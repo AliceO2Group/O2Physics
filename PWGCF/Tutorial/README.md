@@ -2,7 +2,8 @@
 Table of contents: <br>
 1. [Prerequisites](#prerequisites) <br>
 2. [Create your task](#create-your-task-in-o2physics) <br>
-3. [Tutorial checkpoints](#tutorial-checkpoints) <br>
+3. [General tutorial](#general-tutorial) <br>
+4. [FemtoDream tutorial](#femtodream-tutorial) <br>
 _________________
 _______________
 # Prerequisites
@@ -18,7 +19,7 @@ ______________
 To update the software, you need to do the following: <br>
 1. in `alice/alidist`, type `git pull` <br>
 2. in `alice/O2Physics`, type `git pull --rebase` <br>
-3. in `alice/`, type `aliBuild build O2Physics --defaults o2`. Here you can add `--debug`  (or `-d`) for more information.<br>
+3. in `alice/`, type `aliBuild build O2Physics --defaults o2`. Here you can add `--debug` (or `-d`) for more information. <br>
 
 You need to update it frequently, because O2 is constantly evolving. Keep in mind that it might take quite a long time.
 _________
@@ -175,9 +176,9 @@ To enter AnalysisResults.root file enter O2Physics environment (`enter O2Physics
 You can change histograms manually or you can write macros and run them on .root file. If you've never written any root macros consider [_this repository_](https://github.com/zchochul/KADDre). You can find more on root and how to use it here -> [_root.cern/manual/_](https://root.cern/manual/first_steps_with_root/). <br>
 _____________________________
 _____________________________
-# Tutorial checkpoints
+# General tutorial
 ## First task
- We will be using [CFTutorialTask0.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask0.cxx). It's an example task illustrating how to create histograms and fill them with basic information. We will also apply basic event selection.<br>
+ We will be using [CFTutorialTask0.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/PWGCF/Tutorial/CFTutorialTask0.cxx). It's an example task illustrating how to create histograms and fill them with basic information. We will also apply basic event selection.<br>
 
  Here you can see a structure of a typical analysis task in the O2:<br>
  ```c
@@ -250,9 +251,9 @@ Finally, `WorkflowSpec` is necessay to add the task to the DPL workflow . And it
 }
 ```
 
-## Second task
+## Joining different tables
 
-We will be using [CFTutorialTask1.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask1.cxx). In this part of the tutorial, we will focus on how to access information from different tables. Sets of information stored in different tables can be put together using `Join`:
+We will be using [CFTutorialTask1.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/PWGCF/Tutorial/CFTutorialTask1.cxx). In this part of the tutorial, we will focus on how to access information from different tables. Sets of information stored in different tables can be put together using `Join`:
 
 ```c
 namespace o2::aod
@@ -276,9 +277,9 @@ Joined tables can be normally used as agruments of process.
  void process(aod::Collision const& coll, aod::Tracks const& inputTracks){...}
 ```
 
-## Third task
+## Configurables and filters
 
-We will be using [CFTutorialTask2.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask2.cxx). In this part of the tutorial, we will focus on how to use **Configurables** and **Filters**. <br>
+We will be using [CFTutorialTask2.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/PWGCF/Tutorial/CFTutorialTask2.cxx). In this part of the tutorial, we will focus on how to use **Configurables** and **Filters**. <br>
 
 A `Configurable` is a parameter of the task, which can be set from command line or in the dedicated space in Hyperloop.
 In the following, an example for the configurable used for the selection on the vertex z coordinate:
@@ -293,9 +294,9 @@ Filter trackFilter = (nabs(aod::track::eta) < ConfEtaCut) && (aod::track::pt > C
 ```
 Note that configurables can be used in the definition of a filters.
 
-## Fourth task
+## Partitions
 
-We will be using [CFTutorialTask3.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask3.cxx). In this part of the tutorial, we will focus on how to create and use **partitions**.<br>
+We will be using [CFTutorialTask3.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/PWGCF/Tutorial/CFTutorialTask3.cxx). In this part of the tutorial, we will focus on how to create and use **partitions**.<br>
 
 A `Partition` is a subset of a given table that satisfies particular requirements. In the following, a partition obtained from the table _Tracks_:
 
@@ -325,9 +326,9 @@ void process(MyFilteredCollision const& coll, o2::aod::Tracks const& tracks)
 </p>
 </details>
 
-## Fifth task
+## Combining elements of different partitions
 
-We will be using [CFTutorialTask4.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask4.cxx). In this part of the tutorial, we will focus on how to use and combine elements of different **partitions**. In the following, you can see the invariant mass of two pions, a negative one and a positive one, belonging to two different partitions.
+We will be using [CFTutorialTask4.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/PWGCF/Tutorial/CFTutorialTask4.cxx). In this part of the tutorial, we will focus on how to use and combine elements of different **partitions**. In the following, you can see the invariant mass of two pions, a negative one and a positive one, belonging to two different partitions.
 
 `combinations` returns a pair of elements taken from different partitions. `CombinationsFullIndexPolicy` is needed to combine all the element of the first set with all the element of the second set.
 
@@ -350,9 +351,9 @@ for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPosit
 ```
 
 
-## Sixth task
+## Event mixing
 
-We will be using [CFTutorialTask5.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask5.cxx). In this part of the tutorial, we will show how to use multiple processes in the same task with **process switches** and how to access and combine elements of different **partitions** and **different events**.
+We will be using [CFTutorialTask5.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/PWGCF/Tutorial/CFTutorialTask5.cxx). In this part of the tutorial, we will show how to use multiple processes in the same task with **process switches** and how to access and combine elements of different **partitions** and **different events**.
 
 With diss task, we compute the invariant mass of two pions, one positive and one negative.
 We have two separate process functions: <br>
@@ -370,3 +371,244 @@ PROCESS_SWITCH(<name-of-your-structure>, processMixed, "Enable processing mixed 
 ```
 
 The process functions can be activated using `PROCESS_SWITCH`, setting the last parameter as `true`. This parameter can be configured via command line, json file or in the hyperloop interface.
+
+# FemtoDream tutorial
+
+All the things described in section [General tutorial](#general-tutorial) are a prerequisite for this section.
+
+This section will cover:
+- the [skimmed data](#skimmed-data) format used by _FemtoDream_;
+- [event and track selections](#event-and-track-selections), in particular focusing on the use of [CutCulator](#cutculator)
+- use of a [task](#correlation-task) that works on skimmed data
+
+----------------------
+## Skimmed data
+
+**IMPORTANT DISCLAIMER**: you will **NEVER** skim data, but it is important to understand how it works.
+<br>
+
+In order to optimise the data volume, only the information relevant for the analysis is stored. This process is called _data skimming_. For _FemtoDream_ the data skimming is carried out using the task [femtoDreamProducerTask](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx).
+
+`femtoDreamProducerTask` creates tables that are specific for femtoscopy analyses, starting from general O2 tables.
+
+The data format is defined in [FemtoDerived.h](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/DataModel/FemtoDerived.h). At the current state, three different tables are defined: <br>
+1. `FemtoDreamCollisions`
+2. `FemtoDreamParticles`
+3. `FemtoDreamDebugParticles` (used only for debug purpose)
+
+In a table, columns corresponds to variables and rows to element of the set.
+For femtoscopy skimmed data, three kind of columns are used: <br>
+1. `static` columns corresponds to variable that are stored in a file. For example, the static column corresponding to the trasvere momentum is defined in [FemtoDerived.h](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/DataModel/FemtoDerived.h#L71) as:
+```c
+DECLARE_SOA_COLUMN(Pt, pt, float);
+```
+2. `dynamic` columns corresponds to variable that are not stored in a file, but evaluated online from static columns. For example, the static column corresponding to the polar angle $\theta$ is defined in [FemtoDerived.h](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/DataModel/FemtoDerived.h#L82) as:
+```c
+DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
+                           [](float eta) -> float {
+                             return 2.f * std::atan(std::exp(-eta));
+                           });
+```
+3. `index` columns contain the index of another table. For example, in the _FemtoDreamParticle_ table the index of the corresponding collision is defined as:
+```c
+DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
+```
+
+A table is defined from the different columns:
+```c
+DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
+                  o2::soa::Index<>,
+                  femtodreamparticle::FemtoDreamCollisionId,
+                  femtodreamparticle::Pt,
+                  femtodreamparticle::Eta,
+                  ...
+                  femtodreamparticle::Theta<femtodreamparticle::Eta>,
+                  ...
+                  femtodreamparticle::P<femtodreamparticle::Pt, femtodreamparticle::Eta>);
+```
+
+The first element is the index of the table itself. Following, index and static columns can be found. Dynamic columns are at the end of the table and the static columns needed for their evaluation must be specified.
+
+
+In [femtoDreamProducerTask](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx#L85), the final table is declared in the following way:
+
+```c
+Produces<aod::FemtoDreamParticles> outputParts;
+```
+
+All the tracks are filtered according to the chosen selection criteria (seen [next section](#event-and-track-selections)) and tables are filled with selected elements in the following way:
+
+```c
+outputParts(outputCollision.lastIndex(),
+            track.pt(),
+            track.eta(),
+            ...
+           );
+```
+
+The arguments of the filling method are the values to be assigned to each column. The index of the table is not to be inserted. In this case, the first argument is the index-column corresponding to the ID of the collision. The other values are the values of static columns. There are no arguments associated to dynamic columns, since they are evaluated online from static columns.
+
+----------------------------
+## Event and track selections
+
+Event and track selections in FemtoDream are handled by [FemtoDreamCollisionSelection](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/FemtoDreamCollisionSelection.h) and [FemtoDreamTrackSelection](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/FemtoDreamTrackSelection.h), respectively. They are containers of all the relevant selections and they provide useful histograms concerning selections. _FemtoDreamCollisionSelection_ and _FemtoDreamTrackSelection_ are used in _femtoDreamProducerTask_ and only the candidates that pass all the selections are written in the table.
+
+Once elements are filtered, all the not relevant information is **permanently lost**. For example, information about the number of TPC clusters, $\chi^{2}$, etc. will not be available for skimmed data. However, the information about which selections are passed is encoded in a **bitmap**. Let's clarify with an example.
+
+In FemtoDream, for each track three possible selections for pseudorapidity $\eta$ are available: {0.9, 0.8, 0.7}. The corrisponding code is the [following](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx#L116):
+
+```c
+Configurable<std::vector<float>> ConfTrkEta{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kEtaMax, "Track selection: ")};
+```
+All the tracks that pass the loosest selection (in this case $|\eta| < 0.9$) are stored in the file. However, some information concerning the selection is stored in a bitmap: 1 if the selection passed, 0 if not. In the following table, we can see few examples:
+
+| $\eta$ | BIT: $\|\eta\| < 0.7$ | BIT: $\|\eta\| < 0.8$ | BIT: $\|\eta\| < 0.9$ |
+|--------|-----------------------|-----------------------|-----------------------|
+| 0.5    | 1                     | 1                     | 1                     |
+| - 0.72 | 0                     | 1                     | 1                     |
+| 0.83   | 0                     | 0                     | 1                     |
+| 1.3    | 0                     | 0                     | 0                     |
+
+To see whether a track satisfies the requirement $|\eta| < 0.8$, it is necessary to check the corresponding bit. The same procedure is carried out for each different selection. It is quite complex, but do not worry: _CutCulator_ will help.
+
+## CutCulator
+
+Working with skimmed data, you can chose the selection criteria by providing the correct bitmask.
+
+**IMPORTANT**: you can only choose the selection used in the skimming process. Reffering to the previous example, you cannot select tracks with $\eta < 1$, because it does not have a corresponding bit in the bitmap.
+
+The bitmask corresponding the the wished selection is obtained using [femtoDreamCutCulator](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamCutCulator.cxx). You need the `dpl-config.json` file with the configurations used for the data skimming. You need to use the command
+
+```c
+o2-analysis-cf-femtodream-cutculator <path-to-the-config-file>
+```
+
+and you will be asked what kind of selection you want. You must answer with the wished value.
+It looks like this:
+
+```c
+Welcome to the CutCulator!
+[INFO] Variable ConfTrkTPIDspecies not found
+[INFO] Variable ConfV0DaughTPIDspecies not found
+Do you want to work with tracks/v0/cascade (T/V/C)?
+ > T
+Selection: Sign of the track - (-1 1 )
+ > 1
+Selection: Minimal pT (GeV/c) - (0.4 0.5 0.6 )
+ > 0.5
+Selection: Maximal eta - (0.9 0.8 0.7 )
+ > 0.8
+Selection: Minimum number of TPC clusters - (60 70 80 )
+ > 80
+Selection: Minimum fraction of crossed rows/findable clusters - (0.7 0.8 0.9 )
+ > 0.8
+Selection: Minimum number of crossed TPC rows - (60 70 80 )
+ > 70
+Selection: Maximal number of shared TPC cluster - (160 0.1 )
+ > 0.1
+Selection: Minimum number of ITS clusters - (-1 2 4 )
+ > -1
+Selection: Minimum number of ITS clusters in the inner barrel - (-1 1 )
+ > -1
+Selection: Maximal DCA_xy (cm) - (3.5 0.1 )
+ > 0.1
+Selection: Maximal DCA_z (cm) - (3.5 0.2 )
+ > 0.2
+```
+The output is the following:
+```c
+CutCulator has spoken - your selection bit is
+00001010000001001001010001001010 (bitwise)
+168072266 (number representation)
+PID for these species is stored:
+Pion : 0
+Proton : 1
+```
+
+The important value is **number rapresentation**, because it corresponds the **all** the wished selections.
+
+You can also see that in this case the PID information is stored only for pions and protons. In a similar way, also the PID information is not directly stored. On the contrary, a bitmap system is used: the only available information is whether a $n\sigma$ selection (for TPC or TPC + TOF) is passed (considering $2.5\sigma$, $3\sigma$ or $3.5\sigma$).
+
+Referring to this example, for selecting protons with these particular selections one must use:
+- bitmap: 168072266
+- pid: 1
+
+These parameters must be used in [femtoDreamPairTaskTrackTrack](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamPairTaskTrackTrack.cxx) to obtain the same-event and mixed $k^{*}$ distributions, as it will be shown in the next section.
+
+----------------------------------
+## Correlation task
+
+[femtoDreamPairTaskTrackTrack](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamPairTaskTrackTrack.cxx) is used to compute the the same-event and mixed $k^{*}$ distributions from skimmed data.
+
+The parameters of the task must be configured. Locally, on can modify them in the configuration file (in `json` format). On the hyperloop, on can easily modify the parameters.
+
+The first importnat parameters for the two track are stored in a table, in the following way:
+```c
+static constexpr int nPart = 2;
+static constexpr int nCuts = 5;
+static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
+static const float cutsTable[nPart][nCuts]{{4.05f, 1.f, 3.f, 3.f, 100.f},
+                                           {4.05f, 1.f, 3.f, 3.f, 100.f}};
+```
+We have two particles, and for each of them we have the followinf parameters:
+- maximum transverse momentum $p_{\mathrm{T}}$
+- momentum threshold between TPC and TPC + TOF PID
+- $n\sigma$ for TPC selection
+- $n\sigma$ for TPC + TOF selection
+- maximum momentum $p$
+
+This parameters are passed to the task in the following [line](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamPairTaskTrackTrack.cxx#L56):
+```c
+  Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
+```
+
+The other important parameters are the number of species for which PID is stored and the ID corresponding to a particular species. These values can be obtained from the cutculator: in our case, we have PID for two species (pions and protons), and we are interested in protons (the output of the _CutCulator_ is 1).
+
+The full configuration for tracks selection and PID, according to the output of _CutCulator_, is:
+```c
+Configurable<int> cfgNspecies{"ccfgNspecies", 2, "Number of particle spieces with PID info"};
+
+Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 168072266, "Particle 1 - Selection bit from cutCulator"};
+
+Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{1}, "Particle 1 - Read from cutCulator"};
+```
+
+The configurations must be provided for both the particles and two partitions are created, according to the selection criteria:
+
+```c
+Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+
+Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartTwo);
+
+```
+
+The two partitions are used to evaluate same-event and mixed-event $k^{*}$ distributions, as explaind in the section [Combining elements of different partitions](#combining-elements-of-different-partitions). They are evaluated using a helper class (a container):
+
+```c
+FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
+
+FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
+```
+
+The container is filled with the following [line](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamPairTaskTrackTrack.cxx#L191):
+
+```c
+sameEventCont.setPair(p1, p2, multCol);
+```
+where `multCol` is the event multiplicity.
+
+Close-pair rejection works with a helper class:
+```c
+FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejection;
+```
+and it is applied in the following way:
+```c
+ pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii);
+```
+where:
+- `resultRegistry` and `qaRegistry` are the histogram registries where histograms are stored;
+- the 3rd and 4th parameters are the $\Delta\phi$ and $\Delta\eta$ limits for rejection;
+- the last parameter is a boolean, need to activate the plot for different radii.
+
+All the relevant histograms are written to file and are ready to be used!

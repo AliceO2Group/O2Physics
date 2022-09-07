@@ -49,12 +49,15 @@ enum ParticleType {
   kTrack,           //! Track
   kV0,              //! V0
   kV0Child,         //! Child track of a V0
+  kPhi,             // PhiCandidate type
+  kPhiChild,        // PhiCandidate type
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
+
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Phi", "PhiChild", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -123,6 +126,7 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 
 } // namespace femtoworldparticle
+
 DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   o2::soa::Index<>,
                   femtoworldparticle::FemtoWorldCollisionId,
@@ -185,59 +189,7 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
 using FemtoWorldParticle = FemtoWorldParticles::iterator;
-/*
-DECLARE_SOA_TABLE(FemtoWorldDebugParticles, "AOD", "FEMTOWORLDDEBUGPARTS",
-                  femtoworldparticle::Sign,
-                  femtoworldparticle::TPCNClsFound,
-                  track::TPCNClsFindable,
-                  femtoworldparticle::TPCNClsCrossedRows,
-                  track::TPCNClsShared,
-                  track::TPCInnerParam,
-                  femtoworldparticle::ITSNCls,
-                  femtoworldparticle::ITSNClsInnerBarrel,
-                  track::DcaXY,
-                  track::DcaZ,
-                  track::TPCSignal,
-                  pidtpc_tiny::TPCNSigmaStoreEl,
-                  pidtpc_tiny::TPCNSigmaStorePi,
-                  pidtpc_tiny::TPCNSigmaStoreKa,
-                  pidtpc_tiny::TPCNSigmaStorePr,
-                  pidtpc_tiny::TPCNSigmaStoreDe,
-                  pidtof_tiny::TOFNSigmaStoreEl,
-                  pidtof_tiny::TOFNSigmaStorePi,
-                  pidtof_tiny::TOFNSigmaStoreKa,
-                  pidtof_tiny::TOFNSigmaStorePr,
-                  pidtof_tiny::TOFNSigmaStoreDe,
-                  femtoworldparticle::DaughDCA,
-                  femtoworldparticle::TransRadius,
-                  femtoworldparticle::DecayVtxX,
-                  femtoworldparticle::DecayVtxY,
-                  femtoworldparticle::DecayVtxZ,
-                  femtoworldparticle::MKaon,
-                  femtoworldparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtoworldparticle::TPCNClsCrossedRows>,
-                  pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
-                  pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
-                  pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
-                  pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>,
-                  pidtpc_tiny::TPCNSigmaDe<pidtpc_tiny::TPCNSigmaStoreDe>,
-                  pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>,
-                  pidtof_tiny::TOFNSigmaPi<pidtof_tiny::TOFNSigmaStorePi>,
-                  pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
-                  pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
-                  pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
-using FemtoWorldDebugParticle = FemtoWorldDebugParticles::iterator;
-*/
-/// Hash
-/*
-namespace hash
-{
-DECLARE_SOA_COLUMN(Bin, bin, int); //! Hash for the event mixing
-} // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-using Hash = Hashes::iterator;
 
-} // namespace o2::aod
-*/
 namespace femtohash
 {
 DECLARE_SOA_COLUMN(FemtoBin, bin, int); //! Hash for the event mixing

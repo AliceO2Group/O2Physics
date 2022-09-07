@@ -37,8 +37,8 @@ struct flatenictyFV0 {
 
   Configurable<bool> isMC{"isMC", false, "option to flag mc"};
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
-  Configurable<bool> applyCalibCh{"applyCalibCh", true, "equalize FV0"};
-  Configurable<bool> applyCalibVtx{"applyCalibVtx", true, "equalize FV0 vs vtx"};
+  Configurable<bool> applyCalibCh{"applyCalibCh", false, "equalize FV0"};
+  Configurable<bool> applyCalibVtx{"applyCalibVtx", false, "equalize FV0 vs vtx"};
   Configurable<bool> applyNorm{"applyNorm", false, "normalization to eta"};
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f,
@@ -60,11 +60,11 @@ struct flatenictyFV0 {
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[16] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 100, 102, 102, 400, 102};
+    int nBinsEst[16] = {100, 600, 600, 600, 500, 200, 102, 102, 102, 102, 400, 200, 102, 102, 400, 102};
     float lowEdgeEst[16] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
                             -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01};
-    float upEdgeEst[16] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
-                           1.01, 1.01, 1.01, 1.01, 399.5, 99.5, 1.01, 1.01, 399.5, 1.01};
+    float upEdgeEst[16] = {99.5, 599.5, 599.5, 599.5, 39999.5, 199.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 199.5, 1.01, 1.01, 399.5, 1.01};
 
     ConfigurableAxis ptBinning{
       "ptBinning",
@@ -77,13 +77,13 @@ struct flatenictyFV0 {
     flatenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F,
                     {{1000, -0.5, +39999.5, "FV0 amplitude"}});
     flatenicity.add("hFT0Aampl", "FTAampl", HistType::kTH1F,
-                    {{10000, -0.5, +1999.5, "FT0A amplitude"}});
+                    {{30000, -0.5, +3999.5, "FT0A amplitude"}});
     flatenicity.add("hFT0Campl", "FTCampl", HistType::kTH1F,
                     {{10000, -0.5, +1999.5, "FT0C amplitude"}});
     flatenicity.add("hFDDAampl", "FDDAampl", HistType::kTH1F,
-                    {{6000, -0.5, 7999.5, "FDDA amplitude"}});
+                    {{10000, -0.5, 39999.5, "FDDA amplitude"}});
     flatenicity.add("hFDDCampl", "FDDCampl", HistType::kTH1F,
-                    {{6000, -0.5, 7999.5, "FDDC amplitude"}});
+                    {{10000, -0.5, 39999.5, "FDDC amplitude"}});
     flatenicity.add("hFT0C", "FT0C", HistType::kTH1F,
                     {{600, -0.5, 599.5, "FT0C amplitudes"}});
     flatenicity.add("hFT0A", "FT0A", HistType::kTH1F,
@@ -387,33 +387,39 @@ struct flatenictyFV0 {
 
     flatenicity.fill(HIST("hEv"), 3);
     // these values are from equalized pass 4 signals
-    const int nEta1 = 5;                                                               // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
-    float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175}; // after calibration
+    const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
+    // float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175}; // after calibration
+    float weigthsEta1[nEta1] = {0.000710054, 1.94347, 0.04924, 0.00451969, 0.00215551};
     float deltaEeta1[nEta1] = {2.0, 0.2, 1.1, 2.32, 1.6};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
 
-    const int nEta2 = 4;                                                    // FDDC + MFT + FV0 (rings 1-4) + FDDA
-    float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00569502, 0.0037175}; // after calibration
+    const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
+    // float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00569502, 0.0037175}; // after calibration
+    float weigthsEta2[nEta2] = {0.000710054, 1.27606, 0.00451969, 0.00215551};
     float deltaEeta2[nEta2] = {2.0, 1.1, 2.32, 1.6};
     float ampl2[nEta2] = {0, 0, 0, 0};
 
-    const int nEta3 = 2;                              // MFT + FV0
-    float weigthsEta3[nEta3] = {1.05258, 0.00535717}; // after calibration
+    const int nEta3 = 2; // MFT + FV0
+    // float weigthsEta3[nEta3] = {1.05258, 0.00535717}; // after calibration
+    float weigthsEta3[nEta3] = {1.27606, 0.00437892};
     float deltaEeta3[nEta3] = {1.1, 2.9};
     float ampl3[nEta3] = {0, 0};
 
-    const int nEta4 = 2;                               // MFT + FT0A
-    float weigthsEta4[nEta4] = {1.05258, 0.014552069}; // after calibration
+    const int nEta4 = 2; // MFT + FT0A
+    // float weigthsEta4[nEta4] = {1.05258, 0.014552069}; // after calibration
+    float weigthsEta4[nEta4] = {0.00437892, 0.0097735442};
     float deltaEeta4[nEta4] = {1.1, 1.2};
     float ampl4[nEta4] = {0, 0};
 
-    const int nEta5 = 2;                                 // FT0C + FT0A
-    float weigthsEta5[nEta5] = {0.0569502, 0.014552069}; // after calibration
+    const int nEta5 = 2; // FT0C + FT0A
+    // float weigthsEta5[nEta5] = {0.0569502, 0.014552069}; // after calibration
+    float weigthsEta5[nEta5] = {0.04924, 0.0097735442};
     float deltaEeta5[nEta5] = {1.1, 1.2};
     float ampl5[nEta5] = {0, 0};
 
-    const int nEta6 = 2;                                // FT0C + FV0
-    float weigthsEta6[nEta6] = {0.0569502, 0.00535717}; // after calibration
+    const int nEta6 = 2; // FT0C + FV0
+    // float weigthsEta6[nEta6] = {0.0569502, 0.00535717}; // after calibration
+    float weigthsEta6[nEta6] = {0.04924, 0.00437892};
     float deltaEeta6[nEta6] = {1.1, 2.9};
     float ampl6[nEta6] = {0, 0};
 

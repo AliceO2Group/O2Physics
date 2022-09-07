@@ -12,6 +12,7 @@
 /// \file femtoWorldPairTaskTrackTrack.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -48,7 +49,7 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
 } // namespace
 
-struct femtoWorldPairTaskTrackV0 {
+struct femtoWorldPairTaskTrackPhi {
 
   /// Particle selection part
 
@@ -57,22 +58,21 @@ struct femtoWorldPairTaskTrackV0 {
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
   /// Particle 1 (track)
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};                                 // proton (2212)
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
 
   /// Partition for particle 1
-  Partition<aod::FemtoWorldParticles> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack)) && ((aod::femtoworldparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<aod::FemtoWorldParticles> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack));
 
   /// Histogramming for particle 1
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
-  /// Particle 2 (V0)
-  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 3122, "Particle 1 - PDG code"};
+  /// Particle 2 (Phi)
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 333, "Particle 1 - PDG code"}; // phi meson (333)
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
 
   /// Partition for particle 2
-  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kV0)) && ((aod::femtoworldparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
+  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kV0));
 
   /// Histogramming for particle 2
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kV0, 2> trackHistoPartTwo;
@@ -123,7 +123,7 @@ struct femtoWorldPairTaskTrackV0 {
   }
 
   /// This function processes the same event and takes care of all the histogramming
-  /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
+  /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-Phi, Phi-Phi, ...
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
                         o2::aod::FemtoWorldParticles& parts)
   {
@@ -169,10 +169,10 @@ struct femtoWorldPairTaskTrackV0 {
     }
   }
 
-  PROCESS_SWITCH(femtoWorldPairTaskTrackV0, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(femtoWorldPairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
 
   /// This function processes the mixed event
-  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
+  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-Phi, Phi-Phi, ...
   void processMixedEvent(o2::aod::FemtoWorldCollisions& cols,
                          o2::aod::FemtoWorldParticles& parts)
   {
@@ -207,13 +207,13 @@ struct femtoWorldPairTaskTrackV0 {
     }
   }
 
-  PROCESS_SWITCH(femtoWorldPairTaskTrackV0, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(femtoWorldPairTaskTrackPhi, processMixedEvent, "Enable processing mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoWorldPairTaskTrackV0>(cfgc),
+    adaptAnalysisTask<femtoWorldPairTaskTrackPhi>(cfgc),
   };
   return workflow;
 }
