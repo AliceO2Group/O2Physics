@@ -119,9 +119,11 @@ struct MultiCollisionAssociation {
 
 struct AmbiguousTrackPropagation {
   Produces<aod::BestCollisions> tracksBestCollisions;
+  Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
+  float Bz = 0; // Magnetic field for MFT
 
   o2::base::Propagator::MatCorrType matCorr =
     o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -157,11 +159,16 @@ struct AmbiguousTrackPropagation {
               << " from its GRPMagField CCDB object";
     o2::base::Propagator::initFieldFromGRP(grpmag);
     runNumber = bc.runNumber();
+
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
+    Bz = field->getBz(centerMFT);
+    LOG(info) << "The field at the center of the MFT is Bz = " << Bz;
   }
 
-  void process(soa::Join<aod::Tracks, aod::TracksExtra> const&,
-               aod::Collisions const&, ExtBCs const& bcs,
-               aod::AmbiguousTracks const& atracks)
+  void processCentral(soa::Join<aod::Tracks, aod::TracksExtra> const&,
+                      aod::Collisions const&, ExtBCs const& bcs,
+                      aod::AmbiguousTracks const& atracks)
   {
     if (bcs.size() == 0) {
       return;
@@ -207,45 +214,17 @@ struct AmbiguousTrackPropagation {
         trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
     }
   }
-};
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processCentral, "Fill BestCollisions for central ambiguous tracks", true);
 
-struct AmbiguousTrackPropagationFwd {
-  Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
-
-  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedMulti>;
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  int runNumber = -1;
-
-  o2::parameters::GRPMagField* grpmag = nullptr;
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-
-  float Bz = 0;
-
-  void initCCDB(ExtBCs::iterator const& bc)
+  void processMFT(aod::MFTTracks const&,
+                  aod::Collisions const&, ExtBCs const& bcs,
+                  aod::AmbiguousMFTTracks const& atracks)
   {
-    if (runNumber == bc.runNumber()) {
+
+    if (bcs.size() == 0) {
       return;
     }
-    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current()
-              << " A for run " << bc.runNumber()
-              << " from its GRPMagField CCDB object";
-    o2::base::Propagator::initFieldFromGRP(grpmag);
-    runNumber = bc.runNumber();
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-    double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
-    Bz = field->getBz(centerMFT);
-    printf("--------Bz = %f\n", Bz);
-  }
-
-  void process(aod::MFTTracks const&,
-               aod::Collisions const&, ExtBCs const& bcs,
-               aod::AmbiguousMFTTracks const& atracks)
-  {
-    printf("--------Bz = %f\n", Bz);
-    if (bcs.size() == 0) {
+    if (atracks.size() == 0) {
       return;
     }
 
@@ -272,7 +251,7 @@ struct AmbiguousTrackPropagationFwd {
         }
         auto collisions = bc.collisions();
         for (auto const& collision : collisions) {
-          // temporary: for now just the linear propagation since the magnetic field was 0
+
           trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
 
           const auto dcaX(trackPar.getX() - collision.posX());
@@ -292,6 +271,7 @@ struct AmbiguousTrackPropagationFwd {
         trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
     }
   }
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processMFT, "Fill BestCollisionsFwd for MFT ambiguous tracks", false);
 };
 
 //****************************************************************************************
@@ -302,7 +282,6 @@ struct AmbiguousTrackPropagationFwd {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc),
-                        adaptAnalysisTask<AmbiguousTrackPropagationFwd>(cfgc),
                         adaptAnalysisTask<MultiCollisionAssociation>(cfgc)};
   return workflow;
 }

@@ -175,10 +175,13 @@ struct PseudorapidityDensityMFT {
   expressions::Filter atrackFilter = (aod::fwdtrack::bestCollisionId >= 0) &&
                                      (aod::fwdtrack::etas < -2.0f) &&
                                      (aod::fwdtrack::etas > -3.9f) &&
-                                     (nabs(aod::fwdtrack::bestDCAXY) <= 3.f);
+                                     (nabs(aod::fwdtrack::bestDCAXY) <= 2.f);
 
   void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
+    if (tracks.size() == 0) {
+      return;
+    }
     registry.fill(HIST("EventSelection"), 1.);
     if (!useEvSel || (useEvSel && collision.sel8())) {
       registry.fill(HIST("EventSelection"), 2.);
@@ -215,6 +218,9 @@ struct PseudorapidityDensityMFT {
   {
     if (!doprocessGen) {
       LOGP(debug, "You can't enable processMultReweight if not analysing MC");
+      return;
+    }
+    if (tracks.size() == 0) {
       return;
     }
     registry.fill(HIST("EventSelection"), 1.);
