@@ -78,37 +78,44 @@ struct CFFilterTwoN {
   // 10 for both
 
   Configurable<float> confProtonPtMin{"ProtonPtMin", 0.5, "Minimal Pt for Protons"};
-  Configurable<float> confProtonPtMax{"ProtonPtMax", 4.0, "Maximal Pt for Protons"};
+  Configurable<float> confProtonPtMax{"ProtonPtMax", 4.05, "Maximal Pt for Protons"};
   Configurable<float> confPIDThreshold{"PThreshold", 0.75f, "P threshold for TPC/TPC&TOF selection (Protons only)"};
 
   Configurable<float> confDeuteronPtMin{"DeuteronPtMin", 0.5, "Minimal Pt for Deuterons"};
   Configurable<float> confDeuteronPtMax{"DeuteronPtMax", 1.4, "Maximal Pt for Deuterons"};
 
-  Configurable<float> confPIDnSigmaTPCAcceptance{"PIDnSigmaTPCPIDAcceptance", 3., "nSigmaTPC for accepting Protons and Deuterons"};
-  // the value used in this configurable needs to one of the values listed in ConfPIDnSigmaTPCMax
-  Configurable<float> confPIDnSigmTPCTOFAcceptance{"PIDnSigmaTPCTOFPIDAcceptance", 3., "nSigmaTPCTOF for accepting Protons"};
-  // the value used in this configurable needs to one of the values listed in ConfPIDnSigmaTPCMax
+  Configurable<float> confPIDnSigmaTPCAcceptance{"PIDnSigmaTPCPIDAcceptance",
+                                                 3.,
+                                                 "nSigmaTPC for accepting Protons and Deuterons (this value needs to be listed in PIDnSgimaTPCMax)"};
+  // the value used in this configurable needs to one of the values listed in ConfPIDnSigmaTPCMax!
+  Configurable<float> confPIDnSigmTPCTOFAcceptance{"PIDnSigmaTPCTOFPIDAcceptance",
+                                                   3.,
+                                                   "nSigmaTPCTOF for accepting Protons (this values needs to be listed in PIDnSigmaTPCMax)"};
+  // the value used in this configurable needs to one of the values listed in ConfPIDnSigmaTPCMax!
 
-  Configurable<std::vector<float>> ConfPIDnSigmaTPCMax{"PIDnSigmaTPCMax", std::vector<float>{3.5f, 3.f, 2.5f}, "Vector of all possible nSigma values for Accpetance and Rejection"};
-  // this configurable needs to be in sync with FemtoDreamProducerTask
+  Configurable<std::vector<float>> ConfPIDnSigmaTPCMax{"PIDnSigmaTPCMax",
+                                                       std::vector<float>{3.5f, 3.f, 2.5f},
+                                                       "Vector of all possible nSigma values for Accpetance and Rejection (this needs to be in sync with FemtoDreamProducerTask.ConfTrkPIDnSigmaMax)"};
+  // this configurable needs to be in sync with FemtoDreamProducerTask.ConfTrkPIDnSigmaMax
   // do not use more than 3 values, otherwise the FemtoDreamProducerTask will break!
 
-  Configurable<float> confPIDRejection{"PIDRejection", 3.5, "nSigma for rejection bogus Deuterons"};
+  Configurable<float> confPIDRejection{"PIDRejection", 3.5, "nSigma for rejection bogus Deuterons (set it to a negative value to disable the rejection)"};
   // the value used in this configurable needs to one of the values listed in ConfPIDnSigmaTPCMax
   // set it to a negative value to disable the rejection
 
   // suggestion for setting ConfTrkTPIDspecies of the FemtoDreamProducerTask
-  // ConfTrkTPIDspecies = {0, <- Electron at Index 0
-  //                       2, <- Pion at Index 1
-  //                       4, <- Proton at Index 2
-  //                       5} <-Deuteron at Index 3
+  // ConfTrkTPIDspecies = {0, <- Electron PID at Index 0
+  //                       2, <- Pion PID at Index 1
+  //                       4, <- Proton PID at Index 2
+  //                       5} <- Deuteron PID at Index 3
+  //                       total of 4 indices
   // will become clear in the following
 
   Configurable<int> confPIDProtonIndex{"PIDProtonIndex", 2, "Index of Proton PID in ConfTrkTPIDspecies of the FemtoDreamProducerTask"};
   Configurable<int> confPIDDeuteronIndex{"PIDDeuteronIndex", 3, "Index of Deuteron PID in ConfTrkTPIDspecies of the FemtoDreamProducerTask"};
   Configurable<int> confPIDIndexMax{"PIDIndexMax", 4, "Number of Indices in ConfTrkTPIDspecies of the FemtoDreamProducerTask"};
 
-  Configurable<std::vector<int>> ConfPIDRejectionSpeciesIndex{"PIDRejectionSpeciesIndex", std::vector<int>{0, 1, 2}, "Indixes of the particles we want to reject from the Deuteron signal"};
+  Configurable<std::vector<int>> ConfPIDRejectionSpeciesIndex{"PIDRejectionSpeciesIndex", std::vector<int>{0, 1, 2}, "Indices of the particles we want to reject from the Deuteron signal"};
   // when configuring the FemtoDreamProducerTask, select for ConfTrkTPIDspecies at least Protons (=4) and Deuterons (=5)
   // for the rejection to work properly also select electron (=0) and pions (=2)
   // suppose the FemtoDreamProducerTask is configured as above
@@ -162,11 +169,13 @@ struct CFFilterTwoN {
                                          confPIDRejection.value,
                                          ConfPIDnSigmaTPCMax.value,
                                          kDetector::kTPC);
+          // if a deuteron candidate is found which could also be another particle we want to reject, break out of the loop
           if (rejectDeuteron) {
             break;
           }
         }
       }
+      // and reject the candiate, otherwise check if it is fullfills the deuteron hypothesis
       if (!rejectDeuteron) {
         pidSelection = isPIDSelected(pidCut,
                                      std::vector<int>{confPIDDeuteronIndex.value},
@@ -176,7 +185,7 @@ struct CFFilterTwoN {
                                      kDetector::kTPC);
       }
     } else {
-      LOG(fatal) << "Other PID's are not supported by this trigger" << std::endl;
+      LOG(fatal) << "Other PID selections are not supported by this trigger" << std::endl;
     }
     return pidSelection;
   }
