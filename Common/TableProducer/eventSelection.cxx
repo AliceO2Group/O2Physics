@@ -473,7 +473,7 @@ struct EventSelectionTask {
 
     if (forwardBC <= maxBC && backwardBC >= minBC) {
       // if FT0 is found on both sides from meanBC, move to closest one
-      if (labs(forwardBC - meanBC) < labs(meanBC - backwardBC)) {
+      if (labs(int64_t(forwardBC) - meanBC) < labs(int64_t(backwardBC) - meanBC)) {
         bc.moveByIndex(forwardMoveCount);
       } else {
         bc.moveByIndex(backwardMoveCount);
