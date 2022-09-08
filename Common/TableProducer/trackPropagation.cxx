@@ -30,6 +30,7 @@
 #include "Framework/runDataProcessing.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "Common/DataModel/GlobalRunningParameters.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -44,6 +45,7 @@ using namespace o2::framework;
 // using namespace o2::framework::expressions;
 
 struct TrackPropagation {
+  Produces<aod::GrpInfos> grpInfos;
   Produces<aod::StoredTracks> tracksParPropagated;
   Produces<aod::TracksExtension> tracksParExtensionPropagated;
 
@@ -121,6 +123,9 @@ struct TrackPropagation {
       return;
     }
     initCCDB(bcs.begin());
+    for (auto i = 0; i < bcs.size(); i++) {
+      grpInfos(grpmag->getL3Current(), grpmag->getDipoleCurrent(), grpmag->getFieldUniformity());
+    }
 
     gpu::gpustd::array<float, 2> dcaInfo;
 
