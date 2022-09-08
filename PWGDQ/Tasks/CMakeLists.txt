@@ -1,4 +1,4 @@
-# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+PWGDQ/Tasks/CMakeLists.txt # Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
 #
@@ -16,11 +16,6 @@ o2physics_add_dpl_workflow(table-reader
 
 o2physics_add_dpl_workflow(efficiency
                     SOURCES dqEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dilepton-ee
-                    SOURCES dileptonEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
