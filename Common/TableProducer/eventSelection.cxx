@@ -410,42 +410,80 @@ struct EventSelectionTask {
   void processRun3(aod::Collision const& col, BCsWithBcSels const& bcs)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
-    uint64_t apprBC = bc.globalBC();
-    int64_t meanBC = apprBC - std::lround(col.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+    int64_t shift = 0;
+
+    // temporary workaround for apass1. Might be included in CCDB in the future
+    if (bc.runNumber() > 520143) {
+      shift = col.collisionTimeRes() < 12 ? -2 : -15;
+    } else if (bc.runNumber() >= 523141) {
+      shift = col.collisionTimeRes() < 12 ? -2 : 0;
+    }
+
+    int64_t meanBC = bc.globalBC() + shift;
     int64_t deltaBC = std::ceil(col.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
+
     // use custom delta
     if (customDeltaBC > 0) {
       deltaBC = customDeltaBC;
     }
 
-    if (!bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
-      // search forward
-      int forwardMoveCount = 0;
-      int64_t forwardBcDist = deltaBC + 1;
-      for (; bc != bcs.end() && int64_t(bc.globalBC()) <= meanBC + deltaBC; ++bc, ++forwardMoveCount) {
-        if (bc.has_foundFT0()) {
-          forwardBcDist = bc.globalBC() - meanBC;
-          break;
-        }
+    uint64_t minBC = meanBC - deltaBC;
+    uint64_t maxBC = meanBC + deltaBC;
+
+    // temporary workaround for apass1. Might be included in CCDB in the future
+    if (bc.runNumber() >= 520143 && col.collisionTimeRes() < 12) { // collisions with TOF-matched tracks
+      minBC = meanBC - 13;
+      maxBC = meanBC;
+    } else if (bc.runNumber() >= 523141 && col.collisionTimeRes() < 12) { // collisions with TOF-matched tracks
+      minBC = meanBC - 2;
+      maxBC = meanBC + 4;
+    }
+    if (bc.runNumber() == 505600) { // pilot run without TOF - using custom delta bc to improve matching
+      minBC = meanBC - 400;
+      maxBC = meanBC + 400;
+    }
+
+    int forwardMoveCount = 0, backwardMoveCount = 0;
+    uint64_t backwardBC = minBC - 1;
+    uint64_t forwardBC = maxBC + 1;
+    // search in forward direction starting from the current bc
+    while (bc != bcs.end() && bc.globalBC() <= maxBC && bc.globalBC() >= minBC) {
+      if (bc.selection()[kIsBBT0A] || bc.selection()[kIsBBT0C]) {
+        forwardBC = bc.globalBC();
+        break;
       }
-      bc.moveByIndex(-forwardMoveCount);
-      // search backward
-      int backwardMoveCount = 0;
-      int64_t backwardBcDist = deltaBC + 1;
-      for (; int64_t(bc.globalBC()) >= meanBC - deltaBC; --bc, ++backwardMoveCount) {
-        if (bc.has_foundFT0()) {
-          backwardBcDist = meanBC - bc.globalBC();
-          break;
-        }
-        if (bc == bcs.begin()) {
-          break;
-        }
+      bc++;
+      forwardMoveCount++;
+    }
+    bc.moveByIndex(-forwardMoveCount);
+
+    // search in backward direction
+    while (bc.globalIndex() > 0 && bc.globalBC() >= minBC) {
+      bc--;
+      backwardMoveCount--;
+      if (bc.globalBC() > maxBC || bc.globalBC() < minBC) {
+        continue;
       }
-      if (forwardBcDist > deltaBC && backwardBcDist > deltaBC) {
-        bc.moveByIndex(backwardMoveCount); // return to nominal bc if neighbouring ft0 is not found
-      } else if (forwardBcDist < backwardBcDist) {
-        bc.moveByIndex(backwardMoveCount + forwardMoveCount); // move forward
-      }                                                       // else keep backward bc
+      if (bc.selection()[kIsBBT0A] || bc.selection()[kIsBBT0C]) {
+        backwardBC = bc.globalBC();
+        break;
+      }
+    }
+    bc.moveByIndex(-backwardMoveCount);
+
+    if (forwardBC <= maxBC && backwardBC >= minBC) {
+      // if FT0 is found on both sides from meanBC, move to closest one
+      if (labs(int64_t(forwardBC) - meanBC) < labs(int64_t(backwardBC) - meanBC)) {
+        bc.moveByIndex(forwardMoveCount);
+      } else {
+        bc.moveByIndex(backwardMoveCount);
+      }
+    } else if (forwardBC <= maxBC) {
+      // if FT0 is found only in forward, move forward
+      bc.moveByIndex(forwardMoveCount);
+    } else if (backwardBC >= minBC) {
+      // if FT0 is found only in backward, move backward
+      bc.moveByIndex(backwardMoveCount);
     }
 
     int32_t foundBC = bc.globalIndex();

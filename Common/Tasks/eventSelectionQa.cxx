@@ -29,13 +29,13 @@ using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3Match
 
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
-  Configurable<double> minGlobalBC{"minGlobalBC", 0, "minimum global bc"};
   Configurable<int> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs"};
   Configurable<double> minOrbit{"minOrbit", 0, "minimum orbit"};
   Configurable<int> nOrbits{"nOrbits", 10000, "number of orbits"};
   Configurable<int> refBC{"refBC", 1238, "reference bc"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
 
+  uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   bool* applySelection = NULL;
@@ -50,18 +50,20 @@ struct EventSelectionQaTask {
 
   void init(InitContext&)
   {
+    minGlobalBC = uint64_t(minOrbit) * 3564;
+
     // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
     float maxMultV0M = isLowFlux ? 40000 : 40000;
-    float maxMultV0A = isLowFlux ? 30000 : 30000;
+    float maxMultV0A = isLowFlux ? 40000 : 40000;
     float maxMultV0C = isLowFlux ? 30000 : 30000;
-    float maxMultT0A = isLowFlux ? 2000 : 100000;
+    float maxMultT0A = isLowFlux ? 10000 : 100000;
     float maxMultT0C = isLowFlux ? 2000 : 100000;
-    float maxMultFDA = isLowFlux ? 5000 : 10000;
-    float maxMultFDC = isLowFlux ? 5000 : 10000;
+    float maxMultFDA = isLowFlux ? 50000 : 10000;
+    float maxMultFDC = isLowFlux ? 50000 : 10000;
     float maxMultZNA = isLowFlux ? 1000 : 200000;
     float maxMultZNC = isLowFlux ? 1000 : 200000;
     const AxisSpec axisTime{700, -35, 35};
@@ -90,7 +92,6 @@ struct EventSelectionQaTask {
     histos.add("hTimeT0Cbgc", "BeamC-only bcs;T0C time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeFDAbgc", "BeamC-only bcs;FDA time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeFDCbgc", "BeamC-only bcs;FDC time (ns);Entries", kTH1F, {axisTime});
-
     histos.add("hTimeV0Aref", "Reference bcs;V0A time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeV0Cref", "Reference bcs;V0C time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZNAref", "Reference bcs;ZNA time (ns);Entries", kTH1F, {axisTime});
@@ -135,56 +136,63 @@ struct EventSelectionQaTask {
     histos.add("hSelCounter", "", kTH1F, {{kNsel, 0, kNsel}});
     histos.add("hSelMask", "", kTH1F, {{kNsel, 0, kNsel}});
 
-    histos.add("hGlobalBcAll", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
-    histos.add("hGlobalBcCol", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
-    histos.add("hGlobalBcFT0", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
-    histos.add("hGlobalBcFV0", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
-    histos.add("hGlobalBcFDD", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
-    histos.add("hOrbitAll", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
-    histos.add("hOrbitCol", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
-    histos.add("hOrbitFT0", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
-    histos.add("hOrbitFV0", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
-    histos.add("hOrbitFDD", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hGlobalBcAll", ";;", kTH1F, {{nGlobalBCs, 0, double(nGlobalBCs)}});
+    histos.add("hGlobalBcCol", ";;", kTH1F, {{nGlobalBCs, 0, double(nGlobalBCs)}});
+    histos.add("hGlobalBcFT0", ";;", kTH1F, {{nGlobalBCs, 0, double(nGlobalBCs)}});
+    histos.add("hGlobalBcFV0", ";;", kTH1F, {{nGlobalBCs, 0, double(nGlobalBCs)}});
+    histos.add("hGlobalBcFDD", ";;", kTH1F, {{nGlobalBCs, 0, double(nGlobalBCs)}});
+    histos.add("hOrbitAll", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
+    histos.add("hOrbitCol", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
+    histos.add("hOrbitAcc", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
+    histos.add("hOrbitFT0", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
+    histos.add("hOrbitFV0", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
+    histos.add("hOrbitFDD", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
     histos.add("hBcAll", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
     histos.add("hBcCol", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
     histos.add("hBcFT0", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
     histos.add("hBcFV0", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
     histos.add("hBcFDD", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+    histos.add("hBcColTOF", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
 
-    histos.add("hMultV0Aall", "All bcs;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
-    histos.add("hMultV0Call", "All bcs;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultV0Aall", "All bcs;V0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0M}});
+    histos.add("hMultV0Call", "All bcs;V0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0C}});
     histos.add("hMultZNAall", "All bcs;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
     histos.add("hMultZNCall", "All bcs;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
     histos.add("hMultT0Aall", "All bcs;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
     histos.add("hMultT0Call", "All bcs;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
     histos.add("hMultFDAall", "All bcs;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
     histos.add("hMultFDCall", "All bcs;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
-    histos.add("hMultV0Aref", "Reference bcs;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
-    histos.add("hMultV0Cref", "Reference bcs;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultV0Aref", "Reference bcs;V0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0M}});
+    histos.add("hMultV0Cref", "Reference bcs;V0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0C}});
     histos.add("hMultZNAref", "Reference bcs;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
     histos.add("hMultZNCref", "Reference bcs;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
     histos.add("hMultT0Aref", "Reference bcs;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
     histos.add("hMultT0Cref", "Reference bcs;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
     histos.add("hMultFDAref", "Reference bcs;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
     histos.add("hMultFDCref", "Reference bcs;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
-    histos.add("hMultV0Mcol", "All events;V0M multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
-    histos.add("hMultV0Acol", "All events;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0A}});
-    histos.add("hMultV0Ccol", "All events;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultV0Mcol", "All events;V0M multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0M}});
+    histos.add("hMultV0Acol", "All events;V0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0A}});
+    histos.add("hMultV0Ccol", "All events;V0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0C}});
     histos.add("hMultZNAcol", "All events;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
     histos.add("hMultZNCcol", "All events;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
     histos.add("hMultT0Acol", "All events;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
     histos.add("hMultT0Ccol", "All events;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
     histos.add("hMultFDAcol", "All events;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
     histos.add("hMultFDCcol", "All events;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
-    histos.add("hMultV0Macc", "Accepted events;V0M multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
-    histos.add("hMultV0Aacc", "Accepted events;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0A}});
-    histos.add("hMultV0Cacc", "Accepted events;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultV0Macc", "Accepted events;V0M multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0M}});
+    histos.add("hMultV0Aacc", "Accepted events;V0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0A}});
+    histos.add("hMultV0Cacc", "Accepted events;V0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultV0C}});
     histos.add("hMultZNAacc", "Accepted events;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
     histos.add("hMultZNCacc", "Accepted events;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
     histos.add("hMultT0Aacc", "Accepted events;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
     histos.add("hMultT0Cacc", "Accepted events;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
     histos.add("hMultFDAacc", "Accepted events;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
     histos.add("hMultFDCacc", "Accepted events;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
+
+    histos.add("hMultT0Abga", "All events;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
+    histos.add("hMultT0Abgc", "All events;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
+    histos.add("hMultT0Cbga", "All events;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
+    histos.add("hMultT0Cbgc", "All events;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
 
     histos.add("hColTimeRes", ";collision time resolution (ns)", kTH1F, {{7000, 0, 7000}});
     histos.add("hColTimeResVsNcontrib", ";n contributors; collision time resolution (ns)", kTH2F, {{100, 0, 100}, {7000, 0, 7000}});
@@ -196,16 +204,20 @@ struct EventSelectionQaTask {
     histos.add("hDFstartOrbit", "", kTH1F, {{100000, 0., 1e+9}});
     histos.add("hFT0sPerDF", "", kTH1F, {{100000, 0., 1e+9}});
 
-    histos.add("hNcontribCol", ";n contributors;", kTH1F, {{100, 0, 100.}});
-    histos.add("hNcontribAcc", ";n contributors;", kTH1F, {{100, 0, 100.}});
+    histos.add("hNcontribCol", ";n contributors;", kTH1F, {{150, 0, 150.}});
+    histos.add("hNcontribAcc", ";n contributors;", kTH1F, {{150, 0, 150.}});
+    histos.add("hNcontribMis", ";n contributors;", kTH1F, {{150, 0, 150.}});
+    histos.add("hNcontribColTOF", ";n contributors;", kTH1F, {{150, 0, 150.}});
+    histos.add("hNcontribAccTOF", ";n contributors;", kTH1F, {{150, 0, 150.}});
+    histos.add("hNcontribMisTOF", ";n contributors;", kTH1F, {{150, 0, 150.}});
 
     // MC histograms
-    histos.add("hGlobalBcColMC", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
-    histos.add("hOrbitColMC", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hGlobalBcColMC", ";;", kTH1F, {{nGlobalBCs, 0, double(nGlobalBCs)}});
+    histos.add("hOrbitColMC", ";;", kTH1F, {{nOrbits, 0, double(nOrbits)}});
     histos.add("hBcColMC", "", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
     histos.add("hVertexXMC", "", kTH1F, {{1000, -1, 1}});
     histos.add("hVertexYMC", "", kTH1F, {{1000, -1, 1}});
-    histos.add("hVertexZMC", "", kTH1F, {{1000, -10, 10}});
+    histos.add("hVertexZMC", "", kTH1F, {{1000, -20, 20}});
 
     for (int i = 0; i < kNsel; i++) {
       histos.get<TH1>(HIST("hSelCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
@@ -275,22 +287,22 @@ struct EventSelectionQaTask {
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
       int localBC = globalBC % nBCsPerOrbit;
-      histos.fill(HIST("hGlobalBcAll"), globalBC);
-      histos.fill(HIST("hOrbitAll"), orbit);
+      histos.fill(HIST("hGlobalBcAll"), globalBC - minGlobalBC);
+      histos.fill(HIST("hOrbitAll"), orbit - minOrbit);
       histos.fill(HIST("hBcAll"), localBC);
       if (col.selection()[kIsBBV0A] || col.selection()[kIsBBV0C]) {
-        histos.fill(HIST("hGlobalBcFV0"), globalBC);
-        histos.fill(HIST("hOrbitFV0"), orbit);
+        histos.fill(HIST("hGlobalBcFV0"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitFV0"), orbit - minOrbit);
         histos.fill(HIST("hBcFV0"), localBC);
       }
       if (col.selection()[kIsBBT0A] || col.selection()[kIsBBT0C]) {
-        histos.fill(HIST("hGlobalBcFT0"), globalBC);
-        histos.fill(HIST("hOrbitFT0"), orbit);
+        histos.fill(HIST("hGlobalBcFT0"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitFT0"), orbit - minOrbit);
         histos.fill(HIST("hBcFT0"), localBC);
       }
       if (col.selection()[kIsBBFDA] || col.selection()[kIsBBFDC]) {
-        histos.fill(HIST("hGlobalBcFDD"), globalBC);
-        histos.fill(HIST("hOrbitFDD"), orbit);
+        histos.fill(HIST("hGlobalBcFDD"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitFDD"), orbit - minOrbit);
         histos.fill(HIST("hBcFDD"), localBC);
       }
 
@@ -423,34 +435,53 @@ struct EventSelectionQaTask {
     }
 
     // background studies
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
+      // make sure previous bcs are empty to clean-up other activity
+      uint64_t globalBC = bc.globalBC();
+      int deltaIndex = 0;  // backward move counts
+      int deltaBC = 0;     // current difference wrt globalBC
+      int maxDeltaBC = 10; // maximum difference
+      bool pastActivityFT0 = 0;
+      bool pastActivityFDD = 0;
+      bool pastActivityFV0 = 0;
+      while (deltaBC < maxDeltaBC) {
+        if (bc.globalIndex() - deltaIndex < 0) {
+          break;
+        }
+        deltaIndex++;
+        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC - bc_past.globalBC();
+        if (deltaBC < maxDeltaBC) {
+          pastActivityFT0 |= bc_past.has_ft0();
+          pastActivityFV0 |= bc_past.has_fv0a();
+          pastActivityFDD |= bc_past.has_fdd();
+        }
+      }
+
+      bool pastActivity = pastActivityFT0 | pastActivityFV0 | pastActivityFDD;
+
       int localBC = bc.globalBC() % nBCsPerOrbit;
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
       float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
       float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
       float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
       float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
-      if (bcPatternA[localBC] == 1 || bcPatternA[(localBC + 1) % nBCsPerOrbit]) {
-        histos.fill(HIST("hTimeV0Abga"), timeV0A);
+      if (bcPatternA[(localBC + 5) % nBCsPerOrbit] && !pastActivity && !bc.has_ft0()) {
+        histos.fill(HIST("hTimeFDAbga"), timeFDA);
+        histos.fill(HIST("hTimeFDCbga"), timeFDC);
+      }
+      if (bcPatternC[(localBC + 5) % nBCsPerOrbit] && !pastActivity && !bc.has_ft0()) {
+        histos.fill(HIST("hTimeFDAbgc"), timeFDA);
+        histos.fill(HIST("hTimeFDCbgc"), timeFDC);
+      }
+      if (bcPatternA[(localBC + 1) % nBCsPerOrbit] && !pastActivity && !bc.has_ft0()) {
         histos.fill(HIST("hTimeT0Abga"), timeT0A);
         histos.fill(HIST("hTimeT0Cbga"), timeT0C);
-        histos.fill(HIST("hTimeFDAbga"), timeFDA);
-        histos.fill(HIST("hTimeFDCbga"), timeFDC);
+        histos.fill(HIST("hTimeV0Abga"), timeV0A);
       }
-      if (bcPatternA[(localBC + 5) % nBCsPerOrbit]) {
-        histos.fill(HIST("hTimeFDAbga"), timeFDA);
-        histos.fill(HIST("hTimeFDCbga"), timeFDC);
-      }
-      if (bcPatternC[localBC] == 1 || bcPatternC[(localBC + 1) % nBCsPerOrbit]) {
-        histos.fill(HIST("hTimeV0Abgc"), timeV0A);
+      if (bcPatternC[(localBC + 1) % nBCsPerOrbit] && !pastActivity && !bc.has_ft0()) {
         histos.fill(HIST("hTimeT0Abgc"), timeT0A);
         histos.fill(HIST("hTimeT0Cbgc"), timeT0C);
-        histos.fill(HIST("hTimeFDAbgc"), timeFDA);
-        histos.fill(HIST("hTimeFDCbgc"), timeFDC);
-      }
-      if (bcPatternC[(localBC + 5) % nBCsPerOrbit]) {
-        histos.fill(HIST("hTimeFDAbgc"), timeFDA);
-        histos.fill(HIST("hTimeFDCbgc"), timeFDC);
       }
     }
 
@@ -460,6 +491,11 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hDFstartOrbit"), orbit);
       histos.fill(HIST("hFT0sPerDF"), orbit, ft0s.size());
     }
+
+    // vectors of TVX flags used for past-future studies
+    int nBCs = bcs.size();
+    std::vector<bool> vIsTVX(nBCs, 0);
+    std::vector<uint64_t> vGlobalBCs(nBCs, 0);
 
     // bc-based event selection qa
     for (auto& bc : bcs) {
@@ -493,14 +529,14 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hTimeFDCref"), timeFDC);
       }
 
-      histos.fill(HIST("hGlobalBcAll"), globalBC);
-      histos.fill(HIST("hOrbitAll"), orbit);
+      histos.fill(HIST("hGlobalBcAll"), globalBC - minGlobalBC);
+      histos.fill(HIST("hOrbitAll"), orbit - minOrbit);
       histos.fill(HIST("hBcAll"), localBC);
 
       // FV0
       if (bc.has_fv0a()) {
-        histos.fill(HIST("hGlobalBcFV0"), globalBC);
-        histos.fill(HIST("hOrbitFV0"), orbit);
+        histos.fill(HIST("hGlobalBcFV0"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitFV0"), orbit - minOrbit);
         histos.fill(HIST("hBcFV0"), localBC);
         float multV0A = 0;
         for (auto amplitude : bc.fv0a().amplitude()) {
@@ -514,8 +550,8 @@ struct EventSelectionQaTask {
 
       // FT0
       if (bc.has_ft0()) {
-        histos.fill(HIST("hGlobalBcFT0"), globalBC);
-        histos.fill(HIST("hOrbitFT0"), orbit);
+        histos.fill(HIST("hGlobalBcFT0"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitFT0"), orbit - minOrbit);
         histos.fill(HIST("hBcFT0"), localBC);
         float multT0A = 0;
         for (auto amplitude : bc.ft0().amplitudeA()) {
@@ -531,12 +567,21 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hMultT0Aref"), multT0A);
           histos.fill(HIST("hMultT0Cref"), multT0C);
         }
+
+        if (!bc.selection()[kNoBGFDA] && bc.selection()[kIsTriggerTVX]) {
+          histos.fill(HIST("hMultT0Abga"), multT0A);
+          histos.fill(HIST("hMultT0Cbga"), multT0C);
+        }
+        if (!bc.selection()[kNoBGFDC] && bc.selection()[kIsTriggerTVX]) {
+          histos.fill(HIST("hMultT0Abgc"), multT0A);
+          histos.fill(HIST("hMultT0Cbgc"), multT0C);
+        }
       }
 
       // FDD
       if (bc.has_fdd()) {
-        histos.fill(HIST("hGlobalBcFDD"), globalBC);
-        histos.fill(HIST("hOrbitFDD"), orbit);
+        histos.fill(HIST("hGlobalBcFDD"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitFDD"), orbit - minOrbit);
         histos.fill(HIST("hBcFDD"), localBC);
         float multFDA = 0;
         for (auto amplitude : bc.fdd().chargeA()) {
@@ -565,6 +610,11 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hMultZNCref"), multZNC);
         }
       }
+
+      // fill TVX flags for past-future searches
+      int indexBc = bc.globalIndex();
+      vIsTVX[indexBc] = bc.selection()[kIsTriggerTVX];
+      vGlobalBCs[indexBc] = globalBC;
     }
 
     // collision-based event selection qa
@@ -588,10 +638,12 @@ struct EventSelectionQaTask {
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
       int localBC = globalBC % nBCsPerOrbit;
-      histos.fill(HIST("hGlobalBcCol"), globalBC);
-      histos.fill(HIST("hOrbitCol"), orbit);
+      histos.fill(HIST("hGlobalBcCol"), globalBC - minGlobalBC);
+      histos.fill(HIST("hOrbitCol"), orbit - minOrbit);
       histos.fill(HIST("hBcCol"), localBC);
-
+      if (col.sel8()) {
+        histos.fill(HIST("hOrbitAcc"), orbit - minOrbit);
+      }
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nTPCtracks = 0;
       int nTOFtracks = 0;
@@ -603,11 +655,40 @@ struct EventSelectionQaTask {
         nTOFtracks += track.hasTOF();
       }
 
-      auto foundBC = col.foundBC_as<BCsRun3>();
-      uint64_t foundGlobalBC = bc.globalBC();
+      // search for nearest ft0a&ft0c entry
+      int indexBc = bc.globalIndex();
+      int indexNearestTVX = indexBc;
+      if (vIsTVX[indexBc]) {
+        indexNearestTVX = indexBc;
+      } else {
+        bool foundNext = 0;
+        int indexNext = indexBc;
+        while (!foundNext && indexNext < nBCs - 1) {
+          if (vIsTVX[++indexNext]) {
+            foundNext = 1;
+          }
+        }
+        bool foundPrev = 0;
+        int indexPrev = indexBc;
+        while (!foundPrev && indexPrev > 0) {
+          if (vIsTVX[--indexPrev]) {
+            foundPrev = 1;
+          }
+        }
+        if (foundNext && foundPrev) {
+          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
+          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
+          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
+        } else if (foundNext) {
+          indexNearestTVX = indexNext;
+        } else if (foundPrev) {
+          indexNearestTVX = indexPrev;
+        }
+      }
+      const auto& nearestTVX = bcs.iteratorAt(indexNearestTVX);
+      int bcDiff = int(globalBC - nearestTVX.globalBC());
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
-      int bcDiff = int(globalBC - foundGlobalBC);
       histos.fill(HIST("hColTimeRes"), timeRes);
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
       histos.fill(HIST("hColTimeResVsNcontrib"), nContributors, timeRes);
@@ -618,8 +699,15 @@ struct EventSelectionQaTask {
       if (nTOFtracks > 0) {
         histos.fill(HIST("hColBcDiffVsNcontribWithTOF"), nContributors, bcDiff);
         histos.fill(HIST("hColTimeResVsNcontribWithTOF"), nContributors, timeRes);
+        histos.fill(HIST("hNcontribColTOF"), nContributors);
+        histos.fill(HIST("hBcColTOF"), localBC);
+        if (col.sel8()) {
+          histos.fill(HIST("hNcontribAccTOF"), nContributors);
+        }
       }
       histos.fill(HIST("hNcontribCol"), nContributors);
+
+      const auto& foundBC = col.foundBC_as<BCsRun3>();
 
       float timeZNA = foundBC.has_zdc() ? foundBC.zdc().timeZNA() : -999.f;
       float timeZNC = foundBC.has_zdc() ? foundBC.zdc().timeZNC() : -999.f;
@@ -698,19 +786,35 @@ struct EventSelectionQaTask {
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 
-  void processMCRun3(aod::McCollisions const& mcCols, BCsRun3 const& bcs)
+  void processMCRun3(aod::McCollisions const& mcCols, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& cols, BCsRun3 const& bcs, aod::FT0s const& ft0s)
   {
     for (auto& mcCol : mcCols) {
       auto bc = mcCol.bc_as<BCsRun3>();
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
       int localBC = globalBC % nBCsPerOrbit;
-      histos.fill(HIST("hGlobalBcColMC"), globalBC);
-      histos.fill(HIST("hOrbitColMC"), orbit);
+      histos.fill(HIST("hGlobalBcColMC"), globalBC - minGlobalBC);
+      histos.fill(HIST("hOrbitColMC"), orbit - minOrbit);
       histos.fill(HIST("hBcColMC"), localBC);
       histos.fill(HIST("hVertexXMC"), mcCol.posX());
       histos.fill(HIST("hVertexYMC"), mcCol.posY());
       histos.fill(HIST("hVertexZMC"), mcCol.posZ());
+    }
+
+    // check fraction of collisions matched to wrong bcs
+    for (auto& col : cols) {
+      if (!col.has_mcCollision()) {
+        continue;
+      }
+      uint64_t mcBC = col.mcCollision().bc_as<BCsRun3>().globalBC();
+      uint64_t rcBC = col.foundBC_as<BCsRun3>().globalBC();
+      if (mcBC != rcBC) {
+        histos.fill(HIST("hNcontribMis"), col.numContrib());
+        if (col.collisionTimeRes() < 12) {
+          // ~ wrong bcs for collisions with T0F-matched tracks
+          histos.fill(HIST("hNcontribMisTOF"), col.numContrib());
+        }
+      }
     }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processMCRun3, "Process Run3 MC event selection QA", false);
