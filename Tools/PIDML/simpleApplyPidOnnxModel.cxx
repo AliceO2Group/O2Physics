@@ -16,6 +16,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
@@ -36,14 +37,14 @@ DECLARE_SOA_COLUMN(MlPid, mlPid, int);  //! PID predicted by the model
 DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidresult::TrackId, mlpidresult::MlPid);
 } // namespace o2::aod
 
-struct SimpleApplyOnnxModelTask {
+struct SimpleApplyOnnxModel {
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
   Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
   Configurable<bool> cfgUseTRD{"useTRD", true, "Use ML model with TRD signal"};
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
 
-  Configurable<std::string> cfgPathCCDB{"ccdb-path", "/Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable cfgCCDBURL{"ccdb-url", "http://ccdb-test.cern.ch:8080", "URL of the CCDB repository"};
+  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://ccdb-test.cern.ch:8080", "URL of the CCDB repository"};
   //  Paths to local files
   Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/models_train_246_run_285064_all_detectors", "base path to the local directory with ONNX models"};
   Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
@@ -68,7 +69,7 @@ struct SimpleApplyOnnxModelTask {
     }
   }
 
-  void process(aod::Collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processCollisions(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
@@ -83,10 +84,23 @@ struct SimpleApplyOnnxModelTask {
       pidMLResults(track.index(), pid);
     }
   }
+  PROCESS_SWITCH(SimpleApplyOnnxModel, processCollisions, "Process with collisions and bcs for CCDB", true);
+
+  void processTracksOnly(BigTracks const& tracks)
+  {
+    for (auto& track : tracks) {
+      float pid = pidModel.applyModel(track);
+      // pid > 0 --> track is predicted to be of this kind; pid < 0 --> rejected
+      LOGF(info, "collision id: %d track id: %d pid: %.3f p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+           track.collisionId(), track.index(), pid, track.p(), track.x(), track.y(), track.z());
+      pidMLResults(track.index(), pid);
+    }
+  }
+  PROCESS_SWITCH(SimpleApplyOnnxModel, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SimpleApplyOnnxModelTask>(cfgc)};
+    adaptAnalysisTask<SimpleApplyOnnxModel>(cfgc)};
 }

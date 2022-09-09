@@ -17,6 +17,8 @@
 #ifndef O2_ANALYSIS_PIDONNXMODEL_H_
 #define O2_ANALYSIS_PIDONNXMODEL_H_
 
+#include "CCDB/CcdbApi.h"
+
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -45,14 +47,16 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 struct PidONNXModel {
  public:
   // path is local or CCDB
-  PidONNXModel(const std::string& localPath, const std::string& ccdbPath, const bool useCCDB, o2::ccdb::CcdbApi ccdbApi, const uint64_t timestamp, const int pid, const bool useTOF, const bool useTRD)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, bool useTOF, bool useTRD) : mUseTOF(useTOF), mUseTRD(useTRD)
   {
     std::string modelFile;
-    loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, useTOF, useTRD, modelFile);
+    loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, modelFile);
 
     Ort::SessionOptions sessionOptions;
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
+    LOG(info) << "Loading ONNX model from file: " << modelFile;
     mSession.reset(new Ort::Experimental::Session{*mEnv, modelFile, sessionOptions});
+    LOG(info) << "ONNX model loaded";
 
     mInputNames = mSession->GetInputNames();
     mInputShapes = mSession->GetInputShapes();
@@ -106,14 +110,14 @@ struct PidONNXModel {
   }
 
  private:
-  void getFilenamesFromPath(const std::string& path, std::string& modelFile, std::string& trainColumnsFile, std::string& scalingParamsFile)
+  void getFilenamesFromPath(std::string& path, std::string& modelFile, std::string& trainColumnsFile, std::string& scalingParamsFile, int pid)
   {
     std::ostringstream tmp;
     tmp << path << "/TPC";
-    if (useTOF) {
+    if (mUseTOF) {
       tmp << "_TOF";
     }
-    if (useTRD) {
+    if (mUseTRD) {
       tmp << "_TRD";
     }
     std::string modelDir = tmp.str();
@@ -132,21 +136,21 @@ struct PidONNXModel {
     scalingParamsFile = tmp.str();
   }
 
-  void loadInputFiles(const std::string& localPath, const std::string& ccdbPath, const bool useCCDB, o2::ccdb::CcdbApi ccdbApi, const uint64_t timestamp, const int pid, const bool useTOF, const bool useTRD, std::string& modelFile)
+  void loadInputFiles(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, std::string& modelFile)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
 
-    if (!useTOF && useTRD) {
+    if (!mUseTOF && mUseTRD) {
       LOG(warning) << "TRD specified for PID but TOF not! Not using TRD";
     }
 
     std::string localTrainColumnsFile, localScalingParamsFile;
-    getFilenamesFromPath(localPath, modelFile, localTrainColumnsFile, localScalingParamsFile);
+    getFilenamesFromPath(localPath, modelFile, localTrainColumnsFile, localScalingParamsFile, pid);
 
     if (useCCDB) {
       std::string ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile;
-      getFilenamesFromPath(ccdbPath, ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile);
+      getFilenamesFromPath(ccdbPath, ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile, pid);
       LOG(info) << "Fetching network for timestamp: " << timestamp;
       std::map<std::string, std::string> metadata;
       ccdbApi.retrieveBlob(ccdbModelFile, ".", metadata, timestamp, false, modelFile);
@@ -154,6 +158,7 @@ struct PidONNXModel {
       ccdbApi.retrieveBlob(ccdbScalingParamsFile, ".", metadata, timestamp, false, localScalingParamsFile);
     }
 
+    LOG(info) << "Using configuration files: " << localTrainColumnsFile << ", " << localScalingParamsFile;
     if (readJsonFile(localTrainColumnsFile, trainColumnsDoc)) {
       for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
         mTrainColumns.emplace_back(param.GetString());
@@ -171,8 +176,6 @@ struct PidONNXModel {
   {
     // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
     // sign is short, trackType and tpcNClsShared uint8_t
-    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-    float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
     float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
     float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
     float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
@@ -181,7 +184,23 @@ struct PidONNXModel {
     float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
     float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
 
-    std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
+    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
+
+    std::vector<float> inputValues{track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
+
+    if (mUseTOF) {
+      float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+      float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
+      inputValues.push_back(scaledTOFSignal);
+      inputValues.push_back(scaledBeta);
+    }
+
+    if (mUseTRD) {
+      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
+      float scaledTRDPattern = (track.trdPattern() - mScalingParams.at("fTRDPattern").first) / mScalingParams.at("fTRDPattern").second;
+      inputValues.push_back(scaledTRDSignal);
+      inputValues.push_back(scaledTRDPattern);
+    }
 
     return inputValues;
   }
@@ -199,6 +218,8 @@ struct PidONNXModel {
   std::string mModelDir;
   std::vector<std::string> mTrainColumns;
   std::map<std::string, std::pair<float, float>> mScalingParams;
+  bool mUseTOF;
+  bool mUseTRD;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   // No empty constructors for Session, we need a pointer
