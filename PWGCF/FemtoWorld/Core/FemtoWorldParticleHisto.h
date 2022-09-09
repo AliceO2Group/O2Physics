@@ -57,6 +57,7 @@ class FemtoWorldParticleHisto
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
         /// Track histograms
+        LOGF(info, "Tracks============================particle-histo");
         mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
         mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kV0) {
@@ -66,6 +67,7 @@ class FemtoWorldParticleHisto
         /// Cascade histograms
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
         /// Phi histograms
+        LOGF(info, "Phi===================================particle-histo");
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }

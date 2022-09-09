@@ -394,13 +394,15 @@ struct femtoWorldProducerTask {
       // auto cutContainer = trackCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(track);
 
       // now the table is filled
-      /*outputParts(outputCollision.lastIndex(),
+      outputParts(outputCollision.lastIndex(),
                   track.pt(),
                   track.eta(),
                   track.phi(),
+                  track.p(),
+                  1,
                   aod::femtoworldparticle::ParticleType::kTrack,
-                  cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
-                  cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(),
                   childIDs, 0, 0, // początek nowej części
                   track.sign(),
@@ -435,7 +437,7 @@ struct femtoWorldProducerTask {
                   -999.,
                   -999.,
                   -999.);
-      tmpIDtrack.push_back(track.globalIndex());*/
+      tmpIDtrack.push_back(track.globalIndex());
 
       /*if (ConfDebugOutput) {
           outputDebugParts(track.sign(),
@@ -751,33 +753,25 @@ struct femtoWorldProducerTask {
       Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
       Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
 
-      for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+      for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
         // LOGF(info, "p1.type = %u \n p2.type = %u \n", p1.trackType(), p2.trackType());
         if ((p1.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet) || (p2.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet)) {
           continue;
-        }
-        if (p1.globalIndex() == p2.globalIndex()) {
+        } else if (p1.globalIndex() == p2.globalIndex()) {
           continue;
-        }
-        if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
+        } else if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
           continue;
-        }
-        if ((p1.p() < cfgPLowPart1) || (p1.p() > cfgPHighPart1)) {
+        } else if ((p1.p() < cfgPLowPart1) || (p1.p() > cfgPHighPart1)) {
           continue;
-        }
-        if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
+        } else if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
           continue;
-        }
-        if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) {
+        } else if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) {
           continue;
-        }
-        if ((p2.p() < cfgPLowPart2) || (p2.p() > cfgPHighPart2)) {
+        } else if ((p2.p() < cfgPLowPart2) || (p2.p() > cfgPHighPart2)) {
           continue;
-        }
-        if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
+        } else if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
           continue;
-        }
-        if /*((p1.p() > 0.45f))*/ (isgreater(p1.p(), 0.45f)) {
+        } else if ((p1.p() > 0.45f)) {
           if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
             continue;
           }
@@ -786,8 +780,7 @@ struct femtoWorldProducerTask {
           if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
             continue;
           }
-        }
-        if ((p2.p() > 0.45f)) {
+        } else if ((p2.p() > 0.45f)) {
           if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
             continue;
           }
@@ -797,7 +790,9 @@ struct femtoWorldProducerTask {
             continue;
           }
         }
-       
+
+        // LOGF(info, "p1.globalIndex() = %u \t outputCollision.lastIndex() = %u \n", p1.globalIndex(), outputCollision.lastIndex());
+        // LOGF(info, "p2.globalIndex() = %u \t outputCollision.lastIndex() = %u \n", p2.globalIndex(), outputCollision.lastIndex());
         TLorentzVector part1Vec;
         TLorentzVector part2Vec;
         float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();

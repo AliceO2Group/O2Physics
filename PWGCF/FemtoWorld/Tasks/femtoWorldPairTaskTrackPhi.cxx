@@ -133,7 +133,7 @@ struct femtoWorldPairTaskTrackPhi {
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
     /// Histogramming same event
-    for (auto& part : groupPartsOne) {
+    for (auto& part : groupPartsOne) { // jakby tu nie wchodzilo
       /*
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
         continue;
@@ -141,11 +141,11 @@ struct femtoWorldPairTaskTrackPhi {
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }*/
-      LOGF(info, "TEST ==============================TRACKONEFILL=================================== \n");
+      // LOGF(info, "TEST ==============================TRACKONEFILL=================================== \n");
       trackHistoPartOne.fillQA(part);
     }
     for (auto& part : groupPartsTwo) {
-      //LOGF(info, "TEST ==============================TRACKPHIFILL=================================== \n");
+      // LOGF(info, "TEST ==============================TRACKPHIFILL=================================== \n");
       trackHistoPartTwo.fillQA(part);
     }
     /// Now build the combinations
@@ -170,7 +170,7 @@ struct femtoWorldPairTaskTrackPhi {
         continue;
       }*/
 
-      sameEventCont.setPair(p1, p2, multCol);
+      sameEventCont.setPair(p1, p2, multCol); // not going in there..
     }
   }
 
@@ -196,7 +196,7 @@ struct femtoWorldPairTaskTrackPhi {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        /*if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
           continue;
         }
         if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
@@ -206,7 +206,7 @@ struct femtoWorldPairTaskTrackPhi {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
             continue;
           }
-        }
+        }*/
         mixedEventCont.setPair(p1, p2, collision1.multV0M());
       }
     }
