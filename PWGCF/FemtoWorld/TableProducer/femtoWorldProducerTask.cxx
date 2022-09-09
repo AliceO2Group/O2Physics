@@ -1013,7 +1013,6 @@ struct femtoWorldProducerTask {
           continue;
         }
         if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
-          //LOGF(info, "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", p1.pt());
           continue;
         }
         if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {

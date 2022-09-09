@@ -127,13 +127,13 @@ struct femtoWorldPairTaskTrackPhi {
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
                         o2::aod::FemtoWorldParticles& parts)
   {
-    const auto& magFieldTesla = col.magField();
+    // const auto& magFieldTesla = col.magField();
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
     /// Histogramming same event
-    for (auto& part : groupPartsOne) { // jakby tu nie wchodzilo
+    for (auto& part : groupPartsOne) {
       /*
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
         continue;
@@ -141,11 +141,9 @@ struct femtoWorldPairTaskTrackPhi {
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }*/
-      // LOGF(info, "TEST ==============================TRACKONEFILL=================================== \n");
       trackHistoPartOne.fillQA(part);
     }
     for (auto& part : groupPartsTwo) {
-      // LOGF(info, "TEST ==============================TRACKPHIFILL=================================== \n");
       trackHistoPartTwo.fillQA(part);
     }
     /// Now build the combinations
@@ -170,7 +168,7 @@ struct femtoWorldPairTaskTrackPhi {
         continue;
       }*/
 
-      sameEventCont.setPair(p1, p2, multCol); // not going in there..
+      sameEventCont.setPair(p1, p2, multCol);
     }
   }
 

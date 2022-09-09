@@ -123,7 +123,6 @@ class FemtoWorldContainer
   template <typename T>
   void setPair(T const& part1, T const& part2, const int mult)
   {
-    // LOGF(info, "O KURDE WITAM =============================SET=PAIR==================================== \n"); WORKING
     float femtoObs;
     if constexpr (mFemtoObs == femtoWorldContainer::Observable::kstar) {
       femtoObs = FemtoWorldMath::getkstar(part1, mMassOne, part2, mMassTwo);
@@ -152,7 +151,6 @@ class FemtoWorldContainer
     }
 
     if (mHistogramRegistry) {
-      // LOGF(info, "O KURDE WITAM =========================FILLING======================================== \n"); WORKING
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist"), femtoObs);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkT"), kT);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarkT"), femtoObs, kT);
