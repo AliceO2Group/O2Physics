@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -28,13 +29,47 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct CreateTableMc {
+  Produces<aod::PidTracksMcMl> pidTracksTableML;
   Produces<aod::PidTracksMc> pidTracksTable;
 
   Filter trackFilter = requireGlobalTrackInFilter();
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+
+  using BigTracksML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using MyCollisionML = aod::Collisions::iterator;
+  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
-  void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles_000 const& mctracks)
+  HistogramRegistry registry{
+    "registry",
+    {{"hTPCSigvsPt", "TPC signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC signal", {HistType::kTH2F, {{500, 0., 10.}, {1000, 0., 600.}}}},
+     {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF beta", {HistType::kTH2F, {{500, 0., 10.}, {500, 0., 2.}}}},
+     {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TRD signal", {HistType::kTH2F, {{500, 0., 10.}, {2500, 0., 100.}}}}}};
+
+  void processML(MyCollisionML const& collision, BigTracksML const& tracks, aod::McParticles_000 const& mctracks)
+  {
+    for (const auto& track : tracks) {
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
+      uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
+      pidTracksTableML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+                       track.tofSignal(), track.beta(),
+                       track.p(), track.pt(), track.px(), track.py(), track.pz(),
+                       track.sign(),
+                       track.x(), track.y(), track.z(),
+                       track.alpha(),
+                       track.trackType(),
+                       track.tpcNClsShared(),
+                       track.dcaXY(), track.dcaZ(),
+                       mcParticle.pdgCode(),
+                       isPrimary);
+
+      registry.fill(HIST("hTPCSigvsPt"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hTOFBetavsPt"), track.pt(), track.beta());
+      registry.fill(HIST("hTRDSigvsPt"), track.pt(), track.trdSignal());
+    }
+  }
+  PROCESS_SWITCH(CreateTableMc, processML, "Produce only ML MC essential data", true);
+
+  void processAll(MyCollision const& collision, BigTracks const& tracks, aod::McParticles_000 const& mctracks)
   {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
@@ -44,7 +79,8 @@ struct CreateTableMc {
                      collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                      collision.multZNA(), collision.multZNC(),
                      collision.multTracklets(), collision.multTPC(),
-                     track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
+                     track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+                     track.trackEtaEmcal(), track.trackPhiEmcal(),
                      track.tofSignal(), track.beta(),
                      track.p(), track.pt(), track.px(), track.py(), track.pz(),
                      track.sign(),
@@ -65,18 +101,52 @@ struct CreateTableMc {
                      track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
                      mcParticle.pdgCode(),
                      isPrimary);
+
+      registry.fill(HIST("hTPCSigvsPt"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hTOFBetavsPt"), track.pt(), track.beta());
+      registry.fill(HIST("hTRDSigvsPt"), track.pt(), track.trdSignal());
     }
   }
+  PROCESS_SWITCH(CreateTableMc, processAll, "Produce all MC data", false);
 };
 
 struct CreateTableReal {
+  Produces<aod::PidTracksRealMl> pidTracksTableML;
   Produces<aod::PidTracksReal> pidTracksTable;
 
   Filter trackFilter = requireGlobalTrackInFilter();
+  using BigTracksML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
+  using MyCollisionML = aod::Collisions::iterator;
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
-  void process(MyCollision const& collision, BigTracks const& tracks)
+  HistogramRegistry registry{
+    "registry",
+    {{"hTPCSigvsPt", "TPC signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC signal", {HistType::kTH2F, {{500, 0., 10.}, {1000, 0., 600.}}}},
+     {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF beta", {HistType::kTH2F, {{500, 0., 10.}, {500, 0., 2.}}}},
+     {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TRD signal", {HistType::kTH2F, {{500, 0., 10.}, {2500, 0., 100.}}}}}};
+
+  void processML(MyCollisionML const& collision, BigTracksML const& tracks)
+  {
+    for (const auto& track : tracks) {
+      pidTracksTableML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+                       track.tofSignal(), track.beta(),
+                       track.p(), track.pt(), track.px(), track.py(), track.pz(),
+                       track.sign(),
+                       track.x(), track.y(), track.z(),
+                       track.alpha(),
+                       track.trackType(),
+                       track.tpcNClsShared(),
+                       track.dcaXY(), track.dcaZ());
+
+      registry.fill(HIST("hTPCSigvsPt"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hTOFBetavsPt"), track.pt(), track.beta());
+      registry.fill(HIST("hTRDSigvsPt"), track.pt(), track.trdSignal());
+    }
+  }
+  PROCESS_SWITCH(CreateTableReal, processML, "Produce only ML real data", true);
+
+  void processAll(MyCollision const& collision, BigTracks const& tracks)
   {
     for (const auto& track : tracks) {
       pidTracksTable(collision.centRun2V0M(),
@@ -84,7 +154,8 @@ struct CreateTableReal {
                      collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                      collision.multZNA(), collision.multZNC(),
                      collision.multTracklets(), collision.multTPC(),
-                     track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
+                     track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+                     track.trackEtaEmcal(), track.trackPhiEmcal(),
                      track.tofSignal(), track.beta(),
                      track.p(), track.pt(), track.px(), track.py(), track.pz(),
                      track.sign(),
@@ -103,8 +174,13 @@ struct CreateTableReal {
                      track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
                      track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
                      track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
+
+      registry.fill(HIST("hTPCSigvsPt"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hTOFBetavsPt"), track.pt(), track.beta());
+      registry.fill(HIST("hTRDSigvsPt"), track.pt(), track.trdSignal());
     }
   }
+  PROCESS_SWITCH(CreateTableReal, processAll, "Produce all real data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

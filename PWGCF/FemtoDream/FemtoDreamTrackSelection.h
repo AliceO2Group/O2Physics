@@ -87,7 +87,9 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                dcaXYMax(-9999999.),
                                dcaZMax(-9999999.),
                                dcaMin(9999999.),
-                               nSigmaPIDMax(9999999.){};
+                               nSigmaPIDMax(9999999.),
+                               nSigmaPIDOffsetTPC(0.),
+                               nSigmaPIDOffsetTOF(0.){};
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -202,6 +204,11 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   {
     nRejectNotPropagatedTracks = reject;
   }
+  void setnSigmaPIDOffset(float offsetTPC, float offsetTOF)
+  {
+    nSigmaPIDOffsetTPC = offsetTPC;
+    nSigmaPIDOffsetTOF = offsetTOF;
+  }
 
  private:
   bool nRejectNotPropagatedTracks;
@@ -231,6 +238,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   float dcaZMax;
   float dcaMin;
   float nSigmaPIDMax;
+  float nSigmaPIDOffsetTPC;
+  float nSigmaPIDOffsetTOF;
   std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
   static constexpr int kNtrackSelection = 14;
   static constexpr std::string_view mSelectionNames[kNtrackSelection] = {"Sign",
@@ -435,7 +444,7 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
     bool isFulfilled = false;
     for (size_t i = 0; i < pidTPC.size(); ++i) {
       auto pidTPCVal = pidTPC.at(i);
-      if (std::abs(pidTPCVal) < nSigmaPIDMax) {
+      if (std::abs(pidTPCVal - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
         isFulfilled = true;
       }
     }
@@ -478,8 +487,8 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {
       /// PID needs to be handled a bit differently since we may need more than one species
       for (size_t i = 0; i < pidTPC.size(); ++i) {
-        auto pidTPCVal = pidTPC.at(i);
-        auto pidTOFVal = pidTOF.at(i);
+        auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
+        auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         sel.checkSelectionSetBit(pidTPCVal, outputPID, counterPID);
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
         sel.checkSelectionSetBit(pidComb, outputPID, counterPID);

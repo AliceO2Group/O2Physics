@@ -126,10 +126,10 @@ struct HfCorrelatorDplusDminus {
     registry.add("hCountCtriggersMCGen", "c trigger particles - MC gen;;N of trigger c quark", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   /// Dplus-Dminus correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> const& candidates, aod::BigTracks const& bigtracks)
+  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const& candidates, aod::BigTracks const& bigtracks)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -149,7 +149,7 @@ struct HfCorrelatorDplusDminus {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    for (auto& candidate1 : candidates) {
+    for (auto& candidate1 : selectedDPlusCandidates) {
       if (cutYCandMax >= 0. && std::abs(YDPlus(candidate1)) > cutYCandMax) {
         continue;
       }
@@ -194,7 +194,7 @@ struct HfCorrelatorDplusDminus {
       if (outerParticleSign != 1) {
         continue;
       }
-      for (auto& candidate2 : candidates) {
+      for (auto& candidate2 : selectedDPlusCandidates) {
         // check decay channel flag for candidate2
         if (!(candidate2.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // probably dummy since already selected? not sure...
           continue;
@@ -235,7 +235,9 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processData, "Process data", false);
 
   /// Dplus-Dminus correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> const& candidates, aod::BigTracks const& bigtracks)
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> selectedDPlusCandidatesMC = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+
+  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec> const& candidates, aod::BigTracks const& bigtracks)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -258,7 +260,7 @@ struct HfCorrelatorDplusDminus {
     // MC reco level
     bool flagDplusSignal = false;
     bool flagDminusSignal = false;
-    for (auto& candidate1 : candidates) {
+    for (auto& candidate1 : selectedDPlusCandidatesMC) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
@@ -309,7 +311,7 @@ struct HfCorrelatorDplusDminus {
         continue; // reject Dminus in outer loop
       }
       flagDplusSignal = std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
-      for (auto& candidate2 : candidates) {
+      for (auto& candidate2 : selectedDPlusCandidatesMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // check decay channel flag for candidate2
           continue;
         }
@@ -420,7 +422,7 @@ struct HfCorrelatorDplusDminus {
             if (std::abs(particle1.eta()) < etaCut && std::abs(particle2.eta()) < etaCut && particle1.pt() > ptCut && particle2.pt() > ptCut) {
               registry.fill(HIST("hDDbarVsEtaCut"), etaCut - epsilon, ptCut + epsilon);
             }
-            if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
+            if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
               for (auto& dau : particle1.daughters_as<MCParticlesPlus3Prong>()) {
@@ -461,7 +463,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       int partMothPDG = particle1.mothers_as<MCParticlesPlus2Prong>().front().pdgCode();
-      //check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
+      // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }
@@ -496,7 +498,7 @@ struct HfCorrelatorDplusDminus {
         if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
           continue;
         }
-        //check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it
+        // check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it
         if (particle2.mothers_as<MCParticlesPlus2Prong>().front().pdgCode() == PDG_t::kCharmBar) {
           continue;
         }
