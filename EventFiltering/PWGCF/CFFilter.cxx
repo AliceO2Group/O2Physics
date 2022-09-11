@@ -378,7 +378,7 @@ struct CFFilter {
           }
         } // end if
 
-        if (lowQ3Triplets[1] == 0) { // if at least one triplet found in particles, no need to check antiparticles
+        if (lowQ3Triplets[2] == 0) { // if at least one triplet found in particles, no need to check antiparticles
           if (partsLambda1.size() >= 2 && antiprot >= 1) {
             for (auto& p1 : partsProton1) {
               if (!isFullPIDSelectedProton(p1.pidcut(), p1.p())) {
@@ -440,7 +440,7 @@ struct CFFilter {
           }
         } // end if
 
-        if (lowQ3Triplets[0] == 0) { // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
+        if (lowQ3Triplets[3] == 0) { // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
 
           if (partsLambda1.size() >= 3) {
             // test default combinations options
