@@ -13,10 +13,10 @@
 //
 // Author: Filip Krizek
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include "EventFiltering/filterTables.h"
 
@@ -25,15 +25,15 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
 
 #include "Framework/HistogramRegistry.h"
 
+#include <TMath.h>
 #include <cmath>
 #include <string>
-#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,80 +51,148 @@ using namespace o2::framework::expressions;
 
 struct ChJetTriggerQATask {
 
-  Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0, "Accepted z-vertex range"};
-  Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9, "Full eta range"};                       //without fiducial cut
-  Configurable<float> cfgFiducialVolume{"cfgFiducialVolume", 0.5, "Eta range for charged jets"}; //fiducial cut
-  Configurable<int> bTriggerDecision{"bTriggerDecision", 0, "Charged Jet Trigger Decision Seleection"};
-
-  //HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
+                                   "Accepted z-vertex range"};
+  Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9,
+                                   "Full eta range"}; // eta range of TPC
+  Configurable<float> cfgJetR{"cfgJetR", 0.4,
+                              "jet resolution parameter"}; // jet cone radius
+  Configurable<float> cfgJetPtMin{
+    "cfgJetPtMin", 0.05,
+    "minimum jet pT constituent cut"}; // minimum jet constituent pT
+  Configurable<int> bTriggerDecision{
+    "bTriggerDecision", 0,
+    "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
+                                               // by EPN
+  double fiducialVolume;                       // 0.9 - jetR
+  std::vector<fastjet::PseudoJet> jetConstituents;
+  std::vector<fastjet::PseudoJet> jetReclustered;
+  JetFinder jetReclusterer;
 
   HistogramRegistry spectra{
     "spectra",
     {
-      {"fTrackPtIncl", "inclusive track pT", {HistType::kTH1F, {{200, 0., +200.}}}},                                      //
-      {"fJetChPtIncl", "inclusive charged jet pT", {HistType::kTH1F, {{200, 0., +200.}}}},                                //
-      {"fLeadJetChPtVsLeadingTrack", "inclusive charged jet pT", {HistType::kTH2F, {{200, 0., +200.}, {200, 0., +200.}}}} //
-    }                                                                                                                     //
+      {"ptphiTrackInclGood",
+       "pT vs phi inclusive good tracks",
+       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
+      {"ptetaTrackInclGood",
+       "pT vs eta inclusive good tracks",
+       {HistType::kTH2F, {{100, 0., +100.}, {36, -0.9, 0.9}}}}, //
+      {"ptphiTrackInclRejected",
+       "pT vs phi inclusive rejected tracks",
+       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
+      {"ptetaTrackInclRejected",
+       "pT vs eta inclusive rejected tracks",
+       {HistType::kTH2F, {{100, 0., +100.}, {36, -0.9, 0.9}}}}, //
+      {"ptJetChPtInclFidVol",
+       "inclusive charged jet pT in fiducial volume",
+       {HistType::kTH1F, {{200, 0., +200.}}}}, //
+      {"ptphiJetChPtInclFidVol",
+       "inclusive charged jet pT vs phi in fiducial volume",
+       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
+      {"ptetaJetChPtInclFidVol",
+       "inclusive charged jet pT vs eta in fiducial volume",
+       {HistType::kTH2F, {{100, 0., +100.}, {36, -0.9, 0.9}}}}, //
+      {"fLeadJetChPtVsLeadingTrack",
+       "inclusive charged jet pT in TPC volume",
+       {HistType::kTH2F, {{200, 0., +200.}, {200, 0., +200.}}}} //
+    }                                                           //
   };
 
-  TrackSelection globalTracks;
+  // TrackSelection globalTracks;
   void init(o2::framework::InitContext&)
   {
 
-    globalTracks = getGlobalTrackSelection();
-    globalTracks.SetEtaRange(-.9, .9);
-    //spectra.add("fTrackPtIncl", "inclusive track pT", HistType::kTH1F, {{200, 0., +200., "track #it{p}_{T} (GeV/#it{c})"}});  //in TPC volume
-    //spectra.add("fJetChPtIncl", "inclusive charged jet pT", HistType::kTH1F, {{200, 0., +200., "charged jet #it{p}_{T} (GeV/#it{c})"}}); //in fiducial volume
-    //spectra.add("fLeadJetChPtVsLeadingTrack", "inclusive charged jet pT", HistType::kTH2F, {{200, 0., +200.} "charged jet #it{p}_{T} (GeV/#it{c})"}, {{200, 0., +200.} "track #it{p}_{T} (GeV/#it{c})"}); //in TPC volume
-    //spectra.add("fLeadJetChPtVsLeadingTrack", "inclusive charged jet pT", HistType::kTH2F, {{200, 0., +200.},{200, 0., +200.}}); //in TPC volume
+    // globalTracks = getGlobalTrackSelection();
+    // globalTracks.SetEtaRange(-cfgTPCVolume, cfgTPCVolume);
+
+    jetReclusterer.isReclustering = true;
+    jetReclusterer.algorithm = fastjet::JetAlgorithm::antikt_algorithm;
+    jetReclusterer.jetR = cfgJetR;
+
+    fiducialVolume = cfgTPCVolume - cfgJetR;
   }
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
+                                    aod::TracksDCA, aod::TrackSelection>;
 
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVertexCut) && (aod::filtering::hasJetChHighPt >= bTriggerDecision);
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVertexCut);
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::JetFilters>>::iterator const& collision, TrackCandidates const& tracks, aod::Jets const& jets)
+  void
+    process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels,
+                                    aod::JetFilters>>::iterator const& collision,
+            TrackCandidates const& tracks)
   {
 
-    //Find leading jet pT in full TPC volume
-    double leadingJetPt = -1.0;
-    double leadingTrackPt = -1.0;
+    if (collision.hasJetChHighPt() >= bTriggerDecision) {
+      jetConstituents.clear();
+      jetReclustered.clear();
 
-    for (auto& jet : jets) {
-      if (fabs(jet.eta()) < cfgTPCVolume) {
-        if (jet.pt() > leadingJetPt) {
-          leadingJetPt = jet.pt();
+      double leadingJetPt = -1.0;
+      double leadingTrackPt = -1.0;
+
+      for (auto& trk : tracks) {
+        if (fabs(trk.eta()) < cfgTPCVolume) {
+          if (!trk.isQualityTrack()) {
+
+            spectra.fill(
+              HIST("ptphiTrackInclRejected"), trk.pt(),
+              trk.phi()); // Inclusive Track pT vs phi spectrum in TPC volume
+            spectra.fill(
+              HIST("ptetaTrackInclRejected"), trk.pt(),
+              trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
+
+            continue; // skip bad quality tracks
+          }
+
+          spectra.fill(
+            HIST("ptphiTrackInclGood"), trk.pt(),
+            trk.phi()); // Inclusive Track pT vs phi spectrum in TPC volume
+          spectra.fill(
+            HIST("ptetaTrackInclGood"), trk.pt(),
+            trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
+
+          if (trk.pt() > cfgJetPtMin) { // jet constituents
+            fillConstituents(
+              trk,
+              jetConstituents); // ./PWGJE/Core/JetFinder.h
+                                // recombination scheme is assumed
+                                // to be Escheme with pion mass
+          }
+
+          if (trk.pt() >
+              leadingTrackPt) { // Find leading track pT in full TPC volume
+            leadingTrackPt = trk.pt();
+          }
         }
       }
-    }
 
-    //Find leading track pT in full TPC volume
-    for (auto& trk : tracks) {
-      if (!globalTracks.IsSelected(trk))
-        continue;
-      if (fabs(trk.eta()) < cfgTPCVolume) {
-        if (trk.pt() > leadingTrackPt) {
-          leadingTrackPt = trk.pt();
+      // Reconstruct jet from tracks
+      fastjet::ClusterSequenceArea clusterSeq(
+        jetReclusterer.findJets(jetConstituents, jetReclustered));
+      jetReclustered = sorted_by_pt(jetReclustered);
+
+      // Find leading jet pT in full TPC volume
+      for (auto& jet : jetReclustered) {
+        if (fabs(jet.eta()) < cfgTPCVolume) {
+          if (jet.pt() > leadingJetPt) {
+            leadingJetPt = jet.pt();
+          }
         }
       }
-    }
 
-    spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt, leadingJetPt); //leading jet pT versus leading track pT
+      spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt,
+                   leadingJetPt); // leading jet pT versus leading track pT
 
-    //--------------------------------------------------------------
-    // Inclusive Track pT spectrum in TPC volume
-    for (auto& trk : tracks) {
-      if (!globalTracks.IsSelected(trk))
-        continue;
-      if (fabs(trk.eta()) < cfgTPCVolume) {
-        spectra.fill(HIST("fTrackPtIncl"), trk.pt());
-      }
-    }
+      //--------------------------------------------------------------
 
-    // Inclusive Jet pT spectrum in Fiducial volume
-    for (auto& jet : jets) {
-      if (fabs(jet.eta()) < cfgFiducialVolume) {
-        spectra.fill(HIST("fJetChPtIncl"), jet.pt());
+      // Inclusive Jet pT spectrum in Fiducial volume
+      for (auto& jet : jetReclustered) {
+        if (fabs(jet.eta()) < fiducialVolume) {
+          spectra.fill(HIST("ptJetChPtInclFidVol"), jet.pt());
+          spectra.fill(HIST("ptphiJetChPtInclFidVol"), jet.pt(), jet.phi());
+          spectra.fill(HIST("ptetaJetChPtInclFidVol"), jet.pt(), jet.eta());
+        }
       }
     }
   }
@@ -133,6 +201,6 @@ struct ChJetTriggerQATask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
-  return WorkflowSpec{
-    adaptAnalysisTask<ChJetTriggerQATask>(cfgc, TaskName{"jet-charged-trigger-qa"})};
+  return WorkflowSpec{adaptAnalysisTask<ChJetTriggerQATask>(
+    cfgc, TaskName{"jet-charged-trigger-qa"})};
 }
