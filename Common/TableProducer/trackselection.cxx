@@ -37,6 +37,7 @@ using namespace o2::framework::expressions;
 struct TrackSelectionTask {
   // FIXME: this will be removed once we can get this via meta data
   Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
+  Configurable<int> itsMatching{"itsMatching", 0, "condition for ITS matching (0: Run2 SPD kAny, 1: Run3ITSIBkAny, 2: Run3ITSallkAny, 3: Run3ITSall7Layers)"};
 
   Produces<aod::TrackSelection> filterTable;
 
@@ -45,7 +46,29 @@ struct TrackSelectionTask {
 
   void init(InitContext&)
   {
-    globalTracks = getGlobalTrackSelection();
+    switch (itsMatching)
+    {
+    case 0:
+      // Run 2 SPD kAny
+      globalTracks = getGlobalTrackSelection();
+      break;
+    case 1:
+      // Run 3 kAny on 3 IB layers of ITS
+      if(isRun3)  {globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSIBkAny);}
+      break;
+    case 2:
+      // Run 3 kAny on all 7 layers of ITS
+      if(isRun3)  {globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallkAny);}
+      break;
+    case 3:
+      // Run 3 kAll on all 7 layers of ITS
+      if(isRun3)  {globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers);}
+      break;
+    
+    default:
+      LOG(fatal) << "TrackSelectionTask with undefined cuts. Fix it!";
+      break;
+    }
     globalTracksSDD = getGlobalTrackSelectionSDD();
 
     if (isRun3) {
