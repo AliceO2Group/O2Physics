@@ -630,13 +630,13 @@ TrackSelection multFilter::myTrackSelection()
   selectedTracks.SetRequireTPCRefit(true);
   selectedTracks.SetRequireGoldenChi2(false);
   selectedTracks.SetMinNClustersTPC(60);
-  // selectedTracks.SetMinNCrossedRowsTPC(70);
-  // selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  selectedTracks.SetMaxChi2PerClusterTPC(3.f);
+  selectedTracks.SetMinNCrossedRowsTPC(70);
+  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
   selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
   selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  selectedTracks.SetMaxDcaXY(3.f);
-  selectedTracks.SetMaxDcaZ(3.f);
+  selectedTracks.SetMaxDcaXY(1.f);
+  selectedTracks.SetMaxDcaZ(1.f);
   return selectedTracks;
 }
 
