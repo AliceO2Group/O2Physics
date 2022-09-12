@@ -128,9 +128,6 @@ struct DGFilterRun3 {
                aod::FDDs& fdds)
   {
 
-    // nominal BC
-    auto bc = collision.bc_as<BCs>();
-
     // loop over 4 cases
     bool ccs[4]{false};
     for (int ii = 0; ii < 4; ii++) {
@@ -162,7 +159,7 @@ struct DGFilterRun3 {
       LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
       // apply DG selection
-      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
       // save decision
       if (isDGEvent == 0) {

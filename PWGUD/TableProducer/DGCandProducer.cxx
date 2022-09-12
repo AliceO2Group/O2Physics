@@ -220,7 +220,7 @@ struct DGCandProducer {
     auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
     // apply DG selection
-    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
+    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
     if (isDGEvent == 0) {
@@ -297,7 +297,7 @@ struct DGCandProducer {
       auto bcRange = MCcompatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
       // apply DG selection
-      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, collisionTracks, collisionFwdTracks);
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, collisionTracks, collisionFwdTracks);
       LOGF(debug, "  isDG %i", (int)isDGEvent);
 
       // save information of DG events
