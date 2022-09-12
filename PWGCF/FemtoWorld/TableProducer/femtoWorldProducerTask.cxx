@@ -158,6 +158,14 @@ struct femtoWorldProducerTask {
   Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
+  // PHI Daughters (Kaons)
+  Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.05, "Lower limit of the Phi invariant mass"};
+  Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.30, "Upper limit of the Phi invariant mass"};
+
+  Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
+  Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
+  Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
+
   // PHI Candidates
   FemtoWorldPhiSelection PhiCuts;
   Configurable<std::vector<float>> ConfPhiSign{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kPhiSign, "Phi selection: ")};
@@ -169,20 +177,12 @@ struct femtoWorldProducerTask {
   // Configurable<std::vector<float>> PhiTranRadPhiMax{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kTranRadPhiMax, "ConfPhi"), std::vector<float>{100.f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kTranRadPhiMax, "Phi selection: ")};
   // Configurable<std::vector<float>> PhiDecVtxMax{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kDecVtxMax, "ConfPhi"), std::vector<float>{100.f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kDecVtxMax, "Phi selection: ")};
 
-  Configurable<std::vector<float>> ConfPhiDaughCharge{"ConfPhiDaughCharge", std::vector<float>{-1, 1}, "Phi Daugh sel: Charge"};
+  /*Configurable<std::vector<float>> ConfPhiDaughCharge{"ConfPhiDaughCharge", std::vector<float>{-1, 1}, "Phi Daugh sel: Charge"};
   Configurable<std::vector<float>> ConfPhiDaughEta{"ConfPhiDaughEta", std::vector<float>{0.8f}, "Phi Daugh sel: max eta"};
   Configurable<std::vector<float>> ConfPhiDaughTPCnclsMin{"ConfPhiDaughTPCnclsMin", std::vector<float>{80.f, 70.f, 60.f}, "Phi Daugh sel: Min. nCls TPC"};
   Configurable<std::vector<float>> ConfPhiDaughDCAMin{"ConfPhiDaughDCAMin", std::vector<float>{0.05f, 0.06f}, "Phi Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<std::vector<float>> ConfPhiDaughPIDnSigmaMax{"ConfPhiDaughPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Phi Daugh sel: Max. PID nSigma TPC"};
-
-  Configurable<std::vector<int>> ConfPhiDaughTPIDspecies{"ConfPhiDaughTPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "Phi Daugh sel: Particles species for PID"};
-
-  Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.05, "Lower limit of the Phi invariant mass"};
-  Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.30, "Upper limit of the Phi invariant mass"};
-
-  Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
-  Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
-  Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
+  Configurable<std::vector<int>> ConfPhiDaughTPIDspecies{"ConfPhiDaughTPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "Phi Daugh sel: Particles species for PID"};*/
   // Configurable<std::vector<float>> ConfPhiSign{FemtoWorldV0Selection::getSelectionName(femtoWorldV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoWorldV0Selection::getSelectionHelper(femtoWorldV0Selection::kV0Sign, "V0 selection: ")};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
@@ -611,25 +611,26 @@ struct femtoWorldProducerTask {
       for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
         if ((p1.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet) || (p2.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet)) {
           continue;
-        } else if (p1.globalIndex() == p2.globalIndex()) {
+        } else if (p1.globalIndex() == p2.globalIndex()) { // checking not to correlate same particles
           continue;
-        } else if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
+        } else if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) { // pT cuts for part1
           continue;
-        } else if ((p1.p() < cfgPLowPart1) || (p1.p() > cfgPHighPart1)) {
+        } else if ((p1.p() < cfgPLowPart1) || (p1.p() > cfgPHighPart1)) { // p cuts for part1
           continue;
-        } else if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
+        } else if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) { // eta cuts for part1
           continue;
-        } else if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) {
+        } else if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) { // pT cuts for part2
           continue;
-        } else if ((p2.p() < cfgPLowPart2) || (p2.p() > cfgPHighPart2)) {
+        } else if ((p2.p() < cfgPLowPart2) || (p2.p() > cfgPHighPart2)) { // p cuts for part2
           continue;
-        } else if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
+        } else if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) { // eta for part2
           continue;
-        } else if ((p1.p() > 0.45f)) {
+        }
+        // PID for Kaons
+        else if ((p1.p() > 0.45f)) {
           if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
             continue;
           }
-
         } else if ((p1.p() <= 0.45f)) {
           if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
             continue;
@@ -638,7 +639,6 @@ struct femtoWorldProducerTask {
           if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
             continue;
           }
-
         } else if ((p2.p() <= 0.45f)) {
           if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa()))) {
             continue;
