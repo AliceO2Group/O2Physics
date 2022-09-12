@@ -151,8 +151,8 @@ struct femtoWorldProducerTask {
 
   Configurable<std::vector<int>> ConfV0DaughTPIDspecies{"ConfV0DaughTPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Daugh sel: Particles species for PID"};
 
-  Configurable<float> ConfInvMassLowLimit{"ConfInvMassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
-  Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.30, "Upper limit of the V0 invariant mass"};
+  Configurable<float> ConfInvMassLowLimit{"ConfInvMassLowLimit", 1.005, "Lower limit of the V0 invariant mass"};
+  Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.035, "Upper limit of the V0 invariant mass"};
 
   Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
   Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
@@ -661,6 +661,10 @@ struct femtoWorldProducerTask {
         float phiPt = sumVec.Pt();
         float phiP = sumVec.P();
         float phiM = sumVec.M();
+
+        if ((phiM < ConfInvMassLowLimit) || (phiM > ConfInvMassUpLimit)) {
+          continue;
+        }
 
         PhiCuts.fillQA<aod::femtoworldparticle::ParticleType::kPhi, aod::femtoworldparticle::ParticleType::kPhiChild>(col, p1, p1, p2); ///\todo fill QA also for daughters
         auto cutContainerV0 = PhiCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, p1, p2);
