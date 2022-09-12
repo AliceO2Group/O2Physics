@@ -46,28 +46,33 @@ struct TrackSelectionTask {
 
   void init(InitContext&)
   {
-    switch (itsMatching)
-    {
-    case 0:
-      // Run 2 SPD kAny
-      globalTracks = getGlobalTrackSelection();
-      break;
-    case 1:
-      // Run 3 kAny on 3 IB layers of ITS
-      if(isRun3)  {globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSIBkAny);}
-      break;
-    case 2:
-      // Run 3 kAny on all 7 layers of ITS
-      if(isRun3)  {globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallkAny);}
-      break;
-    case 3:
-      // Run 3 kAll on all 7 layers of ITS
-      if(isRun3)  {globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers);}
-      break;
-    
-    default:
-      LOG(fatal) << "TrackSelectionTask with undefined cuts. Fix it!";
-      break;
+    switch (itsMatching) {
+      case 0:
+        // Run 2 SPD kAny
+        globalTracks = getGlobalTrackSelection();
+        break;
+      case 1:
+        // Run 3 kAny on 3 IB layers of ITS
+        if (isRun3) {
+          globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSIBkAny);
+        }
+        break;
+      case 2:
+        // Run 3 kAny on all 7 layers of ITS
+        if (isRun3) {
+          globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallkAny);
+        }
+        break;
+      case 3:
+        // Run 3 kAll on all 7 layers of ITS
+        if (isRun3) {
+          globalTracks = getGlobalTrackSelectionITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers);
+        }
+        break;
+
+      default:
+        LOG(fatal) << "TrackSelectionTask with undefined cuts. Fix it!";
+        break;
     }
     globalTracksSDD = getGlobalTrackSelectionSDD();
 

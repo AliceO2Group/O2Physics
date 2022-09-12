@@ -45,21 +45,20 @@ TrackSelection getGlobalTrackSelection()
 TrackSelection getGlobalTrackSelectionITSMatch(int matching)
 {
   std::pair<int8_t, std::set<unsigned char>> itsMatching;
-  switch (matching)
-  {
-  case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSIBkAny:
-    itsMatching = std::make_pair( (int8_t)1, (std::set<unsigned char>){0, 1, 2} );
-    break;
-  case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallkAny:
-    itsMatching = std::make_pair( (int8_t)1, (std::set<unsigned char>){0, 1, 2, 3, 4, 5, 6} );
-    break;
-  case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers:
-    itsMatching = std::make_pair( (int8_t)7, (std::set<unsigned char>){0, 1, 2, 3, 4, 5, 6} );
-    break;
-  
-  default:
-    LOG(fatal) << "getGlobalTrackSelectionITSMatch with undefined ITS matching";
-    break;
+  switch (matching) {
+    case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSIBkAny:
+      itsMatching = std::make_pair((int8_t)1, (std::set<unsigned char>){0, 1, 2});
+      break;
+    case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallkAny:
+      itsMatching = std::make_pair((int8_t)1, (std::set<unsigned char>){0, 1, 2, 3, 4, 5, 6});
+      break;
+    case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers:
+      itsMatching = std::make_pair((int8_t)7, (std::set<unsigned char>){0, 1, 2, 3, 4, 5, 6});
+      break;
+
+    default:
+      LOG(fatal) << "getGlobalTrackSelectionITSMatch with undefined ITS matching";
+      break;
   }
 
   TrackSelection selectedTracks;
