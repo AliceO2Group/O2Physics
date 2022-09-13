@@ -184,8 +184,8 @@ int main(int argc, char* argv[])
         }
       }
 
-      if (((TObjString*)key1)->GetString().EqualTo("parent_files")) {
-        auto parentFilesCurrentFile = (TMap*)inputFile->Get("parent_files");
+      if (((TObjString*)key1)->GetString().EqualTo("parentFiles")) {
+        auto parentFilesCurrentFile = (TMap*)inputFile->Get("parentFiles");
         if (parentFiles == nullptr) {
           parentFiles = new TMap;
         }
@@ -410,7 +410,7 @@ int main(int argc, char* argv[])
 
   if (parentFiles) {
     outputFile->cd();
-    parentFiles->Write("parent_files", TObject::kSingleKey);
+    parentFiles->Write("parentFiles", TObject::kSingleKey);
   }
 
   outputFile->Write();

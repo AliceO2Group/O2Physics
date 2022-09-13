@@ -27,8 +27,6 @@
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
 
-#include <iostream>
-
 using namespace o2::framework;
 
 namespace o2::analysis::femtoWorld
@@ -323,8 +321,8 @@ bool FemtoWorldV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
   if (signPos < 0 || signNeg > 0) {
-    printf("-Something wrong in isSelectedMinimal--\n");
-    printf("ERROR - Wrong sign for V0 daughters\n");
+    LOGF(error, "-Something wrong in isSelectedMinimal--\n");
+    LOGF(error, "ERROR - Wrong sign for V0 daughters\n");
   }
   const float pT = v0.pt();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
@@ -395,8 +393,8 @@ void FemtoWorldV0Selection::fillLambdaQA(C const& col, V const& v0, T const& pos
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
   if (signPos < 0 || signNeg > 0) {
-    printf("-Something wrong in isSelectedMinimal--\n");
-    printf("ERROR - Wrong sign for V0 daughters\n");
+    LOGF(error, "-Something wrong in isSelectedMinimal--\n");
+    LOGF(error, "ERROR - Wrong sign for V0 daughters\n");
   }
   const float pT = v0.pt();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};

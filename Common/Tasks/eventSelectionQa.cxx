@@ -161,6 +161,7 @@ struct EventSelectionQaTask {
     histos.add("hGlobalBcFDD", "", kTH1F, {axisGlobalBCs});
     histos.add("hBcAll", "", kTH1F, {axisBCs});
     histos.add("hBcCol", "", kTH1F, {axisBCs});
+    histos.add("hBcTVX", "", kTH1F, {axisBCs});
     histos.add("hBcFT0", "", kTH1F, {axisBCs});
     histos.add("hBcFV0", "", kTH1F, {axisBCs});
     histos.add("hBcFDD", "", kTH1F, {axisBCs});
@@ -236,6 +237,10 @@ struct EventSelectionQaTask {
       histos.get<TH1>(HIST("hColCounterAcc"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
       histos.get<TH1>(HIST("hBcCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
     }
+
+    histos.add("hParams", "", kTH1D, {{2, 0, 2.}});
+    histos.get<TH1>(HIST("hParams"))->GetXaxis()->SetBinLabel(1, "run");
+    histos.get<TH1>(HIST("hParams"))->GetXaxis()->SetBinLabel(2, "minOrbit");
   }
 
   void processRun2(
@@ -434,6 +439,7 @@ struct EventSelectionQaTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
+      histos.get<TH1>(HIST("hParams"))->SetBinContent(1, runNumber);
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -469,6 +475,7 @@ struct EventSelectionQaTask {
         // set nOrbits and minOrbit used for orbit-axis binning
         nOrbits = orbitEOR - orbitSOR;
         minOrbit = orbitSOR;
+        histos.get<TH1>(HIST("hParams"))->SetBinContent(2, minOrbit);
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -477,6 +484,7 @@ struct EventSelectionQaTask {
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitTVX", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFT0", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFV0", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
@@ -574,6 +582,11 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hGlobalBcAll"), globalBC - minGlobalBC);
       histos.fill(HIST("hOrbitAll"), orbit - minOrbit);
       histos.fill(HIST("hBcAll"), localBC);
+
+      if (bc.selection()[kIsTriggerTVX]) {
+        histos.fill(HIST("hOrbitTVX"), orbit - minOrbit);
+        histos.fill(HIST("hBcTVX"), localBC);
+      }
 
       // FV0
       if (bc.has_fv0a()) {

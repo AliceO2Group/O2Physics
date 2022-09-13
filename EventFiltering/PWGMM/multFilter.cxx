@@ -15,6 +15,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
 #include "../filterTables.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
@@ -47,7 +48,8 @@ struct multFilter {
          kHighFt0cFv0Flat,
          kLeadingPtTrack,
          kNtriggersMM };
-
+  // my track selection, discussed with Mesut and Matia
+  TrackSelection myTrackSelection();
   // event selection cuts
   Configurable<float> selHTrkMult{"selHTrkMult", 45., "global trk multiplicity threshold"};
   Configurable<float> selHMfddft0cfv0mft{"selHMfddft0cfv0mft", 237.0, "FDD+FV0+FT0C+MFT mult threshold"};
@@ -119,6 +121,8 @@ struct multFilter {
     // QA global tracks
     multiplicity.add("hdNdetaGlobal", "dNdeta", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
     multiplicity.add("hPhiGlobal", "Phi", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
+    multiplicity.add("hDCAxyGlobal", "DCA_{xy}", HistType::kTH1F, {{120, -4.0, 4.0, " "}});
+
     multiplicity.add("hMFTvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {200, -0.5, +199.5, "MFT mult (-3.6<#eta<-2.5)"}});
 
     // QA MFT tracks
@@ -386,7 +390,7 @@ struct multFilter {
     }
 
     for (auto& track : tracks) {
-      if (!track.isGlobalTrack()) {
+      if (!myTrackSelection().IsSelected(track)) {
         continue;
       }
       float eta_a = track.eta();
@@ -395,6 +399,7 @@ struct multFilter {
       multTrack++;
       multiplicity.fill(HIST("hdNdetaGlobal"), eta_a);
       multiplicity.fill(HIST("hPhiGlobal"), phi_a);
+      multiplicity.fill(HIST("hDCAxyGlobal"), track.dcaXY());
       if (flPt < pt_a) {
         flPt = pt_a;
       }
@@ -616,6 +621,24 @@ struct multFilter {
     }
   }
 };
+TrackSelection multFilter::myTrackSelection()
+{
+  TrackSelection selectedTracks;
+  selectedTracks.SetPtRange(0.15f, 1e10f);
+  selectedTracks.SetEtaRange(-0.8f, 0.8f);
+  selectedTracks.SetRequireITSRefit(true);
+  selectedTracks.SetRequireTPCRefit(true);
+  selectedTracks.SetRequireGoldenChi2(false);
+  selectedTracks.SetMinNClustersTPC(60);
+  selectedTracks.SetMinNCrossedRowsTPC(70);
+  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+  selectedTracks.SetMaxChi2PerClusterITS(36.f);
+  selectedTracks.SetMaxDcaXY(1.f);
+  selectedTracks.SetMaxDcaZ(1.f);
+  return selectedTracks;
+}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
