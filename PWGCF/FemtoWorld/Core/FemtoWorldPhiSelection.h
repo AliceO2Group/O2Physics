@@ -28,8 +28,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "TLorentzVector.h"
 
-#include <iostream>
-
 using namespace o2::framework;
 
 namespace o2::analysis::femtoWorld
@@ -387,8 +385,8 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
   if (signPos < 0 || signNeg > 0) {
-    printf("-Something wrong in isSelectedMinimal--\n");
-    printf("ERROR - Wrong sign for Phi daughters\n");
+    LOGF(error, "-Something wrong in isSelectedMinimal--\n");
+    LOGF(error, "ERROR - Wrong sign for Phi daughters\n");
   }
   const float pT = v0.pt();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
@@ -459,8 +457,8 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
   if (signPos < 0 || signNeg > 0) {
-    printf("-Something wrong in isSelectedMinimal--\n");
-    printf("ERROR - Wrong sign for Phi daughters\n");
+    LOGF(error, "-Something wrong in isSelectedMinimal--\n");
+    LOGF(error, "ERROR - Wrong sign for Phi daughters\n");
   }
   const float pT = v0.pt();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
@@ -613,9 +611,6 @@ void FemtoWorldPhiSelection::fillQA(C const& col, V const& v0, T const& posTrack
     TLorentzVector sumVec(part1Vec);
     sumVec += part2Vec;
 
-    //float phiPx = posTrack.px() + negTrack.px();
-    //float phiPy = posTrack.py() + negTrack.py();
-    //float phiPz = posTrack.pz() + negTrack.pz();
     float phiEta = sumVec.Eta();
     float phiPhi = sumVec.Phi();
     float phiPt = sumVec.Pt();
