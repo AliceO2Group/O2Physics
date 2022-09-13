@@ -47,8 +47,8 @@ class TrackSelection
   };
 
   enum GlobalTrackRun3ITSMatching {
-    Run3ITSIBkAny,
-    Run3ITSallkAny,
+    Run3ITSibAny,
+    Run3ITSallAny,
     Run3ITSall7Layers
   };
 
