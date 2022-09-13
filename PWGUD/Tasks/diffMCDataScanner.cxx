@@ -114,7 +114,7 @@ struct collisionsInfo {
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
     // check that there are no FIT signals in any of the compatible BCs
-    std::vector<float> lims = {0., 0., 0., 100., 100.}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
+    std::vector<float> const lims{1.0, 1.0, 1.0, 1.0, 1.0}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
       if (!cleanFIT(bc, lims)) {
@@ -240,19 +240,19 @@ struct BCInfo {
     }
 
     // FIT detector signals
-    if (!bc.has_ft0()) {
+    if (!bc.has_foundFT0()) {
       registry.get<TH1>(HIST("DetectorSignals"))->Fill(0., 1.);
     }
-    if (!bc.has_fv0a()) {
+    if (!bc.has_foundFV0()) {
       registry.get<TH1>(HIST("DetectorSignals"))->Fill(1., 1.);
     }
-    if (!bc.has_fdd()) {
+    if (!bc.has_foundFDD()) {
       registry.get<TH1>(HIST("DetectorSignals"))->Fill(2., 1.);
     }
     if (!bc.has_zdc()) {
       registry.get<TH1>(HIST("DetectorSignals"))->Fill(3., 1.);
     }
-    auto noFIT = !bc.has_fv0a() && !bc.has_fv0a() && !bc.has_fdd();
+    auto noFIT = !bc.has_foundFV0() && !bc.has_foundFT0() && !bc.has_foundFDD();
     if (noFIT) {
       registry.get<TH1>(HIST("DetectorSignals"))->Fill(4., 1.);
     }
