@@ -20,9 +20,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-//
-// centrality
-//  ????
 
 //
 // base namespaces
@@ -101,6 +98,11 @@ struct qaMatchEff {
       initMC();
     else
       initData();
+
+    if ((!isitMC && (doprocessMC || doprocessMCNoColl)) || (isitMC && (doprocessData && doprocessDataNoColl)))
+      LOGF(fatal, "Initialization set for MC and processData function flagged (or viceversa)! Fix the configuration.");
+    if ((doprocessMC && doprocessMCNoColl) || (doprocessData && doprocessDataNoColl))
+      LOGF(fatal, "Cannot process for both without collision tag and with collision tag at the same time! Fix the configuration.");
 
     /// initialize the track selections
     if (b_useTrackSelections) {
@@ -637,7 +639,7 @@ struct qaMatchEff {
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
   //
   //
-  void processMC_NoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& jTracks, aod::McParticles const& mcParticles)
+  void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& jTracks, aod::McParticles const& mcParticles)
   {
     //
     //
@@ -899,7 +901,7 @@ struct qaMatchEff {
     //
     if (doDebug)
       LOGF(info, "Tracks: %d, w/out MC: %d ", count, countNoMC);
-  } // end processMC
+  } // end processMCNoColl
   //
   PROCESS_SWITCH(qaMatchEff, processMCNoColl, "process MC - no loop on collisions", false);
   //
@@ -1051,7 +1053,7 @@ struct qaMatchEff {
     if (doDebug)
       LOGF(info, "Tracks: %d ", countData);
     //
-  } // end processData
+  } // end processDataNoColl
   //
   PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision dependence", true);
   //
