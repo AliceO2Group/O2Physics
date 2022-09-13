@@ -81,7 +81,7 @@ struct femtoWorldPairTaskTrackPhi {
                                                  && (aod::femtoworldparticle::sign > int8_t(0));
 
   /// Histogramming for particle 1
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 1> trackHistoPartOne;
+  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 0> trackHistoPartOne;
 
   /// Particle 2 (Phi)
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 333, "Particle 1 - PDG code"}; // phi meson (333)
@@ -96,7 +96,13 @@ struct femtoWorldPairTaskTrackPhi {
                                                  && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2)                                                                                         // Eta cuts
                                                  && (aod::femtoworldparticle::sign < int8_t(0));
   /// Histogramming for particle 2
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 3> trackHistoPartTwo;
+  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 0> trackHistoPartTwo;
+
+  // Partition for particle 3 (Phi daughters (K+ K-))
+  Partition<aod::FemtoWorldParticles> partsThree = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhiChild));
+
+  /// Histogramming for particle 3
+  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhiChild, 0> trackHistoPartThree;
 
   /// Histogramming for Event
   FemtoWorldEventHisto eventHisto;
@@ -126,29 +132,6 @@ struct femtoWorldPairTaskTrackPhi {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // PID for protons
-  bool IsProtonTPCdEdxNSigma(float mom, float nsigmaP) // true if accepted, false if rejected
-  {
-    if (mom < 0.4 && TMath::Abs(nsigmaP) < 2.0)
-      return true;
-    if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaP) < 1.0)
-      return true;
-    if (mom > 0.5 && TMath::Abs(nsigmaP) < 3.0)
-      return true;
-
-    return false;
-  }
-
-  bool IsProtonTOFNSigma(float mom, float nsigmaP) // true if accepted, false if rejected
-  {
-    if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaP) < 2.0)
-      return true;
-    if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaP) < 1.5)
-      return true;
-    if (mom > 1.0 && TMath::Abs(nsigmaP) < 1.0)
-      return true;
-    return false;
-  }
-
   bool IsProtonNSigma(float mom, float nsigmaTPCP, float nsigmaTOFP) // from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
     bool fNsigmaTPCTOF = true;
@@ -191,6 +174,7 @@ struct femtoWorldPairTaskTrackPhi {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
     trackHistoPartTwo.init(&qaRegistry);
+    trackHistoPartThree.init(&qaRegistry);
 
     sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
@@ -212,8 +196,11 @@ struct femtoWorldPairTaskTrackPhi {
     // const auto& magFieldTesla = col.magField();
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsThree = partsThree->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
+
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if (!(IsProtonNSigma(part.p(), part.tpcNSigmaPr(), part.tofNSigmaPr()))) {
@@ -224,6 +211,10 @@ struct femtoWorldPairTaskTrackPhi {
     for (auto& part : groupPartsTwo) {
       trackHistoPartTwo.fillQA(part);
     }
+    for (auto& part : groupPartsThree) {
+      trackHistoPartThree.fillQA(part);
+    }
+
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
       if (!(IsProtonNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr()))) {
@@ -259,6 +250,7 @@ struct femtoWorldPairTaskTrackPhi {
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
+      auto groupPartsThree = partsThree->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();

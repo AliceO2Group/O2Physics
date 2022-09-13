@@ -66,6 +66,8 @@ class FemtoWorldParticleHisto
         /// Cascade histograms
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
         /// Phi histograms
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
+        /// Phi daughters histograms
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }
@@ -99,6 +101,8 @@ class FemtoWorldParticleHisto
         /// Cascade histograms
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
         /// Phi histograms
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
+        /// Phi daughters histograms
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }
