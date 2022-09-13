@@ -296,6 +296,45 @@ struct femtoWorldProducerTask {
     return false;
   }
 
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    bool fNsigmaTPCTOF = true;
+    double fNsigma = 3;
+    double fNsigma2 = 3;
+    if (fNsigmaTPCTOF) {
+      if (mom > 0.5) {
+        //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
+        if (mom < 2.0) {
+          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma)
+            return true;
+        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2)
+          return true;
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < fNsigma)
+          return true;
+      }
+    } else {
+
+      if (mom < 0.4) {
+        if (nsigmaTOFK < -999.) {
+          if (TMath::Abs(nsigmaTPCK) < 2.0)
+            return true;
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if (mom >= 0.4 && mom <= 0.6) {
+        if (nsigmaTOFK < -999.) {
+          if (TMath::Abs(nsigmaTPCK) < 2.0)
+            return true;
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if (nsigmaTOFK < -999.) {
+        return false;
+      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+        return true;
+    }
+    return false;
+  }
+
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
   float getMagneticFieldTesla(uint64_t timestamp)
   {
@@ -627,22 +666,10 @@ struct femtoWorldProducerTask {
           continue;
         }
         // PID for Kaons
-        else if ((p1.p() > 0.45f)) {
-          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
-            continue;
-          }
-        } else if ((p1.p() <= 0.45f)) {
-          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
-            continue;
-          }
-        } else if ((p2.p() > 0.45f)) {
-          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
-            continue;
-          }
-        } else if ((p2.p() <= 0.45f)) {
-          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa()))) {
-            continue;
-          }
+        else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+          continue;
+        } else if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
+          continue;
         }
 
         TLorentzVector part1Vec;
