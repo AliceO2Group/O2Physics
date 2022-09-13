@@ -672,24 +672,6 @@ struct femtoWorldProducerTask {
           continue;
         }
 
-        /*else if ((p1.p() > 0.45f)) {
-          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
-            continue;
-          }
-        } else if ((p1.p() <= 0.45f)) {
-          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
-            continue;
-          }
-        } else if ((p2.p() > 0.45f)) {
-          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
-            continue;
-          }
-        } else if ((p2.p() <= 0.45f)) {
-          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa()))) {
-            continue;
-          }
-        }*/
-
         TLorentzVector part1Vec;
         TLorentzVector part2Vec;
         float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
