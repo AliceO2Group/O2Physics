@@ -41,11 +41,9 @@ template <typename T>
 bool cleanFDD(T& bc, float limitA, float limitC);
 
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>&& lims);
+bool cleanFIT(T& bc, std::vector<float> lims);
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>& lims);
-template <typename T>
-bool cleanFITCollision(T& col, std::vector<float>&& lims);
+bool cleanFITCollision(T& col, std::vector<float> lims);
 
 template <typename T>
 bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
@@ -393,17 +391,12 @@ bool cleanFDD(T& bc, float limitA, float limitC)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>&& lims)
+bool cleanFIT(T& bc, std::vector<float> lims)
 {
   return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
 }
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>& lims)
-{
-  return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
-}
-template <typename T>
-bool cleanFITCollision(T& col, std::vector<float>&& lims)
+bool cleanFITCollision(T& col, std::vector<float> lims)
 {
   bool isCleanFV0 = true;
   if (col.has_foundFV0()) {
@@ -419,7 +412,6 @@ bool cleanFITCollision(T& col, std::vector<float>&& lims)
   }
   return (isCleanFV0 && isCleanFT0 && isCleanFDD);
 }
-
 // -----------------------------------------------------------------------------
 template <typename T>
 bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)

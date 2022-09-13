@@ -114,7 +114,7 @@ struct collisionsInfo {
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
     // check that there are no FIT signals in any of the compatible BCs
-    std::vector<float> lims = {1., 1., 1., 1., 1.}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
+    std::vector<float> const lims{1.0, 1.0, 1.0, 1.0, 1.0}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
       if (!cleanFIT(bc, lims)) {
