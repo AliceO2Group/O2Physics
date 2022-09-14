@@ -23,3 +23,9 @@ o2physics_add_dpl_workflow(upccand-producer
                            SOURCES UPCCandidateProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder
                            COMPONENT_NAME Analysis)
+
+
+o2physics_add_dpl_workflow(upc-filter-central-barrel
+                    SOURCES upcFilterCentralBarrel.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
