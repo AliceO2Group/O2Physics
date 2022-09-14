@@ -138,7 +138,7 @@ fh_cn_2c_eta10(a.fh_cn_2c_eta10),
 fh_cn_cn_2c_eta10(a.fh_cn_cn_2c_eta10)*/
 {
   // copy constructor
-  //	DefineOutput(1, TList::Class() );
+  //DefineOutput(1, TList::Class() );
 }
 //________________________________________________________________________
 AliJFFlucAnalysis& AliJFFlucAnalysis::operator=(const AliJFFlucAnalysis& ap)
