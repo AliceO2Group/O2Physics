@@ -619,11 +619,6 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
 //________________________________________________________________________
 void AliJFFlucAnalysis::Terminate(Option_t*)
 {
-  //	fList = dynamic_cast<TList*> (GetOutputData(1));
-  //	if(!fList) { Printf("ERROR: fList not availabe"); return;};
-  //
-  //
-  // cout<<"Sucessfully Finished"<<endl;
 }
 //________________________________________________________________________
 //________________________________________________________________________
@@ -686,8 +681,8 @@ void AliJFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
     // track Eta cut Note! pt cuts already applied in AliJFFlucTask.cxx
     // Do we need arbitary Eta cut for QC method?
     // fixed eta ranged -0.8 < eta < 0.8 for QC
-    //				if( TMath::Abs(eta) > fEta_max || TMath::Abs(eta) < fEta_min ) continue; << this is SP cut
-    //				if( TMath::Abs(eta) > 0.8 ) continue;  //   << this is old QC cut
+    // if( TMath::Abs(eta) > fEta_max || TMath::Abs(eta) < fEta_min ) continue; << this is SP cut
+    // if( TMath::Abs(eta) > 0.8 ) continue;  //   << this is old QC cut
     // we need more configuration for to study eta dep of SC(m,n) with QC method.
     // eta cut among all tracks (this is not same with SC(m,n) SP method (SP method needs symmetric eta range)//
     // if( eta < fQC_eta_cut_min || eta > fQC_eta_cut_max)
@@ -730,8 +725,8 @@ TComplex AliJFFlucAnalysis::Q(int n, int p)
 //________________________________________________________________________
 TComplex AliJFFlucAnalysis::Two(int n1, int n2)
 {
-  // two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
-  //	cout << "TWO FUNCTION " << Q(n1,1) << "*" << Q(n2,1) << " - " << Q(n1+n2 , 2) << endl;
+  //two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
+  //cout << "TWO FUNCTION " << Q(n1,1) << "*" << Q(n2,1) << " - " << Q(n1+n2 , 2) << endl;
   TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
   return two;
 }
