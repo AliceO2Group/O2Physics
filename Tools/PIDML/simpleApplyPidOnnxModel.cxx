@@ -70,8 +70,8 @@ struct SimpleApplyOnnxModel {
 
   void processCollisions(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&)
   {
+    auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPid.value, cfgUseTOF.value, cfgUseTRD.value);
     }
 

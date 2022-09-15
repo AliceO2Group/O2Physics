@@ -382,8 +382,8 @@ struct pidml {
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
   void process(aod::Collisions const& collisions, pidTracks const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
+    auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
       model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, true, false);
       model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, true, false);
       model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, true, false);
