@@ -102,6 +102,7 @@ struct TableMaker {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  Configurable<std::string> fConfigAddHistogram{"cfgAddHistogram", "", "Comma separated list of muon cuts"};
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 1.0f, "Low pt cut for tracks in the barrel"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
   Configurable<float> fConfigMinTpcSignal{"cfgMinTpcSignal", 30.0, "Minimum TPC signal"};
@@ -494,6 +495,23 @@ struct TableMaker {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "muon");
         } else {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track");
+        }
+      }
+      // Additioal histogram
+      TString histStr = fConfigAddHistogram.value;
+      if (!histStr.IsNull()) {
+        std::unique_ptr<TObjArray> histArray(histStr.Tokenize(","));
+        for (int ihist = 0; ihist < histArray->GetEntries(); ++ihist) {
+          TString histName = histArray->At(ihist)->GetName();
+          if (classStr.Contains("Event") && histName.Contains("event")) {
+            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", histName);
+          }
+          if (classStr.Contains("Track") && histName.Contains("track")) {
+            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histName);
+          }
+          if (classStr.Contains("Muons") && histName.Contains("muons")) {
+            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histName);
+          }
         }
       }
     }
