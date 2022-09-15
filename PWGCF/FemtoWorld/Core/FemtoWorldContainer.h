@@ -146,9 +146,6 @@ class FemtoWorldContainer
 
     TLorentzVector sumVec(part1Vec);
     sumVec += part2Vec;
-    if (mHistogramRegistry) {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairInvariantMass"), sumVec.M());
-    }
 
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist"), femtoObs);
@@ -162,6 +159,7 @@ class FemtoWorldContainer
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart2"), part2.pt(), mult);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("PtPart1PtPart2"), part1.pt(), part2.pt());
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDetaDphi"), delta_phi, delta_eta);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairInvariantMass"), sumVec.M());
     }
   }
 

@@ -689,7 +689,7 @@ struct femtoWorldProducerTask {
         float phiP = sumVec.P();
         float phiM = sumVec.M();
 
-        if ((phiM < ConfInvMassLowLimit) || (phiM > ConfInvMassUpLimit)) {
+        if (((phiM < ConfInvMassLowLimitPhi) || (phiM > ConfInvMassUpLimitPhi))) {
           continue;
         }
 
