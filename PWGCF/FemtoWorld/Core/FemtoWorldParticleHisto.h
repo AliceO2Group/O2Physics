@@ -104,7 +104,6 @@ class FemtoWorldParticleHisto
         /// Cascade histograms
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
         /// Phi histograms
-        // LOGF(info, "part.mass = ");
         mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST("/InvariantMass"), part.mass());
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
