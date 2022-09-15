@@ -13,13 +13,16 @@
 /// \brief multiparticle-correlations-ar - Task belonging to Anton Riedel for computing multiparticle correlations
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
+#include <Framework/Configurable.h>
 #include "fairlogger/Logger.h"
+#include <algorithm>
 #include <cstdint>
 #include <string_view>
 #include <string>
 #include <vector>
 #include <array>
 #include <numeric>
+#include <bits/stdc++.h>
 #include "TComplex.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -61,6 +64,20 @@ enum HistConfig {
   kOCUT,  // option whether to apply cut at all
   kLAST_HistConfig
 };
+
+enum CorDep {
+  kINTEGRATED,
+  kMULDEP,
+  kCENDEP,
+  kPTDEP,
+  kETADEP,
+  kLAST_CorDep
+};
+static const std::string CorDepNames[kLAST_CorDep] = {"[kINTEGRATED]",
+                                                      "[kMULDEP]",
+                                                      "[kCEN]",
+                                                      "[kPTDEP]",
+                                                      "[kETADEP]"};
 
 // event variables
 enum EventVariable {
@@ -134,6 +151,16 @@ inline bool SurviveCut(std::vector<float> ConfigValue, float Value)
     }
   }
   return flag;
+}
+inline std::vector<int> SplitNumber(int n)
+{
+  std::vector<int> digits;
+  while (n >= 10) {
+    digits.push_back(n % 10);
+    n /= 10;
+  }
+  digits.push_back(n);
+  return digits;
 }
 }; // namespace MultiParticleCorrelationsARTaskGlobalVariables
 
@@ -224,19 +251,33 @@ struct MultiParticleCorrelationsARTask {
                                                             cfgTPCCHI2,
                                                             cfgITSCLUSTERS};
 
+  // Configurable<std::vector<std::vector<int>>> cfgCOR = {"Correlators", {{-2, 2}, {-3, 3}, {-4, 4}}, "Correlators to be computed"};
+  Configurable<std::vector<int>> cfgSC = {"SymmetricCumulants", {23, 24, 34}, "Symmetric Cumulants to be computed"};
+
   // declare histogram registry
-  HistogramRegistry registry{"MultiParticleCorrelationsARTask",
-                             {},
-                             OutputObjHandlingPolicy::AnalysisObject,
-                             false,
-                             false};
+  HistogramRegistry fRegistry{"MultiParticleCorrelationsARTask",
+                              {},
+                              OutputObjHandlingPolicy::AnalysisObject,
+                              false,
+                              false};
 
   // declare 2d array for qvectors
-  std::array<std::array<TComplex, AR::MaxHarmonic>, AR::MaxPower> QVectors;
+  std::array<std::array<TComplex, AR::MaxHarmonic>, AR::MaxPower> fQvectors;
 
   // declare objects for computing qvectors
-  std::vector<double> Angles;
-  std::vector<double> Weights;
+  std::vector<double> fAzimuthalAngles;
+  std::vector<double> fWeights;
+
+  // mapping
+  std::map<int, std::vector<std::vector<int>>> fMapScToCor;
+  std::map<std::vector<int>, int> fMapCorToIndex;
+
+  // vector of all correlators
+  std::vector<std::vector<int>> fCorrelators;
+
+  // list holding nested lists for each correlator
+  OutputObj<TList> fOutput{"fOutput", OutputObjHandlingPolicy::AnalysisObject};
+  TList* fCorrelatorList;
 
   void init(InitContext&)
   {
@@ -247,31 +288,149 @@ struct MultiParticleCorrelationsARTask {
 
         // iterate over event configurables
         for (auto cfg : cfgEvent) {
-          registry.add((std::string(AR::RecoSim[rs]) +
-                        std::string("EventControl/") +
-                        std::string(AR::BeforeAfter[ba]) +
-                        cfg.name)
-                         .c_str(),
-                       "",
-                       HistType::kTH1D,
-                       {{static_cast<Int_t>(cfg.value.at(AR::kBIN)),
-                         cfg.value.at(AR::kLEDGE),
-                         cfg.value.at(AR::kUEDGE)}});
+          fRegistry.add((std::string(AR::RecoSim[rs]) +
+                         std::string("EventControl/") +
+                         std::string(AR::BeforeAfter[ba]) +
+                         cfg.name)
+                          .c_str(),
+                        "",
+                        HistType::kTH1D,
+                        {{static_cast<Int_t>(cfg.value.at(AR::kBIN)),
+                          cfg.value.at(AR::kLEDGE),
+                          cfg.value.at(AR::kUEDGE)}});
         }
         // iterate over track configurables
         for (auto cfg : cfgTrack) {
-          registry.add((std::string(AR::RecoSim[rs]) +
-                        std::string("TrackControl/") +
-                        std::string(AR::BeforeAfter[ba]) +
-                        cfg.name)
-                         .c_str(),
-                       "",
-                       HistType::kTH1D,
-                       {{static_cast<Int_t>(cfg.value.at(AR::kBIN)),
-                         cfg.value.at(AR::kLEDGE),
-                         cfg.value.at(AR::kUEDGE)}});
+          fRegistry.add((std::string(AR::RecoSim[rs]) +
+                         std::string("TrackControl/") +
+                         std::string(AR::BeforeAfter[ba]) +
+                         cfg.name)
+                          .c_str(),
+                        "",
+                        HistType::kTH1D,
+                        {{static_cast<Int_t>(cfg.value.at(AR::kBIN)),
+                          cfg.value.at(AR::kLEDGE),
+                          cfg.value.at(AR::kUEDGE)}});
         }
       }
+    }
+
+    fCorrelatorList = new TList();
+    fCorrelatorList->SetOwner(true);
+    fOutput.setObject(fCorrelatorList);
+
+    LOG(info) << "Book stuff" << std::endl;
+    GetCorreltors();
+    BookCorrelators();
+  }
+
+  std::vector<std::vector<int>> MapSCToCor(int SC)
+  {
+    // map symmetric cumulant to the correlators needed for its computation
+    // the sc is given as an integer, i.e. 23 -> SC(2,3)
+
+    std::vector<int> sc = AR::SplitNumber(SC);
+    std::sort(sc.begin(), sc.end());
+    std::vector<std::vector<int>> correlators;
+
+    switch (sc.size()) {
+      case 2:
+        correlators = {
+          {-sc.at(0), -sc.at(1), sc.at(1), sc.at(0)}, // <4>_{-l,-k,k,l}
+          {-sc.at(0), sc.at(0)},                      // <2>_{-k, k}
+          {-sc.at(1), sc.at(1)}                       // <2>_{-l, l}
+        };
+        break;
+      case 3:
+        correlators = {
+          {-sc.at(0), -sc.at(1), -sc.at(2), sc.at(2), sc.at(1),
+           sc.at(0)},                                 // <6>_{-k,-l,-n,n,l,k}
+          {-sc.at(0), -sc.at(1), sc.at(1), sc.at(0)}, // <4>_{-k,-l,l,k}
+          {-sc.at(0), -sc.at(2), sc.at(2), sc.at(0)}, // <4>_{-k,-n,n,k}
+          {-sc.at(1), -sc.at(2), sc.at(2), sc.at(1)}, // <4>_{-l,-n,n,l}
+          {-sc.at(0), sc.at(0)},                      // <2>_{-k, k}
+          {-sc.at(1), sc.at(1)},                      // <2>_{-l, l}
+          {-sc.at(2), sc.at(2)}};                     // <2>_{ -n, n }
+        break;
+      default:
+        LOG(fatal) << "Symmetric Cumulants of order" << sc.size() << " are not implemented yet" << std::endl;
+    }
+    return correlators;
+  }
+
+  void GetCorreltors()
+  {
+    int Index = 0;
+    std::vector<std::vector<int>> Correlators;
+    for (auto SC : cfgSC.value) {
+
+      LOG(info) << "SC: " << SC << std::endl;
+      Correlators = MapSCToCor(SC);
+      fMapScToCor.insert({SC, Correlators});
+      for (auto cor : Correlators) {
+        if (std::find(fCorrelators.begin(), fCorrelators.end(), cor) !=
+            fCorrelators.end()) {
+          continue;
+        } else {
+          fCorrelators.push_back(cor);
+          fMapCorToIndex.insert({cor, Index});
+          Index++;
+        }
+      }
+    }
+  }
+
+  void
+    BookCorrelators()
+  {
+    // Book final profiles holding correlators
+    // 5 profiles for each correlator
+    //  - integrated
+    //  - as a function of centrality
+    //  - as a function of multiplicity
+    // - as a function of pt
+    // - as a function of eta
+
+    TList* corList;
+    TProfile* profile[AR::kLAST_CorDep];
+    std::string corListName;
+    std::string corName;
+
+    for (std::size_t i = 0; i < fCorrelators.size(); i++) {
+      corListName = std::string("v_{");
+      for (std::size_t j = 0; j < fCorrelators.at(i).size(); j++) {
+        if (j != fCorrelators.at(i).size() - 1) {
+          corListName += std::to_string(fCorrelators.at(i).at(j));
+        } else {
+          corListName += std::to_string(fCorrelators.at(i).at(j));
+        }
+      }
+      corListName += std::string("}");
+      corList = new TList();
+      corList->SetName(corListName.c_str());
+
+      // keep this vector in sync with CorDep enum
+      // kINTEGRATED is missing, so this vector is offset by 1
+      std::vector<Configurable<std::vector<float>>> CorrelatorDep = {cfgMULQ, cfgCEN, cfgPT, cfgETA};
+
+      for (int i = 0; i < AR::kLAST_CorDep; i++) {
+        if (i == AR::kINTEGRATED) {
+          profile[i] = new TProfile((corListName + AR::CorDepNames[AR::kINTEGRATED]).c_str(),
+                                    (corListName + AR::CorDepNames[AR::kINTEGRATED]).c_str(),
+                                    1,
+                                    0,
+                                    1);
+        } else {
+          profile[i] = new TProfile((corListName + AR::CorDepNames[i]).c_str(),
+                                    (corListName + AR::CorDepNames[i]).c_str(),
+                                    CorrelatorDep.at(i - 1).value.at(AR::kBIN),
+                                    CorrelatorDep.at(i - 1).value.at(AR::kLEDGE),
+                                    CorrelatorDep.at(i - 1).value.at(AR::kUEDGE));
+        }
+        corList->Add(profile[i]);
+      }
+
+      fCorrelatorList->Add(corList);
     }
   }
 
@@ -391,7 +550,7 @@ struct MultiParticleCorrelationsARTask {
     // Make sure all Q-vectors are initially zero
     for (int h = 0; h < AR::MaxHarmonic; h++) {
       for (int p = 0; p < AR::MaxPower; p++) {
-        QVectors[h][p] = TComplex(0., 0.);
+        fQvectors[h][p] = TComplex(0., 0.);
       }
     }
 
@@ -399,18 +558,22 @@ struct MultiParticleCorrelationsARTask {
     double dPhi = 0.;
     double wPhi = 1.;         // particle weight
     double wPhiToPowerP = 1.; // particle weight raised to power p
-    for (std::size_t i = 0; i < Angles.size(); i++) {
-      dPhi = Angles.at(i);
-      wPhi = Weights.at(i);
+    for (std::size_t i = 0; i < fAzimuthalAngles.size(); i++) {
+      dPhi = fAzimuthalAngles.at(i);
+      wPhi = fWeights.at(i);
       for (int h = 0; h < AR::MaxHarmonic; h++) {
         for (int p = 0; p < AR::MaxPower; p++) {
           wPhiToPowerP = TMath::Power(wPhi, p);
-          QVectors[h][p] += TComplex(wPhiToPowerP * TMath::Cos(h * dPhi),
-                                     wPhiToPowerP * TMath::Sin(h * dPhi));
+          fQvectors[h][p] += TComplex(wPhiToPowerP * TMath::Cos(h * dPhi),
+                                      wPhiToPowerP * TMath::Sin(h * dPhi));
         }
       }
     }
   }
+
+  void FillCorrelators(){
+
+  };
 
   using CollisionsInstance = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>;
   using TracksInstance = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
@@ -422,40 +585,40 @@ struct MultiParticleCorrelationsARTask {
   {
 
     // clear angles and weights
-    Angles.clear();
-    Weights.clear();
+    fAzimuthalAngles.clear();
+    fWeights.clear();
 
     LOGF(info, "Process reconstructed event: %d", collision.index());
 
-    FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, registry);
-    FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(registry, collision.size(), collision.size());
+    FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, fRegistry);
+    FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(fRegistry, collision.size(), collision.size());
 
     if (!SurviveEventCuts(collision, tracks)) {
       LOGF(info, "Event was CUT");
       return;
     }
 
-    FillEventControlHist<AR::kRECO, AR::kAFTER, CollisionsInstanceIterator>(collision, registry);
+    FillEventControlHist<AR::kRECO, AR::kAFTER, CollisionsInstanceIterator>(collision, fRegistry);
 
     // loop over all tracks in the event
     for (auto const& track : tracks) {
       // fill track control histograms before track cut
-      FillTrackControlHist<AR::kRECO, AR::kBEFORE, TracksInstance::iterator>(track, registry);
+      FillTrackControlHist<AR::kRECO, AR::kBEFORE, TracksInstance::iterator>(track, fRegistry);
       if (!SurviveTrackCuts(track)) {
         continue;
       }
       // fill track control histograms after cut
-      FillTrackControlHist<AR::kRECO, AR::kAFTER, TracksInstance::iterator>(track, registry);
+      FillTrackControlHist<AR::kRECO, AR::kAFTER, TracksInstance::iterator>(track, fRegistry);
 
       // fill angles into vector for processing
-      Angles.push_back(track.phi());
-      Weights.push_back(1.);
+      fAzimuthalAngles.push_back(track.phi());
+      fWeights.push_back(1.);
     }
 
-    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(registry, Angles.size(), std::accumulate(Weights.begin(), Weights.end(), 0.));
+    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(fRegistry, fAzimuthalAngles.size(), std::accumulate(fWeights.begin(), fWeights.end(), 0.));
 
-    // calculate qvectors from filled angles and weights
-    CalculateQvectors();
+    // fill final result profile
+    FillCorrelators();
   }
 };
 
