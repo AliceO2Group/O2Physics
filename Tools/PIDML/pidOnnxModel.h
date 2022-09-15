@@ -110,7 +110,14 @@ struct PidONNXModel {
   }
 
  private:
-  void getFilenamesFromPath(std::string& path, std::string& modelFile, std::string& trainColumnsFile, std::string& scalingParamsFile, int pid)
+  std::string composePath(std::string const& dir, std::string const& filename, std::string const& ext)
+  {
+    std::ostringstream tmp;
+    tmp << dir << "/" << filename << ext;
+    return tmp.str();
+  }
+
+  void getFilenamesFromPath(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
   {
     std::ostringstream tmp;
     tmp << path << "/TPC";
@@ -120,23 +127,29 @@ struct PidONNXModel {
     if (mUseTRD) {
       tmp << "_TRD";
     }
-    std::string modelDir = tmp.str();
+    modelDir = tmp.str();
 
     tmp.str("");
     tmp.clear();
-    tmp << modelDir << "/simple_model_" << pid << ".onnx";
+    tmp << "simple_model_" << pid << ext;
     modelFile = tmp.str();
-    tmp.str("");
-    tmp.clear();
-    tmp << modelDir << "/columns_for_training.json";
-    trainColumnsFile = tmp.str();
-    tmp.str("");
-    tmp.clear();
-    tmp << modelDir << "/scaling_params.json";
-    scalingParamsFile = tmp.str();
+
+    modelPath = composePath(modelDir, modelFile, "");
   }
 
-  void loadInputFiles(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, std::string& modelFile)
+  void downloadFromCCDB(o2::ccdb::CcdbApi& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
+  {
+    std::map<std::string, std::string> metadata;
+    bool retrieveSuccess = ccdbApi.retrieveBlob(ccdbFile, localDir, metadata, timestamp, false, localFile);
+    if (retrieveSuccess) {
+      std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(ccdbFile, metadata, timestamp);
+      LOG(info) << "Network file downloaded from: " << ccdbFile << " to: " << localDir << "/" << localFile;
+    } else {
+      LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this run number/timestamp?";
+    }
+  }
+
+  void loadInputFiles(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, std::string& modelPath)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
@@ -145,26 +158,30 @@ struct PidONNXModel {
       LOG(warning) << "TRD specified for PID but TOF not! Not using TRD";
     }
 
-    std::string localTrainColumnsFile, localScalingParamsFile;
-    getFilenamesFromPath(localPath, modelFile, localTrainColumnsFile, localScalingParamsFile, pid);
+    std::string localDir, localModelFile;
+    std::string trainColumnsFile = "columns_for_training";
+    std::string scalingParamsFile = "scaling_params";
+    getFilenamesFromPath(localPath, localDir, localModelFile, modelPath, pid, ".onnx");
+    std::string localTrainColumnsPath = composePath(localDir, trainColumnsFile, ".json");
+    std::string localScalingParamsPath = composePath(localDir, scalingParamsFile, ".json");
 
     if (useCCDB) {
-      std::string ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile;
-      getFilenamesFromPath(ccdbPath, ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile, pid);
-      LOG(info) << "Fetching network for timestamp: " << timestamp;
-      std::map<std::string, std::string> metadata;
-      ccdbApi.retrieveBlob(ccdbModelFile, ".", metadata, timestamp, false, modelFile);
-      ccdbApi.retrieveBlob(ccdbTrainColumnsFile, ".", metadata, timestamp, false, localTrainColumnsFile);
-      ccdbApi.retrieveBlob(ccdbScalingParamsFile, ".", metadata, timestamp, false, localScalingParamsFile);
+      std::string ccdbDir, ccdbModelFile, ccdbModelPath;
+      getFilenamesFromPath(ccdbPath, ccdbDir, ccdbModelFile, ccdbModelPath, pid, "");
+      std::string ccdbTrainColumnsPath = composePath(ccdbDir, trainColumnsFile, "");
+      std::string ccdbScalingParamsPath = composePath(ccdbDir, scalingParamsFile, "");
+      downloadFromCCDB(ccdbApi, ccdbModelPath, timestamp, localDir, localModelFile);
+      downloadFromCCDB(ccdbApi, ccdbTrainColumnsPath, timestamp, localDir, "columns_for_training.json");
+      downloadFromCCDB(ccdbApi, ccdbScalingParamsPath, timestamp, localDir, "scaling_params.json");
     }
 
-    LOG(info) << "Using configuration files: " << localTrainColumnsFile << ", " << localScalingParamsFile;
-    if (readJsonFile(localTrainColumnsFile, trainColumnsDoc)) {
+    LOG(info) << "Using configuration files: " << localTrainColumnsPath << ", " << localScalingParamsPath;
+    if (readJsonFile(localTrainColumnsPath, trainColumnsDoc)) {
       for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
         mTrainColumns.emplace_back(param.GetString());
       }
     }
-    if (readJsonFile(localScalingParamsFile, scalingParamsDoc)) {
+    if (readJsonFile(localScalingParamsPath, scalingParamsDoc)) {
       for (auto& param : scalingParamsDoc["data"].GetArray()) {
         mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
       }

@@ -44,10 +44,9 @@ struct SimpleApplyOnnxModel {
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://ccdb-test.cern.ch:8080", "URL of the CCDB repository"};
-  //  Paths to local files
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/models_train_246_run_285064_all_detectors", "base path to the local directory with ONNX models"};
+  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
@@ -71,8 +70,8 @@ struct SimpleApplyOnnxModel {
 
   void processCollisions(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&)
   {
-    auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
+      auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPid.value, cfgUseTOF.value, cfgUseTRD.value);
     }
 
