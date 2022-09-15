@@ -74,7 +74,7 @@ DECLARE_SOA_INDEX_COLUMN(FemtoWorldCollision, femtoWorldCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                    //! p_T (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //! Phi
-DECLARE_SOA_COLUMN(Mass, mass, int8_t);               //! Mass of the particle
+DECLARE_SOA_COLUMN(Mass, mass, float);                //! Mass of the particle
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);      //! Type of the particle, according to femtoworldparticle::ParticleType
 DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);       //! Bit-wise container for the different selection criteria
 DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType); //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
