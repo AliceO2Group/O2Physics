@@ -59,6 +59,13 @@ struct SimpleApplyOnnxModel {
   // Filter on isGlobalTrack (TracksSelection)
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
 
+  // FIXME: Temporary solution, new networks will have sigmoid layer added
+  float sigmoid(float x)
+  {
+    float value = std::max(-100.0f, std::min(100.0f, value));
+    return 1.0f / (1.0f + std::exp(-value));
+  }
+
   void init(InitContext const&)
   {
     if (cfgUseCCDB) {
@@ -76,7 +83,7 @@ struct SimpleApplyOnnxModel {
     }
 
     for (auto& track : tracks) {
-      float pid = pidModel.applyModel(track);
+      float pid = sigmoid(pidModel.applyModel(track));
       // pid > 0 --> track is predicted to be of this kind; pid < 0 --> rejected
       LOGF(info, "collision id: %d track id: %d pid: %.3f p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.index(), pid, track.p(), track.x(), track.y(), track.z());
