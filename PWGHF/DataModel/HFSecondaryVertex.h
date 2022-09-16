@@ -1019,7 +1019,26 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
                   aod::hf_correlation_ddbar::MD,
                   aod::hf_correlation_ddbar::MDbar,
                   aod::hf_correlation_ddbar::SignalStatus);
-
+// definition of columns and tables for D0-Hadron correlation pairs
+namespace hf_correlation_d0hadron
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(PtD, ptD, float);
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
+DECLARE_SOA_COLUMN(MD, mD, float);
+DECLARE_SOA_COLUMN(MDbar, mDbar, float);
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+} // namespace hf_correlation_d0hadrons                  
+DECLARE_SOA_TABLE(DHadronPair, "AOD", "DHADRONPAIR",
+                  aod::hf_correlation_d0hadron::DeltaPhi,
+                  aod::hf_correlation_d0hadron::DeltaEta,
+                  aod::hf_correlation_d0hadron::PtD,
+                  aod::hf_correlation_d0hadron::PtHadron);                  
+DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO",
+                  aod::hf_correlation_d0hadron::MD,
+                  aod::hf_correlation_d0hadron::MDbar,
+                  aod::hf_correlation_d0hadron::SignalStatus);
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplushadron
 {
