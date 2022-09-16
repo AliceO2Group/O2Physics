@@ -42,7 +42,7 @@
 #include <Math/LorentzVector.h>
 #include <TRandom.h>
 
-#include "AliJO2Catalyst.h"
+#include "PWGCF/JCorran/DataModel/AliJO2Catalyst.h"
 
 using namespace o2;
 using namespace o2::framework;

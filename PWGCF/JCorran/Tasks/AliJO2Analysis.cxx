@@ -25,7 +25,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "ReconstructionDataFormats/V0.h"
 
-#include "AliJO2Catalyst.h"
+//#include "AliJO2Catalyst.h"
+#include "PWGCF/JCorran/DataModel/AliJO2Catalyst.h"
 #include "AliJFFlucAnalysis.h"
 
 using namespace o2;

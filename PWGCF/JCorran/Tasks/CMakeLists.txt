@@ -9,8 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-add_subdirectory(DataModel)
-add_subdirectory(TableProducer)
-add_subdirectory(Tasks)
-
+o2physics_add_dpl_workflow(jfluc-analysis
+                    SOURCES AliJO2Analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
+                    COMPONENT_NAME Analysis)
