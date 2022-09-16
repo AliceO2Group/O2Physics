@@ -356,30 +356,30 @@ struct MultiParticleCorrelationsARTask {
       }
     }
     // create histograms for binning the correlators with respect to event variables
-    for (int event = 0; event < AR::kLAST_CorEventDep; event++) {
-      fEventDepHists[event] = new TH1F(AR::CorEventDepNames[event].c_str(),
-                                       AR::CorEventDepNames[event].c_str(),
-                                       cfgCorEventDep.at(event).value.at(AR::kBIN),
-                                       cfgCorEventDep.at(event).value.at(AR::kLEDGE),
-                                       cfgCorEventDep.at(event).value.at(AR::kUEDGE));
+    for (int eventDep = 0; eventDep < AR::kLAST_CorEventDep; eventDep++) {
+      fEventDepHists[eventDep] = new TH1F(AR::CorEventDepNames[eventDep].c_str(),
+                                          AR::CorEventDepNames[eventDep].c_str(),
+                                          cfgCorEventDep.at(eventDep).value.at(AR::kBIN),
+                                          cfgCorEventDep.at(eventDep).value.at(AR::kLEDGE),
+                                          cfgCorEventDep.at(eventDep).value.at(AR::kUEDGE));
     }
 
     std::vector<std::vector<double>> tmp = {};
     // create histograms for binning the correlators with respect to event variables
-    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
-      fTrackDepHists[track] = new TH1F(AR::CorTrackDepNames[track].c_str(),
-                                       AR::CorTrackDepNames[track].c_str(),
-                                       cfgCorTrackDep.at(track).value.size() - 1,
-                                       cfgCorTrackDep.at(track).value.data());
+    for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
+      fTrackDepHists[trackDep] = new TH1F(AR::CorTrackDepNames[trackDep].c_str(),
+                                          AR::CorTrackDepNames[trackDep].c_str(),
+                                          cfgCorTrackDep.at(trackDep).value.size() - 1,
+                                          cfgCorTrackDep.at(trackDep).value.data());
 
       // push back empty vector, each on corresponding to a different bin of a track variable
-      fAzimuthalAnglesTrackDep[track].clear();
+      fAzimuthalAnglesTrackDep[trackDep].clear();
       tmp = {};
-      for (std::size_t j = 0; j < cfgCorTrackDep.at(track).value.size() - 1; j++) {
+      for (std::size_t j = 0; j < cfgCorTrackDep.at(trackDep).value.size() - 1; j++) {
         tmp.push_back(std::vector<double>{});
       }
-      fAzimuthalAnglesTrackDep[track] = tmp;
-      fWeightsTrackDep[track] = tmp;
+      fAzimuthalAnglesTrackDep[trackDep] = tmp;
+      fWeightsTrackDep[trackDep] = tmp;
     }
 
     // create master list holding the results of all the correlators
@@ -475,22 +475,22 @@ struct MultiParticleCorrelationsARTask {
       corList->SetName(corListName.c_str());
 
       // create profiles for event variables
-      for (int event = 0; event < AR::kLAST_CorEventDep; event++) {
-        profileEventDep[event] = new TProfile((corListName + AR::CorEventDepNames[event]).c_str(),
-                                              (corListName + AR::CorEventDepNames[event]).c_str(),
-                                              cfgCorEventDep.at(event).value.at(AR::kBIN),
-                                              cfgCorEventDep.at(event).value.at(AR::kLEDGE),
-                                              cfgCorEventDep.at(event).value.at(AR::kUEDGE));
-        corList->Add(profileEventDep[event]);
+      for (int eventDep = 0; eventDep < AR::kLAST_CorEventDep; eventDep++) {
+        profileEventDep[eventDep] = new TProfile((corListName + AR::CorEventDepNames[eventDep]).c_str(),
+                                                 (corListName + AR::CorEventDepNames[eventDep]).c_str(),
+                                                 cfgCorEventDep.at(eventDep).value.at(AR::kBIN),
+                                                 cfgCorEventDep.at(eventDep).value.at(AR::kLEDGE),
+                                                 cfgCorEventDep.at(eventDep).value.at(AR::kUEDGE));
+        corList->Add(profileEventDep[eventDep]);
       }
 
       // create profiles for track variables
-      for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
-        profileTrackDep[track] = new TProfile((corListName + AR::CorTrackDepNames[track]).c_str(),
-                                              (corListName + AR::CorTrackDepNames[track]).c_str(),
-                                              cfgCorTrackDep.at(track).value.size() - 1,
-                                              cfgCorTrackDep.at(track).value.data());
-        corList->Add(profileTrackDep[track]);
+      for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
+        profileTrackDep[trackDep] = new TProfile((corListName + AR::CorTrackDepNames[trackDep]).c_str(),
+                                                 (corListName + AR::CorTrackDepNames[trackDep]).c_str(),
+                                                 cfgCorTrackDep.at(trackDep).value.size() - 1,
+                                                 cfgCorTrackDep.at(trackDep).value.data());
+        corList->Add(profileTrackDep[trackDep]);
       }
       // add the list to the master list
       // to access the profiles in list be aware that
@@ -623,10 +623,10 @@ struct MultiParticleCorrelationsARTask {
     // fill angles into bins of a track variable, for computing correlators as a function of track variable
     std::array<double, AR::kLAST_CorTrackDep> TrackDep = {track.pt(), track.eta()};
     int bin;
-    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
-      bin = fTrackDepHists[track]->FindBin(TrackDep[track]) - 1; // in root, bins start at 1
-      fAzimuthalAnglesTrackDep[track].at(bin).push_back(angle);
-      fWeightsTrackDep[track].at(bin).push_back(weight);
+    for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
+      bin = fTrackDepHists[trackDep]->FindBin(TrackDep[trackDep]) - 1; // in root, bins start at 1
+      fAzimuthalAnglesTrackDep[trackDep].at(bin).push_back(angle);
+      fWeightsTrackDep[trackDep].at(bin).push_back(weight);
     }
   };
 
@@ -672,7 +672,7 @@ struct MultiParticleCorrelationsARTask {
     // compute q vectors for all angles in the event
     CalculateQvectors(fAzimuthalAnglesAll, fWeightsAll);
     int Index;
-    for (int event = 0; event < AR::kLAST_CorEventDep; event++) {
+    for (int eventDep = 0; eventDep < AR::kLAST_CorEventDep; eventDep++) {
       for (auto correlator : fCorrelators) {
         // get index of the correlator in fCorrelator list
         Index = fMapCorToIndex[correlator];
@@ -686,25 +686,25 @@ struct MultiParticleCorrelationsARTask {
     }
 
     // loop over all track variables
-    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
+    for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
       // loop over all bins of the track variable
       // note that in ROOT the bins of a histogram start at 1
-      for (std::size_t bin = 0; bin < fAzimuthalAnglesTrackDep[track].size(); bin++) {
+      for (std::size_t bin = 0; bin < fAzimuthalAnglesTrackDep[trackDep].size(); bin++) {
         // compute the qvectors in each bin
-        CalculateQvectors(fAzimuthalAnglesTrackDep[track].at(bin),
-                          fWeightsTrackDep[track].at(bin));
+        CalculateQvectors(fAzimuthalAnglesTrackDep[trackDep].at(bin),
+                          fWeightsTrackDep[trackDep].at(bin));
         corr = 0.;
         weight = 1.;
         // loop over all correlators
         for (auto correlator : fCorrelators) {
           // check if there are enough tracks for computing the correlator
-          if (fAzimuthalAnglesTrackDep[track].at(bin).size() <= correlator.size()) {
+          if (fAzimuthalAnglesTrackDep[trackDep].at(bin).size() <= correlator.size()) {
             LOG(warning) << "BEGIN WARNING";
             LOG(warning) << "Not enough tracks to compute the correlator v_{";
             std::for_each(correlator.begin(), correlator.end(), [](const auto& e) { LOG(warning) << e << ","; });
             LOG(warning) << "}!";
-            LOG(warning) << "Track variable: " << AR::CorTrackDepNames[track];
-            LOG(warning) << "Bin: " << fTrackDepHists[track]->GetBinLowEdge(bin + 1) << " - " << fTrackDepHists[track]->GetBinLowEdge(bin + 2);
+            LOG(warning) << "Track variable: " << AR::CorTrackDepNames[trackDep];
+            LOG(warning) << "Bin: " << fTrackDepHists[trackDep]->GetBinLowEdge(bin + 1) << " - " << fTrackDepHists[trackDep]->GetBinLowEdge(bin + 2);
             LOG(warning) << "END WARNING";
             continue;
           }
@@ -712,7 +712,7 @@ struct MultiParticleCorrelationsARTask {
           // compute the correlator in this bin of the track variable
           ComputeCorrelator(correlator, &corr, &weight);
           // fill it into the corresponding profile
-          dynamic_cast<TProfile*>(dynamic_cast<TList*>(fCorrelatorList->At(Index))->At(AR::kLAST_CorEventDep + track))->Fill(fTrackDepHists[track]->GetBinCenter(bin + 1), corr, weight);
+          dynamic_cast<TProfile*>(dynamic_cast<TList*>(fCorrelatorList->At(Index))->At(AR::kLAST_CorEventDep + trackDep))->Fill(fTrackDepHists[trackDep]->GetBinCenter(bin + 1), corr, weight);
         }
       }
     }
@@ -1120,10 +1120,10 @@ struct MultiParticleCorrelationsARTask {
     // clear angles and weights
     fAzimuthalAnglesAll.clear();
     fWeightsAll.clear();
-    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
-      for (std::size_t bin = 0; bin < fAzimuthalAnglesTrackDep[track].size(); bin++) {
-        fAzimuthalAnglesTrackDep[track].at(bin).clear();
-        fWeightsTrackDep[track].at(bin).clear();
+    for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
+      for (std::size_t bin = 0; bin < fAzimuthalAnglesTrackDep[trackDep].size(); bin++) {
+        fAzimuthalAnglesTrackDep[trackDep].at(bin).clear();
+        fWeightsTrackDep[trackDep].at(bin).clear();
       }
     }
 
