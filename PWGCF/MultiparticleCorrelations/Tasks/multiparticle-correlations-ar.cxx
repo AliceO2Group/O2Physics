@@ -65,19 +65,26 @@ enum HistConfig {
   kLAST_HistConfig
 };
 
-enum CorDep {
+// for differential computation of correlators with event variables
+enum CorEventDep {
   kINTEGRATED,
   kMULDEP,
   kCENDEP,
+  kLAST_CorEventDep
+};
+const std::string CorEventDepNames[kLAST_CorEventDep] = {"[kINTEGRATED]",
+                                                         "[kMULDEP]",
+                                                         "[kCENDEP]"};
+// for differential computation of correlators with track variables
+enum CorTrackDep {
   kPTDEP,
   kETADEP,
-  kLAST_CorDep
+  kLAST_CorTrackDep
 };
-static const std::string CorDepNames[kLAST_CorDep] = {"[kINTEGRATED]",
-                                                      "[kMULDEP]",
-                                                      "[kCEN]",
-                                                      "[kPTDEP]",
-                                                      "[kETADEP]"};
+const std::string CorTrackDepNames[kLAST_CorTrackDep] = {"[kPTDEP]",
+                                                         "[kETADEP]"};
+// common info string for correlator dependencies
+const std::string CorDepInfo = {"Bin edges for differential analysis of multiparticle correlators"};
 
 // event variables
 enum EventVariable {
@@ -127,7 +134,7 @@ static constexpr std::string_view TrackVariableNames[kLAST_TrackVariable] = {"Pt
                                                                              "ITSClusters"};
 
 // common info string for all configurables
-std::string info = std::string(": Hist bins, Hist lower edge, Hist upper edge, lower cut, upper cut, cut ON(1)/OFF(-1)");
+const std::string ConfigurablesInfo = std::string(": Hist bins, Hist lower edge, Hist upper edge, lower cut, upper cut, cut ON(1)/OFF(-1)");
 
 const int MaxHarmonic = 10;
 const int MaxPower = 10;
@@ -152,6 +159,9 @@ inline bool SurviveCut(std::vector<float> ConfigValue, float Value)
   }
   return flag;
 }
+// split an integer into its digit
+// used for parsing symmetric cumulants as input like
+// 23 -> {2,3} <- SC(2,3)
 inline std::vector<int> SplitNumber(int n)
 {
   std::vector<int> digits;
@@ -172,31 +182,31 @@ struct MultiParticleCorrelationsARTask {
   // event configurables and cuts
   Configurable<std::vector<float>> cfgVX = {std::string(AR::EventVariableNames[AR::kVX]),
                                             {400., -2., 2., -1., 1., 1.},
-                                            std::string("Vertex X") + AR::info};
+                                            std::string("Vertex X") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgVY = {std::string(AR::EventVariableNames[AR::kVY]),
                                             {400., -2., 2., -1., 1., 1.},
-                                            std::string("Vertex Y") + AR::info};
+                                            std::string("Vertex Y") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgVZ = {std::string(AR::EventVariableNames[AR::kVZ]),
                                             {2400., -12., 12., -10., 10., 1.},
-                                            std::string("Vertex Z") + AR::info};
+                                            std::string("Vertex Z") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgVABS = {std::string(AR::EventVariableNames[AR::kVABS]),
                                               {150., 0., 15, 1.e-6, 15., 1.},
-                                              std::string("Vertex distance from origin") + AR::info};
+                                              std::string("Vertex distance from origin") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgCEN = {std::string(AR::EventVariableNames[AR::kCEN]),
                                              {120., 0., 120., 0., 80., 1.},
-                                             std::string("Centrality") + AR::info};
+                                             std::string("Centrality") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgMULQ = {std::string(AR::EventVariableNames[AR::kMULQ]),
                                               {3000., 0., 3000., 10., 3000., 1.},
-                                              std::string("Multiplicity (QVector)") + AR::info};
+                                              std::string("Multiplicity (QVector)") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgMULW = {std::string(AR::EventVariableNames[AR::kMULW]),
                                               {3000., 0., 3000., 10., 3000., 1.},
-                                              std::string("Multiplicity (Weights)") + AR::info};
+                                              std::string("Multiplicity (Weights)") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgMULNC = {std::string(AR::EventVariableNames[AR::kMULNC]),
                                                {3000., 0., 3000., 10., 3000., 1.},
-                                               std::string("Multiplicity (NumContrib)") + AR::info};
+                                               std::string("Multiplicity (NumContrib)") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgMULTPC = {std::string(AR::EventVariableNames[AR::kMULTPC]),
                                                 {3000., 0., 3000., 12., 3000., 1.},
-                                                std::string("Multiplicity (TPC)") + AR::info};
+                                                std::string("Multiplicity (TPC)") + AR::ConfigurablesInfo};
   // write all event configurables into a vector
   std::vector<Configurable<std::vector<float>>> cfgEvent = {cfgVX,
                                                             cfgVY,
@@ -211,34 +221,34 @@ struct MultiParticleCorrelationsARTask {
   // track configurables and cuts
   Configurable<std::vector<float>> cfgPT = {std::string(AR::TrackVariableNames[AR::kPT]),
                                             {600., 0., 6., 0.2, 5., 1.},
-                                            std::string("pt") + AR::info};
+                                            std::string("pt") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgPHI = {std::string(AR::TrackVariableNames[AR::kPHI]),
                                              {360., 0., 2. * M_PI, 0., 2. * M_PI, 1.},
-                                             std::string("phi") + AR::info};
+                                             std::string("phi") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgETA = {std::string(AR::TrackVariableNames[AR::kETA]),
                                              {1000., -1., 1., -0.8, 0.8, 1.},
-                                             std::string("eta") + AR::info};
+                                             std::string("eta") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgCHARGE = {std::string(AR::TrackVariableNames[AR::kCHARGE]),
                                                 {5., -2.5, 2.5, -1.5, 1.5, 1.},
-                                                std::string("charge") + AR::info};
+                                                std::string("charge") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgDCAZ = {std::string(AR::TrackVariableNames[AR::kDCAZ]),
                                               {100., -4., 4., -3.2, 3.2, 1.},
-                                              std::string("DCA in Z") + AR::info};
+                                              std::string("DCA in Z") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgDCAXY = {std::string(AR::TrackVariableNames[AR::kDCAXY]),
                                                {100., -3., 3., -2.4, 2.4, 1.},
-                                               std::string("DCA in XY") + AR::info};
+                                               std::string("DCA in XY") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgTPCCLUSTERS = {std::string(AR::TrackVariableNames[AR::kTPCCLUSTERS]),
                                                      {160., 0., 160., 80., 161., 1.},
-                                                     std::string("TPC clusters") + AR::info};
+                                                     std::string("TPC clusters") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgTPCCROSSEDROWS = {std::string(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]),
                                                         {160., 0., 160., 80., 161., 1.},
-                                                        std::string("TPC crossed rows") + AR::info};
+                                                        std::string("TPC crossed rows") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgTPCCHI2 = {std::string(AR::TrackVariableNames[AR::kTPCCHI2]),
                                                  {500., 0., 5., 0.4, 4., 1.},
-                                                 std::string("TPC chi2") + AR::info};
+                                                 std::string("TPC chi2") + AR::ConfigurablesInfo};
   Configurable<std::vector<float>> cfgITSCLUSTERS = {std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]),
                                                      {6., 0., 6., 0, 7., 1.},
-                                                     std::string("ITS clusters") + AR::info};
+                                                     std::string("ITS clusters") + AR::ConfigurablesInfo};
   // write all track configurables into a vector
   std::vector<Configurable<std::vector<float>>> cfgTrack = {cfgPT,
                                                             cfgPHI,
@@ -251,7 +261,30 @@ struct MultiParticleCorrelationsARTask {
                                                             cfgTPCCHI2,
                                                             cfgITSCLUSTERS};
 
-  // Configurable<std::vector<std::vector<int>>> cfgCOR = {"Correlators", {{-2, 2}, {-3, 3}, {-4, 4}}, "Correlators to be computed"};
+  // configurables for differential analysis of correlators using event variables
+  Configurable<std::vector<float>> cfgINTEGRATED = {std::string(AR::CorEventDepNames[AR::kINTEGRATED]),
+                                                    {1., 0., 1.},
+                                                    AR::CorDepInfo};
+  Configurable<std::vector<float>> cfgMULDEP = {std::string(AR::CorEventDepNames[AR::kMULDEP]),
+                                                {3000., 0., 3000.},
+                                                AR::CorDepInfo};
+  Configurable<std::vector<float>> cfgCENDEP = {std::string(AR::CorEventDepNames[AR::kCENDEP]),
+                                                {120., 0., 120.},
+                                                AR::CorDepInfo};
+  std::vector<Configurable<std::vector<float>>> cfgCorEventDep = {cfgINTEGRATED, cfgMULDEP, cfgCENDEP};
+
+  // configurables for differential analysis of correlators using track variables
+  Configurable<std::vector<float>> cfgPTDEP = {std::string(AR::CorTrackDepNames[AR::kPTDEP]),
+                                               {0.2, 0.34, 0.5, 0.7, 1., 2., 5.},
+                                               AR::CorDepInfo};
+  Configurable<std::vector<float>> cfgETADEP = {std::string(AR::CorTrackDepNames[AR::kETADEP]),
+                                                {-0.8, -0.4, 0., 0.4, 0.8},
+                                                AR::CorDepInfo};
+  std::vector<Configurable<std::vector<float>>> cfgCorTrackDep = {cfgPTDEP, cfgETADEP};
+
+  // configurable for specifying which symmetric cumulants should be computed
+  // the symmetric cumulant is only specified so the appropriate correlators are computed and saved in the output
+  // the actual value of the symmetric cumulant is computed in the post processing by parsing the output
   Configurable<std::vector<int>> cfgSC = {"SymmetricCumulants", {23, 24, 34}, "Symmetric Cumulants to be computed"};
 
   // declare histogram registry
@@ -261,21 +294,30 @@ struct MultiParticleCorrelationsARTask {
                               false,
                               false};
 
-  // declare 2d array for qvectors
-  std::array<std::array<TComplex, AR::MaxHarmonic>, AR::MaxPower> fQvectors;
-
   // declare objects for computing qvectors
-  std::vector<double> fAzimuthalAngles;
-  std::vector<double> fWeights;
+  // global object holding the qvectors
+  std::array<std::array<TComplex, AR::MaxHarmonic>, AR::MaxPower> fQvectors;
+  // global object holding all azimuthal angles and weights, used for computing correlators as a function of event variables
+  std::vector<double> fAzimuthalAnglesAll;
+  std::vector<double> fWeightsAll;
+  // histgram for computing the bins of the event variables
+  std::array<TH1F*, AR::kLAST_CorEventDep> fEventDepHists;
+  // global object holding all azimuthal angles and weights in bins of the track variables, used for computing correlators as a function of track variables
+  std::array<std::vector<std::vector<double>>, AR::kLAST_CorTrackDep> fAzimuthalAnglesTrackDep;
+  std::array<std::vector<std::vector<double>>, AR::kLAST_CorTrackDep> fWeightsTrackDep;
+  // histgram for computing the bins of the track variables
+  std::array<TH1F*, AR::kLAST_CorTrackDep> fTrackDepHists;
 
-  // mapping
+  // mapping symmetric cumulants to correlators
   std::map<int, std::vector<std::vector<int>>> fMapScToCor;
+  // mapping correlators to index in the list of all correlators
   std::map<std::vector<int>, int> fMapCorToIndex;
 
   // vector of all correlators
   std::vector<std::vector<int>> fCorrelators;
 
   // list holding nested lists for each correlator
+  // each list contains the correlatos as a function of event and track variables
   OutputObj<TList> fOutput{"fOutput", OutputObjHandlingPolicy::AnalysisObject};
   TList* fCorrelatorList;
 
@@ -295,7 +337,7 @@ struct MultiParticleCorrelationsARTask {
                           .c_str(),
                         "",
                         HistType::kTH1D,
-                        {{static_cast<Int_t>(cfg.value.at(AR::kBIN)),
+                        {{static_cast<int>(cfg.value.at(AR::kBIN)),
                           cfg.value.at(AR::kLEDGE),
                           cfg.value.at(AR::kUEDGE)}});
         }
@@ -308,26 +350,54 @@ struct MultiParticleCorrelationsARTask {
                           .c_str(),
                         "",
                         HistType::kTH1D,
-                        {{static_cast<Int_t>(cfg.value.at(AR::kBIN)),
+                        {{static_cast<int>(cfg.value.at(AR::kBIN)),
                           cfg.value.at(AR::kLEDGE),
                           cfg.value.at(AR::kUEDGE)}});
         }
       }
     }
+    // create histograms for binning the correlators with respect to event variables
+    for (int event = 0; event < AR::kLAST_CorEventDep; event++) {
+      fEventDepHists[event] = new TH1F(AR::CorEventDepNames[event].c_str(),
+                                       AR::CorEventDepNames[event].c_str(),
+                                       cfgCorEventDep.at(event).value.at(AR::kBIN),
+                                       cfgCorEventDep.at(event).value.at(AR::kLEDGE),
+                                       cfgCorEventDep.at(event).value.at(AR::kUEDGE));
+    }
 
+    std::vector<std::vector<double>> tmp = {};
+    // create histograms for binning the correlators with respect to event variables
+    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
+      fTrackDepHists[track] = new TH1F(AR::CorTrackDepNames[track].c_str(),
+                                       AR::CorTrackDepNames[track].c_str(),
+                                       cfgCorTrackDep.at(track).value.size() - 1,
+                                       cfgCorTrackDep.at(track).value.data());
+
+      // push back empty vector, each on corresponding to a different bin of a track variable
+      fAzimuthalAnglesTrackDep[track].clear();
+      tmp = {};
+      for (std::size_t j = 0; j < cfgCorTrackDep.at(track).value.size() - 1; j++) {
+        tmp.push_back(std::vector<double>{});
+      }
+      fAzimuthalAnglesTrackDep[track] = tmp;
+      fWeightsTrackDep[track] = tmp;
+    }
+
+    // create master list holding the results of all the correlators
     fCorrelatorList = new TList();
     fCorrelatorList->SetOwner(true);
     fOutput.setObject(fCorrelatorList);
 
-    LOG(info) << "Book stuff" << std::endl;
+    // convert SC, given as input, into a unique list of all needed correlators
     GetCorreltors();
+    // book a list for each correlator, containing a TProfile for each track and event variable used as an dependency
     BookCorrelators();
   }
 
   std::vector<std::vector<int>> MapSCToCor(int SC)
   {
     // map symmetric cumulant to the correlators needed for its computation
-    // the sc is given as an integer, i.e. 23 -> SC(2,3)
+    // the sc is given as an integer, i.e. 23 -> SC(2,3) -> { {-3,-2,2,3}, {-3,3}, {-2,2} }
 
     std::vector<int> sc = AR::SplitNumber(SC);
     std::sort(sc.begin(), sc.end());
@@ -343,28 +413,26 @@ struct MultiParticleCorrelationsARTask {
         break;
       case 3:
         correlators = {
-          {-sc.at(0), -sc.at(1), -sc.at(2), sc.at(2), sc.at(1),
-           sc.at(0)},                                 // <6>_{-k,-l,-n,n,l,k}
-          {-sc.at(0), -sc.at(1), sc.at(1), sc.at(0)}, // <4>_{-k,-l,l,k}
-          {-sc.at(0), -sc.at(2), sc.at(2), sc.at(0)}, // <4>_{-k,-n,n,k}
-          {-sc.at(1), -sc.at(2), sc.at(2), sc.at(1)}, // <4>_{-l,-n,n,l}
-          {-sc.at(0), sc.at(0)},                      // <2>_{-k, k}
-          {-sc.at(1), sc.at(1)},                      // <2>_{-l, l}
-          {-sc.at(2), sc.at(2)}};                     // <2>_{ -n, n }
+          {-sc.at(0), -sc.at(1), -sc.at(2), sc.at(2), sc.at(1), sc.at(0)}, // <6>_{-k,-l,-n,n,l,k}
+          {-sc.at(0), -sc.at(1), sc.at(1), sc.at(0)},                      // <4>_{-k,-l,l,k}
+          {-sc.at(0), -sc.at(2), sc.at(2), sc.at(0)},                      // <4>_{-k,-n,n,k}
+          {-sc.at(1), -sc.at(2), sc.at(2), sc.at(1)},                      // <4>_{-l,-n,n,l}
+          {-sc.at(0), sc.at(0)},                                           // <2>_{-k, k}
+          {-sc.at(1), sc.at(1)},                                           // <2>_{-l, l}
+          {-sc.at(2), sc.at(2)}};                                          // <2>_{ -n, n }
         break;
       default:
-        LOG(fatal) << "Symmetric Cumulants of order" << sc.size() << " are not implemented yet" << std::endl;
+        LOG(fatal) << "Symmetric Cumulants of order " << sc.size() << " are not implemented yet";
     }
     return correlators;
   }
 
   void GetCorreltors()
   {
+    // convert symmetric cumulants, given as input, to a unique list of correlators
     int Index = 0;
     std::vector<std::vector<int>> Correlators;
     for (auto SC : cfgSC.value) {
-
-      LOG(info) << "SC: " << SC << std::endl;
       Correlators = MapSCToCor(SC);
       fMapScToCor.insert({SC, Correlators});
       for (auto cor : Correlators) {
@@ -373,6 +441,7 @@ struct MultiParticleCorrelationsARTask {
           continue;
         } else {
           fCorrelators.push_back(cor);
+          // use a map, so we can later figure out at which list index the correlators resides at
           fMapCorToIndex.insert({cor, Index});
           Index++;
         }
@@ -380,22 +449,17 @@ struct MultiParticleCorrelationsARTask {
     }
   }
 
-  void
-    BookCorrelators()
+  void BookCorrelators()
   {
-    // Book final profiles holding correlators
-    // 5 profiles for each correlator
-    //  - integrated
-    //  - as a function of centrality
-    //  - as a function of multiplicity
-    // - as a function of pt
-    // - as a function of eta
+    // Book profiles holding correlator as a function of event and track variables
 
     TList* corList;
-    TProfile* profile[AR::kLAST_CorDep];
+    TProfile* profileEventDep[AR::kLAST_CorEventDep];
+    TProfile* profileTrackDep[AR::kLAST_CorTrackDep];
     std::string corListName;
     std::string corName;
 
+    // create a uniqe name for each correlator
     for (std::size_t i = 0; i < fCorrelators.size(); i++) {
       corListName = std::string("v_{");
       for (std::size_t j = 0; j < fCorrelators.at(i).size(); j++) {
@@ -405,31 +469,34 @@ struct MultiParticleCorrelationsARTask {
           corListName += std::to_string(fCorrelators.at(i).at(j));
         }
       }
+
       corListName += std::string("}");
+      // create a new list for each correlator
       corList = new TList();
       corList->SetName(corListName.c_str());
 
-      // keep this vector in sync with CorDep enum
-      // kINTEGRATED is missing, so this vector is offset by 1
-      std::vector<Configurable<std::vector<float>>> CorrelatorDep = {cfgMULQ, cfgCEN, cfgPT, cfgETA};
-
-      for (int i = 0; i < AR::kLAST_CorDep; i++) {
-        if (i == AR::kINTEGRATED) {
-          profile[i] = new TProfile((corListName + AR::CorDepNames[AR::kINTEGRATED]).c_str(),
-                                    (corListName + AR::CorDepNames[AR::kINTEGRATED]).c_str(),
-                                    1,
-                                    0,
-                                    1);
-        } else {
-          profile[i] = new TProfile((corListName + AR::CorDepNames[i]).c_str(),
-                                    (corListName + AR::CorDepNames[i]).c_str(),
-                                    CorrelatorDep.at(i - 1).value.at(AR::kBIN),
-                                    CorrelatorDep.at(i - 1).value.at(AR::kLEDGE),
-                                    CorrelatorDep.at(i - 1).value.at(AR::kUEDGE));
-        }
-        corList->Add(profile[i]);
+      // create profiles for event variables
+      for (int event = 0; event < AR::kLAST_CorEventDep; event++) {
+        profileEventDep[event] = new TProfile((corListName + AR::CorEventDepNames[event]).c_str(),
+                                              (corListName + AR::CorEventDepNames[event]).c_str(),
+                                              cfgCorEventDep.at(event).value.at(AR::kBIN),
+                                              cfgCorEventDep.at(event).value.at(AR::kLEDGE),
+                                              cfgCorEventDep.at(event).value.at(AR::kUEDGE));
+        corList->Add(profileEventDep[event]);
       }
 
+      // create profiles for track variables
+      for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
+        profileTrackDep[track] = new TProfile((corListName + AR::CorTrackDepNames[track]).c_str(),
+                                              (corListName + AR::CorTrackDepNames[track]).c_str(),
+                                              cfgCorTrackDep.at(track).value.size() - 1,
+                                              cfgCorTrackDep.at(track).value.data());
+        corList->Add(profileTrackDep[track]);
+      }
+      // add the list to the master list
+      // to access the profiles in list be aware that
+      // for the event profiles just use the corresponding enum
+      // and for track profiles use the corresponding enum with AR::kLAST_CorEventDep as offset
       fCorrelatorList->Add(corList);
     }
   }
@@ -544,8 +611,35 @@ struct MultiParticleCorrelationsARTask {
            AR::SurviveCut(cfgITSCLUSTERS.value, track.itsNCls());
   }
 
+  template <typename TrackObject>
+  void FillAzimuthalAngle(TrackObject track)
+  {
+    double angle = track.phi();
+    double weight = GetWeight<TrackObject>(track);
+
+    // all event angles, for computing correlators as a function of event variable
+    fAzimuthalAnglesAll.push_back(angle);
+    fWeightsAll.push_back(weight);
+
+    // fill angles into bins of a track variable, for computing correlators as a function of track variable
+    std::array<double, AR::kLAST_CorTrackDep> TrackDep = {track.pt(), track.eta()};
+    int bin;
+    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
+      bin = fTrackDepHists[track]->FindBin(TrackDep[track]) - 1; // in root, bins start at 1
+      fAzimuthalAnglesTrackDep[track].at(bin).push_back(angle);
+      fWeightsTrackDep[track].at(bin).push_back(weight);
+    }
+  };
+
+  template <typename TrackObject>
+  double GetWeight(TrackObject track)
+  {
+    // for efficiency corrections, tbi
+    return 1.;
+  }
+
   // Calculate all Q-vectors
-  void CalculateQvectors()
+  void CalculateQvectors(std::vector<double> AzimuthalAngles, std::vector<double> Weights)
   {
     // Make sure all Q-vectors are initially zero
     for (int h = 0; h < AR::MaxHarmonic; h++) {
@@ -553,14 +647,13 @@ struct MultiParticleCorrelationsARTask {
         fQvectors[h][p] = TComplex(0., 0.);
       }
     }
-
     // Calculate Q-vectors for available angles and weights
     double dPhi = 0.;
     double wPhi = 1.;         // particle weight
     double wPhiToPowerP = 1.; // particle weight raised to power p
-    for (std::size_t i = 0; i < fAzimuthalAngles.size(); i++) {
-      dPhi = fAzimuthalAngles.at(i);
-      wPhi = fWeights.at(i);
+    for (std::size_t i = 0; i < AzimuthalAngles.size(); i++) {
+      dPhi = AzimuthalAngles.at(i);
+      wPhi = Weights.at(i);
       for (int h = 0; h < AR::MaxHarmonic; h++) {
         for (int p = 0; p < AR::MaxPower; p++) {
           wPhiToPowerP = TMath::Power(wPhi, p);
@@ -571,9 +664,452 @@ struct MultiParticleCorrelationsARTask {
     }
   }
 
-  void FillCorrelators(){
+  void FillCorrelators(double Centrality)
+  {
 
+    double corr = 0.0;
+    double weight = 1.0;
+
+    // compute q vectors for all angles in the event
+    CalculateQvectors(fAzimuthalAnglesAll, fWeightsAll);
+    int Index;
+    for (int event = 0; event < AR::kLAST_CorEventDep; event++) {
+      for (auto correlator : fCorrelators) {
+        // get index of the correlator in fCorrelator list
+        Index = fMapCorToIndex[correlator];
+        // compute the correlator
+        ComputeCorrelator(correlator, &corr, &weight);
+        // fill the correlator depending on the event variable
+        dynamic_cast<TProfile*>(dynamic_cast<TList*>(fCorrelatorList->At(Index))->At(AR::kINTEGRATED))->Fill(0.5, corr, weight);
+        dynamic_cast<TProfile*>(dynamic_cast<TList*>(fCorrelatorList->At(Index))->At(AR::kMULDEP))->Fill(fEventDepHists[AR::kMULDEP]->FindBin(fAzimuthalAnglesAll.size()), corr, weight);
+        dynamic_cast<TProfile*>(dynamic_cast<TList*>(fCorrelatorList->At(Index))->At(AR::kCENDEP))->Fill(fEventDepHists[AR::kCENDEP]->FindBin(Centrality), corr, weight);
+      }
+    }
+
+    // loop over all track variables
+    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
+      // loop over all bins of the track variable
+      // note that in ROOT the bins of a histogram start at 1
+      for (std::size_t bin = 0; bin < fAzimuthalAnglesTrackDep[track].size(); bin++) {
+        // compute the qvectors in each bin
+        CalculateQvectors(fAzimuthalAnglesTrackDep[track].at(bin),
+                          fWeightsTrackDep[track].at(bin));
+        corr = 0.;
+        weight = 1.;
+        // loop over all correlators
+        for (auto correlator : fCorrelators) {
+          // check if there are enough tracks for computing the correlator
+          if (fAzimuthalAnglesTrackDep[track].at(bin).size() <= correlator.size()) {
+            LOG(warning) << "BEGIN WARNING";
+            LOG(warning) << "Not enough tracks to compute the correlator v_{";
+            std::for_each(correlator.begin(), correlator.end(), [](const auto& e) { LOG(warning) << e << ","; });
+            LOG(warning) << "}!";
+            LOG(warning) << "Track variable: " << AR::CorTrackDepNames[track];
+            LOG(warning) << "Bin: " << fTrackDepHists[track]->GetBinLowEdge(bin + 1) << " - " << fTrackDepHists[track]->GetBinLowEdge(bin + 2);
+            LOG(warning) << "END WARNING";
+            continue;
+          }
+          Index = fMapCorToIndex[correlator];
+          // compute the correlator in this bin of the track variable
+          ComputeCorrelator(correlator, &corr, &weight);
+          // fill it into the corresponding profile
+          dynamic_cast<TProfile*>(dynamic_cast<TList*>(fCorrelatorList->At(Index))->At(AR::kLAST_CorEventDep + track))->Fill(fTrackDepHists[track]->GetBinCenter(bin + 1), corr, weight);
+        }
+      }
+    }
   };
+
+  void ComputeCorrelator(std::vector<int> Correlator, double* value, double* weight)
+  {
+    // compute a correlator
+    // write back its value and weight into the passed pointers
+    double Value = 0., Weight = 1.;
+    switch (static_cast<int>(Correlator.size())) {
+      case 2:
+        Value = Two(Correlator.at(0), Correlator.at(1)).Re();
+        Weight = Two(0, 0).Re();
+        break;
+      case 3:
+        Value = Three(Correlator.at(0), Correlator.at(1), Correlator.at(2)).Re();
+        Weight = Three(0, 0, 0).Re();
+        break;
+      case 4:
+        Value = Four(Correlator.at(0), Correlator.at(1), Correlator.at(2), Correlator.at(3)).Re();
+        Weight = Four(0, 0, 0, 0).Re();
+        break;
+      case 5:
+        Value = Five(Correlator.at(0), Correlator.at(1), Correlator.at(2), Correlator.at(3), Correlator.at(4)).Re();
+        Weight = Five(0, 0, 0, 0, 0).Re();
+        break;
+      case 6:
+        Value = Six(Correlator.at(0), Correlator.at(1), Correlator.at(2), Correlator.at(3), Correlator.at(4), Correlator.at(5)).Re();
+        Weight = Six(0, 0, 0, 0, 0, 0).Re();
+        break;
+      default:
+        Value = Recursion(Correlator.size(), Correlator.data()).Re();
+        Weight =
+          Recursion(Correlator.size(), std::vector<int>(Correlator.size(), 0).data()).Re();
+    }
+    // correlators are not normalized yet
+    Value /= Weight;
+    // write back the values
+    *value = Value;
+    *weight = Weight;
+  }
+
+  TComplex Q(int n, int p)
+  {
+    // return Qvector from fQvectors array
+    if (n > AR::MaxHarmonic || p > AR::MaxPower) {
+      std::cout << __LINE__ << ": running out of bounds" << std::endl;
+      Fatal("Q", "Running out of bounds in fQvector");
+    }
+    if (n >= 0) {
+      return fQvectors[n][p];
+    }
+    return TComplex::Conjugate(fQvectors[-n][p]);
+  }
+
+  TComplex Two(int n1, int n2)
+  {
+    // Generic two-particle correlation <exp[i(n1*phi1+n2*phi2)]>.
+    TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
+    return two;
+  }
+
+  TComplex Three(int n1, int n2, int n3)
+  {
+    // Generic three-particle correlation <exp[i(n1*phi1+n2*phi2+n3*phi3)]>.
+    TComplex three = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) - Q(n1 + n2, 2) * Q(n3, 1) -
+                     Q(n2, 1) * Q(n1 + n3, 2) - Q(n1, 1) * Q(n2 + n3, 2) +
+                     2. * Q(n1 + n2 + n3, 3);
+    return three;
+  }
+
+  TComplex Four(int n1, int n2, int n3, int n4)
+  {
+    // Generic four-particle correlation
+    // <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4)]>.
+    TComplex four =
+      Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) -
+      Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) -
+      Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) -
+      Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) -
+      Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) -
+      Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) +
+      2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) +
+      Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) +
+      2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
+
+    return four;
+  }
+
+  TComplex Five(int n1, int n2, int n3, int n4, int n5)
+  {
+    // Generic five-particle correlation
+    // <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4+n5*phi5)]>.
+    TComplex five = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) -
+                    Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) -
+                    Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) * Q(n5, 1) -
+                    Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) * Q(n5, 1) +
+                    2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) * Q(n5, 1) -
+                    Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) * Q(n5, 1) +
+                    Q(n2 + n3, 2) * Q(n1 + n4, 2) * Q(n5, 1) -
+                    Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) * Q(n5, 1) +
+                    Q(n1 + n3, 2) * Q(n2 + n4, 2) * Q(n5, 1) +
+                    2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) * Q(n5, 1) -
+                    Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) * Q(n5, 1) +
+                    Q(n1 + n2, 2) * Q(n3 + n4, 2) * Q(n5, 1) +
+                    2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) * Q(n5, 1) +
+                    2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) * Q(n5, 1) -
+                    6. * Q(n1 + n2 + n3 + n4, 4) * Q(n5, 1) -
+                    Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n1 + n5, 2) +
+                    Q(n2 + n3, 2) * Q(n4, 1) * Q(n1 + n5, 2) +
+                    Q(n3, 1) * Q(n2 + n4, 2) * Q(n1 + n5, 2) +
+                    Q(n2, 1) * Q(n3 + n4, 2) * Q(n1 + n5, 2) -
+                    2. * Q(n2 + n3 + n4, 3) * Q(n1 + n5, 2) -
+                    Q(n1, 1) * Q(n3, 1) * Q(n4, 1) * Q(n2 + n5, 2) +
+                    Q(n1 + n3, 2) * Q(n4, 1) * Q(n2 + n5, 2) +
+                    Q(n3, 1) * Q(n1 + n4, 2) * Q(n2 + n5, 2) +
+                    Q(n1, 1) * Q(n3 + n4, 2) * Q(n2 + n5, 2) -
+                    2. * Q(n1 + n3 + n4, 3) * Q(n2 + n5, 2) +
+                    2. * Q(n3, 1) * Q(n4, 1) * Q(n1 + n2 + n5, 3) -
+                    2. * Q(n3 + n4, 2) * Q(n1 + n2 + n5, 3) -
+                    Q(n1, 1) * Q(n2, 1) * Q(n4, 1) * Q(n3 + n5, 2) +
+                    Q(n1 + n2, 2) * Q(n4, 1) * Q(n3 + n5, 2) +
+                    Q(n2, 1) * Q(n1 + n4, 2) * Q(n3 + n5, 2) +
+                    Q(n1, 1) * Q(n2 + n4, 2) * Q(n3 + n5, 2) -
+                    2. * Q(n1 + n2 + n4, 3) * Q(n3 + n5, 2) +
+                    2. * Q(n2, 1) * Q(n4, 1) * Q(n1 + n3 + n5, 3) -
+                    2. * Q(n2 + n4, 2) * Q(n1 + n3 + n5, 3) +
+                    2. * Q(n1, 1) * Q(n4, 1) * Q(n2 + n3 + n5, 3) -
+                    2. * Q(n1 + n4, 2) * Q(n2 + n3 + n5, 3) -
+                    6. * Q(n4, 1) * Q(n1 + n2 + n3 + n5, 4) -
+                    Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4 + n5, 2) +
+                    Q(n1 + n2, 2) * Q(n3, 1) * Q(n4 + n5, 2) +
+                    Q(n2, 1) * Q(n1 + n3, 2) * Q(n4 + n5, 2) +
+                    Q(n1, 1) * Q(n2 + n3, 2) * Q(n4 + n5, 2) -
+                    2. * Q(n1 + n2 + n3, 3) * Q(n4 + n5, 2) +
+                    2. * Q(n2, 1) * Q(n3, 1) * Q(n1 + n4 + n5, 3) -
+                    2. * Q(n2 + n3, 2) * Q(n1 + n4 + n5, 3) +
+                    2. * Q(n1, 1) * Q(n3, 1) * Q(n2 + n4 + n5, 3) -
+                    2. * Q(n1 + n3, 2) * Q(n2 + n4 + n5, 3) -
+                    6. * Q(n3, 1) * Q(n1 + n2 + n4 + n5, 4) +
+                    2. * Q(n1, 1) * Q(n2, 1) * Q(n3 + n4 + n5, 3) -
+                    2. * Q(n1 + n2, 2) * Q(n3 + n4 + n5, 3) -
+                    6. * Q(n2, 1) * Q(n1 + n3 + n4 + n5, 4) -
+                    6. * Q(n1, 1) * Q(n2 + n3 + n4 + n5, 4) +
+                    24. * Q(n1 + n2 + n3 + n4 + n5, 5);
+    return five;
+  }
+
+  TComplex Six(int n1, int n2, int n3, int n4, int n5, int n6)
+  {
+    // Generic six-particle correlation
+    // <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4+n5*phi5+n6*phi6)]>.
+    TComplex six =
+      Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) * Q(n6, 1) -
+      Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) * Q(n6, 1) -
+      Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) * Q(n5, 1) * Q(n6, 1) -
+      Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) * Q(n5, 1) * Q(n6, 1) +
+      2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) * Q(n5, 1) * Q(n6, 1) -
+      Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) * Q(n5, 1) * Q(n6, 1) +
+      Q(n2 + n3, 2) * Q(n1 + n4, 2) * Q(n5, 1) * Q(n6, 1) -
+      Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) * Q(n5, 1) * Q(n6, 1) +
+      Q(n1 + n3, 2) * Q(n2 + n4, 2) * Q(n5, 1) * Q(n6, 1) +
+      2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) * Q(n5, 1) * Q(n6, 1) -
+      Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) * Q(n5, 1) * Q(n6, 1) +
+      Q(n1 + n2, 2) * Q(n3 + n4, 2) * Q(n5, 1) * Q(n6, 1) +
+      2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) * Q(n5, 1) * Q(n6, 1) +
+      2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) * Q(n5, 1) * Q(n6, 1) -
+      6. * Q(n1 + n2 + n3 + n4, 4) * Q(n5, 1) * Q(n6, 1) -
+      Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n1 + n5, 2) * Q(n6, 1) +
+      Q(n2 + n3, 2) * Q(n4, 1) * Q(n1 + n5, 2) * Q(n6, 1) +
+      Q(n3, 1) * Q(n2 + n4, 2) * Q(n1 + n5, 2) * Q(n6, 1) +
+      Q(n2, 1) * Q(n3 + n4, 2) * Q(n1 + n5, 2) * Q(n6, 1) -
+      2. * Q(n2 + n3 + n4, 3) * Q(n1 + n5, 2) * Q(n6, 1) -
+      Q(n1, 1) * Q(n3, 1) * Q(n4, 1) * Q(n2 + n5, 2) * Q(n6, 1) +
+      Q(n1 + n3, 2) * Q(n4, 1) * Q(n2 + n5, 2) * Q(n6, 1) +
+      Q(n3, 1) * Q(n1 + n4, 2) * Q(n2 + n5, 2) * Q(n6, 1) +
+      Q(n1, 1) * Q(n3 + n4, 2) * Q(n2 + n5, 2) * Q(n6, 1) -
+      2. * Q(n1 + n3 + n4, 3) * Q(n2 + n5, 2) * Q(n6, 1) +
+      2. * Q(n3, 1) * Q(n4, 1) * Q(n1 + n2 + n5, 3) * Q(n6, 1) -
+      2. * Q(n3 + n4, 2) * Q(n1 + n2 + n5, 3) * Q(n6, 1) -
+      Q(n1, 1) * Q(n2, 1) * Q(n4, 1) * Q(n3 + n5, 2) * Q(n6, 1) +
+      Q(n1 + n2, 2) * Q(n4, 1) * Q(n3 + n5, 2) * Q(n6, 1) +
+      Q(n2, 1) * Q(n1 + n4, 2) * Q(n3 + n5, 2) * Q(n6, 1) +
+      Q(n1, 1) * Q(n2 + n4, 2) * Q(n3 + n5, 2) * Q(n6, 1) -
+      2. * Q(n1 + n2 + n4, 3) * Q(n3 + n5, 2) * Q(n6, 1) +
+      2. * Q(n2, 1) * Q(n4, 1) * Q(n1 + n3 + n5, 3) * Q(n6, 1) -
+      2. * Q(n2 + n4, 2) * Q(n1 + n3 + n5, 3) * Q(n6, 1) +
+      2. * Q(n1, 1) * Q(n4, 1) * Q(n2 + n3 + n5, 3) * Q(n6, 1) -
+      2. * Q(n1 + n4, 2) * Q(n2 + n3 + n5, 3) * Q(n6, 1) -
+      6. * Q(n4, 1) * Q(n1 + n2 + n3 + n5, 4) * Q(n6, 1) -
+      Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4 + n5, 2) * Q(n6, 1) +
+      Q(n1 + n2, 2) * Q(n3, 1) * Q(n4 + n5, 2) * Q(n6, 1) +
+      Q(n2, 1) * Q(n1 + n3, 2) * Q(n4 + n5, 2) * Q(n6, 1) +
+      Q(n1, 1) * Q(n2 + n3, 2) * Q(n4 + n5, 2) * Q(n6, 1) -
+      2. * Q(n1 + n2 + n3, 3) * Q(n4 + n5, 2) * Q(n6, 1) +
+      2. * Q(n2, 1) * Q(n3, 1) * Q(n1 + n4 + n5, 3) * Q(n6, 1) -
+      2. * Q(n2 + n3, 2) * Q(n1 + n4 + n5, 3) * Q(n6, 1) +
+      2. * Q(n1, 1) * Q(n3, 1) * Q(n2 + n4 + n5, 3) * Q(n6, 1) -
+      2. * Q(n1 + n3, 2) * Q(n2 + n4 + n5, 3) * Q(n6, 1) -
+      6. * Q(n3, 1) * Q(n1 + n2 + n4 + n5, 4) * Q(n6, 1) +
+      2. * Q(n1, 1) * Q(n2, 1) * Q(n3 + n4 + n5, 3) * Q(n6, 1) -
+      2. * Q(n1 + n2, 2) * Q(n3 + n4 + n5, 3) * Q(n6, 1) -
+      6. * Q(n2, 1) * Q(n1 + n3 + n4 + n5, 4) * Q(n6, 1) -
+      6. * Q(n1, 1) * Q(n2 + n3 + n4 + n5, 4) * Q(n6, 1) +
+      24. * Q(n1 + n2 + n3 + n4 + n5, 5) * Q(n6, 1) -
+      Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) * Q(n1 + n6, 2) +
+      Q(n2 + n3, 2) * Q(n4, 1) * Q(n5, 1) * Q(n1 + n6, 2) +
+      Q(n3, 1) * Q(n2 + n4, 2) * Q(n5, 1) * Q(n1 + n6, 2) +
+      Q(n2, 1) * Q(n3 + n4, 2) * Q(n5, 1) * Q(n1 + n6, 2) -
+      2. * Q(n2 + n3 + n4, 3) * Q(n5, 1) * Q(n1 + n6, 2) +
+      Q(n3, 1) * Q(n4, 1) * Q(n2 + n5, 2) * Q(n1 + n6, 2) -
+      Q(n3 + n4, 2) * Q(n2 + n5, 2) * Q(n1 + n6, 2) +
+      Q(n2, 1) * Q(n4, 1) * Q(n3 + n5, 2) * Q(n1 + n6, 2) -
+      Q(n2 + n4, 2) * Q(n3 + n5, 2) * Q(n1 + n6, 2) -
+      2. * Q(n4, 1) * Q(n2 + n3 + n5, 3) * Q(n1 + n6, 2) +
+      Q(n2, 1) * Q(n3, 1) * Q(n4 + n5, 2) * Q(n1 + n6, 2) -
+      Q(n2 + n3, 2) * Q(n4 + n5, 2) * Q(n1 + n6, 2) -
+      2. * Q(n3, 1) * Q(n2 + n4 + n5, 3) * Q(n1 + n6, 2) -
+      2. * Q(n2, 1) * Q(n3 + n4 + n5, 3) * Q(n1 + n6, 2) +
+      6. * Q(n2 + n3 + n4 + n5, 4) * Q(n1 + n6, 2) -
+      Q(n1, 1) * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) * Q(n2 + n6, 2) +
+      Q(n1 + n3, 2) * Q(n4, 1) * Q(n5, 1) * Q(n2 + n6, 2) +
+      Q(n3, 1) * Q(n1 + n4, 2) * Q(n5, 1) * Q(n2 + n6, 2) +
+      Q(n1, 1) * Q(n3 + n4, 2) * Q(n5, 1) * Q(n2 + n6, 2) -
+      2. * Q(n1 + n3 + n4, 3) * Q(n5, 1) * Q(n2 + n6, 2) +
+      Q(n3, 1) * Q(n4, 1) * Q(n1 + n5, 2) * Q(n2 + n6, 2) -
+      Q(n3 + n4, 2) * Q(n1 + n5, 2) * Q(n2 + n6, 2) +
+      Q(n1, 1) * Q(n4, 1) * Q(n3 + n5, 2) * Q(n2 + n6, 2) -
+      Q(n1 + n4, 2) * Q(n3 + n5, 2) * Q(n2 + n6, 2) -
+      2. * Q(n4, 1) * Q(n1 + n3 + n5, 3) * Q(n2 + n6, 2) +
+      Q(n1, 1) * Q(n3, 1) * Q(n4 + n5, 2) * Q(n2 + n6, 2) -
+      Q(n1 + n3, 2) * Q(n4 + n5, 2) * Q(n2 + n6, 2) -
+      2. * Q(n3, 1) * Q(n1 + n4 + n5, 3) * Q(n2 + n6, 2) -
+      2. * Q(n1, 1) * Q(n3 + n4 + n5, 3) * Q(n2 + n6, 2) +
+      6. * Q(n1 + n3 + n4 + n5, 4) * Q(n2 + n6, 2) +
+      2. * Q(n3, 1) * Q(n4, 1) * Q(n5, 1) * Q(n1 + n2 + n6, 3) -
+      2. * Q(n3 + n4, 2) * Q(n5, 1) * Q(n1 + n2 + n6, 3) -
+      2. * Q(n4, 1) * Q(n3 + n5, 2) * Q(n1 + n2 + n6, 3) -
+      2. * Q(n3, 1) * Q(n4 + n5, 2) * Q(n1 + n2 + n6, 3) +
+      4. * Q(n3 + n4 + n5, 3) * Q(n1 + n2 + n6, 3) -
+      Q(n1, 1) * Q(n2, 1) * Q(n4, 1) * Q(n5, 1) * Q(n3 + n6, 2) +
+      Q(n1 + n2, 2) * Q(n4, 1) * Q(n5, 1) * Q(n3 + n6, 2) +
+      Q(n2, 1) * Q(n1 + n4, 2) * Q(n5, 1) * Q(n3 + n6, 2) +
+      Q(n1, 1) * Q(n2 + n4, 2) * Q(n5, 1) * Q(n3 + n6, 2) -
+      2. * Q(n1 + n2 + n4, 3) * Q(n5, 1) * Q(n3 + n6, 2) +
+      Q(n2, 1) * Q(n4, 1) * Q(n1 + n5, 2) * Q(n3 + n6, 2) -
+      Q(n2 + n4, 2) * Q(n1 + n5, 2) * Q(n3 + n6, 2) +
+      Q(n1, 1) * Q(n4, 1) * Q(n2 + n5, 2) * Q(n3 + n6, 2) -
+      Q(n1 + n4, 2) * Q(n2 + n5, 2) * Q(n3 + n6, 2) -
+      2. * Q(n4, 1) * Q(n1 + n2 + n5, 3) * Q(n3 + n6, 2) +
+      Q(n1, 1) * Q(n2, 1) * Q(n4 + n5, 2) * Q(n3 + n6, 2) -
+      Q(n1 + n2, 2) * Q(n4 + n5, 2) * Q(n3 + n6, 2) -
+      2. * Q(n2, 1) * Q(n1 + n4 + n5, 3) * Q(n3 + n6, 2) -
+      2. * Q(n1, 1) * Q(n2 + n4 + n5, 3) * Q(n3 + n6, 2) +
+      6. * Q(n1 + n2 + n4 + n5, 4) * Q(n3 + n6, 2) +
+      2. * Q(n2, 1) * Q(n4, 1) * Q(n5, 1) * Q(n1 + n3 + n6, 3) -
+      2. * Q(n2 + n4, 2) * Q(n5, 1) * Q(n1 + n3 + n6, 3) -
+      2. * Q(n4, 1) * Q(n2 + n5, 2) * Q(n1 + n3 + n6, 3) -
+      2. * Q(n2, 1) * Q(n4 + n5, 2) * Q(n1 + n3 + n6, 3) +
+      4. * Q(n2 + n4 + n5, 3) * Q(n1 + n3 + n6, 3) +
+      2. * Q(n1, 1) * Q(n4, 1) * Q(n5, 1) * Q(n2 + n3 + n6, 3) -
+      2. * Q(n1 + n4, 2) * Q(n5, 1) * Q(n2 + n3 + n6, 3) -
+      2. * Q(n4, 1) * Q(n1 + n5, 2) * Q(n2 + n3 + n6, 3) -
+      2. * Q(n1, 1) * Q(n4 + n5, 2) * Q(n2 + n3 + n6, 3) +
+      4. * Q(n1 + n4 + n5, 3) * Q(n2 + n3 + n6, 3) -
+      6. * Q(n4, 1) * Q(n5, 1) * Q(n1 + n2 + n3 + n6, 4) +
+      6. * Q(n4 + n5, 2) * Q(n1 + n2 + n3 + n6, 4) -
+      Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n5, 1) * Q(n4 + n6, 2) +
+      Q(n1 + n2, 2) * Q(n3, 1) * Q(n5, 1) * Q(n4 + n6, 2) +
+      Q(n2, 1) * Q(n1 + n3, 2) * Q(n5, 1) * Q(n4 + n6, 2) +
+      Q(n1, 1) * Q(n2 + n3, 2) * Q(n5, 1) * Q(n4 + n6, 2) -
+      2. * Q(n1 + n2 + n3, 3) * Q(n5, 1) * Q(n4 + n6, 2) +
+      Q(n2, 1) * Q(n3, 1) * Q(n1 + n5, 2) * Q(n4 + n6, 2) -
+      Q(n2 + n3, 2) * Q(n1 + n5, 2) * Q(n4 + n6, 2) +
+      Q(n1, 1) * Q(n3, 1) * Q(n2 + n5, 2) * Q(n4 + n6, 2) -
+      Q(n1 + n3, 2) * Q(n2 + n5, 2) * Q(n4 + n6, 2) -
+      2. * Q(n3, 1) * Q(n1 + n2 + n5, 3) * Q(n4 + n6, 2) +
+      Q(n1, 1) * Q(n2, 1) * Q(n3 + n5, 2) * Q(n4 + n6, 2) -
+      Q(n1 + n2, 2) * Q(n3 + n5, 2) * Q(n4 + n6, 2) -
+      2. * Q(n2, 1) * Q(n1 + n3 + n5, 3) * Q(n4 + n6, 2) -
+      2. * Q(n1, 1) * Q(n2 + n3 + n5, 3) * Q(n4 + n6, 2) +
+      6. * Q(n1 + n2 + n3 + n5, 4) * Q(n4 + n6, 2) +
+      2. * Q(n2, 1) * Q(n3, 1) * Q(n5, 1) * Q(n1 + n4 + n6, 3) -
+      2. * Q(n2 + n3, 2) * Q(n5, 1) * Q(n1 + n4 + n6, 3) -
+      2. * Q(n3, 1) * Q(n2 + n5, 2) * Q(n1 + n4 + n6, 3) -
+      2. * Q(n2, 1) * Q(n3 + n5, 2) * Q(n1 + n4 + n6, 3) +
+      4. * Q(n2 + n3 + n5, 3) * Q(n1 + n4 + n6, 3) +
+      2. * Q(n1, 1) * Q(n3, 1) * Q(n5, 1) * Q(n2 + n4 + n6, 3) -
+      2. * Q(n1 + n3, 2) * Q(n5, 1) * Q(n2 + n4 + n6, 3) -
+      2. * Q(n3, 1) * Q(n1 + n5, 2) * Q(n2 + n4 + n6, 3) -
+      2. * Q(n1, 1) * Q(n3 + n5, 2) * Q(n2 + n4 + n6, 3) +
+      4. * Q(n1 + n3 + n5, 3) * Q(n2 + n4 + n6, 3) -
+      6. * Q(n3, 1) * Q(n5, 1) * Q(n1 + n2 + n4 + n6, 4) +
+      6. * Q(n3 + n5, 2) * Q(n1 + n2 + n4 + n6, 4) +
+      2. * Q(n1, 1) * Q(n2, 1) * Q(n5, 1) * Q(n3 + n4 + n6, 3) -
+      2. * Q(n1 + n2, 2) * Q(n5, 1) * Q(n3 + n4 + n6, 3) -
+      2. * Q(n2, 1) * Q(n1 + n5, 2) * Q(n3 + n4 + n6, 3) -
+      2. * Q(n1, 1) * Q(n2 + n5, 2) * Q(n3 + n4 + n6, 3) +
+      4. * Q(n1 + n2 + n5, 3) * Q(n3 + n4 + n6, 3) -
+      6. * Q(n2, 1) * Q(n5, 1) * Q(n1 + n3 + n4 + n6, 4) +
+      6. * Q(n2 + n5, 2) * Q(n1 + n3 + n4 + n6, 4) -
+      6. * Q(n1, 1) * Q(n5, 1) * Q(n2 + n3 + n4 + n6, 4) +
+      6. * Q(n1 + n5, 2) * Q(n2 + n3 + n4 + n6, 4) +
+      24. * Q(n5, 1) * Q(n1 + n2 + n3 + n4 + n6, 5) -
+      Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n5 + n6, 2) +
+      Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) * Q(n5 + n6, 2) +
+      Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) * Q(n5 + n6, 2) +
+      Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) * Q(n5 + n6, 2) -
+      2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) * Q(n5 + n6, 2) +
+      Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) * Q(n5 + n6, 2) -
+      Q(n2 + n3, 2) * Q(n1 + n4, 2) * Q(n5 + n6, 2) +
+      Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) * Q(n5 + n6, 2) -
+      Q(n1 + n3, 2) * Q(n2 + n4, 2) * Q(n5 + n6, 2) -
+      2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) * Q(n5 + n6, 2) +
+      Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) * Q(n5 + n6, 2) -
+      Q(n1 + n2, 2) * Q(n3 + n4, 2) * Q(n5 + n6, 2) -
+      2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) * Q(n5 + n6, 2) -
+      2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) * Q(n5 + n6, 2) +
+      6. * Q(n1 + n2 + n3 + n4, 4) * Q(n5 + n6, 2) +
+      2. * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) * Q(n1 + n5 + n6, 3) -
+      2. * Q(n2 + n3, 2) * Q(n4, 1) * Q(n1 + n5 + n6, 3) -
+      2. * Q(n3, 1) * Q(n2 + n4, 2) * Q(n1 + n5 + n6, 3) -
+      2. * Q(n2, 1) * Q(n3 + n4, 2) * Q(n1 + n5 + n6, 3) +
+      4. * Q(n2 + n3 + n4, 3) * Q(n1 + n5 + n6, 3) +
+      2. * Q(n1, 1) * Q(n3, 1) * Q(n4, 1) * Q(n2 + n5 + n6, 3) -
+      2. * Q(n1 + n3, 2) * Q(n4, 1) * Q(n2 + n5 + n6, 3) -
+      2. * Q(n3, 1) * Q(n1 + n4, 2) * Q(n2 + n5 + n6, 3) -
+      2. * Q(n1, 1) * Q(n3 + n4, 2) * Q(n2 + n5 + n6, 3) +
+      4. * Q(n1 + n3 + n4, 3) * Q(n2 + n5 + n6, 3) -
+      6. * Q(n3, 1) * Q(n4, 1) * Q(n1 + n2 + n5 + n6, 4) +
+      6. * Q(n3 + n4, 2) * Q(n1 + n2 + n5 + n6, 4) +
+      2. * Q(n1, 1) * Q(n2, 1) * Q(n4, 1) * Q(n3 + n5 + n6, 3) -
+      2. * Q(n1 + n2, 2) * Q(n4, 1) * Q(n3 + n5 + n6, 3) -
+      2. * Q(n2, 1) * Q(n1 + n4, 2) * Q(n3 + n5 + n6, 3) -
+      2. * Q(n1, 1) * Q(n2 + n4, 2) * Q(n3 + n5 + n6, 3) +
+      4. * Q(n1 + n2 + n4, 3) * Q(n3 + n5 + n6, 3) -
+      6. * Q(n2, 1) * Q(n4, 1) * Q(n1 + n3 + n5 + n6, 4) +
+      6. * Q(n2 + n4, 2) * Q(n1 + n3 + n5 + n6, 4) -
+      6. * Q(n1, 1) * Q(n4, 1) * Q(n2 + n3 + n5 + n6, 4) +
+      6. * Q(n1 + n4, 2) * Q(n2 + n3 + n5 + n6, 4) +
+      24. * Q(n4, 1) * Q(n1 + n2 + n3 + n5 + n6, 5) +
+      2. * Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4 + n5 + n6, 3) -
+      2. * Q(n1 + n2, 2) * Q(n3, 1) * Q(n4 + n5 + n6, 3) -
+      2. * Q(n2, 1) * Q(n1 + n3, 2) * Q(n4 + n5 + n6, 3) -
+      2. * Q(n1, 1) * Q(n2 + n3, 2) * Q(n4 + n5 + n6, 3) +
+      4. * Q(n1 + n2 + n3, 3) * Q(n4 + n5 + n6, 3) -
+      6. * Q(n2, 1) * Q(n3, 1) * Q(n1 + n4 + n5 + n6, 4) +
+      6. * Q(n2 + n3, 2) * Q(n1 + n4 + n5 + n6, 4) -
+      6. * Q(n1, 1) * Q(n3, 1) * Q(n2 + n4 + n5 + n6, 4) +
+      6. * Q(n1 + n3, 2) * Q(n2 + n4 + n5 + n6, 4) +
+      24. * Q(n3, 1) * Q(n1 + n2 + n4 + n5 + n6, 5) -
+      6. * Q(n1, 1) * Q(n2, 1) * Q(n3 + n4 + n5 + n6, 4) +
+      6. * Q(n1 + n2, 2) * Q(n3 + n4 + n5 + n6, 4) +
+      24. * Q(n2, 1) * Q(n1 + n3 + n4 + n5 + n6, 5) +
+      24. * Q(n1, 1) * Q(n2 + n3 + n4 + n5 + n6, 5) -
+      120. * Q(n1 + n2 + n3 + n4 + n5 + n6, 6);
+    return six;
+  }
+
+  TComplex Recursion(int n, int* harmonic, int mult = 1, int skip = 0)
+  {
+    // Calculate multi-particle correlators by using recursion (an improved
+    // faster version) originally developed by Kristjan Gulbrandsen
+    // (gulbrand@nbi.dk).
+    int nm1 = n - 1;
+    TComplex c(Q(harmonic[nm1], mult));
+    if (nm1 == 0)
+      return c;
+    c *= Recursion(nm1, harmonic);
+    if (nm1 == skip)
+      return c;
+    int multp1 = mult + 1;
+    int nm2 = n - 2;
+    int counter1 = 0;
+    int hhold = harmonic[counter1];
+    harmonic[counter1] = harmonic[nm2];
+    harmonic[nm2] = hhold + harmonic[nm1];
+    TComplex c2(Recursion(nm1, harmonic, multp1, nm2));
+    int counter2 = n - 3;
+    while (counter2 >= skip) {
+      harmonic[nm2] = harmonic[counter1];
+      harmonic[counter1] = hhold;
+      ++counter1;
+      hhold = harmonic[counter1];
+      harmonic[counter1] = harmonic[nm2];
+      harmonic[nm2] = hhold + harmonic[nm1];
+      c2 += Recursion(nm1, harmonic, multp1, counter2);
+      --counter2;
+    }
+    harmonic[nm2] = harmonic[counter1];
+    harmonic[counter1] = hhold;
+    if (mult == 1)
+      return c - c2;
+    return c - double(mult) * c2;
+  }
 
   using CollisionsInstance = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>;
   using TracksInstance = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
@@ -583,18 +1119,23 @@ struct MultiParticleCorrelationsARTask {
 
   void process(CollisionsInstanceIterator const& collision, TracksInstance const& tracks)
   {
-
     // clear angles and weights
-    fAzimuthalAngles.clear();
-    fWeights.clear();
+    fAzimuthalAnglesAll.clear();
+    fWeightsAll.clear();
+    for (int track = 0; track < AR::kLAST_CorTrackDep; track++) {
+      for (std::size_t bin = 0; bin < fAzimuthalAnglesTrackDep[track].size(); bin++) {
+        fAzimuthalAnglesTrackDep[track].at(bin).clear();
+        fWeightsTrackDep[track].at(bin).clear();
+      }
+    }
 
-    LOGF(info, "Process reconstructed event: %d", collision.index());
+    LOG(info) << "Process event: " << collision.index();
 
     FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, fRegistry);
     FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(fRegistry, collision.size(), collision.size());
 
     if (!SurviveEventCuts(collision, tracks)) {
-      LOGF(info, "Event was CUT");
+      LOG(info) << "Event was CUT";
       return;
     }
 
@@ -610,15 +1151,14 @@ struct MultiParticleCorrelationsARTask {
       // fill track control histograms after cut
       FillTrackControlHist<AR::kRECO, AR::kAFTER, TracksInstance::iterator>(track, fRegistry);
 
-      // fill angles into vector for processing
-      fAzimuthalAngles.push_back(track.phi());
-      fWeights.push_back(1.);
+      // fill angles and weights into vectors for processing
+      FillAzimuthalAngle<TracksInstance::iterator>(track);
     }
 
-    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(fRegistry, fAzimuthalAngles.size(), std::accumulate(fWeights.begin(), fWeights.end(), 0.));
+    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(fRegistry, fAzimuthalAnglesAll.size(), std::accumulate(fWeightsAll.begin(), fWeightsAll.end(), 0.));
 
-    // fill final result profile
-    FillCorrelators();
+    // compute correlators
+    FillCorrelators(collision.centRun2V0M());
   }
 };
 
