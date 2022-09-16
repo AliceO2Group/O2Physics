@@ -26,42 +26,49 @@ using namespace ROOT;
 using namespace ROOT::Math;
 
 #ifndef JFLUC_USE_INPUT_LIST
-template<class ValueType>
-class TrackIterInterface{
+template <class ValueType>
+class TrackIterInterface
+{
  public:
-  virtual ValueType & deref() = 0;
+  virtual ValueType& deref() = 0;
   virtual void increment() = 0;
-  virtual bool equals(const TrackIterInterface<ValueType> *) = 0;
+  virtual bool equals(const TrackIterInterface<ValueType>*) = 0;
 };
 
-template<class ValueType>
-class TrackIterBase : public std::iterator<std::input_iterator_tag, ValueType>{
+template <class ValueType>
+class TrackIterBase : public std::iterator<std::input_iterator_tag, ValueType>
+{
  public:
-  //TrackIterBase(TrackIterInterface<ValueType> *_pm) : pm(_pm){};
+  // TrackIterBase(TrackIterInterface<ValueType> *_pm) : pm(_pm){};
   TrackIterBase(std::unique_ptr<TrackIterInterface<ValueType>> _pm) : pm(std::move(_pm)){};
   ~TrackIterBase(){};
-  //TrackIterInterface<ValueType> *pm;
+  // TrackIterInterface<ValueType> *pm;
   std::unique_ptr<TrackIterInterface<ValueType>> pm;
-  TrackIterBase & operator++(){
+  TrackIterBase& operator++()
+  {
     pm->increment();
     return *this;
   }
-  ValueType & operator*(){
+  ValueType& operator*()
+  {
     return pm->deref();
   }
-  bool operator==(const TrackIterBase<ValueType> &m) const{
+  bool operator==(const TrackIterBase<ValueType>& m) const
+  {
     return pm->equals(m.pm.get());
   }
-  bool operator!=(const TrackIterBase<ValueType> &m) const{
+  bool operator!=(const TrackIterBase<ValueType>& m) const
+  {
     return !(*this == m);
   }
 };
 
 typedef TrackIterBase<PtEtaPhiEVector> JTrackIter;
 typedef TrackIterInterface<PtEtaPhiEVector> JTrackIterInterface;
-class TracksBase{
+class TracksBase
+{
  public:
-  TracksBase(){}
+  TracksBase() {}
   virtual ~TracksBase(){};
   virtual JTrackIter begin() = 0;
   virtual JTrackIter end() = 0;
@@ -84,10 +91,13 @@ class AliJFFlucAnalysis
   void Terminate(Option_t*);
 
 #ifndef JFLUC_USE_INPUT_LIST
-  //this generic class can be used by standalone toyMC/hydro/etc.
-  void SetInputList(TracksBase *_fInputList) { fInputList = _fInputList; }
+  // this generic class can be used by standalone toyMC/hydro/etc.
+  void SetInputList(TracksBase* _fInputList) { fInputList = _fInputList; }
 #else
-  void SetInputList(std::vector<PtEtaPhiEVector>* _fInputList) { fInputList = _fInputList; }
+  void SetInputList(std::vector<PtEtaPhiEVector>* _fInputList)
+  {
+    fInputList = _fInputList;
+  }
 #endif
   void SetEventCentralityAndBin(float cent, UInt_t cbin)
   {
@@ -170,9 +180,9 @@ class AliJFFlucAnalysis
 #define kcNH kH6 // max second dimension + 1
  private:
 #ifndef JFLUC_USE_INPUT_LIST
-  TracksBase *fInputList; //no-copy interface to tracks (for O2)
+  TracksBase* fInputList; // no-copy interface to tracks (for O2)
 #else
-  std::vector<PtEtaPhiEVector> *fInputList; //simple list for simulation codes
+  std::vector<PtEtaPhiEVector>* fInputList; // simple list for simulation codes
 #endif
   const Double_t* fVertex; //!
   Float_t fCent;
@@ -251,8 +261,8 @@ class AliJFFlucAnalysis
   AliJTH1D fh_SC_with_QC_4corr;       //! // for <vn^2 vm^2>
   AliJTH1D fh_SC_with_QC_2corr;       //! // for <vn^2>
   AliJTH1D fh_SC_with_QC_2corr_eta10; //!
-  AliJTH1D fh_evt_SP_QC_ratio_2p; //! // check SP QC evt by evt ratio
-  AliJTH1D fh_evt_SP_QC_ratio_4p; //! // check SP QC evt by evt ratio
+  AliJTH1D fh_evt_SP_QC_ratio_2p;     //! // check SP QC evt by evt ratio
+  AliJTH1D fh_evt_SP_QC_ratio_4p;     //! // check SP QC evt by evt ratio
 };
 
 #endif
