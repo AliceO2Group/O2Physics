@@ -75,7 +75,8 @@ struct PseudorapidityDensityMFT {
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // the histogram has been previously stored in the CCDB
-  TH2F* histoReweight = nullptr;
+  TH1D* histoReweight = nullptr;
+  std::vector<long long unsigned> ambTrackIds;
   //------
 
   HistogramRegistry registry{
@@ -134,7 +135,7 @@ struct PseudorapidityDensityMFT {
       // This avoids that users can replace objects **while** a train is running
       ccdb->setCreatedNotAfter(nolaterthan.value);
       LOGF(info, "Getting object %s", path.value.data());
-      histoReweight = ccdb->getForTimeStamp<TH2F>(path.value, nolaterthan.value);
+      histoReweight = ccdb->getForTimeStamp<TH1D>(path.value, nolaterthan.value);
       if (!histoReweight) {
         LOGF(fatal, "object not found!");
       }
@@ -179,6 +180,7 @@ struct PseudorapidityDensityMFT {
 
   void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
+    ambTrackIds.clear();
     if (tracks.size() == 0) {
       return;
     }
@@ -190,7 +192,23 @@ struct PseudorapidityDensityMFT {
       auto Ntrk = perCollisionSample.size() + atracks.size();
 
       registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
+      for (auto& track : atracks) {
+        registry.fill(HIST("TracksEtaZvtx"), track.etas(), z);
+        float phi = track.phis();
+        o2::math_utils::bringTo02Pi(phi);
+        registry.fill(HIST("TracksPhiEta"), phi, track.etas());
+        registry.fill(HIST("TracksPhiZvtx"), phi, z);
+        registry.fill(HIST("TracksPtEta"), track.pts(), track.etas());
+        auto mfttrack = track.mfttrack();
+        if (mfttrack.has_collision()) {
+          ambTrackIds.push_back(track.mfttrackId());
+        }
+      }
+
       for (auto& track : tracks) {
+        if (find(ambTrackIds.begin(), ambTrackIds.end(), track.globalIndex()) != ambTrackIds.end()) {
+          continue; // this track has already been reassigned to bestcollision, don't double count
+        }
         registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
@@ -200,14 +218,7 @@ struct PseudorapidityDensityMFT {
           registry.fill(HIST("TracksPhiZvtx"), phi, z);
         }
       }
-      for (auto& track : atracks) {
-        registry.fill(HIST("TracksEtaZvtx"), track.etas(), z);
-        float phi = track.phis();
-        o2::math_utils::bringTo02Pi(phi);
-        registry.fill(HIST("TracksPhiEta"), phi, track.etas());
-        registry.fill(HIST("TracksPhiZvtx"), phi, z);
-        registry.fill(HIST("TracksPtEta"), track.pts(), track.etas());
-      }
+
     } else {
       registry.fill(HIST("EventSelection"), 4.);
     }
@@ -216,6 +227,7 @@ struct PseudorapidityDensityMFT {
 
   void processMultReweight(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
+    ambTrackIds.clear();
     if (!doprocessGen) {
       LOGP(debug, "You can't enable processMultReweight if not analysing MC");
       return;
@@ -230,20 +242,9 @@ struct PseudorapidityDensityMFT {
       auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
       auto Ntrk = perCollisionSample.size() + atracks.size();
       float weight = 1.;
+      weight = histoReweight->GetBinContent(histoReweight->FindBin(z));
 
-      registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
-      for (auto& track : tracks) {
-
-        float phi = track.phi();
-        o2::math_utils::bringTo02Pi(phi);
-        weight = histoReweight->GetBinContent(histoReweight->FindBin(phi, z));
-        registry.fill(HIST("TracksEtaZvtx"), track.eta(), z, weight);
-        registry.fill(HIST("TracksPhiEta"), phi, track.eta(), weight);
-        registry.fill(HIST("TracksPtEta"), track.pt(), track.eta(), weight);
-        if ((track.eta() < -2.0f) && (track.eta() > -3.9f)) {
-          registry.fill(HIST("TracksPhiZvtx"), phi, z, weight);
-        }
-      }
+      registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z, weight);
       for (auto& track : atracks) {
 
         float phi = track.phis();
@@ -254,7 +255,26 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("TracksPhiEta"), phi, track.etas(), weight);
         registry.fill(HIST("TracksPhiZvtx"), phi, z, weight);
         registry.fill(HIST("TracksPtEta"), track.pts(), track.etas(), weight);
+        auto mfttrack = track.mfttrack();
+        if (mfttrack.has_collision()) {
+          ambTrackIds.push_back(track.mfttrackId());
+        }
       }
+
+      for (auto& track : tracks) {
+        if (find(ambTrackIds.begin(), ambTrackIds.end(), track.globalIndex()) != ambTrackIds.end()) {
+          continue; // this track has already been reassigned to bestcollision, don't double count
+        }
+        float phi = track.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        registry.fill(HIST("TracksEtaZvtx"), track.eta(), z, weight);
+        registry.fill(HIST("TracksPhiEta"), phi, track.eta(), weight);
+        registry.fill(HIST("TracksPtEta"), track.pt(), track.eta(), weight);
+        if ((track.eta() < -2.0f) && (track.eta() > -3.9f)) {
+          registry.fill(HIST("TracksPhiZvtx"), phi, z, weight);
+        }
+      }
+
     } else {
       registry.fill(HIST("EventSelection"), 4.);
     }
