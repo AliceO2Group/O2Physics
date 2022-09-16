@@ -93,7 +93,6 @@ struct PseudorapidityDensityMFT {
 
   void init(InitContext&)
   {
-    ambTrackIds.clear();
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
@@ -181,6 +180,7 @@ struct PseudorapidityDensityMFT {
 
   void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
+    ambTrackIds.clear();
     if (tracks.size() == 0) {
       return;
     }
@@ -227,6 +227,7 @@ struct PseudorapidityDensityMFT {
 
   void processMultReweight(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
+    ambTrackIds.clear();
     if (!doprocessGen) {
       LOGP(debug, "You can't enable processMultReweight if not analysing MC");
       return;
