@@ -361,8 +361,6 @@ void JFFlucAnalysis::UserExec(Option_t*)
     fh_sin_n_psi_n[ih][fCBin]->Fill(TMath::Sin((Double_t)ih * psi));
   }
 
-  // v2^2 :  k=1  /// remember QnQn = vn^(2k) not k
-  // use k=0 for check v2, v3 only
   Double_t vn2[kNH][nKL];
   Double_t vn2_vn2[kNH][nKL][kNH][nKL];
 
@@ -446,7 +444,6 @@ void JFFlucAnalysis::UserExec(Option_t*)
           }
         }
       }
-      // fSingleVn[ih][0] = TMath::Sqrt(vn2[ih][1]); // fill single vn with SP as method 0
     }
 
     //************************************************************************
@@ -529,24 +526,14 @@ void JFFlucAnalysis::UserExec(Option_t*)
   }
 
   for (int ih = 2; ih < kNH; ih++) {
-    // for(int ihh=2; ihh<ih; ihh++){ //all SC
-    for (int ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) { // limited
+    for (int ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
       TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
 
       fh_SC_with_QC_4corr[ih][ihh][fCBin]->Fill(scfour.Re(), event_weight_four);
-      // QC_4p_value[ih][ihh] = scfour.Re();
     }
 
-    // Finally we want 2p corr as like
-    // 1/( M*(M-1) ) * [ QQ* - M ]
-    // two(2,2) = Q2 Q2* - Q0 = Q2Q2* - M
-    // two(0,0) = Q0 Q0* - Q0 = M^2 - M
-    // two[ih] = Two(ih, -ih) / Two(0,0).Re();
     TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
     fh_SC_with_QC_2corr[ih][fCBin]->Fill(sctwo.Re(), event_weight_two);
-    // QC_2p_value[ih] = sctwo.Re();
-    //  fill single vn  with QC without EtaGap as method 2
-    // fSingleVn[ih][2] = TMath::Sqrt(sctwo.Re());
 
     TComplex sctwo10 = (QvectorQCeta10[kSubA][ih][1] * TComplex::Conjugate(QvectorQCeta10[kSubB][ih][1])) / (QvectorQCeta10[kSubA][0][1] * QvectorQCeta10[kSubB][0][1]).Re();
     fh_SC_with_QC_2corr_eta10[ih][fCBin]->Fill(sctwo10.Re(), event_weight_two_eta10);
@@ -615,16 +602,7 @@ void JFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
   for (auto& track : *fInputList) {
     Double_t eta = track.eta();
     Double_t phi = track.phi();
-    // AliJBaseTrack *itrack = (AliJBaseTrack*)fInputList->At(it); // load track
-    // Double_t eta = itrack->Eta();
     // track Eta cut Note! pt cuts already applied in task.
-    // Do we need arbitary Eta cut for QC method?
-    // fixed eta ranged -0.8 < eta < 0.8 for QC
-    // if( TMath::Abs(eta) > fEta_max || TMath::Abs(eta) < fEta_min ) continue; << this is SP cut
-    // if( TMath::Abs(eta) > 0.8 ) continue;  //   << this is old QC cut
-    // we need more configuration for to study eta dep of SC(m,n) with QC method.
-    // eta cut among all tracks (this is not same with SC(m,n) SP method (SP method needs symmetric eta range)//
-    // if( eta < fQC_eta_cut_min || eta > fQC_eta_cut_max)
     if (eta < -etamax || eta > etamax)
       continue;
     /////////////////////////////////////////////////
@@ -663,7 +641,6 @@ TComplex JFFlucAnalysis::Q(int n, int p)
 TComplex JFFlucAnalysis::Two(int n1, int n2)
 {
   // two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
-  // cout << "TWO FUNCTION " << Q(n1,1) << "*" << Q(n2,1) << " - " << Q(n1+n2 , 2) << endl;
   TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
   return two;
 }

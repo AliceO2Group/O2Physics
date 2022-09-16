@@ -92,7 +92,6 @@ struct jflucAnalysisTask {
   O2_DEFINE_CONFIGURABLE(etamin, double, 0.4, "Minimal eta for tracks");
   O2_DEFINE_CONFIGURABLE(etamax, double, 0.8, "Maximal eta for tracks");
 
-  // OutputObj<TDirectory> output{TDirectory("jflucO2","jflucO2","",0)};
   OutputObj<TDirectory> output{"jflucO2"};
 
   void init(InitContext const& ic)

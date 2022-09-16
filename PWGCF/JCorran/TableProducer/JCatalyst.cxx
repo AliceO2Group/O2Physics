@@ -24,10 +24,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 
-////TODO: remove useless:
-//#include "ReconstructionDataFormats/Track.h"
-//#include "Framework/AnalysisDataModel.h"
-
+////TODO: remove redundant:
 #include "Framework/HistogramRegistry.h"
 
 #include "DetectorsVertexing/DCAFitterN.h"
@@ -37,7 +34,6 @@
 #include "ReconstructionDataFormats/V0.h"
 ////
 
-//#include <Math/GenVector/PxPyPzE4D.h>
 #include <Math/Vector4D.h>
 #include <Math/LorentzVector.h>
 #include <TRandom.h>
@@ -50,8 +46,6 @@ using namespace o2::framework::expressions;
 
 using namespace ROOT;
 using namespace ROOT::Math;
-
-// typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiE4D<double>> LorentzVectorD;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -95,7 +89,7 @@ struct JCatalyst {
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
-    gRandom->SetSeed(15122022); // for centrality flattening
+    // gRandom->SetSeed(15122022); // for centrality flattening
 
     if (!mapCentFlattening.value.empty()) {
       pcentFlatteningMap = ccdb->getForTimeStamp<TH1D>(mapCentFlattening.value, nolaterthan.value);
@@ -113,8 +107,6 @@ struct JCatalyst {
     }
   }
 
-  // void process(aod::Collision const& collision, aod::Tracks const& tracks){
-  // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal> const& tracks){
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks)
   {
     Double_t cent[3] = {
@@ -139,45 +131,8 @@ struct JCatalyst {
     }
 
     // TODO: outlier cutting
-    /*UInt_t FB32Tracks = 0;
-    UInt_t FB32TOFTracks = 0;
-    for(auto &track : tracks){
-      //fb
-      Double_t tofTime = track.tofSignal();
-      //track.tofDz();
-      //if(track.hasTOF() && std::abs
-      //track.isGlobalTrackSDD(); //hybrid
-    }*/
 
     if (cutOutliers.value) {
-      //--
-      /*
-      const AliVVertex* vtTrc = event->GetPrimaryVertex();
-      const AliVVertex* vtSPD = event->GetPrimaryVertexSPD();
-      double covTrc[6],covSPD[6];
-      vtTrc->GetCovarianceMatrix(covTrc);
-      vtSPD->GetCovarianceMatrix(covSPD);
-      double dz = vtTrc->GetZ()-vtSPD->GetZ();
-      double errTot = TMath::Sqrt(covTrc[5]+covSPD[5]);
-      double errTrc = TMath::Sqrt(covTrc[5]);
-      double nsigTot = TMath::Abs(dz)/errTot, nsigTrc = TMath::Abs(dz)/errTrc;
-      if(TMath::Abs(dz) > 0.2 || nsigTot > 10 || nsigTrc > 20)
-        return kFALSE;
-
-      AliMultSelection *pms = (AliMultSelection*)event->FindListObject("MultSelection");
-      if(!pms){
-        AliError("MultSelection unavailable.");
-        return kFALSE;
-      }*/
-
-      // TODO: how to get SPD primary vertex?
-      /*collision.posX();
-      collision.covXX();//[5] = covYZ
-      auto primaryVertex = getPrimaryVertex(collision);
-      primaryVertex.getZ();
-      auto covMatrix = primaryVertex.getCov();*/
-      // auto primaryVertexSPD = getPrimaryVertexSPD(collision);
-
       double centCL0 = collision.centRun2CL0();
       double center = 0.973488 * centCL0 + 0.0157497;
       double sigma = 0.673612 + centCL0 * (0.0290718 + centCL0 * (-0.000546728 + centCL0 * 5.82749e-06));
@@ -212,7 +167,6 @@ struct JCatalyst {
       }
 
       particleTrack(track.collisionId(), pt, eta, phi, phiWeight, 1.0f);
-      // particleTrack(pt,eta,phi,phiWeight,1.0f);
     }
     // LOGF(info,"event %u processed with %u tracks.",collisionId,tracks.size());
   }
