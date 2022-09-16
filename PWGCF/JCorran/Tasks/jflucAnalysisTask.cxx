@@ -98,9 +98,9 @@ struct jflucAnalysisTask {
   void init(InitContext const& ic)
   {
     //
-    pcf = new AliJFFlucAnalysis("jflucAnalysis");
+    pcf = new JFFlucAnalysis("jflucAnalysis");
     pcf->SetNumBins(sizeof(jflucCentBins) / sizeof(jflucCentBins[0]));
-    pcf->AddFlags(AliJFFlucAnalysis::FLUC_EBE_WEIGHTING);
+    pcf->AddFlags(JFFlucAnalysis::FLUC_EBE_WEIGHTING);
 
     output->cd();
     pcf->UserCreateOutputObjects();
@@ -122,7 +122,7 @@ struct jflucAnalysisTask {
     pcf->SetEtaRange(etamin, etamax);
     pcf->UserExec("");
   }
-  AliJFFlucAnalysis* pcf;
+  JFFlucAnalysis* pcf;
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

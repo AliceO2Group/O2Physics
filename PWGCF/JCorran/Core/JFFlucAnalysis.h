@@ -76,15 +76,15 @@ class TracksBase
 };
 #endif
 
-class AliJFFlucAnalysis
+class JFFlucAnalysis
 {
  public:
-  AliJFFlucAnalysis();
-  AliJFFlucAnalysis(const char* name);
-  AliJFFlucAnalysis(const AliJFFlucAnalysis& a);             // not implemented
-  AliJFFlucAnalysis& operator=(const AliJFFlucAnalysis& ap); // not implemented
+  JFFlucAnalysis();
+  JFFlucAnalysis(const char* name);
+  JFFlucAnalysis(const JFFlucAnalysis& a);             // not implemented
+  JFFlucAnalysis& operator=(const JFFlucAnalysis& ap); // not implemented
 
-  ~AliJFFlucAnalysis();
+  ~JFFlucAnalysis();
   void UserCreateOutputObjects();
   void Init();
   void UserExec(Option_t* option);

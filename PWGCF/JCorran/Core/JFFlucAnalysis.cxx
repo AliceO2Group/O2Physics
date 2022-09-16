@@ -23,28 +23,28 @@
 
 // TODO: O2 port: check XXXXXX
 
-AliJFFlucAnalysis::AliJFFlucAnalysis() : fInputList(0),
-                                         fVertex(0),
-                                         fCent(0),
-                                         fCBin(0),
-                                         fHMG(0),
-                                         fBin_Subset(),
-                                         fBin_h(),
-                                         fBin_k(),
-                                         fBin_hh(),
-                                         fBin_kk(),
-                                         fHistCentBin(),
-                                         fh_cent(),
-                                         fh_ImpactParameter(),
-                                         fh_vertex(),
-                                         fh_eta(),
-                                         fh_phi(),
-                                         fh_phieta(),
-                                         fh_phietaz(),
-                                         fh_ntracks(),
-                                         fh_vn(),
-                                         fh_vna(),
-                                         fh_vn_vn()
+JFFlucAnalysis::JFFlucAnalysis() : fInputList(0),
+                                   fVertex(0),
+                                   fCent(0),
+                                   fCBin(0),
+                                   fHMG(0),
+                                   fBin_Subset(),
+                                   fBin_h(),
+                                   fBin_k(),
+                                   fBin_hh(),
+                                   fBin_kk(),
+                                   fHistCentBin(),
+                                   fh_cent(),
+                                   fh_ImpactParameter(),
+                                   fh_vertex(),
+                                   fh_eta(),
+                                   fh_phi(),
+                                   fh_phieta(),
+                                   fh_phietaz(),
+                                   fh_ntracks(),
+                                   fh_vn(),
+                                   fh_vna(),
+                                   fh_vn_vn()
 {
   subeventMask = SUBEVENT_A | SUBEVENT_B;
   flags = 0;
@@ -54,28 +54,28 @@ AliJFFlucAnalysis::AliJFFlucAnalysis() : fInputList(0),
 }
 
 //________________________________________________________________________
-AliJFFlucAnalysis::AliJFFlucAnalysis(const char* name) : fInputList(0),
-                                                         fVertex(0),
-                                                         fCent(0),
-                                                         fCBin(0),
-                                                         fHMG(0),
-                                                         fBin_Subset(),
-                                                         fBin_h(),
-                                                         fBin_k(),
-                                                         fBin_hh(),
-                                                         fBin_kk(),
-                                                         fHistCentBin(),
-                                                         fh_cent(),
-                                                         fh_ImpactParameter(),
-                                                         fh_vertex(),
-                                                         fh_eta(),
-                                                         fh_phi(),
-                                                         fh_phieta(),
-                                                         fh_phietaz(),
-                                                         fh_ntracks(),
-                                                         fh_vn(),
-                                                         fh_vna(),
-                                                         fh_vn_vn()
+JFFlucAnalysis::JFFlucAnalysis(const char* name) : fInputList(0),
+                                                   fVertex(0),
+                                                   fCent(0),
+                                                   fCBin(0),
+                                                   fHMG(0),
+                                                   fBin_Subset(),
+                                                   fBin_h(),
+                                                   fBin_k(),
+                                                   fBin_hh(),
+                                                   fBin_kk(),
+                                                   fHistCentBin(),
+                                                   fh_cent(),
+                                                   fh_ImpactParameter(),
+                                                   fh_vertex(),
+                                                   fh_eta(),
+                                                   fh_phi(),
+                                                   fh_phieta(),
+                                                   fh_phietaz(),
+                                                   fh_ntracks(),
+                                                   fh_vn(),
+                                                   fh_vna(),
+                                                   fh_vn_vn()
 {
   // cout << "analysis task created " << endl;
 
@@ -86,53 +86,53 @@ AliJFFlucAnalysis::AliJFFlucAnalysis(const char* name) : fInputList(0),
   fImpactParameter = -1;
 }
 
-Double_t AliJFFlucAnalysis::pttJacek[74] = {0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 40, 45, 50, 60, 70, 80, 90, 100};
-UInt_t AliJFFlucAnalysis::NpttJacek = sizeof(AliJFFlucAnalysis::pttJacek) / sizeof(AliJFFlucAnalysis::pttJacek[0]) - 1;
+Double_t JFFlucAnalysis::pttJacek[74] = {0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 40, 45, 50, 60, 70, 80, 90, 100};
+UInt_t JFFlucAnalysis::NpttJacek = sizeof(JFFlucAnalysis::pttJacek) / sizeof(JFFlucAnalysis::pttJacek[0]) - 1;
 
 //________________________________________________________________________
-AliJFFlucAnalysis::AliJFFlucAnalysis(const AliJFFlucAnalysis& a) : // AliAnalysisTaskSE(a.GetName()),
-                                                                   fInputList(a.fInputList),
-                                                                   fVertex(a.fVertex),
-                                                                   fCent(a.fCent),
-                                                                   fCBin(a.fCBin),
-                                                                   fHMG(a.fHMG),
-                                                                   fBin_Subset(a.fBin_Subset),
-                                                                   fBin_h(a.fBin_h),
-                                                                   fBin_k(a.fBin_k),
-                                                                   fBin_hh(a.fBin_hh),
-                                                                   fBin_kk(a.fBin_kk),
-                                                                   fHistCentBin(a.fHistCentBin),
-                                                                   fh_cent(a.fh_cent),
-                                                                   fh_ImpactParameter(a.fh_ImpactParameter),
-                                                                   fh_vertex(a.fh_vertex),
-                                                                   fh_eta(a.fh_eta),
-                                                                   fh_phi(a.fh_phi),
-                                                                   fh_phieta(a.fh_phieta),
-                                                                   fh_phietaz(a.fh_phietaz),
-                                                                   fh_ntracks(a.fh_ntracks),
-                                                                   fh_vn(a.fh_vn),
-                                                                   fh_vna(a.fh_vna),
-                                                                   fh_vn_vn(a.fh_vn_vn)
+JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : // AliAnalysisTaskSE(a.GetName()),
+                                                          fInputList(a.fInputList),
+                                                          fVertex(a.fVertex),
+                                                          fCent(a.fCent),
+                                                          fCBin(a.fCBin),
+                                                          fHMG(a.fHMG),
+                                                          fBin_Subset(a.fBin_Subset),
+                                                          fBin_h(a.fBin_h),
+                                                          fBin_k(a.fBin_k),
+                                                          fBin_hh(a.fBin_hh),
+                                                          fBin_kk(a.fBin_kk),
+                                                          fHistCentBin(a.fHistCentBin),
+                                                          fh_cent(a.fh_cent),
+                                                          fh_ImpactParameter(a.fh_ImpactParameter),
+                                                          fh_vertex(a.fh_vertex),
+                                                          fh_eta(a.fh_eta),
+                                                          fh_phi(a.fh_phi),
+                                                          fh_phieta(a.fh_phieta),
+                                                          fh_phietaz(a.fh_phietaz),
+                                                          fh_ntracks(a.fh_ntracks),
+                                                          fh_vn(a.fh_vn),
+                                                          fh_vna(a.fh_vna),
+                                                          fh_vn_vn(a.fh_vn_vn)
 {
   // copy constructor
 }
 //________________________________________________________________________
-AliJFFlucAnalysis& AliJFFlucAnalysis::operator=(const AliJFFlucAnalysis& ap)
+JFFlucAnalysis& JFFlucAnalysis::operator=(const JFFlucAnalysis& ap)
 {
   // assignment operator
-  this->~AliJFFlucAnalysis();
-  new (this) AliJFFlucAnalysis(ap);
+  this->~JFFlucAnalysis();
+  new (this) JFFlucAnalysis(ap);
   return *this;
 }
 //________________________________________________________________________
-void AliJFFlucAnalysis::Init()
+void JFFlucAnalysis::Init()
 {
   //
 }
 //________________________________________________________________________
-void AliJFFlucAnalysis::UserCreateOutputObjects()
+void JFFlucAnalysis::UserCreateOutputObjects()
 {
-  fHMG = new AliJHistManager("AliJFFlucHistManager", "jfluc");
+  fHMG = new AliJHistManager("JFFlucHistManager", "jfluc");
   // set AliJBin here //
   fBin_Subset.Set("Sub", "Sub", "Sub:%d", AliJBin::kSingle).SetBin(2);
   fBin_h.Set("NH", "NH", "NH:%d", AliJBin::kSingle).SetBin(kNH);
@@ -175,7 +175,7 @@ void AliJFFlucAnalysis::UserCreateOutputObjects()
     << fVertexBin
     << "END";
   fh_pt
-    << TH1D("hChargedPtJacek", "", AliJFFlucAnalysis::NpttJacek, AliJFFlucAnalysis::pttJacek)
+    << TH1D("hChargedPtJacek", "", JFFlucAnalysis::NpttJacek, JFFlucAnalysis::pttJacek)
     << fHistCentBin
     << "END";
 
@@ -300,7 +300,7 @@ void AliJFFlucAnalysis::UserCreateOutputObjects()
 }
 
 //________________________________________________________________________
-AliJFFlucAnalysis::~AliJFFlucAnalysis()
+JFFlucAnalysis::~JFFlucAnalysis()
 {
   delete fHMG;
 }
@@ -309,34 +309,34 @@ AliJFFlucAnalysis::~AliJFFlucAnalysis()
 #define B (1 - i)
 #define C(u) TComplex::Conjugate(u)
 // TODO: conjugate macro
-inline TComplex TwoGap(const TComplex (*pQq)[AliJFFlucAnalysis::kNH][AliJFFlucAnalysis::nKL], uint i, uint a, uint b)
+inline TComplex TwoGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b)
 {
   return pQq[A][a][1] * C(pQq[B][b][1]);
 }
 
-inline TComplex ThreeGap(const TComplex (*pQq)[AliJFFlucAnalysis::kNH][AliJFFlucAnalysis::nKL], uint i, uint a, uint b, uint c)
+inline TComplex ThreeGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b, uint c)
 {
   return pQq[A][a][1] * C(pQq[B][b][1] * pQq[B][c][1] - pQq[B][b + c][2]);
 }
 
-inline TComplex FourGap22(const TComplex (*pQq)[AliJFFlucAnalysis::kNH][AliJFFlucAnalysis::nKL], uint i, uint a, uint b, uint c, uint d)
+inline TComplex FourGap22(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b, uint c, uint d)
 {
   return pQq[A][a][1] * pQq[A][b][1] * C(pQq[B][c][1] * pQq[B][d][1]) - pQq[A][a + b][2] * C(pQq[B][c][1] * pQq[B][d][1]) - pQq[A][a][1] * pQq[A][b][1] * C(pQq[B][c + d][2]) + pQq[A][a + b][2] * C(pQq[B][c + d][2]);
 }
 
-inline TComplex FourGap13(const TComplex (*pQq)[AliJFFlucAnalysis::kNH][AliJFFlucAnalysis::nKL], uint i, uint a, uint b, uint c, uint d)
+inline TComplex FourGap13(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b, uint c, uint d)
 {
   return pQq[A][a][1] * C(pQq[B][b][1] * pQq[B][c][1] * pQq[B][d][1] - pQq[B][b + c][2] * pQq[B][d][1] - pQq[B][b + d][2] * pQq[B][c][1] - pQq[B][c + d][2] * pQq[B][b][1] + 2.0 * pQq[B][b + c + d][3]);
 }
 
-inline TComplex SixGap33(const TComplex (*pQq)[AliJFFlucAnalysis::kNH][AliJFFlucAnalysis::nKL], uint i, uint n1, uint n2, uint n3, uint n4, uint n5, uint n6)
+inline TComplex SixGap33(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint n1, uint n2, uint n3, uint n4, uint n5, uint n6)
 {
   return pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 2.0 * pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5 + n6][3]) + 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 4.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5 + n6][3]);
 }
 #undef C
 
 //________________________________________________________________________
-void AliJFFlucAnalysis::UserExec(Option_t*)
+void JFFlucAnalysis::UserExec(Option_t*)
 {
   size_t trk_number = fInputList->size();
   fh_ntracks[fCBin]->Fill(trk_number);
@@ -556,12 +556,12 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
 }
 
 //________________________________________________________________________
-void AliJFFlucAnalysis::Terminate(Option_t*)
+void JFFlucAnalysis::Terminate(Option_t*)
 {
 }
 //________________________________________________________________________
 //________________________________________________________________________
-void AliJFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
+void JFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
 {
   for (auto& track : *fInputList) {
     Double_t eta = track.Eta();
@@ -576,7 +576,7 @@ void AliJFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
     if (TMath::Abs(eta) < eta1 || TMath::Abs(eta) > eta2)
       continue;
 
-    Double_t phi_module_corr = 1.0; // itrack->GetWeight();// doing it in AliJFlucTask while filling track information. //XXXXXX
+    Double_t phi_module_corr = 1.0; // itrack->GetWeight();//XXXXXX
 
     Double_t effCorr = 1.0; // itrack->GetTrackEff();//fEfficiency->GetCorrection( pt, fEffFilterBit, fCent); //XXXXXX
     Double_t effInv = 1.0 / effCorr;
@@ -597,7 +597,7 @@ void AliJFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
    Please see Generic Framwork from Ante
    use Standalone method  */
 //________________________________________________________________________
-void AliJFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
+void JFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
 {
   // calcualte Q-vector for QC method ( no subgroup )
   // init
@@ -617,7 +617,7 @@ void AliJFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
     Double_t phi = track.phi();
     // AliJBaseTrack *itrack = (AliJBaseTrack*)fInputList->At(it); // load track
     // Double_t eta = itrack->Eta();
-    // track Eta cut Note! pt cuts already applied in AliJFFlucTask.cxx
+    // track Eta cut Note! pt cuts already applied in task.
     // Do we need arbitary Eta cut for QC method?
     // fixed eta ranged -0.8 < eta < 0.8 for QC
     // if( TMath::Abs(eta) > fEta_max || TMath::Abs(eta) < fEta_min ) continue; << this is SP cut
@@ -651,7 +651,7 @@ void AliJFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
   } // track loop done.
 }
 //________________________________________________________________________
-TComplex AliJFFlucAnalysis::Q(int n, int p)
+TComplex JFFlucAnalysis::Q(int n, int p)
 {
   // Return QvectorQC
   // Q{-n, p} = Q{n, p}*
@@ -660,7 +660,7 @@ TComplex AliJFFlucAnalysis::Q(int n, int p)
   return TComplex::Conjugate(QvectorQC[-n][p]);
 }
 //________________________________________________________________________
-TComplex AliJFFlucAnalysis::Two(int n1, int n2)
+TComplex JFFlucAnalysis::Two(int n1, int n2)
 {
   // two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
   // cout << "TWO FUNCTION " << Q(n1,1) << "*" << Q(n2,1) << " - " << Q(n1+n2 , 2) << endl;
@@ -668,7 +668,7 @@ TComplex AliJFFlucAnalysis::Two(int n1, int n2)
   return two;
 }
 //________________________________________________________________________
-TComplex AliJFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
+TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 {
   TComplex four =
     Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
