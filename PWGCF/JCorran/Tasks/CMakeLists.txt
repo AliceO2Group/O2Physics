@@ -10,6 +10,6 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(jfluc-analysis
-                    SOURCES AliJO2Analysis.cxx
+                    SOURCES jflucAnalysisTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)

@@ -25,9 +25,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "ReconstructionDataFormats/V0.h"
 
-//#include "AliJO2Catalyst.h"
-#include "PWGCF/JCorran/DataModel/AliJO2Catalyst.h"
-#include "AliJFFlucAnalysis.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
+#include "JFFlucAnalysis.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -83,9 +82,9 @@ class Tracks : public TracksBase
   }
 };
 
-struct JFlucAnalysis {
+struct jflucAnalysisTask {
  public:
-  ~JFlucAnalysis()
+  ~jflucAnalysisTask()
   {
     delete pcf;
   }
@@ -129,5 +128,5 @@ struct JFlucAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JFlucAnalysis>(cfgc)};
+    adaptAnalysisTask<jflucAnalysisTask>(cfgc)};
 }

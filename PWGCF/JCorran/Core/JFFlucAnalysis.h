@@ -12,10 +12,10 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since Sep 2022
 
-#ifndef AliJFFlucAnalysis_cxx
-#define AliJFFlucAnalysis_cxx
+#ifndef JFFLUC_ANALYSIS_H
+#define JFFLUC_ANALYSIS_H
 
-#include "AliJHistManager.h"
+#include "JHistManager.h"
 #include <Math/Vector4D.h>
 #include <Math/LorentzVector.h>
 #include <TComplex.h>

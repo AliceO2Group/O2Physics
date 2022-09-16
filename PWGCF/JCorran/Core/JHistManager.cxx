@@ -11,7 +11,7 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#include "AliJHistManager.h"
+#include "JHistManager.h"
 #include <TMath.h>
 using namespace std;
 //////////////////////////////////////////////////////

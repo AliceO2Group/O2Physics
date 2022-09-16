@@ -42,7 +42,7 @@
 #include <Math/LorentzVector.h>
 #include <TRandom.h>
 
-#include "PWGCF/JCorran/DataModel/AliJO2Catalyst.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -55,7 +55,7 @@ using namespace ROOT::Math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct AliJO2Catalyst {
+struct JCatalyst {
  public:
   O2_DEFINE_CONFIGURABLE(zvertex, double, 8.0, "Accepted z-vertex range");
   O2_DEFINE_CONFIGURABLE(ptmin, double, 0.2, "Minimal pT for tracks");
@@ -89,7 +89,7 @@ struct AliJO2Catalyst {
 
   void init(InitContext const& ic)
   {
-    LOGF(info, "JFlucCatalyst init()");
+    LOGF(info, "JCatalyst init()");
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -221,5 +221,5 @@ struct AliJO2Catalyst {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<AliJO2Catalyst>(cfgc)};
+    adaptAnalysisTask<JCatalyst>(cfgc)};
 }

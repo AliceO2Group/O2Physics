@@ -19,7 +19,7 @@
 #include <TMath.h>
 #include <TComplex.h>
 
-#include "AliJFFlucAnalysis.h"
+#include "JFFlucAnalysis.h"
 
 // TODO: O2 port: check XXXXXX
 

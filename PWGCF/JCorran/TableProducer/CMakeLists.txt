@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(jfluc-catalyst
-                    SOURCES AliJO2Catalyst.cxx
+o2physics_add_dpl_workflow(jcatalyst
+                    SOURCES JCatalyst.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
