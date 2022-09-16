@@ -41,5 +41,5 @@ o2physics_add_dpl_workflow(jfluc-catalyst
 
 o2physics_add_dpl_workflow(jfluc-analysis
                     SOURCES AliJO2Analysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCORRAN
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)

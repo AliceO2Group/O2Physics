@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
@@ -54,7 +55,7 @@ using namespace ROOT::Math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-class AliJO2Catalyst
+struct AliJO2Catalyst
 {
  public:
   O2_DEFINE_CONFIGURABLE(zvertex, double, 8.0, "Accepted z-vertex range");

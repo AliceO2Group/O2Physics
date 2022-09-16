@@ -943,7 +943,7 @@ int AliJHistManager::LoadConfig()
 
 bool AliJHistManager::HistogramExists(TString name)
 {
-  for (int i = 0; i < fHistNames.size(); i++) {
+  for (UInt_t i = 0; i < fHistNames.size(); i++) {
     if (fHistNames[i] == name)
       return true;
   }

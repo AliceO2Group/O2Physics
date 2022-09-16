@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 /// \author Dong Jo Kim (djkim@jyu.fi)
+/// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since Sep 2022
 
 #include <TH1D.h>
@@ -17,44 +18,34 @@
 #include <TF3.h>
 #include <TMath.h>
 #include <TComplex.h>
-#include <TClonesArray.h>
-//#include "AliJBaseTrack.h"
 
 #include "AliJFFlucAnalysis.h"
 
-// TODO: check XXXXXX
+// TODO: O2 port: check XXXXXX
 
-// ClassImp(AliJFFlucAnalysis)
-//________________________________________________________________________
-AliJFFlucAnalysis::AliJFFlucAnalysis() : //: AliAnalysisTaskSE(),
-                                         fInputList(0),
-                                         fVertex(0),
-                                         fCent(0),
-                                         fCBin(0),
-                                         fHMG(0),
-                                         fBin_Subset(),
-                                         fBin_h(),
-                                         fBin_k(),
-                                         fBin_hh(),
-                                         fBin_kk(),
-                                         fHistCentBin(),
-                                         fh_cent(),
-                                         fh_ImpactParameter(),
-                                         fh_vertex(),
-                                         fh_eta(),
-                                         fh_phi(),
-                                         fh_phieta(),
-                                         fh_phietaz(),
-                                         // fh_Qvector(),
-                                         fh_ntracks(),
-                                         fh_vn(),
-                                         fh_vna(),
-                                         fh_vn_vn()
-/*fh_cn_4c(),
-fh_cn_2c(),
-fh_cn_cn_2c(),
-fh_cn_2c_eta10(),
-fh_cn_cn_2c_eta10()*/
+AliJFFlucAnalysis::AliJFFlucAnalysis() :
+  fInputList(0),
+  fVertex(0),
+  fCent(0),
+  fCBin(0),
+  fHMG(0),
+  fBin_Subset(),
+  fBin_h(),
+  fBin_k(),
+  fBin_hh(),
+  fBin_kk(),
+  fHistCentBin(),
+  fh_cent(),
+  fh_ImpactParameter(),
+  fh_vertex(),
+  fh_eta(),
+  fh_phi(),
+  fh_phieta(),
+  fh_phietaz(),
+  fh_ntracks(),
+  fh_vn(),
+  fh_vna(),
+  fh_vn_vn()
 {
   subeventMask = SUBEVENT_A | SUBEVENT_B;
   flags = 0;
@@ -64,35 +55,29 @@ fh_cn_cn_2c_eta10()*/
 }
 
 //________________________________________________________________________
-AliJFFlucAnalysis::AliJFFlucAnalysis(const char* name) : //: AliAnalysisTaskSE(name),
-                                                         fInputList(0),
-                                                         fVertex(0),
-                                                         fCent(0),
-                                                         fCBin(0),
-                                                         fHMG(0),
-                                                         fBin_Subset(),
-                                                         fBin_h(),
-                                                         fBin_k(),
-                                                         fBin_hh(),
-                                                         fBin_kk(),
-                                                         fHistCentBin(),
-                                                         fh_cent(),
-                                                         fh_ImpactParameter(),
-                                                         fh_vertex(),
-                                                         fh_eta(),
-                                                         fh_phi(),
-                                                         fh_phieta(),
-                                                         fh_phietaz(),
-                                                         // fh_Qvector(),
-                                                         fh_ntracks(),
-                                                         fh_vn(),
-                                                         fh_vna(),
-                                                         fh_vn_vn()
-/*fh_cn_4c(),
-fh_cn_2c(),
-fh_cn_cn_2c(),
-fh_cn_2c_eta10(),
-fh_cn_cn_2c_eta10()*/
+AliJFFlucAnalysis::AliJFFlucAnalysis(const char* name) :
+  fInputList(0),
+  fVertex(0),
+  fCent(0),
+  fCBin(0),
+  fHMG(0),
+  fBin_Subset(),
+  fBin_h(),
+  fBin_k(),
+  fBin_hh(),
+  fBin_kk(),
+  fHistCentBin(),
+  fh_cent(),
+  fh_ImpactParameter(),
+  fh_vertex(),
+  fh_eta(),
+  fh_phi(),
+  fh_phieta(),
+  fh_phietaz(),
+  fh_ntracks(),
+  fh_vn(),
+  fh_vna(),
+  fh_vn_vn()
 {
   // cout << "analysis task created " << endl;
 
@@ -108,37 +93,30 @@ UInt_t AliJFFlucAnalysis::NpttJacek = sizeof(AliJFFlucAnalysis::pttJacek) / size
 
 //________________________________________________________________________
 AliJFFlucAnalysis::AliJFFlucAnalysis(const AliJFFlucAnalysis& a) : // AliAnalysisTaskSE(a.GetName()),
-                                                                   fInputList(a.fInputList),
-                                                                   fVertex(a.fVertex),
-                                                                   fCent(a.fCent),
-                                                                   fCBin(a.fCBin),
-                                                                   fHMG(a.fHMG),
-                                                                   fBin_Subset(a.fBin_Subset),
-                                                                   fBin_h(a.fBin_h),
-                                                                   fBin_k(a.fBin_k),
-                                                                   fBin_hh(a.fBin_hh),
-                                                                   fBin_kk(a.fBin_kk),
-                                                                   fHistCentBin(a.fHistCentBin),
-                                                                   fh_cent(a.fh_cent),
-                                                                   fh_ImpactParameter(a.fh_ImpactParameter),
-                                                                   fh_vertex(a.fh_vertex),
-                                                                   fh_eta(a.fh_eta),
-                                                                   fh_phi(a.fh_phi),
-                                                                   fh_phieta(a.fh_phieta),
-                                                                   fh_phietaz(a.fh_phietaz),
-                                                                   // fh_Qvector(a.fh_Qvector),
-                                                                   fh_ntracks(a.fh_ntracks),
-                                                                   fh_vn(a.fh_vn),
-                                                                   fh_vna(a.fh_vna),
-                                                                   fh_vn_vn(a.fh_vn_vn)
-/*fh_cn_4c(a.fh_cn_4c),
-fh_cn_2c(a.fh_cn_2c),
-fh_cn_cn_2c(a.fh_cn_cn_2c),
-fh_cn_2c_eta10(a.fh_cn_2c_eta10),
-fh_cn_cn_2c_eta10(a.fh_cn_cn_2c_eta10)*/
+  fInputList(a.fInputList),
+  fVertex(a.fVertex),
+  fCent(a.fCent),
+  fCBin(a.fCBin),
+  fHMG(a.fHMG),
+  fBin_Subset(a.fBin_Subset),
+  fBin_h(a.fBin_h),
+  fBin_k(a.fBin_k),
+  fBin_hh(a.fBin_hh),
+  fBin_kk(a.fBin_kk),
+  fHistCentBin(a.fHistCentBin),
+  fh_cent(a.fh_cent),
+  fh_ImpactParameter(a.fh_ImpactParameter),
+  fh_vertex(a.fh_vertex),
+  fh_eta(a.fh_eta),
+  fh_phi(a.fh_phi),
+  fh_phieta(a.fh_phieta),
+  fh_phietaz(a.fh_phietaz),
+  fh_ntracks(a.fh_ntracks),
+  fh_vn(a.fh_vn),
+  fh_vna(a.fh_vna),
+  fh_vn_vn(a.fh_vn_vn)
 {
   // copy constructor
-  //DefineOutput(1, TList::Class() );
 }
 //________________________________________________________________________
 AliJFFlucAnalysis& AliJFFlucAnalysis::operator=(const AliJFFlucAnalysis& ap)
@@ -273,33 +251,6 @@ void AliJFFlucAnalysis::UserCreateOutputObjects()
     << fBin_hh << fBin_kk
     << fHistCentBin
     << "END"; // histo of < vn * vn > for [ih][ik][ihh][ikk][iCent]
-  /*fh_cn_4c
-    << TH1D("hcn_4c","hcn_4c", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fHistCentBin
-    << "END";
-  fh_cn_2c
-    << TH1D("hcn_2c","hcn_2c", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fHistCentBin
-    << "END";
-  fh_cn_cn_2c
-    << TH1D("hcn_cn_2c", "hcn_cn_2c", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fBin_hh << fBin_kk
-    << fHistCentBin
-    << "END";
-  fh_cn_2c_eta10
-    << TH1D("hcn_2c_eta10","hcn_2c_eta10", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fHistCentBin
-    << "END";
-  fh_cn_cn_2c_eta10
-    << TH1D("hcn_cn_2c_eta10", "hcn_cn_2c_eta10", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fBin_hh << fBin_kk
-    << fHistCentBin
-    << "END";*/
   fh_correlator
     << TH1D("h_corr", "h_corr", 1024, -3.0, 3.0)
     << fCorrBin
@@ -426,7 +377,6 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
   for (int i = 0; i < 2; ++i) {
     if ((subeventMask & (1 << i)) == 0)
       continue;
-    // Double_t ref_2p = N[i][0]*N[i][1];//TwoGap(pQq,i,0,0).Re();
     Double_t ref_2p = TwoGap(pQq, i, 0, 0).Re();
     Double_t ref_3p = ThreeGap(pQq, i, 0, 0, 0).Re();
     Double_t ref_4p = FourGap22(pQq, i, 0, 0, 0, 0).Re();
@@ -439,10 +389,10 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
     Double_t ebe_4p_weightB = 1.0;
     Double_t ebe_6p_weight = 1.0;
     if (flags & FLUC_EBE_WEIGHTING) {
-      ebe_2p_weight = ref_2p; // N[i][0]*N[i][1];//NSubTracks[kSubA] * NSubTracks[kSubB] ;
-      ebe_3p_weight = ref_3p; // ebe_2p_weight*(N[i][1]-1.0);// * (NSubTracks[kSubB]-1.0);
+      ebe_2p_weight = ref_2p;
+      ebe_3p_weight = ref_3p;
       ebe_4p_weight = ref_4p;
-      ebe_4p_weightB = ref_4pB; // ebe_3p_weight*(N[i][1]-2.0);// * (NSubTracks[kSubB]-2.0);
+      ebe_4p_weightB = ref_4pB;
       ebe_6p_weight = ref_6p;
     }
     Double_t ref_2Np[2 * nKL] = {
@@ -467,12 +417,11 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
       }
 
     for (int ih = 2; ih < kNH; ih++) {
-      // corr[ih][1] = pQn[i][0][ih]*pQn[i][1][ih]*N[i][0]*N[i][1];//QnA[ih]*QnB_star[ih];
       corr[ih][1] = TwoGap(pQq, i, ih, ih);
       for (int ik = 2; ik < nKL; ik++)
         corr[ih][ik] = corr[ih][ik - 1] * corr[ih][1]; // TComplex::Power(corr[ih][1],ik);
       ncorr[ih][1] = corr[ih][1];
-      ncorr[ih][2] = FourGap22(pQq, i, ih, ih, ih, ih); // mf*(corr[ih][2]*N[i][0]*N[i][1]-pQn[i][1][2*ih]*pQn[i][0][ih]*pQn[i][0][ih]*N[i][0]-pQn[i][0][2*ih]*pQn[i][1][ih]*pQn[i][1][ih]*N[i][1]+pQn[i][1][2*ih]*pQn[i][0][2*ih]);
+      ncorr[ih][2] = FourGap22(pQq, i, ih, ih, ih, ih);
       ncorr[ih][3] = SixGap33(pQq, i, ih, ih, ih, ih, ih, ih);
       for (int ik = 4; ik < nKL; ik++)
         ncorr[ih][ik] = corr[ih][ik]; // for 8,...-particle correlations, ignore the autocorrelation / weight dependency for now
@@ -494,8 +443,8 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
         fh_vna[ih][ik][fCBin]->Fill(ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
         for (int ihh = 2; ihh < kcNH; ihh++) {
           for (int ikk = 1; ikk < nKL; ikk++) {
-            vn2_vn2[ih][ik][ihh][ikk] = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];                     //(ncorr[ih][ik]*ncorr[ihh][ikk]).Re()/ref_2Np[ik+ikk-1];
-            fh_vn_vn[ih][ik][ihh][ikk][fCBin]->Fill(vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]); // Fill hvn_vn
+            vn2_vn2[ih][ik][ihh][ikk] = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];
+            fh_vn_vn[ih][ik][ihh][ikk][fCBin]->Fill(vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
           }
         }
       }
@@ -519,29 +468,21 @@ void AliJFFlucAnalysis::UserExec(Option_t*)
     TComplex V8V2star_4 = pQq[A][8][1] * TComplex::Power(pQq[B][2][1], 4);
 
     // New correlators (Modified by You's correction term for self-correlations)
-    // double nf = 1.0/(N[i][1]-1.0);
-    /// double ef = nf/(N[i][1]-2.0);
-    TComplex nV4V2star_2 = ThreeGap(pQq, i, 4, 2, 2) / ref_3p; // V4V2_star2-pQq[i][A][4][1]*pQq[i][B][4][2]; //nf*( V4V2star_2*N[i][1] - pQn[i][0][4]*pQn[i][1][4] );
-    // TComplex nV4V2star_2 = nf*( pQn[i][0][4]*pQn[i][1][2]*pQn[i][1][2]*N[i][1] - pQn[i][0][4]*pQn[i][1][4] );//nf*( V4V2star_2*N[i][1] - pQn[i][0][4]*pQn[i][1][4] );
-    TComplex nV5V2starV3star = ThreeGap(pQq, i, 5, 2, 3) / ref_3p;        // V5V2starV3star-pQq[i][A][5][1]*pQq[i][B][5][2]; //nf*( V5V2starV3star*N[i][1] - pQn[i][0][5]*pQn[i][1][5] );
-    TComplex nV6V2star_3 = FourGap13(pQq, i, 6, 2, 2, 2) / ref_4pB;       // V6V2star_3-pQq[i][A][6][2]*pQq[i][B][4][2]*pQq[i][B][2][1]- //pQn[i][0][6]*ef*( pQn[i][1][2]*pQn[i][1][2]*pQn[i][1][2]*N[i][1]*N[i][1] - 3.0*pQn[i][1][2]*pQn[i][1][4]*N[i][1] + 2.0*pQn[i][1][6] );
-    TComplex nV6V3star_2 = ThreeGap(pQq, i, 6, 3, 3) / ref_3p;            // nf*(V6V3star_2*N[i][1] - pQn[i][0][6]*pQn[i][1][6]);
-    TComplex nV6V2starV4star = ThreeGap(pQq, i, 6, 2, 4) / ref_3p;        // nf*(V6V2starV4star*N[i][1] - pQn[i][0][6]*pQn[i][1][6]);
-    TComplex nV7V2star_2V3star = FourGap13(pQq, i, 7, 2, 2, 3) / ref_4pB; // pQn[i][0][7]*ef*( pQn[i][1][2]*pQn[i][1][2]*pQn[i][1][3]*N[i][1]*N[i][1] - 2.0*pQn[i][1][2]*pQn[i][1][5]*N[i][1] - pQn[i][1][3]*pQn[i][1][4]*N[i][1] + 2.0*pQn[i][1][7] );
-    TComplex nV7V2starV5star = ThreeGap(pQq, i, 7, 2, 5) / ref_3p;        // nf*(V7V2starV5star*N[i][1] - pQn[i][0][7]*pQn[i][1][7]);
-    TComplex nV7V3starV4star = ThreeGap(pQq, i, 7, 3, 4) / ref_3p;        // nf*(V7V3starV4star*N[i][1] - pQn[i][0][7]*pQn[i][1][7]);
-    TComplex nV8V2starV3star_2 = FourGap13(pQq, i, 8, 2, 3, 3) / ref_4pB; // pQn[i][0][8]*ef*( pQn[i][1][2]*pQn[i][1][3]*pQn[i][1][3]*N[i][1]*N[i][1] - 2.0*pQn[i][1][3]*pQn[i][1][5]*N[i][1] - pQn[i][1][2]*pQn[i][1][6]*N[i][1] + 2.0*pQn[i][1][8] );
+    TComplex nV4V2star_2 = ThreeGap(pQq, i, 4, 2, 2) / ref_3p;
+    TComplex nV5V2starV3star = ThreeGap(pQq, i, 5, 2, 3) / ref_3p;
+    TComplex nV6V2star_3 = FourGap13(pQq, i, 6, 2, 2, 2) / ref_4pB;
+    TComplex nV6V3star_2 = ThreeGap(pQq, i, 6, 3, 3) / ref_3p;
+    TComplex nV6V2starV4star = ThreeGap(pQq, i, 6, 2, 4) / ref_3p;
+    TComplex nV7V2star_2V3star = FourGap13(pQq, i, 7, 2, 2, 3) / ref_4pB;
+    TComplex nV7V2starV5star = ThreeGap(pQq, i, 7, 2, 5) / ref_3p;
+    TComplex nV7V3starV4star = ThreeGap(pQq, i, 7, 3, 4) / ref_3p;
+    TComplex nV8V2starV3star_2 = FourGap13(pQq, i, 8, 2, 3, 3) / ref_4pB;
 
-    TComplex nV4V4V2V2 = FourGap22(pQq, i, 4, 2, 4, 2) / ref_4p; //(pQn[i][0][4]*pQn[i][1][4]*pQn[i][0][2]*pQn[i][1][2]) - ((1/(N[i][1]-1) * pQn[i][1][6] * pQn[i][0][4] *pQn[i][0][2] ))
-                                                                 //- ((1/(N[i][0]-1) * pQn[i][0][6]*pQn[i][1][4] * pQn[i][1][2])) + (1/((N[i][0]-1)*(N[i][1]-1))*pQn[i][0][6]*pQn[i][1][6] );
-    TComplex nV3V3V2V2 = FourGap22(pQq, i, 3, 2, 3, 2) / ref_4p; //(pQn[i][0][3]*pQn[i][1][3]*pQn[i][0][2]*pQn[i][1][2]) - ((1/(N[i][1]-1) * pQn[i][1][5] * pQn[i][0][3] *pQn[i][0][2] ))
-                                                                 //- ((1/(N[i][0]-1) * pQn[i][0][5]*pQn[i][1][3] * pQn[i][1][2])) + (1/((N[i][0]-1)*(N[i][1]-1))*pQn[i][0][5]*pQn[i][1][5] );
-    TComplex nV5V5V2V2 = FourGap22(pQq, i, 5, 2, 5, 2) / ref_4p; //(pQn[i][0][5]*pQn[i][1][5]*pQn[i][0][2]*pQn[i][1][2]) - ((1/(N[i][1]-1) * pQn[i][1][7] * pQn[i][0][5] *pQn[i][0][2] ))
-                                                                 //- ((1/(N[i][0]-1) * pQn[i][0][7]*pQn[i][1][5] * pQn[i][1][2])) + (1/((N[i][0]-1)*(N[i][1]-1))*pQn[i][0][7]*pQn[i][1][7] );
-    TComplex nV5V5V3V3 = FourGap22(pQq, i, 5, 3, 5, 3) / ref_4p; //(pQn[i][0][5]*pQn[i][1][5]*pQn[i][0][3]*pQn[i][1][3]) - ((1/(N[i][1]-1) * pQn[i][1][8] * pQn[i][0][5] *pQn[i][0][3] ))
-                                                                 //- ((1/(N[i][0]-1) * pQn[i][0][8]*pQn[i][1][5] * pQn[i][1][3])) + (1/((N[i][0]-1)*(N[i][1]-1))*pQn[i][0][8]*pQn[i][1][8] );
-    TComplex nV4V4V3V3 = FourGap22(pQq, i, 4, 3, 4, 3) / ref_4p; //(pQn[i][0][4]*pQn[i][1][4]*pQn[i][0][3]*pQn[i][1][3]) - ((1/(N[i][1]-1) * pQn[i][1][7] * pQn[i][0][4] *pQn[i][0][3] ))
-                                                                 //- ((1/(N[i][0]-1) * pQn[i][0][7]*pQn[i][1][4] * pQn[i][1][3])) + (1/((N[i][0]-1)*(N[i][1]-1))*pQn[i][0][7]*pQn[i][1][7] );
+    TComplex nV4V4V2V2 = FourGap22(pQq, i, 4, 2, 4, 2) / ref_4p;
+    TComplex nV3V3V2V2 = FourGap22(pQq, i, 3, 2, 3, 2) / ref_4p;
+    TComplex nV5V5V2V2 = FourGap22(pQq, i, 5, 2, 5, 2) / ref_4p;
+    TComplex nV5V5V3V3 = FourGap22(pQq, i, 5, 3, 5, 3) / ref_4p;
+    TComplex nV4V4V3V3 = FourGap22(pQq, i, 4, 3, 4, 3) / ref_4p;
 
     fh_correlator[0][fCBin]->Fill(V4V2starv2_2.Re());
     fh_correlator[1][fCBin]->Fill(V4V2starv2_4.Re());
@@ -624,11 +565,11 @@ void AliJFFlucAnalysis::Terminate(Option_t*)
 //________________________________________________________________________
 void AliJFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
 {
-  for (Long64_t it = 0, ntracks = fInputList->size(); it < ntracks; it++) {
-    // AliJBaseTrack *itrack = (AliJBaseTrack*)fInputList->At(it); // load track
-    const PtEtaPhiEVector* itrack = &(*fInputList)[it];
-    Double_t eta = itrack->Eta();
-    Double_t phi = itrack->Phi();
+  for (auto& track : *fInputList) {
+    Double_t eta = track.Eta();
+    Double_t phi = track.Phi();
+    Double_t pt = track.Pt();
+
     if (!(flags & FLUC_PHI_CORRECTION)) {
       fh_phieta[fCBin]->Fill(phi, eta);
       fh_phietaz[fCBin]->Fill(phi, eta, fVertex[2]);
@@ -639,7 +580,6 @@ void AliJFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
 
     Double_t phi_module_corr = 1.0; // itrack->GetWeight();// doing it in AliJFlucTask while filling track information. //XXXXXX
 
-    Double_t pt = itrack->Pt();
     Double_t effCorr = 1.0; // itrack->GetTrackEff();//fEfficiency->GetCorrection( pt, fEffFilterBit, fCent); //XXXXXX
     Double_t effInv = 1.0 / effCorr;
     fh_eta[fCBin]->Fill(eta, effInv);
@@ -674,10 +614,11 @@ void AliJFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
   // Calculate Q-vector with particle loop
   // Long64_t ntracks = fInputList->GetEntriesFast(); // all tracks from Task input
   // for( Long64_t it=0; it<ntracks; it++){
-  for (Long64_t it = 0, ntracks = fInputList->size(); it < ntracks; it++) {
-    const PtEtaPhiEVector* itrack = &(*fInputList)[it];
+  for (auto& track : *fInputList) {
+    Double_t eta = track.eta();
+    Double_t phi = track.phi();
     // AliJBaseTrack *itrack = (AliJBaseTrack*)fInputList->At(it); // load track
-    Double_t eta = itrack->Eta();
+    //Double_t eta = itrack->Eta();
     // track Eta cut Note! pt cuts already applied in AliJFFlucTask.cxx
     // Do we need arbitary Eta cut for QC method?
     // fixed eta ranged -0.8 < eta < 0.8 for QC
@@ -691,8 +632,6 @@ void AliJFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
     /////////////////////////////////////////////////
 
     int isub = (int)(eta > 0.0);
-    Double_t phi = itrack->Phi();
-    // Double_t pt = itrack->Pt();
 
     Double_t effCorr = 1.0;         // itrack->GetTrackEff();//fEfficiency->GetCorrection( pt, fEffFilterBit, fCent); //XXXXXX
     Double_t phi_module_corr = 1.0; // itrack->GetWeight(); //XXXXXX
@@ -737,11 +676,3 @@ TComplex AliJFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
     Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
   return four;
 }
-
-/*int AliJFFlucAnalysis::GetBin(Double_t cent){
-  for(UInt_t iMbin = 0; iMbin < NBin[_binning]; iMbin++){
-    if(fq > pBin[_binning][iMbin][0] && fq < pBin[_binning][iMbin][1])
-      return iMbin;
-  }
-  return -1;
-}*/

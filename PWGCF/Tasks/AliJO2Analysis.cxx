@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
@@ -33,7 +34,47 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-class JFlucAnalysis
+class TrackIter : public JTrackIterInterface{
+ public:
+  TrackIter(aod::ParticleTrack::iterator _m1) : m1(_m1){};
+  ~TrackIter(){};
+  aod::ParticleTrack::iterator m1;
+  PtEtaPhiEVector v;
+  PtEtaPhiEVector & deref(){
+    v.SetPt((*m1).pt());
+    v.SetEta((*m1).eta());
+    v.SetPhi((*m1).phi());
+    return v;
+  }
+  void increment(){
+    ++m1;
+  }
+  bool equals(const JTrackIterInterface *prhs){
+    return m1 == static_cast<const TrackIter *>(prhs)->m1;
+  }
+};
+
+class Tracks : public TracksBase{
+ public:
+  Tracks(aod::ParticleTrack const *_ptracks) : ptracks(_ptracks){};
+  ~Tracks(){};
+  aod::ParticleTrack const *ptracks;
+  JTrackIter begin(){
+    return JTrackIter(
+      std::unique_ptr<JTrackIterInterface>(new TrackIter(ptracks->begin())));
+  }
+  JTrackIter end(){
+    /*return JTrackIter(
+      std::unique_ptr<JTrackIterInterface>(new TrackIterEnd(ptracks->end())));*/
+    return JTrackIter(
+      std::unique_ptr<JTrackIterInterface>(new TrackIter(ptracks->begin()+ptracks->size()))); //return iterator at end()
+  }
+  size_t size() const{
+    return ptracks->size();
+  }
+};
+
+struct JFlucAnalysis
 {
  public:
   ~JFlucAnalysis()
@@ -50,8 +91,6 @@ class JFlucAnalysis
   void init(InitContext const& ic)
   {
     //
-    fInputList.reserve(2500);
-
     pcf = new AliJFFlucAnalysis("jflucAnalysis");
     pcf->SetNumBins(sizeof(jflucCentBins) / sizeof(jflucCentBins[0]));
     pcf->AddFlags(AliJFFlucAnalysis::FLUC_EBE_WEIGHTING);
@@ -60,35 +99,22 @@ class JFlucAnalysis
     pcf->UserCreateOutputObjects();
   }
 
-  // void process(aod::Collision const& collision, aod::ParticleTrack const& tracks){
-  // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, aod::ParticleTrack const& tracks){
   void process(soa::Join<aod::Collisions, aod::CollisionData>::iterator const& collision, aod::ParticleTrack const& tracks)
   {
     if (tracks.size() == 0)
       return; // rejected event
-    fInputList.clear();
-
-    for (auto& track : tracks) {
-      fInputList.emplace_back();
-      PtEtaPhiEVector& t = fInputList.back();
-
-      // ptrack->SetLabel(ntrack);
-      // ptrack->SetParticleType(0);
-      t.SetPt(track.pt());
-      t.SetEta(track.eta());
-      t.SetPhi(track.phi());
-    }
 
     const double fVertex[3] = {collision.posX(), collision.posY(), collision.posZ()};
 
+    Tracks tracksInt(&tracks);
+
     pcf->Init();
-    pcf->SetInputList(&fInputList);
+    pcf->SetInputList(&tracksInt);
     pcf->SetEventCentralityAndBin(collision.cent(), collision.cbin());
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);
     pcf->UserExec("");
   }
-  std::vector<PtEtaPhiEVector> fInputList;
   AliJFFlucAnalysis* pcf;
 };
 

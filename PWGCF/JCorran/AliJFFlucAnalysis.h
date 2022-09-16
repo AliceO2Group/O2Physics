@@ -9,45 +9,86 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 /// \author Dong Jo Kim (djkim@jyu.fi)
+/// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since Sep 2022
 
 #ifndef AliJFFlucAnalysis_cxx
 #define AliJFFlucAnalysis_cxx
 
-//#include <AliAnalysisTaskSE.h>
-//#include "AliJEfficiency.h"
 #include "AliJHistManager.h"
 #include <Math/Vector4D.h>
 #include <Math/LorentzVector.h>
 #include <TComplex.h>
-//#include <TF3.h>
+#include <iterator>
+#include <memory>
 
 using namespace ROOT;
 using namespace ROOT::Math;
 
-// TODO: needs test before switching
-/*class AliJTrackNew : PtEtaPhiEVector{
-public:
-  AliJTrackNew(){};
-  ~AliJTrackNew(){};
-};*/
+#ifndef JFLUC_USE_INPUT_LIST
+template<class ValueType>
+class TrackIterInterface{
+ public:
+  virtual ValueType & deref() = 0;
+  virtual void increment() = 0;
+  virtual bool equals(const TrackIterInterface<ValueType> *) = 0;
+};
+
+template<class ValueType>
+class TrackIterBase : public std::iterator<std::input_iterator_tag, ValueType>{
+ public:
+  //TrackIterBase(TrackIterInterface<ValueType> *_pm) : pm(_pm){};
+  TrackIterBase(std::unique_ptr<TrackIterInterface<ValueType>> _pm) : pm(std::move(_pm)){};
+  ~TrackIterBase(){};
+  //TrackIterInterface<ValueType> *pm;
+  std::unique_ptr<TrackIterInterface<ValueType>> pm;
+  TrackIterBase & operator++(){
+    pm->increment();
+    return *this;
+  }
+  ValueType & operator*(){
+    return pm->deref();
+  }
+  bool operator==(const TrackIterBase<ValueType> &m) const{
+    return pm->equals(m.pm.get());
+  }
+  bool operator!=(const TrackIterBase<ValueType> &m) const{
+    return !(*this == m);
+  }
+};
+
+typedef TrackIterBase<PtEtaPhiEVector> JTrackIter;
+typedef TrackIterInterface<PtEtaPhiEVector> JTrackIterInterface;
+class TracksBase{
+ public:
+  TracksBase(){}
+  virtual ~TracksBase(){};
+  virtual JTrackIter begin() = 0;
+  virtual JTrackIter end() = 0;
+  virtual size_t size() const = 0;
+};
+#endif
 
 class AliJFFlucAnalysis
-{ // : public AliAnalysisTaskSE {
+{
  public:
   AliJFFlucAnalysis();
   AliJFFlucAnalysis(const char* name);
   AliJFFlucAnalysis(const AliJFFlucAnalysis& a);             // not implemented
   AliJFFlucAnalysis& operator=(const AliJFFlucAnalysis& ap); // not implemented
 
-  virtual ~AliJFFlucAnalysis();
-  virtual void UserCreateOutputObjects();
-  virtual void Init();
-  virtual void UserExec(Option_t* option);
-  virtual void Terminate(Option_t*);
+  ~AliJFFlucAnalysis();
+  void UserCreateOutputObjects();
+  void Init();
+  void UserExec(Option_t* option);
+  void Terminate(Option_t*);
 
+#ifndef JFLUC_USE_INPUT_LIST
+  //this generic class can be used by standalone toyMC/hydro/etc.
+  void SetInputList(TracksBase *_fInputList) { fInputList = _fInputList; }
+#else
   void SetInputList(std::vector<PtEtaPhiEVector>* _fInputList) { fInputList = _fInputList; }
-  // void SetInputList(TClonesArray *inputarray){fInputList = inputarray;}
+#endif
   void SetEventCentralityAndBin(float cent, UInt_t cbin)
   {
     fCent = cent;
@@ -103,10 +144,6 @@ class AliJFFlucAnalysis
     flags |= _flags;
   }
 
-  /*static Double_t CentBin_PbPb_default[][2];
-  static Double_t MultBin_PbPb_1[][2];
-  static Double_t MultBin_pPb_1[][2];
-  static Double_t (*pBin[3])[2];*/
   static Double_t pttJacek[74];
   static UInt_t NpttJacek;
 
@@ -132,9 +169,11 @@ class AliJFFlucAnalysis
          nKL };  // order
 #define kcNH kH6 // max second dimension + 1
  private:
-  std::vector<PtEtaPhiEVector>* fInputList;
-  // TClonesArray *fInputList;
-  // AliJEfficiency *fEfficiency;
+#ifndef JFLUC_USE_INPUT_LIST
+  TracksBase *fInputList; //no-copy interface to tracks (for O2)
+#else
+  std::vector<PtEtaPhiEVector> *fInputList; //simple list for simulation codes
+#endif
   const Double_t* fVertex; //!
   Float_t fCent;
   Float_t fImpactParameter;
@@ -149,7 +188,6 @@ class AliJFFlucAnalysis
 
   double fEta_min;
   double fEta_max;
-  // double NSubTracks[2];
 
   TComplex QvectorQC[kNH][nKL];
   TComplex QvectorQCeta10[2][kNH][nKL]; // ksub
@@ -173,7 +211,6 @@ class AliJFFlucAnalysis
   AliJTH1D fh_phi;             //! // for phi dist [ic][isub]
   AliJTH2D fh_phieta;          //!
   AliJTH3D fh_phietaz;         //!
-  // AliJTH1D fh_Qvector;//! // for Q-Vector dist [ic][isub][ih]
 
   AliJTH1D fh_psi_n;       //!
   AliJTH1D fh_cos_n_phi;   //!
@@ -214,11 +251,8 @@ class AliJFFlucAnalysis
   AliJTH1D fh_SC_with_QC_4corr;       //! // for <vn^2 vm^2>
   AliJTH1D fh_SC_with_QC_2corr;       //! // for <vn^2>
   AliJTH1D fh_SC_with_QC_2corr_eta10; //!
-  // AliJTH2D fh_QvectorQC;//! // check for Q-vec dist for [ic][ih]
-  // AliJTH1D fh_QvectorQCphi;//!
   AliJTH1D fh_evt_SP_QC_ratio_2p; //! // check SP QC evt by evt ratio
   AliJTH1D fh_evt_SP_QC_ratio_4p; //! // check SP QC evt by evt ratio
-                                  // ClassDef(AliJFFlucAnalysis, 1);
 };
 
 #endif

@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 #ifndef JFLUC_CATALYST_H
