@@ -22,7 +22,6 @@
 #include <vector>
 #include <array>
 #include <numeric>
-#include <bits/stdc++.h>
 #include "TComplex.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -761,8 +760,7 @@ struct MultiParticleCorrelationsARTask {
   {
     // return Qvector from fQvectors array
     if (n > AR::MaxHarmonic || p > AR::MaxPower) {
-      std::cout << __LINE__ << ": running out of bounds" << std::endl;
-      Fatal("Q", "Running out of bounds in fQvector");
+      LOG(fatal) << "Harmonic " << n << ">" << AR::MaxHarmonic << " or the power " << p << ">" << AR::MaxPower;
     }
     if (n >= 0) {
       return fQvectors[n][p];
