@@ -32,8 +32,6 @@ using namespace o2::aod::hf_correlation_d0hadron;
 using namespace o2::analysis::hf_cuts_d0_topik;
 using namespace o2::constants::math;
 
-
-
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 ///
@@ -41,7 +39,6 @@ double getDeltaPhi(double phiD, double phiDbar)
 {
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PI / 2.);
 }
-
 
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_topik::npTBins;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
@@ -61,7 +58,7 @@ const int ptDAxisBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
-//using MCParticlesPlus = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+// using MCParticlesPlus = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
 struct hfCorrelatorD0Hadrons {
   Produces<aod::DHadronPair> entryD0HadronPair;
@@ -94,7 +91,6 @@ struct hfCorrelatorD0Hadrons {
      {"hCountSoftPiData", "soft pion counter -  Data", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hCountSoftPiMCRec", "soft pion counter - MC rec", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hCountSoftPiMCGen", "soft pion counter - MC gen", {HistType::kTH1F, {{20, 0., 20.}}}}}};
-   
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -117,27 +113,26 @@ struct hfCorrelatorD0Hadrons {
     registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMass1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
     registry.add("hMassD01D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
-    registry.add("hMassD0bar1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});    
-   
+    registry.add("hMassD0bar1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
+
     registry.add("hMassD0MCRecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0MCRecBkg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecRefl", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecBkg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountD0triggersMCGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-
   }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
-  
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // =============================================================================  Process starts for Data ==================================================================================
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData (aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
+  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -169,33 +164,33 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
         continue;
       }
 
-	// ========================== Define parameters for soft pion removal ================================
-	double p2prong0 = (candidate1.pxProng0()*candidate1.pxProng0())+(candidate1.pyProng0()*candidate1.pyProng0())+(candidate1.pzProng0()*candidate1.pzProng0());
-	double p2prong1 = (candidate1.pxProng1()*candidate1.pxProng1())+(candidate1.pyProng1()*candidate1.pyProng1())+(candidate1.pzProng1()*candidate1.pzProng1());
-	double mpi = RecoDecay::getMassPDG(kPiPlus);
-	double mk = RecoDecay::getMassPDG(kKPlus);
-	double e0pi = TMath::Sqrt(p2prong0+(mpi*mpi));
-	double e1pi = TMath::Sqrt(p2prong1+(mpi*mpi));
-	double e0k = TMath::Sqrt(p2prong0+(mk*mk));
-	double e1k = TMath::Sqrt(p2prong1+(mk*mk));
-	
-	// ========================== trigger efficiency ================================
+      // ========================== Define parameters for soft pion removal ================================
+      double p2prong0 = (candidate1.pxProng0() * candidate1.pxProng0()) + (candidate1.pyProng0() * candidate1.pyProng0()) + (candidate1.pzProng0() * candidate1.pzProng0());
+      double p2prong1 = (candidate1.pxProng1() * candidate1.pxProng1()) + (candidate1.pyProng1() * candidate1.pyProng1()) + (candidate1.pzProng1() * candidate1.pzProng1());
+      double mpi = RecoDecay::getMassPDG(kPiPlus);
+      double mk = RecoDecay::getMassPDG(kKPlus);
+      double e0pi = TMath::Sqrt(p2prong0 + (mpi * mpi));
+      double e1pi = TMath::Sqrt(p2prong1 + (mpi * mpi));
+      double e0k = TMath::Sqrt(p2prong0 + (mk * mk));
+      double e1k = TMath::Sqrt(p2prong1 + (mk * mk));
+
+      // ========================== trigger efficiency ================================
       double efficiencyWeight = 1.;
       if (flagApplyEfficiency) {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
       }
-	// ========================== Fill mass histo  ================================
+      // ========================== Fill mass histo  ================================
       if (candidate1.isSelD0() >= selectionFlagD0) {
-      registry.fill(HIST("hMass"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
-      registry.fill(HIST("hMass1D"), InvMassD0(candidate1), efficiencyWeight);
-      registry.fill(HIST("hMassD01D"), InvMassD0(candidate1), efficiencyWeight);
-      } 
+        registry.fill(HIST("hMass"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMass1D"), InvMassD0(candidate1), efficiencyWeight);
+        registry.fill(HIST("hMassD01D"), InvMassD0(candidate1), efficiencyWeight);
+      }
       if (candidate1.isSelD0bar() >= selectionFlagD0bar) {
-      registry.fill(HIST("hMass"), InvMassD0bar(candidate1), candidate1.pt(), efficiencyWeight);
-      registry.fill(HIST("hMass1D"), InvMassD0bar(candidate1), efficiencyWeight);
-      registry.fill(HIST("hMassD0bar1D"), InvMassD0bar(candidate1), efficiencyWeight);
-      } 
- 	// ========================== Fill general histos ================================     
+        registry.fill(HIST("hMass"), InvMassD0bar(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMass1D"), InvMassD0bar(candidate1), efficiencyWeight);
+        registry.fill(HIST("hMassD0bar1D"), InvMassD0bar(candidate1), efficiencyWeight);
+      }
+      // ========================== Fill general histos ================================
       registry.fill(HIST("hPtCand"), candidate1.pt());
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
@@ -203,66 +198,72 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
       registry.fill(HIST("hPhi"), candidate1.phi());
       registry.fill(HIST("hY"), YD0(candidate1));
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
-    
+
       // ================================================================================= D-h correlation dedicated section =====================================================
 
-      
-      	// ========================== track loop starts here ================================
+      // ========================== track loop starts here ================================
       for (const auto& track : tracks) {
-      //Remove D0 daughters by checking track indices
+        // Remove D0 daughters by checking track indices
         if ((candidate1.index0Id() == track.mRowIndex) || (candidate1.index1Id() == track.mRowIndex)) {
           continue;
         }
-        if (abs(track.dcaXY()) >= 1.0 || abs(track.dcaZ()) >= 1.0) continue; // Remove secondary tracks
-        
-                              registry.fill(HIST("hCountSoftPiData"),2);    //fill no. of tracks before soft pion removal    
-        
+        if (abs(track.dcaXY()) >= 1.0 || abs(track.dcaZ()) >= 1.0)
+          continue; // Remove secondary tracks
+
+        registry.fill(HIST("hCountSoftPiData"), 2); // fill no. of tracks before soft pion removal
+
         // ===== soft pion removal ===================================================
         double invmassDstar1 = 0, invmassDstar2 = 0;
         bool isSoftpiD0 = false, isSoftpiD0bar = false;
-        double psum2 = ((candidate1.px()+track.px())*(candidate1.px()+track.px()))+((candidate1.py()+track.py())*(candidate1.py()+track.py()))+((candidate1.pz()+track.pz())*(candidate1.pz()+track.pz()));
-        double Epion = TMath::Sqrt((track.px()*track.px())+(track.py()*track.py())+(track.pz()*track.pz())+(mpi*mpi));
+        double psum2 = ((candidate1.px() + track.px()) * (candidate1.px() + track.px())) + ((candidate1.py() + track.py()) * (candidate1.py() + track.py())) + ((candidate1.pz() + track.pz()) * (candidate1.pz() + track.pz()));
+        double Epion = TMath::Sqrt((track.px() * track.px()) + (track.py() * track.py()) + (track.pz() * track.pz()) + (mpi * mpi));
 
-        invmassDstar1 = TMath::Sqrt(pow(e0pi+e1k+Epion,2.)-psum2);
-        invmassDstar2 = TMath::Sqrt(pow(e0k+e1pi+Epion,2.)-psum2);
-        if (candidate1.isSelD0() >= selectionFlagD0){
-        if ((TMath::Abs(invmassDstar1-InvMassD0(candidate1))-0.14543) < 3*800.*pow(10.,-6.)) {isSoftpiD0 = true; continue;}}
-        
-        if (candidate1.isSelD0bar() >= selectionFlagD0bar){
-        if ((TMath::Abs(invmassDstar2-InvMassD0bar(candidate1))-0.14543) < 3*800.*pow(10.,-6.)) {isSoftpiD0bar = true; continue;}}
-                              registry.fill(HIST("hCountSoftPiData"),4);    //fill no. of tracks after soft pion removal    
-        
+        invmassDstar1 = TMath::Sqrt(pow(e0pi + e1k + Epion, 2.) - psum2);
+        invmassDstar2 = TMath::Sqrt(pow(e0k + e1pi + Epion, 2.) - psum2);
+        if (candidate1.isSelD0() >= selectionFlagD0) {
+          if ((TMath::Abs(invmassDstar1 - InvMassD0(candidate1)) - 0.14543) < 3 * 800. * pow(10., -6.)) {
+            isSoftpiD0 = true;
+            continue;
+          }
+        }
+
+        if (candidate1.isSelD0bar() >= selectionFlagD0bar) {
+          if ((TMath::Abs(invmassDstar2 - InvMassD0bar(candidate1)) - 0.14543) < 3 * 800. * pow(10., -6.)) {
+            isSoftpiD0bar = true;
+            continue;
+          }
+        }
+        registry.fill(HIST("hCountSoftPiData"), 4); // fill no. of tracks after soft pion removal
+
         int SignalStatus = 0;
-        if ((candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {SignalStatus += 1;}
-        if ((candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {SignalStatus += 2;}           
+        if ((candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+          SignalStatus += 1;
+        }
+        if ((candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+          SignalStatus += 2;
+        }
 
-          
-        
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
-                         track.eta() - candidate1.eta(),
-                         candidate1.pt(),
-                         track.pt());
-        entryD0HadronRecoInfo(InvMassD0(candidate1),InvMassD0bar(candidate1),SignalStatus); 
-          
-      
+                          track.eta() - candidate1.eta(),
+                          candidate1.pt(),
+                          track.pt());
+        entryD0HadronRecoInfo(InvMassD0(candidate1), InvMassD0bar(candidate1), SignalStatus);
+
       } // end inner loop (tracks)
 
     } // end outer loop
-    
   }
   PROCESS_SWITCH(hfCorrelatorD0Hadrons, processData, "Process data", false);
-  
-  
-  
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // =============================================================================  Process starts for MCRec ==================================================================================
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-    //Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_selcandidate_d0::isRecoHFFlag >= 0;
+
+  // Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_selcandidate_d0::isRecoHFFlag >= 0;
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates)
   {
-  
-  int nTracks = 0;
+
+    int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
         if (std::abs(track.eta()) > cutTrackEtaMax) {
@@ -279,10 +280,10 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
       return;
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
-  // MC reco level
+    // MC reco level
     bool flagD0 = false;
     bool flagD0bar = false;
-    
+
     for (auto& candidate1 : candidates) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
@@ -299,7 +300,7 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
       if (flagApplyEfficiency) {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
       }
-      
+
       if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::D0ToPiK) {
         // fill per-candidate distributions from D0/D0bar true candidates
         registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
@@ -310,7 +311,7 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
         registry.fill(HIST("hYMCRec"), YD0(candidate1));
         registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       }
-     // fill invariant mass plots from D0/D0bar signal and background candidates
+      // fill invariant mass plots from D0/D0bar signal and background candidates
       if (candidate1.isSelD0() >= selectionFlagD0) {                  // only reco as D0
         if (candidate1.flagMCMatchRec() == 1 << DecayType::D0ToPiK) { // also matched as D0
           registry.fill(HIST("hMassD0MCRecSig"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
@@ -328,25 +329,23 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
         } else {
           registry.fill(HIST("hMassD0barMCRecBkg"), InvMassD0bar(candidate1), candidate1.pt(), efficiencyWeight);
         }
-      } 
-                      registry.fill(HIST("hCountSoftPiMCRec"),2);    //fill no. of tracks before soft pion removal    
+      }
+      registry.fill(HIST("hCountSoftPiMCRec"), 2); // fill no. of tracks before soft pion removal
       // ========================== Define parameters for soft pion removal ================================
-	double p2prong0 = (candidate1.pxProng0()*candidate1.pxProng0())+(candidate1.pyProng0()*candidate1.pyProng0())+(candidate1.pzProng0()*candidate1.pzProng0());
-	double p2prong1 = (candidate1.pxProng1()*candidate1.pxProng1())+(candidate1.pyProng1()*candidate1.pyProng1())+(candidate1.pzProng1()*candidate1.pzProng1());
-	double mpi = RecoDecay::getMassPDG(kPiPlus);
-	double mk = RecoDecay::getMassPDG(kKPlus);
-	double e0pi = TMath::Sqrt(p2prong0+(mpi*mpi));
-	double e1pi = TMath::Sqrt(p2prong1+(mpi*mpi));
-	double e0k = TMath::Sqrt(p2prong0+(mk*mk));
-	double e1k = TMath::Sqrt(p2prong1+(mk*mk));
-      
+      double p2prong0 = (candidate1.pxProng0() * candidate1.pxProng0()) + (candidate1.pyProng0() * candidate1.pyProng0()) + (candidate1.pzProng0() * candidate1.pzProng0());
+      double p2prong1 = (candidate1.pxProng1() * candidate1.pxProng1()) + (candidate1.pyProng1() * candidate1.pyProng1()) + (candidate1.pzProng1() * candidate1.pzProng1());
+      double mpi = RecoDecay::getMassPDG(kPiPlus);
+      double mk = RecoDecay::getMassPDG(kKPlus);
+      double e0pi = TMath::Sqrt(p2prong0 + (mpi * mpi));
+      double e1pi = TMath::Sqrt(p2prong1 + (mpi * mpi));
+      double e0k = TMath::Sqrt(p2prong0 + (mk * mk));
+      double e1k = TMath::Sqrt(p2prong1 + (mk * mk));
+
       // D0-h correlation dedicated section
-     
-      flagD0 = candidate1.flagMCMatchRec() == (1 << DecayType::D0ToPiK);        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
+
+      flagD0 = candidate1.flagMCMatchRec() == (1 << DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate1 matched to D0 (particle)
       flagD0bar = candidate1.flagMCMatchRec() == -(1 << DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
 
-
-      
       for (const auto& track : tracks) {
         if (std::abs(track.eta()) > cutTrackEtaMax) {
           continue;
@@ -361,64 +360,69 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
         if (std::abs(track.dcaXY()) >= 1.0 || std::abs(track.dcaZ()) >= 1.0) {
           continue; // Remove secondary tracks
         }
-                registry.fill(HIST("hCountSoftPiMCRec"),2);    //fill no. of tracks before soft pion removal    
+        registry.fill(HIST("hCountSoftPiMCRec"), 2); // fill no. of tracks before soft pion removal
         // ===== soft pion removal ===================================================
         double invmassDstar1 = 0, invmassDstar2 = 0;
         bool isSoftpiD0 = false, isSoftpiD0bar = false;
-        double psum2 = ((candidate1.px()+track.px())*(candidate1.px()+track.px()))+((candidate1.py()+track.py())*(candidate1.py()+track.py()))+((candidate1.pz()+track.pz())*(candidate1.pz()+track.pz()));
-        double Epion = TMath::Sqrt((track.px()*track.px())+(track.py()*track.py())+(track.pz()*track.pz())+(mpi*mpi));
+        double psum2 = ((candidate1.px() + track.px()) * (candidate1.px() + track.px())) + ((candidate1.py() + track.py()) * (candidate1.py() + track.py())) + ((candidate1.pz() + track.pz()) * (candidate1.pz() + track.pz()));
+        double Epion = TMath::Sqrt((track.px() * track.px()) + (track.py() * track.py()) + (track.pz() * track.pz()) + (mpi * mpi));
 
-        invmassDstar1 = TMath::Sqrt(pow(e0pi+e1k+Epion,2.)-psum2);
-        invmassDstar2 = TMath::Sqrt(pow(e0k+e1pi+Epion,2.)-psum2);
+        invmassDstar1 = TMath::Sqrt(pow(e0pi + e1k + Epion, 2.) - psum2);
+        invmassDstar2 = TMath::Sqrt(pow(e0k + e1pi + Epion, 2.) - psum2);
 
-        if (candidate1.isSelD0() >= selectionFlagD0){
-        if ((TMath::Abs(invmassDstar1-InvMassD0(candidate1))-0.14543) < 3*800.*pow(10.,-6.)) {
-        isSoftpiD0 = true; 
-        continue; }}
-        
-        if (candidate1.isSelD0bar() >= selectionFlagD0bar){
-        if ((TMath::Abs(invmassDstar2-InvMassD0bar(candidate1))-0.14543) < 3*800.*pow(10.,-6.)) { 
-        isSoftpiD0bar = true; 
-        continue;} }
-        
+        if (candidate1.isSelD0() >= selectionFlagD0) {
+          if ((TMath::Abs(invmassDstar1 - InvMassD0(candidate1)) - 0.14543) < 3 * 800. * pow(10., -6.)) {
+            isSoftpiD0 = true;
+            continue;
+          }
+        }
 
-        registry.fill(HIST("hCountSoftPiMCRec"),4); // fill no. of tracks after soft pion removal
-        
+        if (candidate1.isSelD0bar() >= selectionFlagD0bar) {
+          if ((TMath::Abs(invmassDstar2 - InvMassD0bar(candidate1)) - 0.14543) < 3 * 800. * pow(10., -6.)) {
+            isSoftpiD0bar = true;
+            continue;
+          }
+        }
+
+        registry.fill(HIST("hCountSoftPiMCRec"), 4); // fill no. of tracks after soft pion removal
+
         int SignalStatus = 0;
-        if ((flagD0 = true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false))      
-                {SignalStatus += 1;} // signal case D0
-        if ((flagD0bar = true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false))      
-                {SignalStatus += 2;} // reflection case D0
-        if ((flagD0 = false) && (flagD0bar = false) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false))      
-                {SignalStatus += 4;} // background case D0        
-                
-        if ((flagD0bar = true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false))      
-                {SignalStatus += 8;} //signal case D0bar     
-        if ((flagD0 = true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false))      
-                {SignalStatus += 16;} //reflection case D0bar       
-        if ((flagD0 = false) && (flagD0bar = false ) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false))      
-                {SignalStatus += 32;} //background case D0bar  
-                
+        if ((flagD0 = true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+          SignalStatus += 1;
+        } // signal case D0
+        if ((flagD0bar = true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+          SignalStatus += 2;
+        } // reflection case D0
+        if ((flagD0 = false) && (flagD0bar = false) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+          SignalStatus += 4;
+        } // background case D0
 
-        
+        if ((flagD0bar = true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+          SignalStatus += 8;
+        } // signal case D0bar
+        if ((flagD0 = true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+          SignalStatus += 16;
+        } // reflection case D0bar
+        if ((flagD0 = false) && (flagD0bar = false) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+          SignalStatus += 32;
+        } // background case D0bar
+
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
-                             track.eta() - candidate1.eta(),
-                             candidate1.pt(),
-                             track.pt());
-        entryD0HadronRecoInfo(InvMassD0(candidate1),InvMassD0bar(candidate1),SignalStatus); 
+                          track.eta() - candidate1.eta(),
+                          candidate1.pt(),
+                          track.pt());
+        entryD0HadronRecoInfo(InvMassD0(candidate1), InvMassD0bar(candidate1), SignalStatus);
       } // end inner loop (Tracks)
-      
-  } // end of outer loop (D0)
- }
+
+    } // end of outer loop (D0)
+  }
 
   PROCESS_SWITCH(hfCorrelatorD0Hadrons, processMcRec, "Process MC Reco mode", true);
-  
-  
-  
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // =============================================================================  Process starts for MCGen ==================================================================================
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   void processMcGen(aod::McCollision const& mccollision, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC)
   {
 
@@ -441,44 +445,46 @@ registry.add("hMassD0MCRecRefl", "D0 reflection candidates - MC reco;inv. mass (
       registry.fill(HIST("hPhiMCGen"), particle1.phi());
       registry.fill(HIST("hYMCGen"), yD);
 
-// D-h correlation dedicated section
+      // D-h correlation dedicated section
 
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
-	continue;
+        continue;
       registry.fill(HIST("hCountD0triggersMCGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
 
       for (auto& particle2 : particlesMC) {
 
-        if (std::abs(particle2.eta()) > cutTrackEtaMax) continue;
+        if (std::abs(particle2.eta()) > cutTrackEtaMax)
+          continue;
 
-        if (particle2.pt() < cutPtTrackMin) continue;
+        if (particle2.pt() < cutPtTrackMin)
+          continue;
 
-        if ((std::abs(particle2.pdgCode()) != 11) && (std::abs(particle2.pdgCode()) != 13) && (std::abs(particle2.pdgCode()) != 211) && (std::abs(particle2.pdgCode()) != 321) && (std::abs(particle2.pdgCode()) != 2212))  continue;
+        if ((std::abs(particle2.pdgCode()) != 11) && (std::abs(particle2.pdgCode()) != 13) && (std::abs(particle2.pdgCode()) != 211) && (std::abs(particle2.pdgCode()) != 321) && (std::abs(particle2.pdgCode()) != 2212))
+          continue;
 
         // ==============================soft pion removal================================
-        registry.fill(HIST("hCountSoftPiMCGen"),2); //fill before soft pi removal
+        registry.fill(HIST("hCountSoftPiMCGen"), 2); // fill before soft pi removal
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
-        
+
         auto indexMotherPi = RecoDecay::getMother(particlesMC, particle2, 413, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
         auto indexMotherD0 = RecoDecay::getMother(particlesMC, particle1, 413, true, nullptr, 1);
-        if(std::abs(particle2.pdgCode()) == 211 && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi==indexMotherD0)  continue;
-        
-        registry.fill(HIST("hCountSoftPiMCGen"),4); //fill after soft pion removal
-        entryD0HadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
-                             particle2.eta() - particle1.eta(),
-                             particle1.pt(),
-                             particle2.pt());
-        entryD0HadronRecoInfo(1.864,
-                             1.864,
-                             0); //dummy info
-      } // end inner loop
+        if (std::abs(particle2.pdgCode()) == 211 && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0)
+          continue;
 
-    }   // end outer loop
+        registry.fill(HIST("hCountSoftPiMCGen"), 4); // fill after soft pion removal
+        entryD0HadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
+                          particle2.eta() - particle1.eta(),
+                          particle1.pt(),
+                          particle2.pt());
+        entryD0HadronRecoInfo(1.864,
+                              1.864,
+                              0); // dummy info
+      }                           // end inner loop
+
+    } // end outer loop
   }
 
   PROCESS_SWITCH(hfCorrelatorD0Hadrons, processMcGen, "Process MC Gen mode", false);
-
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
