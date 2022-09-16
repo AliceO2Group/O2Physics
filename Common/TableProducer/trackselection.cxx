@@ -85,13 +85,19 @@ struct TrackSelectionTask {
     globalTracksSDD.SetPtRange(ptMin, ptMax);
     globalTracksSDD.SetEtaRange(etaMin, etaMax);
     if (isRun3) {
-      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);    // Requiring that this is a Run 3 track
-      globalTracksSDD.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Requiring that this is a Run 3 track
+      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Requiring that this is a Run 3 track
     }
   }
 
   void process(soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
   {
+    if (isRun3) {
+      for (auto& track : tracks) {
+        filterTable((uint8_t)0,
+                    globalTracks.IsSelectedMask(track));
+      }
+      return;
+    }
     for (auto& track : tracks) {
       filterTable((uint8_t)globalTracksSDD.IsSelected(track),
                   globalTracks.IsSelectedMask(track));
