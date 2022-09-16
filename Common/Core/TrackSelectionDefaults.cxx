@@ -26,7 +26,7 @@
 TrackSelection getGlobalTrackSelection()
 {
   TrackSelection selectedTracks;
-  selectedTracks.SetTrackType(o2::aod::track::Run2Track);// Run 2 track asked by default
+  selectedTracks.SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
   selectedTracks.SetPtRange(0.1f, 1e10f);
   selectedTracks.SetEtaRange(-0.8f, 0.8f);
   selectedTracks.SetRequireITSRefit(true);
