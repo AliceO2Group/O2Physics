@@ -87,5 +87,3 @@ DECLARE_SOA_TABLE(TwoPSkimmedParticles, "AOD", "TWOPSKMDPARTS", //! The generate
 } // namespace o2
 
 #endif // O2_ANALYSIS_TWOPSKIMMED_H
-
-

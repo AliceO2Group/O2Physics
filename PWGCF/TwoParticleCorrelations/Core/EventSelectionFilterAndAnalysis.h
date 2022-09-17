@@ -69,11 +69,11 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   void InitializeMultiplicityFilter();
   int CalculateMaskLength();
 
-  CutBrick<float>* mMultiplicityClasses; //! the multiplicity default classes cuts
-  CutBrick<int>* mTriggerSelection;      //! the trigger selection cuts
-  CutBrick<float>* mZVertex;             //! the z vertex selection cuts
-  CutBrick<int>* mPileUpRejection;       //! the pile-up rejection criteria
-  std::vector<float> mMultiplicities;    // the collision multiplicities from the different implemented estimators
+  CutBrick<float>* mMultiplicityClasses;                 //! the multiplicity default classes cuts
+  CutBrick<int>* mTriggerSelection;                      //! the trigger selection cuts
+  CutBrick<float>* mZVertex;                             //! the z vertex selection cuts
+  CutBrick<int>* mPileUpRejection;                       //! the pile-up rejection criteria
+  std::vector<float> mMultiplicities;                    // the collision multiplicities from the different implemented estimators
   int mDefaultMultiplicityEstimatorIndex;                // the default estimator index on the collision multiplicities array
   std::vector<int> mAlternateMultiplicityEstimatorIndex; // the vector of alternate estimators index on the collision multiplicities array
 

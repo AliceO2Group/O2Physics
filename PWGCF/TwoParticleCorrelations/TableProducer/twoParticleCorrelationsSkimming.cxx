@@ -34,7 +34,7 @@ namespace o2::analysis::twopskim
 
 PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
 PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;
-}
+} // namespace o2::analysis::twopskim
 
 using namespace twopskim;
 
@@ -191,4 +191,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<TwoParticleCorrelationsSkimming>(cfgc)};
   return workflow;
 }
-

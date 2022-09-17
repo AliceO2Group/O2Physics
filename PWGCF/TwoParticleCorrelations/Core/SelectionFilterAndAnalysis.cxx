@@ -44,4 +44,3 @@ SelectionFilterAndAnalysis::SelectionFilterAndAnalysis(const TString& name, selm
     mArmedMask(0UL)
 {
 }
-

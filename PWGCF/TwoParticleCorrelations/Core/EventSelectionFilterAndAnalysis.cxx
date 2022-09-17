@@ -235,4 +235,3 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
     LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
   }
 }
-
