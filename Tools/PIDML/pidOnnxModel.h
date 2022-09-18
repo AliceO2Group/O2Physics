@@ -46,7 +46,6 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  // path is local or CCDB
   PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, bool useTOF, bool useTRD) : mUseTOF(useTOF), mUseTRD(useTRD)
   {
     std::string modelFile;
