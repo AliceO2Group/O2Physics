@@ -62,7 +62,7 @@ struct SimpleApplyOnnxModel {
   // FIXME: Temporary solution, new networks will have sigmoid layer added
   float sigmoid(float x)
   {
-    float value = std::max(-100.0f, std::min(100.0f, value));
+    float value = std::max(-100.0f, std::min(100.0f, x));
     return 1.0f / (1.0f + std::exp(-value));
   }
 

@@ -110,31 +110,18 @@ struct PidONNXModel {
   }
 
  private:
-  std::string composePath(std::string const& dir, std::string const& filename, std::string const& ext)
+  void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
   {
-    std::ostringstream tmp;
-    tmp << dir << "/" << filename << ext;
-    return tmp.str();
-  }
-
-  void getFilenamesFromPath(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
-  {
-    std::ostringstream tmp;
-    tmp << path << "/TPC";
+    modelDir = path + "/TPC";
     if (mUseTOF) {
-      tmp << "_TOF";
+      modelDir += "_TOF";
     }
     if (mUseTRD) {
-      tmp << "_TRD";
+      modelDir += "_TRD";
     }
-    modelDir = tmp.str();
 
-    tmp.str("");
-    tmp.clear();
-    tmp << "simple_model_" << pid << ext;
-    modelFile = tmp.str();
-
-    modelPath = composePath(modelDir, modelFile, "");
+    modelFile = "simple_model_" + pid + ext;
+    modelPath = modelDir + "/" + modelFile;
   }
 
   void downloadFromCCDB(o2::ccdb::CcdbApi& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
@@ -161,15 +148,15 @@ struct PidONNXModel {
     std::string localDir, localModelFile;
     std::string trainColumnsFile = "columns_for_training";
     std::string scalingParamsFile = "scaling_params";
-    getFilenamesFromPath(localPath, localDir, localModelFile, modelPath, pid, ".onnx");
-    std::string localTrainColumnsPath = composePath(localDir, trainColumnsFile, ".json");
-    std::string localScalingParamsPath = composePath(localDir, scalingParamsFile, ".json");
+    getModelPaths(localPath, localDir, localModelFile, modelPath, pid, ".onnx");
+    std::string localTrainColumnsPath = localDir + "/" + trainColumnsFile + ".json";
+    std::string localScalingParamsPath = localDir + "/" + scalingParamsFile + ".json";
 
     if (useCCDB) {
       std::string ccdbDir, ccdbModelFile, ccdbModelPath;
-      getFilenamesFromPath(ccdbPath, ccdbDir, ccdbModelFile, ccdbModelPath, pid, "");
-      std::string ccdbTrainColumnsPath = composePath(ccdbDir, trainColumnsFile, "");
-      std::string ccdbScalingParamsPath = composePath(ccdbDir, scalingParamsFile, "");
+      getModelPaths(ccdbPath, ccdbDir, ccdbModelFile, ccdbModelPath, pid, "");
+      std::string ccdbTrainColumnsPath = ccdbDir + "/" + trainColumnsFile;
+      std::string ccdbScalingParamsPath = ccdbDir + "/" + scalingParamsFile;
       downloadFromCCDB(ccdbApi, ccdbModelPath, timestamp, localDir, localModelFile);
       downloadFromCCDB(ccdbApi, ccdbTrainColumnsPath, timestamp, localDir, "columns_for_training.json");
       downloadFromCCDB(ccdbApi, ccdbScalingParamsPath, timestamp, localDir, "scaling_params.json");
