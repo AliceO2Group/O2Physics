@@ -13,6 +13,7 @@
 /// \brief D0-Hadron correlator task - data-like, MC-reco and MC-kine analyses.
 ///
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
+/// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>, IIT Indore
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
