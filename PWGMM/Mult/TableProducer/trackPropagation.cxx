@@ -221,7 +221,7 @@ struct AmbiguousTrackPropagation {
 
           const auto dcaX(trackPar.getX() - collision.posX());
           const auto dcaY(trackPar.getY() - collision.posY());
-          auto dcaInfo = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+          dcaInfo = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
           if ((dcaInfo < bestDCA)) {
             bestCol = collision.globalIndex();
