@@ -22,7 +22,7 @@ o2physics_add_dpl_workflow(correlator-d0d0bar-barrel-full-pid
 o2physics_add_dpl_workflow(correlator-d0-hadrons
                     SOURCES HFCorrelatorD0Hadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)   
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-dplusdminus
                     SOURCES HFCorrelatorDplusDminus.cxx
