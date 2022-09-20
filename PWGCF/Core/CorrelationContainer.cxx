@@ -796,15 +796,12 @@ TH1* CorrelationContainer::getTriggersAsFunctionOfMultiplicity(CorrelationContai
   return eventHist;
 }
 
-THnBase* CorrelationContainer::getTrackEfficiencyND(CFStep step1, CFStep step2)
+THnBase* CorrelationContainer::getTrackEfficiencyND(EfficiencyStep step1, EfficiencyStep step2)
 {
   // creates a track-level efficiency by dividing step2 by step1
   // in all dimensions but the particle species one
 
   StepTHn* sourceContainer = mTrackHistEfficiency;
-  // step offset because we start with kCFStepAnaTopology
-  step1 = (CFStep)((Int_t)step1 - (Int_t)kCFStepAnaTopology);
-  step2 = (CFStep)((Int_t)step2 - (Int_t)kCFStepAnaTopology);
 
   resetBinLimits(sourceContainer->getTHn(step1));
   resetBinLimits(sourceContainer->getTHn(step2));
@@ -835,24 +832,19 @@ THnBase* CorrelationContainer::getTrackEfficiencyND(CFStep step1, CFStep step2)
 }
 
 //____________________________________________________________________
-TH1* CorrelationContainer::getTrackEfficiency(CFStep step1, CFStep step2, Int_t axis1, Int_t axis2, Int_t source, Int_t axis3)
+TH1* CorrelationContainer::getTrackEfficiency(EfficiencyStep step1, EfficiencyStep step2, Int_t axis1, Int_t axis2, Int_t source, Int_t axis3)
 {
   // creates a track-level efficiency by dividing step2 by step1
   // projected to axis1 and axis2 (optional if >= 0)
   //
-  // source: 0 = mTrackHist; 1 = mTrackHistEfficiency; 2 = mTrackHistEfficiency rebinned for pT,T / pT,lead binning
+  // source: 1 = mTrackHistEfficiency; 2 = mTrackHistEfficiency rebinned for pT,T / pT,lead binning
 
   // cache it for efficiency (usually more than one efficiency is requested)
 
   StepTHn* sourceContainer = nullptr;
 
-  if (source == 0) {
-    return nullptr;
-  } else if (source == 1 || source == 2) {
+  if (source == 1 || source == 2) {
     sourceContainer = mTrackHistEfficiency;
-    // step offset because we start with kCFStepAnaTopology
-    step1 = (CFStep)((Int_t)step1 - (Int_t)kCFStepAnaTopology);
-    step2 = (CFStep)((Int_t)step2 - (Int_t)kCFStepAnaTopology);
   } else {
     return nullptr;
   }
@@ -1083,7 +1075,7 @@ TH1* CorrelationContainer::getTrackEfficiency(CFStep step1, CFStep step2, Int_t 
 }
 
 //____________________________________________________________________
-TH1* CorrelationContainer::getEventEfficiency(CFStep step1, CFStep step2, Int_t axis1, Int_t axis2, Float_t ptTriggerMin, Float_t ptTriggerMax)
+TH1* CorrelationContainer::getEventEfficiency(EfficiencyStep step1, EfficiencyStep step2, Int_t axis1, Int_t axis2, Float_t ptTriggerMin, Float_t ptTriggerMax)
 {
   // creates a event-level efficiency by dividing step2 by step1
   // projected to axis1 and axis2 (optional if >= 0)
@@ -1142,7 +1134,7 @@ void CorrelationContainer::weightHistogram(TH3* hist1, TH1* hist2)
 }
 
 //____________________________________________________________________
-TH1* CorrelationContainer::getBias(CFStep step1, CFStep step2, const char* axis, Float_t leadPtMin, Float_t leadPtMax, Int_t weighting)
+TH1* CorrelationContainer::getBias(EfficiencyStep step1, EfficiencyStep step2, const char* axis, Float_t leadPtMin, Float_t leadPtMax, Int_t weighting)
 {
   // extracts the track-level bias (integrating out the multiplicity) between two steps (dividing step2 by step1)
   // done by weighting the track-level distribution with the number of events as function of leading pT
@@ -1219,125 +1211,126 @@ TH1* CorrelationContainer::getBias(CFStep step1, CFStep step2, const char* axis,
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingEfficiency()
 {
-  // extracts the tracking efficiency by calculating the efficiency from step kCFStepAnaTopology to kCFStepTrackedOnlyPrim
+  // extracts the tracking efficiency for primary particles
   // integrates over the regions and all other variables than pT and eta to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepAnaTopology, kCFStepTrackedOnlyPrim, 0, 1));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::MC, EfficiencyStep::RecoPrimaries, 0, 1));
 }
 
 //____________________________________________________________________
 TH2D* CorrelationContainer::getFakeRate()
 {
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepTracked, (CFStep)(kCFStepTracked + 3), 0, 1));
+  // extracs the fake rate per constructed tracks as a function of pT and eta
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::Fake, 0, 1));
 }
 
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingEfficiencyCentrality()
 {
-  // extracts the tracking efficiency by calculating the efficiency from step kCFStepAnaTopology to kCFStepTrackedOnlyPrim
+  // extracts the tracking efficiency for primary particles
   // integrates over the regions and all other variables than pT, centrality to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepAnaTopology, kCFStepTrackedOnlyPrim, 1, 3));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::MC, EfficiencyStep::RecoPrimaries, 1, 3));
 }
 
 //____________________________________________________________________
 TH1D* CorrelationContainer::getTrackingEfficiency(Int_t axis)
 {
-  // extracts the tracking efficiency by calculating the efficiency from step kCFStepAnaTopology to kCFStepTrackedOnlyPrim
+  // extracts the tracking efficiency for primary particles
   // integrates over the regions and all other variables than pT (axis == 0) and eta (axis == 1) to increase the statistics
 
-  return dynamic_cast<TH1D*>(getTrackEfficiency(kCFStepAnaTopology, kCFStepTrackedOnlyPrim, axis));
+  return dynamic_cast<TH1D*>(getTrackEfficiency(EfficiencyStep::MC, EfficiencyStep::RecoPrimaries, axis));
 }
 
 //____________________________________________________________________
 TH1D* CorrelationContainer::getFakeRate(Int_t axis)
 {
-  return dynamic_cast<TH1D*>(getTrackEfficiency(kCFStepTracked, (CFStep)(kCFStepTracked + 3), axis));
+  return dynamic_cast<TH1D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::Fake, axis));
 }
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingCorrection()
 {
-  // extracts the tracking correction by calculating the efficiency from step kCFStepAnaTopology to kCFStepTracked
+  // extracts the correction for tracking efficiency and secondaries
   // integrates over the regions and all other variables than pT and eta to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepTracked, kCFStepAnaTopology, 0, 1));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::MC, 0, 1));
 }
 
 //____________________________________________________________________
 TH1D* CorrelationContainer::getTrackingCorrection(Int_t axis)
 {
-  // extracts the tracking correction by calculating the efficiency from step kCFStepAnaTopology to kCFStepTracked
+  // extracts the correction for tracking efficiency and secondaries
   // integrates over the regions and all other variables than pT (axis == 0) and eta (axis == 1) to increase the statistics
 
-  return dynamic_cast<TH1D*>(getTrackEfficiency(kCFStepTracked, kCFStepAnaTopology, axis));
+  return dynamic_cast<TH1D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::MC, axis));
 }
 
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingEfficiencyCorrection()
 {
-  // extracts the tracking correction by calculating the efficiency from step kCFStepAnaTopology to kCFStepTracked
+  // extracts the correction for tracking efficiency
   // integrates over the regions and all other variables than pT and eta to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepTrackedOnlyPrim, kCFStepAnaTopology, 0, 1));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::MC, 0, 1));
 }
 
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingEfficiencyCorrectionCentrality()
 {
-  // extracts the tracking correction by calculating the efficiency from step kCFStepAnaTopology to kCFStepTracked
+  // extracts the correction for tracking efficiency
   // integrates over the regions and all other variables than pT and centrality to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepTrackedOnlyPrim, kCFStepAnaTopology, 1, 3));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::MC, 1, 3));
 }
 
 //____________________________________________________________________
 TH1D* CorrelationContainer::getTrackingEfficiencyCorrection(Int_t axis)
 {
-  // extracts the tracking correction by calculating the efficiency from step kCFStepAnaTopology to kCFStepTracked
+  // extracts the correction for tracking efficiency
   // integrates over the regions and all other variables than pT (axis == 0) and eta (axis == 1) to increase the statistics
 
-  return dynamic_cast<TH1D*>(getTrackEfficiency(kCFStepTrackedOnlyPrim, kCFStepAnaTopology, axis));
+  return dynamic_cast<TH1D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::MC, axis));
 }
 
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingContamination()
 {
-  // extracts the tracking contamination by secondaries by calculating the efficiency from step kCFStepTrackedOnlyPrim to kCFStepTracked
+  // extracts the tracking contamination by secondaries
   // integrates over the regions and all other variables than pT and eta to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepTracked, kCFStepTrackedOnlyPrim, 0, 1));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::RecoPrimaries, 0, 1));
 }
 
 //____________________________________________________________________
 TH2D* CorrelationContainer::getTrackingContaminationCentrality()
 {
-  // extracts the tracking contamination by secondaries by calculating the efficiency from step kCFStepTrackedOnlyPrim to kCFStepTracked
+  // extracts the tracking contamination by secondaries
   // integrates over the regions and all other variables than pT and centrality to increase the statistics
   //
   // returned histogram has to be deleted by the user
 
-  return dynamic_cast<TH2D*>(getTrackEfficiency(kCFStepTracked, kCFStepTrackedOnlyPrim, 1, 3));
+  return dynamic_cast<TH2D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::RecoPrimaries, 1, 3));
 }
 
 //____________________________________________________________________
 TH1D* CorrelationContainer::getTrackingContamination(Int_t axis)
 {
-  // extracts the tracking contamination by secondaries by calculating the efficiency from step kCFStepTrackedOnlyPrim to kCFStepTracked
+  // extracts the tracking contamination by secondaries
   // integrates over the regions and all other variables than pT (axis == 0) and eta (axis == 1) to increase the statistics
 
-  return dynamic_cast<TH1D*>(getTrackEfficiency(kCFStepTracked, kCFStepTrackedOnlyPrim, axis));
+  return dynamic_cast<TH1D*>(getTrackEfficiency(EfficiencyStep::RecoAll, EfficiencyStep::RecoPrimaries, axis));
 }
 
 //____________________________________________________________________
