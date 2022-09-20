@@ -22,7 +22,6 @@
 #include "Framework/AnalysisDataModel.h"
 
 // O2Physics headers
-#include "PWGUD/DataModel/UPCFilterCentralBarrel.h"
 #include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
