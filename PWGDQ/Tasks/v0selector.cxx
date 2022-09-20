@@ -66,6 +66,8 @@ struct v0selector {
   };
 
   Produces<o2::aod::V0Bits> v0bits;
+  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0DataLink> v0dataLink;
 
   float alphav0(const array<float, 3>& ppos, const array<float, 3>& pneg)
   {
@@ -313,42 +315,53 @@ struct v0selector {
       // printf("V0.collisionId = %d , collision.globalIndex = %d\n",V0.collisionId(),collision.globalIndex());
 
       if (V0.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-        continue;
+	v0dataLink(-1);
+	continue;
       }
       if (V0.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-        continue;
+	v0dataLink(-1);
+	continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-        continue;
+	v0dataLink(-1);
+	continue;
       }
       if (V0.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+	v0dataLink(-1);
         continue;
       }
 
       if (fabs(V0.posTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
+	v0dataLink(-1);
         continue;
       }
       if (fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
+	v0dataLink(-1);
         continue;
       }
 
       if (fabs(V0.posTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
+	v0dataLink(-1);
         continue;
       }
       if (fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
+	v0dataLink(-1);
         continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().sign() * V0.negTrack_as<FullTracksExt>().sign() > 0) { // reject same sign pair
+	v0dataLink(-1);
         continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().collisionId() != V0.negTrack_as<FullTracksExt>().collisionId()) {
+	v0dataLink(-1);
         continue;
       }
 
       if (!V0.posTrack_as<FullTracksExt>().has_collision() || !V0.negTrack_as<FullTracksExt>().has_collision()) {
+	v0dataLink(-1);
         continue;
       }
       auto const& collision = V0.posTrack_as<FullTracksExt>().collision();
@@ -366,7 +379,8 @@ struct v0selector {
       fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
       if (V0.collisionId() != collision.globalIndex()) {
-        continue;
+        v0dataLink(-1);
+	continue;
       }
       registry.fill(HIST("hV0Candidate"), 0.5);
 
@@ -420,16 +434,34 @@ struct v0selector {
       registry.fill(HIST("hDCAV0Dau"), V0dca);
 
       if (V0dca > dcav0dau) {
-        continue;
+	v0dataLink(-1);
+	continue;
       }
 
       if (V0CosinePA < v0cospa) {
-        continue;
+	v0dataLink(-1);
+	continue;
       }
 
       if (V0radius < v0Rmin || v0Rmax < V0radius) {
+	v0dataLink(-1);
         continue;
       }
+
+      v0data(
+	     V0.posTrackId(),
+	     V0.negTrackId(),
+	     V0.collisionId(),
+	     V0.globalIndex(),
+	     fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+	     pos[0], pos[1], pos[2],
+	     pvec0[0], pvec0[1], pvec0[2],
+	     pvec1[0], pvec1[1], pvec1[2],
+	     fitter.getChi2AtPCACandidate(),
+	     V0.posTrack_as<FullTracksExt>().dcaXY(),
+	     V0.negTrack_as<FullTracksExt>().dcaXY());
+
+      v0dataLink(v0data.lastIndex());
 
       float alpha = alphav0(pvec0, pvec1);
       float qtarm = qtarmv0(pvec0, pvec1);
@@ -676,7 +708,14 @@ struct v0selector {
   } // end of process
 };
 
+struct V0tableInitializer {
+  Spawns<aod::V0Datas> v0datas;
+  void init(InitContext const&) {}
+};
+
 struct trackPIDQA {
+
+  Produces<aod::V0treeTable> v0tree;
 
   // Basic checks
   HistogramRegistry registry{
@@ -798,6 +837,86 @@ struct trackPIDQA {
     } // end of track loop
   }   // end of process
 
+  template <typename T, typename C, typename V0>
+  void fillskimv0table(V0 const& v0,T const& postrack,T const& negtrack,C const& collision, const float nSigmaTPC_pos, const float nSigmaTOF_pos,const float nSigmaTPC_neg, const float nSigmaTOF_neg,const o2::track::PID::ID pos_id,const o2::track::PID::ID neg_id)
+  {
+   
+    const float trackpos_mass = o2::track::pid_constants::sMasses[pos_id];
+    const float trackpos_p = postrack.tpcInnerParam();
+    const float trackpos_bg = trackpos_p / trackpos_mass;
+
+    const float trackneg_mass = o2::track::pid_constants::sMasses[neg_id];
+    const float trackneg_p = negtrack.tpcInnerParam();
+    const float trackneg_bg = trackneg_p / trackneg_mass;
+
+    v0tree(
+	   v0.alpha(),
+	   v0.qtarm(),
+	   v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+	   v0.pt(),
+	   v0.v0radius(),
+	   v0.psipair(),
+	   postrack.tpcSignal(),
+	   postrack.tpcInnerParam(),
+	   postrack.signed1Pt(),
+	   postrack.eta(),
+	   postrack.phi(),
+	   postrack.y(),
+	   nSigmaTPC_pos,
+	   nSigmaTOF_pos,
+	   o2::track::pid_constants::sMasses[pos_id],
+	   trackpos_bg,
+	   pos_id,
+	   negtrack.tpcSignal(),
+	   negtrack.tpcInnerParam(),
+	   negtrack.signed1Pt(),
+	   negtrack.eta(),
+	   negtrack.phi(),
+	   negtrack.y(),
+	   nSigmaTPC_neg,
+	   nSigmaTOF_neg,
+	   o2::track::pid_constants::sMasses[neg_id],
+	   trackneg_bg,
+	   neg_id);
+  }
+
+  void processTree(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks, aod::V0Datas const& v0s)
+  {
+    v0tree.reserve(tracks.size());
+
+    if (collision.numContrib() < 0.5) {
+      return;
+    }
+
+    if (abs(collision.posZ()) > 10.0) {
+      return;
+    }
+
+    for (auto v0 : v0s) {
+      auto posTrack = v0.posTrack_as<soa::Join<FullTracksExt,o2::aod::V0Bits>>();
+      auto negTrack = v0.negTrack_as<soa::Join<FullTracksExt,o2::aod::V0Bits>>();
+      if (!posTrack.has_collision()) {
+        continue;
+      }
+      if (!negTrack.has_collision()) {
+        continue;
+      }
+
+      if (posTrack.pidbit() & negTrack.pidbit() & (uint8_t(1) << v0selector::kGamma)) {
+        fillskimv0table(v0,posTrack,negTrack,collision,posTrack.tpcNSigmaEl(),posTrack.tofNSigmaEl(),negTrack.tpcNSigmaEl(),negTrack.tofNSigmaEl(),o2::track::PID::Electron,o2::track::PID::Electron);
+      }
+      if (posTrack.pidbit() & negTrack.pidbit() & (uint8_t(1) << v0selector::kK0S)) {
+        fillskimv0table(v0,posTrack,negTrack,collision,posTrack.tpcNSigmaPi(),posTrack.tofNSigmaPi(),negTrack.tpcNSigmaPi(),negTrack.tofNSigmaPi(),o2::track::PID::Pion,o2::track::PID::Pion);
+      }
+      if (posTrack.pidbit() & negTrack.pidbit() & (uint8_t(1) << v0selector::kLambda)) {
+        fillskimv0table(v0,posTrack,negTrack,collision,posTrack.tpcNSigmaPr(),posTrack.tofNSigmaPr(),negTrack.tpcNSigmaPi(),negTrack.tofNSigmaPi(),o2::track::PID::Proton,o2::track::PID::Pion);
+      }
+      if (posTrack.pidbit() & negTrack.pidbit() & (uint8_t(1) << v0selector::kAntiLambda)) {
+        fillskimv0table(v0,posTrack,negTrack,collision,posTrack.tpcNSigmaPi(),posTrack.tofNSigmaPi(),negTrack.tpcNSigmaPr(),negTrack.tofNSigmaPr(),o2::track::PID::Pion,o2::track::PID::Proton);
+      }
+    } //end v0s loop
+  }// end loop for processTree
+
   void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
     // do nothing
@@ -805,10 +924,11 @@ struct trackPIDQA {
 
   PROCESS_SWITCH(trackPIDQA, processQA, "Run PID QA for barrel tracks", true);
   PROCESS_SWITCH(trackPIDQA, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(trackPIDQA, processTree, "produce v0tree ", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<v0selector>(cfgc, TaskName{"v0-selector"}), adaptAnalysisTask<trackPIDQA>(cfgc, TaskName{"track-pid-qa"})};
+    adaptAnalysisTask<v0selector>(cfgc, TaskName{"v0-selector"}), adaptAnalysisTask<trackPIDQA>(cfgc, TaskName{"track-pid-qa"}),adaptAnalysisTask<V0tableInitializer>(cfgc)};
 }
