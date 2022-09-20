@@ -57,7 +57,7 @@ DECLARE_SOA_COLUMN(TwoPSkimmedTrackFlags, trackflags, uint64_t); //! The skimmin
 DECLARE_SOA_COLUMN(sPt, spt, float);                             //! The track charge signed transverse momentum
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                               //! The track transverse momentum
                            [](float signedpt) -> float {
-                             return abs(signedpt);
+                             return std::abs(signedpt);
                            });
 DECLARE_SOA_COLUMN(Eta, eta, float);        //! The track pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);        //! The track azimuthal angle
