@@ -316,16 +316,16 @@ struct v0selector {
 
       if (V0.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
 	v0dataLink(-1);
-	continue;
+       continue;
       }
       if (V0.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
 	v0dataLink(-1);
-	continue;
+        continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
 	v0dataLink(-1);
-	continue;
+        continue;
       }
       if (V0.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
 	v0dataLink(-1);
@@ -380,7 +380,7 @@ struct v0selector {
 
       if (V0.collisionId() != collision.globalIndex()) {
         v0dataLink(-1);
-	continue;
+        continue;
       }
       registry.fill(HIST("hV0Candidate"), 0.5);
 
@@ -435,17 +435,17 @@ struct v0selector {
 
       if (V0dca > dcav0dau) {
 	v0dataLink(-1);
-	continue;
+        continue;
       }
 
       if (V0CosinePA < v0cospa) {
 	v0dataLink(-1);
-	continue;
+      continue;
       }
 
       if (V0radius < v0Rmin || v0Rmax < V0radius) {
 	v0dataLink(-1);
-        continue;
+      continue;
       }
 
       v0data(
