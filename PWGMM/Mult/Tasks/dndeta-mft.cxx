@@ -29,24 +29,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <chrono>
 
-namespace o2::aod
-{
-namespace fwdtrack
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(BestCollision, bestCollision, int32_t, Collisions, "");
-DECLARE_SOA_COLUMN(BestDCAXY, bestDCAXY, float);
-DECLARE_SOA_COLUMN(PtStatic, pts, float);
-DECLARE_SOA_COLUMN(PStatic, ps, float);
-DECLARE_SOA_COLUMN(EtaStatic, etas, float);
-DECLARE_SOA_COLUMN(PhiStatic, phis, float);
-} // namespace fwdtrack
-DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD",
-                  aod::fwdtrack::BestCollisionId, aod::fwdtrack::BestDCAXY,
-                  fwdtrack::X, fwdtrack::Y,
-                  fwdtrack::Z, fwdtrack::Tgl, fwdtrack::Signed1Pt,
-                  fwdtrack::PtStatic, fwdtrack::PStatic, fwdtrack::EtaStatic,
-                  fwdtrack::PhiStatic); // Snp does not exist
-} // namespace o2::aod
+#include "bestCollisionTable.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,22 +60,24 @@ struct PseudorapidityDensityMFT {
   // the histogram has been previously stored in the CCDB
   TH1D* histoReweight = nullptr;
   std::vector<long long unsigned> ambTrackIds;
+  int counter = 0;
   //------
 
   HistogramRegistry registry{
     "registry",
     {
-      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}}, //
-      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                //
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},               //
-      {"TracksPhiZvtx", "; #varphi; Z_{vtx}; tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}},             //
-      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                  //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                          //
-    }                                                                                                   //
+      {"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}}, //
+      {"TracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                         //
+      {"TracksPhiZvtx", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}},             //
+      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                            //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                                    //
+    }                                                                                                             //
   };
 
   void init(InitContext&)
   {
+
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
@@ -104,17 +89,17 @@ struct PseudorapidityDensityMFT {
     x->SetBinLabel(7, "BCs with pile-up/splitting");
 
     if (doprocessGen) {
-      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
-      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
-      registry.add({"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"TracksEtaZvtxGen_t", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
+      registry.add({"TracksEtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      registry.add({"TracksEtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"TracksPhiZvtxGen", "; #varphi; Z_{vtx}; tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}}); //
-      registry.add({"TracksToPartPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});   //
+      registry.add({"TracksPhiZvtxGen", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}}); //
+      registry.add({"TracksToPartPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});             //
       registry.add({"TracksPtEtaGen", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
       registry.add({"TracksPtEtaGen_t", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
       registry.add({"EventEfficiency", "; status; events", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
-      registry.add({"NotFoundEventZvtx", " ; Z_{vtx}", {HistType::kTH1F, {ZAxis}}});
+      registry.add({"NotFoundEventZvtx", " ; #it{z}_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
       registry.add({"EventsZposDiff", " ; Z_{rec} - Z_{gen} (cm)", {HistType::kTH1F, {DeltaZAxis}}});
       registry.add({"EventsSplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
 
@@ -145,6 +130,7 @@ struct PseudorapidityDensityMFT {
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   void processTagging(FullBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
+
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
       if (!useEvSel || (useEvSel && ((bc.selection()[evsel::kIsBBT0A] & bc.selection()[evsel::kIsBBT0C]) != 0))) {
@@ -178,9 +164,22 @@ struct PseudorapidityDensityMFT {
                                      (aod::fwdtrack::etas > -3.9f) &&
                                      (nabs(aod::fwdtrack::bestDCAXY) <= 2.f);
 
+  void processAmbi(aod::AmbiguousMFTTracks const& atracks, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::MFTTracks const& tracks)
+  {
+    counter++;
+    ambTrackIds.clear();
+    for (auto& track : atracks) {
+      auto mfttrack = track.mfttrack();
+      if (mfttrack.has_collision()) {
+        ambTrackIds.push_back(track.mfttrackId());
+      }
+    }
+  }
+  PROCESS_SWITCH(PseudorapidityDensityMFT, processAmbi, "Fills vector of ambiTracks", true);
+
   void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
-    ambTrackIds.clear();
+
     if (tracks.size() == 0) {
       return;
     }
@@ -199,10 +198,6 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("TracksPhiEta"), phi, track.etas());
         registry.fill(HIST("TracksPhiZvtx"), phi, z);
         registry.fill(HIST("TracksPtEta"), track.pts(), track.etas());
-        auto mfttrack = track.mfttrack();
-        if (mfttrack.has_collision()) {
-          ambTrackIds.push_back(track.mfttrackId());
-        }
       }
 
       for (auto& track : tracks) {
@@ -227,7 +222,7 @@ struct PseudorapidityDensityMFT {
 
   void processMultReweight(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
-    ambTrackIds.clear();
+
     if (!doprocessGen) {
       LOGP(debug, "You can't enable processMultReweight if not analysing MC");
       return;
@@ -255,10 +250,6 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("TracksPhiEta"), phi, track.etas(), weight);
         registry.fill(HIST("TracksPhiZvtx"), phi, z, weight);
         registry.fill(HIST("TracksPtEta"), track.pts(), track.etas(), weight);
-        auto mfttrack = track.mfttrack();
-        if (mfttrack.has_collision()) {
-          ambTrackIds.push_back(track.mfttrackId());
-        }
       }
 
       for (auto& track : tracks) {
