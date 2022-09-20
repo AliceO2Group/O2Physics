@@ -119,7 +119,9 @@ struct PidONNXModel {
       modelDir += "_TRD";
     }
 
-    modelFile = "simple_model_" + pid + ext;
+    std::ostringstream tmp;
+    tmp << "simple_model_" << pid << ext;
+    modelFile = tmp.str();
     modelPath = modelDir + "/" + modelFile;
   }
 
