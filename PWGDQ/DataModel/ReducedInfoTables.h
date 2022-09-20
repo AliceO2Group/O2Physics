@@ -472,6 +472,67 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 // iterators
 using V0Bit = V0Bits::iterator;
 
+namespace V0Tree
+{
+  DECLARE_SOA_COLUMN(AlphaV0, alphaV0, float);
+  DECLARE_SOA_COLUMN(QtV0, qtV0, float);
+  DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
+  DECLARE_SOA_COLUMN(PtV0, ptV0, float);
+  DECLARE_SOA_COLUMN(RadiusV0, radiusV0, float);
+  DECLARE_SOA_COLUMN(GammaPsiPair, gammaPsiPair, float);
+  DECLARE_SOA_COLUMN(PosTrkTPCSignal, posTrkTPCSignal, float);
+  DECLARE_SOA_COLUMN(PosTrkTPCInnerParam, posTrkTPCInnerParam, float);
+  DECLARE_SOA_COLUMN(PosTrkSigned1Pt, posTrksigned1Pt, float);
+  DECLARE_SOA_COLUMN(PosTrkEta, posTrketa, float);
+  DECLARE_SOA_COLUMN(PosTrkPhi, posTrkphi, float);
+  DECLARE_SOA_COLUMN(PosTrkY, posTrky, float);
+  DECLARE_SOA_COLUMN(PosTrkNSigTPC, posTrknsigTPC, float);
+  DECLARE_SOA_COLUMN(PosTrkNSigTOF, posTrknsigTOF, float);
+  DECLARE_SOA_COLUMN(PosTrkBetaGamma, posTrkbg, float);
+  DECLARE_SOA_COLUMN(PosTrkMass, posTrkmass, float);
+  DECLARE_SOA_COLUMN(PosTrkPidIndex, posTrkpidIndexTPC, uint8_t);
+  DECLARE_SOA_COLUMN(NegTrkTPCSignal, negTrkTPCSignal, float);
+  DECLARE_SOA_COLUMN(NegTrkTPCInnerParam, negTrkTPCInnerParam, float);
+  DECLARE_SOA_COLUMN(NegTrkSigned1Pt, negTrksigned1Pt, float);
+  DECLARE_SOA_COLUMN(NegTrkEta, negTrketa, float);
+  DECLARE_SOA_COLUMN(NegTrkPhi, negTrkphi, float);
+  DECLARE_SOA_COLUMN(NegTrkY, negTrky, float);
+  DECLARE_SOA_COLUMN(NegTrkNSigTPC, negTrknsigTPC, float);
+  DECLARE_SOA_COLUMN(NegTrkNSigTOF, negTrknsigTOF, float);
+  DECLARE_SOA_COLUMN(NegTrkBetaGamma, negTrkbg, float);
+  DECLARE_SOA_COLUMN(NegTrkMass, negTrkmass, float);
+  DECLARE_SOA_COLUMN(NegTrkPidIndex, negTrkpidIndexTPC, uint8_t);
+}//V0Tree namespace
+
+DECLARE_SOA_TABLE(V0treeTable, "AOD", "V0TREE",
+                  V0Tree::AlphaV0,
+                  V0Tree::QtV0,
+                  V0Tree::CosPAV0,
+                  V0Tree::PtV0,
+                  V0Tree::RadiusV0,
+                  V0Tree::GammaPsiPair,
+                  V0Tree::PosTrkTPCSignal,
+                  V0Tree::PosTrkTPCInnerParam,
+                  V0Tree::PosTrkSigned1Pt,
+                  V0Tree::PosTrkEta,
+                  V0Tree::PosTrkPhi,
+                  V0Tree::PosTrkY,
+                  V0Tree::PosTrkNSigTPC,
+                  V0Tree::PosTrkNSigTOF,
+                  V0Tree::PosTrkMass,
+                  V0Tree::PosTrkBetaGamma,
+                  V0Tree::PosTrkPidIndex,
+                  V0Tree::NegTrkTPCSignal,
+                  V0Tree::NegTrkTPCInnerParam,
+                  V0Tree::NegTrkSigned1Pt,
+                  V0Tree::NegTrkEta,
+                  V0Tree::NegTrkPhi,
+                  V0Tree::NegTrkY,
+                  V0Tree::NegTrkNSigTPC,
+                  V0Tree::NegTrkNSigTOF,
+                  V0Tree::NegTrkMass,
+                  V0Tree::NegTrkBetaGamma,
+                  V0Tree::NegTrkPidIndex);
 } // namespace o2::aod
 
 #endif // O2_Analysis_ReducedInfoTables_H_
