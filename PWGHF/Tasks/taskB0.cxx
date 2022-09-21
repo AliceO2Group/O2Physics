@@ -181,7 +181,7 @@ struct HfTaskB0Mc {
         continue;
       }
       auto candD = candidate.index0_as<aod::HfCandProng3>();
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_b0::DecayType::B0ToDPi) {
+      if (TESTBIT(std::abs(candidate.flagMCMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto indexMother = RecoDecay::getMother(candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0MCGen>>(), pdg::Code::kB0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
