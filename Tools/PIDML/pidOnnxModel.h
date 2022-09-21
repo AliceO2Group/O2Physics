@@ -17,6 +17,8 @@
 #ifndef O2_ANALYSIS_PIDONNXMODEL_H_
 #define O2_ANALYSIS_PIDONNXMODEL_H_
 
+#include "CCDB/CcdbApi.h"
+
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -44,14 +46,16 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(const std::string& scalingParamsFile, int pid = 211, bool useTOF = false)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, bool useTOF, bool useTRD) : mUseTOF(useTOF), mUseTRD(useTRD)
   {
     std::string modelFile;
-    loadInputFiles(scalingParamsFile, useTOF, pid, modelFile);
+    loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, modelFile);
 
     Ort::SessionOptions sessionOptions;
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
+    LOG(info) << "Loading ONNX model from file: " << modelFile;
     mSession.reset(new Ort::Experimental::Session{*mEnv, modelFile, sessionOptions});
+    LOG(info) << "ONNX model loaded";
 
     mInputNames = mSession->GetInputNames();
     mInputShapes = mSession->GetInputShapes();
@@ -105,38 +109,67 @@ struct PidONNXModel {
   }
 
  private:
-  void loadInputFiles(const std::string& scalingParamsFile, bool useTOF, int pid, std::string& modelFile)
+  void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
+  {
+    modelDir = path + "/TPC";
+    if (mUseTOF) {
+      modelDir += "_TOF";
+    }
+    if (mUseTRD) {
+      modelDir += "_TRD";
+    }
+
+    std::ostringstream tmp;
+    tmp << "simple_model_" << pid << ext;
+    modelFile = tmp.str();
+    modelPath = modelDir + "/" + modelFile;
+  }
+
+  void downloadFromCCDB(o2::ccdb::CcdbApi& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
+  {
+    std::map<std::string, std::string> metadata;
+    bool retrieveSuccess = ccdbApi.retrieveBlob(ccdbFile, localDir, metadata, timestamp, false, localFile);
+    if (retrieveSuccess) {
+      std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(ccdbFile, metadata, timestamp);
+      LOG(info) << "Network file downloaded from: " << ccdbFile << " to: " << localDir << "/" << localFile;
+    } else {
+      LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this run number/timestamp?";
+    }
+  }
+
+  void loadInputFiles(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, std::string& modelPath)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
 
-    char* mlmodelsDir = getenv("MLMODELS_ROOT");
-    if (mlmodelsDir == NULL) {
-      LOG(fatal) << "Path to ML models undefined, did you load MLModels environment?";
+    if (!mUseTOF && mUseTRD) {
+      LOG(warning) << "TRD specified for PID but TOF not! Not using TRD";
     }
 
-    std::string modelSubdir = useTOF ? "All" : "TPC";
-    std::ostringstream tmp;
-    tmp << mlmodelsDir << "/models/PID_ML/";
-    tmp << modelSubdir << "/simple_model_" << pid << ".onnx";
-    modelFile = tmp.str();
-    tmp.str("");
-    tmp.clear();
-    tmp << mlmodelsDir << "/models/PID_ML/";
-    tmp << modelSubdir << "/columns_for_training.json";
-    std::string trainColumnsFile = tmp.str();
-    tmp.str("");
-    tmp.clear();
-    tmp << mlmodelsDir << "/models/PID_ML/";
-    tmp << scalingParamsFile;
-    std::string scalingParamsFilePath = tmp.str();
+    std::string localDir, localModelFile;
+    std::string trainColumnsFile = "columns_for_training";
+    std::string scalingParamsFile = "scaling_params";
+    getModelPaths(localPath, localDir, localModelFile, modelPath, pid, ".onnx");
+    std::string localTrainColumnsPath = localDir + "/" + trainColumnsFile + ".json";
+    std::string localScalingParamsPath = localDir + "/" + scalingParamsFile + ".json";
 
-    if (readJsonFile(trainColumnsFile, trainColumnsDoc)) {
+    if (useCCDB) {
+      std::string ccdbDir, ccdbModelFile, ccdbModelPath;
+      getModelPaths(ccdbPath, ccdbDir, ccdbModelFile, ccdbModelPath, pid, "");
+      std::string ccdbTrainColumnsPath = ccdbDir + "/" + trainColumnsFile;
+      std::string ccdbScalingParamsPath = ccdbDir + "/" + scalingParamsFile;
+      downloadFromCCDB(ccdbApi, ccdbModelPath, timestamp, localDir, localModelFile);
+      downloadFromCCDB(ccdbApi, ccdbTrainColumnsPath, timestamp, localDir, "columns_for_training.json");
+      downloadFromCCDB(ccdbApi, ccdbScalingParamsPath, timestamp, localDir, "scaling_params.json");
+    }
+
+    LOG(info) << "Using configuration files: " << localTrainColumnsPath << ", " << localScalingParamsPath;
+    if (readJsonFile(localTrainColumnsPath, trainColumnsDoc)) {
       for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
         mTrainColumns.emplace_back(param.GetString());
       }
     }
-    if (readJsonFile(scalingParamsFilePath, scalingParamsDoc)) {
+    if (readJsonFile(localScalingParamsPath, scalingParamsDoc)) {
       for (auto& param : scalingParamsDoc["data"].GetArray()) {
         mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
       }
@@ -148,8 +181,6 @@ struct PidONNXModel {
   {
     // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
     // sign is short, trackType and tpcNClsShared uint8_t
-    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-    float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
     float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
     float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
     float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
@@ -158,7 +189,23 @@ struct PidONNXModel {
     float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
     float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
 
-    std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
+    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
+
+    std::vector<float> inputValues{track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
+
+    if (mUseTOF) {
+      float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+      float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
+      inputValues.push_back(scaledTOFSignal);
+      inputValues.push_back(scaledBeta);
+    }
+
+    if (mUseTRD) {
+      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
+      float scaledTRDPattern = (track.trdPattern() - mScalingParams.at("fTRDPattern").first) / mScalingParams.at("fTRDPattern").second;
+      inputValues.push_back(scaledTRDSignal);
+      inputValues.push_back(scaledTRDPattern);
+    }
 
     return inputValues;
   }
@@ -176,6 +223,8 @@ struct PidONNXModel {
   std::string mModelDir;
   std::vector<std::string> mTrainColumns;
   std::map<std::string, std::pair<float, float>> mScalingParams;
+  bool mUseTOF;
+  bool mUseTRD;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   // No empty constructors for Session, we need a pointer

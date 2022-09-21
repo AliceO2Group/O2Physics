@@ -355,23 +355,44 @@ struct pidml {
   PidONNXModel model2212TPC;
   PidONNXModel model321TPC;
 
-  Configurable<std::string> cfgScalingParamsFile{"scaling-params", "train_208_mc_with_beta_and_sigmas_scaling_params.json", "JSON file with scaling parameters from training"};
+  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
+
+  o2::ccdb::CcdbApi ccdbApi;
+  int currentRunNumber = -1;
 
   void init(InitContext const&)
   {
-    model211All = PidONNXModel(cfgScalingParamsFile.value, 211, true);
-    model2212All = PidONNXModel(cfgScalingParamsFile.value, 2212, true);
-    model321All = PidONNXModel(cfgScalingParamsFile.value, 321, true);
+    if (cfgUseCCDB) {
+      ccdbApi.init(cfgCCDBURL);
+    } else {
+      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, true, false);
+      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, true, false);
+      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, true, false);
 
-    model211TPC = PidONNXModel(cfgScalingParamsFile.value, 211, false);
-    model2212TPC = PidONNXModel(cfgScalingParamsFile.value, 2212, false);
-    model321TPC = PidONNXModel(cfgScalingParamsFile.value, 321, false);
+      model211TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, false, false);
+      model2212TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, false, false);
+      model321TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, false, false);
+    }
   }
 
   Filter trackFilter = requireGlobalTrackInFilter();
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
-  void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
+  void process(aod::Collisions const& collisions, pidTracks const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
+    auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
+      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, true, false);
+      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, true, false);
+      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, true, false);
+
+      model211TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, false, false);
+      model2212TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, false, false);
+      model321TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, false, false);
+    }
+
     for (auto& track : tracks) {
       auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCodeMC = particle.pdgCode();
