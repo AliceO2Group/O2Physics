@@ -724,13 +724,6 @@ auto EDPlus(const T& candidate)
 }
 
 template <typename T>
-auto EDMinus(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDMinus));
-}
-
-
-template <typename T>
 auto InvMassDPlus(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
