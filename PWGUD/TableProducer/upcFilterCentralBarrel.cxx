@@ -148,7 +148,7 @@ struct UPCFilterCentralBarrel {
 		registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(3);
 
 		LOGF(info, "vtx-z (data) = %f", collision.posZ());
-		if (mcCollisions != nullptr) LOGF(info, "vtx-z (data) = %f | size (MC) = %d", collision.posZ(), mcCollisions.size());
+		//if (mcCollisions != nullptr) LOGF(info, "vtx-z (data) = %f | size (MC) = %d", collision.posZ(), mcCollisions.size());
 
 		for (auto & barrelTrack: barrelTracks) {
 
