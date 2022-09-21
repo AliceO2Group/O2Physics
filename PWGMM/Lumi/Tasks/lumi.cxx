@@ -210,7 +210,6 @@ struct lumiTask {
 
     }
 
-    rowEventInfo.reserve(collision.size());
     rowEventInfo(relTS, refitX, refitY, refitZ, refitXX, refitYY, refitXY, chi2,
                  nContrib);
 
