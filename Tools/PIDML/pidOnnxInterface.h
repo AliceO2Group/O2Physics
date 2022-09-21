@@ -22,19 +22,19 @@
 #include <string>
 #include <array>
 
-// What detectors use for a track:
-// always baseDetector, then switch on subsequent detectors when each next limit is passed
-// It's possible to use just one detector configuration if you set limits to very big values
 struct PidConfig {
   int pid;
-  PidMLDetector baseDetector;
-  std::array<float, kNDetectors - 1> pTLimits;
-  float minCertainty; // value in [0, 1] describing min certainty of the model required to accept a particle
+  std::array<float, kNDetectors - 1> pTLimits; // What detectors use for a track: switch on subsequent detectors when each next pT limit is passed
+  float minCertainty;                          // value in [0, 1] describing min certainty of the model required to accept a particle
 };
 
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, std::vector<PidConfig> const& configs, bool autoMode) : mAutoMode(autoMode), mConfigs{configs}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, std::vector<std::array<float, kNDetectors - 1>> const& pTLimits, std::vector<float> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mPids{pids}, mPTLimits{pTLimits}, mMinCertainties{minCertainties}
   {
+    if (pids.size() == 0) {
+      LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
+    }
+
     mModels.clear();
     if (autoMode) {
       fillDefaultConfiguration();
@@ -42,7 +42,7 @@ struct PidONNXInterface {
     mModels.resize(kNDetectors * pids.size());
     for (int i = 0; i < pids.size(); i++) {
       for (int j = 0; j < kNDetectors; j++) {
-        mModels[i * kNDetectors + j] = PidONNXModel(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, configs[i].pid, kTPCOnly + j, configs[i].minCertainty);
+        mModels[i * kNDetectors + j] = PidONNXModel(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], kTPCOnly + j, minCertainties[i]);
       }
     }
   }
@@ -52,11 +52,11 @@ struct PidONNXInterface {
   {
     for (int i = 0; i < mModels.size(); i += kNDetectors) {
       if (mModels[i].mPid == pid) {
-        int j = mConfigs[i / kNDetectors].baseDetector;
-        while (j < kNDetectors && track.pt() < mConfigs[i / kNDetectors].pTLimits[j]) {
+        int j = 0;
+        while (j < kNDetectors && track.pt() < mPTLimits[i / kNDetectors][j]) {
           j++;
         }
-        return mModels[i + j].applyModel(track);
+        return mModels[i + j - 1].applyModel(track);
       }
     }
   }
@@ -66,8 +66,8 @@ struct PidONNXInterface {
   {
     for (int i = 0; i < mModels.size(); i += kNDetectors) {
       if (mModels[i].mPid == pid) {
-        int j = mConfigs[i / kNDetectors].baseDetector;
-        while (j < kNDetectors && track.pt() < mConfigs[i / kNDetectors].pTLimits[j]) {
+        int j = 0;
+        while (j < kNDetectors && track.pt() < mPTLimits[i / kNDetectors][j]) {
           j++;
         }
         return mModels[i + j - 1].applyModelBoolean(track);
@@ -80,9 +80,8 @@ struct PidONNXInterface {
   {
     // FIXME: A more sophisticated strategy should be based on pid values as well
     for (int i = 0; i < mConfigs.size(); i++) {
-      mConfigs[i].baseDetector = kTPCOnly;
-      mConfigs[i].pTLimits = {0.5, 0.8};
-      mConfigs[i].minCertainty = 0.5;
+      mPTLimits[i] = {0.5, 0.8};
+      mMinCertainties[i] = 0.5;
     }
   }
 
@@ -91,7 +90,9 @@ struct PidONNXInterface {
   // static constexpr int mPdgs[mNumKinds] = {211, -211, 2212, -2212, 321, -321, 11, -11, 13, -13};
   // static constexpr int mPdgs[mNumKinds] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
   std::vector<PidONNXModel> mModels;
-  std::vector<PidConfig> mConfigs;
+  std::vector<int> mPids;
+  std::vector<std::array<float, kNDetectors - 1>> mPTLimits;
+  std::vector<float> mMinCertainties;
   bool mAutoMode;
 };
 #endif // O2_ANALYSIS_PIDONNXINTERFACE_H_
