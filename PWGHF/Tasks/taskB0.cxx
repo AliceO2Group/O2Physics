@@ -174,7 +174,7 @@ struct HfTaskB0Mc {
     //MC rec
     for (auto& candidate : candidates) {
       //Printf("(Panos) MC candidate: pT: %lf",candidate.pt());
-      if (!(candidate.hfflag() & 1 << hf_cand_b0::DecayType::B0ToDPi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YB0(candidate)) > cutYCandMax) {
