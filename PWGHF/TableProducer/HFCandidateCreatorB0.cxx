@@ -341,7 +341,7 @@ struct HFCandidateCreatorB0MC {
         //Printf("Checking B0 → D- π+");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD, - pdg::Code::kDPlus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
-          flag = 1 << hf_cand_b0::DecayType::B0ToDPi;
+          flag = BIT(hf_cand_b0::DecayType::B0ToDPi);
         } else {
           debug = 1;
           LOGF(info, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
