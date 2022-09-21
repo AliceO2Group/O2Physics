@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -190,13 +190,13 @@ struct lumiTask {
                                                     // MeanVertex constraint
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
-    double chi2=-1.;
-    double refitX=-9999.;
-    double refitY=-9999.;
-    double refitZ=-9999.;
-    double refitXX=-9999.;
-    double refitYY=-9999.;
-    double refitXY=-9999.;
+    double chi2;
+    double refitX;
+    double refitY;
+    double refitZ;
+    double refitXX;
+    double refitYY;
+    double refitXY;
 
     if (doPVrefit && PVrefit_doable) {
       auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
@@ -207,7 +207,6 @@ struct lumiTask {
       refitXX = Pvtx_refitted.getSigmaX2();
       refitYY = Pvtx_refitted.getSigmaY2();
       refitXY = Pvtx_refitted.getSigmaXY();
-
     }
 
     rowEventInfo(relTS, refitX, refitY, refitZ, refitXX, refitYY, refitXY, chi2,
