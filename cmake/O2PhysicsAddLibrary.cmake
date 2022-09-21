@@ -161,7 +161,7 @@ function(o2physics_add_library baseTargetName)
   # The EXPORT must come first in the list of parameters
   #
   install(TARGETS ${target}
-          EXPORT O2Targets
+          EXPORT O2PhysicsTargets
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
