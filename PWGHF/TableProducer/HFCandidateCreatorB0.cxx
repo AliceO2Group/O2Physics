@@ -361,7 +361,7 @@ struct HFCandidateCreatorB0MC {
         auto DCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         //Printf("Checking D- -> π- K+ π-");
         if (RecoDecay::isMatchedMCGen(particlesMC, DCandMC, - int(pdg::Code::kDPlus), array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
-          flag = sign * (1 << hf_cand_b0::DecayType::B0ToDPi);
+          flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }
       rowMCMatchGen(flag, origin);
