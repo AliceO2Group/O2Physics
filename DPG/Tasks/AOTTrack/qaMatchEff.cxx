@@ -319,7 +319,7 @@ struct qaMatchEff {
   {
     /// Using pt calculated at the inner wall of TPC
     /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
-    return track.tpcInnerParam() / sqrt(1. + track.tgl() * track.tgl());
+    return track.tpcInnerParam() / sqrt(1.f + track.tgl() * track.tgl());
   }
 
   /// Function applying the kinematic selections
