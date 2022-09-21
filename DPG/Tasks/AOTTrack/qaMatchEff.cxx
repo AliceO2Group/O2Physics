@@ -90,6 +90,10 @@ struct qaMatchEff {
   //
   // Track selection object
   TrackSelection cutObject;
+  //
+  //
+  // pt calculated at the inner wall of TPC
+  float trackPtInParamTPC = -1.;
   // Init function
   //
   void init(InitContext&)
@@ -309,6 +313,15 @@ struct qaMatchEff {
 
   } // end initMC
 
+  /// Function calculatind the pt at inner wall of TPC
+  template <typename T>
+  float computePtInParamTPC(T& track)
+  {
+    /// Using pt calculated at the inner wall of TPC
+    /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
+    return track.tpcInnerParam() / sqrt(1. + track.tgl() * track.tgl());
+  }
+
   /// Function applying the kinematic selections
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
@@ -317,7 +330,7 @@ struct qaMatchEff {
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
-    if (b_useTPCinnerWallPt && (track.tpcInnerParam() * track.tpcInnerParam() / (1 + track.tgl() * track.tgl())) < ptMinCutInnerWallTPC * ptMinCutInnerWallTPC) {
+    if (b_useTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
       return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
     }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
@@ -395,8 +408,7 @@ struct qaMatchEff {
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
         /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
-        const float tgl = jT.tgl();
-        trackPt = jT.tpcInnerParam() / sqrt(1 + tgl * tgl);
+        trackPt = computePtInParamTPC(jT);
       }
 
       // kinematic track seletions for all tracks
@@ -671,8 +683,7 @@ struct qaMatchEff {
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
         /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
-        const float tgl = jT.tgl();
-        trackPt = jT.tpcInnerParam() / sqrt(1 + tgl * tgl);
+        trackPt = computePtInParamTPC(jT);
       }
 
       // kinematic track seletions for all tracks
@@ -947,8 +958,7 @@ struct qaMatchEff {
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
         /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
-        const float tgl = jT.tgl();
-        trackPt = jT.tpcInnerParam() / sqrt(1 + tgl * tgl);
+        trackPt = computePtInParamTPC(jT);
       }
 
       // kinematic track seletions for all tracks
@@ -1032,8 +1042,7 @@ struct qaMatchEff {
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
         /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
-        const float tgl = jT.tgl();
-        trackPt = jT.tpcInnerParam() / sqrt(1 + tgl * tgl);
+        trackPt = computePtInParamTPC(jT);
       }
 
       // kinematic track seletions for all tracks
