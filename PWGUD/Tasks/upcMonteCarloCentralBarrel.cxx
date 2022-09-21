@@ -55,7 +55,7 @@ struct UPCFilterCentralBarrel {
 	void processGeneratorLevel(aod::McCollision const& mcCollision,
 														 aod::McParticles const& mcParticles){
 
-		
+
 
 
 	} // end processGeneratorLevel
