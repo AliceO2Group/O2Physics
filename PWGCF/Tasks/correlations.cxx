@@ -212,7 +212,7 @@ struct CorrelationTask {
   }
 
   template <CorrelationContainer::CFStep step, typename TTrack>
-  bool checkObject(TTrack track)
+  bool checkObject(TTrack& track)
   {
     if constexpr (step <= CorrelationContainer::kCFStepAnaTopology) {
       return track.isPhysicalPrimary();
@@ -226,7 +226,7 @@ struct CorrelationTask {
   }
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float multiplicity, float posZ, int magField, float eventWeight)
+  void fillCorrelations(TTarget target, TTracks& tracks1, TTracks& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
   {
     // Cache efficiency for particles (too many FindBin lookups)
     float* efficiencyAssociated = nullptr;
