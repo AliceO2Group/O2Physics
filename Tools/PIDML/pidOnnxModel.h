@@ -24,6 +24,13 @@
 #include <rapidjson/filereadstream.h>
 #include <string>
 
+enum PidMLDetector {
+  kTPCOnly = 0,
+  kTPCTOF,
+  kTPCTOFTRD,
+  kNDetectors ///< number of available detectors configurations
+};
+
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
 {
@@ -46,7 +53,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, bool useTOF, bool useTRD) : mUseTOF(useTOF), mUseTRD(useTRD)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, PidMLDetector detector, float minCertainty) : mDetector(detector), mPid(pid), mMinCertainty(minCertainty)
   {
     std::string modelFile;
     loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, modelFile);
@@ -82,40 +89,23 @@ struct PidONNXModel {
   template <typename T>
   float applyModel(const T& track)
   {
-    auto input_shape = mInputShapes[0];
-    std::vector<float> inputTensorValues = createInputsSingle(track);
-    std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), input_shape));
+    return getModelOutput(track);
+  }
 
-    // Double-check the dimensions of the input tensor
-    assert(inputTensors[0].IsTensor() &&
-           inputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == input_shape);
-    LOG(debug) << "input tensor shape: " << printShape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
-
-    try {
-      auto outputTensors = mSession->Run(mInputNames, inputTensors, mOutputNames);
-
-      // Double-check the dimensions of the output tensors
-      // The number of output tensors is equal to the number of output nodes specifed in the Run() call
-      assert(outputTensors.size() == mOutputNames.size() && outputTensors[0].IsTensor());
-      LOG(debug) << "output tensor shape: " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
-
-      const float* output_value = outputTensors[0].GetTensorData<float>();
-      return *output_value;
-    } catch (const Ort::Exception& exception) {
-      LOG(error) << "Error running model inference: " << exception.what();
-    }
-    return -1.0f; // unreachable code
+  template <typename T>
+  bool applyModelBoolean(const T& track)
+  {
+    return getModelOutput(track) >= mMinCertainty;
   }
 
  private:
   void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
   {
     modelDir = path + "/TPC";
-    if (mUseTOF) {
+    if (mDetector >= kTPCTOF) {
       modelDir += "_TOF";
     }
-    if (mUseTRD) {
+    if (mDetector >= kTPCTOFTRD) {
       modelDir += "_TRD";
     }
 
@@ -141,10 +131,6 @@ struct PidONNXModel {
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
-
-    if (!mUseTOF && mUseTRD) {
-      LOG(warning) << "TRD specified for PID but TOF not! Not using TRD";
-    }
 
     std::string localDir, localModelFile;
     std::string trainColumnsFile = "columns_for_training";
@@ -193,14 +179,14 @@ struct PidONNXModel {
 
     std::vector<float> inputValues{track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
 
-    if (mUseTOF) {
+    if (mDetector >= kTPCTOF) {
       float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
       float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
       inputValues.push_back(scaledTOFSignal);
       inputValues.push_back(scaledBeta);
     }
 
-    if (mUseTRD) {
+    if (mDetector >= kTPCTOFTRD) {
       float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
       float scaledTRDPattern = (track.trdPattern() - mScalingParams.at("fTRDPattern").first) / mScalingParams.at("fTRDPattern").second;
       inputValues.push_back(scaledTRDSignal);
@@ -208,6 +194,43 @@ struct PidONNXModel {
     }
 
     return inputValues;
+  }
+
+  // FIXME: Temporary solution, new networks will have sigmoid layer added
+  float sigmoid(float x)
+  {
+    float value = std::max(-100.0f, std::min(100.0f, x));
+    return 1.0f / (1.0f + std::exp(-value));
+  }
+
+  template <typename T>
+  float getModelOutput(const T& track)
+  {
+    auto input_shape = mInputShapes[0];
+    std::vector<float> inputTensorValues = createInputsSingle(track);
+    std::vector<Ort::Value> inputTensors;
+    inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), input_shape));
+
+    // Double-check the dimensions of the input tensor
+    assert(inputTensors[0].IsTensor() &&
+           inputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == input_shape);
+    LOG(debug) << "input tensor shape: " << printShape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
+
+    try {
+      auto outputTensors = mSession->Run(mInputNames, inputTensors, mOutputNames);
+
+      // Double-check the dimensions of the output tensors
+      // The number of output tensors is equal to the number of output nodes specifed in the Run() call
+      assert(outputTensors.size() == mOutputNames.size() && outputTensors[0].IsTensor());
+      LOG(debug) << "output tensor shape: " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
+
+      const float* output_value = outputTensors[0].GetTensorData<float>();
+      float certainty = sigmoid(*output_value); // FIXME: Temporary, sigmoid will be added as network layer
+      return certainty;
+    } catch (const Ort::Exception& exception) {
+      LOG(error) << "Error running model inference: " << exception.what();
+    }
+    return false; // unreachable code
   }
 
   // Pretty prints a shape dimension vector
@@ -220,11 +243,11 @@ struct PidONNXModel {
     return ss.str();
   }
 
-  std::string mModelDir;
   std::vector<std::string> mTrainColumns;
   std::map<std::string, std::pair<float, float>> mScalingParams;
-  bool mUseTOF;
-  bool mUseTRD;
+  PidMLDetector mDetector;
+  int mPid;
+  float mMinCertainty;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   // No empty constructors for Session, we need a pointer

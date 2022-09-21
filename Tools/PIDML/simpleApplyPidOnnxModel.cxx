@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file simpleApplyPidModelTask
+/// \file simpleApplyPidModel
 /// \brief A simple example for using PID obtained from the PID ML ONNX Model. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
@@ -31,17 +31,18 @@ namespace o2::aod
 {
 namespace mlpidresult
 {
-DECLARE_SOA_INDEX_COLUMN(Track, track); //! Track index
-DECLARE_SOA_COLUMN(MlPid, mlPid, int);  //! PID predicted by the model
+DECLARE_SOA_INDEX_COLUMN(Track, track);       //! Track index
+DECLARE_SOA_COLUMN(Pid, pid, int);            //! Pid to be tested by the model
+DECLARE_SOA_COLUMN(Accepted, accepted, bool); //! Whether the model accepted particle to be of given kind
 } // namespace mlpidresult
-DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidresult::TrackId, mlpidresult::MlPid);
+DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidresult::TrackId, mlpidresult::Pid, mlpidresult::Accepted);
 } // namespace o2::aod
 
 struct SimpleApplyOnnxModel {
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
-  Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
-  Configurable<bool> cfgUseTRD{"useTRD", true, "Use ML model with TRD signal"};
+  Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
+  Configurable<float> cfgCertainty{"certainty", 0.5f, "Min certainty of the model to accept given particle to be of given kind"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
@@ -59,19 +60,12 @@ struct SimpleApplyOnnxModel {
   // Filter on isGlobalTrack (TracksSelection)
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
 
-  // FIXME: Temporary solution, new networks will have sigmoid layer added
-  float sigmoid(float x)
-  {
-    float value = std::max(-100.0f, std::min(100.0f, x));
-    return 1.0f / (1.0f + std::exp(-value));
-  }
-
   void init(InitContext const&)
   {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPid.value, cfgUseTOF.value, cfgUseTRD.value);
+      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
     }
   }
 
@@ -79,15 +73,14 @@ struct SimpleApplyOnnxModel {
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPid.value, cfgUseTOF.value, cfgUseTRD.value);
+      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
     }
 
     for (auto& track : tracks) {
-      float pid = sigmoid(pidModel.applyModel(track));
-      // pid > 0 --> track is predicted to be of this kind; pid < 0 --> rejected
-      LOGF(info, "collision id: %d track id: %d pid: %.3f p: %.3f; x: %.3f, y: %.3f, z: %.3f",
-           track.collisionId(), track.index(), pid, track.p(), track.x(), track.y(), track.z());
-      pidMLResults(track.index(), pid);
+      bool accepted = pidModel.applyModelBoolean(track);
+      LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+           track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
+      pidMLResults(track.index(), cfgPid.value, accepted);
     }
   }
   PROCESS_SWITCH(SimpleApplyOnnxModel, processCollisions, "Process with collisions and bcs for CCDB", true);
@@ -95,11 +88,10 @@ struct SimpleApplyOnnxModel {
   void processTracksOnly(BigTracks const& tracks)
   {
     for (auto& track : tracks) {
-      float pid = pidModel.applyModel(track);
-      // pid > 0 --> track is predicted to be of this kind; pid < 0 --> rejected
-      LOGF(info, "collision id: %d track id: %d pid: %.3f p: %.3f; x: %.3f, y: %.3f, z: %.3f",
-           track.collisionId(), track.index(), pid, track.p(), track.x(), track.y(), track.z());
-      pidMLResults(track.index(), pid);
+      bool accepted = pidModel.applyModelBoolean(track);
+      LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+           track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
+      pidMLResults(track.index(), cfgPid.value, accepted);
     }
   }
   PROCESS_SWITCH(SimpleApplyOnnxModel, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);
