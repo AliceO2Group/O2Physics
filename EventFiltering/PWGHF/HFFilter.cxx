@@ -1149,7 +1149,7 @@ struct HfFilter { // Main struct for HF triggers
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
-      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massPi, massK});
+      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massPi});
 
       auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massK, massK, massPi});
       auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massK});
