@@ -163,13 +163,13 @@ DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
 
 namespace hftraining3p
 {
-DECLARE_SOA_COLUMN(InvMassDplus, invMassDplus, float); //!
-DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float); //!
-DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float); //!
-DECLARE_SOA_COLUMN(InvMassLcToPKPi, invMassLcToPKPi, float); //!
-DECLARE_SOA_COLUMN(InvMassLcToPiKP, invMassLcToPiKP, float); //!
-DECLARE_SOA_COLUMN(InvMassXicToPKPi, invMassXicToPKPi, float); //!
-DECLARE_SOA_COLUMN(InvMassXicToPiKP, invMassXicToPiKP, float); //!
+DECLARE_SOA_COLUMN(InvMassDplus, invMassDplus, float);           //!
+DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float);     //!
+DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float);     //!
+DECLARE_SOA_COLUMN(InvMassLcToPKPi, invMassLcToPKPi, float);     //!
+DECLARE_SOA_COLUMN(InvMassLcToPiKP, invMassLcToPiKP, float);     //!
+DECLARE_SOA_COLUMN(InvMassXicToPKPi, invMassXicToPKPi, float);   //!
+DECLARE_SOA_COLUMN(InvMassXicToPiKP, invMassXicToPiKP, float);   //!
 DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);                   //!
 DECLARE_SOA_COLUMN(PT1, pT1, float);                             //!
 DECLARE_SOA_COLUMN(DeltaMassKKFirst, deltaMassKKFirst, float);   //!
