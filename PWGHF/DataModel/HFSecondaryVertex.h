@@ -712,12 +712,6 @@ auto CtDPlus(const T& candidate)
 }
 
 template <typename T>
-auto CtDMinus(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDMinus));
-}
-
-template <typename T>
 auto YDPlus(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus));
