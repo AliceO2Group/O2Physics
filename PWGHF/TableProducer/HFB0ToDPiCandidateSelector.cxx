@@ -135,7 +135,7 @@ struct HfB0ToDPiCandidateSelector {
       int statusB0 = 0;
 
       // check if flagged as B0 → D- π+
-      if (!(hfCandB0.hfflag() & 1 << hf_cand_b0::DecayType::B0ToDPi)) {
+      if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         hfSelB0ToDPiCandidate(statusB0);
         //Printf("B0 candidate selection failed at hfflag check");
         continue;
