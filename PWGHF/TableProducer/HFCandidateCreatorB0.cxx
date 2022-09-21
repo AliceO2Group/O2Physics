@@ -96,7 +96,7 @@ struct HFCandidateCreatorB0 {
 
     // loop over D candidates
     for (auto& dCand : dCands) {
-      if (!(dCand.hfflag() & 1 << hf_cand_prong3::DecayType::DPlusToPiKPi)) {
+      if (!TESTBIT(dCand.hfflag(), hf_cand_prong3::DecayType::DPlusToPiKPi)) {
         continue;
       }
       if (dCand.isSelDplusToPiKPi() >= d_selectionFlagD) {
