@@ -229,7 +229,7 @@ struct HfTaskB0Mc {
     // MC gen. level
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_b0::DecayType::B0ToDPi) {
+      if (TESTBIT(std::abs(particle.flagMCMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
         if (cutYCandMax >= 0. && std::abs(yParticle) > cutYCandMax) {
