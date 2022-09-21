@@ -22,14 +22,30 @@
 #include <string>
 #include <array>
 
-struct PidConfig {
-  int pid;
-  std::array<float, kNDetectors - 1> pTLimits; // What detectors use for a track: switch on subsequent detectors when each next pT limit is passed
-  float minCertainty;                          // value in [0, 1] describing min certainty of the model required to accept a particle
-};
+namespace pidml_pt_cuts
+{
+static constexpr int nPids = 6;
+static constexpr int nCutVars = kNDetectors - 1;
+constexpr int pids[nPids] = {211, 321, 2212, -211, -321, -2212};
+auto pids_v = std::vector<int>{pids, pids + nPids};
+constexpr double certainties[nPids] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+auto certainties_v = std::vector<double>{certainties, certainties + nPids};
+
+// default values for the cuts
+constexpr double cuts[nPids][nCutVars] = {{0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}};
+
+// row labels
+static const std::vector<std::string> pidLabels = {
+  "211", "321", "2212", "0211", "0321", "02212"};
+// column labels
+static const std::vector<std::string> cutVarLabels = {
+  "TPC + TOF", "TPC + TOF + TRD"};
+} // namespace pidml_pt_cuts
+
+using namespace pidml_pt_cuts;
 
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, std::vector<std::array<float, kNDetectors - 1>> const& pTLimits, std::vector<float> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mPids{pids}, mPTLimits{pTLimits}, mMinCertainties{minCertainties}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, std::vector<std::array<double, kNDetectors - 1>> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mPids{pids}, mPTLimits{pTLimits}, mMinCertainties{minCertainties}
   {
     if (pids.size() == 0) {
       LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
@@ -91,8 +107,8 @@ struct PidONNXInterface {
   // static constexpr int mPdgs[mNumKinds] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
   std::vector<PidONNXModel> mModels;
   std::vector<int> mPids;
-  std::vector<std::array<float, kNDetectors - 1>> mPTLimits;
-  std::vector<float> mMinCertainties;
+  std::vector<std::array<double, kNDetectors - 1>> mPTLimits;
+  std::vector<double> mMinCertainties;
   bool mAutoMode;
 };
 #endif // O2_ANALYSIS_PIDONNXINTERFACE_H_
