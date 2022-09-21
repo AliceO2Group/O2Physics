@@ -40,10 +40,10 @@ DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidre
 
 struct SimpleApplyOnnxInterface {
   PidONNXInterface pidInterface; // One instance to manage all needed ONNX models
-  // TODO: Configurable named array for configs for the interface
+
   Configurable<LabeledArray<double>> cfgPTCuts{"pT_cuts", {pidml_pt_cuts::cuts[0], pidml_pt_cuts::nPids, pidml_pt_cuts::nCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels}, "pT cuts for each output pid"};
   Configurable<std::vector<int>> cfgPids{"pids", std::vector<int>{pidml_pt_cuts::pids_v}, "PIDs to predict"};
-  Configurable<std::vector<double>> cfgCertainties{"certainties", std::vector<double>{pidml_pt_cuts::certs_v}, "Min certainties of the models to accept given particle to be of given kind"};
+  Configurable<std::vector<double>> cfgCertainties{"certainties", std::vector<double>{pidml_pt_cuts::certainties_v}, "Min certainties of the models to accept given particle to be of given kind"};
   Configurable<bool> cfgAutoMode{"autoMode", true, "Use automatic model matching"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
@@ -67,7 +67,7 @@ struct SimpleApplyOnnxInterface {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      pidModel = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
+      pidInterface = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
     }
   }
 
@@ -75,15 +75,15 @@ struct SimpleApplyOnnxInterface {
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      pidModel = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
+      pidInterface = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
     }
 
     for (auto& track : tracks) {
-      for (int pid : cfgConfigs.pids) {
+      for (int pid : cfgPids.value) {
         bool accepted = pidInterface.applyModelBoolean(track, pid);
         LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
              track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
-        pidMLResults(track.index(), cfgPid.value, accepted);
+        pidMLResults(track.index(), pid, accepted);
       }
     }
   }
@@ -92,11 +92,11 @@ struct SimpleApplyOnnxInterface {
   void processTracksOnly(BigTracks const& tracks)
   {
     for (auto& track : tracks) {
-      for (int pid : cfgConfigs.pids) {
+      for (int pid : cfgPids.value) {
         bool accepted = pidInterface.applyModelBoolean(track, pid);
         LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
              track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
-        pidMLResults(track.index(), cfgPid.value, accepted);
+        pidMLResults(track.index(), pid, accepted);
       }
     }
   }

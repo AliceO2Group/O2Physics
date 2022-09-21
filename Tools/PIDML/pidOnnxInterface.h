@@ -17,6 +17,7 @@
 #ifndef O2_ANALYSIS_PIDONNXINTERFACE_H_
 #define O2_ANALYSIS_PIDONNXINTERFACE_H_
 
+#include "Framework/Array2D.h"
 #include "Tools/PIDML/pidOnnxModel.h"
 
 #include <string>
@@ -43,22 +44,30 @@ static const std::vector<std::string> cutVarLabels = {
 } // namespace pidml_pt_cuts
 
 using namespace pidml_pt_cuts;
+using namespace o2::framework;
 
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, std::vector<std::array<double, kNDetectors - 1>> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mPids{pids}, mPTLimits{pTLimits}, mMinCertainties{minCertainties}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mPids{pids}, mPTLimits{pTLimits}, mMinCertainties{minCertainties}
   {
     if (pids.size() == 0) {
       LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
     }
+
+    LOG(info) << "pt limits, y = 0:";
+    auto ptVals = pTLimits[0];
+    for (auto& val : ptVals) {
+      LOG(info) << val;
+    }
+    LOG(info) << "End of pt limits";
 
     mModels.clear();
     if (autoMode) {
       fillDefaultConfiguration();
     }
     mModels.resize(kNDetectors * pids.size());
-    for (int i = 0; i < pids.size(); i++) {
-      for (int j = 0; j < kNDetectors; j++) {
-        mModels[i * kNDetectors + j] = PidONNXModel(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], kTPCOnly + j, minCertainties[i]);
+    for (std::size_t i = 0; i < pids.size(); i++) {
+      for (uint32_t j = 0; j < kNDetectors; j++) {
+        mModels[i * kNDetectors + j] = PidONNXModel(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], (PidMLDetector)(kTPCOnly + j), minCertainties[i]);
       }
     }
   }
@@ -66,9 +75,9 @@ struct PidONNXInterface {
   template <typename T>
   float applyModel(const T& track, int pid)
   {
-    for (int i = 0; i < mModels.size(); i += kNDetectors) {
+    for (std::size_t i = 0; i < mModels.size(); i += kNDetectors) {
       if (mModels[i].mPid == pid) {
-        int j = 0;
+        uint32_t j = 0;
         while (j < kNDetectors && track.pt() < mPTLimits[i / kNDetectors][j]) {
           j++;
         }
@@ -80,12 +89,15 @@ struct PidONNXInterface {
   template <typename T>
   bool applyModelBoolean(const T& track, int pid)
   {
-    for (int i = 0; i < mModels.size(); i += kNDetectors) {
+    for (std::size_t i = 0; i < mModels.size(); i += kNDetectors) {
       if (mModels[i].mPid == pid) {
-        int j = 0;
+        LOG(info) << "Apply model, i: " << i << " pid: " << pid;
+        uint32_t j = 0;
         while (j < kNDetectors && track.pt() < mPTLimits[i / kNDetectors][j]) {
+          LOG(info) << "Apply model, j: " << j << " i/kNDetectors: " << i / kNDetectors << " mPTLimit: " << mPTLimits[i / kNDetectors][j];
           j++;
         }
+        LOG(info) << "Final i: " << i << " j: " << j << "model index: " << i + j - 1 << " number of all models: " << mModels.size() << " all pids: " << mPids.size();
         return mModels[i + j - 1].applyModelBoolean(track);
       }
     }
@@ -95,8 +107,8 @@ struct PidONNXInterface {
   void fillDefaultConfiguration()
   {
     // FIXME: A more sophisticated strategy should be based on pid values as well
-    for (int i = 0; i < mConfigs.size(); i++) {
-      mPTLimits[i] = {0.5, 0.8};
+    mPTLimits = LabeledArray{cuts[0], nPids, nCutVars, pidLabels, cutVarLabels};
+    for (std::size_t i = 0; i < mPids.size(); i++) {
       mMinCertainties[i] = 0.5;
     }
   }
@@ -106,9 +118,9 @@ struct PidONNXInterface {
   // static constexpr int mPdgs[mNumKinds] = {211, -211, 2212, -2212, 321, -321, 11, -11, 13, -13};
   // static constexpr int mPdgs[mNumKinds] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
   std::vector<PidONNXModel> mModels;
-  std::vector<int> mPids;
-  std::vector<std::array<double, kNDetectors - 1>> mPTLimits;
-  std::vector<double> mMinCertainties;
   bool mAutoMode;
+  std::vector<int> mPids;
+  LabeledArray<double> mPTLimits;
+  std::vector<double> mMinCertainties;
 };
 #endif // O2_ANALYSIS_PIDONNXINTERFACE_H_

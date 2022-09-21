@@ -42,7 +42,7 @@ struct SimpleApplyOnnxModel {
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
   Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
-  Configurable<float> cfgCertainty{"certainty", 0.5f, "Min certainty of the model to accept given particle to be of given kind"};
+  Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given particle to be of given kind"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
