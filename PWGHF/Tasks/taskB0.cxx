@@ -72,7 +72,7 @@ struct HfTaskB0 {
   void process(aod::Collision const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>, aod::BigTracks)
   {
     for (auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_b0::DecayType::B0ToDPi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YB0(candidate)) > cutYCandMax) {
