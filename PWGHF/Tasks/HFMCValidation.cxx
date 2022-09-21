@@ -458,6 +458,9 @@ struct ValidationRecLevel {
   {
     // loop over collisions
     for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
       auto mcCollision = collision.mcCollision_as<mcCollisionWithHFSignalInfo>();
       if (checkAmbiguousTracksWithHFEventsOnly && !mcCollision.hasHFsignal()) {
         continue;
@@ -555,20 +558,20 @@ struct ValidationRecLevel {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
           auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
           deltaZ = collision.posZ() - mcCollision.posZ();
-          if (collision.mcCollisionId() == particle.mcCollisionId()) {
+          if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
           } else { // if the most probable collision is not the good one, check if the tracks is ambiguous
             if (track.isAmbiguousTrack()) {
               for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
 
-                if (ambCollision.mcCollisionId() == particle.mcCollisionId()) {
+                if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
                   histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
                   break;
                 }
               }
             } else if (track.isPVContributor()) {
-              if (collision.mcCollisionId() == particle.mcCollisionId()) {
+              if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
                 histContributors->Fill(0);
               } else {
                 histContributors->Fill(1);
