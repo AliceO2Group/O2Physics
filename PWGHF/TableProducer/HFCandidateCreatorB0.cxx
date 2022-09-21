@@ -192,7 +192,7 @@ struct HFCandidateCreatorB0 {
 		      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
 		      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-		      int hfFlag = 1 << hf_cand_b0::DecayType::B0ToDPi;
+		      int hfFlag = BIT(hf_cand_b0::DecayType::B0ToDPi);
 
 		      // fill the candidate table for the B0 here:
 		      rowCandidateBase(collision.globalIndex(),
