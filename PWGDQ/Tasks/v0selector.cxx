@@ -315,54 +315,54 @@ struct v0selector {
       // printf("V0.collisionId = %d , collision.globalIndex = %d\n",V0.collisionId(),collision.globalIndex());
 
       if (V0.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-	v0dataLink(-1);
+       v0dataLink(-1);
        continue;
       }
       if (V0.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-	v0dataLink(-1);
-        continue;
+       v0dataLink(-1);
+       continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-	v0dataLink(-1);
+       v0dataLink(-1);
         continue;
       }
       if (V0.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-	v0dataLink(-1);
+      v0dataLink(-1);
         continue;
       }
 
       if (fabs(V0.posTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
-	v0dataLink(-1);
+     v0dataLink(-1);
         continue;
       }
       if (fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
-	v0dataLink(-1);
+       v0dataLink(-1);
         continue;
       }
 
       if (fabs(V0.posTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-	v0dataLink(-1);
+       v0dataLink(-1);
         continue;
       }
       if (fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-	v0dataLink(-1);
+        v0dataLink(-1);
         continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().sign() * V0.negTrack_as<FullTracksExt>().sign() > 0) { // reject same sign pair
-	v0dataLink(-1);
+        v0dataLink(-1);
         continue;
       }
 
       if (V0.posTrack_as<FullTracksExt>().collisionId() != V0.negTrack_as<FullTracksExt>().collisionId()) {
-	v0dataLink(-1);
+       v0dataLink(-1);
         continue;
       }
 
       if (!V0.posTrack_as<FullTracksExt>().has_collision() || !V0.negTrack_as<FullTracksExt>().has_collision()) {
-	v0dataLink(-1);
-        continue;
+      v0dataLink(-1);
+      continue;
       }
       auto const& collision = V0.posTrack_as<FullTracksExt>().collision();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -434,32 +434,32 @@ struct v0selector {
       registry.fill(HIST("hDCAV0Dau"), V0dca);
 
       if (V0dca > dcav0dau) {
-	v0dataLink(-1);
+        v0dataLink(-1);
         continue;
       }
 
       if (V0CosinePA < v0cospa) {
-	v0dataLink(-1);
+      v0dataLink(-1);
       continue;
       }
 
       if (V0radius < v0Rmin || v0Rmax < V0radius) {
-	v0dataLink(-1);
+      v0dataLink(-1);
       continue;
       }
 
       v0data(
-	     V0.posTrackId(),
-	     V0.negTrackId(),
-	     V0.collisionId(),
-	     V0.globalIndex(),
-	     fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-	     pos[0], pos[1], pos[2],
-	     pvec0[0], pvec0[1], pvec0[2],
-	     pvec1[0], pvec1[1], pvec1[2],
-	     fitter.getChi2AtPCACandidate(),
-	     V0.posTrack_as<FullTracksExt>().dcaXY(),
-	     V0.negTrack_as<FullTracksExt>().dcaXY());
+      V0.posTrackId(),
+      V0.negTrackId(),
+      V0.collisionId(),
+      V0.globalIndex(),
+      fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+      pos[0], pos[1], pos[2],
+      pvec0[0], pvec0[1], pvec0[2],
+      pvec1[0], pvec1[1], pvec1[2],
+      fitter.getChi2AtPCACandidate(),
+      V0.posTrack_as<FullTracksExt>().dcaXY(),
+      V0.negTrack_as<FullTracksExt>().dcaXY());
 
       v0dataLink(v0data.lastIndex());
 
@@ -850,34 +850,34 @@ struct trackPIDQA {
     const float trackneg_bg = trackneg_p / trackneg_mass;
 
     v0tree(
-	   v0.alpha(),
-	   v0.qtarm(),
-	   v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-	   v0.pt(),
-	   v0.v0radius(),
-	   v0.psipair(),
-	   postrack.tpcSignal(),
-	   postrack.tpcInnerParam(),
-	   postrack.signed1Pt(),
-	   postrack.eta(),
-	   postrack.phi(),
-	   postrack.y(),
-	   nSigmaTPC_pos,
-	   nSigmaTOF_pos,
-	   o2::track::pid_constants::sMasses[pos_id],
-	   trackpos_bg,
-	   pos_id,
-	   negtrack.tpcSignal(),
-	   negtrack.tpcInnerParam(),
-	   negtrack.signed1Pt(),
-	   negtrack.eta(),
-	   negtrack.phi(),
-	   negtrack.y(),
-	   nSigmaTPC_neg,
-	   nSigmaTOF_neg,
-	   o2::track::pid_constants::sMasses[neg_id],
-	   trackneg_bg,
-	   neg_id);
+    v0.alpha(),
+    v0.qtarm(),
+    v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+    v0.pt(),
+    v0.v0radius(),
+    v0.psipair(),
+    postrack.tpcSignal(),
+    postrack.tpcInnerParam(),
+    postrack.signed1Pt(),
+    postrack.eta(),
+    postrack.phi(),
+    postrack.y(),
+    nSigmaTPC_pos,
+    nSigmaTOF_pos,
+    o2::track::pid_constants::sMasses[pos_id],
+    trackpos_bg,
+    pos_id,
+    negtrack.tpcSignal(),
+    negtrack.tpcInnerParam(),
+    negtrack.signed1Pt(),
+    negtrack.eta(),
+    negtrack.phi(),
+    negtrack.y(),
+    nSigmaTPC_neg,
+    nSigmaTOF_neg,
+    o2::track::pid_constants::sMasses[neg_id],
+    trackneg_bg,
+    neg_id);
   }
 
   void processTree(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks, aod::V0Datas const& v0s)
