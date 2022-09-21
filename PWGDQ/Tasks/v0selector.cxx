@@ -840,7 +840,6 @@ struct trackPIDQA {
   template <typename T, typename C, typename V0>
   void fillskimv0table(V0 const& v0,T const& postrack,T const& negtrack,C const& collision, const float nSigmaTPC_pos, const float nSigmaTOF_pos,const float nSigmaTPC_neg, const float nSigmaTOF_neg,const o2::track::PID::ID pos_id,const o2::track::PID::ID neg_id)
   {
-   
     const float trackpos_mass = o2::track::pid_constants::sMasses[pos_id];
     const float trackpos_p = postrack.tpcInnerParam();
     const float trackpos_bg = trackpos_p / trackpos_mass;
