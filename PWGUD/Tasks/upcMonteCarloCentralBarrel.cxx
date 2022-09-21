@@ -31,8 +31,6 @@ using namespace o2::framework;
 struct UPCFilterCentralBarrel {
 
 	// Global varialbes
-	bool isMonteCarloData = false;
-
 
 	HistogramRegistry registry{
 		"registry",
@@ -48,31 +46,22 @@ struct UPCFilterCentralBarrel {
 	void init(InitContext&){} // end init
 
 	// process
-	void analyseBarrelTracks(aod::Collision const& collision,
-													 aod::McCollisions const& mcCollisions,
-	                         MeasuredTCs& barrelTracks){
-
-		registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(3);
-
-		LOGF(info, "vtx-z (data) = %f", collision.posZ());
-		if (mcCollisions != nullptr) LOGF(info, "vtx-z (data) = %f | size (MC) = %d", collision.posZ(), mcCollisions.size());
-
-	} // end analyseBarrelTracks
-
-	void processMeasuredData(aod::Collision const& collision,
-	                         MeasuredTCs& barrelTracks){
-		analyseBarrelTracks(collision, (aod::McCollisions)nullptr, barrelTracks);
-	} // end processMeasuredData
-
-	void processMonteCarloData(aod::Collision const& collision,
-	                           aod::McCollisions const& mcCollisions,
+	void processSimulatorLevel(aod::Collision const& collision,
+														 aod::McCollisions const& mcCollisions,
 	                           MeasuredTCs& barrelTracks){
-		isMonteCarloData = true;
-		analyseBarrelTracks(collision, mcCollisions, barrelTracks);
-	} // end processMonteCarloData
 
-	PROCESS_SWITCH(UPCFilterCentralBarrel, processMeasuredData, "Process tables with measured data only", false);
-	PROCESS_SWITCH(UPCFilterCentralBarrel, processMonteCarloData, "Process tables with Monte Carlo data", false);
+	} // end processSimulatorLevel
+
+	void processGeneratorLevel(aod::McCollision const& mcCollision,
+														 aod::McParticles const& mcParticles){
+
+		
+
+
+	} // end processGeneratorLevel
+
+	PROCESS_SWITCH(UPCFilterCentralBarrel, processSimulatorLevel, "Iterate MC tables with reconstructed data", false);
+	PROCESS_SWITCH(UPCFilterCentralBarrel, processGeneratorLevel, "Iterate MC tables with generated data", false);
 
 };
 
@@ -80,6 +69,6 @@ struct UPCFilterCentralBarrel {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
 	return WorkflowSpec{
-		adaptAnalysisTask<UPCFilterCentralBarrel>(cfgc, TaskName{"upc-filter-central-barrel"})
+		adaptAnalysisTask<UPCFilterCentralBarrel>(cfgc, TaskName{"upc-mc-central-barrel"})
 	};
 }
