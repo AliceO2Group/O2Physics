@@ -94,16 +94,17 @@ struct PidONNXInterface {
   template <typename T>
   bool applyModelBoolean(const T& track, int pid)
   {
-    for (std::size_t i = 0; i < mModels.size(); i += kNDetectors) {
+    for (std::size_t i = 0; i < mModels.size(); i += kNDetectors - 1) {
       if (mModels[i].mPid == pid) {
         LOG(info) << "Apply model, i: " << i << " pid: " << pid;
         uint32_t j = 0;
-        while (j < kNDetectors && track.pt() < mPTLimits[i / kNDetectors][j]) {
-          LOG(info) << "Apply model, j: " << j << " i/kNDetectors: " << i / kNDetectors << " mPTLimit: " << mPTLimits[i / kNDetectors][j];
+        LOG(info) << "Apply model, track pt: " << track.pt() << " first pt limit: " << mPTLimits[i / (kNDetectors - 1)][j];
+        while (j < kNDetectors - 1 && track.pt() < mPTLimits[i / (kNDetectors - 1)][j]) {
+          LOG(info) << "Apply model, j: " << j << " i/ (kNDetectors - 1): " << i / (kNDetectors - 1) << " mPTLimit: " << mPTLimits[i / (kNDetectors - 1)][j];
           j++;
         }
-        LOG(info) << "Final i: " << i << " j: " << j << "model index: " << i + j - 1 << " number of all models: " << mModels.size() << " all pids: " << mPids.size();
-        return mModels[i + j - 1].applyModelBoolean(track);
+        LOG(info) << "Final i: " << i << " j: " << j << "model index: " << i + j << " number of all models: " << mModels.size() << " all pids: " << mPids.size();
+        return mModels[i + j].applyModelBoolean(track);
       }
     }
     return false;
