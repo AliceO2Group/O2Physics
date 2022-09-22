@@ -13,12 +13,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-// custom configurable for switching between run2 and run3 selection types
-void customize(std::vector<ConfigParamSpec>& workflowOptions)
-{
-  workflowOptions.push_back(ConfigParamSpec{"selection-run", VariantType::Int, 2, {"selection type: 2 - run 2, 3 - run 3"}});
-}
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -167,9 +161,12 @@ struct MultiplicityTableTaskIndexed {
           lCalibLoaded = true;
           //Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
-            LOGF(info, "Problem loading CCDB objects! Please check");
+            LOGF(error, "Problem loading CCDB objects! Please check");
             lCalibLoaded = false;
           }
+        } else {
+          LOGF(error, "Problem loading CCDB object! Please check");
+          lCalibLoaded = false;
         }
       }
     }
