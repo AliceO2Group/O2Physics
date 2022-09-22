@@ -90,8 +90,9 @@ struct UpcCandAnalyzer {
      {"PID_TPC/nSigmaEl", ";#sigma;", {HistType::kTH1D, {{200, -10., 10.}}}},
      {"PID_TPC/nSigmaPi", ";#sigma;", {HistType::kTH1D, {{200, -10., 10.}}}}}};
 
-  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksCov, o2::aod::UDTracksExtra, o2::aod::UDTracksDCA, o2::aod::UDTracksPID, o2::aod::UDMcTrackLabels, o2::aod::UDTrackCollisionIDs>;
-  using FwdTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra, o2::aod::UDMcFwdTrackLabels>;
+  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksCov, o2::aod::UDTracksExtra, o2::aod::UDTracksDCA,
+                                 o2::aod::UDTracksPID, o2::aod::UDTrackCollisionIDs>;
+  using FwdTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra>;
 
   void init(InitContext&)
   {
@@ -421,8 +422,9 @@ struct UpcCandAnalyzer {
     return pass;
   }
 
-  template <bool isCentral, typename TTrack1, typename TTrack2>
-  void processCandidate(o2::aod::UDCollision const& cand, TTrack1& tr1, TTrack2& tr2, o2::aod::UDMcParticles* mcParticles)
+  template <int32_t processSwitch, typename TTrack1, typename TTrack2>
+  void processCandidate(o2::aod::UDCollision const& cand, TTrack1& tr1, TTrack2& tr2, o2::aod::UDMcParticles* mcParticles,
+                        o2::aod::UDMcTrackLabels* mcTrackLabels, o2::aod::UDMcFwdTrackLabels* mcFwdTrackLabels)
   {
     std::map<int32_t, bool> selFlags; // holder of selection flags
     float mmc = -1;
@@ -433,8 +435,23 @@ struct UpcCandAnalyzer {
     //
     if (fIsMC) {
       TLorentzVector mcP1, mcP2;
-      int32_t mcPartId1 = tr1.udMcParticleId();
-      int32_t mcPartId2 = tr2.udMcParticleId();
+      int32_t mcPartId1;
+      int32_t mcPartId2;
+      // forward
+      if constexpr (processSwitch == 0) {
+        mcPartId1 = mcFwdTrackLabels->iteratorAt(tr1.globalIndex()).udMcParticleId();
+        mcPartId2 = mcFwdTrackLabels->iteratorAt(tr2.globalIndex()).udMcParticleId();
+      }
+      // semi-forward
+      if constexpr (processSwitch == 1) {
+        mcPartId1 = mcFwdTrackLabels->iteratorAt(tr1.globalIndex()).udMcParticleId();
+        mcPartId2 = mcTrackLabels->iteratorAt(tr2.globalIndex()).udMcParticleId();
+      }
+      // central
+      if constexpr (processSwitch == 2) {
+        mcPartId1 = mcTrackLabels->iteratorAt(tr1.globalIndex()).udMcParticleId();
+        mcPartId2 = mcTrackLabels->iteratorAt(tr2.globalIndex()).udMcParticleId();
+      }
       const auto& mcPart1 = mcParticles->iteratorAt(mcPartId1);
       const auto& mcPart2 = mcParticles->iteratorAt(mcPartId2);
       pdg1 = mcPart1.pdgCode();
@@ -453,7 +470,7 @@ struct UpcCandAnalyzer {
     float m1 = pdgsMass[fTargetPdg];
     float m2 = pdgsMass[fTargetPdg];
     bool pidFlags[4] = {false};
-    if constexpr (isCentral) {
+    if constexpr (processSwitch == 2) {
       selFlags[kSelPID] = checkTPCPID(tr1, tr2, m1, m2, pidFlags, pdg1, pdg2);
       selFlags[kSelDDCA] = checkDDCA(tr1, tr2);
     }
@@ -462,7 +479,7 @@ struct UpcCandAnalyzer {
     // check FT0 signal
     if (cand.hasFT0()) {
       bool hasNoFT0 = true;
-      if constexpr (isCentral) {
+      if constexpr (processSwitch == 2) {
         hasNoFT0 = false;
       } else {
         // if there is a signal, candidate passes if timeA is dummy
@@ -528,7 +545,7 @@ struct UpcCandAnalyzer {
       }
     }
     // collect TPC signals if Central Barrel
-    if constexpr (isCentral) {
+    if constexpr (processSwitch == 2) {
       registry.fill(HIST("ProcessCandidate/TPCSignals/All"), tr1.tpcSignal(), tr2.tpcSignal());
       if (selFlags[kSelIdealPID]) {
         registry.fill(HIST("ProcessCandidate/TPCSignals/IdealPID"), tr1.tpcSignal(), tr2.tpcSignal());
@@ -549,7 +566,8 @@ struct UpcCandAnalyzer {
   void processFwdMC(o2::aod::UDCollisions const& eventCandidates,
                     FwdTracks const& fwdTracks,
                     o2::aod::UDMcCollisions const& mcCollisions,
-                    o2::aod::UDMcParticles& mcParticles)
+                    o2::aod::UDMcParticles& mcParticles,
+                    o2::aod::UDMcFwdTrackLabels& mcFwdTrackLabels)
   {
     fIsMC = true;
 
@@ -561,7 +579,7 @@ struct UpcCandAnalyzer {
       auto fwdTracksPerCand = fwdTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
       const auto& tr1 = fwdTracksPerCand.iteratorAt(0);
       const auto& tr2 = fwdTracksPerCand.iteratorAt(1);
-      processCandidate<false>(cand, tr1, tr2, &mcParticles);
+      processCandidate<0>(cand, tr1, tr2, &mcParticles, (o2::aod::UDMcTrackLabels*)nullptr, &mcFwdTrackLabels);
     }
   }
 
@@ -578,7 +596,7 @@ struct UpcCandAnalyzer {
       auto fwdTracksPerCand = fwdTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
       const auto& tr1 = fwdTracksPerCand.iteratorAt(0);
       const auto& tr2 = fwdTracksPerCand.iteratorAt(1);
-      processCandidate<false>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr);
+      processCandidate<0>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
     }
   }
 
@@ -587,7 +605,9 @@ struct UpcCandAnalyzer {
                         FwdTracks const& fwdTracks,
                         BarrelTracks const& barTracks,
                         o2::aod::UDMcCollisions const& mcCollisions,
-                        o2::aod::UDMcParticles& mcParticles)
+                        o2::aod::UDMcParticles& mcParticles,
+                        o2::aod::UDMcFwdTrackLabels& mcFwdTrackLabels,
+                        o2::aod::UDMcTrackLabels& mcTrackLabels)
   {
     fIsMC = true;
 
@@ -600,7 +620,7 @@ struct UpcCandAnalyzer {
       auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
       const auto& tr1 = fwdTracksPerCand.iteratorAt(0);
       const auto& tr2 = barTracksPerCand.iteratorAt(0);
-      processCandidate<false>(cand, tr1, tr2, &mcParticles);
+      processCandidate<1>(cand, tr1, tr2, &mcParticles, &mcTrackLabels, &mcFwdTrackLabels);
     }
   }
 
@@ -619,7 +639,7 @@ struct UpcCandAnalyzer {
       auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
       const auto& tr1 = fwdTracksPerCand.iteratorAt(0);
       const auto& tr2 = barTracksPerCand.iteratorAt(0);
-      processCandidate<false>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr);
+      processCandidate<1>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
     }
   }
 
@@ -627,7 +647,8 @@ struct UpcCandAnalyzer {
   void processCentralMC(o2::aod::UDCollisions const& eventCandidates,
                         BarrelTracks const& barTracks,
                         o2::aod::UDMcCollisions const& mcCollisions,
-                        o2::aod::UDMcParticles& mcParticles)
+                        o2::aod::UDMcParticles& mcParticles,
+                        o2::aod::UDMcTrackLabels& mcTrackLabels)
   {
     fIsMC = true;
 
@@ -639,7 +660,7 @@ struct UpcCandAnalyzer {
       auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
       const auto& tr1 = barTracksPerCand.iteratorAt(0);
       const auto& tr2 = barTracksPerCand.iteratorAt(1);
-      processCandidate<true>(cand, tr1, tr2, &mcParticles);
+      processCandidate<2>(cand, tr1, tr2, &mcParticles, &mcTrackLabels, (o2::aod::UDMcFwdTrackLabels*)nullptr);
     }
   }
 
@@ -650,13 +671,18 @@ struct UpcCandAnalyzer {
   {
     fIsMC = false;
 
+    LOGF(info, "N canditates: %d", eventCandidates.size());
+
     // assuming that candidates have exatly 2 central barrel tracks
     for (const auto& cand : eventCandidates) {
       auto candID = cand.globalIndex();
+      if (candID % 50 == 0) {
+        LOGF(info, "Candidate: %d", candID);
+      }
       auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
       const auto& tr1 = barTracksPerCand.iteratorAt(0);
       const auto& tr2 = barTracksPerCand.iteratorAt(1);
-      processCandidate<true>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr);
+      processCandidate<2>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
     }
   }
 
