@@ -15,12 +15,14 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "TLorentzVector.h"
+
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct UpcTrackSkimmer {
-  int32_t fSignalGenID{1};
-  bool fDoMC;
+  Configurable<int> fSignalGenID{"signalGenID", 1, "Signal generator ID"};
+  bool fDoMC{false};
 
   Produces<o2::aod::UDMcCollisions> udMCCollisions;
   Produces<o2::aod::UDMcParticles> udMCParticles;
@@ -32,6 +34,7 @@ struct UpcTrackSkimmer {
   Produces<o2::aod::UDTracks> udTracks;
   Produces<o2::aod::UDTracksCov> udTracksCov;
   Produces<o2::aod::UDTracksExtra> udTracksExtra;
+  Produces<o2::aod::UDTracksDCA> udTracksDCA;
   Produces<o2::aod::UDTracksPID> udTracksPID;
   Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
 
@@ -74,9 +77,62 @@ struct UpcTrackSkimmer {
   // quality: TOF
   Configurable<int> fRequireTOF{"requireTOF", 0, "Require all tracks to have TOF matches"};
 
+  // QA histograms to check for tracks after cuts
+  HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  enum FwdSels {
+    kFwdSelAll = 0,
+    kFwdSelPt,
+    kFwdSelEta,
+    kFwdSelRabs,
+    kFwdSelpDCA,
+    kFwdSelChi2,
+    kNFwdSels
+  };
+
+  enum BarrelSels {
+    kBarrelSelAll = 0,
+    kBarrelSelHasTOF,
+    kBarrelSelPt,
+    kBarrelSelEta,
+    kBarrelSelITSNCls,
+    kBarrelSelITSChi2,
+    kBarrelSelTPCNCls,
+    kBarrelSelTPCChi2,
+    kBarrelSelDCAXY,
+    kBarrelSelDCAZ,
+    kNBarrelSels
+  };
+
+  void init(InitContext&)
+  {
+    const AxisSpec axisSelFwd{kNFwdSels, 0., double(kNFwdSels), ""};
+    histRegistry.add("MuonsSelCounter", "", kTH1F, {axisSelFwd});
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelAll + 1, "All");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelPt + 1, "Pt");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelEta + 1, "Eta");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelRabs + 1, "Rabs");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelpDCA + 1, "pDCA");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelChi2 + 1, "Chi2");
+
+    const AxisSpec axisSelBar{kNBarrelSels, 0., double(kNBarrelSels), ""};
+    histRegistry.add("BarrelsSelCounter", "", kTH1F, {axisSelBar});
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelAll + 1, "All");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelHasTOF + 1, "HasTOF");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelPt + 1, "Pt");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelEta + 1, "Eta");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelITSNCls + 1, "ITSNCls");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelITSChi2 + 1, "ITSChi2");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelTPCNCls + 1, "TPCNCls");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelTPCChi2 + 1, "TPCChi2");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelDCAXY + 1, "DCAXY");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelDCAZ + 1, "DCAZ");
+  }
+
   template <typename TFwdTrack>
   bool applyFwdCuts(TFwdTrack const& track)
   {
+    histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelAll, 1);
     // using any cuts at all?
     if (!fUseFwdCuts) {
       return true;
@@ -84,90 +140,100 @@ struct UpcTrackSkimmer {
     // check Pt cuts
     float pt = track.pt();
     bool checkPt = pt > fFwdPtLow && pt < fFwdPtHigh;
-    if (!checkPt) {
-      return false;
+    if (checkPt) {
+      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelPt, 1);
     }
     // check pseudorapidity cuts
     float eta = track.eta();
     bool checkEta = eta > fFwdEtaLow && eta < fFwdEtaHigh;
-    if (!checkEta) {
-      return false;
+    if (checkEta) {
+      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelEta, 1);
     }
     // check muon R
     float r = track.rAtAbsorberEnd();
     bool checkR = r > fMuonRAtAbsorberEndLow && r < fMuonRAtAbsorberEndHigh;
-    if (!checkR) {
-      return false;
+    if (checkR) {
+      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelRabs, 1);
     }
     // check pDCA
     float pDCA = track.pDca();
     bool checkPDCA = r < 26.5 ? pDCA < fMuonPDcaHighFirst : pDCA < fMuonPDcaHighSecond;
-    if (!checkPDCA) {
-      return false;
+    if (checkPDCA) {
+      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelpDCA, 1);
     }
     // check Chi2
     float chi2 = track.chi2();
     bool checkChi2 = chi2 > fFwdChi2Low && chi2 < fFwdChi2High;
-    if (!checkChi2) {
-      return false;
+    if (checkChi2) {
+      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelChi2, 1);
     }
-    return true;
+    bool pass = checkPt && checkEta && checkR && checkPDCA && checkChi2;
+    return pass;
   }
 
   template <typename TBarTrack>
   bool applyBarCuts(TBarTrack const& track)
   {
+    histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelAll, 1);
     // using any cuts at all?
     if (!fUseBarCuts) {
       return true;
     }
     // require TOF match
-    if (fRequireTOF && !track.hasTOF()) {
-      return false;
+    bool hasTOF = true;
+    if (fRequireTOF) {
+      hasTOF = track.length() > 0.f && track.tofChi2() > 0.f;
+      if (hasTOF) {
+        histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelHasTOF, 1);
+      }
     }
     // check Pt cuts
     float pt = track.pt();
     bool checkPt = pt > fBarPtLow && pt < fBarPtHigh;
-    if (!checkPt) {
-      return false;
+    if (checkPt) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelPt, 1);
     }
     // check pseudorapidity cuts
     float eta = track.eta();
     bool checkEta = eta > fBarEtaLow && eta < fBarEtaHigh;
-    if (!checkEta) {
-      return false;
+    if (checkEta) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelEta, 1);
     }
     // check ITS cuts
     bool checkITSNClus = track.itsNCls() >= static_cast<uint8_t>(fITSNClusLow) && track.itsNCls() <= static_cast<uint8_t>(fITSNClusHigh);
-    if (!checkITSNClus) {
-      return false;
+    if (checkITSNClus) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelITSNCls, 1);
     }
     bool checkChi2ITS = track.itsChi2NCl() > fITSChi2Low && track.itsChi2NCl() < fITSChi2High;
-    if (!checkChi2ITS) {
-      return false;
+    if (checkChi2ITS) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelITSChi2, 1);
     }
     // check TPC cuts
     int checkTPCNClus = track.tpcNClsCrossedRows() > static_cast<int16_t>(fTPCNClusCRLow) && track.tpcNClsCrossedRows() < static_cast<int16_t>(fTPCNClusCRHigh);
-    if (!checkTPCNClus) {
-      return false;
+    if (checkTPCNClus) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelTPCNCls, 1);
     }
     bool checkChi2TPC = track.tpcChi2NCl() > fTPCChi2Low && track.tpcChi2NCl() < fTPCChi2High;
-    if (!checkChi2TPC) {
-      return false;
+    if (checkChi2TPC) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelTPCChi2, 1);
     }
     // check DCA
+    bool checkMaxDcaXY = true;
     if (fCheckMaxDcaXY) {
       float dca = track.dcaXY();
       float maxDCA = 0.0105f + 0.0350f / pow(pt, 1.1f);
-      if (dca < maxDCA) {
-        return false;
+      checkMaxDcaXY = dca < maxDCA;
+      if (checkMaxDcaXY) {
+        histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelDCAXY, 1);
       }
     }
     bool checkDCAZ = track.dcaZ() > fDcaZLow && track.dcaZ() < fDcaZHigh;
-    if (!checkDCAZ) {
-      return false;
+    if (checkDCAZ) {
+      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelDCAZ, 1);
     }
-    return true;
+    bool pass = hasTOF && checkPt && checkEta && checkITSNClus && checkChi2ITS &&
+                checkTPCNClus && checkChi2TPC && checkMaxDcaXY && checkDCAZ;
+    return pass;
   }
 
   template <typename TMcCollisions, typename TMcParticles, typename TBCs>
@@ -188,7 +254,7 @@ struct UpcTrackSkimmer {
       int32_t mcEventID = mcPart.mcCollisionId();
       const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
       bool isSignal = mcEvent.generatorsID() == fSignalGenID;
-      if (!isSignal || !mcPart.producedByGenerator()) {
+      if (!isSignal) {
         continue;
       }
       newPartIDs[mcPartID] = newPartID;
@@ -258,6 +324,19 @@ struct UpcTrackSkimmer {
                      TMcFwdTrackLabels* mcTrackLabels,
                      std::map<int32_t, int32_t> const& newPartIDs)
   {
+    std::unordered_map<int32_t, int32_t> ambTrIds;
+    for (const auto& ambTr : ambTracks) {
+      auto trId = ambTr.fwdtrackId();
+      if constexpr (TTrackType != -1) {
+        const auto& tr = tracks.iteratorAt(trId);
+        auto trType = tr.trackType();
+        if (trType != TTrackType) {
+          continue;
+        }
+      }
+      ambTrIds[trId] = ambTr.globalIndex();
+    }
+
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.fwdtrackId();
       const auto& tr = tracks.iteratorAt(trId);
@@ -272,12 +351,20 @@ struct UpcTrackSkimmer {
       if (!applyFwdCuts(tr)) {
         continue;
       }
-      const auto& bcSlice = ambTr.bc();
-      auto first = bcSlice.begin();
-      uint64_t firstBC = first.globalBC();
-      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double)tr.trackTime(); // "real" = relative to start of TF
-      uint64_t bc = realTime > 0. ? std::round(realTime / o2::constants::lhc::LHCBunchSpacingNS) : 0;
-      double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
+      uint64_t trackBC;
+      int32_t colId = tr.collisionId();
+      if (colId >= 0) {
+        const auto& col = tr.collision();
+        trackBC = col.bc().globalBC();
+      } else {
+        const auto& ambTr = ambTracks.iteratorAt(ambTrIds.at(trId));
+        const auto& bcSlice = ambTr.bc();
+        auto first = bcSlice.begin();
+        trackBC = first.globalBC();
+      }
+      uint64_t tint = std::round(tr.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      uint64_t bc = trackBC + tint;
+      double trTime = tr.trackTime() - tint * o2::constants::lhc::LHCBunchSpacingNS;
       fwdTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
       fwdTracksExtra(tr.nClusters(), tr.pDca(), tr.rAtAbsorberEnd(), tr.chi2(), tr.chi2MatchMCHMID(),
                      tr.mchBitMap(), tr.midBitMap(), tr.midBoards());
@@ -315,23 +402,26 @@ struct UpcTrackSkimmer {
         continue;
       }
       uint64_t trackBC;
-      if (tr.collisionId() >= 0) {
-        trackBC = tr.collision().bc().globalBC();
+      int32_t colId = tr.collisionId();
+      if (colId >= 0) {
+        const auto& col = tr.collision();
+        trackBC = col.bc().globalBC();
       } else {
         const auto& ambTr = ambTracks.iteratorAt(ambTrIds.at(trId));
         const auto& bcSlice = ambTr.bc();
         auto first = bcSlice.begin();
         trackBC = first.globalBC();
       }
-      double realTime = trackBC * o2::constants::lhc::LHCBunchSpacingNS + (double)tr.trackTime(); // "real" = relative to start of TF
-      uint64_t bc = realTime > 0. ? std::round(realTime / o2::constants::lhc::LHCBunchSpacingNS) : 0;
-      double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
+      uint64_t tint = std::round(tr.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      uint64_t bc = trackBC + tint;
+      double trTime = tr.trackTime() - tint * o2::constants::lhc::LHCBunchSpacingNS;
       udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
       udTracksCov(tr.x(), tr.y(), tr.z(), tr.sigmaY(), tr.sigmaZ());
       udTracksExtra(tr.itsChi2NCl(), tr.itsClusterMap(),
                     tr.tpcChi2NCl(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(), tr.tpcNClsShared(), tr.tpcSignal(),
-                    tr.tofChi2(), tr.tofExpMom(), tr.tofSignal(), tr.length(),
+                    tr.tofChi2(), tr.tofExpMom(), tr.length(),
                     tr.detectorMap());
+      udTracksDCA(tr.dcaZ(), tr.dcaXY());
       udTracksPID(tr.tpcNSigmaEl(), tr.tpcNSigmaMu(), tr.tpcNSigmaPi(), tr.tpcNSigmaKa(), tr.tpcNSigmaPr(),
                   tr.tofNSigmaEl(), tr.tofNSigmaMu(), tr.tofNSigmaPi(), tr.tofNSigmaKa(), tr.tofNSigmaPr());
       // fill MC labels and masks if needed

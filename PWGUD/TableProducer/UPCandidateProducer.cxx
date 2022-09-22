@@ -36,10 +36,10 @@ struct UpcCandProducer {
     uint8_t triggerMask = 0;
   };
 
-  template <typename TFwdTracks, typename TBarTracks,
+  template <typename TFwdTracks, typename TBarrelTracks,
             typename TBCs, typename TFT0s>
   void createCandidates(TFwdTracks* fwdTracks,
-                        TBarTracks* barTracks,
+                        TBarrelTracks* barTracks,
                         TBCs const& bcs,
                         TFT0s const& ft0s)
   {
@@ -101,12 +101,15 @@ struct UpcCandProducer {
     int32_t candID = 0;
     for (const auto& item : bcsMatchedFwdTrIds) {
       uint64_t bc = item.first;
-      const std::vector<int32_t>& fwdTrackIDs = item.second.first;
-      const std::vector<int32_t>& barTrackIDs = item.second.second;
+      std::vector<int32_t> fwdTrackIDs = item.second.first;
+      std::vector<int32_t> barTrackIDs = item.second.second;
       int32_t nFwdTracks = fwdTrackIDs.size();
       int32_t nBarTracks = barTrackIDs.size();
-      // skip candidate if it does not pass `number of tracks` requirement
-      if (!(nFwdTracks == fNFwdProngs && nBarTracks == fNBarProngs)) {
+      // check number of tracks in a candidate
+      bool checkForward = nFwdTracks == fNFwdProngs;
+      bool checkCentral = nBarTracks == fNBarProngs;
+      // check TPC PID if needed
+      if (!checkForward || !checkCentral) {
         continue;
       }
       float RgtrwTOF = 0.;
@@ -117,7 +120,7 @@ struct UpcCandProducer {
         }
       }
       RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float) nBarTracks : 0.;
-      if (RgtrwTOF == 0 && fNFwdProngs == 0) { // require at least 1 TOF track in central and semiforward cases
+      if (RgtrwTOF == 0 && fNBarProngs != 0) { // require at least 1 TOF track in central and semiforward cases
         continue;
       }
       int8_t netCharge = 0;
@@ -177,18 +180,20 @@ struct UpcCandProducer {
     barTrackCandIds.clear();
   }
 
+  using BarrelTracks = o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra, o2::aod::UDTracksPID>;
+
   // create candidates for forward region
   void processFwd(o2::aod::UDFwdTracks const& muonTracks,
                   o2::aod::BCs const& bcs,
                   o2::aod::FT0s const& ft0s)
   {
     fDoSemiFwd = false;
-    createCandidates(&muonTracks, (o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra>*)nullptr, bcs, ft0s);
+    createCandidates(&muonTracks, (BarrelTracks*)nullptr, bcs, ft0s);
   }
 
   // create candidates for semiforward region
   void processSemiFwd(o2::aod::UDFwdTracks const& muonTracks,
-                      o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra> const& barTracks,
+                      BarrelTracks const& barTracks,
                       o2::aod::BCs const& bcs,
                       o2::aod::FT0s const& ft0s)
   {
@@ -198,7 +203,7 @@ struct UpcCandProducer {
 
   // create candidates for central region
   void processCentral(o2::aod::UDFwdTracks const& muonTracks,
-                      o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra> const& barTracks,
+                      BarrelTracks const& barTracks,
                       o2::aod::BCs const& bcs,
                       o2::aod::FT0s const& ft0s)
   {

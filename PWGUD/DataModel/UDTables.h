@@ -17,6 +17,7 @@
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include <cmath>
 
 namespace o2::aod
@@ -122,6 +123,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
                            [](float px, float py) -> float {
                              return std::sqrt(px * px + py * py);
                            });
+DECLARE_SOA_COLUMN(CollisionID, collisionID, int32_t); //!
+DECLARE_SOA_COLUMN(CollisionNContrib, collisionNContrib, int32_t); //!
+DECLARE_SOA_COLUMN(CollisionIsSignal, collisionIsSignal, uint8_t); //!
 } // namespace udtrack
 
 // Barrel track kinematics
@@ -158,7 +162,6 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::TPCSignal,
                   track::TOFChi2,
                   track::TOFExpMom,
-                  pidtofsignal::TOFSignal,
                   track::Length,
                   udtrack::DetectorMap,
                   track::HasITS<udtrack::DetectorMap>,
@@ -168,9 +171,14 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::ITSNCls<track::ITSClusterMap>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
+DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
+                  track::DcaZ,
+                  track::DcaXY)
+
 using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
+using UDTrackDCA = UDTracksDCA::iterator;
 using UDTrackCollisionID = UDTrackCollisionIDs::iterator;
 
 namespace udmctracklabel
