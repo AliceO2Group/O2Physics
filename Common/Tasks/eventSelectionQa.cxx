@@ -718,7 +718,7 @@ struct EventSelectionQaTask {
         nTOFtracks += track.hasTOF();
         nTRDtracks += track.hasTRD();
       }
-      
+
       // search for nearest ft0a&ft0c entry
       int indexBc = bc.globalIndex();
       int indexNearestTVX = indexBc;
@@ -778,13 +778,16 @@ struct EventSelectionQaTask {
         if (!track.isPVContributor()) {
           continue;
         }
-        if (track.hasTOF()) continue;
-        if (track.hasTRD()) continue;
-        if (!track.hasTPC() || !track.hasITS()) continue;
-        if (track.pt()<1) continue;
-        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff+track.trackTime()/o2::constants::lhc::LHCBunchSpacingNS);
+        if (track.hasTOF())
+          continue;
+        if (track.hasTRD())
+          continue;
+        if (!track.hasTPC() || !track.hasITS())
+          continue;
+        if (track.pt() < 1)
+          continue;
+        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       }
-
 
       histos.fill(HIST("hNcontribCol"), nContributors);
 
