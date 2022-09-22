@@ -9,7 +9,7 @@ _______________
 ## How to install O2Physics Framework?
 1. Build prerequisities for your operating system, configure aliBuild (but don't build packages!) - [here](https://alice-doc.github.io/alice-analysis-tutorial/building/custom.html).<br>
 2. Get a GRID certificate - [here](https://alice-doc.github.io/alice-analysis-tutorial/start/cert.html) <br>
-3. Follow instructions on [ALICE O2 documentation]([https://aliceo2group.github.io/analysis-framework/docs/installing.html](https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html)) - Prepare your source code, check prerequisites, build and rebuild and check if everything works! <br>
+3. Follow instructions on [ALICE O2 documentation]([https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html](https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html)) - Prepare your source code, check prerequisites, build and rebuild and check if everything works! <br>
 
 Keep in mind that it might take quite a long time.
 ______________
