@@ -83,7 +83,10 @@ struct PidONNXModel {
     assert(mInputNames.size() == 1 && mOutputNames.size() == 1);
   }
   PidONNXModel() = default;
-  PidONNXModel(PidONNXModel& other) = default;
+  PidONNXModel(PidONNXModel&&) = default;
+  PidONNXModel& operator=(PidONNXModel&&) = default;
+  PidONNXModel(const PidONNXModel&) = delete;
+  PidONNXModel& operator=(const PidONNXModel&) = delete;
   ~PidONNXModel() = default;
 
   template <typename T>

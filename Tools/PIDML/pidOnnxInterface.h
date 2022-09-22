@@ -54,23 +54,27 @@ struct PidONNXInterface {
     }
 
     LOG(info) << "pt limits, y = 0:";
-    auto ptVals = pTLimits[0];
-    for (auto& val : ptVals) {
-      LOG(info) << val;
-    }
+    LOG(info) << pTLimits[0][0];
+    LOG(info) << pTLimits[0][1];
     LOG(info) << "End of pt limits";
 
-    mModels.clear();
+    //mModels.clear();
     if (autoMode) {
       fillDefaultConfiguration();
     }
-    mModels.resize(kNDetectors * pids.size());
+    //mModels.resize(kNDetectors * pids.size());
     for (std::size_t i = 0; i < pids.size(); i++) {
       for (uint32_t j = 0; j < kNDetectors; j++) {
-        mModels[i * kNDetectors + j] = PidONNXModel(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], (PidMLDetector)(kTPCOnly + j), minCertainties[i]);
+        mModels.emplace_back(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], (PidMLDetector)(kTPCOnly + j), minCertainties[i]);
       }
     }
   }
+  PidONNXInterface() = default;
+  PidONNXInterface(PidONNXInterface&&) = default;
+  PidONNXInterface& operator=(PidONNXInterface&&) = default;
+  PidONNXInterface(const PidONNXInterface&) = delete;
+  PidONNXInterface& operator=(const PidONNXInterface&) = delete;
+  ~PidONNXInterface() = default;
 
   template <typename T>
   float applyModel(const T& track, int pid)
@@ -84,6 +88,7 @@ struct PidONNXInterface {
         return mModels[i + j - 1].applyModel(track);
       }
     }
+    return -1.0f;
   }
 
   template <typename T>
@@ -101,6 +106,7 @@ struct PidONNXInterface {
         return mModels[i + j - 1].applyModelBoolean(track);
       }
     }
+    return false;
   }
 
  private:
