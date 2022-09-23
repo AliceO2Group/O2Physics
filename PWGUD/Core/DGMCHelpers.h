@@ -46,7 +46,7 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
   // get associated BC
   auto bcIter = collision.foundBC_as<T>();
 
-  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
   uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
 

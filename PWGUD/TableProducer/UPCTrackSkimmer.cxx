@@ -315,7 +315,7 @@ struct UpcTrackSkimmer {
       udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
       udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
                     tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
-                    tr.tpcSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
+                    tr.tpcSignal(), tr.tofSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
       udTracksPID(tr.tpcNSigmaEl(), tr.tpcNSigmaMu(), tr.tpcNSigmaPi(), tr.tpcNSigmaKa(), tr.tpcNSigmaPr(),
                   tr.tofNSigmaEl(), tr.tofNSigmaMu(), tr.tofNSigmaPi(), tr.tofNSigmaKa(), tr.tofNSigmaPr());
       // fill MC labels and masks if needed

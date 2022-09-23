@@ -132,6 +132,7 @@ struct DGCandProducer {
                       track.trdChi2(),
                       track.tofChi2(),
                       track.tpcSignal(),
+                      track.tofSignal(),
                       track.trdSignal(),
                       track.length(),
                       track.tofExpMom(),
