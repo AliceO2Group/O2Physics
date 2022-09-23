@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
       printf("AO2D merging tool. Options: \n");
       printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
-      printf("  --max-size <size in Bytes>   Target directory size. Default: %ld\n", maxDirSize);
+      printf("  --max-size <size in Bytes>   Target directory size. Default: %ld. Set to 0 if file is not self-contained.\n", maxDirSize);
       printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the input list.\n");
       return -1;
     } else {
@@ -127,6 +127,7 @@ int main(int argc, char* argv[])
   TString line;
   bool connectedToAliEn = false;
   TMap* metaData = nullptr;
+  TMap* parentFiles = nullptr;
   int totalMergedDFs = 0;
   int mergedDFs = 0;
   while (in.good() && exitCode == 0) {
@@ -181,6 +182,17 @@ int main(int argc, char* argv[])
             }
           }
         }
+      }
+
+      if (((TObjString*)key1)->GetString().EqualTo("parentFiles")) {
+        auto parentFilesCurrentFile = (TMap*)inputFile->Get("parentFiles");
+        if (parentFiles == nullptr) {
+          parentFiles = new TMap;
+        }
+        for (auto pair : *parentFilesCurrentFile) {
+          parentFiles->Add(((TPair*)pair)->Key(), ((TPair*)pair)->Value());
+        }
+        delete parentFilesCurrentFile;
       }
 
       if (!((TObjString*)key1)->GetString().BeginsWith("DF_")) {
@@ -371,7 +383,10 @@ int main(int argc, char* argv[])
       // check for not found tables
       for (auto& offset : offsets) {
         if (offset.second < 0) {
-          printf("ERROR: Index on %s but no tree found\n", offset.first.c_str());
+          if (maxDirSize > 0) {
+            // if maxDirSize is 0 then we do not merge DFs and this error is not an error actually (e.g. for not self-contained derived data)
+            printf("ERROR: Index on %s but no tree found\n", offset.first.c_str());
+          }
           offset.second = 0;
         }
       }
@@ -391,6 +406,11 @@ int main(int argc, char* argv[])
       }
     }
     inputFile->Close();
+  }
+
+  if (parentFiles) {
+    outputFile->cd();
+    parentFiles->Write("parentFiles", TObject::kSingleKey);
   }
 
   outputFile->Write();

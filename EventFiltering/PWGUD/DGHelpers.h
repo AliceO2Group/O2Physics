@@ -41,9 +41,9 @@ template <typename T>
 bool cleanFDD(T& bc, float limitA, float limitC);
 
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>&& lims);
+bool cleanFIT(T& bc, std::vector<float> lims);
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>& lims);
+bool cleanFITCollision(T& col, std::vector<float> lims);
 
 template <typename T>
 bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
@@ -68,10 +68,10 @@ struct DGSelector {
   }
 
   // Function to check if collisions passes filter
-  template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
-  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  template <typename CC, typename BCs, typename TCs, typename FWs>
+  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
-    LOGF(debug, "Collision %f BC %u", collision.collisionTime(), bc.globalBC());
+    LOGF(debug, "Collision %f", collision.collisionTime());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
 
     // check that there are no FIT signals in any of the compatible BCs
@@ -80,11 +80,11 @@ struct DGSelector {
 
     for (auto& bc : bcRange) {
       LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
-           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : 0.,
-           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : 0.,
-           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : 0.,
-           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : 0,
-           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : 0);
+           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : -1.,
+           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : -1.,
+           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : -1.,
+           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : -1,
+           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : -1);
       LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", cleanFV0(bc, lims[0]), cleanFT0(bc, lims[1], lims[2]), cleanFDD(bc, lims[3], lims[4]));
 
       if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
@@ -196,11 +196,17 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
-  auto bcIter = collision.bc_as<T>();
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
 
   // due to the filling scheme the most probably BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
   // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
@@ -385,17 +391,27 @@ bool cleanFDD(T& bc, float limitA, float limitC)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>&& lims)
+bool cleanFIT(T& bc, std::vector<float> lims)
 {
   return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
 }
-
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>& lims)
+bool cleanFITCollision(T& col, std::vector<float> lims)
 {
-  return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
+  bool isCleanFV0 = true;
+  if (col.has_foundFV0()) {
+    isCleanFV0 = (FV0AmplitudeA(col.foundFV0()) < lims[0]);
+  }
+  bool isCleanFT0 = true;
+  if (col.has_foundFT0()) {
+    isCleanFT0 = (FT0AmplitudeA(col.foundFT0()) < lims[1]) && (FT0AmplitudeC(col.foundFT0()) < lims[2]);
+  }
+  bool isCleanFDD = true;
+  if (col.has_foundFDD()) {
+    isCleanFDD = (FDDAmplitudeA(col.foundFDD()) < lims[3]) && (FDDAmplitudeC(col.foundFDD()) < lims[4]);
+  }
+  return (isCleanFV0 && isCleanFT0 && isCleanFDD);
 }
-
 // -----------------------------------------------------------------------------
 template <typename T>
 bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
