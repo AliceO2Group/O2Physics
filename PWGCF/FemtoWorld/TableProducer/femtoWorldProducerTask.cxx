@@ -152,8 +152,13 @@ struct femtoWorldProducerTask {
   Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.035, "Upper limit of the V0 invariant mass"};
 
   Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
+  Configurable<bool> ConfRejectPions{"ConfRejectPions", false, "Switch to reject pions"};
+
   Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
+
+  Configurable<float> ConfInvPionMassLowLimit{"ConfInvPionMassLowLimit", 0.12, "Lower limit of the V0 invariant mass for Pion rejection"};
+  Configurable<float> ConfInvPionMassUpLimit{"ConfInvPionMassUpLimit", 0.14, "Upper limit of the V0 invariant mass for Pion rejection"};
 
   // PHI Daughters (Kaons)
   Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
@@ -273,6 +278,8 @@ struct femtoWorldProducerTask {
       if (ConfRejectKaons) {
         v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit, ConfInvKaonMassUpLimit);
       }
+    // ! todo similar action for pions
+
       if (ConfRejectITSHitandTOFMissing) {
         o2PhysicsTrackSelection = new TrackSelection(getGlobalTrackSelection());
         o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
@@ -458,6 +465,8 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
+                  track.tpcNSigmaPi(),
+                  track.tofNSigmaPi(),
                   (uint8_t)track.tpcNClsFound(),
                   track.tpcNClsFindable(),
                   (uint8_t)track.tpcNClsCrossedRows(),
@@ -478,6 +487,7 @@ struct femtoWorldProducerTask {
                   track.tofNSigmaStoreKa(),
                   track.tofNSigmaStorePr(),
                   track.tofNSigmaStoreDe(),
+                  -999.,
                   -999.,
                   -999.,
                   -999.,
@@ -534,6 +544,8 @@ struct femtoWorldProducerTask {
                       postrack.tpcChi2NCl(),
                       postrack.tpcNSigmaKa(),
                       postrack.tofNSigmaKa(),
+                      postrack.tpcNSigmaPi(),
+                      postrack.tofNSigmaPi(),
                       (uint8_t)postrack.tpcNClsFound(),
                       postrack.tpcNClsFindable(),
                       (uint8_t)postrack.tpcNClsCrossedRows(),
@@ -554,6 +566,7 @@ struct femtoWorldProducerTask {
                       postrack.tofNSigmaStoreKa(),
                       postrack.tofNSigmaStorePr(),
                       postrack.tofNSigmaStoreDe(),
+                      -999.,
                       -999.,
                       -999.,
                       -999.,
@@ -585,6 +598,8 @@ struct femtoWorldProducerTask {
                       negtrack.tpcChi2NCl(),
                       negtrack.tpcNSigmaKa(),
                       negtrack.tofNSigmaKa(),
+                      negtrack.tpcNSigmaPi(),
+                      negtrack.tofNSigmaPi(),
                       (uint8_t)negtrack.tpcNClsFound(),
                       negtrack.tpcNClsFindable(),
                       (uint8_t)negtrack.tpcNClsCrossedRows(),
@@ -605,6 +620,7 @@ struct femtoWorldProducerTask {
                       negtrack.tofNSigmaStoreKa(),
                       negtrack.tofNSigmaStorePr(),
                       negtrack.tofNSigmaStoreDe(),
+                      -999.,
                       -999.,
                       -999.,
                       -999.,
@@ -632,6 +648,8 @@ struct femtoWorldProducerTask {
                       postrack.tpcChi2NCl(),
                       postrack.tpcNSigmaKa(),
                       postrack.tofNSigmaKa(),
+                      postrack.tpcNSigmaPi(),
+                      postrack.tofNSigmaPi(),
                       (uint8_t)postrack.tpcNClsFound(),
                       postrack.tpcNClsFindable(),
                       (uint8_t)postrack.tpcNClsCrossedRows(),
@@ -652,6 +670,7 @@ struct femtoWorldProducerTask {
                       postrack.tofNSigmaStoreKa(),
                       postrack.tofNSigmaStorePr(),
                       postrack.tofNSigmaStoreDe(),
+                      -999.,
                       -999.,
                       -999.,
                       -999.,
@@ -732,6 +751,8 @@ struct femtoWorldProducerTask {
                       p1.tpcChi2NCl(),
                       p1.tpcNSigmaKa(),
                       p1.tofNSigmaKa(),
+                      p1.tpcNSigmaPi(),
+                      p1.tofNSigmaPi(),
                       (uint8_t)p1.tpcNClsFound(),
                       p1.tpcNClsFindable(),
                       (uint8_t)p1.tpcNClsCrossedRows(),
@@ -752,6 +773,7 @@ struct femtoWorldProducerTask {
                       p1.tofNSigmaStoreKa(),
                       p1.tofNSigmaStorePr(),
                       p1.tofNSigmaStoreDe(),
+                      -999.,
                       -999.,
                       -999.,
                       -999.,
@@ -783,6 +805,8 @@ struct femtoWorldProducerTask {
                       p2.tpcChi2NCl(),
                       p2.tpcNSigmaKa(),
                       p2.tofNSigmaKa(),
+                      p2.tpcNSigmaPi(),
+                      p2.tofNSigmaPi(),
                       (uint8_t)p2.tpcNClsFound(),
                       p2.tpcNClsFindable(),
                       (uint8_t)p2.tpcNClsCrossedRows(),
@@ -803,6 +827,7 @@ struct femtoWorldProducerTask {
                       p2.tofNSigmaStoreKa(),
                       p2.tofNSigmaStorePr(),
                       p2.tofNSigmaStoreDe(),
+                      -999.,
                       -999.,
                       -999.,
                       -999.,
@@ -837,6 +862,8 @@ struct femtoWorldProducerTask {
                       p1.tpcChi2NCl(),
                       p1.tpcNSigmaKa(),
                       p1.tofNSigmaKa(),
+                      p1.tpcNSigmaPi(),
+                      p1.tofNSigmaPi(),
                       (uint8_t)p1.tpcNClsFound(),
                       0, // p1.tpcNClsFindable(),
                       0, //(uint8_t)p1.tpcNClsCrossedRows(),
@@ -857,6 +884,7 @@ struct femtoWorldProducerTask {
                       p1.tofNSigmaStoreKa(),
                       p1.tofNSigmaStorePr(),
                       p1.tofNSigmaStoreDe(),
+                      -999.,
                       -999.,
                       -999.,
                       -999.,
