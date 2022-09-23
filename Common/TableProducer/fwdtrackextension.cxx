@@ -46,13 +46,12 @@ struct FwdTrackExtension {
       if (track.has_collision()) {
         if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack) {
 
-
-	  auto const& collision = track.collision();
-	  double chi2 = track.chi2();
+          auto const& collision = track.collision();
+          double chi2 = track.chi2();
           SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
           std::vector<double> v1{track.cXX(), track.cXY(), track.cYY(), track.cPhiX(), track.cPhiY(),
-                                    track.cPhiPhi(), track.cTglX(), track.cTglY(), track.cTglPhi(), track.cTglTgl(),
-                                    track.c1PtX(), track.c1PtY(), track.c1PtPhi(), track.c1PtTgl(), track.c1Pt21Pt2()};
+                                 track.cPhiPhi(), track.cTglX(), track.cTglY(), track.cTglPhi(), track.cTglTgl(),
+                                 track.c1PtX(), track.c1PtY(), track.c1PtPhi(), track.c1PtTgl(), track.c1Pt21Pt2()};
           SMatrix55 tcovs(v1.begin(), v1.end());
           o2::track::TrackParCovFwd pars1{track.z(), tpars, tcovs, chi2};
           pars1.propagateToZlinear(collision.posZ());
@@ -65,7 +64,6 @@ struct FwdTrackExtension {
     }
   }
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
