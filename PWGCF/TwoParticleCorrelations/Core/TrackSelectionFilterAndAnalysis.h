@@ -17,6 +17,7 @@
 #include <TNamed.h>
 #include <TList.h>
 
+#include "Framework/Logger.h"
 #include "SkimmingConfigurableCuts.h"
 #include "SelectionFilterAndAnalysis.h"
 
@@ -94,6 +95,7 @@ class TrackSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
  private:
   void ConstructCutFromString(const TString&);
   int CalculateMaskLength();
+  void StoreArmedMask();
 
   TList mTrackTypes;                                        /// the track types to select list
   CutBrick<int>* mNClustersTPC;                             //! the number of TPC clusters cuts
@@ -140,6 +142,16 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
     }
   };
 
+  auto filterBrickValueNoMask = [](auto brick, auto value) {
+    std::vector<bool> res = brick->Filter(value);
+    for (auto b : res) {
+      if (b) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
     filterTrackType((TrackSelectionBrick*)mTrackTypes.At(i), track);
   }
@@ -168,10 +180,14 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
     filterBrickValue(mMaxDcaZ, track.dcaZ());
   }
   if (mPtRange != nullptr) {
-    filterBrickValue(mPtRange, track.pt());
+    if (not filterBrickValueNoMask(mPtRange, track.pt())) {
+      selectedMask = 0UL;
+    }
   }
   if (mEtaRange != nullptr) {
-    filterBrickValue(mEtaRange, track.eta());
+    if (not filterBrickValueNoMask(mEtaRange, track.pt())) {
+      selectedMask = 0UL;
+    }
   }
   return mSelectedMask = selectedMask;
 }

@@ -63,11 +63,13 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
   template <typename CollisionToFilter>
   uint64_t Filter(CollisionToFilter const& col);
+  std::vector<float> GetMultiplicities();
 
  private:
   void ConstructCutFromString(const TString&);
   void InitializeMultiplicityFilter();
   int CalculateMaskLength();
+  virtual void StoreArmedMask();
 
   CutBrick<float>* mMultiplicityClasses;                 //! the multiplicity default classes cuts
   CutBrick<int>* mTriggerSelection;                      //! the trigger selection cuts
@@ -82,7 +84,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
 /// \brief Fills the filter cuts mask
 template <typename CollisionToFilter>
-uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const& col)
+inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const& col)
 {
   /* store the collision multiplicities for the different estimators */
   /* TODO: we need to adapt this to the Run 3 scenario */
@@ -153,6 +155,28 @@ uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const& col)
     mSelectedMask = selectedMask;
   }
   return mSelectedMask;
+}
+
+/// \brief Fills the filter cuts mask
+inline std::vector<float> EventSelectionFilterAndAnalysis::GetMultiplicities()
+{
+  std::vector<float> res;
+
+  if (mMultiplicityClasses != nullptr) {
+    if (mAlternateMultiplicityEstimatorIndex.size() > 0) {
+      /* first the default */
+      res.push_back(mMultiplicities[mDefaultMultiplicityEstimatorIndex]);
+      /* and now the variants */
+      TList& varlst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getVariantBricks();
+      for (int i = 0; i < varlst.GetEntries(); ++i) {
+        res.push_back(mMultiplicities[mAlternateMultiplicityEstimatorIndex[i]]);
+      }
+    } else {
+      /* no alternative estimators, just the default */
+      res.push_back(mMultiplicities[mDefaultMultiplicityEstimatorIndex]);
+    }
+  }
+  return res;
 }
 
 } // namespace PWGCF

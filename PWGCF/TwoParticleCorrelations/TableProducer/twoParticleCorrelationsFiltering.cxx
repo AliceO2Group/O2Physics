@@ -10,16 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
-#include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsFiltered.h"
 #include "Framework/runDataProcessing.h"
@@ -38,13 +30,20 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
 
+namespace o2::analysis::twopfilter
+{
 #define TWOPFILTERLOGCOLLISIONS info
 #define TWOPFILTERLOGTRACKS info
+
+PWGCF::EventSelectionFilterAndAnalysis* fCollisionFilter = nullptr;
+PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
+} // namespace o2::analysis::twopfilter
+
+using namespace o2::aod::twopskim;
 
 struct TwoParticleCorrelationsFilter {
   Produces<aod::TwoPAcceptedCollisions> acceptedcollisions;
@@ -54,19 +53,65 @@ struct TwoParticleCorrelationsFilter {
 
 #include "skimmingconf.h"
 
+  int nReportedTracks;
+  //  HistogramRegistry historeg;
+
+  uint64_t collisionmask = 0UL;
+  uint64_t collisionmask_opt = 0UL;
+  uint64_t collisionmask_forced = 0UL;
+  uint64_t trackmask = 0UL;
+  uint64_t trackmask_opt = 0UL;
+  uint64_t trackmask_forced = 0UL;
+
   void init(InitContext const&)
   {
     using namespace twopfilter;
-    using namespace twopskim;
 
     LOGF(info, "TwoParticleCorrelationsFilter::init()");
+
+    /* collision filtering configuration */
+    PWGCF::EventSelectionConfigurable eventsel(eventfilter.centmultsel, "", eventfilter.zvtxsel, "");
+    fCollisionFilter = new PWGCF::EventSelectionFilterAndAnalysis(eventsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
+
+    /* track filtering configuration */
+    PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
+                                             trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
+    fTrackFilter = new PWGCF::TrackSelectionFilterAndAnalysis(trksel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
+
+    nReportedTracks = 0;
+    collisionmask = fCollisionFilter->getMask();
+    collisionmask_opt = fCollisionFilter->getOptMask();
+    collisionmask_forced = fCollisionFilter->getForcedMask();
+    trackmask = fTrackFilter->getMask();
+    trackmask_opt = fTrackFilter->getOptMask();
+    trackmask_forced = fTrackFilter->getForcedMask();
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", collisionmask, collisionmask_opt, collisionmask_forced);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", trackmask, trackmask_opt, trackmask_forced);
+    if (collisionmask == uint64_t(0) or trackmask == uint64_t(0)) {
+      LOGF(fatal, "TwoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
+    }
   }
 
-  void processRun2(aod::TwoPSkimmedCollision const& collision, aod::TwoPSkimmedTracks const& tracks)
-  {
-    using namespace twopfilter;
+  Filter onlyacceptedcolls = ((aod::twopskim::selflags & static_cast<uint64_t>(collisionmask_forced)) == static_cast<uint64_t>(collisionmask_forced));
+  Filter onlyacceptedtracks = ((aod::twopskim::trackflags & static_cast<uint64_t>(trackmask_forced)) == static_cast<uint64_t>(trackmask_forced));
 
-    LOGF(TWOPFILTERLOGCOLLISIONS, "Received filtered collision with mask 0x%lx", collision.selflags());
+  void processRun2(soa::Filtered<aod::TwoPSkimmedCollisions>::iterator const& collision, soa::Filtered<aod::TwoPSkimmedTracks> const& tracks)
+  {
+    LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%08lx and %ld tracks", collision.selflags(), tracks.size());
+
+    /* for some reason we cannot apply this condition in the filter, it does not work */
+    if ((collision.selflags() & collisionmask_opt) != 0UL) {
+      acceptedcollisions(0, 0, 0);
+      int nAcceptedTracks = 0;
+      for (const auto& track : tracks) {
+        /* for some reason we cannot apply this condition in the filter, it does not work */
+        if ((track.trackflags() & trackmask_opt) != 0UL) {
+          accepteddtracks(acceptedcollisions.lastIndex(), 0, track.spt(), track.eta(), track.phi());
+          nAcceptedTracks++;
+        }
+      }
+      LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%08lx and %d accepted tracks", collision.selflags(), nAcceptedTracks);
+    }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsFilter, processRun2, "Process Run 2 two particle correlations filtering", true);
 };

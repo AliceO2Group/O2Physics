@@ -15,18 +15,18 @@
 #include "Framework/ASoAHelpers.h"
 
 struct : ConfigurableGroup {
-  Configurable<std::string> zvtxsel{"evtflt_zvtx", "zvtx{cwv{rg{-7.0,7.0}:rg{-10.0,10.0}-no,rg{-3.0,3.0}-no}}", "Z vertex cut: zvtx{rg{-7.0,7.0}} or zvtx{cwv{def:var1,var2@,..}}"};
+  Configurable<std::string> zvtxsel{"evtflt_zvtx", "zvtx{cwv{rg{-7.0,7.0}-yes:rg{-10.0,10.0}-no,rg{-3.0,3.0}-no}}", "Z vertex cut: zvtx{rg{-7.0,7.0}} or zvtx{cwv{def:var1,var2@,..}}"};
   Configurable<std::string> centmultsel{"evtflt_centmult", "centmult{cwv{mrg{V0M,0,5,10,20,30,40,50,60,70,80}-yes:mrg{CL1,0,5,10,20,30,40,50,60,70,80}-no}}", "Centrality/Multiplicity cut: centmult{mrg{V0M,0,5,10,20,30,40,50,60,70,80}}"};
 } eventfilter;
 
 struct : ConfigurableGroup {
-  Configurable<std::string> ttype{"trkflt_ttype", "ttype{FB1,FB32,FB64}", "Track types to filter"};
-  Configurable<std::string> nclstpc{"trkflt_nclstpc", "nclstpc{cwv{th{70}:th{80}-no,th{90}-no}}", "Min no of TPC clusters: nclstpc{th{70}} or nclstpc{cwv{def:var1,var2,...}}"};
+  Configurable<std::string> ttype{"trkflt_ttype", "ttype{FB1-no,FB32-yes,FB64-yes}", "Track types to filter"};
+  Configurable<std::string> nclstpc{"trkflt_nclstpc", "nclstpc{cwv{th{70}-yes:th{80}-no,th{90}-no}}", "Min no of TPC clusters: nclstpc{th{70}} or nclstpc{cwv{def:var1,var2,...}}"};
   //  Configurable<std::string> nxrtpc{"trkflt_nxrtpc", "nxrtpc{}", "Min no of TPC crossed rows: nxrtpc{th{70}} or nxrtpc{cwv{def;var1,var2,...}}"};
   Configurable<std::string> nxrtpc{"trkflt_nxrtpc", "", "Min no of TPC crossed rows: nxrtpc{th{70}} or nxrtpc{cwv{def;var1,var2,...}}"};
   //  Configurable<std::string> nclsits{"trkflt_nclsits", "nclsits{}", "Min no of ITS clusters: nclsits{th{3}} or nclsits{cwv{def;var1,var2,...}}"};
   Configurable<std::string> nclsits{"trkflt_nclsits", "", "Min no of ITS clusters: nclsits{th{3}} or nclsits{cwv{def;var1,var2,...}}"};
-  Configurable<std::string> chi2clustpc{"trkflt_chi2clustpc", "chi2clustpc{cwv{lim{4}:lim{3}-no,lim{90}-no}}", "Max Chi^2 per TPC cluster: chi2clustpc{lim{4}} or chi2clustpc{cwv{def:var1,var2,...}}"};
+  Configurable<std::string> chi2clustpc{"trkflt_chi2clustpc", "chi2clustpc{cwv{lim{4}-yes:lim{3}-no,lim{90}-no}}", "Max Chi^2 per TPC cluster: chi2clustpc{lim{4}} or chi2clustpc{cwv{def:var1,var2,...}}"};
   //  Configurable<std::string> chi2clusits{"trkflt_chi2clusits", "chi2clusits{}", "Max Chi^2 per ITS cluster: chi2clusits{lim{4}} or chi2clusits{cwv{def;var1,var2,...}}"};
   Configurable<std::string> chi2clusits{"trkflt_chi2clusits", "", "Max Chi^2 per ITS cluster: chi2clusits{lim{4}} or chi2clusits{cwv{def;var1,var2,...}}"};
   //  Configurable<std::string> xrofctpc{"trkflt_xrofctpc", "xrofctpc{}", "Min no of TPC crossed rows over findable clusters: xrofctpc{th{0.70}} or xrofctpc{cwv{def;var1,var2,...}}"};

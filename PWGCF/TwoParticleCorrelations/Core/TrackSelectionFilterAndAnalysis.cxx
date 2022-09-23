@@ -12,15 +12,10 @@
 #include <boost/regex.hpp>
 #include <TObjArray.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include "Framework/Logger.h"
 #include "TrackSelectionFilterAndAnalysis.h"
 
 using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
@@ -120,6 +115,10 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TrackSele
   }
   cutString += "}";
   ConstructCutFromString(cutString);
+  if (mode == kAnalysis) {
+    /* TODO: check cuts consistency. In principle it should be there except for the ttype valid combinations */
+    StoreArmedMask();
+  }
 }
 
 /// \brief Calculates the length of the mask needed to store the selection cuts
@@ -184,7 +183,7 @@ void TrackSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
   /* let's catch the first level */
-  regex cutregex("^tracksel\\{ttype\\{([\\w\\d,]+)};?(\\w+\\{[\\w\\d.,:{}-]+})*}$", regex_constants::ECMAScript | regex_constants::icase);
+  regex cutregex("^tracksel\\{ttype\\{([\\w\\d,-]+)};?(\\w+\\{[\\w\\d.,:{}-]+})*}$", regex_constants::ECMAScript | regex_constants::icase);
   std::string in(cutstr.Data());
   smatch m;
 
@@ -290,4 +289,64 @@ void TrackSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
     }
   }
   mMaskLength = CalculateMaskLength();
+}
+
+/// \brief Fills the filter cuts mask
+void TrackSelectionFilterAndAnalysis::StoreArmedMask()
+{
+  uint64_t armedMask = 0UL;
+  uint64_t optMask = 0UL;
+  uint64_t forcedMask = 0UL;
+  mArmedMask = 0UL;
+  mOptArmedMask = 0UL;
+  mForcedArmedMask = 0UL;
+  int bit = 0;
+
+  auto armedBrick = [&](auto brick, bool opt = false) {
+    std::vector<bool> res = brick->IsArmed();
+    for (auto b : res) {
+      if (b) {
+        SETBIT(armedMask, bit);
+        if (opt) {
+          SETBIT(optMask, bit);
+        } else {
+          SETBIT(forcedMask, bit);
+        }
+      }
+      bit++;
+    }
+  };
+
+  for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
+    armedBrick((TrackSelectionBrick*)mTrackTypes.At(i), true);
+  }
+  if (mNClustersTPC != nullptr) {
+    armedBrick(mNClustersTPC);
+  }
+  if (mNCrossedRowsTPC != nullptr) {
+    armedBrick(mNCrossedRowsTPC);
+  }
+  if (mNClustersITS != nullptr) {
+    armedBrick(mNClustersITS);
+  }
+  if (mMaxChi2PerClusterTPC != nullptr) {
+    armedBrick(mMaxChi2PerClusterTPC);
+  }
+  if (mMaxChi2PerClusterITS != nullptr) {
+    armedBrick(mMaxChi2PerClusterITS);
+  }
+  if (mMinNCrossedRowsOverFindableClustersTPC != nullptr) {
+    armedBrick(mMinNCrossedRowsOverFindableClustersTPC);
+  }
+  if (mMaxDcaXY != nullptr) {
+    armedBrick(mMaxDcaXY);
+  }
+  if (mMaxDcaZ != nullptr) {
+    armedBrick(mMaxDcaZ);
+  }
+  /* for the time being the pT and eta bricks dont go to the mask */
+  LOGF(info, "TrackSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%08lx, 0x%08lx, 0x%08lx", armedMask, optMask, forcedMask);
+  mArmedMask = armedMask;
+  mOptArmedMask = optMask;
+  mForcedArmedMask = forcedMask;
 }

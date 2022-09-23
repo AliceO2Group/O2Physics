@@ -22,7 +22,6 @@
 #include <regex>
 #include <TObjArray.h>
 
-#include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
 
 namespace o2
@@ -48,8 +47,9 @@ class CutBrick : public TNamed
   /// Returns whether the cut brick is active alowing the selection
   /// \return true if the brick is active
   bool IsActive() { return mState == kACTIVE; }
-  /// Returns whether the cut is brick is incorporated in the selection chain
-  bool IsArmed() { return mMode == kSELECTED; }
+  /// Pure virual function
+  /// Returns whether the cut brick is incorporated in the selection chain
+  virtual std::vector<bool> IsArmed() = 0;
   /// Pure virtual function. Filters the passed value
   /// The brick or brick components will change to active if the passed value
   /// fits within the brick or brick components scope
@@ -100,6 +100,7 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
   CutBrickLimit(const CutBrickLimit&) = delete;
   CutBrickLimit& operator=(const CutBrickLimit&) = delete;
 
+  virtual std::vector<bool> IsArmed();
   virtual std::vector<bool> Filter(const TValueToFilter&);
   virtual int Length() { return 1; }
 
@@ -124,6 +125,7 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
   CutBrickThreshold(const CutBrickThreshold&) = delete;
   CutBrickThreshold& operator=(const CutBrickThreshold&) = delete;
 
+  virtual std::vector<bool> IsArmed();
   virtual std::vector<bool> Filter(const TValueToFilter&);
   virtual int Length() { return 1; }
 
@@ -148,6 +150,7 @@ class CutBrickRange : public CutBrick<TValueToFilter>
   CutBrickRange(const CutBrickRange&) = delete;
   CutBrickRange& operator=(const CutBrickRange&) = delete;
 
+  virtual std::vector<bool> IsArmed();
   virtual std::vector<bool> Filter(const TValueToFilter&);
   virtual int Length() { return 1; }
 
@@ -173,6 +176,7 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
   CutBrickExtToRange(const CutBrickExtToRange&) = delete;
   CutBrickExtToRange& operator=(const CutBrickExtToRange&) = delete;
 
+  virtual std::vector<bool> IsArmed();
   virtual std::vector<bool> Filter(const TValueToFilter&);
   virtual int Length() { return 1; }
 
@@ -200,11 +204,12 @@ class CutBrickSelectorMultipleRanges : public CutBrick<TValueToFilter>
   CutBrickSelectorMultipleRanges(const CutBrickSelectorMultipleRanges&) = delete;
   CutBrickSelectorMultipleRanges& operator=(const CutBrickSelectorMultipleRanges&) = delete;
 
-  virtual std::vector<bool> Filter(const TValueToFilter&);
+  virtual std::vector<bool> IsArmed() override;
+  virtual std::vector<bool> Filter(const TValueToFilter&) override;
   /// Return the length needed to code the brick status
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
-  virtual int Length() { return mActive.size(); }
+  virtual int Length() override { return mActive.size(); }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -233,6 +238,7 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   bool AddVariationBrick(CutBrick<TValueToFilter>* brick);
   TList& getDefaultBricks() { return mDefaultBricks; }
   TList& getVariantBricks() { return mVariationBricks; }
+  virtual std::vector<bool> IsArmed();
   virtual std::vector<bool> Filter(const TValueToFilter&);
   virtual int Length();
 
@@ -264,8 +270,9 @@ class SpecialCutBrick : public TNamed
   /// Returns whether the cut brick is active alowing the selection
   /// \return true if the brick is active
   bool IsActive() { return mState == kACTIVE; }
-  /// Returns whether the cut is brick is incorporated in the selection chain
-  bool IsArmed() { return mMode == kSELECTED; }
+  /// Pure virtual function
+  /// Returns whether the cut brick is incorporated in the selection chain
+  virtual std::vector<bool> IsArmed() = 0;
   /// Pure virtual function. Return the length needed to code the brick status
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
@@ -300,6 +307,7 @@ class TrackSelectionBrick : public SpecialCutBrick
  public:
   TrackSelectionBrick() = default;
   TrackSelectionBrick(const TString&);
+  virtual ~TrackSelectionBrick() override = default;
 
   enum class TrackCuts : int {
     kTrackType = 0,
@@ -320,6 +328,7 @@ class TrackSelectionBrick : public SpecialCutBrick
 
   static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
 
+  virtual std::vector<bool> IsArmed() override;
   template <typename TrackToFilter>
   bool Filter(TrackToFilter const& track)
   {
@@ -344,7 +353,7 @@ class TrackSelectionBrick : public SpecialCutBrick
     }
   }
 
-  int Length() { return 1; }
+  int Length() override { return 1; }
 
   void SetTrackType(o2::aod::track::TrackTypeEnum trackType) { mTrackType = trackType; }
   void SetRequireITSRefit(bool requireITSRefit = true) { mRequireITSRefit = requireITSRefit; }
@@ -425,6 +434,7 @@ class PIDSelectionBrick : public SpecialCutBrick
   {
   }
   PIDSelectionBrick(const TString&);
+  virtual ~PIDSelectionBrick() override = default;
 
   enum PIDSpecies {
     kElectron = 0, ///< electron
@@ -449,10 +459,11 @@ class PIDSelectionBrick : public SpecialCutBrick
 
   static const std::string mCutNames[static_cast<int>(PIDCuts::kNCuts)];
 
+  virtual std::vector<bool> IsArmed() override;
   template <typename TrackToFilter>
   std::vector<bool> Filter(TrackToFilter const& track);
 
-  int Length();
+  int Length() override;
 
  private:
   void ConstructFromString(const TString& cutstr);

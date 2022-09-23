@@ -29,8 +29,8 @@ using namespace o2::analysis;
 
 namespace o2::analysis::twopskim
 {
-#define LOGTRACKCOLLISIONS debug
-#define LOGTRACKTRACKS debug
+#define LOGTRACKCOLLISIONS info
+#define LOGTRACKTRACKS info
 
 PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
 PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;
@@ -168,18 +168,21 @@ struct TwoParticleCorrelationsSkimming {
     LOGF(LOGTRACKCOLLISIONS, "Got mask 0x%lx", colmask);
 
     if (colmask != 0UL) {
-      skimmedcollision(collision.posZ(), 50.0, colmask);
+      skimmedcollision(collision.posZ(), colmask, fEventFilter->GetMultiplicities());
+      int nFilteredTracks = 0;
       for (auto const& track : tracks) {
         auto trkmask = fTrackFilter->Filter(track);
         if (trkmask != 0UL) {
           skimmedtrack(skimmedcollision.lastIndex(), trkmask, track.pt() * track.sign(), track.eta(), track.phi());
+          nFilteredTracks++;
         }
-        if ((trkmask & 0xFFFFF9FF) != 0UL and nReportedTracks < 1000) {
-          LOGF(LOGTRACKTRACKS, "  Got track mask 0x%lx, TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
+        if (trkmask != 0UL and nReportedTracks < 1000) {
+          LOGF(LOGTRACKTRACKS, "  Got track mask 0x%08lx, TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
                trkmask, track.tpcNClsFound(), track.tpcChi2NCl(), track.pt(), track.eta(), track.trackType());
           nReportedTracks++;
         }
       }
+      LOGF(LOGTRACKCOLLISIONS, ">> Filtered %d tracks", nFilteredTracks);
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsSkimming, processRun2, "Process on Run 1 or Run 2 data", true);

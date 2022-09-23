@@ -34,20 +34,20 @@ namespace aod
 /* we have to change from int to bool when bool columns work properly */
 namespace twopskim
 {
-DECLARE_SOA_COLUMN(TwoPSkimmedCollisionCentMult, centmult, float); //! The centrality/multiplicity pecentile
+DECLARE_SOA_COLUMN(TwoPSkimmedCollisionCentMult, centmult, std::vector<float>); //! The centrality/multiplicity pecentile
 DECLARE_SOA_COLUMN(TwoPSkimmedCollisionFlags, selflags, uint64_t); //! The skimming flags for collision selection
 } // namespace twopskim
 DECLARE_SOA_TABLE(TwoPSkimmedCollisions, "AOD", "TWOPSKMDCOLL", //! Accepted reconstructed collisions/events filtered table
                   o2::soa::Index<>,
                   collision::PosZ,
-                  twopskim::TwoPSkimmedCollisionCentMult,
-                  twopskim::TwoPSkimmedCollisionFlags);
+                  twopskim::TwoPSkimmedCollisionFlags,
+                  twopskim::TwoPSkimmedCollisionCentMult);
 using TwoPSkimmedCollision = TwoPSkimmedCollisions::iterator;
 DECLARE_SOA_TABLE(TwoPSkimmedGenCollisions, "AOD", "TWOPSKMDGENCOLL", //! Accepted generated collisions/events filtered table
                   o2::soa::Index<>,
                   mccollision::PosZ,
-                  twopskim::TwoPSkimmedCollisionCentMult,
-                  twopskim::TwoPSkimmedCollisionFlags);
+                  twopskim::TwoPSkimmedCollisionFlags,
+                  twopskim::TwoPSkimmedCollisionCentMult);
 using TwoPSkimmedGenCollision = TwoPSkimmedGenCollisions::iterator;
 namespace twopskim
 {

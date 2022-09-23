@@ -12,15 +12,10 @@
 #include <regex>
 #include <TObjArray.h>
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/Logger.h"
 #include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
 
 using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 
 /// \brief These are the implemented basic bricks
@@ -141,6 +136,20 @@ void CutBrickLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr
   }
 }
 
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+template <typename TValueToFilter>
+std::vector<bool> CutBrickLimit<TValueToFilter>::IsArmed()
+{
+  std::vector<bool> res;
+  if (this->mMode == this->kSELECTED) {
+    res.push_back(true);
+  } else {
+    res.push_back(false);
+  }
+  return res;
+}
+
 /// \brief Filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
@@ -214,6 +223,20 @@ void CutBrickThreshold<TValueToFilter>::ConstructCutFromString(const TString& cu
     this->SetTitle(cutstr.Data());
     mThreshold = TValueToFilter(std::stod(m[2]));
   }
+}
+
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+template <typename TValueToFilter>
+std::vector<bool> CutBrickThreshold<TValueToFilter>::IsArmed()
+{
+  std::vector<bool> res;
+  if (this->mMode == this->kSELECTED) {
+    res.push_back(true);
+  } else {
+    res.push_back(false);
+  }
+  return res;
 }
 
 /// \brief Filter the passed value to update the brick status accordingly
@@ -296,6 +319,20 @@ void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr
   }
 }
 
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+template <typename TValueToFilter>
+std::vector<bool> CutBrickRange<TValueToFilter>::IsArmed()
+{
+  std::vector<bool> res;
+  if (this->mMode == this->kSELECTED) {
+    res.push_back(true);
+  } else {
+    res.push_back(false);
+  }
+  return res;
+}
+
 /// \brief Filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
@@ -374,6 +411,20 @@ void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& c
     mLow = TValueToFilter(std::stod(m[2]));
     mHigh = TValueToFilter(std::stod(m[3]));
   }
+}
+
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+template <typename TValueToFilter>
+std::vector<bool> CutBrickExtToRange<TValueToFilter>::IsArmed()
+{
+  std::vector<bool> res;
+  if (this->mMode == this->kSELECTED) {
+    res.push_back(true);
+  } else {
+    res.push_back(false);
+  }
+  return res;
 }
 
 /// \brief Filter the passed value to update the brick status accordingly
@@ -470,6 +521,25 @@ void CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString(cons
     }
     delete tokens;
   }
+}
+
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+template <typename TValueToFilter>
+std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::IsArmed()
+{
+  std::vector<bool> res;
+  res.reserve(Length());
+  if (this->mMode == this->kSELECTED) {
+    for (unsigned int i = 0; i < mActive.size(); ++i) {
+      res.push_back(true);
+    }
+  } else {
+    for (unsigned int i = 0; i < mActive.size(); ++i) {
+      res.push_back(false);
+    }
+  }
+  return res;
 }
 
 /// \brief Filter the passed value to update the brick status accordingly
@@ -571,6 +641,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
   if (lev1toks->GetEntries() > 2) {
     Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
   }
+  bool atleastonearmed = false;
   auto addCuts = [&](TList& cutlist, std::string cuttxt, bool reqflag) {
     std::smatch m;
     while (cuttxt.length() > 0) {
@@ -591,6 +662,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
       }
       CutBrick<TValueToFilter>* brick = CutBrick<TValueToFilter>::constructBrick(this->GetName(), brickre, allowed);
       brick->Arm(isarmed);
+      atleastonearmed = atleastonearmed || isarmed;
       cutlist.Add(brick);
       cuttxt = m.suffix();
     }
@@ -598,7 +670,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
   /* let's handle the default values */
   {
     LOGF(info, "Cut with variations, extracting defaults: cut string: %s", lev1toks->At(0)->GetName());
-    addCuts(mDefaultBricks, lev1toks->At(0)->GetName(), false);
+    addCuts(mDefaultBricks, lev1toks->At(0)->GetName(), true);
     if (mDefaultBricks.GetEntries() > 1) {
       /* TODO: several default options for track type and for track pid selection */
       Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, several defaults only for trktype or trkpid pending of implementation", cutstr.Data());
@@ -608,16 +680,8 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
   if (lev1toks->GetEntries() > 1) {
     LOGF(info, "Cut with variations, extracting variations: cut string: %s", lev1toks->At(1)->GetName());
     addCuts(mVariationBricks, lev1toks->At(1)->GetName(), true);
-    int narmed = 0;
-    for (auto cut : mVariationBricks) {
-      if (((CutBrick<TValueToFilter>*)cut)->IsArmed()) {
-        narmed++;
-      }
-    }
-    if (narmed > 1) {
-      Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, more than one alternative flagged", cutstr.Data());
-    }
   }
+  this->Arm(atleastonearmed);
   delete lev1toks;
 }
 
@@ -663,6 +727,45 @@ bool CutWithVariations<TValueToFilter>::AddVariationBrick(CutBrick<TValueToFilte
     mVariationBricks.Add(brick);
     return true;
   }
+}
+
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+template <typename TValueToFilter>
+std::vector<bool> CutWithVariations<TValueToFilter>::IsArmed()
+{
+  std::vector<bool> res;
+  res.reserve(Length());
+  if (this->mMode == this->kSELECTED) {
+    int nArmedDefaults = 0;
+    int nArmedVariants = 0;
+    for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
+      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->IsArmed();
+      res.insert(res.end(), tmp.begin(), tmp.end());
+      for (bool iarmed : tmp) {
+        if (iarmed) {
+          nArmedDefaults++;
+        }
+      }
+    }
+    for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
+      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->IsArmed();
+      res.insert(res.end(), tmp.begin(), tmp.end());
+      for (bool iarmed : tmp) {
+        if (iarmed) {
+          nArmedVariants++;
+        }
+      }
+    }
+    if (nArmedDefaults > 1 or nArmedVariants > 1 or (nArmedDefaults + nArmedVariants) > 1) {
+      LOGF(fatal, "CutWithVariations<TValueToFilter>::IsArmed(%s), More than one alternative selected. Default armed %d, variants armed %d", this->GetName(), nArmedDefaults, nArmedVariants);
+    }
+  } else {
+    for (int i = 0; i < Length(); ++i) {
+      res.push_back(false);
+    }
+  }
+  return res;
 }
 
 /// Filters the passed value
@@ -728,23 +831,35 @@ SpecialCutBrick::SpecialCutBrick(const char* name, const char* title)
 ClassImp(SpecialCutBrick);
 
 /// \brief Constructor from regular expression
-TrackSelectionBrick::TrackSelectionBrick(const TString& regex) : SpecialCutBrick(regex, regex)
+TrackSelectionBrick::TrackSelectionBrick(const TString& regex) : SpecialCutBrick()
 {
-  if (regex.EqualTo("FB1LHC2010")) {
+  bool armed = false;
+  TString name = regex;
+  if (regex.EndsWith("-yes")) {
+    name.Remove(regex.Index("-", strlen("-yes")));
+    armed = true;
+  } else if (regex.EndsWith("-no")) {
+    name.Remove(regex.Index("-", strlen("-no")));
+    armed = false;
+  }
+  SetName(name);
+  SetTitle(regex);
+  if (name.EqualTo("FB1LHC2010")) {
     constructFB1LHC2010();
-  } else if (regex.EqualTo("FB1")) {
+  } else if (name.EqualTo("FB1")) {
     constructFB1LHC2011();
-  } else if (regex.EqualTo("FB32LHC2010")) {
+  } else if (name.EqualTo("FB32LHC2010")) {
     constructFB32LHC2010();
-  } else if (regex.EqualTo("FB32")) {
+  } else if (name.EqualTo("FB32")) {
     constructFB32LHC2011();
-  } else if (regex.EqualTo("FB64LHC2010")) {
+  } else if (name.EqualTo("FB64LHC2010")) {
     constructFB64LHC2010();
-  } else if (regex.EqualTo("FB64")) {
+  } else if (name.EqualTo("FB64")) {
     constructFB64LHC2011();
   } else {
     ::Fatal("TrackSelectionBrick::TrackSelectionBrick", "Wrong RE: %s, trying to construct an unknown track type selector", regex.Data());
   }
+  this->Arm(armed);
 }
 
 // Default TPC only track selection according to LHC2010
@@ -846,6 +961,19 @@ const std::string TrackSelectionBrick::mCutNames[static_cast<int>(TrackSelection
     "DCAxy",
     "DCAz"};
 
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+std::vector<bool> TrackSelectionBrick::IsArmed()
+{
+  std::vector<bool> res;
+  if (this->mMode == this->kSELECTED) {
+    res.push_back(true);
+  } else {
+    res.push_back(false);
+  }
+  return res;
+}
+
 ClassImp(TrackSelectionBrick);
 
 /// \brief Construct object from regular expression
@@ -883,6 +1011,20 @@ int PIDSelectionBrick::Length()
     }
   }
   return len;
+}
+
+/// \brief Returns wether the cut brick is incorporated in the selection chain
+/// \return true if the cut brick is incorporated
+std::vector<bool> PIDSelectionBrick::IsArmed()
+{
+  /* TODO: still not the final version */
+  std::vector<bool> res;
+  if (this->mMode == this->kSELECTED) {
+    res.push_back(true);
+  } else {
+    res.push_back(false);
+  }
+  return res;
 }
 
 template <typename TrackObject>

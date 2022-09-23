@@ -17,8 +17,6 @@
 #include <TNamed.h>
 #include <TList.h>
 
-#include "SkimmingConfigurableCuts.h"
-
 namespace o2
 {
 namespace analysis
@@ -40,14 +38,31 @@ class SelectionFilterAndAnalysis : public TNamed
   SelectionFilterAndAnalysis();
   SelectionFilterAndAnalysis(const TString& name, selmodes mode);
 
+  /// \brief get the valid (armed) mask associated to the configuration
+  /// \return the armed mask
+  uint64_t getMask() { return mArmedMask; }
+  /// \brief get the valid (armed) optional part mask associated to the configuration
+  /// \return the armed optional mask
+  /// A clear example of the optional part mask is the mask of the multiplicity classes
+  /// where only one of the available in the whole mask will be flagged
+  uint64_t getOptMask() { return mOptArmedMask; }
+  /// \brief get the valid (armed) mandatory part mask associated to the configuration
+  /// \return the armed optional mask
+  /// A clear example of the mandatory part mask is the mask of the zvertex and their
+  /// alternatives where only one concrete one is required to be flagged
+  uint64_t getForcedMask() { return mForcedArmedMask; }
+
  private:
   virtual int CalculateMaskLength() = 0;
+  virtual void StoreArmedMask() = 0;
 
  protected:
   selmodes mMode = kFilter;      /// the operating mode of the selection instance
   int mMaskLength = 0;           /// the length of the mask needed to filter the selection cuts
-  ULong64_t mSelectedMask = 0UL; /// the selection mask for the current passed collision
-  ULong64_t mArmedMask = 0UL;    /// the armed mask identifying the significative selection cuts
+  uint64_t mSelectedMask = 0UL;  /// the selection mask for the current passed collision
+  uint64_t mArmedMask = 0UL;     /// the complete armed mask identifying the applicable selection cuts
+  uint64_t mOptArmedMask = 0UL;  /// the armed mask for options of the applicable selection cuts
+  uint64_t mForcedArmedMask = 0UL; /// the mandatory armed mask of the applicable selection cuts
 
   ClassDefNV(SelectionFilterAndAnalysis, 1)
 };

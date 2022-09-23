@@ -13,14 +13,9 @@
 #include <TObjArray.h>
 
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "EventSelectionFilterAndAnalysis.h"
 
 using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
@@ -234,4 +229,69 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
   if (mMaskLength > 64) {
     LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
   }
+  StoreArmedMask();
+}
+
+/// \brief Fills the filter cuts mask
+void EventSelectionFilterAndAnalysis::StoreArmedMask()
+{
+  uint64_t armedMask = 0UL;
+  uint64_t optMask = 0UL;
+  uint64_t forcedMask = 0UL;
+  mArmedMask = 0UL;
+  mOptArmedMask = 0UL;
+  mForcedArmedMask = 0UL;
+  int bit = 0;
+
+  auto armedBrick = [&](auto brick, bool opt = false) {
+    std::vector<bool> res = brick->IsArmed();
+    for (auto b : res) {
+      if (b) {
+        SETBIT(armedMask, bit);
+        if (opt) {
+          SETBIT(optMask, bit);
+        } else {
+          SETBIT(forcedMask, bit);
+        }
+      }
+      bit++;
+    }
+  };
+
+  if (mMultiplicityClasses != nullptr) {
+    if (mAlternateMultiplicityEstimatorIndex.size() > 0) {
+      /* we have alternative estimators so our brick is of kind cwv */
+      if (mMultiplicityClasses->IsA() != CutWithVariations<float>::Class()) {
+        LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected class with variations cut but it is not there");
+      }
+      /* first the default */
+      TList& deflst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getDefaultBricks();
+      if (deflst.GetEntries() > 1) {
+        LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected only one default multiplicity class estimator");
+      }
+      armedBrick((CutBrick<float>*)deflst.At(0), true);
+      /* and now the variants */
+      TList& varlst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getVariantBricks();
+      for (int i = 0; i < varlst.GetEntries(); ++i) {
+        if (varlst.At(i)->IsA() != CutBrickSelectorMultipleRanges<float>::Class()) {
+          LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter, expected a multirange selector");
+        }
+        armedBrick((CutBrick<float>*)varlst.At(i), true);
+      }
+    } else {
+      /* no alternative estimators, just the default */
+      armedBrick(mMultiplicityClasses, true);
+    }
+  }
+  if (mTriggerSelection != nullptr) {
+  }
+  if (mZVertex != nullptr) {
+    armedBrick(mZVertex);
+  }
+  if (mPileUpRejection != nullptr) {
+  }
+  LOGF(info, "EventSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%08lx, 0x%08lx, 0x%08lx", armedMask, optMask, forcedMask);
+  mArmedMask = armedMask;
+  mOptArmedMask = optMask;
+  mForcedArmedMask = forcedMask;
 }
