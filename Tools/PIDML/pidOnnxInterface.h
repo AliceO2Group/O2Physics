@@ -26,46 +26,51 @@
 namespace pidml_pt_cuts
 {
 static constexpr int nPids = 6;
-static constexpr int nCutVars = kNDetectors - 1;
+static constexpr int nCutVars = kNDetectors;
 constexpr int pids[nPids] = {211, 321, 2212, -211, -321, -2212};
 auto pids_v = std::vector<int>{pids, pids + nPids};
 constexpr double certainties[nPids] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 auto certainties_v = std::vector<double>{certainties, certainties + nPids};
 
 // default values for the cuts
-constexpr double cuts[nPids][nCutVars] = {{0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}, {0.5, 0.8}};
+constexpr double cuts[nPids][nCutVars] = {{0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}};
 
 // row labels
 static const std::vector<std::string> pidLabels = {
   "211", "321", "2212", "0211", "0321", "02212"};
 // column labels
 static const std::vector<std::string> cutVarLabels = {
-  "TPC + TOF", "TPC + TOF + TRD"};
+  "TPC", "TPC + TOF", "TPC + TOF + TRD"};
 } // namespace pidml_pt_cuts
 
 using namespace pidml_pt_cuts;
 using namespace o2::framework;
 
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mPids{pids}, mPTLimits{pTLimits}, mMinCertainties{minCertainties}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mNPids{pids.size()}, mPTLimits{pTLimits}
   {
     if (pids.size() == 0) {
       LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
     }
-
-    LOG(info) << "pt limits, y = 0:";
-    LOG(info) << pTLimits[0][0];
-    LOG(info) << pTLimits[0][1];
-    LOG(info) << "End of pt limits";
-
-    //mModels.clear();
-    if (autoMode) {
-      fillDefaultConfiguration();
+    std::set<int> tmp;
+    for (auto& pid : pids) {
+      if (!tmp.insert(pid).second) {
+        LOG(fatal) << "PID M Interface: output pids cannot repeat!";
+      }
     }
-    //mModels.resize(kNDetectors * pids.size());
-    for (std::size_t i = 0; i < pids.size(); i++) {
+
+    std::vector<double> minCertaintiesFilled;
+    if (autoMode) {
+      fillDefaultConfiguration(minCertaintiesFilled);
+    } else {
+      if (minCertainties.size() != mNPids) {
+        LOG(fatal) << "PID ML Interface: min certainties vector must be of the same size as the output pids vector";
+      }
+      minCertaintiesFilled = minCertainties;
+    }
+    for (std::size_t i = 0; i < mNPids; i++) {
       for (uint32_t j = 0; j < kNDetectors; j++) {
-        mModels.emplace_back(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], (PidMLDetector)(kTPCOnly + j), minCertainties[i]);
+        mModels.emplace_back(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], (PidMLDetector)(kTPCOnly + j), minCertaintiesFilled[i]);
       }
     }
   }
@@ -79,55 +84,46 @@ struct PidONNXInterface {
   template <typename T>
   float applyModel(const T& track, int pid)
   {
-    for (std::size_t i = 0; i < mModels.size(); i += kNDetectors) {
-      if (mModels[i].mPid == pid) {
-        uint32_t j = 0;
-        while (j < kNDetectors && track.pt() < mPTLimits[i / kNDetectors][j]) {
-          j++;
+    for (std::size_t i = 0; i < mNPids; i++) {
+      if (mModels[i * kNDetectors].mPid == pid) {
+        for (uint32_t j = 0; j < kNDetectors; j++) {
+          if (track.pt() >= mPTLimits[i][j] && (j == kNDetectors - 1 || track.pt() < mPTLimits[i][j + 1])) {
+            return mModels[i * kNDetectors + j].applyModel(track);
+          }
         }
-        return mModels[i + j - 1].applyModel(track);
       }
     }
+    LOG(error) << "No suitable PID ML model found for track: " << track.globalIndex() << " from collision: " << track.collision().globalIndex() << " and expected pid: " << pid;
     return -1.0f;
   }
 
   template <typename T>
   bool applyModelBoolean(const T& track, int pid)
   {
-    for (std::size_t i = 0; i < mModels.size(); i += kNDetectors - 1) {
-      if (mModels[i].mPid == pid) {
-        LOG(info) << "Apply model, i: " << i << " pid: " << pid;
-        uint32_t j = 0;
-        LOG(info) << "Apply model, track pt: " << track.pt() << " first pt limit: " << mPTLimits[i / (kNDetectors - 1)][j];
-        while (j < kNDetectors - 1 && track.pt() < mPTLimits[i / (kNDetectors - 1)][j]) {
-          LOG(info) << "Apply model, j: " << j << " i/ (kNDetectors - 1): " << i / (kNDetectors - 1) << " mPTLimit: " << mPTLimits[i / (kNDetectors - 1)][j];
-          j++;
+    for (std::size_t i = 0; i < mNPids; i++) {
+      if (mModels[i * kNDetectors].mPid == pid) {
+        for (uint32_t j = 0; j < kNDetectors; j++) {
+          if (track.pt() >= mPTLimits[i][j] && (j == kNDetectors - 1 || track.pt() < mPTLimits[i][j + 1])) {
+            return mModels[i * kNDetectors + j].applyModelBoolean(track);
+          }
         }
-        LOG(info) << "Final i: " << i << " j: " << j << "model index: " << i + j << " number of all models: " << mModels.size() << " all pids: " << mPids.size();
-        return mModels[i + j].applyModelBoolean(track);
       }
     }
+    LOG(error) << "No suitable PID ML model found for track: " << track.globalIndex() << " from collision: " << track.collision().globalIndex() << " and expected pid: " << pid;
     return false;
   }
 
  private:
-  void fillDefaultConfiguration()
+  void fillDefaultConfiguration(std::vector<double>& minCertainties)
   {
     // FIXME: A more sophisticated strategy should be based on pid values as well
     mPTLimits = LabeledArray{cuts[0], nPids, nCutVars, pidLabels, cutVarLabels};
-    for (std::size_t i = 0; i < mPids.size(); i++) {
-      mMinCertainties[i] = 0.5;
-    }
+    minCertainties = std::vector<double>(mNPids, 0.5);
   }
 
-  // static constexpr int mNumKinds = 10;
-  //  pions, protons, kaons, electrons, muons, and their antiparticles
-  // static constexpr int mPdgs[mNumKinds] = {211, -211, 2212, -2212, 321, -321, 11, -11, 13, -13};
-  // static constexpr int mPdgs[mNumKinds] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
   std::vector<PidONNXModel> mModels;
   bool mAutoMode;
-  std::vector<int> mPids;
+  std::size_t mNPids;
   LabeledArray<double> mPTLimits;
-  std::vector<double> mMinCertainties;
 };
 #endif // O2_ANALYSIS_PIDONNXINTERFACE_H_
