@@ -104,7 +104,7 @@ void DGPIDCuts::setPIDCuts(std::vector<float> PIDCutValues)
 
   // fill mDGPIDCuts
   auto nCuts = PIDCutValues.size() / numDGPIDCutParameters;
-  for (auto ind = 0; ind < nCuts; ind++) {
+  for (uint ind = 0; ind < nCuts; ind++) {
     mDGPIDCuts.push_back(DGPIDCut(&PIDCutValues[ind*numDGPIDCutParameters]));
   }
 }
