@@ -35,7 +35,7 @@ namespace aod
 namespace twopskim
 {
 DECLARE_SOA_COLUMN(TwoPSkimmedCollisionCentMult, centmult, std::vector<float>); //! The centrality/multiplicity pecentile
-DECLARE_SOA_COLUMN(TwoPSkimmedCollisionFlags, selflags, uint64_t); //! The skimming flags for collision selection
+DECLARE_SOA_COLUMN(TwoPSkimmedCollisionFlags, selflags, uint64_t);              //! The skimming flags for collision selection
 } // namespace twopskim
 DECLARE_SOA_TABLE(TwoPSkimmedCollisions, "AOD", "TWOPSKMDCOLL", //! Accepted reconstructed collisions/events filtered table
                   o2::soa::Index<>,

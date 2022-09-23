@@ -57,11 +57,11 @@ class SelectionFilterAndAnalysis : public TNamed
   virtual void StoreArmedMask() = 0;
 
  protected:
-  selmodes mMode = kFilter;      /// the operating mode of the selection instance
-  int mMaskLength = 0;           /// the length of the mask needed to filter the selection cuts
-  uint64_t mSelectedMask = 0UL;  /// the selection mask for the current passed collision
-  uint64_t mArmedMask = 0UL;     /// the complete armed mask identifying the applicable selection cuts
-  uint64_t mOptArmedMask = 0UL;  /// the armed mask for options of the applicable selection cuts
+  selmodes mMode = kFilter;        /// the operating mode of the selection instance
+  int mMaskLength = 0;             /// the length of the mask needed to filter the selection cuts
+  uint64_t mSelectedMask = 0UL;    /// the selection mask for the current passed collision
+  uint64_t mArmedMask = 0UL;       /// the complete armed mask identifying the applicable selection cuts
+  uint64_t mOptArmedMask = 0UL;    /// the armed mask for options of the applicable selection cuts
   uint64_t mForcedArmedMask = 0UL; /// the mandatory armed mask of the applicable selection cuts
 
   ClassDefNV(SelectionFilterAndAnalysis, 1)
