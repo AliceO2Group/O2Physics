@@ -29,9 +29,12 @@ ClassImp(SelectionFilterAndAnalysis);
 SelectionFilterAndAnalysis::SelectionFilterAndAnalysis()
   : TNamed(),
     mMode(kFilter),
+    mCutStringSignature(),
     mMaskLength(0),
     mSelectedMask(0UL),
-    mArmedMask(0UL)
+    mArmedMask(0UL),
+    mOptArmedMask(0UL),
+    mForcedArmedMask(0UL)
 {
 }
 
@@ -39,8 +42,11 @@ SelectionFilterAndAnalysis::SelectionFilterAndAnalysis()
 SelectionFilterAndAnalysis::SelectionFilterAndAnalysis(const TString& name, selmodes mode)
   : TNamed(name, name),
     mMode(mode),
+    mCutStringSignature(),
     mMaskLength(0),
     mSelectedMask(0UL),
-    mArmedMask(0UL)
+    mArmedMask(0UL),
+    mOptArmedMask(0UL),
+    mForcedArmedMask(0UL)
 {
 }

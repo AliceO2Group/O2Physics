@@ -68,8 +68,8 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
  private:
   void ConstructCutFromString(const TString&);
   void InitializeMultiplicityFilter();
-  int CalculateMaskLength();
-  virtual void StoreArmedMask();
+  int CalculateMaskLength() override;
+  virtual void StoreArmedMask() override;
 
   CutBrick<float>* mMultiplicityClasses;                 //! the multiplicity default classes cuts
   CutBrick<int>* mTriggerSelection;                      //! the trigger selection cuts

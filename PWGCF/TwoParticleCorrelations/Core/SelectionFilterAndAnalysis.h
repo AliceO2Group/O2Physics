@@ -58,6 +58,7 @@ class SelectionFilterAndAnalysis : public TNamed
 
  protected:
   selmodes mMode = kFilter;        /// the operating mode of the selection instance
+  TString mCutStringSignature;     /// the signature of the cut string, i.e. without the alternative selection tags
   int mMaskLength = 0;             /// the length of the mask needed to filter the selection cuts
   uint64_t mSelectedMask = 0UL;    /// the selection mask for the current passed collision
   uint64_t mArmedMask = 0UL;       /// the complete armed mask identifying the applicable selection cuts

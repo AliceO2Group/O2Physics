@@ -51,7 +51,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& 
   ConstructCutFromString(cutstr);
 }
 
-/// \brief Constructor from the track selection configurable
+/// \brief Constructor from the event selection configurable
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSelectionConfigurable& evtsel, selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
     mMultiplicityClasses(nullptr),
@@ -82,6 +82,13 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
 
   cutString += "}";
   ConstructCutFromString(cutString);
+  if (mMaskLength > 64) {
+    LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
+  }
+  mCutStringSignature = cutString.ReplaceAll("-yes", "").ReplaceAll("-no", "");
+  if (mode == kAnalysis) {
+    StoreArmedMask();
+  }
 }
 
 /// \brief Calculates the length of the mask needed to store the selection cuts
@@ -226,10 +233,6 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
     }
   }
   mMaskLength = CalculateMaskLength();
-  if (mMaskLength > 64) {
-    LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
-  }
-  StoreArmedMask();
 }
 
 /// \brief Fills the filter cuts mask

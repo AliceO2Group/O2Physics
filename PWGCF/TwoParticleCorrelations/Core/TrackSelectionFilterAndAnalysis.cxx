@@ -55,8 +55,8 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TString& 
   /* we own the track types cuts objects */
   mTrackTypes.SetOwner(true);
   /* at least we initialize by default pT and eta cuts */
-  mPtRange = CutBrick<float>::constructBrick("pT", "rg{0.2,10}", std::set<std::string>{"rg"});
-  mEtaRange = CutBrick<float>::constructBrick("eta", "rg{-0.8,0.8}", std::set<std::string>{"rg"});
+  mPtRange = CutBrick<float>::constructBrick("pT", "rg{0.1,50}", std::set<std::string>{"rg"});
+  mEtaRange = CutBrick<float>::constructBrick("eta", "rg{-1.0,1.0}", std::set<std::string>{"rg"});
 
   ConstructCutFromString(cutstr);
 }
@@ -115,6 +115,10 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TrackSele
   }
   cutString += "}";
   ConstructCutFromString(cutString);
+  if (mMaskLength > 64) {
+    LOGF(fatal, "TrackSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
+  }
+  mCutStringSignature = cutString.ReplaceAll("-yes", "").ReplaceAll("-no", "");
   if (mode == kAnalysis) {
     /* TODO: check cuts consistency. In principle it should be there except for the ttype valid combinations */
     StoreArmedMask();
