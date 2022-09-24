@@ -975,4 +975,3 @@ std::vector<bool> TrackSelectionBrick::IsArmed()
 }
 
 ClassImp(TrackSelectionBrick);
-

@@ -107,9 +107,9 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   virtual int CalculateMaskLength() override;
   virtual void StoreArmedMask() override;
 
-  float mPTOF = 0.8f;                                 ///< the p threshold for cheking TOF information
-  bool mRequireTOF = false;                           ///< is TOF required
-  bool mEllipticTPCTOF = false;                       ///< 2D nsigmas elliptic TPC+TOF
+  float mPTOF = 0.8f;           ///< the p threshold for cheking TOF information
+  bool mRequireTOF = false;     ///< is TOF required
+  bool mEllipticTPCTOF = false; ///< 2D nsigmas elliptic TPC+TOF
 
   PIDSpecies mSpeciesOfInterest = kWrongSpecies;
   std::vector<CutBrick<float>*> mCloseNsigmasITS;
