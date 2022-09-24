@@ -105,7 +105,7 @@ void DGPIDCuts::setPIDCuts(std::vector<float> PIDCutValues)
   // fill mDGPIDCuts
   auto nCuts = PIDCutValues.size() / numDGPIDCutParameters;
   for (uint ind = 0; ind < nCuts; ind++) {
-    mDGPIDCuts.push_back(DGPIDCut(&PIDCutValues[ind*numDGPIDCutParameters]));
+    mDGPIDCuts.push_back(DGPIDCut(&PIDCutValues[ind * numDGPIDCutParameters]));
   }
 }
 
@@ -314,8 +314,8 @@ void DGPIDSelector::Print()
   LOGF(info, "PIDSelector");
   mAnaPars.Print();
 }
- 
- void DGPIDSelector::init(DGAnaparHolder anaPars)
+
+void DGPIDSelector::init(DGAnaparHolder anaPars)
 {
   mAnaPars = anaPars;
   mIVMs.clear();
