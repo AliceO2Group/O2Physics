@@ -15,6 +15,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "PIDSelectionFilterAndAnalysis.h"
 
 using namespace o2;
@@ -26,13 +27,15 @@ using namespace boost;
 
 ClassImp(PIDSelectionFilterAndAnalysis);
 
+/// \brief species supported
+const std::vector<std::string> PIDSelectionFilterAndAnalysis::mSpeciesNames = {"el", "mu", "pi", "ka", "pr"};
+
 /// \brief Default constructor
 PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis()
   : SelectionFilterAndAnalysis(),
     mPTOF(0.8f),
     mRequireTOF(false),
     mEllipticTPCTOF(false),
-    mCloseNsigmasITS(kNoOfSpecies, nullptr),
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
     mCloseNsigmasTOF(kNoOfSpecies, nullptr)
 {
@@ -44,7 +47,6 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const TString& cuts
     mPTOF(0.8f),
     mRequireTOF(false),
     mEllipticTPCTOF(false),
-    mCloseNsigmasITS(kNoOfSpecies, nullptr),
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
     mCloseNsigmasTOF(kNoOfSpecies, nullptr)
 {
@@ -57,7 +59,6 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
     mPTOF(0.8f),
     mRequireTOF(false),
     mEllipticTPCTOF(false),
-    mCloseNsigmasITS(kNoOfSpecies, nullptr),
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
     mCloseNsigmasTOF(kNoOfSpecies, nullptr)
 {
@@ -74,24 +75,22 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
       }
     }
   };
-  /* TODO: interlace the different detectors */
-  appendCut(pidsel.mPidItsSel_el);
-  appendCut(pidsel.mPidItsSel_mu);
-  appendCut(pidsel.mPidItsSel_pi);
-  appendCut(pidsel.mPidItsSel_ka);
-  appendCut(pidsel.mPidItsSel_pr);
+  cutString += "tpcsel{";
+  first = true;
   appendCut(pidsel.mPidTpcSel_el);
   appendCut(pidsel.mPidTpcSel_mu);
   appendCut(pidsel.mPidTpcSel_pi);
   appendCut(pidsel.mPidTpcSel_ka);
   appendCut(pidsel.mPidTpcSel_pr);
+  cutString += "},tofsel{";
+  first = true;
   appendCut(pidsel.mPidTofSel_el);
   appendCut(pidsel.mPidTofSel_mu);
   appendCut(pidsel.mPidTofSel_pi);
   appendCut(pidsel.mPidTofSel_ka);
   appendCut(pidsel.mPidTofSel_pr);
 
-  cutString += "}";
+  cutString += "}}";
   ConstructCutFromString(cutString);
   if (mMaskLength > 64) {
     LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
@@ -106,9 +105,6 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
 /// Releases the taken memory
 PIDSelectionFilterAndAnalysis::~PIDSelectionFilterAndAnalysis()
 {
-  for (auto brick : mCloseNsigmasITS) {
-    delete brick;
-  }
   for (auto brick : mCloseNsigmasTPC) {
     delete brick;
   }
@@ -123,10 +119,11 @@ int PIDSelectionFilterAndAnalysis::CalculateMaskLength()
   int length = 0;
   auto addLength = [&](auto bricklst) {
     for (auto brick : bricklst) {
-      length += brick->Length();
+      if (brick != nullptr) {
+        length += brick->Length();
+      }
     }
   };
-  addLength(mCloseNsigmasITS);
   addLength(mCloseNsigmasTPC);
   addLength(mCloseNsigmasTOF);
   return length;
@@ -134,6 +131,93 @@ int PIDSelectionFilterAndAnalysis::CalculateMaskLength()
 
 void PIDSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cutstr)
 {
+  LOGF(info, "Cut string: %s", cutstr);
+  /* let's catch the first level */
+  regex cutregex("^pidsel\\{?(\\w+\\{[\\w\\d.,:{}-]+})*}$", regex_constants::ECMAScript | regex_constants::icase);
+  std::string in(cutstr.Data());
+  smatch m;
+
+  bool res = regex_search(in, m, cutregex);
+  if (not res or m.empty() or (m.size() > 2)) {
+    Fatal("PIDSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE: %s, try pidsel{tpcsel{tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}}} for instance", cutstr.Data());
+  }
+  this->SetName("EventSelectionFilterAndAnalysisCuts");
+  this->SetTitle(cutstr.Data());
+
+  /* let's now handle each of the detectors requirements */
+  {
+    LOGF(info, "Captured %s", m[1].str().c_str());
+    TString lev2str = m[1].str();
+    while (lev2str.Length() != 0) {
+      lev2str.Remove(TString::kLeading, ' ');
+      lev2str.Remove(TString::kLeading, ',');
+      lev2str.Remove(TString::kLeading, ' ');
+      if (lev2str.Length() == 0) {
+        break;
+      }
+      regex cutregex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
+      std::string in(lev2str.Data());
+      smatch m;
+      bool res = regex_search(in, m, cutregex);
+
+      if (not res or m.empty() or (m.size() != 3)) {
+        LOGF(fatal, "PIDSelectionFilterAndAnalysis::::ConstructCutFromString. Wrong RE: %s, try pidsel{tpcsel{tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}}} for instance", cutstr.Data());
+      }
+      LOGF(info, "Captured %s", m[1].str().c_str());
+      auto handleDetectorLevel = [](std::string detector, auto& bricklst, std::string cut) {
+        std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "cwv", "mrg"};
+        TString lev3str = cut;
+        while (lev3str.Length() != 0) {
+          regex cutregex3l("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
+          smatch m3l;
+          auto storeCut = [&m3l, &allowed](CutBrick<float>*& brickvar) {
+            if (brickvar != nullptr) {
+              delete brickvar;
+            }
+            brickvar = CutBrick<float>::constructBrick(m3l[1].str().c_str(), m3l[2].str().c_str(), allowed);
+          };
+          lev3str.Remove(TString::kLeading, ' ');
+          lev3str.Remove(TString::kLeading, ',');
+          lev3str.Remove(TString::kLeading, ' ');
+          if (lev3str.Length() == 0) {
+            break;
+          }
+          std::string in3l(lev3str.Data());
+          bool res3l = regex_search(in3l, m3l, cutregex3l);
+          if (not res3l or m3l.empty() or (m3l.size() != 3)) {
+            LOGF(fatal, "PIDSelectionFilterAndAnalysis::::ConstructCutFromString. Wrong RE for detector %s: %s, try tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}} for instance", detector.c_str(), cut.c_str());
+          }
+          LOGF(info, "Captured %s", m3l[1].str().c_str());
+          /* let's search for the involved species index */
+          int spindex = -1;
+          for (uint i = 0; i < mSpeciesNames.size(); ++i) {
+            TString spname = detector + mSpeciesNames[i];
+            LOGF(info, "Checking %s vs %s", spname.Data(), m3l[1].str().c_str());
+            if (spname.EqualTo(m3l[1].str().c_str())) {
+              spindex = i;
+              break;
+            }
+          }
+          if (spindex < 0) {
+            LOGF(fatal, "PIDSelectionFilterAndAnalysis::::ConstructCutFromString. Wrong species %s for detector %s: %s, try tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}} for instance", m3l[1].str().c_str(), detector.c_str(), cut.c_str());
+          } else {
+            storeCut(bricklst[spindex]);
+          }
+          /* removing the already handled species requirements */
+          lev3str.Remove(0, m3l[0].length());
+        }
+      };
+      if (m[1].str() == "tpcsel") {
+        handleDetectorLevel("tpc", mCloseNsigmasTPC, m[2].str());
+      } else if (m[1].str() == "tofsel") {
+        handleDetectorLevel("tof", mCloseNsigmasTOF, m[2].str());
+      } else {
+        Fatal("PIDSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE detector %s, use tpcsel, or tofsel only", m[1].str().c_str());
+      }
+      /* removing the already handled detector requirements */
+      lev2str.Remove(0, m[0].length());
+    }
+  }
   mMaskLength = CalculateMaskLength();
 }
 
@@ -167,7 +251,6 @@ void PIDSelectionFilterAndAnalysis::StoreArmedMask()
       armedBrick(brick, true);
     }
   };
-  armedList(mCloseNsigmasITS);
   armedList(mCloseNsigmasTPC);
   armedList(mCloseNsigmasTOF);
 

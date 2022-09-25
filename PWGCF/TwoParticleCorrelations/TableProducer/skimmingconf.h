@@ -41,25 +41,18 @@ struct : o2::framework::ConfigurableGroup {
 
 struct : o2::framework::ConfigurableGroup {
   struct : ConfigurableGroup {
-    o2::framework::Configurable<std::string> itsel{"pidflt_its_el", "itsel{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the its electron dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> itsmu{"pidflt_its_mu", "itsmu{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the its muon dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> itspi{"pidflt_its_pi", "itspi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the its pion dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> itska{"pidflt_its_ka", "itska{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the its kaon dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> itspr{"pidflt_its_pr", "itspr{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the its proton dE/dx line, below/above"};
-  } piditsfilter;
-  struct : ConfigurableGroup {
-    o2::framework::Configurable<std::string> tpcel{"pidflt_tpc_el", "tpcel{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tpc electron dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> tpcmu{"pidflt_tpc_mu", "tpcmu{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tpc muon dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> tpcpi{"pidflt_tpc_pi", "tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tpc pion dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> tpcka{"pidflt_tpc_ka", "tpcks{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tpc kaon dE/dx line, below/above"};
-    o2::framework::Configurable<std::string> tpcpr{"pidflt_tpc_pr", "tpcpr{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tpc proton dE/dx line, below/above"};
+    o2::framework::Configurable<std::string> tpcel{"pidflt_tpc_el", "tpcel{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tpc electron dE/dx line, below/above"};
+    o2::framework::Configurable<std::string> tpcmu{"pidflt_tpc_mu", "tpcmu{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tpc muon dE/dx line, below/above"};
+    o2::framework::Configurable<std::string> tpcpi{"pidflt_tpc_pi", "tpcpi{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tpc pion dE/dx line, below/above"};
+    o2::framework::Configurable<std::string> tpcka{"pidflt_tpc_ka", "tpcka{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tpc kaon dE/dx line, below/above"};
+    o2::framework::Configurable<std::string> tpcpr{"pidflt_tpc_pr", "tpcpr{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tpc proton dE/dx line, below/above"};
   } pidtpcfilter;
   struct : ConfigurableGroup {
-    o2::framework::Configurable<std::string> tpcel{"pidflt_tof_el", "tofel{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tof electron line, below/above"};
-    o2::framework::Configurable<std::string> tpcmu{"pidflt_tof_mu", "tofmu{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tof muon line, below/above"};
-    o2::framework::Configurable<std::string> tpcpi{"pidflt_tof_pi", "tofpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tof pion line, below/above"};
-    o2::framework::Configurable<std::string> tpcka{"pidflt_tof_ka", "tofks{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tof kaon line, below/above"};
-    o2::framework::Configurable<std::string> tpcpr{"pidflt_tof_pr", "tofpr{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}", "nsigmas to the tof proton line, below/above"};
+    o2::framework::Configurable<std::string> tpcel{"pidflt_tof_el", "tofel{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tof electron line, below/above"};
+    o2::framework::Configurable<std::string> tpcmu{"pidflt_tof_mu", "tofmu{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tof muon line, below/above"};
+    o2::framework::Configurable<std::string> tpcpi{"pidflt_tof_pi", "tofpi{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tof pion line, below/above"};
+    o2::framework::Configurable<std::string> tpcka{"pidflt_tof_ka", "tofka{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tof kaon line, below/above"};
+    o2::framework::Configurable<std::string> tpcpr{"pidflt_tof_pr", "tofpr{cwv{rg{-3.0,3.0}-yes:rg{-2.0,2.0}-no,rg{-3.0,5.0}-no}}", "nsigmas to the tof proton line, below/above"};
   } pidtoffilter;
 } pidfilter;
 

@@ -54,6 +54,7 @@ namespace twopskim
 DECLARE_SOA_INDEX_COLUMN(TwoPSkimmedCollision, event);           //! Reconstructed collision/event
 DECLARE_SOA_INDEX_COLUMN(TwoPSkimmedGenCollision, mcevent);      //! Generated collision/event
 DECLARE_SOA_COLUMN(TwoPSkimmedTrackFlags, trackflags, uint64_t); //! The skimming flags for track selection
+DECLARE_SOA_COLUMN(TwoPSkimmedPidFlags, pidflags, uint64_t);     //! The PID skimming flags for track selection
 DECLARE_SOA_COLUMN(sPt, spt, float);                             //! The track charge signed transverse momentum
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                               //! The track transverse momentum
                            [](float signedpt) -> float {
@@ -70,6 +71,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,      //! The track transverse momentum
 DECLARE_SOA_TABLE(TwoPSkimmedTracks, "AOD", "TWOPSKMDTRKS", //! The reconstructed tracks filtered table
                   twopskim::TwoPSkimmedCollisionId,
                   twopskim::TwoPSkimmedTrackFlags,
+                  twopskim::TwoPSkimmedPidFlags,
                   twopskim::sPt,
                   twopskim::Eta,
                   twopskim::Phi,

@@ -35,19 +35,13 @@ class PIDSelectionConfigurable
   friend class PIDSelectionFilterAndAnalysis;
 
  public:
-  PIDSelectionConfigurable(std::string piditsel = "", std::string piditsmu = "", std::string piditspi = "", std::string piditska = "", std::string piditspr = "",
-                           std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
+  PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
                            std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
-    : mPidItsSel_el{piditsel}, mPidItsSel_mu{piditsmu}, mPidItsSel_pi{piditspi}, mPidItsSel_ka{piditska}, mPidItsSel_pr{piditspr}, mPidTpcSel_el{pidtpcel}, mPidTpcSel_mu{pidtpcmu}, mPidTpcSel_pi{pidtpcpi}, mPidTpcSel_ka{pidtpcka}, mPidTpcSel_pr{pidtpcpr}, mPidTofSel_el{pidtofel}, mPidTofSel_mu{pidtofmu}, mPidTofSel_pi{pidtofpi}, mPidTofSel_ka{pidtofka}, mPidTofSel_pr{pidtofpr}
+    : mPidTpcSel_el{pidtpcel}, mPidTpcSel_mu{pidtpcmu}, mPidTpcSel_pi{pidtpcpi}, mPidTpcSel_ka{pidtpcka}, mPidTpcSel_pr{pidtpcpr}, mPidTofSel_el{pidtofel}, mPidTofSel_mu{pidtofmu}, mPidTofSel_pi{pidtofpi}, mPidTofSel_ka{pidtofka}, mPidTofSel_pr{pidtofpr}
   {
   }
 
  private:
-  std::string mPidItsSel_el = "";
-  std::string mPidItsSel_mu = "";
-  std::string mPidItsSel_pi = "";
-  std::string mPidItsSel_ka = "";
-  std::string mPidItsSel_pr = "";
   std::string mPidTpcSel_el = "";
   std::string mPidTpcSel_mu = "";
   std::string mPidTpcSel_pi = "";
@@ -101,6 +95,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   };
 
   static const std::string mCutNames[static_cast<int>(PIDCuts::kNCuts)];
+  static const std::vector<std::string> mSpeciesNames;
 
  private:
   void ConstructCutFromString(const TString&);
@@ -112,7 +107,6 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   bool mEllipticTPCTOF = false; ///< 2D nsigmas elliptic TPC+TOF
 
   PIDSpecies mSpeciesOfInterest = kWrongSpecies;
-  std::vector<CutBrick<float>*> mCloseNsigmasITS;
   std::vector<CutBrick<float>*> mCloseNsigmasTPC;
   std::vector<CutBrick<float>*> mCloseNsigmasTOF;
 
@@ -138,11 +132,6 @@ inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track
       }
     }
   };
-  filterBrickValue(mCloseNsigmasITS[kElectron], track.itsNSigmaEl());
-  filterBrickValue(mCloseNsigmasITS[kMuon], track.itsNSigmaMu());
-  filterBrickValue(mCloseNsigmasITS[kPion], track.itsNSigmaPi());
-  filterBrickValue(mCloseNsigmasITS[kKaon], track.itsNSigmaKa());
-  filterBrickValue(mCloseNsigmasITS[kProton], track.itsNSigmaPr());
   filterBrickValue(mCloseNsigmasTPC[kElectron], track.tpcNSigmaEl());
   filterBrickValue(mCloseNsigmasTPC[kMuon], track.tpcNSigmaMu());
   filterBrickValue(mCloseNsigmasTPC[kPion], track.tpcNSigmaPi());

@@ -41,6 +41,7 @@ namespace o2::analysis::twopfilter
 
 PWGCF::EventSelectionFilterAndAnalysis* fCollisionFilter = nullptr;
 PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
+PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;
 } // namespace o2::analysis::twopfilter
 
 using namespace o2::aod::twopskim;
@@ -62,6 +63,9 @@ struct TwoParticleCorrelationsFilter {
   uint64_t trackmask = 0UL;
   uint64_t trackmask_opt = 0UL;
   uint64_t trackmask_forced = 0UL;
+  uint64_t pidmask = 0UL;
+  uint64_t pidmask_opt = 0UL;
+  uint64_t pidmask_forced = 0UL;
 
   void init(InitContext const&)
   {
@@ -77,6 +81,9 @@ struct TwoParticleCorrelationsFilter {
     PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
                                              trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
     fTrackFilter = new PWGCF::TrackSelectionFilterAndAnalysis(trksel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
+    PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
+                                           pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
+    fPIDFilter = new PWGCF::PIDSelectionFilterAndAnalysis(pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
 
     nReportedTracks = 0;
     collisionmask = fCollisionFilter->getMask();
@@ -85,11 +92,19 @@ struct TwoParticleCorrelationsFilter {
     trackmask = fTrackFilter->getMask();
     trackmask_opt = fTrackFilter->getOptMask();
     trackmask_forced = fTrackFilter->getForcedMask();
+    pidmask = fPIDFilter->getMask();
+    pidmask_opt = fPIDFilter->getOptMask();
+    pidmask_forced = fPIDFilter->getForcedMask();
     LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", collisionmask, collisionmask_opt, collisionmask_forced);
     LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", trackmask, trackmask_opt, trackmask_forced);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), PID selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", pidmask, pidmask_opt, pidmask_forced);
     if (collisionmask == uint64_t(0) or trackmask == uint64_t(0)) {
       LOGF(fatal, "TwoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
     }
+    /* TODO: check the cuts signatures against the CCDB contents */
+    LOGF(info, "Collision skimming signature: %s", fCollisionFilter->getCutStringSignature().Data());
+    LOGF(info, "Track skimming signature: %s", fTrackFilter->getCutStringSignature().Data());
+    LOGF(info, "PID skimming signature: %s", fPIDFilter->getCutStringSignature().Data());
   }
 
   Filter onlyacceptedcolls = ((aod::twopskim::selflags & static_cast<uint64_t>(collisionmask_forced)) == static_cast<uint64_t>(collisionmask_forced));

@@ -14,6 +14,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 #include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
 #include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
@@ -32,8 +33,12 @@ namespace o2::analysis::twopskim
 #define LOGTRACKCOLLISIONS info
 #define LOGTRACKTRACKS info
 
+using pidTables = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                            aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+
 PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
 PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;
+PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;
 } // namespace o2::analysis::twopskim
 
 using namespace twopskim;
@@ -108,7 +113,15 @@ struct TwoParticleCorrelationsSkimming {
     PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
                                              trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
     fTrackFilter = new PWGCF::TrackSelectionFilterAndAnalysis(trksel, PWGCF::SelectionFilterAndAnalysis::kFilter);
+    PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
+                                           pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
+    fPIDFilter = new PWGCF::PIDSelectionFilterAndAnalysis(pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
     nReportedTracks = 0;
+
+    /* TODO: upload the cuts signatures to the CCDB */
+    LOGF(info, "Collision skimming signature: %s", fEventFilter->getCutStringSignature().Data());
+    LOGF(info, "Track skimming signature: %s", fTrackFilter->getCutStringSignature().Data());
+    LOGF(info, "PID skimming signature: %s", fPIDFilter->getCutStringSignature().Data());
 
     historeg.add("EventCuts", "EventCuts", {HistType::kTH1F, {{aod::run2::kTRDHEE + 1, 0, aod::run2::kTRDHEE + 1}}});
     setEventCutsLabels(historeg.get<TH1>(HIST("EventCuts")));
@@ -159,7 +172,8 @@ struct TwoParticleCorrelationsSkimming {
     }
   }
 
-  void processRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::BCs, aod::Run2BCInfos> const&, soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision,
+                   soa::Join<aod::BCs, aod::Run2BCInfos> const&, soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks)
   {
     /* for the time being this will apply only to Run 1+2 converted data */
     LOGF(LOGTRACKCOLLISIONS, "Got a new collision with zvtx %.2f and V0M %.2f, CL0 %.2f, CL1 %.2f", collision.posZ(), collision.centRun2V0M(), collision.centRun2CL0(), collision.centRun2CL1());
@@ -172,13 +186,14 @@ struct TwoParticleCorrelationsSkimming {
       int nFilteredTracks = 0;
       for (auto const& track : tracks) {
         auto trkmask = fTrackFilter->Filter(track);
+        auto pidmask = fPIDFilter->Filter(track);
         if (trkmask != 0UL) {
-          skimmedtrack(skimmedcollision.lastIndex(), trkmask, track.pt() * track.sign(), track.eta(), track.phi());
+          skimmedtrack(skimmedcollision.lastIndex(), trkmask, pidmask, track.pt() * track.sign(), track.eta(), track.phi());
           nFilteredTracks++;
         }
         if (trkmask != 0UL and nReportedTracks < 1000) {
-          LOGF(LOGTRACKTRACKS, "  Got track mask 0x%08lx, TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
-               trkmask, track.tpcNClsFound(), track.tpcChi2NCl(), track.pt(), track.eta(), track.trackType());
+          LOGF(LOGTRACKTRACKS, "  Got track mask 0x%08lx and PID mask 0x%08lx, TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
+               trkmask, pidmask, track.tpcNClsFound(), track.tpcChi2NCl(), track.pt(), track.eta(), track.trackType());
           nReportedTracks++;
         }
       }

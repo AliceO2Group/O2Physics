@@ -51,6 +51,8 @@ class SelectionFilterAndAnalysis : public TNamed
   /// A clear example of the mandatory part mask is the mask of the zvertex and their
   /// alternatives where only one concrete one is required to be flagged
   uint64_t getForcedMask() { return mForcedArmedMask; }
+  /// \brief get the cut string signature
+  const TString& getCutStringSignature() { return mCutStringSignature; }
 
  private:
   virtual int CalculateMaskLength() = 0;
