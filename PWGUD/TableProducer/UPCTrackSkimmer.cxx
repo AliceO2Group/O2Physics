@@ -40,6 +40,7 @@ struct UpcTrackSkimmer {
 
   // cuts for forward tracks
   Configurable<int> fUseFwdCuts{"useFwdCuts", 1, "Use cuts for forward tracks"};
+  Configurable<int> fTrackType{"trackType", 3, "Filter by Fwd. track type: -1 -> no filter, 0 -> MFT-MCH-MID, 2 -> MFT-MCH, 3 -> MCH-MID. See ForwardTrackTypeEnum"};
   // basic
   Configurable<float> fFwdPtLow{"fwdPtLow", 0.5, "Minimal Pt for forward tracks"};
   Configurable<float> fFwdPtHigh{"fwdPtHigh", 4., "Maximal Pt for forward tracks"};
@@ -317,7 +318,7 @@ struct UpcTrackSkimmer {
     newEventIDs.clear();
   }
 
-  template <int32_t TTrackType, typename TFwdTracks, typename TAmbFwdTracks, typename TBCs, typename TMcFwdTrackLabels>
+  template <typename TFwdTracks, typename TAmbFwdTracks, typename TBCs, typename TMcFwdTrackLabels>
   void skimFwdTracks(TFwdTracks const& tracks,
                      TAmbFwdTracks const& ambTracks,
                      TBCs const& bcs,
@@ -327,23 +328,22 @@ struct UpcTrackSkimmer {
     std::unordered_map<int32_t, int32_t> ambTrIds;
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.fwdtrackId();
-      if constexpr (TTrackType != -1) {
+      if (fTrackType != -1) {
         const auto& tr = tracks.iteratorAt(trId);
         auto trType = tr.trackType();
-        if (trType != TTrackType) {
+        if (trType != fTrackType) {
           continue;
         }
       }
       ambTrIds[trId] = ambTr.globalIndex();
     }
 
-    for (const auto& ambTr : ambTracks) {
-      auto trId = ambTr.fwdtrackId();
-      const auto& tr = tracks.iteratorAt(trId);
+    for (const auto& tr : tracks) {
+      int32_t trId = tr.globalIndex();
       // filter only interesting type of tracks if needed
-      if constexpr (TTrackType != -1) {
+      if (fTrackType != -1) {
         auto trType = tr.trackType();
-        if (trType != TTrackType) {
+        if (trType != fTrackType) {
           continue;
         }
       }
@@ -416,11 +416,13 @@ struct UpcTrackSkimmer {
       uint64_t bc = trackBC + tint;
       double trTime = tr.trackTime() - tint * o2::constants::lhc::LHCBunchSpacingNS;
       udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
+      udTracksCov(tr.x(), tr.y(), tr.z(), tr.sigmaY(), tr.sigmaZ());
       udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
                     tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
                     tr.tpcSignal(), tr.tofSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
       udTracksPID(tr.tpcNSigmaEl(), tr.tpcNSigmaMu(), tr.tpcNSigmaPi(), tr.tpcNSigmaKa(), tr.tpcNSigmaPr(),
                   tr.tofNSigmaEl(), tr.tofNSigmaMu(), tr.tofNSigmaPi(), tr.tofNSigmaKa(), tr.tofNSigmaPr());
+      udTracksDCA(tr.dcaZ(), tr.dcaXY());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trId);
@@ -452,7 +454,7 @@ struct UpcTrackSkimmer {
     const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> newPartIDs;
     skimMCInfo(mcCollisions, mcParticles, bcs, newPartIDs);
-    skimFwdTracks<trType>(tracks, ambTracks, bcs, &mcFwdTrackLabels, newPartIDs);
+    skimFwdTracks(tracks, ambTracks, bcs, &mcFwdTrackLabels, newPartIDs);
     newPartIDs.clear();
   }
 
@@ -463,9 +465,8 @@ struct UpcTrackSkimmer {
   {
     fDoMC = false;
     using namespace o2::aod::fwdtrack;
-    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> dummyMap;
-    skimFwdTracks<trType>(tracks, ambTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
+    skimFwdTracks(tracks, ambTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
   }
 
   // process both barrel and muon tracks with MC information
@@ -482,10 +483,9 @@ struct UpcTrackSkimmer {
   {
     fDoMC = true;
     using namespace o2::aod::fwdtrack;
-    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> newPartIDs;
     skimMCInfo(mcCollisions, mcParticles, bcs, newPartIDs);
-    skimFwdTracks<trType>(fwdTracks, ambFwdTracks, bcs, &mcFwdTrackLabels, newPartIDs);
+    skimFwdTracks(fwdTracks, ambFwdTracks, bcs, &mcFwdTrackLabels, newPartIDs);
     skimBarTracks(collisions, barTracks, ambBarTracks, bcs, &mcBarTrackLabels, newPartIDs);
     newPartIDs.clear();
   }
@@ -500,9 +500,8 @@ struct UpcTrackSkimmer {
   {
     fDoMC = false;
     using namespace o2::aod::fwdtrack;
-    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> dummyMap;
-    skimFwdTracks<trType>(fwdTracks, ambFwdTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
+    skimFwdTracks(fwdTracks, ambFwdTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
     skimBarTracks(collisions, barTracks, ambBarTracks, bcs, (o2::aod::McTrackLabels*)nullptr, dummyMap);
   }
 
