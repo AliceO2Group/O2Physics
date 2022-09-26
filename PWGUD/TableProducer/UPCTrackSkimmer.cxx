@@ -451,7 +451,6 @@ struct UpcTrackSkimmer {
   {
     fDoMC = true;
     using namespace o2::aod::fwdtrack;
-    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> newPartIDs;
     skimMCInfo(mcCollisions, mcParticles, bcs, newPartIDs);
     skimFwdTracks(tracks, ambTracks, bcs, &mcFwdTrackLabels, newPartIDs);

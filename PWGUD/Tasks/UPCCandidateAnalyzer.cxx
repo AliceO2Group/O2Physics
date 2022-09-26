@@ -461,7 +461,8 @@ struct UpcCandAnalyzer {
     if (fHistSwitch == 1 || fHistSwitch == 2) {
       float pt1 = p1.Pt();
       float pt2 = p2.Pt();
-      bool fill1, fill2;
+      bool fill1 = false;
+      bool fill2 = false;
       if (fIsMC) { // if this is MC, we can just use real PDG
         fill1 = pdg1 == fTargetPdg;
         fill2 = pdg2 == fTargetPdg;
