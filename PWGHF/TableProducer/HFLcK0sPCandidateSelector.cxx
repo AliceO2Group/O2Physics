@@ -13,6 +13,7 @@
 /// \brief Lc --> K0s+p selection task.
 ///
 /// \author Chiara Zampolli <Chiara.Zampolli@cern.ch>, CERN
+///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
 
 /// based on HFD0CandidateSelector.cxx
 
@@ -25,22 +26,8 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
+using namespace o2::analysis::hf_cuts_lc_tok0sp;
 
-static const int nPtBins = 8;
-static const int nCutVars = 8;
-//temporary until 2D array in configurable is solved - then move to json
-//mK0s(GeV)     mLambdas(GeV)    mGammas(GeV)    ptp     ptK0sdau     pTLc     d0p     d0K0
-constexpr double cuts[nPtBins][nCutVars] = {{0.008, 0.005, 0.1, 0.5, 0.3, 0.6, 0.05, 999999.},  // 1 < pt < 2
-                                            {0.008, 0.005, 0.1, 0.5, 0.4, 1.3, 0.05, 999999.},  // 2 < pt < 3
-                                            {0.009, 0.005, 0.1, 0.6, 0.4, 1.3, 0.05, 999999.},  // 3 < pt < 4
-                                            {0.011, 0.005, 0.1, 0.6, 0.4, 1.4, 0.05, 999999.},  // 4 < pt < 5
-                                            {0.013, 0.005, 0.1, 0.6, 0.4, 1.4, 0.06, 999999.},  // 5 < pt < 6
-                                            {0.013, 0.005, 0.1, 0.9, 0.4, 1.6, 0.09, 999999.},  // 6 < pt < 8
-                                            {0.016, 0.005, 0.1, 0.9, 0.4, 1.7, 0.10, 999999.},  // 8 < pt < 12
-                                            {0.019, 0.005, 0.1, 1.0, 0.4, 1.9, 0.20, 999999.}}; // 12 < pt < 24
-/// Struct for applying D0 selection cuts
-
-//#define MY_DEBUG
 
 #ifdef MY_DEBUG
 #define MY_DEBUG_MSG(condition, cmd) \
@@ -71,32 +58,16 @@ struct HFLcK0sPCandidateSelector {
   Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 50., "Lower bound of TPC findable clusters for good PID"};
   Configurable<bool> requireTPC{"requireTPC", true, "Flag to require a positive Number of found clusters in TPC"};
 
+  //cuts
+  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_lc_tok0sp::pTBins_v}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_tok0sp::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
+
   // for debugging
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
   Configurable<std::vector<int>> indexK0Sneg{"indexK0Sneg", {730, 2867, 4755, 5458, 6892, 7825, 9244, 9811}, "indices of K0S negative daughters, for debug"};
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
-
-  /// Gets corresponding pT bin from cut file array
-  /// \param candPt is the pT of the candidate
-  /// \return corresponding bin number of array
-  template <typename T>
-  int getPtBin(T candPt) // This should be taken out of the selector, since it is something in common to everyone;
-                         // it should become parameterized with the pt intervals, and also the pt intervals
-                         // should be configurable from outside
-  {
-    double ptBins[nPtBins + 1] = {1., 2., 3., 4., 5., 6., 8., 12., 24.};
-    if (candPt < ptBins[0] || candPt >= ptBins[nPtBins]) {
-      return -1;
-    }
-    for (int i = 0; i < nPtBins; i++) {
-      if (candPt < ptBins[i + 1]) {
-        return i;
-      }
-    }
-    return -1;
-  }
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
@@ -116,7 +87,7 @@ struct HFLcK0sPCandidateSelector {
   bool selectionTopol(const T& hfCandCascade)
   {
     auto candPt = hfCandCascade.pt();
-    int ptBin = getPtBin(candPt);
+    int ptBin = findBin(pTBins,candPt);
     if (ptBin == -1) {
       return false;
     }
@@ -126,55 +97,55 @@ struct HFLcK0sPCandidateSelector {
       return false; //check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfCandCascade.mK0Short() - RecoDecay::getMassPDG(kK0Short)) > cuts[ptBin][0]) {
-      LOG(debug) << "massK0s cut failed: from v0 in cascade, K0s --> " << hfCandCascade.mK0Short() << ", in PDG K0s --> " << RecoDecay::getMassPDG(kK0Short) << ", cut --> " << cuts[ptBin][0];
+    if (std::abs(hfCandCascade.mK0Short() - RecoDecay::getMassPDG(kK0Short)) > cuts->get(ptBin,"mK0s")) {
+      LOG(debug) << "massK0s cut failed: from v0 in cascade, K0s --> " << hfCandCascade.mK0Short() << ", in PDG K0s --> " << RecoDecay::getMassPDG(kK0Short) << ", cut --> " << cuts->get(ptBin,"mK0s");
       return false; // mass of the K0s
     }
 
-    if ((std::abs(hfCandCascade.mLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts[ptBin][1]) || (std::abs(hfCandCascade.mAntiLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts[ptBin][1])) {
-      LOG(debug) << "mass L cut failed: from v0 in cascade, Lambda --> " << hfCandCascade.mLambda() << ", AntiLambda --> " << hfCandCascade.mAntiLambda() << ", in PDG, Lambda --> " << RecoDecay::getMassPDG(kLambda0) << ", cut --> " << cuts[ptBin][1];
+    if ((std::abs(hfCandCascade.mLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts->get(ptBin,"mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts->get(ptBin,"mLambda"))) {
+      LOG(debug) << "mass L cut failed: from v0 in cascade, Lambda --> " << hfCandCascade.mLambda() << ", AntiLambda --> " << hfCandCascade.mAntiLambda() << ", in PDG, Lambda --> " << RecoDecay::getMassPDG(kLambda0) << ", cut --> " << cuts->get(ptBin,"mLambda");
       return false; // mass of the Lambda
     }
 
-    if (std::abs(InvMassGamma(hfCandCascade) - RecoDecay::getMassPDG(kGamma)) < cuts[ptBin][2]) {
-      LOG(debug) << "mass gamma cut failed: from v0 in cascade, gamma --> " << InvMassGamma(hfCandCascade) << ", cut --> " << cuts[ptBin][2];
+    if (std::abs(InvMassGamma(hfCandCascade) - RecoDecay::getMassPDG(kGamma)) < cuts->get(ptBin,"mGamma")) {
+      LOG(debug) << "mass gamma cut failed: from v0 in cascade, gamma --> " << InvMassGamma(hfCandCascade) << ", cut --> " << cuts->get(ptBin,"mGamma");
       return false; // mass of the Gamma
     }
 
-    if (hfCandCascade.ptProng0() < cuts[ptBin][3]) {
-      LOG(debug) << "bach pt cut failed, from cascade --> " << hfCandCascade.ptProng0() << " , cut --> " << cuts[ptBin][3];
+    if (hfCandCascade.ptProng0() < cuts->get(ptBin,"ptBach")) {
+      LOG(debug) << "bach pt cut failed, from cascade --> " << hfCandCascade.ptProng0() << " , cut --> " << cuts->get(ptBin,"ptBach");
       return false; // pt of the p
     }
 
-    if (hfCandCascade.ptV0Pos() < cuts[ptBin][4]) {
-      LOG(debug) << "v0 pos daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Pos() << ", cut --> " << cuts[ptBin][4];
+    if (hfCandCascade.ptV0Pos() < cuts->get(ptBin,"ptV0Dau")) {
+      LOG(debug) << "v0 pos daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Pos() << ", cut --> " << cuts->get(ptBin,"ptV0Dau");
       return false; // pt of the K0
     }
 
-    if (hfCandCascade.ptV0Neg() < cuts[ptBin][4]) {
-      LOG(debug) << "v0 neg daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Neg() << ", cut --> " << cuts[ptBin][4];
+    if (hfCandCascade.ptV0Neg() < cuts->get(ptBin,"ptV0Dau")) {
+      LOG(debug) << "v0 neg daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Neg() << ", cut --> " << cuts->get(ptBin,"ptV0Dau");
       return false; // pt of the K0
     }
 
-    if (hfCandCascade.pt() < cuts[ptBin][5]) {
-      LOG(debug) << "cand pt cut failed, from cascade --> " << hfCandCascade.pt() << ", cut --> " << cuts[ptBin][5];
+    if (hfCandCascade.ptProng1() < cuts->get(ptBin,"ptV0")) {
+      LOG(debug) << "cand pt cut failed, from cascade --> " << hfCandCascade.ptProng1() << ", cut --> " << cuts->get(ptBin,"ptV0");
       return false; // pt of the Lc
     }
 
-    if (std::abs(hfCandCascade.impactParameter0()) > cuts[ptBin][6]) {
-      LOG(debug) << "d0 bach cut failed, in cascade --> " << hfCandCascade.impactParameter0() << ", cut --> " << cuts[ptBin][6];
+    if (std::abs(hfCandCascade.impactParameter0()) > cuts->get(ptBin,"d0Bach")) {
+      LOG(debug) << "d0 bach cut failed, in cascade --> " << hfCandCascade.impactParameter0() << ", cut --> " << cuts->get(ptBin,"d0Bach");
       return false; // d0 of the bachelor
     }
 
     /*
-    if ((std::abs(hfCandCascade.dcapostopv()) > cuts[ptBin][7]) || (std::abs(hfCandCascade.dcanegtopv()) > cuts[ptBin][7])) {
-      LOG(debug) << "v0 daugh cut failed, positive v0 daugh --> " << hfCandCascade.dcapostopv() << ", negative v0 daugh --> " << hfCandCascade.dcanegtopv() << " , cut --> " << cuts[ptBin][7];
+    if ((std::abs(hfCandCascade.dcapostopv()) > d0K0Cut[ptBin]) || (std::abs(hfCandCascade.dcanegtopv()) > d0K0Cut[ptBin])) {
+      LOG(debug) << "v0 daugh cut failed, positive v0 daugh --> " << hfCandCascade.dcapostopv() << ", negative v0 daugh --> " << hfCandCascade.dcanegtopv() << " , cut --> " << d0K0Cut[ptBin];
       return false; // d0 of the K0s daughters
     }
     */
 
-    if (std::abs(hfCandCascade.impactParameter1()) > cuts[ptBin][7]) {
-      LOG(debug) << "d0 v0 cut failed, in cascade --> " << hfCandCascade.impactParameter1() << ", cut --> " << cuts[ptBin][7];
+    if (std::abs(hfCandCascade.impactParameter1()) > cuts->get(ptBin,"d0V0")) {
+      LOG(debug) << "d0 v0 cut failed, in cascade --> " << hfCandCascade.impactParameter1() << ", cut --> " << cuts->get(ptBin,"d0V0");
       return false; // d0 of the v0
     }
 
@@ -332,7 +303,6 @@ struct HFLcK0sPCandidateSelector {
     //int pidLc = -1;
 
     for (auto& candidate : candidates) { //looping over cascade candidates
-
       const auto& bach = candidate.index0_as<MyBigTracks>(); //bachelor track
 #ifdef MY_DEBUG
       auto indexV0DaughPos = candidate.posTrack_as<MyBigTracks>().mcParticleId();
