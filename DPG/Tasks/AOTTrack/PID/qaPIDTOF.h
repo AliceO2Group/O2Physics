@@ -685,10 +685,12 @@ struct tofPidBetaQa {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
     const AxisSpec betaAxis{nBinsBeta, minBeta, maxBeta, "TOF #beta"};
+    const AxisSpec massAxis{1000, 0, 3, "TOF mass (GeV/#it{c}^{2})"};
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
+    const AxisSpec pAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}/z (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
@@ -698,11 +700,21 @@ struct tofPidBetaQa {
 
     // Event properties
     histos.add("event/tofsignal", "", HistType::kTH2F, {pAxis, tofAxis});
+    histos.add("event/tofmass", "TOF mass", HistType::kTH1F, {massAxis});
+    histos.add("event/tofmassEvTimeTOF", "TOF mass Ev. Time TOF", HistType::kTH1F, {massAxis});
+    histos.add("event/tofmassEvTimeTOFOnly", "TOF mass Ev. Time TOF Only", HistType::kTH1F, {massAxis});
+    histos.add("event/tofmassEvTimeT0AC", "TOF mass Ev. Time T0AC", HistType::kTH1F, {massAxis});
+    histos.add("event/tofmassEvTimeT0ACOnly", "TOF mass Ev. Time T0AC Only", HistType::kTH1F, {massAxis});
     histos.add("event/tofbeta", "", HistType::kTH2F, {pAxis, betaAxis});
     histos.add("event/tofbetaEvTimeTOF", "Ev. Time TOF", HistType::kTH2F, {pAxis, betaAxis});
     histos.add("event/tofbetaEvTimeTOFOnly", "Ev. Time TOF Only", HistType::kTH2F, {pAxis, betaAxis});
     histos.add("event/tofbetaEvTimeT0AC", "Ev. Time T0AC", HistType::kTH2F, {pAxis, betaAxis});
     histos.add("event/tofbetaEvTimeT0ACOnly", "Ev. Time T0AC Only", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("event/signedtofbeta", "", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+    histos.add("event/signedtofbetaEvTimeTOF", "Ev. Time TOF", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+    histos.add("event/signedtofbetaEvTimeTOFOnly", "Ev. Time TOF Only", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+    histos.add("event/signedtofbetaEvTimeT0AC", "Ev. Time T0AC", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+    histos.add("event/signedtofbetaEvTimeT0ACOnly", "Ev. Time T0AC Only", HistType::kTH2F, {pAxisPosNeg, betaAxis});
     histos.add("event/eta", "", HistType::kTH1F, {etaAxis});
     histos.add("event/length", "", HistType::kTH1F, {lAxis});
     histos.add("event/pt", "", HistType::kTH1F, {ptAxis});
@@ -729,7 +741,7 @@ struct tofPidBetaQa {
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::pidEvTimeFlags> const& tracks)
+               soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTOFbeta, aod::pidTOFmass, aod::TrackSelection, aod::TOFSignal, aod::pidEvTimeFlags> const& tracks)
   {
 
     histos.fill(HIST("event/evsel"), 1);
@@ -771,18 +783,28 @@ struct tofPidBetaQa {
       }
       histos.fill(HIST("event/trackselection"), 3.f);
       if (track.isEvTimeTOF()) {
+        histos.fill(HIST("event/tofmassEvTimeTOF"), track.mass());
         histos.fill(HIST("event/tofbetaEvTimeTOF"), track.p(), track.beta());
+        histos.fill(HIST("event/signedtofbetaEvTimeTOF"), track.p() * track.sign(), track.beta());
       }
       if (track.isEvTimeTOF() && !track.isEvTimeT0AC()) {
+        histos.fill(HIST("event/tofmassEvTimeTOFOnly"), track.mass());
         histos.fill(HIST("event/tofbetaEvTimeTOFOnly"), track.p(), track.beta());
+        histos.fill(HIST("event/signedtofbetaEvTimeTOFOnly"), track.p() * track.sign(), track.beta());
       }
       if (track.isEvTimeT0AC()) {
+        histos.fill(HIST("event/tofmassEvTimeT0AC"), track.mass());
         histos.fill(HIST("event/tofbetaEvTimeT0AC"), track.p(), track.beta());
+        histos.fill(HIST("event/signedtofbetaEvTimeT0AC"), track.p() * track.sign(), track.beta());
       }
       if (track.isEvTimeT0AC() && !track.isEvTimeTOF()) {
+        histos.fill(HIST("event/tofmassEvTimeT0ACOnly"), track.mass());
         histos.fill(HIST("event/tofbetaEvTimeT0ACOnly"), track.p(), track.beta());
+        histos.fill(HIST("event/signedtofbetaEvTimeT0ACOnly"), track.p() * track.sign(), track.beta());
       }
+      histos.fill(HIST("event/tofmass"), track.mass());
       histos.fill(HIST("event/tofbeta"), track.p(), track.beta());
+      histos.fill(HIST("event/signedtofbeta"), track.p() * track.sign(), track.beta());
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
