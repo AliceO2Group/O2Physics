@@ -53,7 +53,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, PidMLDetector detector, float minCertainty) : mDetector(detector), mPid(pid), mMinCertainty(minCertainty)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, PidMLDetector detector, double minCertainty) : mDetector(detector), mPid(pid), mMinCertainty(minCertainty)
   {
     std::string modelFile;
     loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, modelFile);
@@ -83,7 +83,10 @@ struct PidONNXModel {
     assert(mInputNames.size() == 1 && mOutputNames.size() == 1);
   }
   PidONNXModel() = default;
-  PidONNXModel(PidONNXModel& other) = default;
+  PidONNXModel(PidONNXModel&&) = default;
+  PidONNXModel& operator=(PidONNXModel&&) = default;
+  PidONNXModel(const PidONNXModel&) = delete;
+  PidONNXModel& operator=(const PidONNXModel&) = delete;
   ~PidONNXModel() = default;
 
   template <typename T>
@@ -98,6 +101,10 @@ struct PidONNXModel {
     return getModelOutput(track) >= mMinCertainty;
   }
 
+  PidMLDetector mDetector;
+  int mPid;
+  double mMinCertainty;
+
  private:
   void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
   {
@@ -109,9 +116,13 @@ struct PidONNXModel {
       modelDir += "_TRD";
     }
 
-    std::ostringstream tmp;
-    tmp << "simple_model_" << pid << ext;
-    modelFile = tmp.str();
+    modelFile = "simple_model_";
+    if (pid < 0) {
+      modelFile += "0" + std::to_string(-pid);
+    } else {
+      modelFile += std::to_string(pid);
+    }
+    modelFile += ext;
     modelPath = modelDir + "/" + modelFile;
   }
 
@@ -245,9 +256,6 @@ struct PidONNXModel {
 
   std::vector<std::string> mTrainColumns;
   std::map<std::string, std::pair<float, float>> mScalingParams;
-  PidMLDetector mDetector;
-  int mPid;
-  float mMinCertainty;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   // No empty constructors for Session, we need a pointer

@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file simpleApplyPidModel
-/// \brief A simple example for using PID obtained from the PID ML ONNX Model. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
+/// \file simpleApplyPidInterface
+/// \brief A simple example for using PID obtained from the PID ML ONNX Interface. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
@@ -19,7 +19,7 @@
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/pidOnnxInterface.h"
 
 #include <string>
 
@@ -38,16 +38,18 @@ DECLARE_SOA_COLUMN(Accepted, accepted, bool); //! Whether the model accepted par
 DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidresult::TrackId, mlpidresult::Pid, mlpidresult::Accepted);
 } // namespace o2::aod
 
-struct SimpleApplyOnnxModel {
-  PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
-  Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
-  Configurable<int> cfgPid{"pid", 211, "PID to predict"};
-  Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given particle to be of given kind"};
+struct SimpleApplyOnnxInterface {
+  PidONNXInterface pidInterface; // One instance to manage all needed ONNX models
+
+  Configurable<LabeledArray<double>> cfgPTCuts{"pT_cuts", {pidml_pt_cuts::cuts[0], pidml_pt_cuts::nPids, pidml_pt_cuts::nCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels}, "pT cuts for each output pid and each detector configuration"};
+  Configurable<std::vector<int>> cfgPids{"pids", std::vector<int>{pidml_pt_cuts::pids_v}, "PIDs to predict"};
+  Configurable<std::vector<double>> cfgCertainties{"certainties", std::vector<double>{pidml_pt_cuts::certainties_v}, "Min certainties of the models to accept given particle to be of given kind"};
+  Configurable<bool> cfgAutoMode{"autoMode", true, "Use automatic model matching: default pT cuts and min certainties"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML", "base path to the local directory with ONNX models"};
+  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
@@ -65,7 +67,7 @@ struct SimpleApplyOnnxModel {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+      pidInterface = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
     }
   }
 
@@ -73,32 +75,36 @@ struct SimpleApplyOnnxModel {
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+      pidInterface = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
     }
 
     for (auto& track : tracks) {
-      bool accepted = pidModel.applyModelBoolean(track);
-      LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
-           track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
-      pidMLResults(track.index(), cfgPid.value, accepted);
+      for (int pid : cfgPids.value) {
+        bool accepted = pidInterface.applyModelBoolean(track, pid);
+        LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+             track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
+        pidMLResults(track.index(), pid, accepted);
+      }
     }
   }
-  PROCESS_SWITCH(SimpleApplyOnnxModel, processCollisions, "Process with collisions and bcs for CCDB", true);
+  PROCESS_SWITCH(SimpleApplyOnnxInterface, processCollisions, "Process with collisions and bcs for CCDB", true);
 
   void processTracksOnly(BigTracks const& tracks)
   {
     for (auto& track : tracks) {
-      bool accepted = pidModel.applyModelBoolean(track);
-      LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
-           track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
-      pidMLResults(track.index(), cfgPid.value, accepted);
+      for (int pid : cfgPids.value) {
+        bool accepted = pidInterface.applyModelBoolean(track, pid);
+        LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+             track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
+        pidMLResults(track.index(), pid, accepted);
+      }
     }
   }
-  PROCESS_SWITCH(SimpleApplyOnnxModel, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);
+  PROCESS_SWITCH(SimpleApplyOnnxInterface, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SimpleApplyOnnxModel>(cfgc)};
+    adaptAnalysisTask<SimpleApplyOnnxInterface>(cfgc)};
 }
