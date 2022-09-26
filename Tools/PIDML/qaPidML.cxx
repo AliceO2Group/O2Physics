@@ -368,13 +368,13 @@ struct pidml {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      model211All = std::move(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, kTPCTOF, 0.5f));
-      model2212All = std::move(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, kTPCTOF, 0.5f));
-      model321All = std::move(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, kTPCTOF, 0.5f));
+      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, kTPCTOF, 0.5f);
+      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, kTPCTOF, 0.5f);
+      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, kTPCTOF, 0.5f);
 
-      model211TPC = std::move(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, kTPCOnly, 0.5f));
-      model2212TPC = std::move(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, kTPCOnly, 0.5f));
-      model321TPC = std::move(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, kTPCOnly, 0.5f));
+      model211TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, kTPCOnly, 0.5f);
+      model2212TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, kTPCOnly, 0.5f);
+      model321TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, kTPCOnly, 0.5f);
     }
   }
 

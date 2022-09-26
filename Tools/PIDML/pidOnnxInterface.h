@@ -47,7 +47,7 @@ using namespace pidml_pt_cuts;
 using namespace o2::framework;
 
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mAutoMode(autoMode), mNPids{pids.size()}, mPTLimits{pTLimits}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mNPids{pids.size()}, mPTLimits{pTLimits}
   {
     if (pids.size() == 0) {
       LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
@@ -122,7 +122,6 @@ struct PidONNXInterface {
   }
 
   std::vector<PidONNXModel> mModels;
-  bool mAutoMode;
   std::size_t mNPids;
   LabeledArray<double> mPTLimits;
 };
