@@ -553,8 +553,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisEventMixing>(cfgc),
-    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)
-    };
+    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
 }
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses)
@@ -582,7 +581,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_lmee","");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_lmee", "");
       }
     }
 
