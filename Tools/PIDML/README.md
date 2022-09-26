@@ -16,8 +16,27 @@ This class represents a single ML model from an ONNX file. It requires the follo
 
 Let's assume your `PidONNXModel` instance is named `pidModel`. Then, inside your analysis task `process()` function, you can iterate over tracks and call: `pidModel.applyModel(track);` to get the certainty of the model. You can also use `pidModel.applyModelBoolean(track);` to receive a true/false answer, whether the track can be accepted based on the minimum certainty provided to the `PidONNXModel` constructor.
 
-You can check a [simple analysis task example](https://github.com/AliceO2Group/O2Physics/blob/master/Tools/PIDML/simpleApplyPidOnnxModel.cxx). It uses configurable parameters and shows how to calculate the data timestamp. Note that, however, calculation of the timestamp requires subscribing to `aod::Collisions` and `aod::BCsWithTimestamps`. On the other hand, it is possible to use locally stored models, and then the timestamp is not used, so it can be a dummy value. `processTracksOnly` presents how to analyze on local-only PID ML models.
+You can check [a simple analysis task example](https://github.com/AliceO2Group/O2Physics/blob/master/Tools/PIDML/simpleApplyPidOnnxModel.cxx). It uses configurable parameters and shows how to calculate the data timestamp. Note that, however, calculation of the timestamp requires subscribing to `aod::Collisions` and `aod::BCsWithTimestamps`. On the other hand, it is possible to use locally stored models, and then the timestamp is not used, so it can be a dummy value. `processTracksOnly` presents how to analyze on local-only PID ML models.
 
 ## PidONNXInterface
 
-This is a wrapper around PidONNXModel that contains several models. 
+This is a wrapper around PidONNXModel that contains several models. It has the possibility of automatically selecting best fitting model for the data. You can also configure manually model selection. Some obligatory class parameters are the same as for `PidONNXModel`:
+- path to local top directory with PID ML models. If `useCCDB` is set to `true`, this is the location of the downloaded files
+- CCDB path to the top directory with PID ML models
+- boolean flag: whether CCDB should be used
+- CCDB Api instance created in an analysis task
+- timestamp of the input analysis data -- neded to choose appropriate model
+
+Then, obligatory parameters for the interface:
+- a vector of int output PIDs
+- a 2-dimensional LabeledArray of *p*T limits for each PID, for each detector configuration. It describes the minimum *p*T values at which each next detector should be included for predicting given PID
+- a vector of minimum certainties for each PID for accepting a track to be of this PID
+- boolean flag: whether to switch on auto mode. If true, then *p*T limits and minimum certainties can be passed as an empty array and an empty vector, and the interface will fill them with default configuration:
+  - *p*T limits: same values for all PIDs: 0.0 (TPC), 0.5 (TPC + TOF), 0.8 (TPC + TOF + TRD)
+  - minimum certainties: 0.5 for all PIDs
+
+You can use the interface in the same way as the model, by calling `applyModel(track)` or `applyModelBoolean(track)`. The interface will then call the respective method of the model selected with the aforementioned interface parameters.
+
+In the future, the interface will be extended with a more sophisticated model selection strategy. Moreover, it will also allow for using a backup model in the case the best fit model doesn't exist.
+
+There is again [a simple analysis task example](https://github.com/AliceO2Group/O2Physics/blob/master/Tools/PIDML/simpleApplyPidOnnxInterface.cxx) for using `PidONNXInterface`. It is analogous to the `PidONNXModel` example.
