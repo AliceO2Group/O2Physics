@@ -119,7 +119,7 @@ struct UpcCandProducer {
           RgtrwTOF++;
         }
       }
-      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float) nBarTracks : 0.;
+      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float)nBarTracks : 0.;
       if (RgtrwTOF == 0 && fNBarProngs != 0) { // require at least 1 TOF track in central and semiforward cases
         continue;
       }
