@@ -59,7 +59,7 @@ struct UpcCandAnalyzer {
   Configurable<int32_t> fTPCPIDSwitch{"tpcPIDSwitch", 0, "TPC PID switch: 0 -- two muons, 1 -- two pions, 2 -- two electrons, 3 -- electron + muon/pion"};
   Configurable<int32_t> fHistSwitch{"histSwitch", 0, "What information to collect: 0 -- pair mass, 1 -- p_T of target particle, 2 -- both"};
 
-  static constexpr int32_t nBinsMass = 1000;
+  static constexpr int32_t nBinsMass = 500;
   static constexpr float minMass = 0;
   static constexpr float maxMass = 10;
 
