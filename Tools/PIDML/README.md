@@ -1,6 +1,6 @@
 # PID ML in O2
 
-Particle identification is essential in most of the analyzes. The following tutorial will help you to make use of the machine learning models to improve purity and efficiency of particle kinds for your analysis. A single model is tailored to a specific particle kind, e.g., pions with PID 211. For each track, the model returns a float value in [0, 1] which measures the ''certainty'' of the model that this track is of given kind.
+Particle identification is essential in most of the analyzes. The PID ML interface will help you to make use of the machine learning models to improve purity and efficiency of particle kinds for your analysis. A single model is tailored to a specific particle kind, e.g., pions with PID 211. For each track, the model returns a float value in [0, 1] which measures the ''certainty'' of the model that this track is of given kind.
 
 ## PidONNXModel
 
