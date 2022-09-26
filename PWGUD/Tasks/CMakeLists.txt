@@ -43,23 +43,3 @@ o2physics_add_dpl_workflow(upccand-analyzer
                            SOURCES UPCCandidateAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
-
-#o2physics_add_dpl_workflow(upc-test-task
-#                           SOURCES testTask.cxx
-#                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
-#                           COMPONENT_NAME Analysis)
-#
-#o2physics_add_dpl_workflow(upc-calib-nsigmas
-#                           SOURCES CalibTPCSigmas.cxx
-#                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
-#                           COMPONENT_NAME Analysis)
-#
-#o2physics_add_dpl_workflow(upccand-analyzer-tau
-#                           SOURCES UPCCandidateAnalyzerTau.cxx
-#                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
-#                           COMPONENT_NAME Analysis)
-#
-#o2physics_add_dpl_workflow(upccand-analyzer-tau-semifwd
-#                           SOURCES UPCCandidateAnalyzerTauSemiFwd.cxx
-#                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
-#                           COMPONENT_NAME Analysis)
