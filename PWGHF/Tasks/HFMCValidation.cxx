@@ -381,6 +381,7 @@ struct ValidationRecLevel {
      {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100.}}}},
      {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
      {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
+     {"histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
      {"histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
 
   /// RMS calculation
@@ -457,6 +458,9 @@ struct ValidationRecLevel {
   {
     // loop over collisions
     for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
       auto mcCollision = collision.mcCollision_as<mcCollisionWithHFSignalInfo>();
       if (checkAmbiguousTracksWithHFEventsOnly && !mcCollision.hasHFsignal()) {
         continue;
@@ -468,6 +472,23 @@ struct ValidationRecLevel {
       registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), deltaZ);
       auto tracksGlobalWoDCAColl1 = tracksFilteredGlobalTrackWoDCA->sliceByCached(aod::track::collisionId, collision.globalIndex());
       registry.fill(HIST("histNtracks"), tracksGlobalWoDCAColl1.size());
+      auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      int nContributors = 0, nGoodContributors = 0;
+      for (auto& track : tracksColl1) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        nContributors++;
+        auto particle = track.mcParticle();
+        if (collision.mcCollisionId() == particle.mcCollisionId()) {
+          nGoodContributors++;
+        }
+      }
+      float frac = (nContributors > 0) ? float(nGoodContributors) / nContributors : 1.;
+      registry.fill(HIST("histFracGoodContributors"), frac);
       uint64_t mostProbableBC = collision.bc().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
         uint64_t mostProbableBC2 = collision2.bc().globalBC();
@@ -475,7 +496,6 @@ struct ValidationRecLevel {
           float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
           float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
           int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
-          auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex());
           for (auto& trackColl1 : tracksColl1) {
             if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
               auto particleColl1 = trackColl1.mcParticle();
@@ -538,20 +558,20 @@ struct ValidationRecLevel {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
           auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
           deltaZ = collision.posZ() - mcCollision.posZ();
-          if (collision.mcCollisionId() == particle.mcCollisionId()) {
+          if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
           } else { // if the most probable collision is not the good one, check if the tracks is ambiguous
             if (track.isAmbiguousTrack()) {
               for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
 
-                if (ambCollision.mcCollisionId() == particle.mcCollisionId()) {
+                if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
                   histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
                   break;
                 }
               }
             } else if (track.isPVContributor()) {
-              if (collision.mcCollisionId() == particle.mcCollisionId()) {
+              if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
                 histContributors->Fill(0);
               } else {
                 histContributors->Fill(1);

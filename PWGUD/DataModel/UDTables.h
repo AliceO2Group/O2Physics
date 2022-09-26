@@ -123,9 +123,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
                            [](float px, float py) -> float {
                              return std::sqrt(px * px + py * py);
                            });
-DECLARE_SOA_COLUMN(CollisionID, collisionID, int32_t); //!
-DECLARE_SOA_COLUMN(CollisionNContrib, collisionNContrib, int32_t); //!
-DECLARE_SOA_COLUMN(CollisionIsSignal, collisionIsSignal, uint8_t); //!
 } // namespace udtrack
 
 // Barrel track kinematics
@@ -152,17 +149,21 @@ DECLARE_SOA_TABLE(UDTrackCollisionIDs, "AOD", "UDTRCOLID",
                   udtrack::UDCollisionId);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
-                  track::ITSChi2NCl,
                   track::ITSClusterMap,
-                  track::TPCChi2NCl,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
                   track::TPCNClsShared,
-                  track::TPCSignal,
+                  track::TRDPattern,
+                  track::ITSChi2NCl,
+                  track::TPCChi2NCl,
+                  track::TRDChi2,
                   track::TOFChi2,
-                  track::TOFExpMom,
+                  track::TPCSignal,
+                  pidtofsignal::TOFSignal,
+                  track::TRDSignal,
                   track::Length,
+                  track::TOFExpMom,
                   udtrack::DetectorMap,
                   track::HasITS<udtrack::DetectorMap>,
                   track::HasTPC<udtrack::DetectorMap>,

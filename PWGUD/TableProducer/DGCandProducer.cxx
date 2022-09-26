@@ -121,17 +121,21 @@ struct DGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
-    outputTracksExtra(track.itsChi2NCl(),
-                      track.itsClusterMap(),
-                      track.tpcChi2NCl(),
+    outputTracksExtra(track.itsClusterMap(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
                       track.tpcNClsShared(),
-                      track.tpcSignal(),
+                      track.trdPattern(),
+                      track.itsChi2NCl(),
+                      track.tpcChi2NCl(),
+                      track.trdChi2(),
                       track.tofChi2(),
-                      track.tofExpMom(),
+                      track.tpcSignal(),
+                      track.tofSignal(),
+                      track.trdSignal(),
                       track.length(),
+                      track.tofExpMom(),
                       track.detectorMap());
     outputTracksCollisionsId(outputCollisions.lastIndex());
   }

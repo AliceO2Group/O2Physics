@@ -416,12 +416,9 @@ struct UpcTrackSkimmer {
       uint64_t bc = trackBC + tint;
       double trTime = tr.trackTime() - tint * o2::constants::lhc::LHCBunchSpacingNS;
       udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
-      udTracksCov(tr.x(), tr.y(), tr.z(), tr.sigmaY(), tr.sigmaZ());
-      udTracksExtra(tr.itsChi2NCl(), tr.itsClusterMap(),
-                    tr.tpcChi2NCl(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(), tr.tpcNClsShared(), tr.tpcSignal(),
-                    tr.tofChi2(), tr.tofExpMom(), tr.length(),
-                    tr.detectorMap());
-      udTracksDCA(tr.dcaZ(), tr.dcaXY());
+      udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
+                    tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
+                    tr.tpcSignal(), tr.tofSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
       udTracksPID(tr.tpcNSigmaEl(), tr.tpcNSigmaMu(), tr.tpcNSigmaPi(), tr.tpcNSigmaKa(), tr.tpcNSigmaPr(),
                   tr.tofNSigmaEl(), tr.tofNSigmaMu(), tr.tofNSigmaPi(), tr.tofNSigmaKa(), tr.tofNSigmaPr());
       // fill MC labels and masks if needed
