@@ -40,3 +40,26 @@ You can use the interface in the same way as the model, by calling `applyModel(t
 In the future, the interface will be extended with a more sophisticated model selection strategy. Moreover, it will also allow for using a backup model in the case the best fit model doesn't exist.
 
 There is again [a simple analysis task example](https://github.com/AliceO2Group/O2Physics/blob/master/Tools/PIDML/simpleApplyPidOnnxInterface.cxx) for using `PidONNXInterface`. It is analogous to the `PidONNXModel` example.
+
+## Notes on running the current task
+
+Currently, only models for run 285064 (timestamp interval: 1524176895000 - 1524212953000) are uploaded to CCDB, so you can use hardcoded timestamp 1524176895000 for tests.
+
+Both model and interface analysis examples can be run with a script:
+```bash
+#!/bin/bash
+
+config_file="my-config.json"
+
+o2-analysis-timestamp --configuration json://$config_file -b |
+  o2-analysis-trackextension --configuration json://$config_file -b |
+  o2-analysis-trackselection --configuration json://$config_file -b |
+  o2-analysis-multiplicity-table --configuration json://$config_file -b |
+  o2-analysis-fdd-converter --configuration json://$config_file -b |
+  o2-analysis-pid-tof-base --configuration json://$config_file -b |
+  o2-analysis-pid-tof-beta --configuration json://$config_file -b |
+  o2-analysis-pid-tof-full --configuration json://$config_file -b |
+  o2-analysis-pid-tpc-full --configuration json://$config_file -b |
+  o2-analysis-simple-apply-pid-onnx-model --configuration json://$config_file -b
+```
+Replace "model" with "interface" in the last line if you want to run the interface workflow.
