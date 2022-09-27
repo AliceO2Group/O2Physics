@@ -130,10 +130,10 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::DecayVtxZ);
 using ResoDaughter = ResoDaughters::iterator;
 
-using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA>;
+using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
 using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksExtra, aod::TracksDCA>;
+using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA>; // Without Extra
 
 } // namespace o2::aod
 #endif // O2_ANALYSIS_LFRESONANCETABLES_H_
