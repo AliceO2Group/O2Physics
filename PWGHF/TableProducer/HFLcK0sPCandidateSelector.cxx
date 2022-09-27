@@ -107,8 +107,8 @@ struct HFLcK0sPCandidateSelector {
       return false; // mass of the Lambda
     }
 
-    if (std::abs(InvMassGamma(hfCandCascade) - RecoDecay::getMassPDG(kGamma)) < cuts->get(ptBin, "mGamma")) {
-      LOG(debug) << "mass gamma cut failed: from v0 in cascade, gamma --> " << InvMassGamma(hfCandCascade) << ", cut --> " << cuts->get(ptBin, "mGamma");
+    if (std::abs(hfCandCascade.mGamma() - RecoDecay::getMassPDG(kGamma)) < cuts->get(ptBin, "mGamma")) {
+      LOG(debug) << "mass gamma cut failed: from v0 in cascade, gamma --> " << hfCandCascade.mGamma() << ", cut --> " << cuts->get(ptBin, "mGamma");
       return false; // mass of the Gamma
     }
 
