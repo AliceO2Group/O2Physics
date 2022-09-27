@@ -284,6 +284,7 @@ struct TableMaker {
             auto ambiTrack = ambiTrackMid.template track_as<MyBarrelTracks>();
             if (ambiTrack.globalIndex() == track.globalIndex()) {
               isAmbiguous = 1;
+              break;
             }
           }
         }
@@ -400,6 +401,7 @@ struct TableMaker {
             auto ambiMuon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
             if (ambiMuon.globalIndex() == muon.globalIndex()) {
               isAmbiguous = 1;
+              break;
             }
           }
         }
