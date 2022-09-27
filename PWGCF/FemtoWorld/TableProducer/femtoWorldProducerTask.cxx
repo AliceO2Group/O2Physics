@@ -152,7 +152,6 @@ struct femtoWorldProducerTask {
   Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.035, "Upper limit of the V0 invariant mass"};
 
   Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
-
   Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
@@ -274,7 +273,6 @@ struct femtoWorldProducerTask {
       if (ConfRejectKaons) {
         v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit, ConfInvKaonMassUpLimit);
       }
-
       if (ConfRejectITSHitandTOFMissing) {
         o2PhysicsTrackSelection = new TrackSelection(getGlobalTrackSelection());
         o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
