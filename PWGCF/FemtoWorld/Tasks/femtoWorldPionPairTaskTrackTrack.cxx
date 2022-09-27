@@ -77,7 +77,7 @@ struct femtoWorldPairTaskTrackTrack {
   /// Particle 1 Pi+
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from json file"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
-  
+
   /// Partition for particle 1
   Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                         // particle type cut
                                                        && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1)                    // simple pT cuts
@@ -195,7 +195,7 @@ struct femtoWorldPairTaskTrackTrack {
   // {
   //   if(mom>=0.5 && TMath::Abs(nsigmap)<3.0)
   //     return true;
-    
+
   //   return false;
   // }
 
@@ -203,13 +203,13 @@ struct femtoWorldPairTaskTrackTrack {
   // {
   //   if(mom>0.5 && TMath::Abs(nsigmap)<3.0)
   //     return true;
-      
+
   //   return false;
   // }
 
   bool IsPionNSigma(float nsigmap)
   {
-    if(TMath::Abs(nsigmap)<3.0)
+    if (TMath::Abs(nsigmap) < 3.0)
       return true;
     return false;
   }
@@ -234,14 +234,14 @@ struct femtoWorldPairTaskTrackTrack {
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if ((part.p() > (float)0.45)) {
-        
-        float NSigmaPion=TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion())+TMath::Sq(part.tofNSigmaPion()));
+
+        float NSigmaPion = TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion()) + TMath::Sq(part.tofNSigmaPion()));
         if (!IsPionNSigma(NSigmaPion)) {
           continue;
         }
 
       } else if ((part.p() <= (float)0.45)) {
-        float NSigmaPion=part.tpcNSigmaPion();
+        float NSigmaPion = part.tpcNSigmaPion();
         if (!IsPionNSigma(NSigmaPion)) {
           continue;
         }
@@ -254,19 +254,19 @@ struct femtoWorldPairTaskTrackTrack {
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-      if ((part.p() > (float)0.45)) {
-        
-        float NSigmaPion=TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion())+TMath::Sq(part.tofNSigmaPion()));
-        if (!IsPionNSigma(NSigmaPion)) {
-          continue;
-        }
+        if ((part.p() > (float)0.45)) {
 
-      } else if ((part.p() <= (float)0.45)) {
-        float NSigmaPion=part.tpcNSigmaPion();
-        if (!IsPionNSigma(NSigmaPion)) {
-          continue;
+          float NSigmaPion = TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion()) + TMath::Sq(part.tofNSigmaPion()));
+          if (!IsPionNSigma(NSigmaPion)) {
+            continue;
+          }
+
+        } else if ((part.p() <= (float)0.45)) {
+          float NSigmaPion = part.tpcNSigmaPion();
+          if (!IsPionNSigma(NSigmaPion)) {
+            continue;
+          }
         }
-      }
         trackHistoPartTwo.fillQA(part);
       }
       for (auto& part : groupPartsTwoFailed) {
@@ -276,27 +276,27 @@ struct femtoWorldPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      
+
       if ((p1.p() > (float)0.45)) {
-        float NSigmaPion1=TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion())+TMath::Sq(p1.tofNSigmaPion()));
+        float NSigmaPion1 = TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
         if (!IsPionNSigma(NSigmaPion1)) {
           continue;
         }
 
       } else if ((p1.p() <= (float)0.45)) {
-        float NSigmaPion1=p1.tpcNSigmaPion();
+        float NSigmaPion1 = p1.tpcNSigmaPion();
         if (!IsPionNSigma(NSigmaPion1)) {
           continue;
         }
       }
       if ((p2.p() > (float)0.45)) {
-        float NSigmaPion2=TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion())+TMath::Sq(p2.tofNSigmaPion()));
+        float NSigmaPion2 = TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
         if (!IsPionNSigma(NSigmaPion2)) {
           continue;
         }
 
       } else if ((p2.p() <= (float)0.45)) {
-        float NSigmaPion2=p2.tpcNSigmaPion();
+        float NSigmaPion2 = p2.tpcNSigmaPion();
         if (!IsPionNSigma(NSigmaPion2)) {
           continue;
         }
@@ -340,31 +340,31 @@ struct femtoWorldPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        
-      if ((p1.p() > (float)0.45)) {
-        float NSigmaPion1=TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion())+TMath::Sq(p1.tofNSigmaPion()));
-        if (!IsPionNSigma(NSigmaPion1)) {
-          continue;
-        }
 
-      } else if ((p1.p() <= (float)0.45)) {
-        float NSigmaPion1=p1.tpcNSigmaPion();
-        if (!IsPionNSigma(NSigmaPion1)) {
-          continue;
-        }
-      }
-      if ((p2.p() > (float)0.45)) {
-        float NSigmaPion2=TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion())+TMath::Sq(p2.tofNSigmaPion()));
-        if (!IsPionNSigma(NSigmaPion2)) {
-          continue;
-        }
+        if ((p1.p() > (float)0.45)) {
+          float NSigmaPion1 = TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
+          if (!IsPionNSigma(NSigmaPion1)) {
+            continue;
+          }
 
-      } else if ((p2.p() <= (float)0.45)) {
-        float NSigmaPion2=p2.tpcNSigmaPion();
-        if (!IsPionNSigma(NSigmaPion2)) {
-          continue;
+        } else if ((p1.p() <= (float)0.45)) {
+          float NSigmaPion1 = p1.tpcNSigmaPion();
+          if (!IsPionNSigma(NSigmaPion1)) {
+            continue;
+          }
         }
-      }
+        if ((p2.p() > (float)0.45)) {
+          float NSigmaPion2 = TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
+          if (!IsPionNSigma(NSigmaPion2)) {
+            continue;
+          }
+
+        } else if ((p2.p() <= (float)0.45)) {
+          float NSigmaPion2 = p2.tpcNSigmaPion();
+          if (!IsPionNSigma(NSigmaPion2)) {
+            continue;
+          }
+        }
 
         if (ConfIsCPR) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
