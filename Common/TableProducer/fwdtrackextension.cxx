@@ -49,7 +49,7 @@ struct FwdTrackExtension {
           auto const& collision = track.collision();
           double chi2 = track.chi2();
           SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-	  std::vector<double> v1;
+          std::vector<double> v1;
           SMatrix55 tcovs(v1.begin(), v1.end());
           o2::track::TrackParCovFwd pars1{track.z(), tpars, tcovs, chi2};
           pars1.propagateToZlinear(collision.posZ());
