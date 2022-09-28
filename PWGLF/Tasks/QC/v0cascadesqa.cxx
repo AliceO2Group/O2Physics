@@ -53,6 +53,7 @@ using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
 struct v0cascadesQA {
 
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
+  Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
 
   HistogramRegistry histos_eve{
     "histos-eve",
@@ -161,6 +162,10 @@ struct v0cascadesQA {
 
   void processReconstructedEvent(aod::Collision const& Collision)
   {
+    if (sel8 && !Collision.sel8()) {
+      return;
+    }
+
     histos_eve.fill(HIST("hEventCounter"), 0.5);
   }
   PROCESS_SWITCH(v0cascadesQA, processReconstructedEvent, "Process reconstructed level Event", true);
@@ -171,6 +176,10 @@ struct v0cascadesQA {
 
   void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
+    if (sel8 && !mcCollision.sel8()) {
+      return;
+    }
+
     double posx = mcCollision.posX();
     double posy = mcCollision.posY();
 
@@ -231,6 +240,10 @@ struct v0cascadesQA {
 
   void processReconstructedV0(aod::Collision const& collision, MyTracks const& tracks, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& v0 : fullV0s) {
 
       auto posdau = v0.posTrack_as<DaughterTracks>();
@@ -294,6 +307,10 @@ struct v0cascadesQA {
 
   void processMcV0(aod::Collision const& collision, MyTracksMC const& tracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& v0 : fullV0s) {
 
       float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0);
@@ -395,6 +412,10 @@ struct v0cascadesQA {
 
   void processReconstructedCascade(aod::Collision const& collision, aod::CascDataExt const& Cascades, aod::V0Datas const& fullV0s)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& casc : Cascades) {
       // histos_Casc.fill(HIST("XiProgSelections"), );
       // histos_Casc.fill(HIST("OmegaProgSelections"), );
@@ -470,6 +491,10 @@ struct v0cascadesQA {
 
   void processMcCascade(aod::Collision const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+    
     for (auto& casc : Cascades) {
 
       histos_Casc.fill(HIST("QA_XinusCandidates"), 0.5);
