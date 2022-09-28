@@ -117,7 +117,7 @@ struct HfTaskBplus {
   void process(aod::Collisions const& collision, soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate> const&, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate> const&, aod::BigTracks const&)
   {
 
-    for (auto& candidate : selectedBPlusCandidates) {
+    for (const auto& candidate : selectedBPlusCandidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
         continue;
       }
@@ -158,7 +158,7 @@ struct HfTaskBplus {
                  soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)
   {
     // MC rec
-    for (auto& candidate : selectedBPlusCandidatesMC) {
+    for (const auto& candidate : selectedBPlusCandidatesMC) {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
         continue;
       }
