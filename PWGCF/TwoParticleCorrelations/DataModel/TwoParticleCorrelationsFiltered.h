@@ -26,13 +26,11 @@ DECLARE_SOA_COLUMN(TwoPCollisionCentMult, centmult, float); //! The centrality/m
 } // namespace twopfilter
 DECLARE_SOA_TABLE(TwoPAcceptedCollisions, "AOD", "TWOPACCCOLL", //! Accepted reconstructed collisions/events filtered table
                   o2::soa::Index<>,
-                  collision::BCId,
                   collision::PosZ,
                   twopfilter::TwoPCollisionCentMult);
 using TowPAcceptedCollision = TwoPAcceptedCollisions::iterator;
 DECLARE_SOA_TABLE(TwoPAcceptedGenCollisions, "AOD", "TWOPACCGENCOLL", //! Accepted generated collisions/events filtered table
                   o2::soa::Index<>,
-                  collision::BCId,
                   mccollision::PosZ,
                   twopfilter::TwoPCollisionCentMult);
 using TwoPAcceptedGenCollision = TwoPAcceptedGenCollisions::iterator;
@@ -45,17 +43,15 @@ DECLARE_SOA_COLUMN(TwoPTrackacceptedAs, twoptrackacceptedas, uint8_t); //! Track
 DECLARE_SOA_TABLE(TwoPFilteredTracks, "AOD", "FILTEREDTRKS", //! The reconstructed tracks filtered table
                   twopfilter::TwoPAcceptedCollisionId,
                   twopfilter::TwoPTrackacceptedAs,
-                  twopskim::sPt,
-                  twopskim::Eta,
-                  twopskim::Phi,
-                  twopskim::Sign<twopskim::sPt>);
+                  cfskim::Pt,
+                  cfskim::Eta,
+                  cfskim::Phi);
 DECLARE_SOA_TABLE(TwoPFilteredParticles, "AOD", "FILTEREDGENTRKS", //! The generated particles filtered table
                   twopfilter::TwoPAcceptedGenCollisionId,
                   twopfilter::TwoPTrackacceptedAs,
-                  twopskim::sPt,
-                  twopskim::Eta,
-                  twopskim::Phi,
-                  twopskim::Sign<twopskim::sPt>);
+                  cfskim::Pt,
+                  cfskim::Eta,
+                  cfskim::Phi);
 } // namespace aod
 } // namespace o2
 

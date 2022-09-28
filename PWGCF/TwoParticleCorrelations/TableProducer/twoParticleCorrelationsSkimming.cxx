@@ -28,7 +28,7 @@ using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
 
-namespace o2::analysis::twopskim
+namespace o2::analysis::cfskim
 {
 #define LOGTRACKCOLLISIONS info
 #define LOGTRACKTRACKS info
@@ -39,9 +39,9 @@ using pidTables = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pi
 PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
 PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;
 PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;
-} // namespace o2::analysis::twopskim
+} // namespace o2::analysis::cfskim
 
-using namespace twopskim;
+using namespace cfskim;
 
 void setEventCutsLabels(std::shared_ptr<TH1> h)
 {
@@ -89,10 +89,11 @@ void reportEventCuts(std::shared_ptr<TH1> h, uint32_t eventcuts)
 
 struct TwoParticleCorrelationsSkimming {
   /* skimmed data tables */
-  Produces<aod::TwoPSkimmedCollisions> skimmedcollision;
-  Produces<aod::TwoPSkimmedTracks> skimmedtrack;
-  Produces<aod::TwoPSkimmedGenCollisions> skimmedgencollision;
-  Produces<aod::TwoPSkimmedParticles> skimmedparticles;
+  Produces<aod::CFCollisions> skimmedcollision;
+  Produces<aod::CFTracks> skimmedtrack;
+  Produces<aod::CFTrackPIDs> skimmtrackpid;
+  Produces<aod::CFMCCollisions> skimmedgencollision;
+  Produces<aod::CFMCParticles> skimmedparticles;
 
 #include "skimmingconf.h"
 
@@ -101,7 +102,7 @@ struct TwoParticleCorrelationsSkimming {
 
   void init(InitContext const&)
   {
-    using namespace twopskim;
+    using namespace cfskim;
 
     LOGF(info, "DptDptSkimTask::init()");
 
@@ -173,28 +174,35 @@ struct TwoParticleCorrelationsSkimming {
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision,
-                   soa::Join<aod::BCs, aod::Run2BCInfos> const&, soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks)
+                   soa::Join<aod::BCs, aod::Timestamps, aod::Run2BCInfos> const&, soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks)
   {
     /* for the time being this will apply only to Run 1+2 converted data */
     LOGF(LOGTRACKCOLLISIONS, "Got a new collision with zvtx %.2f and V0M %.2f, CL0 %.2f, CL1 %.2f", collision.posZ(), collision.centRun2V0M(), collision.centRun2CL0(), collision.centRun2CL1());
 
-    auto colmask = filterRun2Collision(collision, collision.bc_as<soa::Join<aod::BCs, aod::Run2BCInfos>>());
+    auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::Run2BCInfos>>();
+    auto colmask = filterRun2Collision(collision, bc);
     LOGF(LOGTRACKCOLLISIONS, "Got mask 0x%lx", colmask);
 
     if (colmask != 0UL) {
-      skimmedcollision(collision.posZ(), colmask, fEventFilter->GetMultiplicities());
+      skimmedcollision(collision.posZ(), bc.runNumber(), bc.timestamp(), colmask, fEventFilter->GetMultiplicities());
       int nFilteredTracks = 0;
+      int nCollisionReportedTracks = 0;
       for (auto const& track : tracks) {
         auto trkmask = fTrackFilter->Filter(track);
         auto pidmask = fPIDFilter->Filter(track);
         if (trkmask != 0UL) {
-          skimmedtrack(skimmedcollision.lastIndex(), trkmask, pidmask, track.pt() * track.sign(), track.eta(), track.phi());
+          skimmedtrack(skimmedcollision.lastIndex(), trkmask, track.pt(), track.eta(), track.phi());
+          skimmtrackpid(pidmask);
           nFilteredTracks++;
         }
         if (trkmask != 0UL and nReportedTracks < 1000) {
-          LOGF(LOGTRACKTRACKS, "  Got track mask 0x%08lx and PID mask 0x%08lx, TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
-               trkmask, pidmask, track.tpcNClsFound(), track.tpcChi2NCl(), track.pt(), track.eta(), track.trackType());
-          nReportedTracks++;
+          if (nCollisionReportedTracks < 20) {
+            LOGF(LOGTRACKTRACKS, "  Got track mask 0x%08lx and PID mask 0x%08lx", trkmask, pidmask);
+            LOGF(LOGTRACKTRACKS, "    TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
+                 track.tpcNClsFound(), track.tpcChi2NCl(), track.pt(), track.eta(), track.trackType());
+            nCollisionReportedTracks++;
+            nReportedTracks++;
+          }
         }
       }
       LOGF(LOGTRACKCOLLISIONS, ">> Filtered %d tracks", nFilteredTracks);

@@ -44,7 +44,7 @@ PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
 PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;
 } // namespace o2::analysis::twopfilter
 
-using namespace o2::aod::twopskim;
+using namespace o2::aod::cfskim;
 
 struct TwoParticleCorrelationsFilter {
   Produces<aod::TwoPAcceptedCollisions> acceptedcollisions;
@@ -107,21 +107,21 @@ struct TwoParticleCorrelationsFilter {
     LOGF(info, "PID skimming signature: %s", fPIDFilter->getCutStringSignature().Data());
   }
 
-  Filter onlyacceptedcolls = ((aod::twopskim::selflags & static_cast<uint64_t>(collisionmask_forced)) == static_cast<uint64_t>(collisionmask_forced));
-  Filter onlyacceptedtracks = ((aod::twopskim::trackflags & static_cast<uint64_t>(trackmask_forced)) == static_cast<uint64_t>(trackmask_forced));
+  Filter onlyacceptedcolls = ((aod::cfskim::selflags & static_cast<uint64_t>(collisionmask_forced)) == static_cast<uint64_t>(collisionmask_forced));
+  Filter onlyacceptedtracks = ((aod::cfskim::trackflags & static_cast<uint64_t>(trackmask_forced)) == static_cast<uint64_t>(trackmask_forced));
 
-  void processRun2(soa::Filtered<aod::TwoPSkimmedCollisions>::iterator const& collision, soa::Filtered<aod::TwoPSkimmedTracks> const& tracks)
+  void processRun2(soa::Filtered<aod::CFCollisions>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%08lx and %ld tracks", collision.selflags(), tracks.size());
 
     /* for some reason we cannot apply this condition in the filter, it does not work */
     if ((collision.selflags() & collisionmask_opt) != 0UL) {
-      acceptedcollisions(0, 0, 0);
+      acceptedcollisions(collision.posZ(), collision.centmult()[0]);
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
         /* for some reason we cannot apply this condition in the filter, it does not work */
         if ((track.trackflags() & trackmask_opt) != 0UL) {
-          accepteddtracks(acceptedcollisions.lastIndex(), 0, track.spt(), track.eta(), track.phi());
+          accepteddtracks(acceptedcollisions.lastIndex(), 0, track.pt(), track.eta(), track.phi());
           nAcceptedTracks++;
         }
       }

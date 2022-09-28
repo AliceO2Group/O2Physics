@@ -21,8 +21,8 @@
 #include "Framework/runDataProcessing.h"
 
 /* TODO: this will go to its proper header at some point */
-#ifndef O2_ANALYSIS_TWOPSKIMMED_H
-#define O2_ANALYSIS_TWOPSKIMMED_H
+#ifndef O2_ANALYSIS_cfskimMED_H
+#define O2_ANALYSIS_cfskimMED_H
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -32,60 +32,64 @@ namespace o2
 namespace aod
 {
 /* we have to change from int to bool when bool columns work properly */
-namespace twopskim
+namespace cfskim
 {
-DECLARE_SOA_COLUMN(TwoPSkimmedCollisionCentMult, centmult, std::vector<float>); //! The centrality/multiplicity pecentile
-DECLARE_SOA_COLUMN(TwoPSkimmedCollisionFlags, selflags, uint64_t);              //! The skimming flags for collision selection
-} // namespace twopskim
-DECLARE_SOA_TABLE(TwoPSkimmedCollisions, "AOD", "TWOPSKMDCOLL", //! Accepted reconstructed collisions/events filtered table
+DECLARE_SOA_COLUMN(CFCollisionCentMult, centmult, std::vector<float>); //! The centrality/multiplicity pecentile
+DECLARE_SOA_COLUMN(CFCollisionFlags, selflags, uint64_t);              //! The skimming flags for collision selection
+} // namespace cfskim
+DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Accepted reconstructed collisions/events filtered table
                   o2::soa::Index<>,
                   collision::PosZ,
-                  twopskim::TwoPSkimmedCollisionFlags,
-                  twopskim::TwoPSkimmedCollisionCentMult);
-using TwoPSkimmedCollision = TwoPSkimmedCollisions::iterator;
-DECLARE_SOA_TABLE(TwoPSkimmedGenCollisions, "AOD", "TWOPSKMDGENCOLL", //! Accepted generated collisions/events filtered table
+                  bc::RunNumber,
+                  timestamp::Timestamp,
+                  cfskim::CFCollisionFlags,
+                  cfskim::CFCollisionCentMult);
+using CFCollision = CFCollisions::iterator;
+DECLARE_SOA_TABLE(CFMCCollisions, "AOD", "CFMCCOLLISION", //! Accepted generated collisions/events filtered table
                   o2::soa::Index<>,
                   mccollision::PosZ,
-                  twopskim::TwoPSkimmedCollisionFlags,
-                  twopskim::TwoPSkimmedCollisionCentMult);
-using TwoPSkimmedGenCollision = TwoPSkimmedGenCollisions::iterator;
-namespace twopskim
+                  cfskim::CFCollisionFlags,
+                  cfskim::CFCollisionCentMult); //! To check if to have this columng does make sense for generated collisions
+using CFMCCollision = CFMCCollisions::iterator;
+namespace cfskim
 {
-DECLARE_SOA_INDEX_COLUMN(TwoPSkimmedCollision, event);           //! Reconstructed collision/event
-DECLARE_SOA_INDEX_COLUMN(TwoPSkimmedGenCollision, mcevent);      //! Generated collision/event
-DECLARE_SOA_COLUMN(TwoPSkimmedTrackFlags, trackflags, uint64_t); //! The skimming flags for track selection
-DECLARE_SOA_COLUMN(TwoPSkimmedPidFlags, pidflags, uint64_t);     //! The PID skimming flags for track selection
-DECLARE_SOA_COLUMN(sPt, spt, float);                             //! The track charge signed transverse momentum
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                               //! The track transverse momentum
-                           [](float signedpt) -> float {
-                             return std::abs(signedpt);
-                           });
-DECLARE_SOA_COLUMN(Eta, eta, float);        //! The track pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);        //! The track azimuthal angle
-DECLARE_SOA_COLUMN(Charge, charge, int8_t); //! Charge: in units of electric charge
-DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,      //! The track transverse momentum
-                           [](float signedpt) -> short {
-                             return (signedpt >= 0) ? 1 : -1;
-                           });
-} // namespace twopskim
-DECLARE_SOA_TABLE(TwoPSkimmedTracks, "AOD", "TWOPSKMDTRKS", //! The reconstructed tracks filtered table
-                  twopskim::TwoPSkimmedCollisionId,
-                  twopskim::TwoPSkimmedTrackFlags,
-                  twopskim::TwoPSkimmedPidFlags,
-                  twopskim::sPt,
-                  twopskim::Eta,
-                  twopskim::Phi,
-                  twopskim::Pt<twopskim::sPt>,
-                  twopskim::Sign<twopskim::sPt>);
-DECLARE_SOA_TABLE(TwoPSkimmedParticles, "AOD", "TWOPSKMDPARTS", //! The generated particles filtered table
-                  twopskim::TwoPSkimmedGenCollisionId,
-                  twopskim::TwoPSkimmedTrackFlags,
-                  twopskim::sPt,
-                  twopskim::Eta,
-                  twopskim::Phi,
-                  twopskim::Pt<twopskim::sPt>,
-                  twopskim::Sign<twopskim::sPt>);
+DECLARE_SOA_INDEX_COLUMN(CFCollision, cfcollision);     //! Reconstructed collision/event
+DECLARE_SOA_INDEX_COLUMN(CFMCCollision, cfmccollision); //! Generated collision/event
+DECLARE_SOA_COLUMN(CFTrackFlags, trackflags, uint64_t); //! The skimming flags for track selection, B0 track/particle positive charge, B1 track/particle negative charge
+DECLARE_SOA_COLUMN(CFPidFlags, pidflags, uint64_t);     //! The PID skimming flags for track selection
+DECLARE_SOA_COLUMN(Pt, pt, float);                      //! The track transverse momentum
+DECLARE_SOA_COLUMN(Eta, eta, float);                    //! The track pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                    //! The track azimuthal angle
+} // namespace cfskim
+DECLARE_SOA_TABLE(CFTracks, "AOD", "CFTRACK", //! The reconstructed tracks filtered table
+                  cfskim::CFCollisionId,
+                  cfskim::CFTrackFlags,
+                  cfskim::Pt,
+                  cfskim::Eta,
+                  cfskim::Phi);
+using CFTrack = CFTracks::iterator;
+DECLARE_SOA_TABLE(CFTrackPIDs, "AOD", "CFTRACKPID", //! The reconstructed tracks PID filtered table
+                  cfskim::CFPidFlags);
+using CFTrackPID = CFTrackPIDs::iterator;
+DECLARE_SOA_TABLE(CFMCParticles, "AOD", "CFMCPARICLE", //! The generated particles filtered table
+                  o2::soa::Index<>,
+                  cfskim::CFMCCollisionId,
+                  cfskim::CFTrackFlags,
+                  cfskim::Pt,
+                  cfskim::Eta,
+                  cfskim::Phi);
+using CFMCParticle = CFMCParticles::iterator;
+namespace cfskim
+{
+DECLARE_SOA_INDEX_COLUMN(CFMCParticle, mcparticle);
+}
+DECLARE_SOA_TABLE(CFMCCollisionLbls, "AOD", "CFMCCOLLISONLBL",
+                  cfskim::CFMCCollisionId,
+                  mccollisionlabel::McMask);
+DECLARE_SOA_TABLE(CFMCTrakLabels, "AOD", "CFMCTRACKLABEL",
+                  cfskim::CFMCParticleId,
+                  mctracklabel::McMask);
 } // namespace aod
 } // namespace o2
 
-#endif // O2_ANALYSIS_TWOPSKIMMED_H
+#endif // O2_ANALYSIS_cfskimMED_H
