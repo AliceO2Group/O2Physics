@@ -58,7 +58,7 @@ struct v0cascadesQA {
   HistogramRegistry histos_eve{
     "histos-eve",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}, 
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -95,14 +95,14 @@ struct v0cascadesQA {
       {"InvMassK0S_EtaDaughters", "InvMassK0S_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 0.4f, 0.6f}}}},
       {"InvMassLambda_EtaDaughters", "InvMassLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_EtaDaughters", "InvMassAntiLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
-      {"InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2.*TMath::Pi()}, {628, 0.0f, 2.*TMath::Pi()}, {200, 0.4f, 0.6f}}}},
-      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2.*TMath::Pi()}, {628, 0.0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
-      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2.*TMath::Pi()}, {628, 0.0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2. * TMath::Pi()}, {628, 0.0f, 2. * TMath::Pi()}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2. * TMath::Pi()}, {628, 0.0f, 2. * TMath::Pi()}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2. * TMath::Pi()}, {628, 0.0f, 2. * TMath::Pi()}, {200, 1.07f, 1.17f}}}},
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
-      {"InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 0.4f, 0.6f}}}},
-      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 1.07f, 1.17f}}}},
-      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", {HistType::kTH3F, {{8, -0.5f, 7.5f}, {8, -0.5f, 7.5f}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_ITSMapDaughters", "InvMassLambda_ITSMapDaughters", {HistType::kTH3F, {{8, -0.5f, 7.5f}, {8, -0.5f, 7.5f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_ITSMapDaughters", "InvMassAntiLambda_ITSMapDaughters", {HistType::kTH3F, {{8, -0.5f, 7.5f}, {8, -0.5f, 7.5f}, {200, 1.07f, 1.17f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -169,7 +169,7 @@ struct v0cascadesQA {
   void processReconstructedEvent(soa::Join<aod::Collisions, aod::EvSels>::iterator const& Collision)
   {
     histos_eve.fill(HIST("hEventCounter"), 0.5);
-    
+
     if (sel8 && !Collision.sel8()) {
       return;
     }
@@ -182,7 +182,7 @@ struct v0cascadesQA {
   ////////// Collision QA - MC //////////
   ///////////////////////////////////////
 
-  void processMcEvent( soa::Join<aod::McCollisions, aod::EvSels>::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcEvent(soa::Join<aod::McCollisions, aod::EvSels>::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
     if (sel8 && !mcCollision.sel8()) {
       return;
@@ -260,13 +260,13 @@ struct v0cascadesQA {
       Int_t posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
         if (posdau.itsClusterMap() & (1 << i)) {
-          posITSNhits ++;
+          posITSNhits++;
         }
         if (negdau.itsClusterMap() & (1 << i)) {
-          negITSNhits ++;
+          negITSNhits++;
         }
       }
-          
+
       histos_V0.fill(HIST("CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
       histos_V0.fill(HIST("V0Radius"), v0.v0radius());
       histos_V0.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
