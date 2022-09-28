@@ -94,6 +94,9 @@ DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                   //! Trans
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                       //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                       //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                       //! Z position of the decay vertex
+// For MC
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
+DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   o2::soa::Index<>,
@@ -129,6 +132,13 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::DecayVtxY,
                   resodaughter::DecayVtxZ);
 using ResoDaughter = ResoDaughters::iterator;
+
+DECLARE_SOA_TABLE(ResoDaughtersMC, "AOD", "RESODAUGHTERSMC",
+                  mcparticle::PdgCode,
+                  mcparticle::MothersIds, 
+                  mcparticle::DaughtersIdSlice,
+                  resodaughter::IsPhysicalPrimary,
+                  resodaughter::ProducedByGenerator);
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
