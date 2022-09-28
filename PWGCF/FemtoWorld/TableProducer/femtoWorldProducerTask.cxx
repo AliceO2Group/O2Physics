@@ -109,7 +109,7 @@ struct femtoWorldProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
-  Configurable<bool> ConfStorePhi{"ConfStorePhi", false, "True: store Phi table"};
+  Configurable<bool> ConfStorePhi{"ConfStorePhi", true, "True: store Phi table"};
   // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
@@ -155,13 +155,9 @@ struct femtoWorldProducerTask {
   Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.035, "Upper limit of the V0 invariant mass"};
 
   Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
-  Configurable<bool> ConfRejectPions{"ConfRejectPions", false, "Switch to reject pions"};
 
   Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
-
-  Configurable<float> ConfInvPionMassLowLimit{"ConfInvPionMassLowLimit", 0.12, "Lower limit of the V0 invariant mass for Pion rejection"};
-  Configurable<float> ConfInvPionMassUpLimit{"ConfInvPionMassUpLimit", 0.14, "Upper limit of the V0 invariant mass for Pion rejection"};
 
   // PHI Daughters (Kaons)
   Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.05, "Lower limit of the Phi invariant mass"};
@@ -250,7 +246,6 @@ struct femtoWorldProducerTask {
       if (ConfRejectKaons) {
         v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit, ConfInvKaonMassUpLimit);
       }
-    // ! todo similar action for pions
 
       if (ConfRejectITSHitandTOFMissing) {
         o2PhysicsTrackSelection = new TrackSelection(getGlobalTrackSelection());
@@ -447,7 +442,6 @@ struct femtoWorldProducerTask {
                   -999.,
                   -999.,
                   -999.,
-                  -999.,
                   -999.);
       tmpIDtrack.push_back(track.globalIndex());
     }
@@ -526,7 +520,6 @@ struct femtoWorldProducerTask {
                       -999.,
                       -999.,
                       -999.,
-                      -999.,
                       -999.);
           const int rowOfPosTrack = outputParts.lastIndex();
           int negtrackID = v0.negTrackId();
@@ -580,7 +573,6 @@ struct femtoWorldProducerTask {
                       -999.,
                       -999.,
                       -999.,
-                      -999.,
                       -999.);
           const int rowOfNegTrack = outputParts.lastIndex();
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
@@ -625,7 +617,6 @@ struct femtoWorldProducerTask {
                       postrack.tofNSigmaStoreKa(),
                       postrack.tofNSigmaStorePr(),
                       postrack.tofNSigmaStoreDe(),
-                      -999.,
                       -999.,
                       -999.,
                       -999.,
@@ -766,7 +757,6 @@ struct femtoWorldProducerTask {
                       -999.,
                       -999.,
                       -999.,
-                      -999.,
                       -999.);
           const int rowOfPosTrack = outputParts.lastIndex();
           int negtrackID = p2.globalIndex();
@@ -820,7 +810,6 @@ struct femtoWorldProducerTask {
                       -999.,
                       -999.,
                       -999.,
-                      -999.,
                       -999.);
 
           const int rowOfNegTrack = outputParts.lastIndex();
@@ -866,7 +855,6 @@ struct femtoWorldProducerTask {
                       p1.tofNSigmaStoreKa(),
                       p1.tofNSigmaStorePr(),
                       p1.tofNSigmaStoreDe(),
-                      -999.,
                       -999.,
                       -999.,
                       -999.,
