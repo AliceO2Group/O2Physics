@@ -135,7 +135,7 @@ using ResoDaughter = ResoDaughters::iterator;
 
 DECLARE_SOA_TABLE(ResoDaughtersMC, "AOD", "RESODAUGHTERSMC",
                   mcparticle::PdgCode,
-                  mcparticle::MothersIds, 
+                  mcparticle::MothersIds,
                   mcparticle::DaughtersIdSlice,
                   resodaughter::IsPhysicalPrimary,
                   resodaughter::ProducedByGenerator);
