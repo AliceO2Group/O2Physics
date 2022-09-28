@@ -360,6 +360,7 @@ struct HFLcK0sPCandidateSelector {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfcg)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HFLcK0sPCandidateSelector>(cfcg, TaskName{"hf-lc-tok0sp-candidate-selector"})};
+  WorkflowSpec workflow{};
+  workflow.push_back(adaptAnalysisTask<HFLcK0sPCandidateSelector>(cfcg));
+  return workflow;
 }
