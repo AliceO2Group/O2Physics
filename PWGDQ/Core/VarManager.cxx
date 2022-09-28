@@ -260,6 +260,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonChi2MatchMCHMFT] = "";
   fgVariableNames[kMuonMatchScoreMCHMFT] = "match score MCH-MFT";
   fgVariableUnits[kMuonMatchScoreMCHMFT] = "";
+  fgVariableNames[kMuonDCAx] = "dca_X";
+  fgVariableUnits[kMuonDCAx] = "cm";
+  fgVariableNames[kMuonDCAy] = "dca_Y";
+  fgVariableUnits[kMuonDCAy] = "cm";
   fgVariableNames[kMuonCXX] = "cov XX";
   fgVariableUnits[kMuonCXX] = "";
   fgVariableNames[kMuonCYY] = "cov YY";

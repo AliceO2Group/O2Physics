@@ -248,8 +248,8 @@ DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_COLUMN(Sign, sign, int); //!
-DECLARE_SOA_COLUMN(FwdDcaX, fwddcaX, float); //!
-DECLARE_SOA_COLUMN(FwdDcaY, fwddcaY, float); //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwddcaX, float);       //!
+DECLARE_SOA_COLUMN(FwdDcaY, fwddcaY, float);       //!
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,   //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
