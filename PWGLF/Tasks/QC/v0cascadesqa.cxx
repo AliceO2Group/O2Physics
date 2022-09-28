@@ -58,7 +58,7 @@ struct v0cascadesQA {
   HistogramRegistry histos_eve{
     "histos-eve",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}}, // storing total #events
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}, 
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -95,6 +95,9 @@ struct v0cascadesQA {
       {"InvMassK0S_EtaDaughters", "InvMassK0S_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 0.4f, 0.6f}}}},
       {"InvMassLambda_EtaDaughters", "InvMassLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_EtaDaughters", "InvMassAntiLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
     },
@@ -162,11 +165,13 @@ struct v0cascadesQA {
 
   void processReconstructedEvent(aod::Collision const& Collision)
   {
+    histos_eve.fill(HIST("hEventCounter"), 0.5);
+    
     if (sel8 && !Collision.sel8()) {
       return;
     }
 
-    histos_eve.fill(HIST("hEventCounter"), 0.5);
+    histos_eve.fill(HIST("hEventCounter"), 1.5);
   }
   PROCESS_SWITCH(v0cascadesQA, processReconstructedEvent, "Process reconstructed level Event", true);
 
@@ -269,6 +274,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_Radius"), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
+            histos_V0.fill(HIST("InvMassK0S_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
             histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
           }
 
@@ -279,6 +285,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Ctau"), CtauLambda, v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mLambda());
+            histos_V0.fill(HIST("InvMassLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mLambda());
             histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
             if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - RecoDecay::getMassPDG(310)) > 0.012 && TMath::Abs(v0.mAntiLambda() - RecoDecay::getMassPDG(3122)) > 0.08 && TMath::Abs(v0.mLambda() - RecoDecay::getMassPDG(3122)) < 0.002) {
               histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
@@ -293,6 +300,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassAntiLambda_Radius"), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Ctau"), CtauLambda, v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
+            histos_V0.fill(HIST("InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
             histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
           }
         }
@@ -494,7 +502,7 @@ struct v0cascadesQA {
     if (sel8 && !collision.sel8()) {
       return;
     }
-    
+
     for (auto& casc : Cascades) {
 
       histos_Casc.fill(HIST("QA_XinusCandidates"), 0.5);
