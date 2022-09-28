@@ -690,6 +690,7 @@ struct hypertriton3bodyMcParticleCount {
         {"hSelAndRecoMcCollCounter", "hSelAndRecoMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
 
         {"h3dMCHypertriton", "h3dMCHypertriton", {HistType::kTH3F, {{20, -1.0f, 1.0f, "Rapidity"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {50, 0.0f, 50.0f, "ct(cm)"}}}},
+        {"h3dMCDecayedHypertriton", "h3dMCDecayedHypertriton", {HistType::kTH3F, {{20, -1.0f, 1.0f, "Rapidity"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {50, 0.0f, 50.0f, "ct(cm)"}}}},
         {"hMcHypertritonCheck", "hMcHypertritonCheck", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
         {"hMcParticleCount", "hMcParticleCount", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
         {"hHypertritonCount_PtDiff", "hHypertritonCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -824,6 +825,7 @@ struct hypertriton3bodyMcParticleCount {
           registry.fill(HIST("hMcHypertritonDecayCount"), 0.5);
           registry.fill(HIST("hMcHypertritonDecayCount"), 2.5);
         }
+        double MClifetime = RecoDecay::sqrtSumOfSquares(dauDeuteronPos[0] - mcparticle.vx(), dauDeuteronPos[1] - mcparticle.vy(), dauDeuteronPos[2] - mcparticle.vz())*2.991/mcparticle.p();  
         if ( (haveProton && haveAntiPion && haveDeuteron && mcparticle.pdgCode() == 1010010030) || (haveAntiProton && havePion && haveAntiDeuteron && mcparticle.pdgCode() == -1010010030) ){
           registry.fill(HIST("hMcDiffVx1"), dauProtonPos[0] - dauPionPos[0]);
           registry.fill(HIST("hMcDiffVy1"), dauProtonPos[1] - dauPionPos[1]);
@@ -832,6 +834,7 @@ struct hypertriton3bodyMcParticleCount {
           registry.fill(HIST("hMcDiffVy2"), dauProtonPos[1] - dauDeuteronPos[1]);
           registry.fill(HIST("hMcDiffVz2"), dauProtonPos[2] - dauDeuteronPos[2]);
           registry.fill(HIST("hMcRecoInvMass"), RecoDecay::m(array{array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus), 1.87561}));
+          registry.fill(HIST("h3dMCDecayedHypertriton"), mcparticle.y(), mcparticle.pt(), MClifetime);
         }
 
         int daughterPionCount = 0;
@@ -851,7 +854,6 @@ struct hypertriton3bodyMcParticleCount {
           }
           }*/
 
-        double MClifetime = RecoDecay::sqrtSumOfSquares(dauDeuteronPos[0] - mcparticle.vx(), dauDeuteronPos[1] - mcparticle.vy(), dauDeuteronPos[2] - mcparticle.vz())*2.991/mcparticle.p();  
         registry.fill(HIST("hMcHypertritonLifeTime"), MClifetime);
         registry.fill(HIST("h3dMCHypertriton"), mcparticle.y(), mcparticle.pt(), MClifetime);
 
