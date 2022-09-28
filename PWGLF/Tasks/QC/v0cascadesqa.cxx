@@ -53,11 +53,12 @@ using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
 struct v0cascadesQA {
 
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
+  Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
 
   HistogramRegistry histos_eve{
     "histos-eve",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}}, // storing total #events
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -94,8 +95,14 @@ struct v0cascadesQA {
       {"InvMassK0S_EtaDaughters", "InvMassK0S_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 0.4f, 0.6f}}}},
       {"InvMassLambda_EtaDaughters", "InvMassLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_EtaDaughters", "InvMassAntiLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2. * TMath::Pi()}, {628, 0.0f, 2. * TMath::Pi()}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2. * TMath::Pi()}, {628, 0.0f, 2. * TMath::Pi()}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2. * TMath::Pi()}, {628, 0.0f, 2. * TMath::Pi()}, {200, 1.07f, 1.17f}}}},
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", {HistType::kTH3F, {{8, -0.5f, 7.5f}, {8, -0.5f, 7.5f}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_ITSMapDaughters", "InvMassLambda_ITSMapDaughters", {HistType::kTH3F, {{8, -0.5f, 7.5f}, {8, -0.5f, 7.5f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_ITSMapDaughters", "InvMassAntiLambda_ITSMapDaughters", {HistType::kTH3F, {{8, -0.5f, 7.5f}, {8, -0.5f, 7.5f}, {200, 1.07f, 1.17f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -159,9 +166,15 @@ struct v0cascadesQA {
   ////////// Collisions QA - reconstructed //////////
   ///////////////////////////////////////////////////
 
-  void processReconstructedEvent(aod::Collision const& Collision)
+  void processReconstructedEvent(soa::Join<aod::Collisions, aod::EvSels>::iterator const& Collision)
   {
     histos_eve.fill(HIST("hEventCounter"), 0.5);
+
+    if (sel8 && !Collision.sel8()) {
+      return;
+    }
+
+    histos_eve.fill(HIST("hEventCounter"), 1.5);
   }
   PROCESS_SWITCH(v0cascadesQA, processReconstructedEvent, "Process reconstructed level Event", true);
 
@@ -169,8 +182,12 @@ struct v0cascadesQA {
   ////////// Collision QA - MC //////////
   ///////////////////////////////////////
 
-  void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcEvent(soa::Join<aod::McCollisions, aod::EvSels>::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
+    if (sel8 && !mcCollision.sel8()) {
+      return;
+    }
+
     double posx = mcCollision.posX();
     double posy = mcCollision.posY();
 
@@ -229,12 +246,26 @@ struct v0cascadesQA {
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
 
-  void processReconstructedV0(aod::Collision const& collision, MyTracks const& tracks, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MyTracks const& tracks, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& v0 : fullV0s) {
 
       auto posdau = v0.posTrack_as<DaughterTracks>();
       auto negdau = v0.negTrack_as<DaughterTracks>();
+
+      Int_t posITSNhits = 0, negITSNhits = 0;
+      for (unsigned int i = 0; i < 7; i++) {
+        if (posdau.itsClusterMap() & (1 << i)) {
+          posITSNhits++;
+        }
+        if (negdau.itsClusterMap() & (1 << i)) {
+          negITSNhits++;
+        }
+      }
 
       histos_V0.fill(HIST("CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
       histos_V0.fill(HIST("V0Radius"), v0.v0radius());
@@ -256,7 +287,9 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_Radius"), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
+            histos_V0.fill(HIST("InvMassK0S_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
             histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+            histos_V0.fill(HIST("InvMassK0S_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mK0Short());
           }
 
           if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
@@ -266,11 +299,13 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Ctau"), CtauLambda, v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mLambda());
+            histos_V0.fill(HIST("InvMassLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mLambda());
             histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
             if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - RecoDecay::getMassPDG(310)) > 0.012 && TMath::Abs(v0.mAntiLambda() - RecoDecay::getMassPDG(3122)) > 0.08 && TMath::Abs(v0.mLambda() - RecoDecay::getMassPDG(3122)) < 0.002) {
               histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
               histos_V0.fill(HIST("ResponseProtonFromLambda"), v0.pt(), posdau.tpcNSigmaPr());
             }
+            histos_V0.fill(HIST("InvMassLambda_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mLambda());
           }
 
           if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
@@ -280,7 +315,9 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassAntiLambda_Radius"), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Ctau"), CtauLambda, v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
+            histos_V0.fill(HIST("InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
             histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+            histos_V0.fill(HIST("InvMassAntiLambda_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mAntiLambda());
           }
         }
       }
@@ -292,8 +329,12 @@ struct v0cascadesQA {
   ////////// V0 QA - MC //////////
   ////////////////////////////////
 
-  void processMcV0(aod::Collision const& collision, MyTracksMC const& tracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MyTracksMC const& tracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& v0 : fullV0s) {
 
       float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0);
@@ -393,8 +434,12 @@ struct v0cascadesQA {
   // if( (part==5) && (TMath::Abs(fCasc_NSigPosPion)>3 || TMath::Abs(fCasc_NSigNegProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
   // if( (part==6) && (TMath::Abs(fCasc_NSigNegPion)>3 || TMath::Abs(fCasc_NSigPosProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
 
-  void processReconstructedCascade(aod::Collision const& collision, aod::CascDataExt const& Cascades, aod::V0Datas const& fullV0s)
+  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0Datas const& fullV0s)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& casc : Cascades) {
       // histos_Casc.fill(HIST("XiProgSelections"), );
       // histos_Casc.fill(HIST("OmegaProgSelections"), );
@@ -468,8 +513,12 @@ struct v0cascadesQA {
   ////////// Cascade QA - MC ///////////
   //////////////////////////////////////
 
-  void processMcCascade(aod::Collision const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
+  void processMcCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
   {
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
     for (auto& casc : Cascades) {
 
       histos_Casc.fill(HIST("QA_XinusCandidates"), 0.5);
