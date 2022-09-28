@@ -650,7 +650,7 @@ struct ValidationRecLevel {
       // determine which kind of candidate it is
       bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi);
       bool isDStarSel = false; // FIXME: add proper check when D* will be added in HF vertexing
-      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToPiKK);
+      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi);
       bool isLcSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi);
       bool isXicSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::XicToPKPi);
       if (!isDPlusSel && !isDStarSel && !isDsSel && !isLcSel && !isXicSel) {
@@ -659,7 +659,7 @@ struct ValidationRecLevel {
       int whichHad = -1;
       if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DPlusToPiKPi)) {
         whichHad = 0;
-      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DsToPiKK)) {
+      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DsToKKPi)) {
         whichHad = 3;
       } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::LcToPKPi)) {
         whichHad = 4;
