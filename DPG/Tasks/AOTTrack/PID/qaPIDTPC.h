@@ -204,8 +204,8 @@ struct tpcPidQa {
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
-    const AxisSpec pAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p} (GeV/#it{c})"};
-    const AxisSpec ptAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec pAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}/z (GeV/#it{c})"};
+    const AxisSpec ptAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}_{T}/z (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {

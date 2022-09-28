@@ -107,8 +107,8 @@ DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                        
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCNSigmaKaon, tpcNSigmaKaon, float);                                 //! TPCNSigmaKaon
 DECLARE_SOA_COLUMN(TOFNSigmaKaon, tofNSigmaKaon, float);                                 //! TOFNSigmaKaon
-DECLARE_SOA_COLUMN(TPCNSigmaPion,tpcNSigmaPion,float);                                   //! TPCNSigmaPion 
-DECLARE_SOA_COLUMN(TOFNSigmaPion,tofNSigmaPion,float);                                   //! TOFNSigmaPion 
+DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcNSigmaPion, float);                                 //! TPCNSigmaPion
+DECLARE_SOA_COLUMN(TOFNSigmaPion, tofNSigmaPion, float);                                 //! TOFNSigmaPion
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
@@ -122,6 +122,7 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
+DECLARE_SOA_COLUMN(MPion, mPion, float);             //! The invariant mass of V0 candidate, assuming pion
 
 } // namespace femtoworldparticle
 
@@ -150,8 +151,8 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::TPCChi2NCl,
                   femtoworldparticle::TPCNSigmaKaon,
                   femtoworldparticle::TOFNSigmaKaon,
-                  femtoworldparticle::TPCNSigmaPion,               
-                  femtoworldparticle::TOFNSigmaPion,          
+                  femtoworldparticle::TPCNSigmaPion,
+                  femtoworldparticle::TOFNSigmaPion,
                   femtoworldparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtoworldparticle::TPCNClsCrossedRows,
@@ -178,6 +179,7 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::DecayVtxY,
                   femtoworldparticle::DecayVtxZ,
                   femtoworldparticle::MKaon,
+                  femtoworldparticle::MPion,
                   femtoworldparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtoworldparticle::TPCNClsCrossedRows>,
                   pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
                   pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,

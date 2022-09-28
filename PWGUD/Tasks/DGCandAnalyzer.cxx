@@ -49,9 +49,13 @@ struct DGCandAnalyzer {
 
   // get a DGCutparHolder and DGAnaparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<bool> verbose{"Verbose", {}, "Additional print outs"};
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   DGAnaparHolder anaPars = DGAnaparHolder();
   MutableConfigurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
+
+  ConfigurableAxis IVMAxis{"IVMAxis", {350, 0.0, 3.5}, ""};
+  ConfigurableAxis ptAxis{"ptAxis", {250, 0.0, 2.5}, ""};
 
   // PID selector
   DGPIDSelector pidsel = DGPIDSelector();
@@ -61,15 +65,59 @@ struct DGCandAnalyzer {
     "registry",
     {
       {"nIVMs", "#nIVMs", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
-      {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 100.0}}}},
+      {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 100.0}}}},
+      {"nSTwoTracks", "#nSTwoTracks", {HistType::kTH2F, {{100, -5., 5.}, {100, -5., 5.0}}}},
+      {"nSigmaTPCPtEl", "#nSigmaTPCPtEl", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTPCPtPi", "#nSigmaTPCPtPi", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTPCPtMu", "#nSigmaTPCPtMu", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTPCPtKa", "#nSigmaTPCPtKa", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTPCPtPr", "#nSigmaTPCPtPr", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTOFPtEl", "#nSigmaTOFPtEl", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTOFPtPi", "#nSigmaTOFPtPi", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTOFPtMu", "#nSigmaTOFPtMu", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTOFPtKa", "#nSigmaTOFPtKa", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
+      {"nSigmaTOFPtPr", "#nSigmaTOFPtPr", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
     }};
+
+  void fillNSigmaHist(DGParticle ivm, UDTracksFull dgtracks, DGPIDSelector pidsel)
+  {
+    // process only events with 2 tracks
+    if (ivm.trkinds().size() != 2) {
+      return;
+    }
+
+    // get analysis paraneters
+    auto anaPars = pidsel.getAnaPars();
+
+    // fill histogram
+    auto tr1 = dgtracks.rawIteratorAt(ivm.trkinds()[0]);
+    auto pid1 = anaPars.PIDs()[0];
+    auto signalTPC1 = tr1.tpcSignal();
+    auto nSigma1 = pidsel.getTPCnSigma(tr1, pid1);
+    auto tr2 = dgtracks.rawIteratorAt(ivm.trkinds()[1]);
+    auto signalTPC2 = tr2.tpcSignal();
+    auto pid2 = anaPars.PIDs()[1];
+    auto nSigma2 = pidsel.getTPCnSigma(tr2, pid2);
+
+    registry.get<TH2>(HIST("TPCsignal1"))->Fill(tr1.pt(), signalTPC1);
+    registry.get<TH2>(HIST("TPCsignal2"))->Fill(tr2.pt(), signalTPC2);
+    registry.get<TH2>(HIST("nSTwoTracks"))->Fill(nSigma1, nSigma2);
+  }
 
   void init(InitContext&)
   {
     diffCuts = (DGCutparHolder)DGCuts;
     anaPars = (DGAnaparHolder)DGPars;
     pidsel.init(anaPars);
+    if (verbose) {
+      pidsel.Print();
+    }
+
+    const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
+    const AxisSpec axispt{ptAxis, "pt axis for histograms"};
+    registry.add("IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {axisIVM, axispt}});
+    registry.add("IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {axisIVM, axispt}});
   }
 
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
@@ -90,8 +138,8 @@ struct DGCandAnalyzer {
       return;
     }
 
-    // find track combinations which are compatible with anaPars.TPCnSigmas()
-    auto nIVMs = pidsel.computeIVMs(anaPars.nCombine(), dgtracks);
+    // find track combinations which are compatible with PID cuts
+    auto nIVMs = pidsel.computeIVMs(dgtracks);
 
     // update histograms
     registry.get<TH1>(HIST("nIVMs"))->Fill(nIVMs, 1.);
@@ -100,7 +148,22 @@ struct DGCandAnalyzer {
       for (auto ind : ivm.trkinds()) {
         auto track = dgtracks.rawIteratorAt(ind);
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
+
+        // fill nSigma histograms
+        registry.get<TH2>(HIST("nSigmaTPCPtEl"))->Fill(track.pt(), track.tpcNSigmaEl());
+        registry.get<TH2>(HIST("nSigmaTPCPtPi"))->Fill(track.pt(), track.tpcNSigmaPi());
+        registry.get<TH2>(HIST("nSigmaTPCPtMu"))->Fill(track.pt(), track.tpcNSigmaMu());
+        registry.get<TH2>(HIST("nSigmaTPCPtKa"))->Fill(track.pt(), track.tpcNSigmaKa());
+        registry.get<TH2>(HIST("nSigmaTPCPtPr"))->Fill(track.pt(), track.tpcNSigmaPr());
+        if (track.hasTOF()) {
+          registry.get<TH2>(HIST("nSigmaTOFPtEl"))->Fill(track.pt(), track.tofNSigmaEl());
+          registry.get<TH2>(HIST("nSigmaTOFPtPi"))->Fill(track.pt(), track.tofNSigmaPi());
+          registry.get<TH2>(HIST("nSigmaTOFPtMu"))->Fill(track.pt(), track.tofNSigmaMu());
+          registry.get<TH2>(HIST("nSigmaTOFPtKa"))->Fill(track.pt(), track.tofNSigmaKa());
+          registry.get<TH2>(HIST("nSigmaTOFPtPr"))->Fill(track.pt(), track.tofNSigmaPr());
+        }
       }
+      fillNSigmaHist(ivm, dgtracks, pidsel);
     }
   }
 };
