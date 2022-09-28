@@ -23,7 +23,7 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-#include "TDatabasePDG.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -34,8 +34,6 @@ using namespace o2::aod::hf_cand_bplus;
 using namespace o2::analysis::hf_cuts_bplus_tod0pi;
 using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
-
 // string definitions, used for histogram axis labels
 const TString stringPt = "#it{p}_{T} (GeV/#it{c})";
 const TString BPlusCandTitle = "B+ candidates;";
@@ -43,7 +41,7 @@ const TString entries = "entries";
 const TString BPlusCandMatch = "B+ candidates (matched);";
 const TString BPlusCandUnmatch = "B+ candidates (unmatched);";
 const TString mcParticleMatched = "MC particles (matched);";
-    
+
 /// B± analysis task
 struct HfTaskBplus {
   HistogramRegistry registry{
@@ -73,9 +71,9 @@ struct HfTaskBplus {
     const AxisSpec axisEta{100, -2., 2.};
     const AxisSpec axisRapidity{100, -2., 2.};
     const AxisSpec axisPtB{(std::vector<double>)bins, "#it{p}_{T}^{B^{+}} (GeV/#it{c})"};
-    
+
     registry.add("hMass", BPlusCandTitle + "inv. mass #bar{D^{0}}#pi^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMass, axisPtB}});
-    registry.add("hDecLength", BPlusCandTitle + "decay length (cm);" + stringPt, {HistType::kTH2F, {axisDecLength,axisPtB}});
+    registry.add("hDecLength", BPlusCandTitle + "decay length (cm);" + stringPt, {HistType::kTH2F, {axisDecLength, axisPtB}});
     registry.add("hDecLengthXY", BPlusCandTitle + "decay length xy (cm);" + stringPt, {HistType::kTH2F, {axisDecLength, axisPtB}});
     registry.add("hd0Prong0", BPlusCandTitle + "prong 0 DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisD0Prong, axisPtB}});
     registry.add("hd0Prong1", BPlusCandTitle + "prong 1 DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisD0Prong, axisPtB}});
