@@ -460,20 +460,22 @@ struct qaEventTrack {
   // Process function for data
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   // using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
-  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered, aod::AmbiguousTracks const& ambitracks)
+  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
+  {
+    /// work with collision grouping
+    fillRecoHistogramsGroupedTracks<false>(collision, tracks, tracksUnfiltered);
+  }
+  PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
+
+  // process function for all tracks, w/o requiring the collision grouping
+  void processTrackMatch(soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered, aod::AmbiguousTracks const& ambitracks)
   {
     /// work with all filtered tracks
     fillRecoHistogramsAllTracks<false, true>(tracks, ambitracks);
     /// work with all unfiltered tracks
     fillRecoHistogramsAllTracks<false, false>(tracksUnfiltered, ambitracks);
-    /// work with collision grouping
-    for (auto const& collision : collisions) {
-      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
-      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
-      fillRecoHistogramsGroupedTracks<false>(collision, tracksColl, tracksUnfilteredColl);
-    }
   }
-  PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
+  PROCESS_SWITCH(qaEventTrack, processTrackMatch, "process for track-to-collision matching studies", false);
 
   // Process function for Run2 converted data
   void processRun2ConvertedData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
