@@ -68,6 +68,7 @@ struct TrackPropagation {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -129,7 +130,7 @@ struct TrackPropagation {
       dcaInfo[1] = 999;
       auto trackPar = getTrackPar(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
+      if (track.x() < minPropagationRadius) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
@@ -159,7 +160,7 @@ struct TrackPropagation {
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
+      if (track.x() < minPropagationRadius) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});

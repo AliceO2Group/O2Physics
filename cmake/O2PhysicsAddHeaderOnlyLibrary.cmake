@@ -62,6 +62,6 @@ function(o2physics_add_header_only_library baseTargetName)
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
   install(TARGETS ${target}
-          EXPORT O2Targets
+          EXPORT O2PhysicsTargets
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endfunction()
