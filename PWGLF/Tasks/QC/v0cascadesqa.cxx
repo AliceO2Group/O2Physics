@@ -95,9 +95,9 @@ struct v0cascadesQA {
       {"InvMassK0S_EtaDaughters", "InvMassK0S_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 0.4f, 0.6f}}}},
       {"InvMassLambda_EtaDaughters", "InvMassLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_EtaDaughters", "InvMassAntiLambda_EtaDaughters", {HistType::kTH3F, {{100, -1.0f, 1.0f}, {100, -1.0f, 1.0f}, {200, 1.07f, 1.17f}}}},
-      {"InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 0.4f, 0.6f}}}},
-      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
-      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2.*TMath::Pi()}, {628, 0.0f, 2.*TMath::Pi()}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2.*TMath::Pi()}, {628, 0.0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0.0f, 2.*TMath::Pi()}, {628, 0.0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 0.4f, 0.6f}}}},
@@ -166,7 +166,7 @@ struct v0cascadesQA {
   ////////// Collisions QA - reconstructed //////////
   ///////////////////////////////////////////////////
 
-  void processReconstructedEvent(aod::Collision const& Collision)
+  void processReconstructedEvent(soa::Join<aod::Collisions, aod::EvSels>::iterator const& Collision)
   {
     histos_eve.fill(HIST("hEventCounter"), 0.5);
     
@@ -182,7 +182,7 @@ struct v0cascadesQA {
   ////////// Collision QA - MC //////////
   ///////////////////////////////////////
 
-  void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcEvent( soa::Join<aod::McCollisions, aod::EvSels>::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
     if (sel8 && !mcCollision.sel8()) {
       return;
@@ -246,7 +246,7 @@ struct v0cascadesQA {
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
 
-  void processReconstructedV0(aod::Collision const& collision, MyTracks const& tracks, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MyTracks const& tracks, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -329,7 +329,7 @@ struct v0cascadesQA {
   ////////// V0 QA - MC //////////
   ////////////////////////////////
 
-  void processMcV0(aod::Collision const& collision, MyTracksMC const& tracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MyTracksMC const& tracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -434,7 +434,7 @@ struct v0cascadesQA {
   // if( (part==5) && (TMath::Abs(fCasc_NSigPosPion)>3 || TMath::Abs(fCasc_NSigNegProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
   // if( (part==6) && (TMath::Abs(fCasc_NSigNegPion)>3 || TMath::Abs(fCasc_NSigPosProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
 
-  void processReconstructedCascade(aod::Collision const& collision, aod::CascDataExt const& Cascades, aod::V0Datas const& fullV0s)
+  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0Datas const& fullV0s)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -513,7 +513,7 @@ struct v0cascadesQA {
   ////////// Cascade QA - MC ///////////
   //////////////////////////////////////
 
-  void processMcCascade(aod::Collision const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
+  void processMcCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
   {
     if (sel8 && !collision.sel8()) {
       return;
