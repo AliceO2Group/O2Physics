@@ -100,6 +100,9 @@ struct v0cascadesQA {
       {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{628, 0f, 2.*TMath::Pi()}, {628, 0f, 2.*TMath::Pi()}, {200, 1.07f, 1.17f}}}},
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 0.4f, 0.6f}}}},
+      {"InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 1.07f, 1.17f}}}},
+      {"InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", {HistType::kTH3F, {{128, -0.5f, 127.5f}, {128, -0.5f, 127.5f}, {200, 1.07f, 1.17f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -254,6 +257,16 @@ struct v0cascadesQA {
       auto posdau = v0.posTrack_as<DaughterTracks>();
       auto negdau = v0.negTrack_as<DaughterTracks>();
 
+      Int_t posITSNhits = 0, negITSNhits = 0;
+      for (unsigned int i = 0; i < 7; i++) {
+        if (posdau.itsClusterMap() & (1 << i)) {
+          posITSNhits ++;
+        }
+        if (negdau.itsClusterMap() & (1 << i)) {
+          negITSNhits ++;
+        }
+      }
+          
       histos_V0.fill(HIST("CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
       histos_V0.fill(HIST("V0Radius"), v0.v0radius());
       histos_V0.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
@@ -276,6 +289,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassK0S_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
             histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+            histos_V0.fill(HIST("InvMassK0S_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mK0Short());
           }
 
           if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
@@ -291,6 +305,7 @@ struct v0cascadesQA {
               histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
               histos_V0.fill(HIST("ResponseProtonFromLambda"), v0.pt(), posdau.tpcNSigmaPr());
             }
+            histos_V0.fill(HIST("InvMassLambda_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mLambda());
           }
 
           if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
@@ -302,6 +317,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
             histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+            histos_V0.fill(HIST("InvMassAntiLambda_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mAntiLambda());
           }
         }
       }
