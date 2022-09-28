@@ -65,7 +65,7 @@ enum PDGtype {
 };
 
 #define requireTPCPIDCutInFilter(mask) ((aod::resodaughter::tpcPIDselectionFlag & (uint8_t)aod::resodaughter::mask) == (uint8_t)aod::resodaughter::mask)
-#define requireTOFPIDCutInFilter(mask) (((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::kHasTOF) != (uint8_t)aod::resodaughter::kHasTOF) || (((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::mask) == (uint8_t)aod::resodaughter::mask) && ((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::kHasTOF) == (uint8_t)aod::resodaughter::kHasTOF)))
+#define requireTOFPIDCutInFilter(mask) (((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::mask) == (uint8_t)aod::resodaughter::mask) && ((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::kHasTOF) == (uint8_t)aod::resodaughter::kHasTOF))
 #define requireTPCPIDPionCutInFilter() requireTPCPIDCutInFilter(PDGtype::kPion)
 #define requireTPCPIDKaonCutInFilter() requireTPCPIDCutInFilter(PDGtype::kKaon)
 #define requireTPCPIDProtonCutInFilter() requireTPCPIDCutInFilter(PDGtype::kProton)
