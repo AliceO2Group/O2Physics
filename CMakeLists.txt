@@ -61,6 +61,9 @@ include(O2PhysicsAddWorkflow)
 include(O2PhysicsAddLibrary)
 include(O2PhysicsAddHeaderOnlyLibrary)
 include(O2PhysicsTargetRootDictionary)
+include(O2PhysicsSetROOTPCMDependencies)
+include(O2PhysicsDataFile)
+include(AddRootDictionary)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -81,3 +84,11 @@ add_subdirectory(PWGUD)
 add_subdirectory(Tools)
 add_subdirectory(Tutorials)
 add_subdirectory(EventFiltering)
+
+# Testing and packaging only needed if we are the top level directory
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  add_subdirectory(packaging)
+endif()
+
+set_root_pcm_dependencies()
+

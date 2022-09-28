@@ -131,6 +131,8 @@ struct strangenessFilter {
     QAHistos.add("hTOFnsigmaPrAfterSel", "hTOFnsigmaPrAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaPrAfterSel"}});
     QAHistos.add("hTOFnsigmaBachPiBefSel", "hTOFnsigmaBachPiBefSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachPiBefSel"}});
     QAHistos.add("hTOFnsigmaBachPiAfterSel", "hTOFnsigmaBachPiAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachPiAfterSel"}});
+    QAHistos.add("hTOFnsigmaBachKBefSel", "hTOFnsigmaBachKBefSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachKBefSel"}});
+    QAHistos.add("hTOFnsigmaBachKAfterSel", "hTOFnsigmaBachKAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachKAfterSel"}});
 
     // topological variables distributions
     QAHistosTopologicalVariables.add("CascCosPA", "CascCosPA", HistType::kTH1F, {{350, 0.65f, 1.0f}});
@@ -199,7 +201,7 @@ struct strangenessFilter {
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFKa>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
@@ -366,7 +368,7 @@ struct strangenessFilter {
                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isOmega = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+      isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpc) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
@@ -572,9 +574,11 @@ struct strangenessFilter {
         QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), negdau.tofNSigmaPr());
         QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), posdau.tofNSigmaPi());
         QAHistos.fill(HIST("hTOFnsigmaBachPiBefSel"), bachelor.tofNSigmaPi());
+        QAHistos.fill(HIST("hTOFnsigmaBachKBefSel"), bachelor.tofNSigmaKa());
         if (
           (TMath::Abs(posdau.tofNSigmaPi()) > nsigmatof) &&
           (TMath::Abs(negdau.tofNSigmaPr()) > nsigmatof) &&
+          (TMath::Abs(bachelor.tofNSigmaKa()) > nsigmatof) &&
           (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
           continue;
         };
@@ -582,6 +586,7 @@ struct strangenessFilter {
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
         QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());
         QAHistos.fill(HIST("hTOFnsigmaBachPiAfterSel"), bachelor.tofNSigmaPi());
+        QAHistos.fill(HIST("hTOFnsigmaBachKAfterSel"), bachelor.tofNSigmaKa());
       } else {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;

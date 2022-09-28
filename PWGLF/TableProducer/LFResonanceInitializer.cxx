@@ -84,28 +84,11 @@ struct reso2initializer {
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
   Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                      // Global track cuts
 
-  void init(InitContext&)
+  // Filter for all tracks
+  template <bool isMC, typename CollisionType, typename TrackType>
+  void fillTracks(CollisionType const& collision, TrackType const& tracks)
   {
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
-    colCuts.init(&qaRegistry);
-  }
-
-  void process(const soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::Mults>::iterator& collision,
-               soa::Filtered<aod::Reso2TracksPIDExt> const& tracks, o2::aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
-  {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    // Default event selection
-    if (!colCuts.isSelected(collision))
-      return;
-    colCuts.fillQA(collision);
-
-    if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
-    } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
-    }
-
-    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
+    int childIDs[2] = {0, 0}; // Dummy lists for V0s
     // Loop over tracks
     for (auto& track : tracks) {
       // Tracks are already filtered by the pre-filters
@@ -159,52 +142,84 @@ struct reso2initializer {
                   0, 0, 0,
                   0, 0, 0, 0);
     }
-    /// V0s
-    if (ConfStoreV0) {
-      for (auto& v0 : V0s) {
-        qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
-        auto postrack = v0.posTrack_as<aod::Reso2TracksPIDExt>();
-        auto negtrack = v0.negTrack_as<aod::Reso2TracksPIDExt>();
+  }
 
-        if (postrack.tpcNClsCrossedRows() < mincrossedrows)
-          continue;
-        if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
-          continue;
-        qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
+  // Filter for all V0s
+  template <bool isMC, typename CollisionType, typename TrackType>
+  void fillV0s(CollisionType const& collision, aod::V0Datas const& v0s, TrackType const& tracks)
+  {
+    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
+    for (auto& v0 : v0s) {
+      qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
+      auto postrack = v0.posTrack_as<TrackType>();
+      auto negtrack = v0.negTrack_as<TrackType>();
 
-        if (fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
-          continue;
-        if (fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
-          continue;
-        qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
+      if (postrack.tpcNClsCrossedRows() < mincrossedrows)
+        continue;
+      if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
+        continue;
+      qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
 
-        if ((v0.v0radius() > cMaxV0Radius) || (v0.v0radius() < cMinV0Radius))
-          continue;
-        qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
-          continue;
-        qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
-        childIDs[0] = v0.posTrackId();
-        childIDs[1] = v0.negTrackId();
-        reso2tracks(resoCollisions.lastIndex(),
-                    v0.pt(),
-                    v0.px(),
-                    v0.py(),
-                    v0.pz(),
-                    v0.eta(),
-                    v0.phi(),
-                    aod::resodaughter::DaughterType::kV0,
-                    v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    childIDs,
-                    0,
-                    0,
-                    v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    0,
-                    v0.x(), 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
-                    v0.v0radius(), v0.x(), v0.y(), v0.z());
-      }
+      if (fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
+        continue;
+      if (fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
+        continue;
+      qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
+
+      if ((v0.v0radius() > cMaxV0Radius) || (v0.v0radius() < cMinV0Radius))
+        continue;
+      qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
+      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
+        continue;
+      qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
+      childIDs[0] = v0.posTrackId();
+      childIDs[1] = v0.negTrackId();
+      reso2tracks(resoCollisions.lastIndex(),
+                  v0.pt(),
+                  v0.px(),
+                  v0.py(),
+                  v0.pz(),
+                  v0.eta(),
+                  v0.phi(),
+                  aod::resodaughter::DaughterType::kV0,
+                  v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                  childIDs,
+                  0,
+                  0,
+                  v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                  0,
+                  v0.x(), 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
+                  v0.v0radius(), v0.x(), v0.y(), v0.z());
     }
+  }
+
+  void init(InitContext&)
+  {
+    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.init(&qaRegistry);
+  }
+
+  void process(const soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator& collision,
+               soa::Filtered<aod::Reso2TracksPIDExt> const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    // Default event selection
+    if (!colCuts.isSelected(collision))
+      return;
+    colCuts.fillQA(collision);
+
+    if (ConfIsRun3) {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    } else {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    }
+
+    // Loop over tracks
+    fillTracks<false>(collision, tracks);
+    /// V0s
+    if (ConfStoreV0)
+      fillV0s<false>(collision, V0s, tracks);
   }
 };
 

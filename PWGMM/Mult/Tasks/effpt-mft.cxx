@@ -25,12 +25,15 @@
 #include "CommonConstants/MathConstants.h"
 #include "TDatabasePDG.h"
 #include "MathUtils/Utils.h"
+#include "Index.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-//AxisSpec PtAxis = {1001, -0.005, 10.005};
+AxisSpec EtaAxis = {18, -4.6, -1.};
+AxisSpec PhiAxis = {629, 0, 2 * M_PI};
+AxisSpec ZAxis = {301, -30.1, 30.1};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -58,6 +61,16 @@ struct EffPtMFT {
       registry.add({"TracksToPartPtEtaPrim", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}}); //
       registry.add({"TracksPtEtaGen", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});
       registry.add({"TracksPtEtaGen_t", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});
+    }
+
+    if (doprocessTrackEfficiencyIndexed) {
+      registry.add({"TracksPtEtaGenI", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
+      registry.add({"TracksPtEtaZvtxGenI", " ; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm)", {HistType::kTH3F, {PtAxis, EtaAxis, ZAxis}}});
+      registry.add({"TracksPtEtaPrimI", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
+      registry.add({"TracksPtEtaZvtxPrimI", " ; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm)", {HistType::kTH3F, {PtAxis, EtaAxis, ZAxis}}});
+      registry.add({"TracksPtEtaDuplicates", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
+      registry.add({"TracksPhiEtaGenDuplicates", " ; #phi; #eta", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"TracksPhiEtaDuplicates", " ; #phi; #eta", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
     }
   }
 
@@ -114,7 +127,7 @@ struct EffPtMFT {
 
   void processGenPt(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
-    //In the MFT the measurement of pT is not precise, so we access it by using the particle's pT instead
+    // In the MFT the measurement of pT is not precise, so we access it by using the particle's pT instead
 
     if (collision.has_mcCollision()) {
       if ((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)) {
@@ -124,7 +137,7 @@ struct EffPtMFT {
             if (!track.has_mcParticle()) {
               continue;
             }
-            auto particle = track.mcParticle(); //this mcParticle doesn't necessarly come from the right mcCollision
+            auto particle = track.mcParticle(); // this mcParticle doesn't necessarly come from the right mcCollision
             registry.fill(HIST("TracksToPartPtEta"), particle.pt(), particle.eta());
             if ((particle.mcCollisionId() != collision.mcCollision().globalIndex()) || (!particle.isPhysicalPrimary())) {
               if (particle.mcCollisionId() != collision.mcCollision().globalIndex()) {
@@ -140,6 +153,73 @@ struct EffPtMFT {
   }
 
   PROCESS_SWITCH(EffPtMFT, processGenPt, "Process particle-level info of pt", false);
+
+  // using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
+  using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
+  // expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
+  Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+
+  void processTrackEfficiencyIndexed(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+                                     aod::McCollisions const&,
+                                     ParticlesI const&,
+                                     MFTTracksLabeled const& tracks)
+  {
+    for (auto& collision : collisions) {
+      if (useEvSel && !collision.sel8()) {
+        continue;
+      }
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      auto mcCollision = collision.mcCollision();
+      auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+      particlesI.bindExternalIndices(&tracks);
+
+      for (auto& particle : particlesI) {
+        auto charge = 0.;
+        auto p = pdg->GetParticle(particle.pdgCode());
+        if (p != nullptr) {
+          charge = p->Charge();
+        }
+        if (std::abs(charge) < 3.) {
+          continue;
+        }
+        registry.fill(HIST("TracksPtEtaZvtxGenI"), particle.pt(), particle.eta(), mcCollision.posZ()); // ptEtaGenPrimary
+        if ((mcCollision.posZ() > -12) && (mcCollision.posZ() < 12)) {
+          registry.fill(HIST("TracksPtEtaGenI"), particle.pt(), particle.eta()); // ptEtaGenPrimary
+        }
+
+        if (particle.has_mfttracks()) {
+          auto counted = false;
+          auto counter = 0;
+          auto relatedTracks = particle.mfttracks_as<MFTTracksLabeled>();
+          for (auto& track : relatedTracks) {
+
+            ++counter;
+
+            if (!counted) // this particle was not already counted
+            {
+              registry.fill(HIST("TracksPtEtaZvtxPrimI"), particle.pt(), particle.eta(), mcCollision.posZ());
+              if ((mcCollision.posZ() > -12) && (mcCollision.posZ() < 12)) {
+                registry.fill(HIST("TracksPtEtaPrimI"), particle.pt(), particle.eta());
+              }
+              counted = true;
+            }
+            if (counter > 1) {
+              registry.fill(HIST("TracksPtEtaDuplicates"), particle.pt(), particle.eta());
+              registry.fill(HIST("TracksPhiEtaDuplicates"), track.phi(), track.eta());
+            } // Adding TracksPtEtaDuplicates and TracksPtEtaPrimI gives you the total
+          }
+
+          if (relatedTracks.size() > 1) {
+            registry.fill(HIST("TracksPhiEtaGenDuplicates"), particle.phi(), particle.eta());
+          }
+        } // the particle has a track
+      }   // loop on particlesI
+    }     // loop on collisions
+  }       // end of processTrackEfficiencyIndexed
+
+  PROCESS_SWITCH(EffPtMFT, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
 };
 
 WorkflowSpec

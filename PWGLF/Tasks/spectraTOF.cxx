@@ -49,7 +49,7 @@ struct tofSpectra {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
-  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, ""};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, ""};
   Configurable<bool> isRun2{"isRun2", false, "Flag to process Run 2 data"};
 
   // Histograms
@@ -91,6 +91,48 @@ struct tofSpectra {
                                                            "dcaxyphi/neg/ka", "dcaxyphi/neg/pr", "dcaxyphi/neg/de",
                                                            "dcaxyphi/neg/tr", "dcaxyphi/neg/he", "dcaxyphi/neg/al"};
   // MC
+  static constexpr std::string_view hpt_num_prm[NpCharge] = {"MC/el/pos/prm/pt/num", "MC/mu/pos/prm/pt/num", "MC/pi/pos/prm/pt/num",
+                                                             "MC/ka/pos/prm/pt/num", "MC/pr/pos/prm/pt/num", "MC/de/pos/prm/pt/num",
+                                                             "MC/tr/pos/prm/pt/num", "MC/he/pos/prm/pt/num", "MC/al/pos/prm/pt/num",
+                                                             "MC/el/neg/prm/pt/num", "MC/mu/neg/prm/pt/num", "MC/pi/neg/prm/pt/num",
+                                                             "MC/ka/neg/prm/pt/num", "MC/pr/neg/prm/pt/num", "MC/de/neg/prm/pt/num",
+                                                             "MC/tr/neg/prm/pt/num", "MC/he/neg/prm/pt/num", "MC/al/neg/prm/pt/num"};
+  static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/numtof", "MC/mu/pos/prm/pt/numtof", "MC/pi/pos/prm/pt/numtof",
+                                                                "MC/ka/pos/prm/pt/numtof", "MC/pr/pos/prm/pt/numtof", "MC/de/pos/prm/pt/numtof",
+                                                                "MC/tr/pos/prm/pt/numtof", "MC/he/pos/prm/pt/numtof", "MC/al/pos/prm/pt/numtof",
+                                                                "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
+                                                                "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
+                                                                "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
+  static constexpr std::string_view hpt_den_prm[NpCharge] = {"MC/el/pos/prm/pt/den", "MC/mu/pos/prm/pt/den", "MC/pi/pos/prm/pt/den",
+                                                             "MC/ka/pos/prm/pt/den", "MC/pr/pos/prm/pt/den", "MC/de/pos/prm/pt/den",
+                                                             "MC/tr/pos/prm/pt/den", "MC/he/pos/prm/pt/den", "MC/al/pos/prm/pt/den",
+                                                             "MC/el/neg/prm/pt/den", "MC/mu/neg/prm/pt/den", "MC/pi/neg/prm/pt/den",
+                                                             "MC/ka/neg/prm/pt/den", "MC/pr/neg/prm/pt/den", "MC/de/neg/prm/pt/den",
+                                                             "MC/tr/neg/prm/pt/den", "MC/he/neg/prm/pt/den", "MC/al/neg/prm/pt/den"};
+  static constexpr std::string_view hpt_num_str[NpCharge] = {"MC/el/pos/str/pt/num", "MC/mu/pos/str/pt/num", "MC/pi/pos/str/pt/num",
+                                                             "MC/ka/pos/str/pt/num", "MC/pr/pos/str/pt/num", "MC/de/pos/str/pt/num",
+                                                             "MC/tr/pos/str/pt/num", "MC/he/pos/str/pt/num", "MC/al/pos/str/pt/num",
+                                                             "MC/el/neg/str/pt/num", "MC/mu/neg/str/pt/num", "MC/pi/neg/str/pt/num",
+                                                             "MC/ka/neg/str/pt/num", "MC/pr/neg/str/pt/num", "MC/de/neg/str/pt/num",
+                                                             "MC/tr/neg/str/pt/num", "MC/he/neg/str/pt/num", "MC/al/neg/str/pt/num"};
+  static constexpr std::string_view hpt_den_str[NpCharge] = {"MC/el/pos/str/pt/den", "MC/mu/pos/str/pt/den", "MC/pi/pos/str/pt/den",
+                                                             "MC/ka/pos/str/pt/den", "MC/pr/pos/str/pt/den", "MC/de/pos/str/pt/den",
+                                                             "MC/tr/pos/str/pt/den", "MC/he/pos/str/pt/den", "MC/al/pos/str/pt/den",
+                                                             "MC/el/neg/str/pt/den", "MC/mu/neg/str/pt/den", "MC/pi/neg/str/pt/den",
+                                                             "MC/ka/neg/str/pt/den", "MC/pr/neg/str/pt/den", "MC/de/neg/str/pt/den",
+                                                             "MC/tr/neg/str/pt/den", "MC/he/neg/str/pt/den", "MC/al/neg/str/pt/den"};
+  static constexpr std::string_view hpt_num_mat[NpCharge] = {"MC/el/pos/mat/pt/num", "MC/mu/pos/mat/pt/num", "MC/pi/pos/mat/pt/num",
+                                                             "MC/ka/pos/mat/pt/num", "MC/pr/pos/mat/pt/num", "MC/de/pos/mat/pt/num",
+                                                             "MC/tr/pos/mat/pt/num", "MC/he/pos/mat/pt/num", "MC/al/pos/mat/pt/num",
+                                                             "MC/el/neg/mat/pt/num", "MC/mu/neg/mat/pt/num", "MC/pi/neg/mat/pt/num",
+                                                             "MC/ka/neg/mat/pt/num", "MC/pr/neg/mat/pt/num", "MC/de/neg/mat/pt/num",
+                                                             "MC/tr/neg/mat/pt/num", "MC/he/neg/mat/pt/num", "MC/al/neg/mat/pt/num"};
+  static constexpr std::string_view hpt_den_mat[NpCharge] = {"MC/el/pos/mat/pt/den", "MC/mu/pos/mat/pt/den", "MC/pi/pos/mat/pt/den",
+                                                             "MC/ka/pos/mat/pt/den", "MC/pr/pos/mat/pt/den", "MC/de/pos/mat/pt/den",
+                                                             "MC/tr/pos/mat/pt/den", "MC/he/pos/mat/pt/den", "MC/al/pos/mat/pt/den",
+                                                             "MC/el/neg/mat/pt/den", "MC/mu/neg/mat/pt/den", "MC/pi/neg/mat/pt/den",
+                                                             "MC/ka/neg/mat/pt/den", "MC/pr/neg/mat/pt/den", "MC/de/neg/mat/pt/den",
+                                                             "MC/tr/neg/mat/pt/den", "MC/he/neg/mat/pt/den", "MC/al/neg/mat/pt/den"};
   static constexpr std::string_view hdcaxyprm[NpCharge] = {"dcaxyprm/pos/el", "dcaxyprm/pos/mu", "dcaxyprm/pos/pi",
                                                            "dcaxyprm/pos/ka", "dcaxyprm/pos/pr", "dcaxyprm/pos/de",
                                                            "dcaxyprm/pos/tr", "dcaxyprm/pos/he", "dcaxyprm/pos/al",
@@ -128,8 +170,6 @@ struct tofSpectra {
                                                           "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                           "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
 
-  TrackSelection globalTrackswoPrim; // Track without cut for primaries
-
   void init(o2::framework::InitContext&)
   {
     if (doprocessFullEl == true && doprocessTinyEl == true) {
@@ -158,13 +198,6 @@ struct tofSpectra {
     }
     if (doprocessFullAl == true && doprocessTinyAl == true) {
       LOGF(fatal, "Cannot enable processFullAl and processTinyAl at the same time. Please choose one.");
-    }
-
-    globalTrackswoPrim = getGlobalTrackSelection();
-    globalTrackswoPrim.SetMaxDcaXYPtDep([](float pt) { return 3.f; });
-    globalTrackswoPrim.SetRequireGoldenChi2(false);
-    if (!isRun2) {
-      globalTrackswoPrim.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
     }
 
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
@@ -197,6 +230,17 @@ struct tofSpectra {
     const AxisSpec dcaXyAxis{600, -3.005, 2.995, "DCA_{xy} (cm)"};
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{600, -3.005, 2.995, "DCA_{z} (cm)"};
+
+    histos.add("Data/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH1F, {ptAxis});
+    histos.add("Data/pos/pt/its_tpc", "pos ITS-TPC", kTH1F, {ptAxis});
+    histos.add("Data/pos/pt/tpc", "pos TPC", kTH1F, {ptAxis});
+    histos.add("Data/pos/pt/its", "pos ITS", kTH1F, {ptAxis});
+
+    histos.add("Data/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/its_tpc", "neg ITS-TPC", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/tpc", "neg TPC", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/its", "neg ITS", kTH1F, {ptAxis});
+
     for (int i = 0; i < NpCharge; i++) {
 
       switch (i) {
@@ -262,7 +306,16 @@ struct tofSpectra {
       histos.add(hdcaxy[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaXyAxis});
       histos.add(hdcaz[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaZAxis});
       histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2F, {phiAxis, dcaXyAxis});
+
       if (doprocessMC) {
+        histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1F, {ptAxis});
+        histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH1F, {ptAxis});
+        histos.add(hpt_num_str[i].data(), pTCharge[i], kTH1F, {ptAxis});
+        histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH1F, {ptAxis});
+        histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH1F, {ptAxis});
+        histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1F, {ptAxis});
+        histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH1F, {ptAxis});
+
         histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaXyAxis});
         histos.add(hdcazprm[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaZAxis});
         histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaXyAxis});
@@ -358,11 +411,42 @@ struct tofSpectra {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 2);
     }
-    if (!globalTrackswoPrim.IsSelected(track)) {
+    if (!track.isGlobalTrackWoDCA()) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 3);
+    }
+    if constexpr (fillHistograms) {
+      if (track.sign() > 0) {
+        if (track.hasITS() && track.hasTPC()) {
+          if (track.hasTOF()) {
+            histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+          } else {
+            histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+          }
+        }
+        if (track.hasTPC()) {
+          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
+        }
+        if (track.hasITS()) {
+          histos.fill(HIST("Data/pos/pt/its"), track.pt());
+        }
+      } else {
+        if (track.hasITS() && track.hasTPC()) {
+          if (track.hasTOF()) {
+            histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
+          } else {
+            histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+          }
+        }
+        if (track.hasTPC()) {
+          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
+        }
+        if (track.hasITS()) {
+          histos.fill(HIST("Data/neg/pt/its"), track.pt());
+        }
+      }
     }
     if (!track.hasTOF()) {
       return false;
@@ -481,7 +565,7 @@ struct tofSpectra {
       if (std::abs(mcParticle.y()) > cfgCutY) {
         continue;
       }
-      if (!globalTrackswoPrim.IsSelected(track)) {
+      if (!track.isGlobalTrackWoDCA()) {
         continue;
       }
       if (!mcParticle.isPhysicalPrimary()) {
@@ -496,26 +580,49 @@ struct tofSpectra {
         histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
       }
-      if (!track.isGlobalTrack()) {
+
+      if (!track.isGlobalTrack()) { // Skipping tracks that don't pass the standard cuts
         continue;
       }
-    }
-    // for (auto& particle : mcParticles) {
-    //   // if (std::abs(particle.eta()) > 0.8) {
-    //   //    continue;
-    //   //  }
-    //   if (std::abs(0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()))) > 0.5) {
-    //     continue;
-    //   }
-    //   if (!particle.isPhysicalPrimary()) {
-    //     continue;
-    //   }
-    //   if (particle.pdgCode() != pdg_num[i]) {
-    //     continue;
-    //   }
 
-    //   histos.fill(HIST(pt_den[i]), particle.pt());
-    // }
+      if (!mcParticle.isPhysicalPrimary()) {
+        if (mcParticle.getProcess() == 4) {
+          histos.fill(HIST(hpt_num_str[i]), track.pt());
+        } else {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt());
+        }
+      } else {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt());
+        if (track.hasTOF()) {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt());
+        }
+      }
+    }
+
+    for (auto& particle : mcParticles) {
+      if (std::abs(particle.eta()) > cfgCutEta) {
+        continue;
+      }
+      if (std::abs(particle.y()) > cfgCutY) {
+        continue;
+      }
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (particle.pdgCode() != PDGs[i]) {
+        continue;
+      }
+
+      if (!particle.isPhysicalPrimary()) {
+        if (particle.getProcess() == 4) {
+          histos.fill(HIST(hpt_den_str[i]), particle.pt());
+        } else {
+          histos.fill(HIST(hpt_den_mat[i]), particle.pt());
+        }
+      } else {
+        histos.fill(HIST(hpt_den_prm[i]), particle.pt());
+      }
+    }
   }
 
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
