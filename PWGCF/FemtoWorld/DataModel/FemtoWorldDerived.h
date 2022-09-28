@@ -122,7 +122,6 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
-DECLARE_SOA_COLUMN(MPion, mPion, float);             //! The invariant mass of V0 candidate, assuming pion
 
 } // namespace femtoworldparticle
 
@@ -179,7 +178,6 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::DecayVtxY,
                   femtoworldparticle::DecayVtxZ,
                   femtoworldparticle::MKaon,
-                  femtoworldparticle::MPion,
                   femtoworldparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtoworldparticle::TPCNClsCrossedRows>,
                   pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
                   pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
