@@ -71,7 +71,7 @@ struct v0cascadesQA {
       {"V0Radius", "V0Radius", {HistType::kTH1D, {{100, 0.0f, 10.0f}}}},
       {"DecayLength", "DecayLength", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"V0DCANegToPV", "V0DCANegToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}}}, // this window captures but a small part of the distribution; plus the dcatopv can be negative ---- set to [-1;1] for comparison
-      {"V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},  // this window captures but a small part of the distribution; plus the dcatopv can be negative
+      {"V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}}, // this window captures but a small part of the distribution; plus the dcatopv can be negative
       {"V0DCAV0Daughters", "V0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}}},
       {"CtauK0s", "CtauK0s", {HistType::kTH1F, {{65, 0.0f, 13.0f}}}},
       {"CtauLambda", "CtauLambda", {HistType::kTH1F, {{200, 0.0f, 40.0f}}}},
