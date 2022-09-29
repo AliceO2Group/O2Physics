@@ -683,14 +683,11 @@ struct AnalysisSameEventPairing {
       }
     }
 
+    // Usage example of ccdb
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(nolaterthan.value);
-    auto histCCDB = ccdb->get<TH1F>(ccdbPath.value);
-    if (!histCCDB) {
-      LOGF(fatal, "CCDB histogram not found");
-    }
 
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
