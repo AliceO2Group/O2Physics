@@ -33,12 +33,11 @@ using namespace o2::framework::expressions;
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
-using MyMuonsWithCov = aod::FwdTracks;
 
 struct FwdTrackExtension {
   Produces<aod::FwdTracksDCA> extendedTrackQuantities;
 
-  void process(MyMuonsWithCov const& tracks, aod::Collisions const&)
+  void process(aod::FwdTracks const& tracks, aod::Collisions const&)
   {
     for (auto& track : tracks) {
       float dcaX = -999;

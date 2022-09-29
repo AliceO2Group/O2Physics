@@ -813,8 +813,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonChi2MatchMCHMFT] = track.chi2MatchMCHMFT();
     values[kMuonMatchScoreMCHMFT] = track.matchScoreMCHMFT();
     values[kMuonTrackType] = track.trackType();
-    values[kMuonDCAx] = track.fwddcaX();
-    values[kMuonDCAy] = track.fwddcaY();
+    values[kMuonDCAx] = track.fwdDcaX();
+    values[kMuonDCAy] = track.fwdDcaY();
   }
   // Quantities based on the muon covariance table
   if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {
