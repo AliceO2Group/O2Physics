@@ -28,13 +28,15 @@ float particleMass(TDatabasePDG* pdg, int pid);
 // -----------------------------------------------------------------------------
 //  numPart:    Particle number to which the parameters apply
 //  cutPID:     DPG code of particle hypothesis for nSigma calculation
+//  cutDetector:detector: 1: TPC
+//                        2: TOF
+//  cutType:    cut type:  1: pt and nSigma within limits
+//                        -1: nSigma out of limits within pt range
+//                         2: pt and detector signal  within limits
+//                        -2: detector signal out of limits within pt range
 //  cutApply:   How to apply cut: 0: not active
 //                                1: if information available
 //                                2: return false if information not available
-//  cutType:    cut type: 1: pt and nSigma within limits
-//                        2: nSigma out of limits
-//  cutDetector:detector: 1: TPC
-//                        2: TOF
 //  ptMin, ptMax, nSigmaTPCmin, nSigmaTPCmax, nSigmaTOFmin, nSigmaTOFmax: cut limits
 struct DGPIDCut {
 
@@ -57,8 +59,8 @@ struct DGPIDCut {
   int cutApply() { return mcutApply; }
   float cutPtMin() { return mptMin; }
   float cutPtMax() { return mptMax; }
-  float cutnSigmaMin() { return mnSigmamin; }
-  float cutnSigmaMax() { return mnSigmamax; }
+  float cutdetValueMin() { return mdetValuemin; }
+  float cutdetValueMax() { return mdetValuemax; }
 
  private:
   int mnumPart;
@@ -68,8 +70,8 @@ struct DGPIDCut {
   int mcutApply;
   float mptMin;
   float mptMax;
-  float mnSigmamin;
-  float mnSigmamax;
+  float mdetValuemin;
+  float mdetValuemax;
 
   // ClassDefNV(DGPIDCut, 1);
 };

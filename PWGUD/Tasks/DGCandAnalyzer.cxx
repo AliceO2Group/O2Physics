@@ -67,7 +67,10 @@ struct DGCandAnalyzer {
       {"nIVMs", "#nIVMs", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
       {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 100.0}}}},
       {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 100.0}}}},
-      {"nSTwoTracks", "#nSTwoTracks", {HistType::kTH2F, {{100, -5., 5.}, {100, -5., 5.0}}}},
+      {"sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}}},
+      {"TOFsignal1", "#TOFsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 50000.0}}}},
+      {"TOFsignal2", "#TOFsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 50000.0}}}},
+      {"sig1VsSig2TOF", "#sig1VsSig2TOF", {HistType::kTH2F, {{100, 0., 50000.}, {100, 0., 50000.}}}},
       {"nSigmaTPCPtEl", "#nSigmaTPCPtEl", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
       {"nSigmaTPCPtPi", "#nSigmaTPCPtPi", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
       {"nSigmaTPCPtMu", "#nSigmaTPCPtMu", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
@@ -92,17 +95,20 @@ struct DGCandAnalyzer {
 
     // fill histogram
     auto tr1 = dgtracks.rawIteratorAt(ivm.trkinds()[0]);
-    auto pid1 = anaPars.PIDs()[0];
     auto signalTPC1 = tr1.tpcSignal();
-    auto nSigma1 = pidsel.getTPCnSigma(tr1, pid1);
     auto tr2 = dgtracks.rawIteratorAt(ivm.trkinds()[1]);
     auto signalTPC2 = tr2.tpcSignal();
-    auto pid2 = anaPars.PIDs()[1];
-    auto nSigma2 = pidsel.getTPCnSigma(tr2, pid2);
 
     registry.get<TH2>(HIST("TPCsignal1"))->Fill(tr1.pt(), signalTPC1);
     registry.get<TH2>(HIST("TPCsignal2"))->Fill(tr2.pt(), signalTPC2);
-    registry.get<TH2>(HIST("nSTwoTracks"))->Fill(nSigma1, nSigma2);
+    registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
+
+    auto signalTOF1 = tr1.tofSignal();
+    auto signalTOF2 = tr2.tofSignal();
+
+    registry.get<TH2>(HIST("TOFsignal1"))->Fill(tr1.pt(), signalTOF1);
+    registry.get<TH2>(HIST("TOFsignal2"))->Fill(tr2.pt(), signalTOF2);
+    registry.get<TH2>(HIST("sig1VsSig2TOF"))->Fill(signalTOF1, signalTOF2);
   }
 
   void init(InitContext&)
