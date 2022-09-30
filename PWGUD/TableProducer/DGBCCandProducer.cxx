@@ -18,7 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/Core/UDHelperFunctions.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "DGCBCandProducer.h"
+#include "DGBCCandProducer.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,144 +100,145 @@ struct tracksWTOFInBCs {
       }
     }
   }
+};
 
-  // -----------------------------------------------------------------------------
-  struct DGBCCandProducer {
-    // data tables
-    Produces<aod::UDCollisions> outputCollisions;
-    Produces<aod::UDTracks> outputTracks;
-    Produces<aod::UDTracksPID> outputTracksPID;
-    Produces<aod::UDTracksExtra> outputTracksExtra;
-    Produces<aod::UDTrackCollisionIDs> outputTracksCollisionsId;
+// -----------------------------------------------------------------------------
+struct DGBCCandProducer {
+  // data tables
+  Produces<aod::UDCollisions> outputCollisions;
+  Produces<aod::UDTracks> outputTracks;
+  Produces<aod::UDTracksPID> outputTracksPID;
+  Produces<aod::UDTracksExtra> outputTracksExtra;
+  Produces<aod::UDTrackCollisionIDs> outputTracksCollisionsId;
 
-    // get a DGCutparHolder
-    DGCutparHolder diffCuts = DGCutparHolder();
-    MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
-    // DG selector
-    DGSelector dgSelector;
+  // DG selector
+  DGSelector dgSelector;
 
-    void init(InitContext&)
-    {
-      diffCuts = (DGCutparHolder)DGCuts;
+  void init(InitContext&)
+  {
+    diffCuts = (DGCutparHolder)DGCuts;
+  }
+
+  using TWTs = aod::TrackswTOFInBCs;
+  using TWT = TWTs::iterator;
+  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
+  using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FWs = aod::FwdTracks;
+
+  Preslice<CCs> perBC = aod::evsel::foundBCId;
+  Preslice<TCs> perCollision = aod::track::collisionId;
+  Preslice<FWs> perCollisionFwd = aod::fwdtrack::collisionId;
+
+  // function to update UDTracks, UDTracksPID, UDTracksExtra, and UDTrackCollisionIDs
+  template <typename TTrack, typename TBC>
+  void updateUDTrackTables(TTrack const& track, TBC const& bc)
+  {
+    outputTracks(track.px(), track.py(), track.pz(), track.sign(),
+                 bc.globalBC(), track.trackTime(), track.trackTimeRes());
+    outputTracksPID(track.tpcNSigmaEl(),
+                    track.tpcNSigmaMu(),
+                    track.tpcNSigmaPi(),
+                    track.tpcNSigmaKa(),
+                    track.tpcNSigmaPr(),
+                    track.tofNSigmaEl(),
+                    track.tofNSigmaMu(),
+                    track.tofNSigmaPi(),
+                    track.tofNSigmaKa(),
+                    track.tofNSigmaPr());
+    outputTracksExtra(track.itsClusterMap(),
+                      track.tpcNClsFindable(),
+                      track.tpcNClsFindableMinusFound(),
+                      track.tpcNClsFindableMinusCrossedRows(),
+                      track.tpcNClsShared(),
+                      track.trdPattern(),
+                      track.itsChi2NCl(),
+                      track.tpcChi2NCl(),
+                      track.trdChi2(),
+                      track.tofChi2(),
+                      track.tpcSignal(),
+                      track.tofSignal(),
+                      track.trdSignal(),
+                      track.length(),
+                      track.tofExpMom(),
+                      track.detectorMap());
+    outputTracksCollisionsId(outputCollisions.lastIndex());
+  }
+
+  void process(TWT& twt, BCs& bcs, CCs& collisions, TCs& tracks, FWs& fwdtracks,
+               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  {
+
+    // leave if twt has no associated BC
+    if (!twt.has_bc()) {
+      return;
     }
 
-    using TWTs = aod::TrackswTOFInBCs;
-    using TWT = TWTs::iterator;
-    using CCs = soa::Join<aod::Collisions, aod::EvSels>;
-    using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-    using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                          aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-    using FWs = aod::FwdTracks;
+    // get bc and related tracks
+    auto bc = twt.bc_as<BCs>();
 
-    Preslice<CCs> perBC = aod::evsel::foundBCId;
-    Preslice<TCs> perCollision = aod::track::collisionId;
-    Preslice<FWs> perCollisionFwd = aod::fwdtrack::collisionId;
+    // check if DG event
+    float rtrwTOF = -1.;
+    int8_t nCharge;
 
-    // function to update UDTracks, UDTracksPID, UDTracksExtra, and UDTrackCollisionIDs
-    template <typename TTrack, typename TBC>
-    void updateUDTrackTables(TTrack const& track, TBC const& bc)
-    {
-      outputTracks(track.px(), track.py(), track.pz(), track.sign(),
-                   bc.globalBC(), track.trackTime(), track.trackTimeRes());
-      outputTracksPID(track.tpcNSigmaEl(),
-                      track.tpcNSigmaMu(),
-                      track.tpcNSigmaPi(),
-                      track.tpcNSigmaKa(),
-                      track.tpcNSigmaPr(),
-                      track.tofNSigmaEl(),
-                      track.tofNSigmaMu(),
-                      track.tofNSigmaPi(),
-                      track.tofNSigmaKa(),
-                      track.tofNSigmaPr());
-      outputTracksExtra(track.itsClusterMap(),
-                        track.tpcNClsFindable(),
-                        track.tpcNClsFindableMinusFound(),
-                        track.tpcNClsFindableMinusCrossedRows(),
-                        track.tpcNClsShared(),
-                        track.trdPattern(),
-                        track.itsChi2NCl(),
-                        track.tpcChi2NCl(),
-                        track.trdChi2(),
-                        track.tofChi2(),
-                        track.tpcSignal(),
-                        track.tofSignal(),
-                        track.trdSignal(),
-                        track.length(),
-                        track.tofExpMom(),
-                        track.detectorMap());
-      outputTracksCollisionsId(outputCollisions.lastIndex());
-    }
+    // is there an associated collision?
+    auto collision = collisions.sliceBy(perBC, bc.globalIndex());
+    if (collision.size() > 0) {
+      auto col = collision.rawIteratorAt(0);
+      auto colTracks = tracks.sliceBy(perCollision, col.globalIndex());
+      auto colFWDTracks = fwdtracks.sliceBy(perCollisionFwd, col.globalIndex());
+      auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+      if (dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFWDTracks) == 0) {
+        rtrwTOF = rPVtrwTOF(colTracks, col.numContrib());
+        nCharge = netCharge(colTracks);
 
-    void process(TWT& twt, BCs& bcs, CCs& collisions, TCs& tracks, FWs& fwdtracks,
-                 aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
-    {
+        outputCollisions(bc.globalBC(), bc.runNumber(),
+                         col.posX(), col.posY(), col.posZ(),
+                         col.numContrib(), nCharge,
+                         rtrwTOF,
+                         0., 0., 0., 0., 0);
 
-      // leave if twt has no associated BC
-      if (!twt.has_bc()) {
-        return;
-      }
-
-      // get bc and related tracks
-      auto bc = twt.bc_as<BCs>();
-
-      // check if DG event
-      float rtrwTOF = -1.;
-      int8_t nCharge;
-
-      // is there an associated collision?
-      auto collision = collisions.sliceBy(perBC, bc.globalIndex());
-      if (collision.size() > 0) {
-        auto col = collision.rawIteratorAt(0);
-        auto colTracks = tracks.sliceBy(perCollision, col.globalIndex());
-        auto colFWDTracks = fwdtracks.sliceBy(perCollisionFwd, col.globalIndex());
-        auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-        if (dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFWDTracks) == 0) {
-          rtrwTOF = rPVtrwTOF(colTracks, col.numContrib());
-          nCharge = netCharge(colTracks);
-
-          outputCollisions(bc.globalBC(), bc.runNumber(),
-                           col.posX(), col.posY(), col.posZ(),
-                           col.numContrib(), nCharge,
-                           rtrwTOF,
-                           0., 0., 0., 0., 0);
-
-          // update DGTracks tables
-          for (auto& track : colTracks) {
-            if (track.isPVContributor()) {
-              updateUDTrackTables(track, bc);
-            }
-          }
-        }
-      } else {
-        auto tracksArray = twt.track_as<TCs>();
-        if (dgSelector.IsSelected(diffCuts, bc, tracksArray) == 0) {
-          rtrwTOF = -1.;
-          nCharge = netCharge(tracksArray);
-
-          outputCollisions(bc.globalBC(), bc.runNumber(),
-                           0., 0., 0.,
-                           tracksArray.size(), nCharge,
-                           rtrwTOF,
-                           0., 0., 0., 0., 0);
-
-          // update DGTracks tables
-          for (auto& track : tracksArray) {
+        // update DGTracks tables
+        for (auto& track : colTracks) {
+          if (track.isPVContributor()) {
             updateUDTrackTables(track, bc);
           }
         }
       }
+    } else {
+      auto tracksArray = twt.track_as<TCs>();
+      if (dgSelector.IsSelected(diffCuts, bc, tracksArray) == 0) {
+        rtrwTOF = -1.;
+        nCharge = netCharge(tracksArray);
+
+        outputCollisions(bc.globalBC(), bc.runNumber(),
+                         0., 0., 0.,
+                         tracksArray.size(), nCharge,
+                         rtrwTOF,
+                         0., 0., 0., 0., 0);
+
+        // update DGTracks tables
+        for (auto& track : tracksArray) {
+          updateUDTrackTables(track, bc);
+        }
+      }
     }
-  };
-
-  // -----------------------------------------------------------------------------
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-  {
-    return WorkflowSpec{
-      adaptAnalysisTask<trackLooper>(cfgc, TaskName{"trackswtofinbcs"}),
-      adaptAnalysisTask<DGBCCandProducer>(cfgc, TaskName{"dgbccandproducer"}),
-    };
   }
+};
 
-  // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<tracksWTOFInBCs>(cfgc, TaskName{"trackswtofinbcs"}),
+    adaptAnalysisTask<DGBCCandProducer>(cfgc, TaskName{"dgbccandproducer"}),
+  };
+}
+
+// -----------------------------------------------------------------------------
