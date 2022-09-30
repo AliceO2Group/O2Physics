@@ -32,21 +32,20 @@ namespace o2::aod
 
 namespace dgbcandidate
 {
-DECLARE_SOA_COLUMN(BCNum, bcnum, uint64_t); //! BC number
+DECLARE_SOA_COLUMN(BCNum, bcnum, uint64_t);     //! BC number
 DECLARE_SOA_COLUMN(FullDiff2, fulldiff2, bool); //! BC contains all tracks if Diff2 event
 
-DECLARE_SOA_INDEX_COLUMN(BC, bc); //! BC index
-DECLARE_SOA_COLUMN(HasFIT, hasFIT, bool);  //! has FIT signal
-DECLARE_SOA_COLUMN(NCollisions, nCollisions, int);  //! number of associated collisions
-DECLARE_SOA_COLUMN(NtrwTOF, ntrwTOF, int);  //! number of tracks with TOF
-DECLARE_SOA_COLUMN(NPVTracks, nPVTracks, int);  //! number of PV tracks
-DECLARE_SOA_COLUMN(NGlobalTracks, nGlobalTracks, int);  //! number of global tracks
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track); //! track index array
-
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                      //! BC index
+DECLARE_SOA_COLUMN(HasFIT, hasFIT, bool);              //! has FIT signal
+DECLARE_SOA_COLUMN(NCollisions, nCollisions, int);     //! number of associated collisions
+DECLARE_SOA_COLUMN(NtrwTOF, ntrwTOF, int);             //! number of tracks with TOF
+DECLARE_SOA_COLUMN(NPVTracks, nPVTracks, int);         //! number of PV tracks
+DECLARE_SOA_COLUMN(NGlobalTracks, nGlobalTracks, int); //! number of global tracks
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);          //! track index array
 
 } // namespace dgbcandidate
 
-DECLARE_SOA_TABLE(TrackswTOFInBCs, "AOD", "TRACKSWTOFINBCS", //! 
+DECLARE_SOA_TABLE(TrackswTOFInBCs, "AOD", "TRACKSWTOFINBCS", //!
                   o2::soa::Index<>,
                   collision::BCId,
                   dgbcandidate::BCNum,
