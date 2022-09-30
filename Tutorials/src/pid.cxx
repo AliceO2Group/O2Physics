@@ -60,15 +60,15 @@ struct pid {
 
     // Access TPC and TOF nSigma dinamically for each particle mass hypothesis
     for (int i = 0; i < 9; i++) {
-      tofNSigma(track, i);
-      tofExpSigma(track, i);
-      tofExpSignal(track, i);
-      tofExpSignalDiff(track, i);
+      tofNSigma(i, track);
+      tofExpSigma(i, track);
+      tofExpSignal(i, track);
+      tofExpSignalDiff(i, track);
 
-      tpcNSigma(track, i);
-      tpcExpSigma(track, i);
-      tpcExpSignal(track, i);
-      tpcExpSignalDiff(track, i);
+      tpcNSigma(i, track);
+      tpcExpSigma(i, track);
+      tpcExpSignal(i, track);
+      tpcExpSignalDiff(i, track);
     }
   }
 };
