@@ -67,11 +67,11 @@ struct v0cascadesQA {
   HistogramRegistry histos_V0{
     "histos-V0",
     {
-      {"CosPA", "CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}}},
+      {"CosPA", "CosPA", {HistType::kTH1F, {{200, 0.8f, 1.0f}}}},
       {"V0Radius", "V0Radius", {HistType::kTH1D, {{100, 0.0f, 10.0f}}}},
       {"DecayLength", "DecayLength", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"V0DCANegToPV", "V0DCANegToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}}}, // this window captures but a small part of the distribution; plus the dcatopv can be negative ---- set to [-1;1] for comparison
-      {"V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{100, 0.0f, 1.0f}}}},  // this window captures but a small part of the distribution; plus the dcatopv can be negative
+      {"V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}}, // this window captures but a small part of the distribution; plus the dcatopv can be negative
       {"V0DCAV0Daughters", "V0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}}},
       {"CtauK0s", "CtauK0s", {HistType::kTH1F, {{65, 0.0f, 13.0f}}}},
       {"CtauLambda", "CtauLambda", {HistType::kTH1F, {{200, 0.0f, 40.0f}}}},
@@ -131,9 +131,9 @@ struct v0cascadesQA {
       {"DcaV0Daughters", "DcaV0Daughters", {HistType::kTH2F, {{110, 0.0f, 2.2f}, {2, -2, 2}}}},
       {"DcaCascDaughters", "DcaCascDaughters", {HistType::kTH2F, {{110, 0.0f, 2.2f}, {2, -2, 2}}}},
       {"DcaV0ToPV", "DcaV0ToPV", {HistType::kTH2F, {{2000, 0.0f, 2.f}, {2, -2, 2}}}},
-      {"DcaBachToPV", "DcaBachToPV", {HistType::kTH2F, {{40, 0.0f, 0.2f}, {2, -2, 2}}}},
-      {"DcaPosToPV", "DcaPosToPV", {HistType::kTH2F, {{40, 0.0f, 0.2f}, {2, -2, 2}}}},
-      {"DcaNegToPV", "DcaNegToPV", {HistType::kTH2F, {{40, 0.0f, 0.2f}, {2, -2, 2}}}},
+      {"DcaBachToPV", "DcaBachToPV", {HistType::kTH2F, {{80, -0.2f, 0.2f}, {2, -2, 2}}}},
+      {"DcaPosToPV", "DcaPosToPV", {HistType::kTH2F, {{80, -0.2f, 0.2f}, {2, -2, 2}}}},
+      {"DcaNegToPV", "DcaNegToPV", {HistType::kTH2F, {{80, -0.2f, 0.2f}, {2, -2, 2}}}},
       {"InvMassLambdaDaughter", "InvMassLambdaDaughter", {HistType::kTH2F, {{100, 1.1f, 1.13f}, {2, -2, 2}}}},
       {"InvMassXiPlus", "InvMassXiPlus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.28f, 1.36f}}}},
       {"InvMassXiMinus", "InvMassXiMinus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.28f, 1.36f}}}},
