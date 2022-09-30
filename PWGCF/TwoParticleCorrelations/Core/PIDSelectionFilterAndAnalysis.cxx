@@ -25,6 +25,72 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
+PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
+                                                   std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr,
+                                                   std::vector<std::string> pidbayel, std::vector<std::string> pidbaymu, std::vector<std::string> pidbaypi, std::vector<std::string> pidbayka, std::vector<std::string> pidbaypr)
+  : mPidTpcSel_el{},
+    mPidTpcSel_mu{},
+    mPidTpcSel_pi{},
+    mPidTpcSel_ka{},
+    mPidTpcSel_pr{},
+    mPidTofSel_el{},
+    mPidTofSel_mu{},
+    mPidTofSel_pi{},
+    mPidTofSel_ka{},
+    mPidTofSel_pr{},
+    mPidBaySel_el{},
+    mPidBaySel_mu{},
+    mPidBaySel_pi{},
+    mPidBaySel_ka{},
+    mPidBaySel_pr{}
+{
+  auto storeCutString = [](auto& selvector, std::string selname) {
+    if (selvector.size() != 0) {
+      if (selvector.size() == 1) {
+        if (selvector[0].size() != 0) {
+          return TString::Format("%s{%s}", selname.c_str(), selvector[0].c_str());
+        } else {
+          return TString("");
+        }
+      } else {
+        TString scut = selname + "{cwv{";
+        bool def = true;
+        bool firstvar = true;
+        for (auto cut : selvector) {
+          if (def) {
+            scut += cut + ':';
+            def = false;
+          } else {
+            if (not firstvar) {
+              scut += ',';
+            }
+            scut += cut;
+            firstvar = false;
+          }
+        }
+        scut += "}}";
+        return scut;
+      }
+    }
+    return TString("");
+  };
+  mPidTpcSel_el = storeCutString(pidtpcel, "tpcel");
+  mPidTpcSel_mu = storeCutString(pidtpcmu, "tpcmu");
+  mPidTpcSel_pi = storeCutString(pidtpcpi, "tpcpi");
+  mPidTpcSel_ka = storeCutString(pidtpcka, "tpcka");
+  mPidTpcSel_pr = storeCutString(pidtpcpr, "tpcpr");
+  mPidTofSel_el = storeCutString(pidtofel, "tofel");
+  mPidTofSel_mu = storeCutString(pidtofmu, "tofmu");
+  mPidTofSel_pi = storeCutString(pidtofpi, "tofpi");
+  mPidTofSel_ka = storeCutString(pidtofka, "tofka");
+  mPidTofSel_pr = storeCutString(pidtofpr, "tofpr");
+  mPidBaySel_el = storeCutString(pidbayel, "bayel");
+  mPidBaySel_mu = storeCutString(pidbaymu, "baymu");
+  mPidBaySel_pi = storeCutString(pidbaypi, "baypi");
+  mPidBaySel_ka = storeCutString(pidbayka, "bayka");
+  mPidBaySel_pr = storeCutString(pidbaypr, "baypr");
+}
+
 ClassImp(PIDSelectionFilterAndAnalysis);
 
 /// \brief species supported
@@ -37,7 +103,8 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis()
     mRequireTOF(false),
     mEllipticTPCTOF(false),
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
-    mCloseNsigmasTOF(kNoOfSpecies, nullptr)
+    mCloseNsigmasTOF(kNoOfSpecies, nullptr),
+    mBayesProbability(kNoOfSpecies, nullptr)
 {
 }
 
@@ -48,7 +115,8 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const TString& cuts
     mRequireTOF(false),
     mEllipticTPCTOF(false),
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
-    mCloseNsigmasTOF(kNoOfSpecies, nullptr)
+    mCloseNsigmasTOF(kNoOfSpecies, nullptr),
+    mBayesProbability(kNoOfSpecies, nullptr)
 {
   ConstructCutFromString(cutstr);
 }
@@ -60,7 +128,8 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
     mRequireTOF(false),
     mEllipticTPCTOF(false),
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
-    mCloseNsigmasTOF(kNoOfSpecies, nullptr)
+    mCloseNsigmasTOF(kNoOfSpecies, nullptr),
+    mBayesProbability(kNoOfSpecies, nullptr)
 {
   TString cutString = "pidsel{";
   bool first = true;
@@ -89,6 +158,13 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
   appendCut(pidsel.mPidTofSel_pi);
   appendCut(pidsel.mPidTofSel_ka);
   appendCut(pidsel.mPidTofSel_pr);
+  cutString += "},baysel{";
+  first = true;
+  appendCut(pidsel.mPidBaySel_el);
+  appendCut(pidsel.mPidBaySel_mu);
+  appendCut(pidsel.mPidBaySel_pi);
+  appendCut(pidsel.mPidBaySel_ka);
+  appendCut(pidsel.mPidBaySel_pr);
 
   cutString += "}}";
   ConstructCutFromString(cutString);
@@ -111,6 +187,9 @@ PIDSelectionFilterAndAnalysis::~PIDSelectionFilterAndAnalysis()
   for (auto brick : mCloseNsigmasTOF) {
     delete brick;
   }
+  for (auto brick : mBayesProbability) {
+    delete brick;
+  }
 }
 
 /// \brief Calculates the length of the mask needed to store the selection cuts
@@ -126,6 +205,7 @@ int PIDSelectionFilterAndAnalysis::CalculateMaskLength()
   };
   addLength(mCloseNsigmasTPC);
   addLength(mCloseNsigmasTOF);
+  addLength(mBayesProbability);
   return length;
 }
 
@@ -211,6 +291,8 @@ void PIDSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cutstr
         handleDetectorLevel("tpc", mCloseNsigmasTPC, m[2].str());
       } else if (m[1].str() == "tofsel") {
         handleDetectorLevel("tof", mCloseNsigmasTOF, m[2].str());
+      } else if (m[1].str() == "baysel") {
+        handleDetectorLevel("bay", mBayesProbability, m[2].str());
       } else {
         Fatal("PIDSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE detector %s, use tpcsel, or tofsel only", m[1].str().c_str());
       }
@@ -253,6 +335,7 @@ void PIDSelectionFilterAndAnalysis::StoreArmedMask()
   };
   armedList(mCloseNsigmasTPC);
   armedList(mCloseNsigmasTOF);
+  armedList(mBayesProbability);
 
   LOGF(info, "PIDSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%08lx, 0x%08lx, 0x%08lx", armedMask, optMask, forcedMask);
   mArmedMask = armedMask;

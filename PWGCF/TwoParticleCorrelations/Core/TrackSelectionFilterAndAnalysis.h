@@ -60,6 +60,17 @@ class TrackSelectionConfigurable
       mEtaRange{etarange}
   {
   }
+  TrackSelectionConfigurable(std::vector<std::string> ttype,
+                             std::vector<std::string> nclstpc,
+                             std::vector<std::string> nxrtpc,
+                             std::vector<std::string> nclsits,
+                             std::vector<std::string> chi2clustpc,
+                             std::vector<std::string> chi2clusits,
+                             std::vector<std::string> xrofctpc,
+                             std::vector<std::string> dcaxy,
+                             std::vector<std::string> dcaz,
+                             std::vector<std::string> ptrange,
+                             std::vector<std::string> etarange);
 
  private:
   std::string mTrackTypes = "";                             /// the track types to select list

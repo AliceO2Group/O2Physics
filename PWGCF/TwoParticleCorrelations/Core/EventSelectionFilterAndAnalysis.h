@@ -42,6 +42,10 @@ class EventSelectionConfigurable
     : mMultSel{multsel}, mTriggerSel{trigsel}, mZVertexSel{zvtxsel}, mPileUpRejection{pileuprej}
   {
   }
+  EventSelectionConfigurable(std::vector<std::string> multsel,
+                             std::vector<std::string> trigsel,
+                             std::vector<std::string> zvtxsel,
+                             std::vector<std::string> pileuprej);
 
  private:
   std::string mMultSel = "";         //! the multiplicity selection cuts

@@ -19,6 +19,51 @@ using namespace o2;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
+EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> multsel,
+                                                       std::vector<std::string> trigsel,
+                                                       std::vector<std::string> zvtxsel,
+                                                       std::vector<std::string> pileuprej)
+  : mMultSel(""),
+    mTriggerSel(""),
+    mZVertexSel(""),
+    mPileUpRejection("")
+{
+  auto storeCutString = [](auto& selvector, std::string selname) {
+    if (selvector.size() != 0) {
+      if (selvector.size() == 1) {
+        if (selvector[0].size() != 0) {
+          return TString::Format("%s{%s}", selname.c_str(), selvector[0].c_str());
+        } else {
+          return TString("");
+        }
+      } else {
+        TString scut = selname + "{cwv{";
+        bool def = true;
+        bool firstvar = true;
+        for (auto cut : selvector) {
+          if (def) {
+            scut += cut + ':';
+            def = false;
+          } else {
+            if (not firstvar) {
+              scut += ',';
+            }
+            scut += cut;
+            firstvar = false;
+          }
+        }
+        scut += "}}";
+        return scut;
+      }
+    }
+    return TString("");
+  };
+  mMultSel = storeCutString(multsel, "centmult");
+  mTriggerSel = storeCutString(trigsel, "trigger");
+  mZVertexSel = storeCutString(zvtxsel, "zvtx");
+  mPileUpRejection = storeCutString(pileuprej, "pileup");
+}
+
 ClassImp(EventSelectionFilterAndAnalysis);
 
 const int nNoOfMultiplicityEstimators = 3;

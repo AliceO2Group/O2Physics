@@ -19,6 +19,86 @@ using namespace o2;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
+/// \brief Constructor adapted to hyperloop
+TrackSelectionConfigurable::TrackSelectionConfigurable(std::vector<std::string> ttype,
+                                                       std::vector<std::string> nclstpc,
+                                                       std::vector<std::string> nxrtpc,
+                                                       std::vector<std::string> nclsits,
+                                                       std::vector<std::string> chi2clustpc,
+                                                       std::vector<std::string> chi2clusits,
+                                                       std::vector<std::string> xrofctpc,
+                                                       std::vector<std::string> dcaxy,
+                                                       std::vector<std::string> dcaz,
+                                                       std::vector<std::string> ptrange,
+                                                       std::vector<std::string> etarange)
+  : mTrackTypes{},
+    mNClustersTPC{},
+    mNCrossedRowsTPC{},
+    mNClustersITS{},
+    mMaxChi2PerClusterTPC{},
+    mMaxChi2PerClusterITS{},
+    mMinNCrossedRowsOverFindableClustersTPC{},
+    mMaxDcaXY{},
+    mMaxDcaZ{},
+    mPtRange{},
+    mEtaRange{}
+{
+  auto storeCutString = [](auto& selvector, std::string selname) {
+    if (selvector.size() != 0) {
+      if (selvector.size() == 1) {
+        if (selvector[0].size() != 0) {
+          return TString::Format("%s{%s}", selname.c_str(), selvector[0].c_str());
+        } else {
+          return TString("");
+        }
+      } else {
+        TString scut = selname + "{cwv{";
+        bool def = true;
+        bool firstvar = true;
+        for (auto cut : selvector) {
+          if (def) {
+            scut += cut + ':';
+            def = false;
+          } else {
+            if (not firstvar) {
+              scut += ',';
+            }
+            scut += cut;
+            firstvar = false;
+          }
+        }
+        scut += "}}";
+        return scut;
+      }
+    }
+    return TString("");
+  };
+  /* track types are a bit specific */
+  {
+    TString ttypes = "ttype{";
+    bool first = true;
+    for (auto& type : ttype) {
+      if (not first) {
+        ttypes += ',';
+      }
+      ttypes += type;
+      first = false;
+    }
+    ttypes += "}";
+    mTrackTypes = ttypes;
+  }
+  mNClustersTPC = storeCutString(nclstpc, "nclstpc");
+  mNCrossedRowsTPC = storeCutString(nxrtpc, "nxrtpc");
+  mNClustersITS = storeCutString(nclsits, "nclsits");
+  mMaxChi2PerClusterTPC = storeCutString(chi2clustpc, "chi2clustpc");
+  mMaxChi2PerClusterITS = storeCutString(chi2clusits, "chi2clusits");
+  mMinNCrossedRowsOverFindableClustersTPC = storeCutString(xrofctpc, "xrofctpc");
+  mMaxDcaXY = storeCutString(dcaxy, "dcaxy");
+  mMaxDcaZ = storeCutString(dcaz, "dcaz");
+  mPtRange = storeCutString(ptrange, "pT");
+  mEtaRange = storeCutString(etarange, "eta");
+}
+
 ClassImp(TrackSelectionFilterAndAnalysis);
 
 /// \brief Default constructor

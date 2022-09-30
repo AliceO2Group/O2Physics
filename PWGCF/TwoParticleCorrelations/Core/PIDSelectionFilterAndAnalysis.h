@@ -36,10 +36,14 @@ class PIDSelectionConfigurable
 
  public:
   PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
-                           std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
-    : mPidTpcSel_el{pidtpcel}, mPidTpcSel_mu{pidtpcmu}, mPidTpcSel_pi{pidtpcpi}, mPidTpcSel_ka{pidtpcka}, mPidTpcSel_pr{pidtpcpr}, mPidTofSel_el{pidtofel}, mPidTofSel_mu{pidtofmu}, mPidTofSel_pi{pidtofpi}, mPidTofSel_ka{pidtofka}, mPidTofSel_pr{pidtofpr}
+                           std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "",
+                           std::string pidbayel = "", std::string pidbaymu = "", std::string pidbaypi = "", std::string pidbayka = "", std::string pidbaypr = "")
+    : mPidTpcSel_el{pidtpcel}, mPidTpcSel_mu{pidtpcmu}, mPidTpcSel_pi{pidtpcpi}, mPidTpcSel_ka{pidtpcka}, mPidTpcSel_pr{pidtpcpr}, mPidTofSel_el{pidtofel}, mPidTofSel_mu{pidtofmu}, mPidTofSel_pi{pidtofpi}, mPidTofSel_ka{pidtofka}, mPidTofSel_pr{pidtofpr}, mPidBaySel_el{pidbayel}, mPidBaySel_mu{pidbaymu}, mPidBaySel_pi{pidbaypi}, mPidBaySel_ka{pidbayka}, mPidBaySel_pr{pidbaypr}
   {
   }
+  PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
+                           std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr,
+                           std::vector<std::string> pidbayel, std::vector<std::string> pidbaymu, std::vector<std::string> pidbaypi, std::vector<std::string> pidbayka, std::vector<std::string> pidbaypr);
 
  private:
   std::string mPidTpcSel_el = "";
@@ -52,6 +56,11 @@ class PIDSelectionConfigurable
   std::string mPidTofSel_pi = "";
   std::string mPidTofSel_ka = "";
   std::string mPidTofSel_pr = "";
+  std::string mPidBaySel_el = "";
+  std::string mPidBaySel_mu = "";
+  std::string mPidBaySel_pi = "";
+  std::string mPidBaySel_ka = "";
+  std::string mPidBaySel_pr = "";
 
  private:
   ClassDefNV(PIDSelectionConfigurable, 1);
@@ -109,6 +118,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   PIDSpecies mSpeciesOfInterest = kWrongSpecies;
   std::vector<CutBrick<float>*> mCloseNsigmasTPC;
   std::vector<CutBrick<float>*> mCloseNsigmasTOF;
+  std::vector<CutBrick<float>*> mBayesProbability;
 
   ClassDef(PIDSelectionFilterAndAnalysis, 1);
 };
@@ -142,6 +152,11 @@ inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track
   filterBrickValue(mCloseNsigmasTOF[kPion], track.tofNSigmaPi());
   filterBrickValue(mCloseNsigmasTOF[kKaon], track.tofNSigmaKa());
   filterBrickValue(mCloseNsigmasTOF[kProton], track.tofNSigmaPr());
+  filterBrickValue(mBayesProbability[kElectron], track.bayesEl());
+  filterBrickValue(mBayesProbability[kMuon], track.bayesMu());
+  filterBrickValue(mBayesProbability[kPion], track.bayesPi());
+  filterBrickValue(mBayesProbability[kKaon], track.bayesKa());
+  filterBrickValue(mBayesProbability[kProton], track.bayesPr());
 
   mSelectedMask = selectedMask;
   return mSelectedMask;
