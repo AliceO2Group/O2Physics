@@ -235,7 +235,7 @@ struct CorrelationTask {
         efficiencyAssociated = new float[tracks2.size()];
         int i = 0;
         for (auto& track : tracks2) {
-          efficiencyAssociated[i++] = getEfficiency(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ);
+          efficiencyAssociated[i++] = getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ);
         }
       }
     }
@@ -243,8 +243,10 @@ struct CorrelationTask {
     for (auto& track1 : tracks1) {
       // LOGF(info, "Track %f | %f | %f  %d %d", track1.eta(), track1.phi(), track1.pt(), track1.isGlobalTrack(), track1.isGlobalTrackSDD());
 
-      if (!checkObject<step>(track1)) {
-        continue;
+      if constexpr (step <= CorrelationContainer::kCFStepTracked) {
+        if (!checkObject<step>(track1)) {
+          continue;
+        }
       }
 
       if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
@@ -254,7 +256,7 @@ struct CorrelationTask {
       float triggerWeight = eventWeight;
       if constexpr (step == CorrelationContainer::kCFStepCorrected) {
         if (cfg.mEfficiencyTrigger) {
-          triggerWeight *= getEfficiency(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), multiplicity, posZ);
+          triggerWeight *= getEfficiencyCorrection(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), multiplicity, posZ);
         }
       }
 
@@ -267,8 +269,10 @@ struct CorrelationTask {
           continue;
         }
 
-        if (!checkObject<step>(track2)) {
-          continue;
+        if constexpr (step <= CorrelationContainer::kCFStepTracked) {
+          if (!checkObject<step>(track2)) {
+            continue;
+          }
         }
 
         if (cfgPtOrder != 0 && track2.pt() >= track1.pt()) {
@@ -337,7 +341,7 @@ struct CorrelationTask {
     cfg.efficiencyLoaded = true;
   }
 
-  double getEfficiency(THn* eff, float eta, float pt, float multiplicity, float posZ)
+  double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
   {
     int effVars[4];
     effVars[0] = eff->GetAxis(0)->FindBin(eta);
