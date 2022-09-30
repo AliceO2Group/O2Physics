@@ -18,7 +18,7 @@
 
 #include "CCDB/CcdbApi.h"
 #include <boost/program_options.hpp>
-#include <FairLogger.h>
+#include "Framework/Logger.h"
 #include "TFile.h"
 
 // Global executable arguments
