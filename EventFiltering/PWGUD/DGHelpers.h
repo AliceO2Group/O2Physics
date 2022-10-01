@@ -188,7 +188,7 @@ struct DGSelector {
     }
 
     // number of tracks
-    if (tracks.size() < diffCuts.minNTracks() || tracks.size() > diffCuts.maxNTracks()) {
+    if ((int)tracks.size() < diffCuts.minNTracks() || (int)tracks.size() > diffCuts.maxNTracks()) {
       return 6;
     }
 
