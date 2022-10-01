@@ -30,7 +30,7 @@ DGPIDCut::DGPIDCut()
 }
 
 DGPIDCut::DGPIDCut(float numPart, float cutPID, float cutDetector, float cutType, float cutApply,
-                   float ptMin, float ptMax, float nSigmamin, float nSigmamax) : mnumPart{(int)numPart}, mcutPID{(int)cutPID}, mcutDetector{(int)cutDetector}, mcutType{(int)cutType}, mcutApply{(int)cutApply}, mptMin{ptMin}, mptMax{ptMax}, mnSigmamin{nSigmamin}, mnSigmamax{nSigmamax}
+                   float ptMin, float ptMax, float nSigmamin, float nSigmamax) : mnumPart{(int)numPart}, mcutPID{(int)cutPID}, mcutDetector{(int)cutDetector}, mcutType{(int)cutType}, mcutApply{(int)cutApply}, mptMin{ptMin}, mptMax{ptMax}, mdetValuemin{nSigmamin}, mdetValuemax{nSigmamax}
 {
 }
 
@@ -43,8 +43,8 @@ DGPIDCut::DGPIDCut(float* cutValues)
   mcutApply = (int)cutValues[4];
   mptMin = cutValues[5];
   mptMax = cutValues[6];
-  mnSigmamin = cutValues[7];
-  mnSigmamax = cutValues[8];
+  mdetValuemin = cutValues[7];
+  mdetValuemax = cutValues[8];
 }
 
 DGPIDCut::~DGPIDCut()
@@ -62,8 +62,8 @@ void DGPIDCut::Print()
   LOGF(info, "        Application: %i", mcutApply);
   LOGF(info, "        ptMin:       %f", mptMin);
   LOGF(info, "        ptMax:       %f", mptMax);
-  LOGF(info, "        nSigmaMin:   %f", mnSigmamin);
-  LOGF(info, "        nSigmaMax:   %f", mnSigmamax);
+  LOGF(info, "        nSigmaMin:   %f", mdetValuemin);
+  LOGF(info, "        nSigmaMax:   %f", mdetValuemax);
 }
 
 // =============================================================================
@@ -408,28 +408,42 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
       }
     }
 
-    // get nSigma value
+    // get detector value
     LOGF(debug, "cutPID %i", pidcut.cutPID());
-    float nSigma = 0.;
+    float detValue = 0.;
     if (pidcut.cutDetector() == 1) {
       if (!track.hasTPC()) {
         continue;
       }
-      nSigma = getTPCnSigma(track, pidcut.cutPID());
-    } else if (pidcut.cutDetector() == 2) {
+      switch (abs(pidcut.cutType())) {
+        case 1:
+          detValue = getTPCnSigma(track, pidcut.cutPID());
+          break;
+        case 2:
+          detValue = track.tpcSignal();
+      }
+      LOGF(info, "detValue TPC %f", detValue);
+    } else if (abs(pidcut.cutDetector()) == 2) {
       if (!track.hasTOF()) {
         continue;
       }
-      nSigma = getTOFnSigma(track, pidcut.cutPID());
+      switch (abs(pidcut.cutType())) {
+        case 1:
+          detValue = getTOFnSigma(track, pidcut.cutPID());
+          break;
+        case 2:
+          detValue = track.tofSignal();
+      }
+      LOGF(info, "detValue TOF %f", detValue);
     } else {
       continue;
     }
-    LOGF(debug, "nSigma %f", nSigma);
+    LOGF(debug, "detValue %f", detValue);
 
     // inclusive / exclusive
-    if (pidcut.cutType() == 1 && (nSigma < pidcut.cutnSigmaMin() || nSigma > pidcut.cutnSigmaMax())) {
+    if (pidcut.cutType() > 0 && (detValue < pidcut.cutdetValueMin() || detValue > pidcut.cutdetValueMax())) {
       return false;
-    } else if (pidcut.cutType() == 2 && (nSigma > pidcut.cutnSigmaMin() && nSigma < pidcut.cutnSigmaMax())) {
+    } else if (pidcut.cutType() < 0 && (detValue > pidcut.cutdetValueMin() && detValue < pidcut.cutdetValueMax())) {
       return false;
     }
   }

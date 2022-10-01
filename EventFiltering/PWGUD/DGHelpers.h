@@ -178,6 +178,64 @@ struct DGSelector {
     return 0;
   };
 
+  template <typename BCs, typename TCs>
+  int IsSelected(DGCutparHolder diffCuts, BCs& bc, TCs& tracks)
+  {
+    // check that there are no FIT signals in bc
+    // Double Gap (DG) condition
+    if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+      return 1;
+    }
+
+    // number of tracks
+    if ((int)tracks.size() < diffCuts.minNTracks() || (int)tracks.size() > diffCuts.maxNTracks()) {
+      return 6;
+    }
+
+    // PID, pt, and eta of tracks, invariant mass, and net charge
+    // which particle hypothesis?
+    auto mass2Use = 0.;
+    TParticlePDG* pdgparticle = fPDG->GetParticle(diffCuts.pidHypothesis());
+    if (pdgparticle != nullptr) {
+      mass2Use = pdgparticle->Mass();
+    }
+
+    auto netCharge = 0;
+    auto lvtmp = TLorentzVector();
+    auto ivm = TLorentzVector();
+    for (auto& track : tracks) {
+      // PID
+      if (!hasGoodPID(diffCuts, track)) {
+        return 7;
+      }
+
+      // pt
+      lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
+      if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
+        return 8;
+      }
+
+      // eta
+      if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
+        return 9;
+      }
+      netCharge += track.sign();
+      ivm += lvtmp;
+    }
+
+    // net charge
+    if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
+      return 10;
+    }
+    // invariant mass
+    if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
+      return 11;
+    }
+
+    // if we arrive here then the event is good!
+    return 0;
+  };
+
  private:
   TDatabasePDG* fPDG;
 };
