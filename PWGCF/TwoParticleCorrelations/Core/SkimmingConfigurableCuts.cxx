@@ -807,6 +807,37 @@ int CutWithVariations<TValueToFilter>::Length()
   return length;
 }
 
+/// Virtual function. Return the index of the armed brick within this brick
+/// \returns The index of the armed brick within this brick. Default -1
+template <typename TValueToFilter>
+int CutWithVariations<TValueToFilter>::getArmedIndex()
+{
+  int index = -1;
+  if (this->mMode == this->kSELECTED) {
+    auto checkBrickList = [&index](auto& brklst) {
+      bool found = false;
+      for (int i = 0; not found and i < brklst.GetEntries(); ++i) {
+        index++;
+        std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)brklst.At(i))->IsArmed();
+        for (bool iarmed : tmp) {
+          if (iarmed) {
+            found = true;
+            break;
+          }
+        }
+      }
+      return found;
+    };
+    if (not checkBrickList(mDefaultBricks)) {
+      if (not checkBrickList(mVariationBricks)) {
+        LOGF(fatal, "CutWithVariations::getArmedIndex(). There should be at least one brick armed");
+        return -1;
+      }
+    }
+  }
+  return index;
+}
+
 templateClassImp(o2::analysis::CutWithVariations);
 template class o2::analysis::PWGCF::CutWithVariations<float>;
 template class o2::analysis::PWGCF::CutWithVariations<int>;

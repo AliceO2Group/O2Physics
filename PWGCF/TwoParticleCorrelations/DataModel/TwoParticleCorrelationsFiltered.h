@@ -22,36 +22,27 @@ namespace aod
 /* we have to change from int to bool when bool columns work properly */
 namespace twopfilter
 {
-DECLARE_SOA_COLUMN(TwoPCollisionCentMult, centmult, float); //! The centrality/multiplicity pecentile
+DECLARE_SOA_COLUMN(TwoPCollisionAccepted, accepted, uint8_t);   //! If the collision/event has been accepted or not
+DECLARE_SOA_COLUMN(TwoPCollisionCentMult, centmult, float);     //! The centrality/multiplicity pecentile
+DECLARE_SOA_COLUMN(TwoPMCCollisionCentMult, mccentmult, float); //! The centrality/multiplicity pecentile
 } // namespace twopfilter
 DECLARE_SOA_TABLE(TwoPAcceptedCollisions, "AOD", "TWOPACCCOLL", //! Accepted reconstructed collisions/events filtered table
-                  o2::soa::Index<>,
-                  collision::PosZ,
-                  twopfilter::TwoPCollisionCentMult);
+                  twopfilter::TwoPCollisionCentMult,
+                  twopfilter::TwoPCollisionAccepted);
 using TowPAcceptedCollision = TwoPAcceptedCollisions::iterator;
 DECLARE_SOA_TABLE(TwoPAcceptedGenCollisions, "AOD", "TWOPACCGENCOLL", //! Accepted generated collisions/events filtered table
-                  o2::soa::Index<>,
-                  mccollision::PosZ,
-                  twopfilter::TwoPCollisionCentMult);
+                  twopfilter::TwoPMCCollisionCentMult,
+                  twopfilter::TwoPCollisionAccepted);
 using TwoPAcceptedGenCollision = TwoPAcceptedGenCollisions::iterator;
 namespace twopfilter
 {
-DECLARE_SOA_INDEX_COLUMN(TwoPAcceptedCollision, collision);            //! Reconstructed collision/event
-DECLARE_SOA_INDEX_COLUMN(TwoPAcceptedGenCollision, mccollision);       //! Generated collision/event
-DECLARE_SOA_COLUMN(TwoPTrackacceptedAs, twoptrackacceptedas, uint8_t); //! Track accepted as type 0..255, even positive or particle, odd negative or antiparticle
+DECLARE_SOA_COLUMN(TwoPTrackAcceptedAs, acceptedas, uint8_t);      //! Track accepted as type 0..255, even positive, odd negative, < 0 not accepted
+DECLARE_SOA_COLUMN(TwoPParticleAcceptedAs, mcacceptedas, uint8_t); //! Particle accepted as type 0..255, even positive, odd negative, < 0 not accepted
 } // namespace twopfilter
 DECLARE_SOA_TABLE(TwoPFilteredTracks, "AOD", "FILTEREDTRKS", //! The reconstructed tracks filtered table
-                  twopfilter::TwoPAcceptedCollisionId,
-                  twopfilter::TwoPTrackacceptedAs,
-                  cfskim::Pt,
-                  cfskim::Eta,
-                  cfskim::Phi);
+                  twopfilter::TwoPTrackAcceptedAs);
 DECLARE_SOA_TABLE(TwoPFilteredParticles, "AOD", "FILTEREDGENTRKS", //! The generated particles filtered table
-                  twopfilter::TwoPAcceptedGenCollisionId,
-                  twopfilter::TwoPTrackacceptedAs,
-                  cfskim::Pt,
-                  cfskim::Eta,
-                  cfskim::Phi);
+                  twopfilter::TwoPParticleAcceptedAs);
 } // namespace aod
 } // namespace o2
 

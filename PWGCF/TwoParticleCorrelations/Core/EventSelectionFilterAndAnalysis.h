@@ -68,6 +68,8 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   template <typename CollisionToFilter>
   uint64_t Filter(CollisionToFilter const& col);
   std::vector<float> GetMultiplicities();
+  /// \brief Gets the index of the active multiplicity value within the multiplicities array
+  int getMultiplicityIndex() { return mMultiplicityClasses->getArmedIndex(); }
 
  private:
   void ConstructCutFromString(const TString&);

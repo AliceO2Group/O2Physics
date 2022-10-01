@@ -59,6 +59,9 @@ class CutBrick : public TNamed
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
   virtual int Length() = 0;
+  /// Virtual function. Return the index of the armed brick within this brick
+  /// \returns The index of the armed brick within this brick. Default -1
+  virtual int getArmedIndex() { return -1; }
 
   static CutBrick<TValueToFilter>* constructBrick(const char* name, const char* regex, const std::set<std::string>& allowed);
   static const char* mgImplementedbricks[];
@@ -241,6 +244,7 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   virtual std::vector<bool> IsArmed();
   virtual std::vector<bool> Filter(const TValueToFilter&);
   virtual int Length();
+  virtual int getArmedIndex();
 
  private:
   void ConstructCutFromString(const TString&);

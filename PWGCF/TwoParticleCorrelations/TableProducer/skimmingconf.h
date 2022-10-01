@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_DPTDPTSKIMCONF_H
-#define O2_ANALYSIS_DPTDPTSKIMCONF_H
+#ifndef O2_ANALYSIS_CFSKIMMINGCONF_H
+#define O2_ANALYSIS_CFSKIMMINGCONF_H
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -29,7 +29,7 @@ struct : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> xrofctpc{"trkflt_xrofctpc", {""}, "Min no of TPC crossed rows over findable clusters: first, default value, next, alternatives"};
   o2::framework::Configurable<std::vector<std::string>> dcaxy{"trkflt_dcaxy", {""}, "Max DCAxy: first, default value, next, alternatives"};
   o2::framework::Configurable<std::vector<std::string>> dcaz{"trkflt_dcaz", {""}, "Max DCAz: first, default value, next, alternatives"};
-  o2::framework::Configurable<std::vector<std::string>> ptrange{"trkflt_pt", {"rg{0.2,10.0}"}, "pT range"};
+  o2::framework::Configurable<std::vector<std::string>> ptrange{"trkflt_pt", {"rg{0.1,50.0}"}, "pT range"};
   o2::framework::Configurable<std::vector<std::string>> etarange{"trkflt_eta", {"rg{-1.0,1.0}"}, "eta range"};
 } trackfilter;
 
@@ -57,4 +57,4 @@ struct : o2::framework::ConfigurableGroup {
   } pidbayesfilter;
 } pidfilter;
 
-#endif // O2_ANALYSIS_DPTDPTSKIMCONF_H
+#endif // O2_ANALYSIS_CFSKIMMINGCONF_H
