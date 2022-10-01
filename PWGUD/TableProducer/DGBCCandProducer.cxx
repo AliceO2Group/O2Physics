@@ -28,9 +28,6 @@ using namespace o2::framework::expressions;
 struct tracksWTOFInBCs {
   Produces<aod::TrackswTOFInBCs> tracksWTOFInBCs;
 
-  DGCutparHolder diffCuts = DGCutparHolder();
-  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-
   HistogramRegistry registry{
     "registry",
     {}};
@@ -45,8 +42,8 @@ struct tracksWTOFInBCs {
 
   void init(InitContext& context)
   {
-    diffCuts = (DGCutparHolder)DGCuts;
   }
+
   // ---------------------------------------------------------------------------
 
   Preslice<aod::AmbiguousTracks> perTrack = aod::ambiguous::trackId;
@@ -118,9 +115,18 @@ struct DGBCCandProducer {
   // DG selector
   DGSelector dgSelector;
 
-  void init(InitContext&)
+  HistogramRegistry registry{
+    "registry",
+    {}};
+
+  void init(InitContext& context)
   {
     diffCuts = (DGCutparHolder)DGCuts;
+
+    if (context.mOptions.get<bool>("processQA")) {
+      registry.add("isDG1vsisDG2", "#isDG1vsisDG2", {HistType::kTH2F, {{13, -1.5, 11.5}, {13, -1.5, 11.5}}});
+      registry.add("ntr1vsntr2", "#ntr1vsntr2", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
+    }
   }
 
   using TWTs = aod::TrackswTOFInBCs;
@@ -132,9 +138,10 @@ struct DGBCCandProducer {
                         aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
-  Preslice<CCs> perBC = aod::evsel::foundBCId;
-  Preslice<TCs> perCollision = aod::track::collisionId;
-  Preslice<FWs> perCollisionFwd = aod::fwdtrack::collisionId;
+  Preslice<CCs> CCperBC = aod::evsel::foundBCId;
+  Preslice<TCs> TCperCollision = aod::track::collisionId;
+  Preslice<FWs> FWperCollision = aod::fwdtrack::collisionId;
+  Preslice<TWTs> TWTperBC = aod::dgbcandidate::bcId;
 
   // function to update UDTracks, UDTracksPID, UDTracksExtra, and UDTrackCollisionIDs
   template <typename TTrack, typename TBC>
@@ -188,11 +195,11 @@ struct DGBCCandProducer {
     int8_t nCharge;
 
     // is there an associated collision?
-    auto collision = collisions.sliceBy(perBC, bc.globalIndex());
-    if (collision.size() > 0) {
-      auto col = collision.rawIteratorAt(0);
-      auto colTracks = tracks.sliceBy(perCollision, col.globalIndex());
-      auto colFWDTracks = fwdtracks.sliceBy(perCollisionFwd, col.globalIndex());
+    auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
+    if (colSlize.size() > 0) {
+      auto col = colSlize.rawIteratorAt(0);
+      auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
+      auto colFWDTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
       auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
       if (dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFWDTracks) == 0) {
         rtrwTOF = rPVtrwTOF(colTracks, col.numContrib());
@@ -230,6 +237,52 @@ struct DGBCCandProducer {
       }
     }
   }
+
+  void processQA(TWTs& twts, BCs& bcs, CCs& collisions, TCs& tracks, FWs& fwdtracks,
+                 aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  {
+
+    // loop over BCs
+    int isDG1, isDG2;
+    int ntr1, ntr2;
+    for (auto bc : bcs) {
+      // reset counters
+      isDG1 = -1;
+      isDG2 = -1;
+      ntr1 = -1;
+      ntr2 = -1;
+      
+      // check for associated collision
+      auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
+      if (colSlize.size() > 0) {
+        auto col = colSlize.begin();
+        auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
+        auto colFWDTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
+        auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+        isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFWDTracks);
+        ntr1 = col.numContrib();
+      }
+
+      // find corresponding entry in twts
+      auto twtSlice = twts.sliceBy(TWTperBC, bc.globalIndex());
+      if (twtSlice.size() > 0) {
+        auto twt = twtSlice.begin();
+
+        // check collision to be DGCandidate -> isDG2
+        auto tracksArray = twt.track_as<TCs>();
+        isDG2 = dgSelector.IsSelected(diffCuts, bc, tracksArray);
+        ntr2 = tracksArray.size();
+      }
+
+      // update histogram isDG1vsisDG2 and ntr1vsntr2
+      registry.get<TH2>(HIST("isDG1vsisDG2"))->Fill(isDG1, isDG2);
+      if (isDG1 == 0 && isDG2 == 0) {
+        registry.get<TH2>(HIST("ntr1vsntr2"))->Fill(ntr1, ntr2);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DGBCCandProducer, processQA, "Produce QA histograms for DGBCCandProducer", false);
 };
 
 // -----------------------------------------------------------------------------
