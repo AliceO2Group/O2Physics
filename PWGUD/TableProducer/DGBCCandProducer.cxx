@@ -251,7 +251,7 @@ struct DGBCCandProducer {
       isDG2 = -1;
       ntr1 = -1;
       ntr2 = -1;
-      
+
       // check for associated collision
       auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
       if (colSlize.size() > 0) {

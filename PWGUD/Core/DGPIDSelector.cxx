@@ -415,20 +415,24 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
       if (!track.hasTPC()) {
         continue;
       }
-      switch(abs(pidcut.cutType())) {
-        case 1: detValue = getTPCnSigma(track, pidcut.cutPID());
-                break;
-        case 2: detValue = track.tpcSignal();
+      switch (abs(pidcut.cutType())) {
+        case 1:
+          detValue = getTPCnSigma(track, pidcut.cutPID());
+          break;
+        case 2:
+          detValue = track.tpcSignal();
       }
       LOGF(info, "detValue TPC %f", detValue);
     } else if (abs(pidcut.cutDetector()) == 2) {
       if (!track.hasTOF()) {
         continue;
       }
-      switch(abs(pidcut.cutType())) {
-        case 1: detValue = getTOFnSigma(track, pidcut.cutPID());
-                break;
-        case 2: detValue = track.tofSignal();
+      switch (abs(pidcut.cutType())) {
+        case 1:
+          detValue = getTOFnSigma(track, pidcut.cutPID());
+          break;
+        case 2:
+          detValue = track.tofSignal();
       }
       LOGF(info, "detValue TOF %f", detValue);
     } else {
@@ -439,7 +443,7 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
     // inclusive / exclusive
     if (pidcut.cutType() > 0 && (detValue < pidcut.cutdetValueMin() || detValue > pidcut.cutdetValueMax())) {
       return false;
-    } else if (pidcut.cutType() < 0  && (detValue > pidcut.cutdetValueMin() && detValue < pidcut.cutdetValueMax())) {
+    } else if (pidcut.cutType() < 0 && (detValue > pidcut.cutdetValueMin() && detValue < pidcut.cutdetValueMax())) {
       return false;
     }
   }
