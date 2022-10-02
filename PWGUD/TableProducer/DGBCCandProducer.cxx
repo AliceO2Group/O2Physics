@@ -27,6 +27,7 @@ using namespace o2::framework::expressions;
 // -----------------------------------------------------------------------------
 struct tracksWTOFInBCs {
   Produces<aod::TrackswTOFInBCs> tracksWTOFInBCs;
+  Produces<aod::FwdTracksInBCs> fwdTracksInBCs;
 
   HistogramRegistry registry{
     "registry",
@@ -40,15 +41,14 @@ struct tracksWTOFInBCs {
   using TC = TCs::iterator;
   using ATs = aod::AmbiguousTracks;
 
+  Preslice<aod::AmbiguousTracks> perTrack = aod::ambiguous::trackId;
+  Preslice<aod::AmbiguousFwdTracks> perFwdTrack = aod::ambiguous::fwdtrackId;
+
   void init(InitContext& context)
   {
   }
 
-  // ---------------------------------------------------------------------------
-
-  Preslice<aod::AmbiguousTracks> perTrack = aod::ambiguous::trackId;
-
-  void process(TCs& tracks, BCs& bcs, CCs& collisions, ATs& ambTracks)
+  void processBarrel(TCs& tracks, BCs& bcs, CCs& collisions, ATs& ambTracks)
   {
     // container to sort tracks with TOF hit according to their matching/closest BC
     std::map<uint64_t, std::vector<int32_t>> tracksInBCList{};
@@ -68,7 +68,7 @@ struct tracksWTOFInBCs {
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
           closestBC = (uint64_t)(firstCompatibleBC +
-                                 (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + 0.5));
+                                 (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         }
 
         // update tracksInBCList
@@ -97,6 +97,59 @@ struct tracksWTOFInBCs {
       }
     }
   }
+  PROCESS_SWITCH(tracksWTOFInBCs, processBarrel, "Process barrel tracks", true);
+
+  void processForward(aod::FwdTracks& fwdTracks, BCs& bcs, CCs& collisions, aod::AmbiguousFwdTracks& ambFwdTracks)
+  {
+    // container to sort forward tracks according to their matching/closest BC
+    std::map<uint64_t, std::vector<int32_t>> fwdTracksInBCList{};
+    uint64_t closestBC = 0;
+
+    // loop over all forward tracks and fill fwdTracksInBCList
+    for (auto& fwdTrack : fwdTracks) {
+      // only consider tracks with trackTimeRes < LHCBunchSpacingNS
+      LOGF(debug, "fwdTrack.trackTimeRes %f", fwdTrack.trackTimeRes());
+      if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
+
+        // get first compatible BC
+        auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
+        if (ambFwdTracksSlice.size() == 0) {
+          // this track is not ambiguous, has hence a unique association to a collision/BC
+          closestBC = fwdTrack.collision_as<CCs>().bc_as<BCs>().globalBC();
+        } else {
+          // compute the BC closest in time
+          auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();
+          closestBC = (uint64_t)(firstCompatibleBC +
+                                 (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+        }
+
+        // update tracksInBCList
+        fwdTracksInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
+      }
+    }
+
+    // fill fwdTracksInBCs
+    int indBCToSave;
+    for (auto fwdTracksInBC : fwdTracksInBCList) {
+      indBCToSave = -1;
+      if (fwdTracksInBC.second.size() > 0) {
+        // find corresponding BC
+        for (auto ind = 0; ind < bcs.size(); ind++) {
+          auto bc = bcs.rawIteratorAt(ind);
+          if (bc.globalBC() == fwdTracksInBC.first) {
+            indBCToSave = ind;
+            break;
+          }
+          if (bc.globalBC() > fwdTracksInBC.first) {
+            break;
+          }
+        }
+        fwdTracksInBCs(indBCToSave, fwdTracksInBC.first, fwdTracksInBC.second);
+        LOGF(debug, " BC %i/%u with %i tracks with TOF", indBCToSave, fwdTracksInBC.first, fwdTracksInBC.second.size());
+      }
+    }
+  }
+  PROCESS_SWITCH(tracksWTOFInBCs, processForward, "Process forward tracks", true);
 };
 
 // -----------------------------------------------------------------------------
@@ -119,29 +172,21 @@ struct DGBCCandProducer {
     "registry",
     {}};
 
-  void init(InitContext& context)
-  {
-    diffCuts = (DGCutparHolder)DGCuts;
-
-    if (context.mOptions.get<bool>("processQA")) {
-      registry.add("isDG1vsisDG2", "#isDG1vsisDG2", {HistType::kTH2F, {{13, -1.5, 11.5}, {13, -1.5, 11.5}}});
-      registry.add("ntr1vsntr2", "#ntr1vsntr2", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
-    }
-  }
-
-  using TWTs = aod::TrackswTOFInBCs;
-  using TWT = TWTs::iterator;
+  using TIBCs = aod::TrackswTOFInBCs;
+  using TIBC = TIBCs::iterator;
+  using FTIBCs = aod::FwdTracksInBCs;
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                         aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using FWs = aod::FwdTracks;
+  using FTCs = aod::FwdTracks;
 
   Preslice<CCs> CCperBC = aod::evsel::foundBCId;
   Preslice<TCs> TCperCollision = aod::track::collisionId;
-  Preslice<FWs> FWperCollision = aod::fwdtrack::collisionId;
-  Preslice<TWTs> TWTperBC = aod::dgbcandidate::bcId;
+  Preslice<FTCs> FWperCollision = aod::fwdtrack::collisionId;
+  Preslice<TIBCs> TIBCperBC = aod::dgbcandidate::bcId;
+  Preslice<FTIBCs> FTIBCperBC = aod::dgbcandidate::bcId;
 
   // function to update UDTracks, UDTracksPID, UDTracksExtra, and UDTrackCollisionIDs
   template <typename TTrack, typename TBC>
@@ -178,30 +223,45 @@ struct DGBCCandProducer {
     outputTracksCollisionsId(outputCollisions.lastIndex());
   }
 
-  void process(TWT& twt, BCs& bcs, CCs& collisions, TCs& tracks, FWs& fwdtracks,
+  void init(InitContext& context)
+  {
+    diffCuts = (DGCutparHolder)DGCuts;
+
+    if (context.mOptions.get<bool>("processQA")) {
+      registry.add("isDG1vsisDG2", "#isDG1vsisDG2", {HistType::kTH2F, {{13, -1.5, 11.5}, {13, -1.5, 11.5}}});
+      registry.add("ntr1vsntr2All", "#ntr1vsntr2All", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
+      registry.add("ntr1vsntr2Cand", "#ntr1vsntr2Cand", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
+    }
+  }
+
+  void process(TIBC& tibc, FTIBCs& ftibcs, BCs& bcs, CCs& collisions, TCs& tracks, FTCs& fwdtracks,
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
 
-    // leave if twt has no associated BC
-    if (!twt.has_bc()) {
+    // leave if tibc has no associated BC
+    if (!tibc.has_bc()) {
       return;
     }
 
-    // get bc and related tracks
-    auto bc = twt.bc_as<BCs>();
+    // get bc
+    auto bc = tibc.bc_as<BCs>();
 
     // check if DG event
     float rtrwTOF = -1.;
     int8_t nCharge;
 
     // is there an associated collision?
+    int isDG = -1;
     auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
     if (colSlize.size() > 0) {
       auto col = colSlize.rawIteratorAt(0);
       auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
-      auto colFWDTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
+      auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
       auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-      if (dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFWDTracks) == 0) {
+      isDG = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
+
+      // update UDTables
+      if (isDG == 0) {
         rtrwTOF = rPVtrwTOF(colTracks, col.numContrib());
         nCharge = netCharge(colTracks);
 
@@ -219,8 +279,20 @@ struct DGBCCandProducer {
         }
       }
     } else {
-      auto tracksArray = twt.track_as<TCs>();
-      if (dgSelector.IsSelected(diffCuts, bc, tracksArray) == 0) {
+      auto tracksArray = tibc.track_as<TCs>();
+
+      // does BC have fwdTracks?
+      auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
+      if (ftibcSlice.size() > 0) {
+        auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
+        isDG = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+      } else {
+        auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+        isDG = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+      }
+
+      // update UDTables
+      if (isDG == 0) {
         rtrwTOF = -1.;
         nCharge = netCharge(tracksArray);
 
@@ -238,7 +310,7 @@ struct DGBCCandProducer {
     }
   }
 
-  void processQA(TWTs& twts, BCs& bcs, CCs& collisions, TCs& tracks, FWs& fwdtracks,
+  void processQA(TIBCs& tibcs, FTIBCs& ftibcs, BCs& bcs, CCs& collisions, TCs& tracks, FTCs& fwdtracks,
                  aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
 
@@ -257,27 +329,35 @@ struct DGBCCandProducer {
       if (colSlize.size() > 0) {
         auto col = colSlize.begin();
         auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
-        auto colFWDTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
+        auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
         auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-        isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFWDTracks);
+        isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
         ntr1 = col.numContrib();
       }
 
-      // find corresponding entry in twts
-      auto twtSlice = twts.sliceBy(TWTperBC, bc.globalIndex());
-      if (twtSlice.size() > 0) {
-        auto twt = twtSlice.begin();
+      // find corresponding entry in tibcs
+      auto tibcSlice = tibcs.sliceBy(TIBCperBC, bc.globalIndex());
+      if (tibcSlice.size() > 0) {
+        auto tibc = tibcSlice.begin();
 
         // check collision to be DGCandidate -> isDG2
-        auto tracksArray = twt.track_as<TCs>();
-        isDG2 = dgSelector.IsSelected(diffCuts, bc, tracksArray);
+        auto tracksArray = tibc.track_as<TCs>();
+        auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
+        if (ftibcSlice.size() > 0) {
+          auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
+          isDG2 = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+        } else {
+          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          isDG2 = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+        }
         ntr2 = tracksArray.size();
       }
 
-      // update histogram isDG1vsisDG2 and ntr1vsntr2
+      // update histogram isDG1vsisDG2 and ntr1vsntr2xxx
       registry.get<TH2>(HIST("isDG1vsisDG2"))->Fill(isDG1, isDG2);
+      registry.get<TH2>(HIST("ntr1vsntr2All"))->Fill(ntr1, ntr2);
       if (isDG1 == 0 && isDG2 == 0) {
-        registry.get<TH2>(HIST("ntr1vsntr2"))->Fill(ntr1, ntr2);
+        registry.get<TH2>(HIST("ntr1vsntr2Cand"))->Fill(ntr1, ntr2);
       }
     }
   }

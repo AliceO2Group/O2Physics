@@ -10,9 +10,9 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(DGPIDSelector
-                        SOURCES DGPIDSelector.cxx
-                          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+                      SOURCES DGPIDSelector.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
-  o2physics_target_root_dictionary(DGPIDSelector
-                                     HEADERS DGPIDSelector.h
-                                       LINKDEF DGPIDSelectorLinkDef.h)
+o2physics_target_root_dictionary(DGPIDSelector
+                                 HEADERS DGPIDSelector.h
+                                 LINKDEF DGPIDSelectorLinkDef.h)
