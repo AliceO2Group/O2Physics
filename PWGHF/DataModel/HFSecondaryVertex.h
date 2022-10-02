@@ -1346,7 +1346,7 @@ DECLARE_SOA_TABLE(HfCandLbMCGen, "AOD", "HFCANDLBMCGEN", //!
 // specific B0 candidate properties
 namespace hf_cand_b0
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng3, "_0"); // D index 
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng3, "_0"); // D index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
@@ -1357,7 +1357,7 @@ DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);         // debug flag for mi
 // mapping of decay types
 enum DecayType { B0ToDPi };
 
-// B0(B0bar) → D∓ π± 
+// B0(B0bar) → D∓ π±
 template <typename T>
 auto CtB0(const T& candidate)
 {
@@ -1388,7 +1388,6 @@ auto CosThetaStarB0(const T& candidate)
   return candidate.cosThetaStar(array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kB0), 1);
 }
 } // namespace hf_cand_b0
-
 
 // declare dedicated B0 decay candidate table
 DECLARE_SOA_TABLE(HfCandB0Base, "AOD", "HFCANDB0BASE",
@@ -1431,15 +1430,15 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandB0Ext, HfCandB0Base, "HFCANDB0EXT",
 using HfCandB0 = HfCandB0Ext;
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfCandB0MCRec, "AOD", "HFCANDB0MCREC", 
+DECLARE_SOA_TABLE(HfCandB0MCRec, "AOD", "HFCANDB0MCREC",
                   hf_cand_b0::FlagMCMatchRec,
                   hf_cand_b0::OriginMCRec,
                   hf_cand_b0::DebugMCRec);
 
 // table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfCandB0MCGen, "AOD", "HFCANDB0MCGEN", 
+DECLARE_SOA_TABLE(HfCandB0MCGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::FlagMCMatchGen,
-                  hf_cand_b0::OriginMCGen); 
+                  hf_cand_b0::OriginMCGen);
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_HFSECONDARYVERTEX_H_

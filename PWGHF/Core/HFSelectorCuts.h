@@ -613,7 +613,7 @@ static const std::vector<std::string> pTBinLabels = {
   "pT bin 11"};
 
 // column labels
-static const std::vector<std::string> cutVarLabels = {"m", "CPA", "Chi2PCA","d0 D", "d0 Pi", "pT D", "pT Pi", "B0 decLen", "B0 decLenXY", "Imp. Par. Product", "DeltaMD", "Cos ThetaStar"};
+static const std::vector<std::string> cutVarLabels = {"m", "CPA", "Chi2PCA", "d0 D", "d0 Pi", "pT D", "pT Pi", "B0 decLen", "B0 decLenXY", "Imp. Par. Product", "DeltaMD", "Cos ThetaStar"};
 } // namespace hf_cuts_b0_todpi
 
 namespace hf_cuts_bplus_tod0pi

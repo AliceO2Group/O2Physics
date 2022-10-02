@@ -29,7 +29,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::aod::hf_cand_b0;	// from HFSecondaryVertex.h
+using namespace o2::aod::hf_cand_b0; // from HFSecondaryVertex.h
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Reconstruction of B0 candidates
 struct HFCandidateCreatorB0 {
-  Produces<aod::HfCandB0Base> rowCandidateBase;  // table defined in HFSecondaryVertex.h
+  Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in HFSecondaryVertex.h
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
@@ -66,7 +66,7 @@ struct HFCandidateCreatorB0 {
 
   Configurable<int> d_selectionFlagD{"d_selectionFlagD", 1, "Selection Flag for D"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagD); //FIXME
+  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagD); // FIXME
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -105,7 +105,7 @@ struct HFCandidateCreatorB0 {
       hPtD->Fill(dCand.pt());
       hCPAD->Fill(dCand.cpa());
 
-			// track0 <-> pi, track1 <-> K, track2 <-> pi
+      // track0 <-> pi, track1 <-> K, track2 <-> pi
       auto track0 = dCand.index0_as<aod::BigTracks>();
       auto track1 = dCand.index1_as<aod::BigTracks>();
       auto track2 = dCand.index2_as<aod::BigTracks>();
@@ -118,7 +118,7 @@ struct HFCandidateCreatorB0 {
       if (df3.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
         continue;
       }
-      
+
       const auto& secondaryVertex = df3.getPCACandidate();
       trackParVar0.propagateTo(secondaryVertex[0], magneticField);
       trackParVar1.propagateTo(secondaryVertex[0], magneticField);
@@ -128,15 +128,15 @@ struct HFCandidateCreatorB0 {
       array<float, 3> pVecpiK = {track0.px() + track1.px(), track0.py() + track1.py(), track0.pz() + track1.pz()};
       array<float, 3> pVecD = {pVecpiK[0] + track2.px(), pVecpiK[1] + track2.py(), pVecpiK[2] + track2.pz()};
       auto trackParVarPiK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecpiK, df3.calcPCACovMatrixFlat(),
-                                          trackParVar0, trackParVar1, {0, 0}, {0, 0});
+                                                trackParVar0, trackParVar1, {0, 0}, {0, 0});
       auto trackParVarD = o2::dataformats::V0(df3.getPCACandidatePos(), pVecD, df3.calcPCACovMatrixFlat(),
-                                        trackParVarPiK, trackParVar2, {0, 0}, {0, 0});
+                                              trackParVarPiK, trackParVar2, {0, 0}, {0, 0});
 
       int index0D = track0.globalIndex();
       int index1D = track1.globalIndex();
       int index2D = track2.globalIndex();
-      //int charge = track0.sign() + track1.sign() + track2.sign();
-      
+      // int charge = track0.sign() + track1.sign() + track2.sign();
+
       // loop on D-
       // D- → π- K+ π-
       // we don't have direct access to D sign so we use the sign of the daughters (the pion track0 here)
@@ -308,9 +308,9 @@ struct HFCandidateCreatorB0MC {
   Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in HFSecondaryVertex.h
 
   void processMC(aod::HfCandB0 const& candidates,
-               aod::HfCandProng3 const&,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+                 aod::HfCandProng3 const&,
+                 aod::BigTracksMC const& tracks,
+                 aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -333,7 +333,7 @@ struct HFCandidateCreatorB0MC {
                                    candD.index1_as<aod::BigTracksMC>(),
                                    candD.index2_as<aod::BigTracksMC>()};
       // B0 → D- π+ → (π- K+ π-) π+
-      //Printf("Checking B0 → D- π+");
+      // Printf("Checking B0 → D- π+");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kB0, array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // B0 → D- π+
@@ -355,7 +355,7 @@ struct HFCandidateCreatorB0MC {
       flag = 0;
       origin = 0;
       // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kB0, array{- int(pdg::Code::kDPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kB0, array{-int(pdg::Code::kDPlus), +kPiPlus}, true)) {
         // Match D- -> π- K+ π-
         auto candDMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D- -> π- K+ π-");
@@ -374,6 +374,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{
     adaptAnalysisTask<HFCandidateCreatorB0>(cfgc),
     adaptAnalysisTask<HFCandidateCreatorB0Expressions>(cfgc)};
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorB0MC>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HFCandidateCreatorB0MC>(cfgc));
   return workflow;
 }
