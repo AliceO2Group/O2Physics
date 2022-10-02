@@ -48,20 +48,18 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles (WARNING only for multiplicity estimate)")
-  O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles (WARNING only for multiplicity estimate)")
+  O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles")
+  O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  // Filter centralityFilter = aod::cent::centRun2V0M >= 0.0f && aod::cent::centRun2V0M <= 100.0f;
   Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
   Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
 
-  // TODO cannot be used yet as there is no index rewriting below for the tracks
-  // Filter mcParticleFilter = (nabs(aod::mcparticle::eta) < cfgCutMCEta) && (aod::mcparticle::pt > cfgCutMCPt);
+  Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
   OutputObj<TH3F> yields{TH3F("yields", "centrality vs pT vs eta", 100, 0, 100, 40, 0, 20, 100, -2, 2)};
   OutputObj<TH3F> etaphi{TH3F("etaphi", "centrality vs eta vs phi", 100, 0, 100, 100, -2, 2, 200, 0, 2 * M_PI)};
@@ -182,7 +180,7 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processMC2, "Process MC: MC part", false);
 
-  void processMC(aod::McCollision const& mcCollision, aod::McParticles const& particles,
+  void processMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, aod::McParticles const& particles,
                  soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities>> const& collisions,
                  soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const&)
@@ -254,9 +252,6 @@ struct FilterCF {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       outputCollisions(outputMcCollisions.lastIndex(), bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
-      if (outputMcCollisions.lastIndex() != collision.mcCollisionId()) {
-        LOGP(warning, "processMC:     Index out of line {} {}", outputMcCollisions.lastIndex(), collision.mcCollisionId());
-      }
 
       for (auto& track : groupedTracks) {
         uint8_t trackType = 0;
@@ -266,8 +261,14 @@ struct FilterCF {
           trackType = 2;
         }
 
-        // NOTE only works if we save all MC tracks...
-        outputTracks(outputCollisions.lastIndex(), mcParticleLabels[track.mcParticleId() - particles.begin().globalIndex()],
+        int mcParticleId = track.mcParticleId();
+        if (mcParticleId >= 0) {
+          mcParticleId = mcParticleLabels[track.mcParticleId() - particles.begin().globalIndex()];
+          if (mcParticleId < 0) {
+            LOGP(fatal, "processMC:     Track {} is referring to a MC particle which we do not store {} {}", track.index(), track.mcParticleId(), mcParticleId);
+          }
+        }
+        outputTracks(outputCollisions.lastIndex(), mcParticleId,
                      truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), trackType);
 
         yields->Fill(collision.multiplicity(), track.pt(), track.eta());

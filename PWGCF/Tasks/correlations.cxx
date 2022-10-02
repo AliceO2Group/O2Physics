@@ -99,7 +99,7 @@ struct CorrelationTask {
 
   // MC filters
   Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
-  Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt);
+  Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt) && (aod::cfmcparticle::sign != 0);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -262,10 +262,9 @@ struct CorrelationTask {
 
       target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
 
-      int i = -1;
       for (auto& track2 : tracks2) {
-        i++; // HACK
-        if (track1 == track2) {
+        if (track1.globalIndex() == track2.globalIndex()) {
+          // LOGF(info, "Track identical: %f | %f | %f || %f | %f | %f", track1.eta(), track1.phi(), track1.pt(),  track2.eta(), track2.phi(), track2.pt());
           continue;
         }
 
@@ -299,7 +298,7 @@ struct CorrelationTask {
         float associatedWeight = triggerWeight;
         if constexpr (step == CorrelationContainer::kCFStepCorrected) {
           if (cfg.mEfficiencyAssociated) {
-            associatedWeight *= efficiencyAssociated[i];
+            associatedWeight *= efficiencyAssociated[track2.filteredIndex()];
           }
         }
 
@@ -602,23 +601,21 @@ struct CorrelationTask {
       LOGF(info, "processMCSameDerived. MC collision: %d, particles: %d, collisions: %d", mcCollision.globalIndex(), mcParticles.size(), collisions.size());
     }
 
-    const auto multiplicity = 1; // TODO
-
-    same->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
-    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepAll);
+    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
 
     if (collisions.size() == 0) {
       return;
     }
 
-    same->fillEvent(multiplicity, CorrelationContainer::kCFStepVertex);
-    fillCorrelations<CorrelationContainer::kCFStepVertex>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepVertex);
+    fillCorrelations<CorrelationContainer::kCFStepVertex>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
 
-    same->fillEvent(multiplicity, CorrelationContainer::kCFStepTrackedOnlyPrim);
-    fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepTrackedOnlyPrim);
+    fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
 
-    same->fillEvent(multiplicity, CorrelationContainer::kCFStepTracked);
-    fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepTracked);
+    fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
 
     // NOTE kCFStepReconstructed and kCFStepCorrected are filled in processSameDerived
     //      This also means that if a MC collision had several reconstructed vertices (collisions), all of them are filled
