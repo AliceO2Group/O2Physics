@@ -54,6 +54,7 @@ DECLARE_SOA_TABLE(TrackswTOFInBCs, "AOD", "TRACKSWTOFINBCS", //!
 
 using TrackswTOFInBC = TrackswTOFInBCs::iterator;
 
+ master
 DECLARE_SOA_TABLE(FwdTracksInBCs, "AOD", "FWDTRACKSINBCS", //!
                   o2::soa::Index<>,
                   collision::BCId,

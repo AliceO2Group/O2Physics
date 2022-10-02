@@ -20,7 +20,6 @@
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
 #include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;

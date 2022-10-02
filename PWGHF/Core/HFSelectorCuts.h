@@ -303,6 +303,50 @@ static const std::vector<std::string> pTBinLabels = {
 static const std::vector<std::string> cutVarLabels = {"m", "pT p", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle"};
 } // namespace hf_cuts_lc_topkpi
 
+namespace hf_cuts_lc_tok0sp
+{
+static constexpr int npTBins = 8;
+static constexpr int nCutVars = 8;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double pTBins[npTBins + 1] = {
+  1.,
+  2.,
+  3.,
+  4.,
+  5.,
+  6.,
+  8.,
+  12.,
+  24.};
+auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+
+// default values for the cuts
+// mK0s(GeV)     mLambdas(GeV)    mGammas(GeV)    ptp     ptK0sdau     ptK0s     d0p     d0K0
+constexpr double cuts[npTBins][nCutVars] = {{0.008, 0.005, 0.1, 0.5, 0.3, 0.6, 0.05, 999999.},  // 1 < pt < 2
+                                            {0.008, 0.005, 0.1, 0.5, 0.4, 1.3, 0.05, 999999.},  // 2 < pt < 3
+                                            {0.009, 0.005, 0.1, 0.6, 0.4, 1.3, 0.05, 999999.},  // 3 < pt < 4
+                                            {0.011, 0.005, 0.1, 0.6, 0.4, 1.4, 0.05, 999999.},  // 4 < pt < 5
+                                            {0.013, 0.005, 0.1, 0.6, 0.4, 1.4, 0.06, 999999.},  // 5 < pt < 6
+                                            {0.013, 0.005, 0.1, 0.9, 0.4, 1.6, 0.09, 999999.},  // 6 < pt < 8
+                                            {0.016, 0.005, 0.1, 0.9, 0.4, 1.7, 0.10, 999999.},  // 8 < pt < 12
+                                            {0.019, 0.005, 0.1, 1.0, 0.4, 1.9, 0.20, 999999.}}; // 12 < pt < 24
+
+// row labels
+static const std::vector<std::string> pTBinLabels = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7"};
+
+// column labels
+static const std::vector<std::string> cutVarLabels = {"mK0s", "mLambda", "mGamma", "ptBach", "ptV0Dau", "ptV0", "d0Bach", "d0V0"};
+} // namespace hf_cuts_lc_tok0sp
+
 namespace hf_cuts_dplus_topikpi
 {
 static const int npTBins = 12;

@@ -16,6 +16,12 @@
 
 namespace o2::aod
 {
+namespace fwdtrack
+{
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float); //! Impact parameter in X of forward track to the primary vertex
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float); //! Impact parameter in Y of forward track to the primary vertex
+} // namespace fwdtrack
+
 namespace track
 {
 // Columns to store the DCA to the primary vertex
@@ -119,6 +125,10 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::IsGlobalTrack<track::TrackCutFlag>,
                   track::IsGlobalTrackWoPtEta<track::TrackCutFlag>,
                   track::IsGlobalTrackWoDCA<track::TrackCutFlag>);
+
+DECLARE_SOA_TABLE(FwdTracksDCA, "AOD", "FWDTRACKDCA", //! DCA information for the forward track
+                  fwdtrack::FwdDcaX,
+                  fwdtrack::FwdDcaY);
 
 } // namespace o2::aod
 

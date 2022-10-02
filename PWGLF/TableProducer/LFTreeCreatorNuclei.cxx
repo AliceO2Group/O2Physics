@@ -74,7 +74,7 @@ struct LfTreeCreatorNuclei {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                    aod::pidTOFbeta, aod::TOFSignal,
+                                    aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
                                     aod::pidTPCFullPi, aod::pidTOFFullPi,
                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                     aod::pidTPCFullPr, aod::pidTOFFullPr,
@@ -111,6 +111,8 @@ struct LfTreeCreatorNuclei {
         track.tofNSigmaDe(), track.tofNSigmaHe(),
         track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(),
         track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(),
+        track.isEvTimeTOF(),
+        track.isEvTimeT0AC(),
         track.hasTOF(),
         track.tpcInnerParam(),
         track.tpcSignal(),

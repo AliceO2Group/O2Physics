@@ -248,6 +248,8 @@ DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);       //!  Impact parameter in X of forward track to the primary vertex
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);       //!  Impact parameter in Y of forward track to the primary vertex
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,   //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -283,7 +285,8 @@ DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId,
-                  fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType);
+                  fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType,
+                  reducedmuon::FwdDcaX, reducedmuon::FwdDcaY);
 
 // Muon covariance, TODO: the rest of the matrix should be added when needed
 DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",
