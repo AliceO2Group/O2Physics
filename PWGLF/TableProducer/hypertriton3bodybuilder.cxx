@@ -273,6 +273,7 @@ struct hypertriton3bodyLabelBuilder {
         {"hAntiHypertriton", "hAntiHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
         {"hHypertritonMass", "hHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
         {"hAntiHypertritonMass", "hAntiHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
+        {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
       },
   };
 
@@ -304,6 +305,7 @@ struct hypertriton3bodyLabelBuilder {
       int lLabel = -1;
       int lPDG = -1;
       float lPt = -1;
+      double MClifetime = -1;
       bool is3bodyDecay = false; // all considered V0s
 
       auto lTrack0 = vtx.track0_as<LabeledTracks>();
@@ -332,6 +334,7 @@ struct hypertriton3bodyLabelBuilder {
               lLabel = lMother1.globalIndex();
               lPt = lMother1.pt();
               lPDG = lMother1.pdgCode();
+              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz())*2.991/lMother2.p();  
               is3bodyDecay = true; // vtxs with the same mother
             }
           }
@@ -351,6 +354,7 @@ struct hypertriton3bodyLabelBuilder {
         registry.fill(HIST("hHypertritonCounter"), 0.5);
         registry.fill(HIST("hHypertriton"), lPt);
         registry.fill(HIST("hHypertritonMass"), hypertritonMCMass);
+        registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, hypertritonMCMass);
         if (TMath::Abs( lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 0.5);
         }
@@ -370,6 +374,7 @@ struct hypertriton3bodyLabelBuilder {
         registry.fill(HIST("hHypertritonCounter"), 2.5);
         registry.fill(HIST("hAntiHypertriton"), lPt);
         registry.fill(HIST("hAntiHypertritonMass"), antiHypertritonMCMass);
+        registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, antiHypertritonMCMass);
         if (TMath::Abs( lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 4.5);
         }
