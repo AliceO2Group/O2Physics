@@ -93,9 +93,9 @@ struct DGSelector {
     }
 
     // no activity in muon arm
-    LOGF(debug, "Muons %i", fwdtracks.size());
-    for (auto& muon : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
+    LOGF(debug, "FwdTracks %i", fwdtracks.size());
+    for (auto& fwdtrack : fwdtracks) {
+      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
     }
     if (fwdtracks.size() > 0) {
       return 2;
@@ -178,13 +178,22 @@ struct DGSelector {
     return 0;
   };
 
-  template <typename BCs, typename TCs>
-  int IsSelected(DGCutparHolder diffCuts, BCs& bc, TCs& tracks)
+  template <typename BCs, typename TCs, typename FWs>
+  int IsSelected(DGCutparHolder diffCuts, BCs& bc, TCs& tracks, FWs& fwdtracks)
   {
     // check that there are no FIT signals in bc
     // Double Gap (DG) condition
     if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
       return 1;
+    }
+
+    // no activity in muon arm
+    LOGF(debug, "FwdTracks %i", fwdtracks.size());
+    for (auto& fwdtrack : fwdtracks) {
+      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
+    }
+    if (fwdtracks.size() > 0) {
+      return 2;
     }
 
     // number of tracks

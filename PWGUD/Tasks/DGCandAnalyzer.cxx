@@ -50,6 +50,7 @@ struct DGCandAnalyzer {
   // get a DGCutparHolder and DGAnaparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   MutableConfigurable<bool> verbose{"Verbose", {}, "Additional print outs"};
+  MutableConfigurable<int> candCase{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   DGAnaparHolder anaPars = DGAnaparHolder();
   MutableConfigurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
@@ -129,6 +130,13 @@ struct DGCandAnalyzer {
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
   {
 
+    // skip unwanted cases
+    if (candCase < 0 && dgcand.rgtrwTOF() >= 0) {
+      return;
+    } else if (candCase > 0 && dgcand.rgtrwTOF() < 0) {
+      return;
+    }
+
     // skip events with too few/many tracks
     if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
       return;
@@ -140,7 +148,7 @@ struct DGCandAnalyzer {
     }
 
     // skip events with out-of-range rgtrwTOF
-    if (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF()) {
+    if (dgcand.rgtrwTOF() >= 0 && dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF()) {
       return;
     }
 
