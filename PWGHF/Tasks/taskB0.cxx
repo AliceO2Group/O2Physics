@@ -111,7 +111,7 @@ struct HfTaskB0 {
 };    // struct
 
 /// B0 MC analysis and fill histograms
-struct HfTaskB0Mc {
+struct HfTaskB0MC {
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "B0 candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
@@ -173,7 +173,7 @@ struct HfTaskB0Mc {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
-  void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate, aod::HfCandB0MCRec>> const& candidates,
+  void processMC(soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate, aod::HfCandB0MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
     //MC rec
@@ -265,15 +265,13 @@ struct HfTaskB0Mc {
       }
     } //gen
   }   // process
+  PROCESS_SWITCH(HfTaskB0MC, processMC, "Process MC", false);
 };    // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  const bool doMC = cfgc.options().get<bool>("doMC");
   workflow.push_back(adaptAnalysisTask<HfTaskB0>(cfgc));
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfTaskB0Mc>(cfgc));
-  }
+  workflow.push_back(adaptAnalysisTask<HfTaskB0MC>(cfgc));
   return workflow;
 }

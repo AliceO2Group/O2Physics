@@ -162,6 +162,6 @@ struct HfB0ToDPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfB0ToDPiCandidateSelector>(cfgc, TaskName{"hf-b0-todpi-candidate-selector"}));
+  workflow.push_back(adaptAnalysisTask<HfB0ToDPiCandidateSelector>(cfgc));
   return workflow;
 }
