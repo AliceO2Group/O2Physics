@@ -42,6 +42,7 @@ DECLARE_SOA_COLUMN(NtrwTOF, ntrwTOF, int);             //! number of tracks with
 DECLARE_SOA_COLUMN(NPVTracks, nPVTracks, int);         //! number of PV tracks
 DECLARE_SOA_COLUMN(NGlobalTracks, nGlobalTracks, int); //! number of global tracks
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);          //! track index array
+DECLARE_SOA_ARRAY_INDEX_COLUMN(FwdTrack, fwdtrack);    //! fwd track index array
 
 } // namespace dgbcandidate
 
@@ -52,6 +53,14 @@ DECLARE_SOA_TABLE(TrackswTOFInBCs, "AOD", "TRACKSWTOFINBCS", //!
                   dgbcandidate::TrackIds);
 
 using TrackswTOFInBC = TrackswTOFInBCs::iterator;
+
+DECLARE_SOA_TABLE(FwdTracksInBCs, "AOD", "FWDTRACKSINBCS", //!
+                  o2::soa::Index<>,
+                  collision::BCId,
+                  dgbcandidate::BCNum,
+                  dgbcandidate::FwdTrackIds);
+
+using FwdTracksInBC = FwdTracksInBCs::iterator;
 
 DECLARE_SOA_TABLE(IsFullDiff2s, "AOD", "ISFULLDIFF2S", //! To join with TrackswTOFInBCs
                   dgbcandidate::FullDiff2);

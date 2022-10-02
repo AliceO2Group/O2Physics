@@ -422,7 +422,7 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
         case 2:
           detValue = track.tpcSignal();
       }
-      LOGF(info, "detValue TPC %f", detValue);
+      LOGF(debug, "detValue TPC %f", detValue);
     } else if (abs(pidcut.cutDetector()) == 2) {
       if (!track.hasTOF()) {
         continue;
@@ -434,7 +434,7 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
         case 2:
           detValue = track.tofSignal();
       }
-      LOGF(info, "detValue TOF %f", detValue);
+      LOGF(debug, "detValue TOF %f", detValue);
     } else {
       continue;
     }
