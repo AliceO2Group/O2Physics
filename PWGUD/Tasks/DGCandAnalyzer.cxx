@@ -129,7 +129,7 @@ struct DGCandAnalyzer {
 
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
   {
-    
+
     // skip unwanted cases
     if (candCase < 0 && dgcand.rgtrwTOF() >= 0) {
       return;

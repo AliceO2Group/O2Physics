@@ -110,22 +110,22 @@ struct tracksWTOFInBCs {
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
       LOGF(debug, "fwdTrack.trackTimeRes %f", fwdTrack.trackTimeRes());
       if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
-    
-        // get first compatible BC                                                             
-        auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());    
-        if (ambFwdTracksSlice.size() == 0) {                                                   
-          // this track is not ambiguous, has hence a unique association to a collision/BC     
-          closestBC = fwdTrack.collision_as<CCs>().bc_as<BCs>().globalBC();                    
-        } else {                                                                               
-          // compute the BC closest in time                                                    
-          auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();          
-          closestBC = (uint64_t)(firstCompatibleBC +                                           
-                                 (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)); 
-        }                                                                                      
 
-        // update tracksInBCList                                                               
+        // get first compatible BC
+        auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
+        if (ambFwdTracksSlice.size() == 0) {
+          // this track is not ambiguous, has hence a unique association to a collision/BC
+          closestBC = fwdTrack.collision_as<CCs>().bc_as<BCs>().globalBC();
+        } else {
+          // compute the BC closest in time
+          auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();
+          closestBC = (uint64_t)(firstCompatibleBC +
+                                 (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+        }
+
+        // update tracksInBCList
         fwdTracksInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
-      }               
+      }
     }
 
     // fill fwdTracksInBCs
@@ -150,7 +150,6 @@ struct tracksWTOFInBCs {
     }
   }
   PROCESS_SWITCH(tracksWTOFInBCs, processForward, "Process forward tracks", true);
-
 };
 
 // -----------------------------------------------------------------------------
@@ -260,7 +259,7 @@ struct DGBCCandProducer {
       auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
       auto bcRange = compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
       isDG = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
-      
+
       // update UDTables
       if (isDG == 0) {
         rtrwTOF = rPVtrwTOF(colTracks, col.numContrib());
@@ -281,7 +280,7 @@ struct DGBCCandProducer {
       }
     } else {
       auto tracksArray = tibc.track_as<TCs>();
-      
+
       // does BC have fwdTracks?
       auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
       if (ftibcSlice.size() > 0) {
