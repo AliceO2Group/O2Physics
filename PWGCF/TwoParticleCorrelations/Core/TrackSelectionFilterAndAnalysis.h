@@ -108,6 +108,7 @@ class TrackSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   int CalculateMaskLength();
   void StoreArmedMask();
 
+  TList mTrackSign;                                         /// the track charge sign list
   TList mTrackTypes;                                        /// the track types to select list
   CutBrick<int>* mNClustersTPC;                             //! the number of TPC clusters cuts
   CutBrick<int>* mNCrossedRowsTPC;                          //! the number of TPC crossed rows cuts
@@ -127,12 +128,6 @@ class TrackSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 template <typename TrackToFilter>
 uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
 {
-  /* limit for the current implementation */
-  int length = CalculateMaskLength();
-  if (length > 64) {
-    LOGF(fatal, "TrackSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being");
-  }
-
   uint64_t selectedMask = 0UL;
   int bit = 0;
 
@@ -163,6 +158,9 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
     return false;
   };
 
+  for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
+    filterBrickValue((CutBrick<float>*)mTrackSign.At(i), track.sign());
+  }
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
     filterTrackType((TrackSelectionBrick*)mTrackTypes.At(i), track);
   }

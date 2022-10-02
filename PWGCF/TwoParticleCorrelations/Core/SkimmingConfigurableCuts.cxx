@@ -246,7 +246,7 @@ template <typename TValueToFilter>
 std::vector<bool> CutBrickThreshold<TValueToFilter>::Filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
-  if (mThreshold <= value) {
+  if (mThreshold < value) {
     this->mState = this->kACTIVE;
     res.push_back(true);
   } else {
@@ -340,7 +340,7 @@ template <typename TValueToFilter>
 std::vector<bool> CutBrickRange<TValueToFilter>::Filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
-  if ((mLow <= value) and (value < mHigh)) {
+  if ((mLow < value) and (value < mHigh)) {
     this->mState = this->kACTIVE;
     res.push_back(true);
   } else {
@@ -434,7 +434,7 @@ template <typename TValueToFilter>
 std::vector<bool> CutBrickExtToRange<TValueToFilter>::Filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
-  if ((value < mLow) or (mHigh <= value)) {
+  if ((value < mLow) or (mHigh < value)) {
     this->mState = this->kACTIVE;
     res.push_back(true);
   } else {

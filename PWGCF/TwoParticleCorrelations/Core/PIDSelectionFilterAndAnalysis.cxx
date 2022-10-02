@@ -309,7 +309,7 @@ void PIDSelectionFilterAndAnalysis::StoreArmedMask()
   uint64_t optMask = 0UL;
   uint64_t forcedMask = 0UL;
   mArmedMask = 0UL;
-  mOptArmedMask = 0UL;
+  mOptArmedMask.clear();
   mForcedArmedMask = 0UL;
   int bit = 0;
   auto armedList = [&](auto bricklst) {
@@ -330,15 +330,14 @@ void PIDSelectionFilterAndAnalysis::StoreArmedMask()
       }
     };
     for (auto brick : bricklst) {
-      armedBrick(brick, true);
+      armedBrick(brick, false);
     }
   };
   armedList(mCloseNsigmasTPC);
   armedList(mCloseNsigmasTOF);
   armedList(mBayesProbability);
 
-  LOGF(info, "PIDSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%08lx, 0x%08lx, 0x%08lx", armedMask, optMask, forcedMask);
+  LOGF(info, "PIDSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%016lx, %s, 0x%016lx", armedMask, printOptionalMasks().Data(), forcedMask);
   mArmedMask = armedMask;
-  mOptArmedMask = optMask;
   mForcedArmedMask = forcedMask;
 }

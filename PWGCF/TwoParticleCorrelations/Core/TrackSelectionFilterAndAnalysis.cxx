@@ -113,7 +113,8 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis()
     mMaxDcaXY(nullptr),
     mMaxDcaZ(nullptr)
 {
-  /* we own the track types cuts objects */
+  /* we own the track sign and types cuts objects */
+  mTrackSign.SetOwner(true);
   mTrackTypes.SetOwner(true);
   /* at least we initialize by default pT and eta cuts */
   mPtRange = CutBrick<float>::constructBrick("pT", "rg{0.2,10}", std::set<std::string>{"rg"});
@@ -132,7 +133,8 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TString& 
     mMaxDcaXY(nullptr),
     mMaxDcaZ(nullptr)
 {
-  /* we own the track types cuts objects */
+  /* we own the track sign and types cuts objects */
+  mTrackSign.SetOwner(true);
   mTrackTypes.SetOwner(true);
   /* at least we initialize by default pT and eta cuts */
   mPtRange = CutBrick<float>::constructBrick("pT", "rg{0.1,50}", std::set<std::string>{"rg"});
@@ -155,7 +157,8 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TrackSele
     mPtRange(nullptr),
     mEtaRange(nullptr)
 {
-  /* we own the track types cuts objects */
+  /* we own the track sign and types cuts objects */
+  mTrackSign.SetOwner(true);
   mTrackTypes.SetOwner(true);
 
   TString cutString = "tracksel{" + trcksel.mTrackTypes;
@@ -209,6 +212,9 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TrackSele
 int TrackSelectionFilterAndAnalysis::CalculateMaskLength()
 {
   int length = 0;
+  for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
+    length += ((CutBrick<float>*)mTrackSign.At(i))->Length();
+  }
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
     length += ((SpecialCutBrick*)mTrackTypes.At(i))->Length();
   }
@@ -277,6 +283,18 @@ void TrackSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
   }
   SetName("TrackSelectionFilterAndAnalysisCuts");
   SetTitle(cutstr.Data());
+
+  /* let's introduce the charge sign bricks into the chain */
+  {
+    auto addChargeBrick = [this](auto name, auto regex) {
+      std::set<std::string> allowed = {"lim", "th"};
+      CutBrick<float>* brick = CutBrick<float>::constructBrick(name, regex, allowed);
+      brick->Arm(true);
+      mTrackSign.Add(brick);
+    };
+    addChargeBrick("chp", "th{0}");
+    addChargeBrick("chn", "lim{0}");
+  }
 
   /* let's split the handling of track types and of its characteristics */
   /* let's handle the track types */
@@ -382,7 +400,7 @@ void TrackSelectionFilterAndAnalysis::StoreArmedMask()
   uint64_t optMask = 0UL;
   uint64_t forcedMask = 0UL;
   mArmedMask = 0UL;
-  mOptArmedMask = 0UL;
+  mOptArmedMask.clear();
   mForcedArmedMask = 0UL;
   int bit = 0;
 
@@ -401,9 +419,17 @@ void TrackSelectionFilterAndAnalysis::StoreArmedMask()
     }
   };
 
+  optMask = 0UL;
+  for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
+    armedBrick((CutBrick<float>*)mTrackSign.At(i), true);
+  }
+  mOptArmedMask.push_back(optMask);
+  optMask = 0UL;
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
     armedBrick((TrackSelectionBrick*)mTrackTypes.At(i), true);
   }
+  mOptArmedMask.push_back(optMask);
+  optMask = 0UL;
   if (mNClustersTPC != nullptr) {
     armedBrick(mNClustersTPC);
   }
@@ -429,8 +455,7 @@ void TrackSelectionFilterAndAnalysis::StoreArmedMask()
     armedBrick(mMaxDcaZ);
   }
   /* for the time being the pT and eta bricks dont go to the mask */
-  LOGF(info, "TrackSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%08lx, 0x%08lx, 0x%08lx", armedMask, optMask, forcedMask);
+  LOGF(info, "TrackSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%016lx, %s, 0x%016lx", armedMask, printOptionalMasks().Data(), forcedMask);
   mArmedMask = armedMask;
-  mOptArmedMask = optMask;
   mForcedArmedMask = forcedMask;
 }

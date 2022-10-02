@@ -17,6 +17,7 @@
 #include <TNamed.h>
 #include <TList.h>
 
+#include "Framework/Logger.h"
 #include "SkimmingConfigurableCuts.h"
 #include "SelectionFilterAndAnalysis.h"
 
@@ -35,19 +36,22 @@ class EventSelectionConfigurable
   friend class EventSelectionFilterAndAnalysis;
 
  public:
-  EventSelectionConfigurable(std::string multsel = "",
+  EventSelectionConfigurable(std::string bfieldsel = "",
+                             std::string multsel = "",
                              std::string trigsel = "",
                              std::string zvtxsel = "",
                              std::string pileuprej = "")
-    : mMultSel{multsel}, mTriggerSel{trigsel}, mZVertexSel{zvtxsel}, mPileUpRejection{pileuprej}
+    : mBFiledSel(bfieldsel), mMultSel{multsel}, mTriggerSel{trigsel}, mZVertexSel{zvtxsel}, mPileUpRejection{pileuprej}
   {
   }
-  EventSelectionConfigurable(std::vector<std::string> multsel,
+  EventSelectionConfigurable(std::vector<std::string> bfieldsel,
+                             std::vector<std::string> multsel,
                              std::vector<std::string> trigsel,
                              std::vector<std::string> zvtxsel,
                              std::vector<std::string> pileuprej);
 
  private:
+  std::string mBFiledSel = "";       //! the magnetic field selection cuts
   std::string mMultSel = "";         //! the multiplicity selection cuts
   std::string mTriggerSel = "";      //! the trigger selection cuts
   std::string mZVertexSel = "";      //! the z vertex selection cuts
@@ -66,7 +70,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   EventSelectionFilterAndAnalysis(const EventSelectionConfigurable&, selmodes);
 
   template <typename CollisionToFilter>
-  uint64_t Filter(CollisionToFilter const& col);
+  uint64_t Filter(CollisionToFilter const& col, int bfield);
   std::vector<float> GetMultiplicities();
   /// \brief Gets the index of the active multiplicity value within the multiplicities array
   int getMultiplicityIndex() { return mMultiplicityClasses->getArmedIndex(); }
@@ -77,7 +81,8 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   int CalculateMaskLength() override;
   virtual void StoreArmedMask() override;
 
-  CutBrick<float>* mMultiplicityClasses;                 //! the multiplicity default classes cuts
+  std::vector<CutBrick<float>*> mBFieldSelection;        //! the magnetic field selection cuts
+  CutBrick<float>* mMultiplicityClasses;                 //! the multiplicity classes cuts
   CutBrick<int>* mTriggerSelection;                      //! the trigger selection cuts
   CutBrick<float>* mZVertex;                             //! the z vertex selection cuts
   CutBrick<int>* mPileUpRejection;                       //! the pile-up rejection criteria
@@ -90,7 +95,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
 /// \brief Fills the filter cuts mask
 template <typename CollisionToFilter>
-inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const& col)
+inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const& col, int bfield)
 {
   /* store the collision multiplicities for the different estimators */
   /* TODO: we need to adapt this to the Run 3 scenario */
@@ -118,6 +123,14 @@ inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const&
 
   /* we require the collision be accepted by the whole set of filters */
   bool acceptcollision = true;
+  if (mBFieldSelection.size() > 0) {
+    bool oneatleast = false;
+    for (auto brick : mBFieldSelection) {
+      bool acc = filterBrickValue(brick, bfield);
+      oneatleast = oneatleast || acc;
+    }
+    acceptcollision = acceptcollision && oneatleast;
+  }
   if (mMultiplicityClasses != nullptr) {
     if (mAlternateMultiplicityEstimatorIndex.size() > 0) {
       bool atleastonealternative = false;

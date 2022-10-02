@@ -39,6 +39,16 @@ namespace o2::analysis::twopfilter
 #define TWOPFILTERLOGCOLLISIONS info
 #define TWOPFILTERLOGTRACKS info
 
+uint64_t collisionmask = 0UL;
+std::vector<uint64_t> collisionmask_opt;
+uint64_t collisionmask_forced = 0UL;
+uint64_t trackmask = 0UL;
+std::vector<uint64_t> trackmask_opt;
+uint64_t trackmask_forced = 0UL;
+uint64_t pidmask = 0UL;
+std::vector<uint64_t> pidmask_opt;
+uint64_t pidmask_forced = 0UL;
+
 PWGCF::EventSelectionFilterAndAnalysis* fCollisionFilter = nullptr;
 PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
 PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;
@@ -59,16 +69,6 @@ struct TwoParticleCorrelationsFilter {
   int nReportedTracks;
   //  HistogramRegistry historeg;
 
-  uint64_t collisionmask = 0UL;
-  uint64_t collisionmask_opt = 0UL;
-  uint64_t collisionmask_forced = 0UL;
-  uint64_t trackmask = 0UL;
-  uint64_t trackmask_opt = 0UL;
-  uint64_t trackmask_forced = 0UL;
-  uint64_t pidmask = 0UL;
-  uint64_t pidmask_opt = 0UL;
-  uint64_t pidmask_forced = 0UL;
-
   void init(InitContext const&)
   {
     using namespace twopfilter;
@@ -76,7 +76,7 @@ struct TwoParticleCorrelationsFilter {
     LOGF(info, "TwoParticleCorrelationsFilter::init()");
 
     /* collision filtering configuration */
-    PWGCF::EventSelectionConfigurable eventsel(eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
+    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
     fCollisionFilter = new PWGCF::EventSelectionFilterAndAnalysis(eventsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
 
     /* track filtering configuration */
@@ -86,7 +86,7 @@ struct TwoParticleCorrelationsFilter {
     PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr,
                                            pidfilter.pidbayesfilter.bayel, pidfilter.pidbayesfilter.baymu, pidfilter.pidbayesfilter.baypi, pidfilter.pidbayesfilter.bayka, pidfilter.pidbayesfilter.baypr);
-    fPIDFilter = new PWGCF::PIDSelectionFilterAndAnalysis(pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
+    fPIDFilter = new PWGCF::PIDSelectionFilterAndAnalysis(pidsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
 
     nReportedTracks = 0;
     collisionmask = fCollisionFilter->getMask();
@@ -99,9 +99,9 @@ struct TwoParticleCorrelationsFilter {
     pidmask = fPIDFilter->getMask();
     pidmask_opt = fPIDFilter->getOptMask();
     pidmask_forced = fPIDFilter->getForcedMask();
-    LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%08lx, 0x%08lx, and 0x%08lx and multiplicity index %d", collisionmask, collisionmask_opt, collisionmask_forced, fMultiplicityIndex);
-    LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", trackmask, trackmask_opt, trackmask_forced);
-    LOGF(info, "TwoParticleCorrelationsFilter::init(), PID selection masks 0x%08lx, 0x%08lx, and 0x%08lx ", pidmask, pidmask_opt, pidmask_forced);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%016lx, %s, and 0x%016lx and multiplicity index %d", collisionmask, fCollisionFilter->printOptionalMasks().Data(), collisionmask_forced, fMultiplicityIndex);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%016lx, %s, and 0x%016lx ", trackmask, fTrackFilter->printOptionalMasks().Data(), trackmask_forced);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), PID selection masks 0x%016lx, %s, and 0x%016lx ", pidmask, fPIDFilter->printOptionalMasks().Data(), pidmask_forced);
     if (collisionmask == uint64_t(0) or trackmask == uint64_t(0)) {
       LOGF(fatal, "TwoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
     }
@@ -115,19 +115,27 @@ struct TwoParticleCorrelationsFilter {
   {
     using namespace twopfilter;
     LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
+    auto passOptions = [](auto options, auto mask) {
+      bool all = true;
+      for (auto option : options) {
+        all = all && ((option & mask) != 0UL);
+      }
+      return all;
+    };
 
-    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced and (collision.selflags() & collisionmask_opt) != 0UL) {
+    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced and passOptions(collisionmask_opt, collision.selflags())) {
+      LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
       acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
-        if ((track.trackflags() & trackmask_forced) == trackmask_forced and (track.trackflags() & trackmask_opt) != 0UL) {
+        if ((track.trackflags() & trackmask_forced) == trackmask_forced and passOptions(trackmask_opt, track.trackflags())) {
           accepteddtracks(0); // TODO: the kind of accepted track
           nAcceptedTracks++;
         } else {
           accepteddtracks(-1);
         }
       }
-      LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%08lx and %d accepted tracks", collision.selflags(), nAcceptedTracks);
+      LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %d accepted tracks", collision.selflags(), nAcceptedTracks);
     } else {
       acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(false));
     }

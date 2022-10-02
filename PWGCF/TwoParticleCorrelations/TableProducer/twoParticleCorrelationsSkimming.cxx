@@ -16,11 +16,12 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
 #include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
 #include "Framework/runDataProcessing.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -96,10 +97,29 @@ struct TwoParticleCorrelationsSkimming {
   Produces<aod::CFMCCollisions> skimmedgencollision;
   Produces<aod::CFMCParticles> skimmedparticles;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
 #include "skimmingconf.h"
 
   int nReportedTracks;
+  int runNumber = 0;
+  int bfield = 0;
   HistogramRegistry historeg;
+
+  int getMagneticField(std::string ccdbpath, uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
+  }
 
   void init(InitContext const&)
   {
@@ -108,7 +128,7 @@ struct TwoParticleCorrelationsSkimming {
     LOGF(info, "DptDptSkimTask::init()");
 
     /* collision filtering configuration */
-    PWGCF::EventSelectionConfigurable eventsel(eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
+    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
     fEventFilter = new PWGCF::EventSelectionFilterAndAnalysis(eventsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
 
     /* track filtering configuration */
@@ -128,6 +148,11 @@ struct TwoParticleCorrelationsSkimming {
 
     historeg.add("EventCuts", "EventCuts", {HistType::kTH1F, {{aod::run2::kTRDHEE + 1, 0, aod::run2::kTRDHEE + 1}}});
     setEventCutsLabels(historeg.get<TH1>(HIST("EventCuts")));
+
+    /* initialize access to the CCDB */
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
   template <typename Coll, typename BcInfo>
@@ -168,8 +193,13 @@ struct TwoParticleCorrelationsSkimming {
     reportEventCuts(historeg.get<TH1>(HIST("EventCuts")), eventcuts);
 
     // CONFIGURABLE EVENT SELECTION
+    /* update magnetic field if needed */
+    if (bcinfo.runNumber() != runNumber) {
+      bfield = getMagneticField("GLO/GRP/GRP", bcinfo.timestamp());
+      runNumber = bcinfo.runNumber();
+    }
     if (accepted) {
-      return fEventFilter->Filter(collision);
+      return fEventFilter->Filter(collision, bfield);
     } else {
       return 0UL;
     }

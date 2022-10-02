@@ -128,9 +128,9 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
   CutBrickThreshold(const CutBrickThreshold&) = delete;
   CutBrickThreshold& operator=(const CutBrickThreshold&) = delete;
 
-  virtual std::vector<bool> IsArmed();
-  virtual std::vector<bool> Filter(const TValueToFilter&);
-  virtual int Length() { return 1; }
+  virtual std::vector<bool> IsArmed() override;
+  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  virtual int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);

@@ -33,7 +33,7 @@ SelectionFilterAndAnalysis::SelectionFilterAndAnalysis()
     mMaskLength(0),
     mSelectedMask(0UL),
     mArmedMask(0UL),
-    mOptArmedMask(0UL),
+    mOptArmedMask{},
     mForcedArmedMask(0UL)
 {
 }
@@ -46,7 +46,22 @@ SelectionFilterAndAnalysis::SelectionFilterAndAnalysis(const TString& name, selm
     mMaskLength(0),
     mSelectedMask(0UL),
     mArmedMask(0UL),
-    mOptArmedMask(0UL),
+    mOptArmedMask{},
     mForcedArmedMask(0UL)
 {
+}
+
+TString SelectionFilterAndAnalysis::printOptionalMasks() const
+{
+  TString str = "(";
+  bool first = true;
+  for (auto option : mOptArmedMask) {
+    if (not first) {
+      str += ", ";
+    }
+    first = false;
+    str += TString::Format("0x%016lx", option);
+  }
+  str += ")";
+  return str;
 }

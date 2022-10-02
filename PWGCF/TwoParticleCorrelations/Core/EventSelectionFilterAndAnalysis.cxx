@@ -19,11 +19,13 @@ using namespace o2;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
-EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> multsel,
+EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> bfieldsel,
+                                                       std::vector<std::string> multsel,
                                                        std::vector<std::string> trigsel,
                                                        std::vector<std::string> zvtxsel,
                                                        std::vector<std::string> pileuprej)
-  : mMultSel(""),
+  : mBFiledSel(""),
+    mMultSel(""),
     mTriggerSel(""),
     mZVertexSel(""),
     mPileUpRejection("")
@@ -58,6 +60,20 @@ EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> 
     }
     return TString("");
   };
+  /* b-field is a bit specific */
+  {
+    TString bfield = "bfield{";
+    bool first = true;
+    for (auto& pol : bfieldsel) {
+      if (not first) {
+        bfield += ',';
+      }
+      bfield += pol;
+      first = false;
+    }
+    bfield += '}';
+    mBFiledSel = bfield;
+  }
   mMultSel = storeCutString(multsel, "centmult");
   mTriggerSel = storeCutString(trigsel, "trigger");
   mZVertexSel = storeCutString(zvtxsel, "zvtx");
@@ -72,6 +88,7 @@ const char* multiplicityEstimators[nNoOfMultiplicityEstimators] = {"V0M", "CL0",
 /// \brief Default constructor
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
   : SelectionFilterAndAnalysis(),
+    mBFieldSelection{},
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
@@ -85,6 +102,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
 /// \brief Constructor from regular expression
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& cutstr, selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
+    mBFieldSelection{},
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
@@ -99,6 +117,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& 
 /// \brief Constructor from the event selection configurable
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSelectionConfigurable& evtsel, selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
+    mBFieldSelection{},
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
@@ -120,6 +139,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
       }
     }
   };
+  appendCut(evtsel.mBFiledSel);
   appendCut(evtsel.mMultSel);
   appendCut(evtsel.mTriggerSel);
   appendCut(evtsel.mZVertexSel);
@@ -147,6 +167,9 @@ int EventSelectionFilterAndAnalysis::CalculateMaskLength()
     }
   };
 
+  for (auto brick : mBFieldSelection) {
+    length += brick->Length();
+  }
   addLength(mMultiplicityClasses);
   addLength(mTriggerSelection);
   addLength(mZVertex);
@@ -263,7 +286,33 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
         }
         brickvar = CutBrick<float>::constructBrick(m[1].str().c_str(), m[2].str().c_str(), allowed);
       };
-      if (m[1].str() == "centmult") {
+      /* b-field requires speciat treatment */
+      auto storeBFieldCut = [&m](auto& brickvector) {
+        LOGF(info, "Captured %s with %s", m[1].str().c_str(), m[2].str().c_str());
+        auto storeBFPolarity = [&brickvector](auto regex) {
+          auto addBFieldBrick = [&brickvector](auto name, auto regex, bool arm) {
+            std::set<std::string> allowed = {"lim", "th"};
+            CutBrick<float>* brick = CutBrick<float>::constructBrick(name, regex, allowed);
+            brick->Arm(arm);
+            brickvector.push_back(brick);
+          };
+          if (TString(regex).Contains("positive")) {
+            addBFieldBrick("bfp", "th{0}", TString(regex).Contains("-yes"));
+          } else if (TString(regex).Contains("negative")) {
+            addBFieldBrick("bfn", "lim{0}", TString(regex).Contains("-yes"));
+          } else {
+            LOGF(fatal, "storeBFPolarity(). Unknown polarity %s", regex);
+          }
+        };
+        TObjArray* toks = TString(m[2].str()).Tokenize(",");
+        for (int i = 0; i < toks->GetEntries(); ++i) {
+          storeBFPolarity(toks->At(i)->GetName());
+        }
+        delete toks;
+      };
+      if (m[1].str() == "bfield") {
+        storeBFieldCut(mBFieldSelection);
+      } else if (m[1].str() == "centmult") {
         storeFloatCut(mMultiplicityClasses);
         InitializeMultiplicityFilter();
       } else if (m[1].str() == "mtrigg") {
@@ -287,7 +336,7 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   uint64_t optMask = 0UL;
   uint64_t forcedMask = 0UL;
   mArmedMask = 0UL;
-  mOptArmedMask = 0UL;
+  mOptArmedMask.clear();
   mForcedArmedMask = 0UL;
   int bit = 0;
 
@@ -306,6 +355,12 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
     }
   };
 
+  optMask = 0UL;
+  for (auto brick : mBFieldSelection) {
+    armedBrick(brick, true);
+  }
+  mOptArmedMask.push_back(optMask);
+  optMask = 0UL;
   if (mMultiplicityClasses != nullptr) {
     if (mAlternateMultiplicityEstimatorIndex.size() > 0) {
       /* we have alternative estimators so our brick is of kind cwv */
@@ -331,6 +386,8 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
       armedBrick(mMultiplicityClasses, true);
     }
   }
+  mOptArmedMask.push_back(optMask);
+  optMask = 0UL;
   if (mTriggerSelection != nullptr) {
   }
   if (mZVertex != nullptr) {
@@ -338,8 +395,7 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   }
   if (mPileUpRejection != nullptr) {
   }
-  LOGF(info, "EventSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%08lx, 0x%08lx, 0x%08lx", armedMask, optMask, forcedMask);
+  LOGF(info, "EventSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%016lx, %s, 0x%016lx", armedMask, printOptionalMasks().Data(), forcedMask);
   mArmedMask = armedMask;
-  mOptArmedMask = optMask;
   mForcedArmedMask = forcedMask;
 }
