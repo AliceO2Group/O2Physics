@@ -44,7 +44,6 @@ o2physics_add_dpl_workflow(task-dplus
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-
 o2physics_add_dpl_workflow(task-lc-parametrized-pid-mc
                     SOURCES taskLcparametrizedPID.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
