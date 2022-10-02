@@ -27,8 +27,8 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::aod::hf_cand_b0;	// from HFSecondaryVertex.h
-using namespace o2::analysis::hf_cuts_b0_todpi;	// from HFSelectorCuts.h
+using namespace o2::aod::hf_cand_b0;            // from HFSecondaryVertex.h
+using namespace o2::analysis::hf_cuts_b0_todpi; // from HFSelectorCuts.h
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -174,9 +174,9 @@ struct HfTaskB0MC {
   Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
   void processMC(soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate, aod::HfCandB0MCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
+                 soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
-    //MC rec
+    // MC rec
     for (auto& candidate : candidates) {
       if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
@@ -207,7 +207,7 @@ struct HfTaskB0MC {
         registry.fill(HIST("hCPADRecSig"), candD.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthDRecSig"), candD.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), candidate.pt());
-        //registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
+        // registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
@@ -226,12 +226,12 @@ struct HfTaskB0MC {
         registry.fill(HIST("hCPADRecBg"), candD.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthDRecBg"), candD.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), candidate.pt());
-        //registry.fill(HIST("hThetaStarRecBg"), candidate.cosThetaStar(), candidate.pt());
+        // registry.fill(HIST("hThetaStarRecBg"), candidate.cosThetaStar(), candidate.pt());
       }
     } // rec
 
     // MC gen. level
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (TESTBIT(std::abs(particle.flagMCMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
@@ -263,10 +263,10 @@ struct HfTaskB0MC {
         registry.fill(HIST("hYGen"), yParticle, particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta(), particle.pt());
       }
-    } //gen
+    } // gen
   }   // process
   PROCESS_SWITCH(HfTaskB0MC, processMC, "Process MC", false);
-};    // struct
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
