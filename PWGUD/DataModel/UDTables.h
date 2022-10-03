@@ -139,7 +139,7 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFDDA, udcollision::BBFDDC, udcollision::BGFDDA, udcollision::BGFDDC);
 
 using UDCollision = UDCollisions::iterator;
-using UDCollisionSels = UDCollisionsSels::iterator;
+using UDCollisionsSel = UDCollisionsSels::iterator;
 
 namespace udtrack
 {
