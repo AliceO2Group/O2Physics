@@ -268,8 +268,7 @@ struct DGBCCandProducer {
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          col.posX(), col.posY(), col.posZ(),
                          col.numContrib(), nCharge,
-                         rtrwTOF,
-                         0., 0., 0., 0., 0);
+                         rtrwTOF);
 
         // update DGTracks tables
         for (auto& track : colTracks) {
@@ -299,8 +298,7 @@ struct DGBCCandProducer {
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          0., 0., 0.,
                          tracksArray.size(), nCharge,
-                         rtrwTOF,
-                         0., 0., 0., 0., 0);
+                         rtrwTOF);
 
         // update DGTracks tables
         for (auto& track : tracksArray) {
