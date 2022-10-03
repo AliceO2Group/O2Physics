@@ -17,6 +17,7 @@
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include <cmath>
 
 namespace o2::aod
@@ -84,8 +85,28 @@ DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float); //! sum of am
 DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);                     //! FT0A average time
 DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);                     //! FT0C average time
 DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
-DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0,                         //! has FT0 signal in the same BC
-                           [](float TimeFT0A, float TimeFT0C) -> bool { return TimeFT0A > -999. && TimeFT0C > -999.; });
+// FDD information
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float); //! sum of amplitudes on A side of FDD
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float); //! sum of amplitudes on C side of FDD
+DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);                     //! FDDA average time
+DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);                     //! FDDC average time
+DECLARE_SOA_COLUMN(TriggerMaskFDD, triggerMaskFDD, uint8_t);       //! FDD trigger mask
+// FV0A information
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float); //! sum of amplitudes on A side of FDD
+DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);                     //! FV0A average time
+DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t);     //! FV0 trigger mask
+// FIT selection flags
+DECLARE_SOA_COLUMN(BBFT0A, bbFT0A, bool); //! Beam-beam time in FT0A
+DECLARE_SOA_COLUMN(BBFT0C, bbFT0C, bool); //! Beam-beam time in FT0C
+DECLARE_SOA_COLUMN(BGFT0A, bgFT0A, bool); //! Beam-gas time in FT0A
+DECLARE_SOA_COLUMN(BGFT0C, bgFT0C, bool); //! Beam-gas time in FT0C
+DECLARE_SOA_COLUMN(BBFV0A, bbFV0A, bool); //! Beam-beam time in V0A
+DECLARE_SOA_COLUMN(BGFV0A, bgFV0A, bool); //! Beam-gas time in V0A
+DECLARE_SOA_COLUMN(BBFDDA, bbFDDA, bool); //! Beam-beam time in FDA
+DECLARE_SOA_COLUMN(BBFDDC, bbFDDC, bool); //! Beam-beam time in FDC
+DECLARE_SOA_COLUMN(BGFDDA, bgFDDA, bool); //! Beam-gas time in FDA
+DECLARE_SOA_COLUMN(BGFDDC, bgFDDC, bool); //! Beam-gas time in FDC
+
 } // namespace udcollision
 
 DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
@@ -97,15 +118,28 @@ DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
                   collision::PosZ,
                   collision::NumContrib,
                   udcollision::NetCharge,
-                  udcollision::RgtrwTOF,
+                  udcollision::RgtrwTOF);
+
+DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::TotalFT0AmplitudeA,
                   udcollision::TotalFT0AmplitudeC,
                   udcollision::TimeFT0A,
                   udcollision::TimeFT0C,
                   udcollision::TriggerMaskFT0,
-                  udcollision::HasFT0<udcollision::TimeFT0A, udcollision::TimeFT0C>);
+                  udcollision::TotalFDDAmplitudeA,
+                  udcollision::TotalFDDAmplitudeC,
+                  udcollision::TimeFDDA,
+                  udcollision::TimeFDDC,
+                  udcollision::TriggerMaskFDD,
+                  udcollision::TotalFV0AmplitudeA,
+                  udcollision::TimeFV0A,
+                  udcollision::TriggerMaskFV0A,
+                  udcollision::BBFT0A, udcollision::BBFT0C, udcollision::BGFT0A, udcollision::BGFT0C,
+                  udcollision::BBFV0A, udcollision::BGFV0A,
+                  udcollision::BBFDDA, udcollision::BBFDDC, udcollision::BGFDDA, udcollision::BGFDDC);
 
 using UDCollision = UDCollisions::iterator;
+using UDCollisionSels = UDCollisionsSels::iterator;
 
 namespace udtrack
 {
@@ -135,6 +169,10 @@ DECLARE_SOA_TABLE(UDTracks, "AOD", "UDTRACK",
                   udtrack::TrackTime,
                   udtrack::TrackTimeRes,
                   udtrack::Pt<udtrack::Px, udtrack::Py>);
+
+DECLARE_SOA_TABLE(UDTracksCov, "AOD", "UDTRACKCOV",
+                  track::X, track::Y, track::Z,
+                  track::SigmaY, track::SigmaZ);
 
 DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
@@ -167,8 +205,14 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::ITSNCls<track::ITSClusterMap>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
+DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
+                  track::DcaZ,
+                  track::DcaXY)
+
 using UDTrack = UDTracks::iterator;
+using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
+using UDTrackDCA = UDTracksDCA::iterator;
 using UDTrackCollisionID = UDTrackCollisionIDs::iterator;
 
 namespace udmctracklabel
