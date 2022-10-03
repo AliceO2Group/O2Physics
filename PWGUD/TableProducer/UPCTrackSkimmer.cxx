@@ -77,6 +77,8 @@ struct UpcTrackSkimmer {
   Configurable<float> fDcaZHigh{"dcaZHigh", 3., "Maximal DCA_z for barrel tracks"};
   // quality: TOF
   Configurable<int> fRequireTOF{"requireTOF", 0, "Require all tracks to have TOF matches"};
+  // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
+  Configurable<int> fMaxNContrib{"maxNContrib", 2, "Consider tracks from collisions with N contributors <= maxNContrib"};
 
   // QA histograms to check for tracks after cuts
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -183,7 +185,7 @@ struct UpcTrackSkimmer {
     // require TOF match
     bool hasTOF = true;
     if (fRequireTOF) {
-      hasTOF = track.length() > 0.f && track.tofChi2() > 0.f;
+      hasTOF = track.hasTOF();
       if (hasTOF) {
         histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelHasTOF, 1);
       }
@@ -405,6 +407,9 @@ struct UpcTrackSkimmer {
       int32_t colId = tr.collisionId();
       if (colId >= 0) {
         const auto& col = tr.collision();
+        if (col.numContrib() > fMaxNContrib) {
+          continue;
+        }
         trackBC = col.bc().globalBC();
       } else {
         const auto& ambTr = ambTracks.iteratorAt(ambTrIds.at(trId));
@@ -416,7 +421,6 @@ struct UpcTrackSkimmer {
       uint64_t bc = trackBC + tint;
       double trTime = tr.trackTime() - tint * o2::constants::lhc::LHCBunchSpacingNS;
       udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
-      udTracksCov(tr.x(), tr.y(), tr.z(), tr.sigmaY(), tr.sigmaZ());
       udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
                     tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
                     tr.tpcSignal(), tr.tofSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
@@ -437,7 +441,7 @@ struct UpcTrackSkimmer {
     }
   }
 
-  using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA,
+  using BarrelTracks = o2::soa::Join<o2::aod::Tracks, /*o2::aod::TracksCov,*/ o2::aod::TracksExtra, o2::aod::TracksDCA,
                                      o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                      o2::aod::TOFSignal, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
 

@@ -26,9 +26,6 @@ struct UpcCandAnalyzer {
   Preslice<o2::aod::UDMcParticles> perMcCollision = o2::aod::udmcparticle::udMcCollisionId;
 
   float ft0DummyTime = 32.767f;
-
-  float fT0ABBlower = -1.0; // ns
-  float fT0ABBupper = 1.0;  // ns
   float fT0CBBlower = -1.0; // ns
   float fT0CBBupper = 1.0;  // ns
 
@@ -47,8 +44,11 @@ struct UpcCandAnalyzer {
     kSelIsNotFake,    // MC is used: check MC particle IDs (background particles are not stored => mcID < 0)
     kSelUnlikeSign,
     kSelNoFT0,
+    kSelNoFV0A,
+    kSelNoFDD,
     kSelPID,
     kSelDDCA,
+    kSelPt,
     kNSelectors
   };
 
@@ -59,13 +59,16 @@ struct UpcCandAnalyzer {
   Configurable<int32_t> fTPCPIDSwitch{"tpcPIDSwitch", 0, "TPC PID switch: 0 -- two muons, 1 -- two pions, 2 -- two electrons, 3 -- electron + muon/pion"};
   Configurable<int32_t> fHistSwitch{"histSwitch", 0, "What information to collect: 0 -- pair mass, 1 -- p_T of target particle, 2 -- both"};
 
+  float fMinPt = 0.;
+  float fMaxPt = 1.;
+
   static constexpr int32_t nBinsMass = 500;
   static constexpr float minMass = 0;
-  static constexpr float maxMass = 10;
+  static constexpr float maxMass = 5;
 
   static constexpr int32_t nBinsPt = 500;
   static constexpr float minPt = 0;
-  static constexpr float maxPt = 10;
+  static constexpr float maxPt = 5;
 
   HistogramRegistry registry{
     "registry",
@@ -75,6 +78,8 @@ struct UpcCandAnalyzer {
      {"Selection/PairMass/All", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
      {"Selection/PairMass/UnlikeSign", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
      {"Selection/PairMass/NoFT0", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
+     {"Selection/PairMass/NoFV0A", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
+     {"Selection/PairMass/NoFDD", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
      {"Selection/PairMass/DDCA", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
      {"Selection/PairMass/DDCA_MC", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
      {"Selection/PairMass/PID", ";#it{m}, GeV;", {HistType::kTH1D, {{nBinsMass, minMass, maxMass}}}},
@@ -89,6 +94,8 @@ struct UpcCandAnalyzer {
      {"Selection/TargetPt/All", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
      {"Selection/TargetPt/UnlikeSign", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
      {"Selection/TargetPt/NoFT0", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
+     {"Selection/TargetPt/NoFV0A", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
+     {"Selection/TargetPt/NoFDD", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
      {"Selection/TargetPt/DDCA", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
      {"Selection/TargetPt/DDCA_MC", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
      {"Selection/TargetPt/PID", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{nBinsPt, minPt, maxPt}}}},
@@ -108,13 +115,16 @@ struct UpcCandAnalyzer {
      {"Selection/TPCSignals/DDCA", ";TPC signal 1; TPC signal 2;", {HistType::kTH2D, {{200, 0., 200.}, {200, 0., 200.}}}},
      {"Selection/TPCSignals/DDCASig", ";TPC signal 1; TPC signal 2;", {HistType::kTH2D, {{200, 0., 200.}, {200, 0., 200.}}}},
      //
-     {"Selection/DDCA/All", ";DDCA_z; DDCA_xy;", {HistType::kTH2D, {{400, -20., 20.}, {400, -20., 20.}}}},
-     {"Selection/DDCA/Sig", ";DDCA_z; DDCA_xy;", {HistType::kTH2D, {{400, -20., 20.}, {400, -20., 20.}}}},
+     {"Selection/DDCA/All", ";DDCA_z; DDCA_xy;", {HistType::kTH2D, {{500, -5., 5.}, {500, -5., 5.}}}},
+     {"Selection/DDCA/Sig", ";DDCA_z; DDCA_xy;", {HistType::kTH2D, {{500, -5., 5.}, {500, -5., 5.}}}},
+     {"Selection/DDCA/MvsDCAZAll", ";#it{m}, GeV; DDCA_z;", {HistType::kTH2D, {{500, 0., 5.}, {500, -5., 5.}}}},
+     {"Selection/DDCA/MvsDCAXYAll", ";#it{m}, GeV; DDCA_xy;", {HistType::kTH2D, {{500, 0., 5.}, {500, -5., 5.}}}},
      //
      {"Selection/TPC_nSigmaEl", ";#sigma;", {HistType::kTH1D, {{200, -10., 10.}}}},
      {"Selection/TPC_nSigmaPi", ";#sigma;", {HistType::kTH1D, {{200, -10., 10.}}}}}};
 
-  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksCov, o2::aod::UDTracksExtra, o2::aod::UDTracksDCA,
+  using Candidates = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSels>;
+  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra, o2::aod::UDTracksDCA,
                                  o2::aod::UDTracksPID, o2::aod::UDTrackCollisionIDs>;
   using FwdTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra>;
 
@@ -126,14 +136,17 @@ struct UpcCandAnalyzer {
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelIsNotFake + 1, "kSelIsNotFake");
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelUnlikeSign + 1, "kSelUnlikeSign");
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelNoFT0 + 1, "kSelNoFT0");
+    registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelNoFV0A + 1, "kSelNoFV0A");
+    registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelNoFDD + 1, "kSelNoFDD");
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelPID + 1, "kSelPID");
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelDDCA + 1, "kSelDDCA");
+    registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelPt + 1, "kSelPt");
 
     // populate "pdg->particle mass" map
-    pdgsMass[11] = 0.000511;
-    pdgsMass[13] = 0.10566;
-    pdgsMass[15] = 1.777;
-    pdgsMass[211] = 0.13957;
+    pdgsMass[kPdgElectron] = 0.000511;
+    pdgsMass[kPdgMuon] = 0.10566;
+    pdgsMass[kPdgTau] = 1.777;
+    pdgsMass[kPdgPion] = 0.13957;
   }
 
   void processMCParts(o2::aod::UDMcCollisions const& mcCollisions, o2::aod::UDMcParticles const& mcParticles)
@@ -179,8 +192,8 @@ struct UpcCandAnalyzer {
     // "soft" selection
     bool isEl1 = std::abs(nTPCSigmaEl1) < 3.0f && std::abs(nTPCSigmaEl1) < std::abs(nTPCSigmaPi1);
     bool isEl2 = std::abs(nTPCSigmaEl2) < 3.0f && std::abs(nTPCSigmaEl2) < std::abs(nTPCSigmaPi2);
-    bool isPi1 = std::abs(nTPCSigmaPi1) < 3.0f && std::abs(nTPCSigmaEl1) > std::abs(nTPCSigmaPi1);
-    bool isPi2 = std::abs(nTPCSigmaPi2) < 3.0f && std::abs(nTPCSigmaEl2) > std::abs(nTPCSigmaPi2);
+    bool isPi1 = tr1.tpcSignal() < 77; // std::abs(nTPCSigmaPi1) < 3.0f && std::abs(nTPCSigmaEl1) > std::abs(nTPCSigmaPi1);
+    bool isPi2 = tr2.tpcSignal() < 77; // std::abs(nTPCSigmaPi2) < 3.0f && std::abs(nTPCSigmaEl2) > std::abs(nTPCSigmaPi2);
 
     // PID flags to check sigmas later
     pidFlags[0] = isEl1;
@@ -266,7 +279,7 @@ struct UpcCandAnalyzer {
     }
     registry.fill(HIST("Selection/PairMass/All"), m);
     // unlike-sign
-    bool selector = selFlags[kSelUnlikeSign];
+    bool selector = selFlags[kSelPt] && selFlags[kSelUnlikeSign];
     if (selector) {
       registry.fill(HIST("Selection/PairMass/UnlikeSign"), m);
     }
@@ -274,6 +287,14 @@ struct UpcCandAnalyzer {
     selector = selector && selFlags[kSelNoFT0];
     if (selector) {
       registry.fill(HIST("Selection/PairMass/NoFT0"), m);
+    }
+    selector = selector && selFlags[kSelNoFV0A];
+    if (selector) {
+      registry.fill(HIST("Selection/PairMass/NoFV0A"), m);
+    }
+    selector = selector && selFlags[kSelNoFDD];
+    if (selector) {
+      registry.fill(HIST("Selection/PairMass/NoFDD"), m);
     }
     // unlike sign + no FT0 + delta(DCA)
     bool selectorDCA = selector && selFlags[kSelDDCA];
@@ -309,7 +330,7 @@ struct UpcCandAnalyzer {
     }
     registry.fill(HIST("Selection/TargetPt/All"), pt);
     // unlike-sign
-    bool selector = selFlags[kSelUnlikeSign];
+    bool selector = selFlags[kSelPt] && selFlags[kSelUnlikeSign];
     if (selector) {
       registry.fill(HIST("Selection/TargetPt/UnlikeSign"), pt);
     }
@@ -317,6 +338,14 @@ struct UpcCandAnalyzer {
     selector = selector && selFlags[kSelNoFT0];
     if (selector) {
       registry.fill(HIST("Selection/TargetPt/NoFT0"), pt);
+    }
+    selector = selector && selFlags[kSelNoFV0A];
+    if (selector) {
+      registry.fill(HIST("Selection/TargetPt/NoFV0A"), pt);
+    }
+    selector = selector && selFlags[kSelNoFDD];
+    if (selector) {
+      registry.fill(HIST("Selection/TargetPt/NoFDD"), pt);
     }
     // unlike sign + no FT0 + delta(DCA)
     bool selectorDCA = selector && selFlags[kSelDDCA];
@@ -347,22 +376,23 @@ struct UpcCandAnalyzer {
 
   // naive DCA check
   template <typename TTrack>
-  bool checkDDCA(TTrack& tr1, TTrack& tr2, bool isNotFake = false)
+  bool checkDDCA(TTrack& tr1, TTrack& tr2, TLorentzVector& p, bool isNotFake = false)
   {
     float dDcaZ = tr1.dcaZ() - tr2.dcaZ();
     float dDcaXY = tr1.dcaXY() - tr2.dcaXY();
     registry.fill(HIST("Selection/DDCA/All"), dDcaZ, dDcaXY);
+    registry.fill(HIST("Selection/DDCA/MvsDCAZAll"), p.M(), dDcaZ);
+    registry.fill(HIST("Selection/DDCA/MvsDCAXYAll"), p.M(), dDcaXY);
     if (isNotFake) {
       registry.fill(HIST("Selection/DDCA/Sig"), dDcaZ, dDcaXY);
     }
-    float r = std::sqrt(dDcaZ * dDcaZ + dDcaXY * dDcaXY);
-    bool pass = r < 2.f;
+    bool pass = std::abs(dDcaZ) < 4.f;
     return pass;
   }
 
   template <int32_t processSwitch, typename TTrack1, typename TTrack2>
-  void processCandidate(o2::aod::UDCollision const& cand, TTrack1& tr1, TTrack2& tr2, o2::aod::UDMcParticles* mcParticles,
-                        o2::aod::UDMcTrackLabels* mcTrackLabels, o2::aod::UDMcFwdTrackLabels* mcFwdTrackLabels)
+  void processCandidate(Candidates::iterator const& cand, TTrack1& tr1, TTrack2& tr2,
+                        o2::aod::UDMcParticles* mcParticles, o2::aod::UDMcTrackLabels* mcTrackLabels, o2::aod::UDMcFwdTrackLabels* mcFwdTrackLabels)
   {
     std::unordered_map<int32_t, bool> selFlags; // holder of selection flags
     float mmc = -1;
@@ -410,25 +440,46 @@ struct UpcCandAnalyzer {
     bool pidFlags[4] = {false};
     if constexpr (processSwitch == 2) {
       selFlags[kSelPID] = checkTPCPID(tr1, tr2, m1, m2, pidFlags, pdg1, pdg2);
-      selFlags[kSelDDCA] = checkDDCA(tr1, tr2, selFlags[kSelIsNotFake]);
     }
     // unlike-sign tracks requirement
-    selFlags[kSelUnlikeSign] = tr1.sign() * tr2.sign() < 0;
+    selFlags[kSelUnlikeSign] = (tr1.sign() * tr2.sign()) < 0;
     // check FT0 signal
-    if (cand.hasFT0()) {
-      bool hasNoFT0 = true;
-      if constexpr (processSwitch == 2) {
-        bool bbT0A = cand.timeFT0A() > fT0ABBlower && cand.timeFT0A() < fT0ABBupper;
-        bool bbT0C = cand.timeFT0C() > fT0CBBlower && cand.timeFT0C() < fT0CBBupper;
-        hasNoFT0 = !bbT0A && !bbT0C;
-      } else {
-        // if there is a signal, candidate passes if timeA is dummy
-        // and timeC is between +/- 1 ns
-        bool checkA = std::abs(cand.timeFT0A() - ft0DummyTime) < 1e-3;
-        bool checkC = cand.timeFT0C() > fT0CBBlower && cand.timeFT0C() < fT0CBBupper;
-        hasNoFT0 = checkA && checkC;
-      }
-      selFlags[kSelNoFT0] = hasNoFT0;
+    bool hasNoFT0 = true;
+    if constexpr (processSwitch == 2) {
+      bool isBB = cand.bbFT0A() || cand.bbFT0C();
+      bool isBG = cand.bgFT0A() || cand.bgFT0C();
+      hasNoFT0 = !isBB && !isBG;
+    } else {
+      // if there is a signal, candidate passes if timeA is dummy
+      // and timeC is between +/- 1 ns
+      bool checkA = std::abs(cand.timeFT0A() - ft0DummyTime) < 1e-3;
+      bool checkC = cand.timeFT0C() > fT0CBBlower && cand.timeFT0C() < fT0CBBupper;
+      hasNoFT0 = checkA && checkC;
+    }
+    selFlags[kSelNoFT0] = hasNoFT0;
+    // check FV0 signal
+    bool hasNoFV0A = true;
+    if constexpr (processSwitch == 2) {
+      bool isBB = cand.bbFV0A();
+      bool isBG = cand.bgFV0A();
+      hasNoFV0A = !isBB && !isBG;
+    }
+    selFlags[kSelNoFV0A] = hasNoFV0A;
+    // check FDD signal
+    bool hasNoFDD = true;
+    if constexpr (processSwitch == 2) {
+      bool isBB = cand.bbFDDA() || cand.bbFDDC();
+      bool isBG = cand.bgFDDA() || cand.bgFDDC();
+      hasNoFDD = !isBB && !isBG;
+    }
+    selFlags[kSelNoFDD] = hasNoFDD;
+    TLorentzVector p1, p2;
+    p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), m1);
+    p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), m2);
+    TLorentzVector p = p1 + p2;
+    selFlags[kSelPt] = p.Pt() > fMinPt && p.Pt() < fMaxPt;
+    if constexpr (processSwitch == 2) {
+      selFlags[kSelDDCA] = checkDDCA(tr1, tr2, p, selFlags[kSelIsNotFake]);
     }
     // selection counters
     if (selFlags[kSelIdealPID]) { // has real meaning for MC only
@@ -443,18 +494,24 @@ struct UpcCandAnalyzer {
     if (selFlags[kSelNoFT0]) {
       registry.fill(HIST("Selection/SelCounter"), kSelNoFT0, 1);
     }
+    if (selFlags[kSelNoFV0A]) {
+      registry.fill(HIST("Selection/SelCounter"), kSelNoFV0A, 1);
+    }
+    if (selFlags[kSelNoFDD]) {
+      registry.fill(HIST("Selection/SelCounter"), kSelNoFDD, 1);
+    }
     if (selFlags[kSelPID]) {
       registry.fill(HIST("Selection/SelCounter"), kSelPID, 1);
     }
     if (selFlags[kSelDDCA]) {
       registry.fill(HIST("Selection/SelCounter"), kSelDDCA, 1);
     }
-    TLorentzVector p1, p2;
-    p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), m1);
-    p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), m2);
+    if (selFlags[kSelPt]) {
+      registry.fill(HIST("Selection/SelCounter"), kSelPt, 1);
+    }
     // collect mass distributions if needed
     if (fHistSwitch == 0 || fHistSwitch == 2) {
-      float m = (p1 + p2).M();
+      float m = p.M();
       fillMassDistr(m, mmc, selFlags);
     }
     // collect pt distributions if needed
@@ -512,12 +569,15 @@ struct UpcCandAnalyzer {
   {
     for (const auto& tr : tracks) {
       int32_t candId = tr.udCollisionId();
+      if (candId < 0) {
+        continue;
+      }
       tracksPerCand[candId].push_back(tr.globalIndex());
     }
   }
 
   // process candidates with 2 muon tracks
-  void processFwdMC(o2::aod::UDCollisions const& eventCandidates,
+  void processFwdMC(Candidates const& eventCandidates,
                     FwdTracks const& fwdTracks,
                     o2::aod::UDMcCollisions const& mcCollisions,
                     o2::aod::UDMcParticles& mcParticles,
@@ -543,7 +603,7 @@ struct UpcCandAnalyzer {
   }
 
   // process candidates with 2 muon tracks
-  void processFwd(o2::aod::UDCollisions const& eventCandidates,
+  void processFwd(Candidates const& eventCandidates,
                   FwdTracks const& fwdTracks,
                   o2::aod::UDMcCollisions const& mcCollisions)
   {
@@ -565,7 +625,7 @@ struct UpcCandAnalyzer {
   }
 
   // process candidates with 1 muon and 1 barrel tracks
-  void processSemiFwdMC(o2::aod::UDCollisions const& eventCandidates,
+  void processSemiFwdMC(Candidates const& eventCandidates,
                         FwdTracks const& fwdTracks,
                         BarrelTracks const& barTracks,
                         o2::aod::UDMcCollisions const& mcCollisions,
@@ -597,7 +657,7 @@ struct UpcCandAnalyzer {
   }
 
   // process candidates with 1 muon and 1 barrel tracks
-  void processSemiFwd(o2::aod::UDCollisions const& eventCandidates,
+  void processSemiFwd(Candidates const& eventCandidates,
                       FwdTracks const& fwdTracks,
                       BarrelTracks const& barTracks,
                       o2::aod::UDMcCollisions const& mcCollisions)
@@ -624,7 +684,7 @@ struct UpcCandAnalyzer {
   }
 
   // process candidates with 2 central barrel tracks
-  void processCentralMC(o2::aod::UDCollisions const& eventCandidates,
+  void processCentralMC(Candidates const& eventCandidates,
                         BarrelTracks const& barTracks,
                         o2::aod::UDMcCollisions const& mcCollisions,
                         o2::aod::UDMcParticles& mcParticles,
@@ -650,7 +710,7 @@ struct UpcCandAnalyzer {
   }
 
   // process candidates with 2 central barrel tracks
-  void processCentral(o2::aod::UDCollisions const& eventCandidates,
+  void processCentral(Candidates const& eventCandidates,
                       BarrelTracks const& barTracks,
                       o2::aod::UDMcCollisions const& mcCollisions)
   {
@@ -667,6 +727,8 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = barTracks.iteratorAt(trId1);
       const auto& tr2 = barTracks.iteratorAt(trId2);
+      if (tr1.hasTRD() || tr2.hasTRD())
+        continue;
       processCandidate<2>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
     }
   }

@@ -26,5 +26,5 @@ o2physics_add_dpl_workflow(upctrack-skimmer
 
 o2physics_add_dpl_workflow(upccand-producer
                            SOURCES UPCandidateProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)
