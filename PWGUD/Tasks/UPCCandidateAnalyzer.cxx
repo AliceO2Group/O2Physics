@@ -604,8 +604,7 @@ struct UpcCandAnalyzer {
 
   // process candidates with 2 muon tracks
   void processFwd(Candidates const& eventCandidates,
-                  FwdTracks const& fwdTracks,
-                  o2::aod::UDMcCollisions const& mcCollisions)
+                  FwdTracks const& fwdTracks)
   {
     fIsMC = false;
 
@@ -659,8 +658,7 @@ struct UpcCandAnalyzer {
   // process candidates with 1 muon and 1 barrel tracks
   void processSemiFwd(Candidates const& eventCandidates,
                       FwdTracks const& fwdTracks,
-                      BarrelTracks const& barTracks,
-                      o2::aod::UDMcCollisions const& mcCollisions)
+                      BarrelTracks const& barTracks)
   {
     fIsMC = false;
 
@@ -711,8 +709,7 @@ struct UpcCandAnalyzer {
 
   // process candidates with 2 central barrel tracks
   void processCentral(Candidates const& eventCandidates,
-                      BarrelTracks const& barTracks,
-                      o2::aod::UDMcCollisions const& mcCollisions)
+                      BarrelTracks const& barTracks)
   {
     fIsMC = false;
 
@@ -727,8 +724,6 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = barTracks.iteratorAt(trId1);
       const auto& tr2 = barTracks.iteratorAt(trId2);
-      if (tr1.hasTRD() || tr2.hasTRD())
-        continue;
       processCandidate<2>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
     }
   }
