@@ -335,7 +335,7 @@ struct HfFilter { // Main struct for HF triggers
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
+  Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
 
   // array of ONNX config and BDT thresholds
@@ -409,21 +409,22 @@ struct HfFilter { // Main struct for HF triggers
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     ccdbApi.init(url);
 
-    // init ONNX runtime session
-    if (applyML && ccdbTimestamp > 0) {
-      thresholdBDTScores = {
-        thresholdBDTScoreD0ToKPi,
-        thresholdBDFScoreDPlusToPiKPi,
-        thresholdBDFScoreDSToPiKK,
-        thresholdBDFScoreLcToPiKP,
-        thresholdBDFScoreXicToPiKP};
+    thresholdBDTScores = {
+      thresholdBDTScoreD0ToKPi,
+      thresholdBDFScoreDPlusToPiKPi,
+      thresholdBDFScoreDSToPiKK,
+      thresholdBDFScoreLcToPiKP,
+      thresholdBDFScoreXicToPiKP};
 
-      onnxFiles = {
-        onnxFileD0ToKPiConf,
-        onnxFileDPlusToPiKPiConf,
-        onnxFileDSToPiKKConf,
-        onnxFileLcToPiKPConf,
-        onnxFileXicToPiKPConf};
+    onnxFiles = {
+      onnxFileD0ToKPiConf,
+      onnxFileDPlusToPiKPiConf,
+      onnxFileDSToPiKKConf,
+      onnxFileLcToPiKPConf,
+      onnxFileXicToPiKPConf};
+
+    // init ONNX runtime session
+    if (applyML && ccdbTimestamp != 0) {
 
       /// specific timestamp for models
       LOG(info) << "specific timestamp for models: " << ccdbTimestamp.value;
@@ -434,8 +435,11 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          std::string tmp = networkPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
+          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
+          bool retrieve_success = true;
+          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos) {
+            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
+          }
           if (retrieve_success) {
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
             inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
@@ -796,20 +800,8 @@ struct HfFilter { // Main struct for HF triggers
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksWithProtonPID const& tracks)
   {
-    if (applyML && ccdbTimestamp == 0 && onnxFiles[kD0] == "") {
-      thresholdBDTScores = {
-        thresholdBDTScoreD0ToKPi,
-        thresholdBDFScoreDPlusToPiKPi,
-        thresholdBDFScoreDSToPiKK,
-        thresholdBDFScoreLcToPiKP,
-        thresholdBDFScoreXicToPiKP};
 
-      onnxFiles = {
-        onnxFileD0ToKPiConf,
-        onnxFileDPlusToPiKPiConf,
-        onnxFileDSToPiKKConf,
-        onnxFileLcToPiKPConf,
-        onnxFileXicToPiKPConf};
+    if (applyML && ccdbTimestamp == 0 && onnxFiles[kD0].find("cvmfs") == std::string::npos && inputNamesML[kD0].size() == 0) {
 
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
@@ -821,7 +813,7 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          std::string tmp = networkPathCCDB.value + charmParticleNames[iCharmPart];
+          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
           bool retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
           if (retrieve_success) {
 
