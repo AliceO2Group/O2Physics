@@ -78,7 +78,8 @@ struct UpcTrackSkimmer {
   // quality: TOF
   Configurable<int> fRequireTOF{"requireTOF", 0, "Require all tracks to have TOF matches"};
   // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
-  Configurable<int> fMaxNContrib{"maxNContrib", 2, "Consider tracks from collisions with N contributors <= maxNContrib"};
+  Configurable<int> fMaxNContrib{"maxNContrib", 2, "Central barrel: consider tracks from collisions with N contributors <= maxNContrib"};
+  Configurable<int> fAmbigSwitch{"ambigSwitch", 0, "Central barrel: 0 -- loop over all tracks, 1 -- loop only over tracks with vertices"};
 
   // QA histograms to check for tracks after cuts
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -412,6 +413,9 @@ struct UpcTrackSkimmer {
         }
         trackBC = col.bc().globalBC();
       } else {
+        if (fAmbigSwitch == 1) { // skip ambiguous tracks if needed
+          continue;
+        }
         const auto& ambTr = ambTracks.iteratorAt(ambTrIds.at(trId));
         const auto& bcSlice = ambTr.bc();
         auto first = bcSlice.begin();
