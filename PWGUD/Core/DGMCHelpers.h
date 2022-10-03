@@ -37,11 +37,18 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
-  auto bcIter = collision.bc_as<T>();
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    LOGF(info, "Collision %i - no BC found!", collision.globalIndex());
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
 
-  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
   // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);

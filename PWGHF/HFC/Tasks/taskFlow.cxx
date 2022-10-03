@@ -22,7 +22,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"

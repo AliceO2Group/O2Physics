@@ -557,7 +557,8 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   v0data::V0CosPA<v0data::X, v0data::Y, v0data::Z, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, collision::PosZ>,
                   v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                   v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                  v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>);
+                  v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>);
 //                  ,
 //                  v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 //                  v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -697,7 +698,7 @@ DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); //! resonant
 // mapping of decay types
 enum DecayType { DPlusToPiKPi = 0,
                  LcToPKPi,
-                 DsToPiKK,
+                 DsToKKPi,
                  XicToPKPi,
                  N3ProngDecays }; // always keep N3ProngDecays at the end
 
@@ -727,6 +728,38 @@ template <typename T>
 auto InvMassDPlus(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+// Ds± → K± K∓ π±
+
+template <typename T>
+auto CtDs(const T& candidate)
+{
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto YDs(const T& candidate)
+{
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto EDs(const T& candidate)
+{
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto InvMassDsKKPi(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+template <typename T>
+auto InvMassDsPiKK(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
 }
 
 // Λc± → p± K∓ π±

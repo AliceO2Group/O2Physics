@@ -65,7 +65,7 @@ struct AddAmbiguousTrackInfo {
   void process(TracksWithSel const& tracks,
                aod::AmbiguousTracks const& ambitracks,
                aod::Collisions const& collisions,
-               aod::BCs const& bcs)
+               aod::BCs const&)
   {
     // loop over ambiguous tracks
     std::vector<int> trackIndices{};
@@ -364,20 +364,26 @@ struct ValidationRecLevel {
   AxisSpec axisOrigin{4, -1.5, 2.5};
   AxisSpec axisEta{40, -1., 1.};
   AxisSpec axisPt{50, 0., 10.};
+  AxisSpec axisPtD{100, 0., 50.};
   AxisSpec axisDeltaVtx{200, -1, 1.};
   AxisSpec axisDecision{2, -0.5, 1.5};
   AxisSpec axisITShits{8, -0.5, 7.5};
+  AxisSpec axisMult{200, 0., 200.};
+  AxisSpec axisR{100, 0., 0.5};
+  AxisSpec axisSmallNum{20, -0.5, 19.5};
 
   HistogramRegistry registry{
     "registry",
-    {{"histNtracks", "Number of global tracks w/o DCA requirement;#it{N}_{tracks};entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+    {{"histNtracks", "Number of global tracks w/o DCA requirement;#it{N}_{tracks};entries", {HistType::kTH1F, {axisMult}}},
      {"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
      {"histDeltaZvtx", "Residual distribution of PV in #it{Z} as a function of number of contributors;number of contributors;#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH2F, {{100, -0.5, 99.5}, {1000, -0.5, 0.5}}}},
      {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100.}}}},
      {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
-     {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}}}};
+     {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
+     {"histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
+     {"histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
 
   /// RMS calculation
   /// \param vec  vector of values to compute RMS
@@ -427,7 +433,7 @@ struct ValidationRecLevel {
       histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
       histDeltaDecayLength[iHad] = registry.add<TH1>(Form("histDeltaDecayLength%s", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
       for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-        histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("histPtReco%s%s", originNames[iOrigin].data(), particleNames[iHad].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
+        histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("histPtReco%s%s", originNames[iOrigin].data(), particleNames[iHad].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
         for (auto iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
           histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histPtDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
           histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histEtaDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
@@ -446,10 +452,16 @@ struct ValidationRecLevel {
   using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TracksWithAmbiguousCollisionInfo>;
   using mcCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions)
+  Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
+  Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
+
+  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions, aod::BCs const&)
   {
     // loop over collisions
-    for (auto& collision : collisions) {
+    for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
       auto mcCollision = collision.mcCollision_as<mcCollisionWithHFSignalInfo>();
       if (checkAmbiguousTracksWithHFEventsOnly && !mcCollision.hasHFsignal()) {
         continue;
@@ -459,15 +471,59 @@ struct ValidationRecLevel {
       registry.fill(HIST("histZvtxReco"), collision.posZ());
       auto deltaZ = collision.posZ() - mcCollision.posZ();
       registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), deltaZ);
+      auto tracksGlobalWoDCAColl1 = tracksFilteredGlobalTrackWoDCA->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      registry.fill(HIST("histNtracks"), tracksGlobalWoDCAColl1.size());
+      auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      int nContributors = 0, nGoodContributors = 0;
+      for (auto& track : tracksColl1) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        nContributors++;
+        auto particle = track.mcParticle();
+        if (collision.mcCollisionId() == particle.mcCollisionId()) {
+          nGoodContributors++;
+        }
+      }
+      float frac = (nContributors > 0) ? float(nGoodContributors) / nContributors : 1.;
+      registry.fill(HIST("histFracGoodContributors"), frac);
+      uint64_t mostProbableBC = collision.bc().globalBC();
+      for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
+        uint64_t mostProbableBC2 = collision2.bc().globalBC();
+        if (mostProbableBC2 == mostProbableBC) {
+          float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
+          float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
+          int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
+          for (auto& trackColl1 : tracksColl1) {
+            if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
+              auto particleColl1 = trackColl1.mcParticle();
+              auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl1, true);
+              if (origin == RecoDecay::NonPrompt) {
+                nFromBeautyColl1++;
+              }
+            }
+          }
+          auto tracksColl2 = tracksInAcc->sliceByCached(aod::track::collisionId, collision2.globalIndex());
+          for (auto& trackColl2 : tracksColl2) {
+            if (trackColl2.has_mcParticle() && trackColl2.isPVContributor()) {
+              auto particleColl2 = trackColl2.mcParticle();
+              auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl2, true);
+              if (origin == RecoDecay::NonPrompt) {
+                nFromBeautyColl2++;
+              }
+            }
+          }
+          registry.fill(HIST("histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), radColl1, radColl2, nFromBeautyColl1, nFromBeautyColl2);
+          break;
+        }
+      }
     }
 
     // loop over tracks
-    int nTracks = 0;
-    for (auto& track : tracks) {
-      if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
-        continue;
-      }
-      nTracks++;
+    for (auto& track : tracksFilteredGlobalTrackWoDCA) {
       // check number of ITS hits
       int nITSlayers = 0;
       uint8_t ITSHitMap = track.itsClusterMap();
@@ -503,20 +559,20 @@ struct ValidationRecLevel {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
           auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
           deltaZ = collision.posZ() - mcCollision.posZ();
-          if (collision.mcCollisionId() == particle.mcCollisionId()) {
+          if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
           } else { // if the most probable collision is not the good one, check if the tracks is ambiguous
             if (track.isAmbiguousTrack()) {
               for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
 
-                if (ambCollision.mcCollisionId() == particle.mcCollisionId()) {
+                if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
                   histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
                   break;
                 }
               }
             } else if (track.isPVContributor()) {
-              if (collision.mcCollisionId() == particle.mcCollisionId()) {
+              if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
                 histContributors->Fill(0);
               } else {
                 histContributors->Fill(1);
@@ -529,7 +585,6 @@ struct ValidationRecLevel {
         histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor(), track.hasTOF(), nITSlayers);
       }
     }
-    registry.fill(HIST("histNtracks"), nTracks);
 
     // loop over 2-prong candidates
     for (auto& cand2Prong : cand2Prongs) {
@@ -595,7 +650,7 @@ struct ValidationRecLevel {
       // determine which kind of candidate it is
       bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi);
       bool isDStarSel = false; // FIXME: add proper check when D* will be added in HF vertexing
-      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToPiKK);
+      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi);
       bool isLcSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi);
       bool isXicSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::XicToPKPi);
       if (!isDPlusSel && !isDStarSel && !isDsSel && !isLcSel && !isXicSel) {
@@ -604,7 +659,7 @@ struct ValidationRecLevel {
       int whichHad = -1;
       if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DPlusToPiKPi)) {
         whichHad = 0;
-      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DsToPiKK)) {
+      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DsToKKPi)) {
         whichHad = 3;
       } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::LcToPKPi)) {
         whichHad = 4;

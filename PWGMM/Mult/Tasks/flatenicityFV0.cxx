@@ -51,20 +51,20 @@ struct flatenictyFV0 {
     OutputObjHandlingPolicy::AnalysisObject,
     true,
     true};
-  static constexpr std::string_view nhEst[16] = {
-    "eGlobaltrack", "eFDDAFDDCFT0CFV0MFT", "eFDDAFDDCFV0MFT", "eFV0MFT", "eFV0", "eMFTmult", "e1flatencityFV0", "e1flatencitytrkMFT", "e1flatencitytrkMFTFV0", "e1flatencityMFTFV0", "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A", "eFV0FT0C", "e1flatencityFV0FT0C"};
-  static constexpr std::string_view tEst[16] = {
-    "GlobalTrk", "FDDA_FDDC_FT0C_FV0_MFT", "FDDA_FDDC_FV0_MFT", "FV0_MFT", "FV0", "MFTTrk", "1-flatencity_FV0", "1-flatencity_trk_MFT", "1-flatencity_trk_MFT_FV0", "1-flatencity_MFT_FV0", "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A", "FV0_FT0C", "1-flatencity_FV0_FT0C"};
-  static constexpr std::string_view nhPtEst[16] = {
-    "ptVsGlobaltrack", "ptVsFDDAFDDCFT0CFV0MFT", "ptVsFDDAFDDCFV0MFT", "ptVsFV0MFT", "ptVsFV0", "ptVsMFTmult", "ptVs1flatencityFV0", "ptVs1flatencitytrkMFT", "ptVs1flatencitytrkMFTFV0", "ptVs1flatencityMFTFV0", "ptVsMFTmultFT0A", "ptVsFT0", "ptVs1flatencityFT0", "ptVs1flatencityMFTFT0A", "ptVsFV0FT0C", "ptVs1flatencityFV0FT0C"};
+  static constexpr std::string_view nhEst[17] = {
+    "eGlobaltrack", "eFDDAFDDCFT0CFV0MFT", "eFDDAFDDCFV0MFT", "eFV0MFT", "eFV0", "eMFTmult", "e1flatencityFV0", "e1flatencitytrkMFT", "e1flatencitytrkMFTFV0", "e1flatencityMFTFV0", "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A", "eFV0FT0C", "e1flatencityFV0FT0C", "ePtTrig"};
+  static constexpr std::string_view tEst[17] = {
+    "GlobalTrk", "FDDA_FDDC_FT0C_FV0_MFT", "FDDA_FDDC_FV0_MFT", "FV0_MFT", "FV0", "MFTTrk", "1-flatencity_FV0", "1-flatencity_trk_MFT", "1-flatencity_trk_MFT_FV0", "1-flatencity_MFT_FV0", "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A", "FV0_FT0C", "1-flatencity_FV0_FT0C", "PtTrig"};
+  static constexpr std::string_view nhPtEst[17] = {
+    "ptVsGlobaltrack", "ptVsFDDAFDDCFT0CFV0MFT", "ptVsFDDAFDDCFV0MFT", "ptVsFV0MFT", "ptVsFV0", "ptVsMFTmult", "ptVs1flatencityFV0", "ptVs1flatencitytrkMFT", "ptVs1flatencitytrkMFTFV0", "ptVs1flatencityMFTFV0", "ptVsMFTmultFT0A", "ptVsFT0", "ptVs1flatencityFT0", "ptVs1flatencityMFTFT0A", "ptVsFV0FT0C", "ptVs1flatencityFV0FT0C", "pTVsPtTrig"};
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[16] = {100, 600, 600, 600, 500, 200, 102, 102, 102, 102, 400, 200, 102, 102, 400, 102};
-    float lowEdgeEst[16] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
-                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01};
-    float upEdgeEst[16] = {99.5, 599.5, 599.5, 599.5, 39999.5, 199.5,
-                           1.01, 1.01, 1.01, 1.01, 399.5, 199.5, 1.01, 1.01, 399.5, 1.01};
+    int nBinsEst[17] = {100, 500, 500, 800, 5000, 500, 102, 102, 102, 102, 400, 400, 102, 102, 600, 102, 600};
+    float lowEdgeEst[17] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
+                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01, 0.0};
+    float upEdgeEst[17] = {99.5, 999.5, 999.5, 799.5, 199999.5, 499.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 399.5, 1.01, 1.01, 599.5, 1.01, 300.0};
 
     ConfigurableAxis ptBinning{
       "ptBinning",
@@ -75,31 +75,31 @@ struct flatenictyFV0 {
     flatenicity.add("hEv", "Ev", HistType::kTH1F,
                     {{6, -0.5, 5.5, "index activated detector"}});
     flatenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F,
-                    {{1000, -0.5, +39999.5, "FV0 amplitude"}});
+                    {{4000, -0.5, +49999.5, "FV0 amplitude"}});
     flatenicity.add("hFT0Aampl", "FTAampl", HistType::kTH1F,
-                    {{30000, -0.5, +3999.5, "FT0A amplitude"}});
+                    {{50000, -0.5, +199999.5, "FT0A amplitude"}});
     flatenicity.add("hFT0Campl", "FTCampl", HistType::kTH1F,
-                    {{10000, -0.5, +1999.5, "FT0C amplitude"}});
+                    {{10000, -0.5, +4999.5, "FT0C amplitude"}});
     flatenicity.add("hFDDAampl", "FDDAampl", HistType::kTH1F,
                     {{10000, -0.5, 39999.5, "FDDA amplitude"}});
     flatenicity.add("hFDDCampl", "FDDCampl", HistType::kTH1F,
                     {{10000, -0.5, 39999.5, "FDDC amplitude"}});
     flatenicity.add("hFT0C", "FT0C", HistType::kTH1F,
-                    {{600, -0.5, 599.5, "FT0C amplitudes"}});
+                    {{50000, -0.5, 199999.5, "FT0C amplitudes"}});
     flatenicity.add("hFT0A", "FT0A", HistType::kTH1F,
-                    {{600, -0.5, 599.5, "FT0A amplitudes"}});
+                    {{2000, -0.5, 1999.5, "FT0A amplitudes"}});
 
     flatenicity.add("hMFTmult", "", HistType::kTH1F,
-                    {{200, -0.5, +199.5, "MFT mult (-3.6<#eta<-3.4)"}});
+                    {{500, -0.5, +499.5, "MFT mult (-3.6<#eta<-3.4)"}});
     flatenicity.add("hetaMFT", "", HistType::kTH1F,
                     {{100, -5.0, +5.0, "#eta"}});
     flatenicity.add("hphiMFT", "", HistType::kTH1F,
                     {{8, 0.0, 2.0 * M_PI, "#varphi"}});
 
     flatenicity.add("hMFTmultAll", "", HistType::kTH1F,
-                    {{200, -0.5, +199.5, "MFT mult (-3.6<#eta<-2.5)"}});
+                    {{500, -0.5, +499.5, "MFT mult (-3.6<#eta<-2.5)"}});
     // estimators
-    for (int i_e = 0; i_e < 16; ++i_e) {
+    for (int i_e = 0; i_e < 17; ++i_e) {
       flatenicity.add(
         nhEst[i_e].data(), "", HistType::kTH2F,
         {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()},
@@ -107,7 +107,7 @@ struct flatenictyFV0 {
     }
 
     // vs pT
-    for (int i_e = 0; i_e < 16; ++i_e) {
+    for (int i_e = 0; i_e < 17; ++i_e) {
       flatenicity.add(nhPtEst[i_e].data(), "", HistType::kTProfile,
                       {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
     }
@@ -115,7 +115,7 @@ struct flatenictyFV0 {
     flatenicity.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
     // QA flatenicity
     flatenicity.add("fMultFv0", "FV0 amp", HistType::kTH1F,
-                    {{1000, -0.5, +39999.5, "FV0 amplitude"}});
+                    {{5000, -0.5, +199999.5, "FV0 amplitude"}});
     flatenicity.add(
       "hAmpV0VsCh", "", HistType::kTH2F,
       {{48, -0.5, 47.5, "channel"}, {500, -0.5, +19999.5, "FV0 amplitude"}});
@@ -387,39 +387,33 @@ struct flatenictyFV0 {
 
     flatenicity.fill(HIST("hEv"), 3);
     // these values are from equalized pass 4 signals
-    const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
-    // float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175}; // after calibration
-    float weigthsEta1[nEta1] = {0.000710054, 1.94347, 0.04924, 0.00451969, 0.00215551};
+    const int nEta1 = 5;                                                                 // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
+    float weigthsEta1[nEta1] = {0.0824071, 0.464187, 0.0490638, 0.00348809, 0.00360993}; // lhc22m
     float deltaEeta1[nEta1] = {2.0, 0.2, 1.1, 2.32, 1.6};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
 
     const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
-    // float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00569502, 0.0037175}; // after calibration
-    float weigthsEta2[nEta2] = {0.000710054, 1.27606, 0.00451969, 0.00215551};
+    float weigthsEta2[nEta2] = {0.0824071, 0.246551, 0.00348809, 0.00360993};
     float deltaEeta2[nEta2] = {2.0, 1.1, 2.32, 1.6};
     float ampl2[nEta2] = {0, 0, 0, 0};
 
     const int nEta3 = 2; // MFT + FV0
-    // float weigthsEta3[nEta3] = {1.05258, 0.00535717}; // after calibration
-    float weigthsEta3[nEta3] = {1.27606, 0.00437892};
+    float weigthsEta3[nEta3] = {0.246551, 0.00353962};
     float deltaEeta3[nEta3] = {1.1, 2.9};
     float ampl3[nEta3] = {0, 0};
 
     const int nEta4 = 2; // MFT + FT0A
-    // float weigthsEta4[nEta4] = {1.05258, 0.014552069}; // after calibration
-    float weigthsEta4[nEta4] = {0.00437892, 0.0097735442};
+    float weigthsEta4[nEta4] = {0.246551, 0.010958415};
     float deltaEeta4[nEta4] = {1.1, 1.2};
     float ampl4[nEta4] = {0, 0};
 
     const int nEta5 = 2; // FT0C + FT0A
-    // float weigthsEta5[nEta5] = {0.0569502, 0.014552069}; // after calibration
-    float weigthsEta5[nEta5] = {0.04924, 0.0097735442};
+    float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
     float deltaEeta5[nEta5] = {1.1, 1.2};
     float ampl5[nEta5] = {0, 0};
 
     const int nEta6 = 2; // FT0C + FV0
-    // float weigthsEta6[nEta6] = {0.0569502, 0.00535717}; // after calibration
-    float weigthsEta6[nEta6] = {0.04924, 0.00437892};
+    float weigthsEta6[nEta6] = {0.0490638, 0.00353962};
     float deltaEeta6[nEta6] = {1.1, 2.9};
     float ampl6[nEta6] = {0, 0};
 
@@ -610,6 +604,7 @@ struct flatenictyFV0 {
     for (int iCh = 0; iCh < nCells2; iCh++) {
       RhoLattice2[iCh] = 0.0;
     }
+    float ptT = 0.;
     int multGlob = 0;
     for (auto& track : tracks) {
       if (!track.isGlobalTrack()) {
@@ -617,6 +612,9 @@ struct flatenictyFV0 {
       }
       float eta_a = track.eta();
       float phi_a = track.phi();
+      if (track.pt() > ptT) {
+        ptT = track.pt();
+      }
       multGlob++;
 
       int i_ch = 0;
@@ -731,15 +729,20 @@ struct flatenictyFV0 {
       flatenicity.fill(HIST("hAmpFDCvsVtx"), vtxZ, sumAmpFDDC);
     }
 
+    bool isOK_estimator1 = false;
+    bool isOK_estimator2 = false;
+    bool isOK_estimator3 = false;
+    bool isOK_estimator4 = false;
+    bool isOK_estimator5 = false;
+    bool isOK_estimator6 = false;
     float combined_estimator1 = 0;
     float combined_estimator2 = 0;
     float combined_estimator3 = 0;
     float combined_estimator4 = 0;
     float combined_estimator5 = 0;
     float combined_estimator6 = 0;
-
-    float estimator[16];
-    for (int i_e = 0; i_e < 16; ++i_e) {
+    float estimator[17];
+    for (int i_e = 0; i_e < 17; ++i_e) {
       estimator[i_e] = 0;
     }
 
@@ -752,17 +755,22 @@ struct flatenictyFV0 {
       ampl1[3] = sumAmpFV01to4Ch;
       ampl1[4] = sumAmpFDDA;
       float all_weights = 0;
-      if (applyNorm) {
-        all_weights = 0;
-        for (int i_1 = 0; i_1 < nEta1; ++i_1) {
-          combined_estimator1 +=
-            ampl1[i_1] * weigthsEta1[i_1] / deltaEeta1[i_1];
-          all_weights += weigthsEta1[i_1];
-        }
-        combined_estimator1 /= all_weights;
-      } else {
-        for (int i_1 = 0; i_1 < nEta1; ++i_1) {
-          combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
+      if (sumAmpFDDC > 0 && multMFTTrack > 0 && sumAmpFT0C > 0 && sumAmpFV0 > 0 && sumAmpFDDA > 0) {
+        isOK_estimator1 = true;
+      }
+      if (isOK_estimator1) {
+        if (applyNorm) {
+          all_weights = 0;
+          for (int i_1 = 0; i_1 < nEta1; ++i_1) {
+            combined_estimator1 +=
+              ampl1[i_1] * weigthsEta1[i_1] / deltaEeta1[i_1];
+            all_weights += weigthsEta1[i_1];
+          }
+          combined_estimator1 /= all_weights;
+        } else {
+          for (int i_1 = 0; i_1 < nEta1; ++i_1) {
+            combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
+          }
         }
       }
       // option 2
@@ -770,85 +778,108 @@ struct flatenictyFV0 {
       ampl2[1] = multMFTTrack;
       ampl2[2] = sumAmpFV01to4Ch;
       ampl2[3] = sumAmpFDDA;
-      if (applyNorm) {
-        all_weights = 0;
-        for (int i_2 = 0; i_2 < nEta2; ++i_2) {
-          combined_estimator2 +=
-            ampl2[i_2] * weigthsEta2[i_2] / deltaEeta2[i_2];
-          all_weights += weigthsEta2[i_2];
-        }
-        combined_estimator2 /= all_weights;
-      } else {
-        for (int i_2 = 0; i_2 < nEta2; ++i_2) {
-          combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
+      if (sumAmpFDDC > 0 && multMFTTrack > 0 && sumAmpFV0 > 0 && sumAmpFDDA > 0) {
+        isOK_estimator2 = true;
+      }
+      if (isOK_estimator2) {
+        if (applyNorm) {
+          all_weights = 0;
+          for (int i_2 = 0; i_2 < nEta2; ++i_2) {
+            combined_estimator2 +=
+              ampl2[i_2] * weigthsEta2[i_2] / deltaEeta2[i_2];
+            all_weights += weigthsEta2[i_2];
+          }
+          combined_estimator2 /= all_weights;
+        } else {
+          for (int i_2 = 0; i_2 < nEta2; ++i_2) {
+            combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
+          }
         }
       }
       // option 3
       ampl3[0] = multMFTTrack;
       ampl3[1] = sumAmpFV0;
-      if (applyNorm) {
-        all_weights = 0;
-        for (int i_3 = 0; i_3 < nEta3; ++i_3) {
-          combined_estimator3 +=
-            ampl3[i_3] * weigthsEta3[i_3] / deltaEeta3[i_3];
-          all_weights += weigthsEta3[i_3];
-        }
-        combined_estimator3 /= all_weights;
-      } else {
-        for (int i_3 = 0; i_3 < nEta3; ++i_3) {
-          combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
+      if (multMFTTrack > 0 && sumAmpFV0 > 0) {
+        isOK_estimator3 = true;
+      }
+      if (isOK_estimator3) {
+        if (applyNorm) {
+          all_weights = 0;
+          for (int i_3 = 0; i_3 < nEta3; ++i_3) {
+            combined_estimator3 +=
+              ampl3[i_3] * weigthsEta3[i_3] / deltaEeta3[i_3];
+            all_weights += weigthsEta3[i_3];
+          }
+          combined_estimator3 /= all_weights;
+        } else {
+          for (int i_3 = 0; i_3 < nEta3; ++i_3) {
+            combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
+          }
         }
       }
       // option 4
       ampl4[0] = multMFTTrack;
       ampl4[1] = sumAmpFT0A;
-      if (applyNorm) {
-        all_weights = 0;
-        for (int i_4 = 0; i_4 < nEta4; ++i_4) {
-          combined_estimator4 +=
-            ampl4[i_4] * weigthsEta4[i_4] / deltaEeta4[i_4];
-          all_weights += weigthsEta4[i_4];
-        }
-        combined_estimator4 /= all_weights;
-      } else {
-        for (int i_4 = 0; i_4 < nEta4; ++i_4) {
-          combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
+      if (multMFTTrack > 0 && sumAmpFT0A > 0) {
+        isOK_estimator4 = true;
+      }
+      if (isOK_estimator4) {
+        if (applyNorm) {
+          all_weights = 0;
+          for (int i_4 = 0; i_4 < nEta4; ++i_4) {
+            combined_estimator4 +=
+              ampl4[i_4] * weigthsEta4[i_4] / deltaEeta4[i_4];
+            all_weights += weigthsEta4[i_4];
+          }
+          combined_estimator4 /= all_weights;
+        } else {
+          for (int i_4 = 0; i_4 < nEta4; ++i_4) {
+            combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
+          }
         }
       }
       // option 5
       ampl5[0] = sumAmpFT0C;
       ampl5[1] = sumAmpFT0A;
-      if (applyNorm) {
-        all_weights = 0;
-        for (int i_5 = 0; i_5 < nEta5; ++i_5) {
-          combined_estimator5 +=
-            ampl5[i_5] * weigthsEta5[i_5] / deltaEeta5[i_5];
-          all_weights += weigthsEta5[i_5];
-        }
-        combined_estimator5 /= all_weights;
-      } else {
-        for (int i_5 = 0; i_5 < nEta5; ++i_5) {
-          combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+      if (sumAmpFT0C > 0 && sumAmpFT0A > 0) {
+        isOK_estimator5 = true;
+      }
+      if (isOK_estimator5) {
+        if (applyNorm) {
+          all_weights = 0;
+          for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+            combined_estimator5 +=
+              ampl5[i_5] * weigthsEta5[i_5] / deltaEeta5[i_5];
+            all_weights += weigthsEta5[i_5];
+          }
+          combined_estimator5 /= all_weights;
+        } else {
+          for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+            combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+          }
         }
       }
-
       // option 6: FT0C + FV0
       ampl6[0] = sumAmpFT0C;
       ampl6[1] = sumAmpFV0;
-      if (applyNorm) {
-        all_weights = 0;
-        for (int i_6 = 0; i_6 < nEta6; ++i_6) {
-          combined_estimator6 +=
-            ampl6[i_6] * weigthsEta6[i_6] / deltaEeta6[i_6];
-          all_weights += weigthsEta6[i_6];
-        }
-        combined_estimator6 /= all_weights;
-      } else {
-        for (int i_6 = 0; i_6 < nEta6; ++i_6) {
-          combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+      if (sumAmpFT0C > 0 && sumAmpFV0 > 0) {
+        isOK_estimator6 = true;
+      }
+      if (isOK_estimator6) {
+        if (applyNorm) {
+          all_weights = 0;
+          for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+            combined_estimator6 +=
+              ampl6[i_6] * weigthsEta6[i_6] / deltaEeta6[i_6];
+            all_weights += weigthsEta6[i_6];
+          }
+          combined_estimator6 /= all_weights;
+        } else {
+          for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+            combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+          }
         }
       }
-
       flatenicity.fill(HIST("hMFTmult"), multMFTTrackParc);
       flatenicity.fill(HIST("hMFTmultAll"), multMFTTrack);
       flatenicity.fill(HIST("hFDDAampl"), sumAmpFDDA);
@@ -879,8 +910,8 @@ struct flatenictyFV0 {
       estimator[13] = 1.0 - flatenicity_mft_ft0a;
       estimator[14] = combined_estimator6;
       estimator[15] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
-
-      static_for<0, 15>([&](auto i) {
+      estimator[16] = ptT;
+      static_for<0, 16>([&](auto i) {
         constexpr int index = i.value;
         flatenicity.fill(HIST(nhEst[index]), estimator[index], estimator[0]);
       });
@@ -894,7 +925,7 @@ struct flatenictyFV0 {
           continue;
         }
         float pt = track.pt();
-        static_for<0, 15>([&](auto i) {
+        static_for<0, 16>([&](auto i) {
           constexpr int index = i.value;
           flatenicity.fill(HIST(nhPtEst[index]), estimator[index], pt);
         });

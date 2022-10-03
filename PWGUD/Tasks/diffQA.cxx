@@ -65,6 +65,7 @@ struct DiffQA {
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
   Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
+  Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -105,12 +106,12 @@ struct DiffQA {
       {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
       {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{120, -6., 6.}, {1000, 0., 1000.}}}},
       {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
       {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
       {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{120, -6., 6.0}, {1000, 0., 1000.}}}},
       {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
       {"netChargeDG", "#netChargeDG", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
       {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
@@ -176,7 +177,7 @@ struct DiffQA {
   }
 
   void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtarcks,
+               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtracks,
                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
                aod::Zdcs& zdcs, aod::Calos& calos,
                aod::V0s& v0s, aod::Cascades& cascades)
@@ -214,7 +215,7 @@ struct DiffQA {
       // update eta vs pt histogram
       registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
       // update dEdx histograms
-      registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
+      registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.p() * track.sign(), track.tpcSignal());
       if (track.tpcSignal() > maxdEdxTPC) {
         maxdEdxTPC = track.tpcSignal();
         LOGF(info, "<DiffQA> New maxdEdx TPC %f", maxdEdxTPC);
@@ -254,11 +255,17 @@ struct DiffQA {
     // get BCrange to test for FIT signals
     auto bcSlice = compatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
 
-    // no FIT signal in bcSlice
-    for (auto& bc : bcSlice) {
-      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+    // no FIT signal in bcSlice / collision
+    if (doCleanFITBC) {
+      for (auto& bc : bcSlice) {
+        if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+          isDGcandidate = false;
+          break;
+        }
+      }
+    } else {
+      if (!cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
-        break;
       }
     }
     registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
@@ -417,7 +424,7 @@ struct DiffQA {
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
           LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
-          registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.pt(), track.tpcSignal());
+          registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.p() * track.sign(), track.tpcSignal());
           registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
           registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           if (track.hasTOF()) {

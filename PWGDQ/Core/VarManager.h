@@ -251,6 +251,8 @@ class VarManager : public TObject
     kMuonC1Pt21Pt2,
     kNMuonTrackVariables,
     kMuonTrackType,
+    kMuonDCAx,
+    kMuonDCAy,
 
     // MC particle variables
     kMCPdgCode,
@@ -811,6 +813,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonChi2MatchMCHMFT] = track.chi2MatchMCHMFT();
     values[kMuonMatchScoreMCHMFT] = track.matchScoreMCHMFT();
     values[kMuonTrackType] = track.trackType();
+    values[kMuonDCAx] = track.fwdDcaX();
+    values[kMuonDCAy] = track.fwdDcaY();
   }
   // Quantities based on the muon covariance table
   if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {
@@ -1035,7 +1039,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   std::array<float, 3> pvec1;
 
   if constexpr (eventHasVtxCov) {
-    double* covMatrixPCA;
+    std::array<float, 6> covMatrixPCA;
     o2::dataformats::DCA impactParameter0;
     o2::dataformats::DCA impactParameter1;
     // get track impact parameters
@@ -1049,7 +1053,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     if constexpr (pairType == kJpsiToEE && trackHasCov) {
       secondaryVertex = fgFitterTwoProngBarrel.getPCACandidate();
       bz = fgFitterTwoProngBarrel.getBz();
-      covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrix().Array();
+      covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrixFlat();
       auto chi2PCA = fgFitterTwoProngBarrel.getChi2AtPCACandidate();
       auto trackParVar0 = fgFitterTwoProngBarrel.getTrack(0);
       auto trackParVar1 = fgFitterTwoProngBarrel.getTrack(1);
@@ -1065,7 +1069,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       secondaryVertex = fgFitterTwoProngFwd.getPCACandidate();
       bz = fgFitterTwoProngFwd.getBz();
-      covMatrixPCA = fgFitterTwoProngFwd.calcPCACovMatrix().Array();
+      covMatrixPCA = fgFitterTwoProngFwd.calcPCACovMatrixFlat();
       auto chi2PCA = fgFitterTwoProngFwd.getChi2AtPCACandidate();
       auto trackParVar0 = fgFitterTwoProngFwd.getTrack(0);
       auto trackParVar1 = fgFitterTwoProngFwd.getTrack(1);
@@ -1216,7 +1220,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   Vec3D secondaryVertex;
 
   if constexpr (eventHasVtxCov) {
-    double* covMatrixPCA;
+    std::array<float, 6> covMatrixPCA;
     o2::dataformats::DCA impactParameter0;
     o2::dataformats::DCA impactParameter1;
 
@@ -1227,10 +1231,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
     if constexpr (candidateType == kBtoJpsiEEK && trackHasCov) {
       secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
-      covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrix().Array();
+      covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrixFlat();
     } else if constexpr (candidateType == kBcToThreeMuons && muonHasCov) {
       secondaryVertex = fgFitterThreeProngFwd.getPCACandidate();
-      covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrix().Array();
+      covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrixFlat();
     }
 
     double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());

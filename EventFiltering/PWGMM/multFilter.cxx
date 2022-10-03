@@ -15,6 +15,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
 #include "../filterTables.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
@@ -47,7 +48,8 @@ struct multFilter {
          kHighFt0cFv0Flat,
          kLeadingPtTrack,
          kNtriggersMM };
-
+  // my track selection, discussed with Mesut and Matia
+  TrackSelection myTrackSelection();
   // event selection cuts
   Configurable<float> selHTrkMult{"selHTrkMult", 45., "global trk multiplicity threshold"};
   Configurable<float> selHMfddft0cfv0mft{"selHMfddft0cfv0mft", 237.0, "FDD+FV0+FT0C+MFT mult threshold"};
@@ -93,11 +95,11 @@ struct multFilter {
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[17] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 100, 102, 102, 200, 102, 150};
+    int nBinsEst[17] = {100, 500, 500, 500, 500, 500, 102, 102, 102, 102, 400, 500, 102, 102, 500, 102, 150};
     float lowEdgeEst[17] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
                             -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01, .0};
-    float upEdgeEst[17] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
-                           1.01, 1.01, 1.01, 1.01, 399.5, 99.5, 1.01, 1.01, 199.5, 1.01, 150.0};
+    float upEdgeEst[17] = {99.5, 1499.5, 1499.5, 999.5, 49999.5, 199.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 499.5, 1.01, 1.01, 499.5, 1.01, 150.0};
 
     // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -119,6 +121,8 @@ struct multFilter {
     // QA global tracks
     multiplicity.add("hdNdetaGlobal", "dNdeta", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
     multiplicity.add("hPhiGlobal", "Phi", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
+    multiplicity.add("hDCAxyGlobal", "DCA_{xy}", HistType::kTH1F, {{120, -4.0, 4.0, " "}});
+
     multiplicity.add("hMFTvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {200, -0.5, +199.5, "MFT mult (-3.6<#eta<-2.5)"}});
 
     // QA MFT tracks
@@ -386,7 +390,7 @@ struct multFilter {
     }
 
     for (auto& track : tracks) {
-      if (!track.isGlobalTrack()) {
+      if (!myTrackSelection().IsSelected(track)) {
         continue;
       }
       float eta_a = track.eta();
@@ -395,6 +399,7 @@ struct multFilter {
       multTrack++;
       multiplicity.fill(HIST("hdNdetaGlobal"), eta_a);
       multiplicity.fill(HIST("hPhiGlobal"), phi_a);
+      multiplicity.fill(HIST("hDCAxyGlobal"), track.dcaXY());
       if (flPt < pt_a) {
         flPt = pt_a;
       }
@@ -411,6 +416,12 @@ struct multFilter {
       }
     }
     float flatenicity_glob = GetFlatenicity(RhoLattice2, nCells2);
+    bool isOK_estimator1 = false;
+    bool isOK_estimator2 = false;
+    bool isOK_estimator3 = false;
+    bool isOK_estimator4 = false;
+    bool isOK_estimator5 = false;
+    bool isOK_estimator6 = false;
 
     float combined_estimator1 = 0;
     float combined_estimator2 = 0;
@@ -444,74 +455,99 @@ struct multFilter {
     // option 1
     const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
     // float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};// values for pilot run, 900 GeV
-    float weigthsEta1[nEta1] = {0.000710054, 1.94347, 0.04924, 0.00451969, 0.00215551};
+    float weigthsEta1[nEta1] = {0.0824071, 0.464187, 0.0490638, 0.00348809, 0.00360993};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
     ampl1[0] = sumAmpFDDC;
     ampl1[1] = multMFTTrackParc;
     ampl1[2] = sumAmpFT0C;
     ampl1[3] = sumAmpFV01to4Ch;
     ampl1[4] = sumAmpFDDA;
-
-    for (int i_1 = 0; i_1 < nEta1; ++i_1) {
-      combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
+    if (sumAmpFDDC > 0 && multMFTTrack > 0 && sumAmpFT0C > 0 && sumAmpFV0 > 0 && sumAmpFDDA > 0) {
+      isOK_estimator1 = true;
+    }
+    if (isOK_estimator1) {
+      for (int i_1 = 0; i_1 < nEta1; ++i_1) {
+        combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
+      }
     }
     // option 2
     const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
     // float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00548221, 0.0037175};// values for pilot run, 900 GeV
-    float weigthsEta2[nEta2] = {0.000710054, 1.27606, 0.00451969, 0.00215551};
+    float weigthsEta2[nEta2] = {0.0824071, 0.246551, 0.00348809, 0.00360993};
     float ampl2[nEta2] = {0, 0, 0, 0};
     ampl2[0] = sumAmpFDDC;
     ampl2[1] = multMFTTrack;
     ampl2[2] = sumAmpFV01to4Ch;
     ampl2[3] = sumAmpFDDA;
-    for (int i_2 = 0; i_2 < nEta2; ++i_2) {
-      combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
+    if (sumAmpFDDC > 0 && multMFTTrack > 0 && sumAmpFV0 > 0 && sumAmpFDDA > 0) {
+      isOK_estimator2 = true;
     }
-
+    if (isOK_estimator2) {
+      for (int i_2 = 0; i_2 < nEta2; ++i_2) {
+        combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
+      }
+    }
     // option 3
     const int nEta3 = 2; // MFT + FV0
     // float weigthsEta3[nEta3] = {1.05258, 0.00535717};// values for pilot run, 900 GeV
-    float weigthsEta3[nEta3] = {1.27606, 0.00437892};
+    float weigthsEta3[nEta3] = {0.246551, 0.00353962};
     float ampl3[nEta3] = {0, 0};
     ampl3[0] = multMFTTrack;
     ampl3[1] = sumAmpFV0;
-    for (int i_3 = 0; i_3 < nEta3; ++i_3) {
-      combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
+    if (multMFTTrack > 0 && sumAmpFV0 > 0) {
+      isOK_estimator3 = true;
+    }
+    if (isOK_estimator3) {
+      for (int i_3 = 0; i_3 < nEta3; ++i_3) {
+        combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
+      }
     }
 
     // option 4
     const int nEta4 = 2; // MFT + FT0A
     // float weigthsEta4[nEta4] = {1.05258, 0.014552069};// values for pilot run, 900 GeV
-    float weigthsEta4[nEta4] = {0.00437892, 0.0097735442};
+    float weigthsEta4[nEta4] = {0.246551, 0.010958415};
     float ampl4[nEta4] = {0, 0};
     ampl4[0] = multMFTTrack;
     ampl4[1] = sumAmpFT0A;
-    for (int i_4 = 0; i_4 < nEta4; ++i_4) {
-      combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
+    if (multMFTTrack > 0 && sumAmpFT0A > 0) {
+      isOK_estimator4 = true;
     }
-
+    if (isOK_estimator4) {
+      for (int i_4 = 0; i_4 < nEta4; ++i_4) {
+        combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
+      }
+    }
     // option 5
     const int nEta5 = 2; // FT0C + FT0A
     // float weigthsEta5[nEta5] = {0.0569502, 0.014552069};// values for pilot run, 900 GeV
-    float weigthsEta5[nEta5] = {0.04924, 0.0097735442};
+    float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
     float ampl5[nEta5] = {0, 0};
     ampl5[0] = sumAmpFT0C;
     ampl5[1] = sumAmpFT0A;
-    for (int i_5 = 0; i_5 < nEta5; ++i_5) {
-      combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+    if (sumAmpFT0C > 0 && sumAmpFT0A > 0) {
+      isOK_estimator5 = true;
     }
-
+    if (isOK_estimator5) {
+      for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+        combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+      }
+    }
     // option 6
     const int nEta6 = 2; //  FT0C + FV0
     // float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
-    float weigthsEta6[nEta6] = {0.04924, 0.00437892};
+    float weigthsEta6[nEta6] = {0.0490638, 0.00353962};
     float ampl6[nEta6] = {0, 0};
     ampl6[0] = sumAmpFT0C;
     ampl6[1] = sumAmpFV0;
-    for (int i_6 = 0; i_6 < nEta6; ++i_6) {
-      combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+    if (sumAmpFT0C > 0 && sumAmpFV0 > 0) {
+      isOK_estimator6 = true;
     }
-
+    if (isOK_estimator6) {
+      for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+        combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+      }
+    }
     float flatenicity_mft_glob = (flatenicity_mft + flatenicity_glob) / 2.0;
     float flatenicity_mft_fv0 = (flatenicity_mft + flatenicity_fv0) / 2.0;
     float flatenicity_mft_glob_fv0 =
@@ -585,6 +621,24 @@ struct multFilter {
     }
   }
 };
+TrackSelection multFilter::myTrackSelection()
+{
+  TrackSelection selectedTracks;
+  selectedTracks.SetPtRange(0.15f, 1e10f);
+  selectedTracks.SetEtaRange(-0.8f, 0.8f);
+  selectedTracks.SetRequireITSRefit(true);
+  selectedTracks.SetRequireTPCRefit(true);
+  selectedTracks.SetRequireGoldenChi2(false);
+  selectedTracks.SetMinNClustersTPC(60);
+  selectedTracks.SetMinNCrossedRowsTPC(70);
+  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+  selectedTracks.SetMaxChi2PerClusterITS(36.f);
+  selectedTracks.SetMaxDcaXY(1.f);
+  selectedTracks.SetMaxDcaZ(1.f);
+  return selectedTracks;
+}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {

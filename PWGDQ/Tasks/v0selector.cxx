@@ -34,6 +34,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include <CCDB/BasicCCDBManager.h>
 
 #include <Math/Vector4D.h>
@@ -47,7 +48,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
                                 aod::pidTOFFullEl, aod::pidTOFFullPi,
@@ -234,7 +235,7 @@ struct v0selector {
   };
 
   // Configurables
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<double> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 0.3, "DCA V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
@@ -243,54 +244,49 @@ struct v0selector {
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(InitContext& context)
   {
-    // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
 
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
+      ccdb->get<TGeoManager>(geoPath);
     }
   }
 
   float getMagneticField(uint64_t timestamp)
   {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    static o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
+    if (grpo != nullptr) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    } else {
+      LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+      return 0;
     }
-    float output = grpo->getNominalL3Field();
-    return output;
+    LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+    float bz = std::lround(5.f * grpo->getL3Current() / 30000.f); // in kG
+    LOGF(info, "magnetig field = %f kG", bz);
+    return bz;
   }
 
   void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
   {
     if (lRunNumber != mRunNumber) {
-      if (d_bz_input < -990) {
+      if (abs(d_bz_input) > 99) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = getMagneticField(lTimeStamp);
       } else {
@@ -360,7 +356,7 @@ struct v0selector {
       CheckAndUpdate(bc.runNumber(), bc.timestamp());
       // Define o2 fitter, 2-prong
       o2::vertexing::DCAFitterN<2> fitter;
-      fitter.setBz(d_bz);
+      fitter.setBz(d_bz); // in kG
       fitter.setPropagateToPCA(true);
       fitter.setMaxR(200.);
       fitter.setMinParamChange(1e-3);
@@ -516,7 +512,7 @@ struct v0selector {
       CheckAndUpdate(bc.runNumber(), bc.timestamp());
       // Define o2 fitter, 2-prong
       o2::vertexing::DCAFitterN<2> fitterV0;
-      fitterV0.setBz(d_bz);
+      fitterV0.setBz(d_bz); // in kG
       fitterV0.setPropagateToPCA(true);
       fitterV0.setMaxR(200.);
       fitterV0.setMinParamChange(1e-3);
@@ -527,7 +523,7 @@ struct v0selector {
 
       // next, cascade, Omega -> LK
       o2::vertexing::DCAFitterN<2> fitterCasc;
-      fitterCasc.setBz(d_bz);
+      fitterCasc.setBz(d_bz); // in kG
       fitterCasc.setPropagateToPCA(true);
       fitterCasc.setMaxR(200.);
       fitterCasc.setMinParamChange(1e-3);

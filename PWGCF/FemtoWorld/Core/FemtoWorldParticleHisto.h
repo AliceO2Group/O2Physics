@@ -64,6 +64,13 @@ class FemtoWorldParticleHisto
         mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{p}_{T} (GeV/#it{c}); cos#alpha", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kCascade) {
         /// Cascade histograms
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
+        /// Phi histograms
+        int mInvBins = 1000;
+        framework::AxisSpec mInvAxis = {mInvBins, 0.5, 1.5};
+        mHistogramRegistry->add((folderName + "/InvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
+        /// Phi daughters histograms
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }
@@ -95,6 +102,11 @@ class FemtoWorldParticleHisto
                                  part.pt(), part.tempFitVar());
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kCascade) {
         /// Cascade histograms
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
+        /// Phi histograms
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST("/InvariantMass"), part.mass());
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
+        /// Phi daughters histograms
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }

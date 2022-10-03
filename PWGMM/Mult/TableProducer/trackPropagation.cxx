@@ -29,6 +29,18 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
+
+#include "bestCollisionTable.h"
+
+using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a
 // track with ITS this is the innermost (or second innermost) ITS layer. For a
@@ -49,33 +61,6 @@ using namespace o2;
 using namespace o2::framework;
 // using namespace o2::framework::expressions;
 
-namespace o2::aod
-{
-namespace track
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(BestCollision, bestCollision, int32_t, Collisions, "");
-DECLARE_SOA_COLUMN(BestDCAXY, bestDCAXY, float);
-DECLARE_SOA_COLUMN(BestDCAZ, bestDCAZ, float);
-DECLARE_SOA_COLUMN(PtStatic, pts, float);
-DECLARE_SOA_COLUMN(PStatic, ps, float);
-DECLARE_SOA_COLUMN(EtaStatic, etas, float);
-DECLARE_SOA_COLUMN(PhiStatic, phis, float);
-} // namespace track
-DECLARE_SOA_TABLE(BestCollisions, "AOD", "BESTCOLL",
-                  aod::track::BestCollisionId, aod::track::BestDCAXY,
-                  aod::track::BestDCAZ, track::X, track::Alpha, track::Y,
-                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,
-                  track::PtStatic, track::PStatic, track::EtaStatic,
-                  track::PhiStatic);
-namespace indices
-{
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
-}
-
-DECLARE_SOA_TABLE(MatchedMulti, "AOD", "MAMU",
-                  indices::BCId, indices::CollisionIds);
-} // namespace o2::aod
-
 struct MultiCollisionAssociation {
   Produces<aod::MatchedMulti> mm;
   struct {
@@ -93,9 +78,11 @@ struct MultiCollisionAssociation {
 
 struct AmbiguousTrackPropagation {
   Produces<aod::BestCollisions> tracksBestCollisions;
+  Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
+  float Bz = 0; // Magnetic field for MFT
 
   o2::base::Propagator::MatCorrType matCorr =
     o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -122,6 +109,8 @@ struct AmbiguousTrackPropagation {
 
   void initCCDB(ExtBCs::iterator const& bc)
   {
+    LOG(info) << "INITIALIZING CCDB";
+
     if (runNumber == bc.runNumber()) {
       return;
     }
@@ -131,13 +120,16 @@ struct AmbiguousTrackPropagation {
               << " from its GRPMagField CCDB object";
     o2::base::Propagator::initFieldFromGRP(grpmag);
     runNumber = bc.runNumber();
+
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
+    Bz = field->getBz(centerMFT);
+    LOG(info) << "The field at the center of the MFT is Bz = " << Bz;
   }
 
-  Preslice<aod::AmbiguousTracks> perTrack = aod::ambiguous::trackId;
-
-  void process(soa::Join<aod::Tracks, aod::TracksExtra> const&,
-               aod::Collisions const&, ExtBCs const& bcs,
-               aod::AmbiguousTracks const& atracks)
+  void processCentral(soa::Join<aod::Tracks, aod::TracksExtra> const&,
+                      aod::Collisions const&, ExtBCs const& bcs,
+                      aod::AmbiguousTracks const& atracks)
   {
     if (bcs.size() == 0) {
       return;
@@ -146,10 +138,11 @@ struct AmbiguousTrackPropagation {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     float bestDCA[2];
+    o2::track::TrackParametrization<float> bestTrackPar;
 
     for (auto& atrack : atracks) {
-      dcaInfo[0] = 999;
-      dcaInfo[1] = 999;
+      dcaInfo[0] = 999; // DCAxy
+      dcaInfo[1] = 999; // DCAz
       bestDCA[0] = 999;
       bestDCA[1] = 999;
 
@@ -172,17 +165,80 @@ struct AmbiguousTrackPropagation {
               bestCol = collision.globalIndex();
               bestDCA[0] = dcaInfo[0];
               bestDCA[1] = dcaInfo[1];
+              bestTrackPar = trackPar;
             }
           }
         }
       }
       tracksBestCollisions(
-        bestCol, dcaInfo[0], dcaInfo[1], trackPar.getX(), trackPar.getAlpha(),
-        trackPar.getY(), trackPar.getZ(), trackPar.getSnp(),
-        trackPar.getTgl(), trackPar.getQ2Pt(), trackPar.getPt(),
-        trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
+        bestCol, bestDCA[0], bestDCA[1], bestTrackPar.getX(), bestTrackPar.getAlpha(),
+        bestTrackPar.getY(), bestTrackPar.getZ(), bestTrackPar.getSnp(),
+        bestTrackPar.getTgl(), bestTrackPar.getQ2Pt(), bestTrackPar.getPt(),
+        bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi());
     }
   }
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processCentral, "Fill BestCollisions for central ambiguous tracks", true);
+
+  void processMFT(aod::MFTTracks const&,
+                  aod::Collisions const&, ExtBCs const& bcs,
+                  aod::AmbiguousMFTTracks const& atracks)
+  {
+
+    if (bcs.size() == 0) {
+      return;
+    }
+    if (atracks.size() == 0) {
+      return;
+    }
+    initCCDB(bcs.begin());
+
+    // Only on DCAxy
+    float dcaInfo;
+    float bestDCA;
+    o2::track::TrackParCovFwd bestTrackPar;
+
+    for (auto& atrack : atracks) {
+      dcaInfo = 999; // DCAxy
+      bestDCA = 999;
+
+      auto track = atrack.mfttrack();
+      auto bestCol = track.has_collision() ? track.collisionId() : -1;
+
+      std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
+      SMatrix55 tcovs(v1.begin(), v1.end());
+      SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+      o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
+
+      auto compatibleBCs = atrack.bc_as<ExtBCs>();
+      for (auto& bc : compatibleBCs) {
+        if (!bc.has_collisions()) {
+          continue;
+        }
+        auto collisions = bc.collisions();
+        for (auto const& collision : collisions) {
+
+          trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
+
+          const auto dcaX(trackPar.getX() - collision.posX());
+          const auto dcaY(trackPar.getY() - collision.posY());
+          dcaInfo = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+
+          if ((dcaInfo < bestDCA)) {
+            bestCol = collision.globalIndex();
+            bestDCA = dcaInfo;
+            bestTrackPar = trackPar;
+          }
+        }
+      }
+
+      fwdtracksBestCollisions(
+        bestCol, bestDCA, bestTrackPar.getX(),
+        bestTrackPar.getY(), bestTrackPar.getZ(),
+        bestTrackPar.getTgl(), bestTrackPar.getInvQPt(), bestTrackPar.getPt(),
+        bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi());
+    }
+  }
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processMFT, "Fill BestCollisionsFwd for MFT ambiguous tracks", false);
 };
 
 //****************************************************************************************

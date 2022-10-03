@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi>;
+using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi>;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct qaK0sTrackingEfficiency {
