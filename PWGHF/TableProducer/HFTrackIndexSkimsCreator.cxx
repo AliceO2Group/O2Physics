@@ -838,8 +838,8 @@ struct HfTrackIndexSkimsCreator {
   Configurable<std::vector<double>> pTBinsDPlusToPiKPi{"pTBinsDPlusToPiKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for D+->piKpi pT-depentend cuts"};
   Configurable<LabeledArray<double>> cutsDPlusToPiKPi{"cutsDPlusToPiKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "D+->piKpi selections per pT bin"};
   // Ds+ cuts
-  Configurable<std::vector<double>> pTBinsDsToPiKK{"pTBinsDsToPiKK", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Ds+->KKpi pT-depentend cuts"};
-  Configurable<LabeledArray<double>> cutsDsToPiKK{"cutsDsToPiKK", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Ds+->KKpi selections per pT bin"};
+  Configurable<std::vector<double>> pTBinsDsToKKPi{"pTBinsDsToKKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Ds+->KKPi pT-depentend cuts"};
+  Configurable<LabeledArray<double>> cutsDsToKKPi{"cutsDsToKKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Ds+->KKPi selections per pT bin"};
   // Lc+ cuts
   Configurable<std::vector<double>> pTBinsLcToPKPi{"pTBinsLcToPKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Lc->pKpi pT-depentend cuts"};
   Configurable<LabeledArray<double>> cutsLcToPKPi{"cutsLcToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Lc->pKpi selections per pT bin"};
@@ -881,7 +881,7 @@ struct HfTrackIndexSkimsCreator {
      {"hNCand3ProngVsNTracks", "3-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2F, {{2500, 0., 25000.}, {5000, 0., 500000.}}}},
      {"hMassDPlusToPiKPi", "D^{#plus} candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      {"hMassLcToPKPi", "#Lambda_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hMassDsToPiKK", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassDsToKKPi", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      {"hMassXicToPKPi", "#Xi_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
   static const int n2ProngDecays = hf_cand_prong2::DecayType::N2ProngDecays; // number of 2-prong hadron types
@@ -915,7 +915,7 @@ struct HfTrackIndexSkimsCreator {
     arrMass3Prong[hf_cand_prong3::DecayType::LcToPKPi] = array{array{massProton, massK, massPi},
                                                                array{massPi, massK, massProton}};
 
-    arrMass3Prong[hf_cand_prong3::DecayType::DsToPiKK] = array{array{massK, massK, massPi},
+    arrMass3Prong[hf_cand_prong3::DecayType::DsToKKPi] = array{array{massK, massK, massPi},
                                                                array{massPi, massK, massK}};
 
     arrMass3Prong[hf_cand_prong3::DecayType::XicToPKPi] = array{array{massProton, massK, massPi},
@@ -925,8 +925,8 @@ struct HfTrackIndexSkimsCreator {
     cut2Prong = {cutsD0ToPiK, cutsJpsiToEE, cutsJpsiToMuMu};
     pTBins2Prong = {pTBinsD0ToPiK, pTBinsJpsiToEE, pTBinsJpsiToMuMu};
     // cuts for 3-prong decays retrieved by json. the order must be then one in hf_cand_prong3::DecayType
-    cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToPiKK, cutsXicToPKPi};
-    pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToPiKK, pTBinsXicToPKPi};
+    cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToKKPi, cutsXicToPKPi};
+    pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToKKPi, pTBinsXicToPKPi};
 
     // needed for PV refitting
     if (doPvRefit) {
@@ -1836,8 +1836,8 @@ struct HfTrackIndexSkimsCreator {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
                         registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
@@ -1850,8 +1850,8 @@ struct HfTrackIndexSkimsCreator {
                   if (whichHypo3Prong[iDecay3P] >= 2) {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
@@ -2039,8 +2039,8 @@ struct HfTrackIndexSkimsCreator {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
                         registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
@@ -2053,8 +2053,8 @@ struct HfTrackIndexSkimsCreator {
                   if (whichHypo3Prong[iDecay3P] >= 2) {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
