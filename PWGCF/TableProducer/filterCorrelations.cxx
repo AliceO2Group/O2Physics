@@ -50,6 +50,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles")
   O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles")
+  O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -79,7 +80,9 @@ struct FilterCF {
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    LOGF(info, "processData: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | Multiplicity: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.multiplicity());
+    if (cfgVerbosity > 0) {
+      LOGF(info, "processData: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | Multiplicity: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.multiplicity());
+    }
 
     if (!keepCollision(collision)) {
       return;
@@ -106,7 +109,9 @@ struct FilterCF {
 
   void processMC1(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks)
   {
-    LOGF(info, "processMC1: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", tracks.size(), collision.posZ(), collision.flags(), collision.sel7());
+    if (cfgVerbosity > 0) {
+      LOGF(info, "processMC1: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", tracks.size(), collision.posZ(), collision.flags(), collision.sel7());
+    }
 
     if (!keepCollision(collision)) {
       return;
@@ -136,7 +141,9 @@ struct FilterCF {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   void processMC2(aod::McCollision const& mcCollision, aod::McParticles const& particles, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks)
   {
-    LOGF(info, "processMC2: Particles for MC collision: %d | Vertex: %.1f", particles.size(), mcCollision.posZ());
+    if (cfgVerbosity > 0) {
+      LOGF(info, "processMC2: Particles for MC collision: %d | Vertex: %.1f", particles.size(), mcCollision.posZ());
+    }
 
     bool* reconstructed = new bool[particles.size()];
     for (int i = 0; i < particles.size(); i++) {
@@ -144,7 +151,9 @@ struct FilterCF {
     }
     for (auto& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      LOGF(info, "  Reconstructed collision at vtx-z = %f which has %d tracks", collision.posZ(), groupedTracks.size());
+      if (cfgVerbosity > 0) {
+        LOGF(info, "  Reconstructed collision at vtx-z = %f which has %d tracks", collision.posZ(), groupedTracks.size());
+      }
 
       for (auto& track : groupedTracks) {
         if (track.has_mcParticle()) {
@@ -185,7 +194,9 @@ struct FilterCF {
                  soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const&)
   {
-    LOGF(info, "processMC: Particles for MC collision: %d | Vertex: %.1f", particles.size(), mcCollision.posZ());
+    if (cfgVerbosity > 0) {
+      LOGF(info, "processMC: Particles for MC collision: %d | Vertex: %.1f", particles.size(), mcCollision.posZ());
+    }
 
     bool* reconstructed = new bool[particles.size()];
     int* mcParticleLabels = new int[particles.size()];
@@ -197,7 +208,9 @@ struct FilterCF {
     // PASS 1 on collisions: check which particles are kept
     for (auto& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      LOGF(info, "processMC:   Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
+      if (cfgVerbosity > 0) {
+        LOGF(info, "processMC:   Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
+      }
 
       if (!keepCollision(collision)) {
         continue;
@@ -244,7 +257,9 @@ struct FilterCF {
     // PASS 2 on collisions: store collisions and tracks
     for (auto& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      LOGF(info, "processMC:   Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
+      if (cfgVerbosity > 0) {
+        LOGF(info, "processMC:   Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
+      }
 
       if (!keepCollision(collision)) {
         continue;
