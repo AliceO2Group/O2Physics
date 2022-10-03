@@ -12,7 +12,7 @@
 #include <regex>
 #include <TObjArray.h>
 
-#include "Framework/Logger.h"
+#include <fairlogger/Logger.h>
 #include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
 
 using namespace o2;
@@ -32,14 +32,14 @@ CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick(const char* n
   CutBrick<TValueToFilter>* thebrick = nullptr;
 
   bool found = false;
-  for (auto bname : allowed) {
+  for (auto& bname : allowed) {
     if (TString(regex).BeginsWith(bname)) {
       found = true;
       break;
     }
   }
   if (not found) {
-    ::Fatal("CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick", "Wrong RE: %s, trying to construct a not allowed basic cut brick", regex);
+    LOGF(fatal, "CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick", "Wrong RE: %s, trying to construct a not allowed basic cut brick", regex);
   }
   TString brickregex = TString(name) + "{" + TString(regex) + "}";
 

@@ -12,7 +12,7 @@
 #include <boost/regex.hpp>
 #include <TObjArray.h>
 
-#include "Framework/Logger.h"
+#include <fairlogger/Logger.h>
 #include "TrackSelectionFilterAndAnalysis.h"
 
 using namespace o2;
@@ -279,7 +279,7 @@ void TrackSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
 
   bool res = regex_search(in, m, cutregex);
   if (not res or m.empty() or (m.size() > 3)) {
-    Fatal("TrackSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE: %s, try tracksel{ttype{FB32,FB96};ncls{th{70}},nxr{cwv{th{70},th{80}}}} for instance", cutstr.Data());
+    LOGF(fatal, "TrackSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE: %s, try tracksel{ttype{FB32,FB96};ncls{th{70}},nxr{cwv{th{70},th{80}}}} for instance", cutstr.Data());
   }
   SetName("TrackSelectionFilterAndAnalysisCuts");
   SetTitle(cutstr.Data());

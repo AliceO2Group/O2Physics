@@ -17,7 +17,7 @@
 #include <TNamed.h>
 #include <TList.h>
 
-#include "Framework/Logger.h"
+#include <fairlogger/Logger.h>
 #include "SkimmingConfigurableCuts.h"
 #include "SelectionFilterAndAnalysis.h"
 
