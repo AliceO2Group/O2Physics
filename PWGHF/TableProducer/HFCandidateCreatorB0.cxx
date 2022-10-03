@@ -15,12 +15,13 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
+#include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
@@ -31,14 +32,6 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_b0; // from HFSecondaryVertex.h
 using namespace o2::framework::expressions;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 /// Reconstruction of B0 candidates
 struct HFCandidateCreatorB0 {

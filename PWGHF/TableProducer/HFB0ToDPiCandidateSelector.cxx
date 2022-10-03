@@ -19,7 +19,6 @@
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;

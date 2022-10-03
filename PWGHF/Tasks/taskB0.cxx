@@ -14,12 +14,13 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/Core/HFSelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -30,14 +31,6 @@ using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_b0;            // from HFSecondaryVertex.h
 using namespace o2::analysis::hf_cuts_b0_todpi; // from HFSelectorCuts.h
 using namespace o2::framework::expressions;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 /// B0 analysis task
 struct HfTaskB0 {
