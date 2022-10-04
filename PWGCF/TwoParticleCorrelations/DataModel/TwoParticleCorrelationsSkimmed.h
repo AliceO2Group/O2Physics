@@ -86,7 +86,7 @@ DECLARE_SOA_INDEX_COLUMN(CFMCParticle, mcparticle);
 DECLARE_SOA_TABLE(CFMCCollisionLbls, "AOD", "CFMCCOLLISONLBL",
                   cfskim::CFMCCollisionId,
                   mccollisionlabel::McMask);
-DECLARE_SOA_TABLE(CFMCTrakLabels, "AOD", "CFMCTRACKLABEL",
+DECLARE_SOA_TABLE(CFMCTrackLabels, "AOD", "CFMCTRACKLABEL",
                   cfskim::CFMCParticleId,
                   mctracklabel::McMask);
 } // namespace aod
