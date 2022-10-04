@@ -176,6 +176,9 @@ struct tofSpectra {
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocessRun2 == true && doprocessRun2 == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
     if (doprocessFullEl == true && doprocessTinyEl == true) {
       LOGF(fatal, "Cannot enable processFullEl and processTinyEl at the same time. Please choose one.");
     }
