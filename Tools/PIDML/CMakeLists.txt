@@ -21,6 +21,12 @@ o2physics_add_dpl_workflow(simple-apply-pid-onnx-model
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(simple-apply-pid-onnx-interface
+                           SOURCES simpleApplyPidOnnxInterface.cxx
+                           JOB_POOL analysis
+                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(qa-pid
                   SOURCES qaPid.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

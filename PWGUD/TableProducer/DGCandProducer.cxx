@@ -132,6 +132,7 @@ struct DGCandProducer {
                       track.trdChi2(),
                       track.tofChi2(),
                       track.tpcSignal(),
+                      track.tofSignal(),
                       track.trdSignal(),
                       track.length(),
                       track.tofExpMom(),
@@ -230,8 +231,7 @@ struct DGCandProducer {
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), netCharge(tracks),
-                       rPVtrwTOF(tracks, collision.numContrib()),
-                       0., 0., 0., 0., 0);
+                       rPVtrwTOF(tracks, collision.numContrib()));
 
       // update DGTracks tables
       for (auto& track : tracks) {
@@ -314,8 +314,7 @@ struct DGCandProducer {
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          collision.posX(), collision.posY(), collision.posZ(),
                          collision.numContrib(), netCharge(tracks),
-                         rPVtrwTOF(collisionTracks, collision.numContrib()),
-                         0., 0., 0., 0., 0);
+                         rPVtrwTOF(collisionTracks, collision.numContrib()));
 
         // UDTracks, UDTrackCollisionID, UDTracksExtras, UDMcTrackLabels
         for (auto& track : collisionTracks) {

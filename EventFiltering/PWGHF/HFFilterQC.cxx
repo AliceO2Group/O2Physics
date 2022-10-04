@@ -36,10 +36,15 @@ namespace
 {
 
 enum HfTriggers {
-  kHighPt = 0,
-  kBeauty,
-  kFemto,
-  kDoubleCharm,
+  kHighPt2P = 0,
+  kHighPt3P,
+  kBeauty3P,
+  kBeauty4P,
+  kFemto2P,
+  kFemto3P,
+  kDoubleCharm2P,
+  kDoubleCharm3P,
+  kDoubleCharmMix,
   kNtriggersHF
 };
 
@@ -128,12 +133,17 @@ struct HfFilterQc { // Main struct for HF trigger QC
   void process(HfFilter const& filterDecision,
                McParticles const& particlesMC)
   {
-    bool hasHighPt = filterDecision.hasHfHighPt();
-    bool hasBeauty = filterDecision.hasHfBeauty();
-    bool hasFemto = filterDecision.hasHfFemto();
-    bool hasDoubleCharm = filterDecision.hasHfDoubleCharm();
-    bool isTriggered = hasHighPt || hasBeauty || hasFemto || hasDoubleCharm;
-    auto triggerDecision = std::array{isTriggered, hasHighPt, hasBeauty, hasFemto, hasDoubleCharm};
+    bool hasHighPt2P = filterDecision.hasHfHighPt2P();
+    bool hasHighPt3P = filterDecision.hasHfHighPt3P();
+    bool hasBeauty3P = filterDecision.hasHfBeauty3P();
+    bool hasBeauty4P = filterDecision.hasHfBeauty4P();
+    bool hasFemto2P = filterDecision.hasHfFemto2P();
+    bool hasFemto3P = filterDecision.hasHfFemto3P();
+    bool hasDoubleCharm2P = filterDecision.hasHfDoubleCharm2P();
+    bool hasDoubleCharm3P = filterDecision.hasHfDoubleCharm3P();
+    bool hasDoubleCharmMix = filterDecision.hasHfDoubleCharmMix();
+    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix;
+    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix};
 
     std::array<int, kNParticles> nPart{0};
     // Loop over the MC particles

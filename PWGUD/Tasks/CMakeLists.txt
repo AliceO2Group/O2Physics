@@ -43,8 +43,3 @@ o2physics_add_dpl_workflow(upccand-analyzer
                            SOURCES UPCCandidateAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(upc-track-skimmer-qa
-                           SOURCES UPCTrackSkimmerQA.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
-                           COMPONENT_NAME Analysis)
