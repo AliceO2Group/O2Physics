@@ -261,8 +261,8 @@ class CutBrickRange : public CutBrick<TValueToFilter>
   void ConstructCutFromString(const TString&);
 
  protected:
-  TValueToFilter mLow;  ///< the lower value of the range
-  TValueToFilter mUp;   ///< the upper value of the range
+  TValueToFilter mLow; ///< the lower value of the range
+  TValueToFilter mUp;  ///< the upper value of the range
  private:
   ClassDef(CutBrickRange, 1);
 };
@@ -335,8 +335,8 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
   void ConstructCutFromString(const TString&);
 
  protected:
-  TValueToFilter mLow;  ///< the lower value of the range
-  TValueToFilter mUp;   ///< the upper value of the range
+  TValueToFilter mLow; ///< the lower value of the range
+  TValueToFilter mUp;  ///< the upper value of the range
  private:
   ClassDef(CutBrickExtToRange, 1);
 };
