@@ -55,7 +55,6 @@ struct tofSpectra {
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Multiplicity"};
   ConfigurableAxis binsMultPercentile{"binsMultPercentile", {100, 0, 100}, "Multiplicity percentile"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1"};
-  Configurable<bool> isRun2{"isRun2", false, "Flag to process Run 2 data"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -177,6 +176,9 @@ struct tofSpectra {
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocessRun2 == true && doprocessRun2 == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
     if (doprocessFullEl == true && doprocessTinyEl == true) {
       LOGF(fatal, "Cannot enable processFullEl and processTinyEl at the same time. Please choose one.");
     }
@@ -491,13 +493,13 @@ struct tofSpectra {
     }
   }
 
-  template <bool fillHistograms, typename CollisionType>
+  template <bool fillHistograms, bool fillMultiplicity, typename CollisionType>
   bool isEventSelected(CollisionType const& collision)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1);
     }
-    if (isRun2 && !collision.sel7()) {
+    if (doprocessRun2 && !collision.sel7()) {
       return false;
 
     } else if (!collision.sel8()) {
@@ -513,15 +515,17 @@ struct tofSpectra {
       histos.fill(HIST("evsel"), 3);
       histos.fill(HIST("event/vertexz"), collision.posZ());
 
-      // histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A() + collision.multZeqFV0C());
-      histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A());
-      histos.fill(HIST("Mult/FT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
-      histos.fill(HIST("Mult/FDDM"), collision.multZeqFDDA() + collision.multZeqFDDC());
+      if constexpr (fillMultiplicity) {
+        // histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A() + collision.multZeqFV0C());
+        histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A());
+        histos.fill(HIST("Mult/FT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
+        histos.fill(HIST("Mult/FDDM"), collision.multZeqFDDA() + collision.multZeqFDDC());
 
-      histos.fill(HIST("Mult/Tracklets"), collision.multTracklets());
-      histos.fill(HIST("Mult/TPC"), collision.multTPC());
-      histos.fill(HIST("Mult/NTracksPV"), collision.multZeqNTracksPV());
-      histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
+        histos.fill(HIST("Mult/Tracklets"), collision.multTracklets());
+        histos.fill(HIST("Mult/TPC"), collision.multTPC());
+        histos.fill(HIST("Mult/NTracksPV"), collision.multZeqNTracksPV());
+        histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
+      }
     }
     return true;
   }
@@ -590,14 +594,15 @@ struct tofSpectra {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
+  using CollisionCandidateRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using CollisionCandidate = soa::Join<CollisionCandidateRun2, aod::MultZeqs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
-  void process(CollisionCandidate::iterator const& collision,
-               TrackCandidates const& tracks)
+  void processRun3(CollisionCandidate::iterator const& collision,
+                   TrackCandidates const& tracks)
   {
-    if (!isEventSelected<true>(collision)) {
+    if (!isEventSelected<true, true>(collision)) {
       return;
     }
     for (const auto& track : tracks) {
@@ -616,6 +621,21 @@ struct tofSpectra {
       // }
     }
   } // end of the process function
+  PROCESS_SWITCH(tofSpectra, processRun3, "Standard process function for the Run3 data", true);
+
+  void processRun2(CollisionCandidateRun2::iterator const& collision,
+                   TrackCandidates const& tracks)
+  {
+    if (!isEventSelected<true, false>(collision)) {
+      return;
+    }
+    for (const auto& track : tracks) {
+      if (!isTrackSelected<true>(track)) {
+        continue;
+      }
+    }
+  } // end of the process function
+  PROCESS_SWITCH(tofSpectra, processRun2, "Standard process function for the Run2 data", false);
 
 // Full tables
 #define makeProcessFunction(inputPid, particleId)                                \
@@ -624,7 +644,7 @@ struct tofSpectra {
                                        aod::pidTOFFull##inputPid,                \
                                        aod::pidTPCFull##inputPid> const& tracks) \
   {                                                                              \
-    if (!isEventSelected<false>(collision)) {                                    \
+    if (!isEventSelected<false, false>(collision)) {                             \
       return;                                                                    \
     }                                                                            \
     for (const auto& track : tracks) {                                           \
@@ -654,7 +674,7 @@ struct tofSpectra {
                                        aod::pidTOF##inputPid,                \
                                        aod::pidTPC##inputPid> const& tracks) \
   {                                                                          \
-    if (!isEventSelected<false>(collision)) {                                \
+    if (!isEventSelected<false, false>(collision)) {                         \
       return;                                                                \
     }                                                                        \
     for (const auto& track : tracks) {                                       \
