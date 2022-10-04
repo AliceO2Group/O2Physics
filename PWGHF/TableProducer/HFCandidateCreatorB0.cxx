@@ -329,7 +329,7 @@ struct HFCandidateCreatorB0MC {
       // Printf("Checking B0 → D- π+");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kB0, array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
-        // B0 → D- π+
+        // D- → π- K+ π-
         // Printf("Checking D- → π- K+ π-");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD, pdg::Code::kDMinus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {

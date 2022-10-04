@@ -69,7 +69,7 @@ struct HfTaskB0 {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
@@ -170,7 +170,7 @@ struct HfTaskB0MC {
                  soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
     // MC rec
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
@@ -225,7 +225,7 @@ struct HfTaskB0MC {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (auto const& particle : particlesMC) {
       if (TESTBIT(std::abs(particle.flagMCMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
