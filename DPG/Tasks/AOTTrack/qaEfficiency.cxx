@@ -79,14 +79,14 @@ struct QaEfficiency {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   static constexpr int nHistograms = nSpecies * 2;
   // Pt
-  // static constexpr std::string_view hPt_ITS_TPC[nHistograms] = {"MC/el/pos/pt/its_tpc", "MC/mu/pos/pt/its_tpc", "MC/pi/pos/pt/its_tpc",
-  //                                                               "MC/ka/pos/pt/its_tpc", "MC/pr/pos/pt/its_tpc", "MC/de/pos/pt/its_tpc",
-  //                                                               "MC/tr/pos/pt/its_tpc", "MC/he/pos/pt/its_tpc", "MC/al/pos/pt/its_tpc",
-  //                                                               "MC/all/pos/pt/its_tpc",
-  //                                                               "MC/el/neg/pt/its_tpc", "MC/mu/neg/pt/its_tpc", "MC/pi/neg/pt/its_tpc",
-  //                                                               "MC/ka/neg/pt/its_tpc", "MC/pr/neg/pt/its_tpc", "MC/de/neg/pt/its_tpc",
-  //                                                               "MC/tr/neg/pt/its_tpc", "MC/he/neg/pt/its_tpc", "MC/al/neg/pt/its_tpc",
-  //                                                               "MC/all/neg/pt/its_tpc"};
+  static constexpr std::string_view hPt_ITS_TPC[nHistograms] = {"MC/el/pos/pt/its_tpc", "MC/mu/pos/pt/its_tpc", "MC/pi/pos/pt/its_tpc",
+                                                                "MC/ka/pos/pt/its_tpc", "MC/pr/pos/pt/its_tpc", "MC/de/pos/pt/its_tpc",
+                                                                "MC/tr/pos/pt/its_tpc", "MC/he/pos/pt/its_tpc", "MC/al/pos/pt/its_tpc",
+                                                                "MC/all/pos/pt/its_tpc",
+                                                                "MC/el/neg/pt/its_tpc", "MC/mu/neg/pt/its_tpc", "MC/pi/neg/pt/its_tpc",
+                                                                "MC/ka/neg/pt/its_tpc", "MC/pr/neg/pt/its_tpc", "MC/de/neg/pt/its_tpc",
+                                                                "MC/tr/neg/pt/its_tpc", "MC/he/neg/pt/its_tpc", "MC/al/neg/pt/its_tpc",
+                                                                "MC/all/neg/pt/its_tpc"};
   static constexpr std::string_view hPtNumTrk[nHistograms] = {"MC/el/pos/pt/numtrk", "MC/mu/pos/pt/numtrk", "MC/pi/pos/pt/numtrk",
                                                               "MC/ka/pos/pt/numtrk", "MC/pr/pos/pt/numtrk", "MC/de/pos/pt/numtrk",
                                                               "MC/tr/pos/pt/numtrk", "MC/he/pos/pt/numtrk", "MC/al/pos/pt/numtrk",
@@ -472,7 +472,7 @@ struct QaEfficiency {
       makeHistogramsPerCharge(1);
     }
 
-    if (makeEff && doSumPDG) {
+    if (makeEff) {
       LOG(debug) << "Making TEfficiency for MC";
       TList* subList = new TList();
       subList->SetName(partName);
@@ -684,14 +684,14 @@ struct QaEfficiency {
           listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
         }
       };
-      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/sum/eta/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/sum/phi/its_tpc_tof"));
+      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/pos/eta/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"));
 
-      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta", Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/eta/its_tpc_tof"));
-      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi", Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/phi/its_tpc_tof"));
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta", Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/eta/its_tpc_tof"));
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi", Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/phi/its_tpc_tof"));
     }
   }
 
@@ -1245,79 +1245,57 @@ struct QaEfficiency {
       histos.fill(HIST("Data/trackLength"), track.length());
 
       if (passedITSCuts) {
-        histos.fill(HIST("Data/sum/pt/its"), track.pt());
-        histos.fill(HIST("Data/sum/eta/its"), track.eta());
-        histos.fill(HIST("Data/sum/phi/its"), track.phi());
-        histos.fill(HIST("Data/sum/etaphi/its"), track.eta(), track.phi());
-      }
-      if (passedTPCCuts) {
-        histos.fill(HIST("Data/sum/pt/tpc"), track.pt());
-        histos.fill(HIST("Data/sum/eta/tpc"), track.eta());
-        histos.fill(HIST("Data/sum/phi/tpc"), track.phi());
-        histos.fill(HIST("Data/sum/etaphi/tpc"), track.eta(), track.phi());
-      }
-      if (passedITSCuts && passedTPCCuts) {
-        histos.fill(HIST("Data/sum/pt/its_tpc"), track.pt());
-        histos.fill(HIST("Data/sum/eta/its_tpc"), track.eta());
-        histos.fill(HIST("Data/sum/phi/its_tpc"), track.phi());
-        histos.fill(HIST("Data/sum/etaphi/its_tpc"), track.eta(), track.phi());
-      }
-      if (passedITSCuts && passedTPCCuts && track.hasTOF()) {
-        histos.fill(HIST("Data/sum/pt/its_tpc_tof"), track.pt());
-        histos.fill(HIST("Data/sum/eta/its_tpc_tof"), track.eta());
-        histos.fill(HIST("Data/sum/phi/its_tpc_tof"), track.phi());
-        histos.fill(HIST("Data/sum/etaphi/its_tpc_tof"), track.eta(), track.phi());
-      }
-
-      if (track.sign() > 0) {
-        if (passedITSCuts) {
+        if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its"), track.pt());
           histos.fill(HIST("Data/pos/eta/its"), track.eta());
           histos.fill(HIST("Data/pos/phi/its"), track.phi());
           histos.fill(HIST("Data/pos/etaphi/its"), track.eta(), track.phi());
-        }
-        if (passedTPCCuts) {
-          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
-        }
-        if (passedITSCuts && passedTPCCuts) {
-          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
-        }
-        if (track.hasITS() && passedTPCCuts && track.hasTOF()) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
-        }
-      } else {
-        if (passedITSCuts) {
+        } else {
           histos.fill(HIST("Data/neg/pt/its"), track.pt());
           histos.fill(HIST("Data/neg/eta/its"), track.eta());
           histos.fill(HIST("Data/neg/phi/its"), track.phi());
           histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
         }
-        if (passedTPCCuts) {
+      }
+      if (passedTPCCuts) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
+          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
+          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
+        } else {
           histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
           histos.fill(HIST("Data/neg/eta/tpc"), track.eta());
           histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
           histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
         }
+
         if (passedITSCuts && passedTPCCuts) {
-          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+          if (track.sign() > 0) {
+            histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+            histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
+            histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
+            histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+          } else {
+            histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+            histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
+            histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
+            histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+          }
         }
-        if (passedITSCuts && passedTPCCuts && track.hasTOF()) {
-          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
+
+        if (track.hasITS() && passedTPCCuts && track.hasTOF()) {
+          if (track.sign() > 0) {
+            histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+            histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
+            histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
+            histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+          } else {
+            histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
+            histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
+            histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
+            histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
+          }
         }
       }
 
