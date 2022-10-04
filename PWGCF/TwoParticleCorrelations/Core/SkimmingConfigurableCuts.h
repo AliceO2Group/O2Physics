@@ -17,11 +17,13 @@
 #include <TNamed.h>
 #include <TMath.h>
 #include <TList.h>
+#include <TF1.h>
 #include <set>
 #include <vector>
 #include <regex>
 #include <TObjArray.h>
 
+#include <fairlogger/Logger.h>
 #include "Framework/DataTypes.h"
 
 namespace o2
@@ -68,6 +70,12 @@ class CutBrick : public TNamed
 
   /// Set the status of the cut significative (or not) for the selection chain
   void Arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
+  /// Setting the value of independent variable for cuts with function levels
+  /// The default behavior is to raise a fatal exception
+  virtual void setIndependentFnVar(float)
+  {
+    LOGF(fatal, "CutBrick::setIndependentFnVar(). The brick you are using %s does not accept setting the independent variable value");
+  }
 
  protected:
   /// \enum BrickStatus
@@ -110,8 +118,54 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
  private:
   void ConstructCutFromString(const TString&);
 
+ protected:
   TValueToFilter mLimit; ///< the limiting upper value
+ private:
   ClassDef(CutBrickLimit, 1);
+};
+
+/// \brief Filter the passed value to update the brick status accordingly
+/// \param value The value to filter
+/// \return true if the value passed the cut false otherwise
+template <typename TValueToFilter>
+inline std::vector<bool> CutBrickLimit<TValueToFilter>::Filter(const TValueToFilter& value)
+{
+  std::vector<bool> res;
+  if (value < mLimit) {
+    this->mState = this->kACTIVE;
+    res.push_back(true);
+  } else {
+    this->mState = this->kPASSIVE;
+    res.push_back(false);
+  }
+  return res;
+}
+
+/// \class CutBrickFnLimit
+/// \brief Class which implements a function based limiting cut brick.
+/// The brick will be active if the filtered value is below the limit
+template <typename TValueToFilter>
+class CutBrickFnLimit : public CutBrickLimit<TValueToFilter>
+{
+ public:
+  CutBrickFnLimit();
+  CutBrickFnLimit(const char*, const TF1&);
+  CutBrickFnLimit(const TString&);
+  virtual ~CutBrickFnLimit() override = default;
+  CutBrickFnLimit(const CutBrickFnLimit&) = delete;
+  CutBrickFnLimit& operator=(const CutBrickFnLimit&) = delete;
+
+  /// sets the value of the limit according the passed variable value
+  virtual void setIndependentFnVar(float x) override
+  {
+    this->mLimit = TValueToFilter(mFunction.Eval(x));
+  }
+
+ private:
+  void ConstructCutFromString(const TString&);
+
+  TF1 mFunction; ///< the function for evaluating the limit value
+  ClassDef(CutBrickFnLimit, 1);
 };
 
 /// \class CutBrickThreshold
@@ -135,8 +189,54 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
  private:
   void ConstructCutFromString(const TString&);
 
+ protected:
   TValueToFilter mThreshold; ///< the threshold value
+ private:
   ClassDef(CutBrickThreshold, 1);
+};
+
+/// \brief Filter the passed value to update the brick status accordingly
+/// \param value The value to filter
+/// \return true if the value passed the cut false otherwise
+template <typename TValueToFilter>
+inline std::vector<bool> CutBrickThreshold<TValueToFilter>::Filter(const TValueToFilter& value)
+{
+  std::vector<bool> res;
+  if (mThreshold < value) {
+    this->mState = this->kACTIVE;
+    res.push_back(true);
+  } else {
+    this->mState = this->kPASSIVE;
+    res.push_back(false);
+  }
+  return res;
+}
+
+/// \class CutBrickFnThreshold
+/// \brief Class which implements a function based threshold cut brick.
+/// The brick will be active if the filtered value is above the threshold
+template <typename TValueToFilter>
+class CutBrickFnThreshold : public CutBrickThreshold<TValueToFilter>
+{
+ public:
+  CutBrickFnThreshold();
+  CutBrickFnThreshold(const char*, const TF1&);
+  CutBrickFnThreshold(const TString&);
+  virtual ~CutBrickFnThreshold() override = default;
+  CutBrickFnThreshold(const CutBrickFnThreshold&) = delete;
+  CutBrickFnThreshold& operator=(const CutBrickFnThreshold&) = delete;
+
+  /// sets the value of the threshold according the passed variable value
+  virtual void setIndependentFnVar(float x) override
+  {
+    this->mThreshold = TValueToFilter(mFunction.Eval(x));
+  }
+
+ private:
+  void ConstructCutFromString(const TString&);
+
+  TF1 mFunction; ///< the function for evaluate the threshold value
+  ClassDef(CutBrickFnThreshold, 1);
 };
 
 /// \class CutBrickRange
@@ -160,9 +260,57 @@ class CutBrickRange : public CutBrick<TValueToFilter>
  private:
   void ConstructCutFromString(const TString&);
 
+ protected:
   TValueToFilter mLow;  ///< the lower value of the range
-  TValueToFilter mHigh; ///< the upper value of the range
+  TValueToFilter mUp;   ///< the upper value of the range
+ private:
   ClassDef(CutBrickRange, 1);
+};
+
+/// \brief Filter the passed value to update the brick status accordingly
+/// \param value The value to filter
+/// \return true if the value passed the cut false otherwise
+template <typename TValueToFilter>
+std::vector<bool> CutBrickRange<TValueToFilter>::Filter(const TValueToFilter& value)
+{
+  std::vector<bool> res;
+  if ((mLow < value) and (value < mUp)) {
+    this->mState = this->kACTIVE;
+    res.push_back(true);
+  } else {
+    this->mState = this->kPASSIVE;
+    res.push_back(false);
+  }
+  return res;
+}
+
+/// \class CutBrickFnRange
+/// \brief Class which implements a function based range cut brick.
+/// The brick will be active if the filtered value is within the range
+template <typename TValueToFilter>
+class CutBrickFnRange : public CutBrickRange<TValueToFilter>
+{
+ public:
+  CutBrickFnRange();
+  CutBrickFnRange(const char*, const TF1&, const TF1&);
+  CutBrickFnRange(const TString&);
+  virtual ~CutBrickFnRange() override = default;
+  CutBrickFnRange(const CutBrickFnRange&) = delete;
+  CutBrickFnRange& operator=(const CutBrickFnRange&) = delete;
+
+  /// sets the value of the limits according the passed variable value
+  virtual void setIndependentFnVar(float x) override
+  {
+    this->mLow = TValueToFilter(mLowFunction.Eval(x));
+    this->mUp = TValueToFilter(mUpFunction.Eval(x));
+  }
+
+ private:
+  void ConstructCutFromString(const TString&);
+
+  TF1 mLowFunction; ///< the function for evaluating the low limit value
+  TF1 mUpFunction;  ///< the function for evaluating the upper limit value
+  ClassDef(CutBrickFnRange, 1);
 };
 
 /// \class CutBrickExtToRange
@@ -186,9 +334,57 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
  private:
   void ConstructCutFromString(const TString&);
 
+ protected:
   TValueToFilter mLow;  ///< the lower value of the range
-  TValueToFilter mHigh; ///< the upper value of the range
+  TValueToFilter mUp;   ///< the upper value of the range
+ private:
   ClassDef(CutBrickExtToRange, 1);
+};
+
+/// \brief Filter the passed value to update the brick status accordingly
+/// \param value The value to filter
+/// \return true if the value passed the cut false otherwise
+template <typename TValueToFilter>
+std::vector<bool> CutBrickExtToRange<TValueToFilter>::Filter(const TValueToFilter& value)
+{
+  std::vector<bool> res;
+  if ((value < mLow) or (mUp < value)) {
+    this->mState = this->kACTIVE;
+    res.push_back(true);
+  } else {
+    this->mState = this->kPASSIVE;
+    res.push_back(false);
+  }
+  return res;
+}
+
+/// \class CutBrickExtToRange
+/// \brief Class which implements an external to function base range cut brick.
+/// The brick will be active if the filtered value is outside the range
+template <typename TValueToFilter>
+class CutBrickFnExtToRange : public CutBrickExtToRange<TValueToFilter>
+{
+ public:
+  CutBrickFnExtToRange();
+  CutBrickFnExtToRange(const char*, const TF1&, const TF1&);
+  CutBrickFnExtToRange(const TString&);
+  virtual ~CutBrickFnExtToRange() override = default;
+  CutBrickFnExtToRange(const CutBrickFnExtToRange&) = delete;
+  CutBrickFnExtToRange& operator=(const CutBrickFnExtToRange&) = delete;
+
+  /// sets the value of the limits according the passed variable value
+  virtual void setIndependentFnVar(float x) override
+  {
+    this->mLow = TValueToFilter(mLowFunction.Eval(x));
+    this->mUp = TValueToFilter(mUpFunction.Eval(x));
+  }
+
+ private:
+  void ConstructCutFromString(const TString&);
+
+  TF1 mLowFunction; ///< the function for evaluating the low limit value
+  TF1 mUpFunction;  ///< the function for evaluating the upper limit value
+  ClassDef(CutBrickFnExtToRange, 1);
 };
 
 /// \class CutBrickSelectorMultipleRanges

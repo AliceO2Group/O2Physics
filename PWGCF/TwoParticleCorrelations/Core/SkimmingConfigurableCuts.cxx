@@ -22,7 +22,7 @@ using namespace o2::analysis::PWGCF;
 /// If more are implemented the list must be expanded and the
 /// corresponding brick construction implemented
 template <typename TValueToFilter>
-const char* CutBrick<TValueToFilter>::mgImplementedbricks[] = {"lim", "th", "rg", "xrg", "mrg", "cwv"};
+const char* CutBrick<TValueToFilter>::mgImplementedbricks[] = {"lim", "fnlim", "th", "fnth", "rg", "fnrg", "xrg", "fnxrg", "mrg", "cwv"};
 
 ///////////////////////////////////////////////////////////////////////////////////////
 template <typename TValueToFilter>
@@ -45,12 +45,20 @@ CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick(const char* n
 
   if (TString(regex).BeginsWith("lim")) {
     thebrick = new CutBrickLimit<TValueToFilter>(brickregex);
+  } else if (TString(regex).BeginsWith("fnlim")) {
+    thebrick = new CutBrickFnLimit<TValueToFilter>(brickregex);
   } else if (TString(regex).BeginsWith("th")) {
     thebrick = new CutBrickThreshold<TValueToFilter>(brickregex);
+  } else if (TString(regex).BeginsWith("fnth")) {
+    thebrick = new CutBrickFnThreshold<TValueToFilter>(brickregex);
   } else if (TString(regex).BeginsWith("rg")) {
     thebrick = new CutBrickRange<TValueToFilter>(brickregex);
+  } else if (TString(regex).BeginsWith("fnrg")) {
+    thebrick = new CutBrickFnRange<TValueToFilter>(brickregex);
   } else if (TString(regex).BeginsWith("xrg")) {
     thebrick = new CutBrickExtToRange<TValueToFilter>(brickregex);
+  } else if (TString(regex).BeginsWith("fnxrg")) {
+    thebrick = new CutBrickFnExtToRange<TValueToFilter>(brickregex);
   } else if (TString(regex).BeginsWith("mrg")) {
     thebrick = new CutBrickSelectorMultipleRanges<TValueToFilter>(brickregex);
   } else if (TString(regex).BeginsWith("cwv")) {
@@ -150,26 +158,71 @@ std::vector<bool> CutBrickLimit<TValueToFilter>::IsArmed()
   return res;
 }
 
-/// \brief Filter the passed value to update the brick status accordingly
-/// \param value The value to filter
-/// \return true if the value passed the cut false otherwise
-template <typename TValueToFilter>
-std::vector<bool> CutBrickLimit<TValueToFilter>::Filter(const TValueToFilter& value)
-{
-  std::vector<bool> res;
-  if (value < mLimit) {
-    this->mState = this->kACTIVE;
-    res.push_back(true);
-  } else {
-    this->mState = this->kPASSIVE;
-    res.push_back(false);
-  }
-  return res;
-}
-
 templateClassImp(CutBrickLimit);
 template class o2::analysis::PWGCF::CutBrickLimit<int>;
 template class o2::analysis::PWGCF::CutBrickLimit<float>;
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// Default constructor
+template <typename TValueToFilter>
+CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit()
+  : CutBrickLimit<TValueToFilter>(),
+    mFunction{}
+{
+}
+
+/// Named constructor
+/// \param name The name of the brick
+/// \param fn The function which will provide limit value
+template <typename TValueToFilter>
+CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const char* name, const TF1& fn)
+  : CutBrickLimit<TValueToFilter>(),
+    mFunction(fn)
+{
+  this->SetName(name);
+}
+
+/// \brief Cut string constructor
+/// \param cutstr The cuts string
+template <typename TValueToFilter>
+CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const TString& cutstr)
+  : CutBrickLimit<TValueToFilter>(),
+    mFunction{}
+{
+  ConstructCutFromString(cutstr);
+}
+
+/// \brief Construct the cut from a cut string
+/// \param cutstr The cut string
+/// The cut string should have the structure
+///    name{fnlim{function}}
+/// If the cut string is correctly parsed the cut is correctly built
+/// if not a fatal exception is rised
+template <typename TValueToFilter>
+void CutBrickFnLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+{
+  LOGF(info, "Cut string: %s", cutstr.Data());
+
+  std::regex cutregex("^(\\w+)\\{fnlim\\{([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::string in(cutstr.Data());
+  std::smatch m;
+
+  std::regex_search(in, m, cutregex);
+  if (m.empty() or (m.size() < 3)) {
+    Fatal("CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnlim{2.0*sin(x)/x}} for instance", cutstr.Data());
+  } else {
+    this->SetName(m[1].str().c_str());
+    this->SetTitle(cutstr.Data());
+    mFunction = TF1(m[1].str().c_str(), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    if (not mFunction.IsValid()) {
+      Fatal("CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnlim{2.0*sin(x)/x}} for instance", cutstr.Data());
+    }
+  }
+}
+
+templateClassImp(CutBrickFnLimit);
+template class o2::analysis::PWGCF::CutBrickFnLimit<int>;
+template class o2::analysis::PWGCF::CutBrickFnLimit<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -239,23 +292,6 @@ std::vector<bool> CutBrickThreshold<TValueToFilter>::IsArmed()
   return res;
 }
 
-/// \brief Filter the passed value to update the brick status accordingly
-/// \param value The value to filter
-/// \return true if the value passed the cut false otherwise
-template <typename TValueToFilter>
-std::vector<bool> CutBrickThreshold<TValueToFilter>::Filter(const TValueToFilter& value)
-{
-  std::vector<bool> res;
-  if (mThreshold < value) {
-    this->mState = this->kACTIVE;
-    res.push_back(true);
-  } else {
-    this->mState = this->kPASSIVE;
-    res.push_back(false);
-  }
-  return res;
-}
-
 templateClassImp(CutBrickThreshold);
 template class o2::analysis::PWGCF::CutBrickThreshold<int>;
 template class o2::analysis::PWGCF::CutBrickThreshold<float>;
@@ -263,10 +299,72 @@ template class o2::analysis::PWGCF::CutBrickThreshold<float>;
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
 template <typename TValueToFilter>
+CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold()
+  : CutBrickThreshold<TValueToFilter>(),
+    mFunction{}
+{
+}
+
+/// Named constructor
+/// \param name The name of the brick
+/// \param fn The function which will provide the threshold value
+template <typename TValueToFilter>
+CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const char* name, const TF1& fn)
+  : CutBrickThreshold<TValueToFilter>(),
+    mFunction(fn)
+{
+  this->SetName(name);
+}
+
+/// \brief Cut string constructor
+/// \param cutstr The cuts string
+template <typename TValueToFilter>
+CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const TString& cutstr)
+  : CutBrickThreshold<TValueToFilter>(),
+    mFunction{}
+{
+  ConstructCutFromString(cutstr);
+}
+
+/// \brief Construct the cut from a cut string
+/// \param cutstr The cut string
+/// The cut string should have the structure
+///    name{fnth{function}}
+/// If the cut string is correctly parsed the cut is correctly built
+/// if not a fatal exception is rised
+template <typename TValueToFilter>
+void CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+{
+  LOGF(info, "Cut string: %s", cutstr.Data());
+
+  std::regex cutregex("^(\\w+)\\{fnth\\{([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::string in(cutstr.Data());
+  std::smatch m;
+
+  std::regex_search(in, m, cutregex);
+  if (m.empty() or (m.size() < 3)) {
+    Fatal("CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnth{2.0*sin(x)/x}} for instance", cutstr.Data());
+  } else {
+    this->SetName(m[1].str().c_str());
+    this->SetTitle(cutstr.Data());
+    mFunction = TF1(m[1].str().c_str(), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    if (not mFunction.IsValid()) {
+      Fatal("CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnth{2.0*sin(x)/x}} for instance", cutstr.Data());
+    }
+  }
+}
+
+templateClassImp(CutBrickFnThreshold);
+template class o2::analysis::PWGCF::CutBrickFnThreshold<int>;
+template class o2::analysis::PWGCF::CutBrickFnThreshold<float>;
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// Default constructor
+template <typename TValueToFilter>
 CutBrickRange<TValueToFilter>::CutBrickRange()
   : CutBrick<TValueToFilter>(),
     mLow(0),
-    mHigh(0)
+    mUp(0)
 {
 }
 
@@ -278,7 +376,7 @@ template <typename TValueToFilter>
 CutBrickRange<TValueToFilter>::CutBrickRange(const char* name, const TValueToFilter& low, const TValueToFilter& high)
   : CutBrick<TValueToFilter>(name, TString::Format("%s{rg{%f,%f}}", name, float(low), float(high))),
     mLow(low),
-    mHigh(high)
+    mUp(high)
 {
 }
 
@@ -288,7 +386,7 @@ template <typename TValueToFilter>
 CutBrickRange<TValueToFilter>::CutBrickRange(const TString& cutstr)
   : CutBrick<TValueToFilter>(),
     mLow(0),
-    mHigh(0)
+    mUp(0)
 {
   ConstructCutFromString(cutstr);
 }
@@ -315,7 +413,7 @@ void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
     mLow = TValueToFilter(std::stod(m[2]));
-    mHigh = TValueToFilter(std::stod(m[3]));
+    mUp = TValueToFilter(std::stod(m[3]));
   }
 }
 
@@ -333,23 +431,6 @@ std::vector<bool> CutBrickRange<TValueToFilter>::IsArmed()
   return res;
 }
 
-/// \brief Filter the passed value to update the brick status accordingly
-/// \param value The value to filter
-/// \return true if the value passed the cut false otherwise
-template <typename TValueToFilter>
-std::vector<bool> CutBrickRange<TValueToFilter>::Filter(const TValueToFilter& value)
-{
-  std::vector<bool> res;
-  if ((mLow < value) and (value < mHigh)) {
-    this->mState = this->kACTIVE;
-    res.push_back(true);
-  } else {
-    this->mState = this->kPASSIVE;
-    res.push_back(false);
-  }
-  return res;
-}
-
 templateClassImp(CutBrickRange);
 template class o2::analysis::PWGCF::CutBrickRange<int>;
 template class o2::analysis::PWGCF::CutBrickRange<float>;
@@ -357,10 +438,77 @@ template class o2::analysis::PWGCF::CutBrickRange<float>;
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
 template <typename TValueToFilter>
+CutBrickFnRange<TValueToFilter>::CutBrickFnRange()
+  : CutBrickRange<TValueToFilter>(),
+    mLowFunction{},
+    mUpFunction{}
+{
+}
+
+/// Named constructor
+/// \param name The name of the brick
+/// \param lowfn The function which will provide the low value for the cut range
+/// \param upfn The function which will provide the upper value for the cut range
+template <typename TValueToFilter>
+CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const char* name, const TF1& lowfn, const TF1& upfn)
+  : CutBrickRange<TValueToFilter>(),
+    mLowFunction{lowfn},
+    mUpFunction{upfn}
+{
+  this->SetName(name);
+}
+
+/// \brief Cut string constructor
+/// \param cutstr The cuts string
+template <typename TValueToFilter>
+CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const TString& cutstr)
+  : CutBrickRange<TValueToFilter>(),
+    mLowFunction{},
+    mUpFunction{}
+{
+  ConstructCutFromString(cutstr);
+}
+
+/// \brief Construct the cut from a cut string
+/// \param cutstr The cut string
+/// The cut string should have the structure
+///    name{fnrg{lowfn,highfn}}
+/// If the cut string is correctly parsed the cut is correctly built
+/// if not a fatal exception is rised
+template <typename TValueToFilter>
+void CutBrickFnRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+{
+  LOGF(info, "Cut string: %s", cutstr.Data());
+
+  std::regex cutregex("^(\\w+)\\{fnrg\\{([\\w\\-\\*\\/\\+\\()\\.]+),([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::string in(cutstr.Data());
+  std::smatch m;
+
+  std::regex_search(in, m, cutregex);
+  if (m.empty() or (m.size() < 4)) {
+    Fatal("CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+  } else {
+    this->SetName(m[1].str().c_str());
+    this->SetTitle(cutstr.Data());
+    mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    if (not mLowFunction.IsValid() or not mUpFunction.IsValid()) {
+      Fatal("CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+    }
+  }
+}
+
+templateClassImp(CutBrickFnRange);
+template class o2::analysis::PWGCF::CutBrickFnRange<int>;
+template class o2::analysis::PWGCF::CutBrickFnRange<float>;
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// Default constructor
+template <typename TValueToFilter>
 CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange()
   : CutBrick<TValueToFilter>(),
     mLow(0),
-    mHigh(0)
+    mUp(0)
 {
 }
 
@@ -372,7 +520,7 @@ template <typename TValueToFilter>
 CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const char* name, const TValueToFilter& low, const TValueToFilter& high)
   : CutBrick<TValueToFilter>(name, TString::Format("%s{xrg{%f,%f}}", name, float(low), float(high))),
     mLow(low),
-    mHigh(high)
+    mUp(high)
 {
 }
 
@@ -382,7 +530,7 @@ template <typename TValueToFilter>
 CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const TString& cutstr)
   : CutBrick<TValueToFilter>(),
     mLow(0),
-    mHigh(0)
+    mUp(0)
 {
   ConstructCutFromString(cutstr);
 }
@@ -409,7 +557,7 @@ void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& c
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
     mLow = TValueToFilter(std::stod(m[2]));
-    mHigh = TValueToFilter(std::stod(m[3]));
+    mUp = TValueToFilter(std::stod(m[3]));
   }
 }
 
@@ -427,26 +575,75 @@ std::vector<bool> CutBrickExtToRange<TValueToFilter>::IsArmed()
   return res;
 }
 
-/// \brief Filter the passed value to update the brick status accordingly
-/// \param value The value to filter
-/// \return true if the value passed the cut false otherwise
-template <typename TValueToFilter>
-std::vector<bool> CutBrickExtToRange<TValueToFilter>::Filter(const TValueToFilter& value)
-{
-  std::vector<bool> res;
-  if ((value < mLow) or (mHigh < value)) {
-    this->mState = this->kACTIVE;
-    res.push_back(true);
-  } else {
-    this->mState = this->kPASSIVE;
-    res.push_back(false);
-  }
-  return res;
-}
-
 templateClassImp(CutBrickExtToRange);
 template class o2::analysis::PWGCF::CutBrickExtToRange<int>;
 template class o2::analysis::PWGCF::CutBrickExtToRange<float>;
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// Default constructor
+template <typename TValueToFilter>
+CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange()
+  : CutBrickExtToRange<TValueToFilter>(),
+    mLowFunction{},
+    mUpFunction{}
+{
+}
+
+/// Named constructor
+/// \param name The name of the brick
+/// \param lowfn The function which will provide the low value for the cut excluded range
+/// \param upfn The function which will provide the upper value for the cut excluded range
+template <typename TValueToFilter>
+CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const char* name, const TF1& lowfn, const TF1& upfn)
+  : CutBrickExtToRange<TValueToFilter>(),
+    mLowFunction{lowfn},
+    mUpFunction{upfn}
+{
+}
+
+/// \brief Cut string constructor
+/// \param cutstr The cuts string
+template <typename TValueToFilter>
+CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const TString& cutstr)
+  : CutBrickExtToRange<TValueToFilter>(),
+    mLowFunction{},
+    mUpFunction{}
+{
+  ConstructCutFromString(cutstr);
+}
+
+/// \brief Construct the cut from a cut string
+/// \param cutstr The cut string
+/// The cut string should have the structure
+///    name{fnxrg{low,high}}
+/// If the cut string is correctly parsed the cut is correctly built
+/// if not a fatal exception is rised
+template <typename TValueToFilter>
+void CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+{
+  LOGF(info, "Cut string: %s", cutstr.Data());
+
+  std::regex cutregex("^(\\w+)\\{fnxrg\\{([\\w\\-\\*\\/\\+\\()\\.]+),([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::string in(cutstr.Data());
+  std::smatch m;
+
+  std::regex_search(in, m, cutregex);
+  if (m.empty() or (m.size() < 4)) {
+    Fatal("CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnxrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+  } else {
+    this->SetName(m[1].str().c_str());
+    this->SetTitle(cutstr.Data());
+    mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    if (not mLowFunction.IsValid() or not mUpFunction.IsValid()) {
+      Fatal("CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnxrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+    }
+  }
+}
+
+templateClassImp(CutBrickFnExtToRange);
+template class o2::analysis::PWGCF::CutBrickFnExtToRange<int>;
+template class o2::analysis::PWGCF::CutBrickFnExtToRange<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
