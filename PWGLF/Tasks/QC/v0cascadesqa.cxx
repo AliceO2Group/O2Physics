@@ -59,6 +59,7 @@ struct v0cascadesQA {
 
   // configurable binning of histograms
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
+  ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0CosPA{"binV0CosPA", {200, 0.8f, 1.0f}, ""};
   ConfigurableAxis binV0Radius{"binV0Radius", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0DecayLength{"binV0DecayLength", {100, 0.0f, 10.0f}, ""};
@@ -82,6 +83,7 @@ struct v0cascadesQA {
   ConfigurableAxis binEta{"binEta", {100, -1.0f, 1.0f}, ""};
   ConfigurableAxis binPhi{"binPhi", {(int)TMath::Pi() * 10 / 2, 0.0f, 2. * TMath::Pi()}, ""};
   ConfigurableAxis binRadius{"binRadius", {100, 0.0f, 50.0f}, ""};
+  ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
 
   HistogramRegistry histos_eve{
@@ -141,6 +143,7 @@ struct v0cascadesQA {
   void init(InitContext const&)
   {
     const AxisSpec axisPt{binPt, "p_{T} (GeV/c)"};
+    const AxisSpec axisPtsmall{binPtsmall, "p_{T} (GeV/c)"};
     const AxisSpec axisV0CosPA{binV0CosPA, "V0 Cos(PA)"};
     const AxisSpec axisV0Radius{binV0Radius, "V0 Radius (cm)"};
     const AxisSpec axisV0DecayLength{binV0DecayLength, "V0 Decay Length (cm)"};
@@ -164,6 +167,7 @@ struct v0cascadesQA {
     const AxisSpec axisEta{binEta, "Eta"};
     const AxisSpec axisPhi{binPhi, "Phi"};
     const AxisSpec axisRadius{binRadius, "Radius"};
+    const AxisSpec axisRadiussmall{binRadiussmall, "Radius"};
     const AxisSpec axisITSMapDaughters{binITSMapDaughters, "ITS Map Daughters"};
 
     histos_V0.add("CosPA", "CosPA", kTH1F, {axisV0CosPA});
@@ -201,6 +205,9 @@ struct v0cascadesQA {
     histos_V0.add("InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassK0S});
     histos_V0.add("InvMassLambda_ITSMapDaughters", "InvMassLambda_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassLambda});
     histos_V0.add("InvMassAntiLambda_ITSMapDaughters", "InvMassAntiLambda_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassAntiLambda});
+    histos_V0.add("InvMassK0S_PtRadius", "InvMassK0S_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassK0S});
+    histos_V0.add("InvMassLambda_PtRadius", "InvMassLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassLambda});
+    histos_V0.add("InvMassAntiLambda_PtRadius", "InvMassAntiLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassAntiLambda});
 
     if (isMC) {
       histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100, 0, 10}, {100, 0.f, 50.f}}});
@@ -338,6 +345,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("DecayLengthK0s"), decayLength);
             histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_Radius"), v0.v0radius(), v0.mK0Short());
+            histos_V0.fill(HIST("InvMassK0S_PtRadius"), v0.pt(), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
             histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -349,6 +357,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("CtauLambda"), CtauLambda);
             histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
+            histos_V0.fill(HIST("InvMassLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Ctau"), CtauLambda, v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mLambda());
@@ -365,6 +374,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("CtauAntiLambda"), CtauLambda);
             histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Radius"), v0.v0radius(), v0.mAntiLambda());
+            histos_V0.fill(HIST("InvMassAntiLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Ctau"), CtauLambda, v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
