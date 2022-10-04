@@ -12,7 +12,7 @@
 o2physics_add_dpl_workflow(pid-ml-producer
                            SOURCES pidMLProducer.cxx
                            JOB_POOL analysis
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CommonDataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(simple-apply-pid-onnx-model
