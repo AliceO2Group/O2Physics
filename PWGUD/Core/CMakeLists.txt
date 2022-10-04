@@ -11,7 +11,7 @@
 
 o2physics_add_library(DGPIDSelector
                       SOURCES DGPIDSelector.cxx
-                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EG)
 
 o2physics_target_root_dictionary(DGPIDSelector
                                  HEADERS DGPIDSelector.h
