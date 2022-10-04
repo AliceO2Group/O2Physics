@@ -1,0 +1,59 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+#ifndef O2_ANALYSIS_CALOCLUSTERS_H_
+#define O2_ANALYSIS_CALOCLUSTERS_H_
+
+#include "Framework/AnalysisDataModel.h"
+
+namespace o2::aod
+{
+namespace calocluster
+{
+// Columns to store momenta of "photons"
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_COLUMN(Type, caloType, uint8_t);    //! calo type: 0: PHOS, 1: EMCAL
+DECLARE_SOA_COLUMN(Px, px, float);              //! momenta components
+DECLARE_SOA_COLUMN(Py, py, float);              //!
+DECLARE_SOA_COLUMN(Pz, pz, float);              //!
+DECLARE_SOA_COLUMN(E, e, float);                //!
+
+// Columns to store cluster PID parameters
+DECLARE_SOA_COLUMN(Module, mod, uint8_t);                //! module/supermodule number
+DECLARE_SOA_COLUMN(Ncell, ncell, uint8_t);               //! cluster multiplicity
+DECLARE_SOA_COLUMN(X, x, float);                         //! cluster global coordinates
+DECLARE_SOA_COLUMN(Y, y, float);                         //!
+DECLARE_SOA_COLUMN(Z, z, float);                         //!
+DECLARE_SOA_COLUMN(Time, time, float);                   //! cluster time (seconds)
+DECLARE_SOA_COLUMN(NLM, nlm, uint8_t);                   //! number of local maxima
+DECLARE_SOA_COLUMN(M02, m02, float);                     //! smaller dispersion axis
+DECLARE_SOA_COLUMN(M20, m20, float);                     //! larger dispersion axis
+DECLARE_SOA_COLUMN(TrackDist, trackdist, float);         //! distance to closest track
+DECLARE_SOA_COLUMN(TrackIndex, trackIndex, uint8_t);     //! index of closest track
+DECLARE_SOA_COLUMN(FiredTrigger, firedTrigger, uint8_t); //! Matched with trigger tile
+DECLARE_SOA_COLUMN(DistBad, distBad, float);             //! distance to closest bad channel
+
+} // namespace calocluster
+
+DECLARE_SOA_TABLE(CaloClusters, "AOD", "CALOCLUSTERS", //!
+                  o2::soa::Index<>, calocluster::CollisionId,
+                  calocluster::Type,
+                  calocluster::Px, calocluster::Py, calocluster::Pz, calocluster::E,
+                  calocluster::Module, calocluster::Ncell,
+                  calocluster::X, calocluster::Y, calocluster::Z,
+                  calocluster::Time, calocluster::NLM, calocluster::M02, calocluster::M20,
+                  calocluster::TrackDist, calocluster::TrackIndex, calocluster::FiredTrigger, calocluster::DistBad);
+
+using CaloCluster = CaloClusters::iterator;
+
+} // namespace o2::aod
+
+#endif // O2_ANALYSIS_CALOCLUSTERS_H_
