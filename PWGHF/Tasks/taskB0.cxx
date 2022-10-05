@@ -235,7 +235,7 @@ struct HfTaskB0MC {
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));

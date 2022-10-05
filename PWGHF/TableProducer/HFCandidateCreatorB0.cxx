@@ -88,7 +88,7 @@ struct HFCandidateCreatorB0 {
     df3.setUseAbsDCA(true);
 
     // loop over D candidates
-    for (auto& dCand : dCands) {
+    for (auto const& dCand : dCands) {
       if (!TESTBIT(dCand.hfflag(), hf_cand_prong3::DecayType::DPlusToPiKPi)) {
         continue;
       }

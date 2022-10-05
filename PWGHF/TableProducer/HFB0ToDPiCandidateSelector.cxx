@@ -35,9 +35,6 @@ struct HfB0ToDPiCandidateSelector {
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
 
-  // Track quality
-  Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
-
   // TPC PID
   Configurable<double> pidTPCMinpT{"pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 10., "Upper bound of track pT for TPC PID"};
@@ -129,7 +126,7 @@ struct HfB0ToDPiCandidateSelector {
 
   void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const&, aod::BigTracksPID const&)
   {
-    for (auto& hfCandB0 : hfCandB0s) { // looping over B0 candidates
+    for (auto const& hfCandB0 : hfCandB0s) { // looping over B0 candidates
 
       int statusB0 = 0;
 
