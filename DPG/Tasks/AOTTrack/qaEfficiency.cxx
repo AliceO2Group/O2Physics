@@ -29,7 +29,7 @@
 // ROOT includes
 #include "TPDGCode.h"
 #include "TEfficiency.h"
-#include "TList.h"
+#include "THashList.h"
 
 using namespace o2::framework;
 
@@ -71,8 +71,8 @@ struct QaEfficiency {
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
 
-  OutputObj<TList> listEfficiencyMC{"EfficiencyMC"};
-  OutputObj<TList> listEfficiencyData{"EfficiencyData"};
+  OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
+  OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   static constexpr int nHistograms = nSpecies * 2;
@@ -507,6 +507,76 @@ struct QaEfficiency {
         histos.add(hPtEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
         histos.add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
       }
+
+      if (makeEff) {
+        LOG(debug) << "Making TEfficiency for MC";
+        THashList* subList = new THashList();
+        subList->SetName(Form("%s_%s", chargeIndex == 0 ? "Positive" : "Negative", partName));
+        listEfficiencyMC->Add(subList);
+
+        auto makeEfficiency = [&](TString effname, auto templateHisto) { // 1D efficiencies
+          effname = partName + effname;
+          LOG(debug) << " - " << effname;
+          const auto h = histos.get<TH1>(templateHisto);
+          const TAxis* axis = h->GetXaxis();
+          TString efftitle = h->GetTitle();
+          efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
+          efftitle = Form("%s;%s;Efficiency", efftitle.Data(), axis->GetTitle());
+          if (axis->IsVariableBinSize()) {
+            subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
+          } else {
+            subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+          }
+        };
+
+        makeEfficiency("ITS_vsPt", HIST(hPtIts[histogramIndex]));
+        makeEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]));
+        makeEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Trk", HIST(hPtTrkItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsPt_Str", HIST(hPtItsTpcTofStr[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Mat", HIST(hPtItsTpcMat[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPt_Mat_Trk", HIST(hPtTrkItsTpcMat[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsPt_Mat", HIST(hPtItsTpcTofMat[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsP", HIST(hPItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsP_Trk", HIST(hPTrkItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsP", HIST(hPItsTpcTof[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsEta", HIST(hEtaItsTpc[histogramIndex]));
+        makeEfficiency("ITS-Tpc_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsEta", HIST(hEtaItsTpcTof[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsY", HIST(hYItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsY", HIST(hYItsTpcTof[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPhi", HIST(hPhiItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC_vsPhi_Trk", HIST(hPhiTrkItsTpc[histogramIndex]));
+        makeEfficiency("ITS-TPC-TOF_vsPhi", HIST(hPhiItsTpcTof[histogramIndex]));
+
+        auto makeEfficiency2D = [&](TString effname, auto templateHisto) { // 2D efficiencies
+          effname = partName + effname;
+          LOG(debug) << " - " << effname;
+          const auto h = histos.get<TH2>(templateHisto);
+          const TAxis* axisX = h->GetXaxis();
+          const TAxis* axisY = h->GetYaxis();
+          TString efftitle = h->GetTitle();
+          efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
+          efftitle = Form("%s;%s;%s;Efficiency", efftitle.Data(), axisX->GetTitle(), axisY->GetTitle());
+          if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
+            subList->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
+          } else {
+            subList->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
+          }
+        };
+
+        if (doPtEta) {
+          makeEfficiency2D("ITS-TPC_vsPt_vsEta", HIST(hPtEtaItsTpc[histogramIndex]));
+        }
+      }
     };
 
     if (doPositivePDG) { // Positive
@@ -516,52 +586,6 @@ struct QaEfficiency {
       makeHistogramsPerCharge(1);
     }
 
-    if (makeEff) {
-      LOG(debug) << "Making TEfficiency for MC";
-      TList* subList = new TList();
-      subList->SetName(partName);
-      listEfficiencyMC->Add(subList);
-      auto makeEfficiency = [&](TString effname, auto templateHisto) {
-        effname = partName + effname;
-        LOG(debug) << " - " << effname;
-        const auto h = histos.get<TH1>(templateHisto);
-        const TAxis* axis = h->GetXaxis();
-        TString efftitle = h->GetTitle();
-        efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
-        efftitle = Form("%s;%s;Efficiency", efftitle.Data(), axis->GetTitle());
-        if (axis->IsVariableBinSize()) {
-          subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
-        } else {
-          subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-        }
-      };
-      makeEfficiency("efficiencyVsPt", HIST(hPtItsTpc[id]));
-      makeEfficiency("efficiencyVsPtPrm", HIST(hPtItsTpcPrm[id]));
-      makeEfficiency("efficiencyVsPtDec", HIST(hPtItsTpcStr[id]));
-      makeEfficiency("efficiencyVsPtMat", HIST(hPtItsTpcMat[id]));
-      makeEfficiency("efficiencyVsP", HIST(hPItsTpc[id]));
-      makeEfficiency("efficiencyVsEta", HIST(hEtaItsTpc[id]));
-      makeEfficiency("efficiencyVsPhi", HIST(hPhiItsTpc[id]));
-
-      auto makeEfficiency2D = [&](TString effname, auto templateHisto) {
-        effname = partName + effname;
-        LOG(debug) << " - " << effname;
-        const auto h = histos.get<TH2>(templateHisto);
-        const TAxis* axisX = h->GetXaxis();
-        const TAxis* axisY = h->GetYaxis();
-        TString efftitle = h->GetTitle();
-        efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
-        efftitle = Form("%s;%s;%s;Efficiency", efftitle.Data(), axisX->GetTitle(), axisY->GetTitle());
-        if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
-          subList->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
-        } else {
-          subList->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
-        }
-      };
-      if (doPtEta) {
-        makeEfficiency2D("efficiencyVsPtVsEta", HIST(hPtEtaItsTpc[id]));
-      }
-    }
     LOG(debug) << "Done with particle: " << partName;
   }
 
@@ -601,7 +625,7 @@ struct QaEfficiency {
 
     histos.add("MC/trackLength", "Track length;Track length (cm)", kTH1F, {{2000, -1000, 1000}});
 
-    listEfficiencyMC.setObject(new TList);
+    listEfficiencyMC.setObject(new THashList);
     makeMCHistograms<o2::track::PID::Electron>(doEl);
     makeMCHistograms<o2::track::PID::Muon>(doMu);
     makeMCHistograms<o2::track::PID::Pion>(doPi);
@@ -708,7 +732,7 @@ struct QaEfficiency {
     histos.add("Data/pos/etaphi/its", "ITS Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its", "ITS Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
 
-    listEfficiencyData.setObject(new TList);
+    listEfficiencyData.setObject(new THashList);
     if (makeEff) {
       LOG(debug) << "Making TEfficiency for Data";
       auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
@@ -719,6 +743,13 @@ struct QaEfficiency {
           listEfficiencyData->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
         }
       };
+
+      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/pos/eta/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"));
+
       auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY) {
         TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
         TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
@@ -728,11 +759,6 @@ struct QaEfficiency {
           listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
         }
       };
-      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/pos/eta/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"));
 
       makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta", Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin, phiMax, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/eta/its_tpc_tof"));
       makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi", Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin, etaMax, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/phi/its_tpc_tof"));
@@ -923,7 +949,7 @@ struct QaEfficiency {
 
     const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
-    TList* subList = static_cast<TList*>(listEfficiencyMC->FindObject(partName));
+    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(partName));
     if (!subList) {
       LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
