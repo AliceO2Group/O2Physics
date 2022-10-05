@@ -142,6 +142,7 @@ struct QaEfficiency {
                                                                  "MC/ka/neg/pt/generated", "MC/pr/neg/pt/generated", "MC/de/neg/pt/generated",
                                                                  "MC/tr/neg/pt/generated", "MC/he/neg/pt/generated", "MC/al/neg/pt/generated",
                                                                  "MC/all/neg/pt/generated"};
+
   // Pt for primaries
   static constexpr std::string_view hPtItsTpcPrm[nHistograms] = {"MC/el/pos/pt/its_tpc/prm", "MC/mu/pos/pt/its_tpc/prm", "MC/pi/pos/pt/its_tpc/prm",
                                                                  "MC/ka/pos/pt/its_tpc/prm", "MC/pr/pos/pt/its_tpc/prm", "MC/de/pos/pt/its_tpc/prm",
@@ -175,6 +176,7 @@ struct QaEfficiency {
                                                                     "MC/ka/neg/pt/den/prm", "MC/pr/neg/pt/den/prm", "MC/de/neg/pt/den/prm",
                                                                     "MC/tr/neg/pt/den/prm", "MC/he/neg/pt/den/prm", "MC/al/neg/pt/den/prm",
                                                                     "MC/all/neg/pt/den/prm"};
+
   // Pt for secondaries from weak decay
   static constexpr std::string_view hPtItsTpcStr[nHistograms] = {"MC/el/pos/str/pt/num", "MC/mu/pos/str/pt/num", "MC/pi/pos/str/pt/num",
                                                                  "MC/ka/pos/str/pt/num", "MC/pr/pos/str/pt/num", "MC/de/pos/str/pt/num",
@@ -208,6 +210,7 @@ struct QaEfficiency {
                                                                     "MC/ka/neg/str/pt/den", "MC/pr/neg/str/pt/den", "MC/de/neg/str/pt/den",
                                                                     "MC/tr/neg/str/pt/den", "MC/he/neg/str/pt/den", "MC/al/neg/str/pt/den",
                                                                     "MC/all/neg/str/pt/den"};
+
   // Pt for secondaries from material
   static constexpr std::string_view hPtItsTpcMat[nHistograms] = {"MC/el/pos/mat/pt/num", "MC/mu/pos/mat/pt/num", "MC/pi/pos/mat/pt/num",
                                                                  "MC/ka/pos/mat/pt/num", "MC/pr/pos/mat/pt/num", "MC/de/pos/mat/pt/num",
@@ -309,6 +312,7 @@ struct QaEfficiency {
                                                                   "MC/ka/neg/eta/den", "MC/pr/neg/eta/den", "MC/de/neg/eta/den",
                                                                   "MC/tr/neg/eta/den", "MC/he/neg/eta/den", "MC/al/neg/eta/den",
                                                                   "MC/all/neg/eta/den"};
+
   // Y
   static constexpr std::string_view hYItsTpc[nHistograms] = {"MC/el/pos/y/num", "MC/mu/pos/y/num", "MC/pi/pos/y/num",
                                                              "MC/ka/pos/y/num", "MC/pr/pos/y/num", "MC/de/pos/y/num",
@@ -334,6 +338,7 @@ struct QaEfficiency {
                                                                 "MC/ka/neg/y/den", "MC/pr/neg/y/den", "MC/de/neg/y/den",
                                                                 "MC/tr/neg/y/den", "MC/he/neg/y/den", "MC/al/neg/y/den",
                                                                 "MC/all/neg/y/den"};
+
   // Phi
   static constexpr std::string_view hPhiItsTpc[nHistograms] = {"MC/el/pos/phi/num", "MC/mu/pos/phi/num", "MC/pi/pos/phi/num",
                                                                "MC/ka/pos/phi/num", "MC/pr/pos/phi/num", "MC/de/pos/phi/num",
@@ -367,6 +372,7 @@ struct QaEfficiency {
                                                                   "MC/ka/neg/phi/den", "MC/pr/neg/phi/den", "MC/de/neg/phi/den",
                                                                   "MC/tr/neg/phi/den", "MC/he/neg/phi/den", "MC/al/neg/phi/den",
                                                                   "MC/all/neg/phi/den"};
+
   // Pt-Eta
   static constexpr std::string_view hPtEtaItsTpc[nHistograms] = {"MC/el/pos/pteta/num", "MC/mu/pos/pteta/num", "MC/pi/pos/pteta/num",
                                                                  "MC/ka/pos/pteta/num", "MC/pr/pos/pteta/num", "MC/de/pos/pteta/num",
