@@ -38,6 +38,10 @@
 // ML application
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
+//CCDB
+#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/CcdbApi.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -312,7 +316,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
   Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::pTBinsVec}, "track pT bin limits for BDT cut"};
 
-  Configurable<std::string> onnxFileD0ToKPiConf{"onnxFileD0ToKPiConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220124/PWGHF/o2/trigger/XGBoostModel.onnx", "ONNX file for ML model for D0 candidates"};
+  Configurable<std::string> onnxFileD0ToKPiConf{"onnxFileD0ToKPiConf", "XGBoostModel.onnx", "ONNX file for ML model for D0 candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreD0ToKPi{"thresholdBDTScoreD0ToKPi", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of D0 candidates"};
 
   Configurable<std::string> onnxFileDPlusToPiKPiConf{"onnxFileDPlusToPiKPiConf", "", "ONNX file for ML model for D+ candidates"};
@@ -326,6 +330,13 @@ struct HfFilter { // Main struct for HF triggers
 
   Configurable<std::string> onnxFileXicToPiKPConf{"onnxFileXicToPiKPConf", "", "ONNX file for ML model for Xic+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDFScoreXicToPiKP{"thresholdBDFScoreXicToPiKP", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of Xic+ candidates"};
+
+  //CCDB configuration
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
+  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
 
   // array of ONNX config and BDT thresholds
   std::array<std::string, kNCharmParticles> onnxFiles;
@@ -392,46 +403,64 @@ struct HfFilter { // Main struct for HF triggers
       hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
     }
 
+    ccdb->setURL(url.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    ccdbApi.init(url);
+
+    thresholdBDTScores = {
+      thresholdBDTScoreD0ToKPi,
+      thresholdBDFScoreDPlusToPiKPi,
+      thresholdBDFScoreDSToPiKK,
+      thresholdBDFScoreLcToPiKP,
+      thresholdBDFScoreXicToPiKP};
+
+    onnxFiles = {
+      onnxFileD0ToKPiConf,
+      onnxFileDPlusToPiKPiConf,
+      onnxFileDSToPiKKConf,
+      onnxFileLcToPiKPConf,
+      onnxFileXicToPiKPConf};
+
     // init ONNX runtime session
-    if (applyML) {
-      thresholdBDTScores = {
-        thresholdBDTScoreD0ToKPi,
-        thresholdBDFScoreDPlusToPiKPi,
-        thresholdBDFScoreDSToPiKK,
-        thresholdBDFScoreLcToPiKP,
-        thresholdBDFScoreXicToPiKP};
+    if (applyML && ccdbTimestamp != 0) {
 
-      onnxFiles = {
-        onnxFileD0ToKPiConf,
-        onnxFileDPlusToPiKPiConf,
-        onnxFileDSToPiKKConf,
-        onnxFileLcToPiKPConf,
-        onnxFileXicToPiKPConf};
-
+      /// specific timestamp for models
+      LOG(info) << "specific timestamp for models: " << ccdbTimestamp.value;
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
           if (singleThreadInference) {
             sessionOptions[iCharmPart].SetIntraOpNumThreads(1);
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
-          sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
-          inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
-          inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
-          if (inputShapesML[iCharmPart][0][0] < 0) {
-            LOGF(warning, Form("Model for %s with negative input shape likely because converted with ummingbird, setting it to 1.", charmParticleNames[iCharmPart].data()));
-            inputShapesML[iCharmPart][0][0] = 1;
+          std::map<std::string, std::string> metadata;
+          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
+          bool retrieve_success = true;
+          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos) {
+            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
           }
-          outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
-          outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
+          if (retrieve_success) {
+            sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
+            inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
+            inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
+            if (inputShapesML[iCharmPart][0][0] < 0) {
+              LOGF(warning, Form("Model for %s with negative input shape likely because converted with ummingbird, setting it to 1.", charmParticleNames[iCharmPart].data()));
+              inputShapesML[iCharmPart][0][0] = 1;
+            }
+            outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
+            outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
 
-          Ort::TypeInfo typeInfo = sessionML[iCharmPart]->GetInputTypeInfo(0);
-          auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
-          dataTypeML[iCharmPart] = tensorInfo.GetElementType();
+            Ort::TypeInfo typeInfo = sessionML[iCharmPart]->GetInputTypeInfo(0);
+            auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
+            dataTypeML[iCharmPart] = tensorInfo.GetElementType();
+          } else {
+            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          }
         }
       }
     }
   }
-
   /// Single-track cuts for bachelor track of beauty candidates
   /// \param track is a track
   /// \param candType candidate type (3-prong or 4-prong beauty candidate)
@@ -766,10 +795,48 @@ struct HfFilter { // Main struct for HF triggers
   using BigTracksWithProtonPID = soa::Filtered<soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   void process(aod::Collision const& collision,
+               aod::BCsWithTimestamps const&,
                HfTrackIndexProng2withColl const& cand2Prongs,
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksWithProtonPID const& tracks)
   {
+
+    if (applyML && ccdbTimestamp == 0 && onnxFiles[kD0].find("cvmfs") == std::string::npos && inputNamesML[kD0].size() == 0) {
+
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
+
+      for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
+        if (onnxFiles[iCharmPart] != "") {
+          if (singleThreadInference) {
+            sessionOptions[iCharmPart].SetIntraOpNumThreads(1);
+            sessionOptions[iCharmPart].SetInterOpNumThreads(1);
+          }
+          std::map<std::string, std::string> metadata;
+          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
+          bool retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
+          if (retrieve_success) {
+
+            sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
+            inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
+            inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
+            if (inputShapesML[iCharmPart][0][0] < 0) {
+              LOGF(warning, Form("Model for %s with negative input shape likely because converted with ummingbird, setting it to 1.", charmParticleNames[iCharmPart].data()));
+              inputShapesML[iCharmPart][0][0] = 1;
+            }
+            outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
+            outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
+
+            Ort::TypeInfo typeInfo = sessionML[iCharmPart]->GetInputTypeInfo(0);
+            auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
+            dataTypeML[iCharmPart] = tensorInfo.GetElementType();
+          } else {
+            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          }
+        }
+      }
+    }
+
     hProcessedEvents->Fill(0);
 
     // collision process loop
