@@ -772,10 +772,10 @@ struct HfFilter { // Main struct for HF triggers
     if (scores[0] > thresholdBDTScores[candType].get(0u, "BDTbkg")) {
       return retValue;
     }
-    if (scores[1] < thresholdBDTScores[candType].get(0u, "BDTprompt")) {
+    if (scores[1] > thresholdBDTScores[candType].get(0u, "BDTprompt")) {
       retValue |= BIT(RecoDecay::OriginType::Prompt);
     }
-    if (scores[2] < thresholdBDTScores[candType].get(0u, "BDTnonprompt")) {
+    if (scores[2] > thresholdBDTScores[candType].get(0u, "BDTnonprompt")) {
       retValue |= BIT(RecoDecay::OriginType::NonPrompt);
     }
 
