@@ -249,6 +249,21 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::FlagOrigin,
                   hftraining3p::Channel,
                   hftraining3p::HFSelBit);
+
+namespace hfoptimisationTree
+{
+DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);           //!
+DECLARE_SOA_COLUMN(BkgBDT, bkgBDT, float);           //!
+DECLARE_SOA_COLUMN(PromptBDT, promptBDT, float);           //!
+DECLARE_SOA_COLUMN(NonpromptBDT, nonpromptBDT, float);           //!
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);           //!
+} // namespace hfoptimisationTree
+DECLARE_SOA_TABLE(HFOptimisationTree, "AOD", "HFOPTIMTREE", //!
+                  hfoptimisationTree::CollisionIndex,
+                  hfoptimisationTree::BkgBDT,
+                  hfoptimisationTree::PromptBDT,
+                  hfoptimisationTree::NonpromptBDT,
+                  hfoptimisationTree::DCAXY);
 } // namespace o2::aod
 
 struct AddCollisionId {
@@ -337,6 +352,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  // parameter for Optimisation Tree
+  Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
 
   // array of ONNX config and BDT thresholds
   std::array<std::string, kNCharmParticles> onnxFiles;
@@ -858,6 +875,7 @@ struct HfFilter { // Main struct for HF triggers
 
       bool isCharmTagged{true}, isBeautyTagged{true};
 
+      float scores[3] = {-1, -1, -1}; // initialize BDT scores array outside ML loop
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
         isCharmTagged = false;
@@ -883,7 +901,9 @@ struct HfFilter { // Main struct for HF triggers
           assert(outputTensorD0.size() == outputNamesML[kD0].size() && outputTensorD0[1].IsTensor());
           auto typeInfo = outputTensorD0[1].GetTensorTypeAndShapeInfo();
           assert(typeInfo.GetElementCount() == 3); // we need multiclass
-          auto scores = outputTensorD0[1].GetTensorMutableData<float>();
+          scores[0] = outputTensorD0[1].GetTensorMutableData<float>()[0];
+          scores[1] = outputTensorD0[1].GetTensorMutableData<float>()[1];
+          scores[2] = outputTensorD0[1].GetTensorMutableData<float>()[2];
 
           if (applyML && activateQA) {
             hBDTScoreBkg[kD0]->Fill(scores[0]);
@@ -934,6 +954,10 @@ struct HfFilter { // Main struct for HF triggers
             auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
             if (isTrackSelected == kRegular && std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty3P] = true;
+              // fill optimisation tree for D0
+              if (applyOptimisation) {
+                optimisationTree(collision.globalIndex(), scores[0], scores[1], scores[2], track.dcaXY());
+              }              
               if (activateQA) {
                 hMassVsPtB[kBplus]->Fill(ptCand, massCand);
               }
