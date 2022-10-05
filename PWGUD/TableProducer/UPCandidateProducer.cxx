@@ -20,7 +20,7 @@ using namespace o2::framework::expressions;
 
 struct UpcCandProducer {
   Produces<o2::aod::UDCollisions> eventCandidates;
-  Produces<o2::aod::UDCollisionSels> eventCandidatesSels;
+  Produces<o2::aod::UDCollisionsSels> eventCandidatesSels;
   Produces<o2::aod::UDTrackCollisionIDs> barrelCandIds;
   Produces<o2::aod::UDFwdTrackCollisionIDs> muonCandIds;
 

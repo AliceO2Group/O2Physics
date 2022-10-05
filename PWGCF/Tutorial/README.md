@@ -10,7 +10,7 @@ _______________
 ## How to install O2Physics Framework?
 1. Build prerequisities for your operating system, configure aliBuild (but don't build packages!) - [here](https://alice-doc.github.io/alice-analysis-tutorial/building/custom.html).<br>
 2. Get a GRID certificate - [here](https://alice-doc.github.io/alice-analysis-tutorial/start/cert.html) <br>
-3. Follow instructions on [ALICE O2 documentation](https://aliceo2group.github.io/analysis-framework/docs/installing/) - Prepare your source code, check prerequisites, build and rebuild and check if everything works! <br>
+3. Follow instructions on [ALICE O2 documentation](https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html) - Prepare your source code, check prerequisites, build and rebuild and check if everything works! <br>
 
 Keep in mind that it might take quite a long time.
 ______________
@@ -130,7 +130,7 @@ Sometimes you may get an error, for example:
  ```
 It means that `v0dataext` couldn't be found in your AOD file or it has not been produced by any attached helper task.
 So now you know which table is missing. There are two paths you can choose; <br>
-1. **EASIEST**: follow the instructions reported in  [ALICE O2 documentation- Tree not found](https://aliceo2group.github.io/analysis-framework/docs/troubleshooting/treenotfound.html). After entering [ALICE O2 documentation - helper task tables](https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html), you search the table that you are missing and you will find the task you need to attach as dependency.<br>
+1. **EASIEST**: follow the instructions reported in  [ALICE O2 documentation - Tree not found](https://aliceo2group.github.io/analysis-framework/docs/troubleshooting/). After entering [ALICE O2 documentation - helper task tables](https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html), you search the table that you are missing and you will find the task you need to attach as dependency.<br>
 2. More difficult: enter directory `alice/O2Physics` and look for the missing table. </br>
 For example, if you are missing `pidtofka` table, you should type:
 ```c
