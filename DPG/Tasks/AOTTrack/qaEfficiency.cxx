@@ -467,7 +467,6 @@ struct QaEfficiency {
     auto makeHistogramsPerCharge = [&](const int chargeIndex) {
       const int histogramIndex = id + chargeIndex * nSpecies;
 
-      histos2.add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1F, {axisPt});
       histos.add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1F, {axisPt});
       histos.add(hPtTpc[histogramIndex].data(), "TPC tracks " + tagPt, kTH1F, {axisPt});
       histos.add(hPtItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisPt});
@@ -1015,13 +1014,40 @@ struct QaEfficiency {
       eff->SetPassedHistogram(*histos.get<TH1>(num).get(), "f");
     };
 
-    doFillEfficiency("efficiencyVsPt", HIST(hPtItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("efficiencyVsPtPrm", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
-    doFillEfficiency("efficiencyVsPtDec", HIST(hPtItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
-    doFillEfficiency("efficiencyVsPtMat", HIST(hPtItsTpcMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
-    doFillEfficiency("efficiencyVsP", HIST(hPItsTpc[histogramIndex]), HIST(hPGenerated[histogramIndex]));
-    doFillEfficiency("efficiencyVsEta", HIST(hEtaItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
-    doFillEfficiency("efficiencyVsPhi", HIST(hPhiItsTpc[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
+    doFillEfficiency("ITS_vsPt", HIST(hPtIts[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Trk", HIST(hPtTrkItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Str", HIST(hPtItsTpcTofStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsPt_Mat", HIST(hPtItsTpcMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Mat_Trk", HIST(hPtTrkItsTpcMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Mat", HIST(hPtItsTpcTofMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsP", HIST(hPItsTpc[histogramIndex]), HIST(hPGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsP_Trk", HIST(hPTrkItsTpc[histogramIndex]), HIST(hPGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsP", HIST(hPItsTpcTof[histogramIndex]), HIST(hPGenerated[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsEta", HIST(hEtaItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
+    doFillEfficiency("ITS-Tpc_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsEta", HIST(hEtaItsTpcTof[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsY", HIST(hYItsTpc[histogramIndex]), HIST(hYGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsY", HIST(hYItsTpcTof[histogramIndex]), HIST(hYGenerated[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsPhi", HIST(hPhiItsTpc[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPhi_Trk", HIST(hPhiTrkItsTpc[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPhi", HIST(hPhiItsTpcTof[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
 
     if (!doPtEta) {
       return;
@@ -1038,7 +1064,7 @@ struct QaEfficiency {
       eff->SetTotalHistogram(*histos.get<TH2>(den).get(), "f");
       eff->SetPassedHistogram(*histos.get<TH2>(num).get(), "f");
     };
-    fillEfficiency2D("efficiencyVsPtVsEta", HIST(hPtEtaItsTpc[histogramIndex]), HIST(hPtEtaGenerated[histogramIndex]));
+    fillEfficiency2D("ITS-TPC_vsPt_vsEta", HIST(hPtEtaItsTpc[histogramIndex]), HIST(hPtEtaGenerated[histogramIndex]));
   }
 
   template <bool doFillHistograms, typename CollType>
