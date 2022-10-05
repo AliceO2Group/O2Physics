@@ -105,7 +105,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   pairAxis.insert(pairAxis.end(), userAxis.begin(), userAxis.end());
   long bins = 1;
   for (const auto& axis : pairAxis) {
-    bins *= axis.getNbins();
+    //bins *= axis.getNbins();
   }
   LOGF(info, "Creating CorrelationContainer with %ld bins in the pair histogram (approx. %ld-%ld MB of memory)", bins, bins * 4 / 1024 / 1024, bins * 8 / 1024 / 1024);
 

@@ -469,8 +469,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairDalitz")) {
-    cut->AddCut(GetAnalysisCut("pairDalitz"));
+  if (!nameStr.compare("pairDalitz1")) {
+    cut->AddCut(GetAnalysisCut("pairDalitz1"));
+    return cut;
+  }
+  
+  if (!nameStr.compare("pairDalitz2")) {
+    cut->AddCut(GetAnalysisCut("pairDalitz2"));
+    return cut;
+  }
+  
+  if (!nameStr.compare("pairDalitz3")) {
+    cut->AddCut(GetAnalysisCut("pairDalitz3"));
     return cut;
   }
 
@@ -932,8 +942,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairDalitz")) {
-    cut->AddCut(VarManager::kMass, 0.0, 0.135);
+  if (!nameStr.compare("pairDalitz1")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.1);
+    return cut;
+  }
+  
+  if (!nameStr.compare("pairDalitz2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.15);
+    return cut;
+  }
+  
+  if (!nameStr.compare("pairDalitz3")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.2);
     return cut;
   }
 
