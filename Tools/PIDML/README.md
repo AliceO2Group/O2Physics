@@ -16,7 +16,9 @@ This class represents a single ML model from an ONNX file. It requires the follo
 
 Let's assume your `PidONNXModel` instance is named `pidModel`. Then, inside your analysis task `process()` function, you can iterate over tracks and call: `pidModel.applyModel(track);` to get the certainty of the model. You can also use `pidModel.applyModelBoolean(track);` to receive a true/false answer, whether the track can be accepted based on the minimum certainty provided to the `PidONNXModel` constructor.
 
-You can check [a simple analysis task example](https://github.com/AliceO2Group/O2Physics/blob/master/Tools/PIDML/simpleApplyPidOnnxModel.cxx). It uses configurable parameters and shows how to calculate the data timestamp. Note that, however, calculation of the timestamp requires subscribing to `aod::Collisions` and `aod::BCsWithTimestamps`. On the other hand, it is possible to use locally stored models, and then the timestamp is not used, so it can be a dummy value. `processTracksOnly` presents how to analyze on local-only PID ML models.
+You can check [a simple analysis task example](https://github.com/AliceO2Group/O2Physics/blob/master/Tools/PIDML/simpleApplyPidOnnxModel.cxx). It uses configurable parameters and shows how to calculate the data timestamp. Note that the calculation of the timestamp requires subscribing to `aod::Collisions` and `aod::BCsWithTimestamps`. For Hyperloop tests, you can set `cfgUseFixedTimestamp` to true with `cfgTimestamp` set to the default value.
+
+On the other hand, it is possible to use locally stored models, and then the timestamp is not used, so it can be a dummy value. `processTracksOnly` presents how to analyze on local-only PID ML models.
 
 ## PidONNXInterface
 
