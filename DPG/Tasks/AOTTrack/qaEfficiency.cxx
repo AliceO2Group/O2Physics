@@ -127,14 +127,14 @@ struct QaEfficiency {
                                                                  "MC/ka/neg/pt/its_tpc_tof", "MC/pr/neg/pt/its_tpc_tof", "MC/de/neg/pt/its_tpc_tof",
                                                                  "MC/tr/neg/pt/its_tpc_tof", "MC/he/neg/pt/its_tpc_tof", "MC/al/neg/pt/its_tpc_tof",
                                                                  "MC/all/neg/pt/its_tpc_tof"};
-  static constexpr std::string_view hPtTrkItsTpc[nHistograms] = {"MC/el/pos/pt/its_tpc/trk", "MC/mu/pos/pt/its_tpc/trk", "MC/pi/pos/pt/its_tpc/trk",
-                                                                 "MC/ka/pos/pt/its_tpc/trk", "MC/pr/pos/pt/its_tpc/trk", "MC/de/pos/pt/its_tpc/trk",
-                                                                 "MC/tr/pos/pt/its_tpc/trk", "MC/he/pos/pt/its_tpc/trk", "MC/al/pos/pt/its_tpc/trk",
-                                                                 "MC/all/pos/pt/its_tpc/trk",
-                                                                 "MC/el/neg/pt/its_tpc/trk", "MC/mu/neg/pt/its_tpc/trk", "MC/pi/neg/pt/its_tpc/trk",
-                                                                 "MC/ka/neg/pt/its_tpc/trk", "MC/pr/neg/pt/its_tpc/trk", "MC/de/neg/pt/its_tpc/trk",
-                                                                 "MC/tr/neg/pt/its_tpc/trk", "MC/he/neg/pt/its_tpc/trk", "MC/al/neg/pt/its_tpc/trk",
-                                                                 "MC/all/neg/pt/its_tpc/trk"};
+  static constexpr std::string_view hPtTrkItsTpc[nHistograms] = {"MC/el/pos/pt/trk/its_tpc", "MC/mu/pos/pt/trk/its_tpc", "MC/pi/pos/pt/trk/its_tpc",
+                                                                 "MC/ka/pos/pt/trk/its_tpc", "MC/pr/pos/pt/trk/its_tpc", "MC/de/pos/pt/trk/its_tpc",
+                                                                 "MC/tr/pos/pt/trk/its_tpc", "MC/he/pos/pt/trk/its_tpc", "MC/al/pos/pt/trk/its_tpc",
+                                                                 "MC/all/pos/pt/trk/its_tpc",
+                                                                 "MC/el/neg/pt/trk/its_tpc", "MC/mu/neg/pt/trk/its_tpc", "MC/pi/neg/pt/trk/its_tpc",
+                                                                 "MC/ka/neg/pt/trk/its_tpc", "MC/pr/neg/pt/trk/its_tpc", "MC/de/neg/pt/trk/its_tpc",
+                                                                 "MC/tr/neg/pt/trk/its_tpc", "MC/he/neg/pt/trk/its_tpc", "MC/al/neg/pt/trk/its_tpc",
+                                                                 "MC/all/neg/pt/trk/its_tpc"};
   static constexpr std::string_view hPtGenerated[nHistograms] = {"MC/el/pos/pt/generated", "MC/mu/pos/pt/generated", "MC/pi/pos/pt/generated",
                                                                  "MC/ka/pos/pt/generated", "MC/pr/pos/pt/generated", "MC/de/pos/pt/generated",
                                                                  "MC/tr/pos/pt/generated", "MC/he/pos/pt/generated", "MC/al/pos/pt/generated",
@@ -145,106 +145,114 @@ struct QaEfficiency {
                                                                  "MC/all/neg/pt/generated"};
 
   // Pt for primaries
-  static constexpr std::string_view hPtItsTpcPrm[nHistograms] = {"MC/el/pos/pt/its_tpc/prm", "MC/mu/pos/pt/its_tpc/prm", "MC/pi/pos/pt/its_tpc/prm",
-                                                                 "MC/ka/pos/pt/its_tpc/prm", "MC/pr/pos/pt/its_tpc/prm", "MC/de/pos/pt/its_tpc/prm",
-                                                                 "MC/tr/pos/pt/its_tpc/prm", "MC/he/pos/pt/its_tpc/prm", "MC/al/pos/pt/its_tpc/prm",
-                                                                 "MC/all/pos/pt/its_tpc/prm",
-                                                                 "MC/el/neg/pt/its_tpc/prm", "MC/mu/neg/pt/its_tpc/prm", "MC/pi/neg/pt/its_tpc/prm",
-                                                                 "MC/ka/neg/pt/its_tpc/prm", "MC/pr/neg/pt/its_tpc/prm", "MC/de/neg/pt/its_tpc/prm",
-                                                                 "MC/tr/neg/pt/its_tpc/prm", "MC/he/neg/pt/its_tpc/prm", "MC/al/neg/pt/its_tpc/prm",
-                                                                 "MC/all/neg/pt/its_tpc/prm"};
-  static constexpr std::string_view hPtTrkItsTpcPrm[nHistograms] = {"MC/el/pos/pt/its_tpc/trk/prm", "MC/mu/pos/pt/its_tpc/trk/prm", "MC/pi/pos/pt/its_tpc/trk/prm",
-                                                                    "MC/ka/pos/pt/its_tpc/trk/prm", "MC/pr/pos/pt/its_tpc/trk/prm", "MC/de/pos/pt/its_tpc/trk/prm",
-                                                                    "MC/tr/pos/pt/its_tpc/trk/prm", "MC/he/pos/pt/its_tpc/trk/prm", "MC/al/pos/pt/its_tpc/trk/prm",
-                                                                    "MC/all/pos/pt/its_tpc/trk/prm",
-                                                                    "MC/el/neg/pt/its_tpc/trk/prm", "MC/mu/neg/pt/its_tpc/trk/prm", "MC/pi/neg/pt/its_tpc/trk/prm",
-                                                                    "MC/ka/neg/pt/its_tpc/trk/prm", "MC/pr/neg/pt/its_tpc/trk/prm", "MC/de/neg/pt/its_tpc/trk/prm",
-                                                                    "MC/tr/neg/pt/its_tpc/trk/prm", "MC/he/neg/pt/its_tpc/trk/prm", "MC/al/neg/pt/its_tpc/trk/prm",
-                                                                    "MC/all/neg/pt/its_tpc/trk/prm"};
-  static constexpr std::string_view hPtItsTpcTofPrm[nHistograms] = {"MC/el/pos/pt/its_tpc_tof/prm", "MC/mu/pos/pt/its_tpc_tof/prm", "MC/pi/pos/pt/its_tpc_tof/prm",
-                                                                    "MC/ka/pos/pt/its_tpc_tof/prm", "MC/pr/pos/pt/its_tpc_tof/prm", "MC/de/pos/pt/its_tpc_tof/prm",
-                                                                    "MC/tr/pos/pt/its_tpc_tof/prm", "MC/he/pos/pt/its_tpc_tof/prm", "MC/al/pos/pt/its_tpc_tof/prm",
-                                                                    "MC/all/pos/pt/its_tpc_tof/prm",
-                                                                    "MC/el/neg/pt/its_tpc_tof/prm", "MC/mu/neg/pt/its_tpc_tof/prm", "MC/pi/neg/pt/its_tpc_tof/prm",
-                                                                    "MC/ka/neg/pt/its_tpc_tof/prm", "MC/pr/neg/pt/its_tpc_tof/prm", "MC/de/neg/pt/its_tpc_tof/prm",
-                                                                    "MC/tr/neg/pt/its_tpc_tof/prm", "MC/he/neg/pt/its_tpc_tof/prm", "MC/al/neg/pt/its_tpc_tof/prm",
-                                                                    "MC/all/neg/pt/its_tpc_tof/prm"};
-  static constexpr std::string_view hPtGeneratedPrm[nHistograms] = {"MC/el/pos/pt/generated/prm", "MC/mu/pos/pt/generated/prm", "MC/pi/pos/pt/generated/prm",
-                                                                    "MC/ka/pos/pt/generated/prm", "MC/pr/pos/pt/generated/prm", "MC/de/pos/pt/generated/prm",
-                                                                    "MC/tr/pos/pt/generated/prm", "MC/he/pos/pt/generated/prm", "MC/al/pos/pt/generated/prm",
-                                                                    "MC/all/pos/pt/generated/prm",
-                                                                    "MC/el/neg/pt/generated/prm", "MC/mu/neg/pt/generated/prm", "MC/pi/neg/pt/generated/prm",
-                                                                    "MC/ka/neg/pt/generated/prm", "MC/pr/neg/pt/generated/prm", "MC/de/neg/pt/generated/prm",
-                                                                    "MC/tr/neg/pt/generated/prm", "MC/he/neg/pt/generated/prm", "MC/al/neg/pt/generated/prm",
-                                                                    "MC/all/neg/pt/generated/prm"};
+  static constexpr std::string_view hPtItsPrm[nHistograms] = {"MC/el/pos/pt/prm/its", "MC/mu/pos/pt/prm/its", "MC/pi/pos/pt/prm/its",
+                                                              "MC/ka/pos/pt/prm/its", "MC/pr/pos/pt/prm/its", "MC/de/pos/pt/prm/its",
+                                                              "MC/tr/pos/pt/prm/its", "MC/he/pos/pt/prm/its", "MC/al/pos/pt/prm/its",
+                                                              "MC/all/pos/pt/prm/its",
+                                                              "MC/el/neg/pt/prm/its", "MC/mu/neg/pt/prm/its", "MC/pi/neg/pt/prm/its",
+                                                              "MC/ka/neg/pt/prm/its", "MC/pr/neg/pt/prm/its", "MC/de/neg/pt/prm/its",
+                                                              "MC/tr/neg/pt/prm/its", "MC/he/neg/pt/prm/its", "MC/al/neg/pt/prm/its",
+                                                              "MC/all/neg/pt/prm/its"};
+  static constexpr std::string_view hPtItsTpcPrm[nHistograms] = {"MC/el/pos/pt/prm/its_tpc", "MC/mu/pos/pt/prm/its_tpc", "MC/pi/pos/pt/prm/its_tpc",
+                                                                 "MC/ka/pos/pt/prm/its_tpc", "MC/pr/pos/pt/prm/its_tpc", "MC/de/pos/pt/prm/its_tpc",
+                                                                 "MC/tr/pos/pt/prm/its_tpc", "MC/he/pos/pt/prm/its_tpc", "MC/al/pos/pt/prm/its_tpc",
+                                                                 "MC/all/pos/pt/prm/its_tpc",
+                                                                 "MC/el/neg/pt/prm/its_tpc", "MC/mu/neg/pt/prm/its_tpc", "MC/pi/neg/pt/prm/its_tpc",
+                                                                 "MC/ka/neg/pt/prm/its_tpc", "MC/pr/neg/pt/prm/its_tpc", "MC/de/neg/pt/prm/its_tpc",
+                                                                 "MC/tr/neg/pt/prm/its_tpc", "MC/he/neg/pt/prm/its_tpc", "MC/al/neg/pt/prm/its_tpc",
+                                                                 "MC/all/neg/pt/prm/its_tpc"};
+  static constexpr std::string_view hPtTrkItsTpcPrm[nHistograms] = {"MC/el/pos/pt/prm/trk/its_tpc", "MC/mu/pos/pt/prm/trk/its_tpc", "MC/pi/pos/pt/prm/trk/its_tpc",
+                                                                    "MC/ka/pos/pt/prm/trk/its_tpc", "MC/pr/pos/pt/prm/trk/its_tpc", "MC/de/pos/pt/prm/trk/its_tpc",
+                                                                    "MC/tr/pos/pt/prm/trk/its_tpc", "MC/he/pos/pt/prm/trk/its_tpc", "MC/al/pos/pt/prm/trk/its_tpc",
+                                                                    "MC/all/pos/pt/prm/trk/its_tpc",
+                                                                    "MC/el/neg/pt/prm/trk/its_tpc", "MC/mu/neg/pt/prm/trk/its_tpc", "MC/pi/neg/pt/prm/trk/its_tpc",
+                                                                    "MC/ka/neg/pt/prm/trk/its_tpc", "MC/pr/neg/pt/prm/trk/its_tpc", "MC/de/neg/pt/prm/trk/its_tpc",
+                                                                    "MC/tr/neg/pt/prm/trk/its_tpc", "MC/he/neg/pt/prm/trk/its_tpc", "MC/al/neg/pt/prm/trk/its_tpc",
+                                                                    "MC/all/neg/pt/prm/trk/its_tpc"};
+  static constexpr std::string_view hPtItsTpcTofPrm[nHistograms] = {"MC/el/pos/pt/prm/its_tpc_tof", "MC/mu/pos/pt/prm/its_tpc_tof", "MC/pi/pos/pt/prm/its_tpc_tof",
+                                                                    "MC/ka/pos/pt/prm/its_tpc_tof", "MC/pr/pos/pt/prm/its_tpc_tof", "MC/de/pos/pt/prm/its_tpc_tof",
+                                                                    "MC/tr/pos/pt/prm/its_tpc_tof", "MC/he/pos/pt/prm/its_tpc_tof", "MC/al/pos/pt/prm/its_tpc_tof",
+                                                                    "MC/all/pos/pt/prm/its_tpc_tof",
+                                                                    "MC/el/neg/pt/prm/its_tpc_tof", "MC/mu/neg/pt/prm/its_tpc_tof", "MC/pi/neg/pt/prm/its_tpc_tof",
+                                                                    "MC/ka/neg/pt/prm/its_tpc_tof", "MC/pr/neg/pt/prm/its_tpc_tof", "MC/de/neg/pt/prm/its_tpc_tof",
+                                                                    "MC/tr/neg/pt/prm/its_tpc_tof", "MC/he/neg/pt/prm/its_tpc_tof", "MC/al/neg/pt/prm/its_tpc_tof",
+                                                                    "MC/all/neg/pt/prm/its_tpc_tof"};
+  static constexpr std::string_view hPtGeneratedPrm[nHistograms] = {"MC/el/pos/pt/prm/generated", "MC/mu/pos/pt/prm/generated", "MC/pi/pos/pt/prm/generated",
+                                                                    "MC/ka/pos/pt/prm/generated", "MC/pr/pos/pt/prm/generated", "MC/de/pos/pt/prm/generated",
+                                                                    "MC/tr/pos/pt/prm/generated", "MC/he/pos/pt/prm/generated", "MC/al/pos/pt/prm/generated",
+                                                                    "MC/all/pos/pt/prm/generated",
+                                                                    "MC/el/neg/pt/prm/generated", "MC/mu/neg/pt/prm/generated", "MC/pi/neg/pt/prm/generated",
+                                                                    "MC/ka/neg/pt/prm/generated", "MC/pr/neg/pt/prm/generated", "MC/de/neg/pt/prm/generated",
+                                                                    "MC/tr/neg/pt/prm/generated", "MC/he/neg/pt/prm/generated", "MC/al/neg/pt/prm/generated",
+                                                                    "MC/all/neg/pt/prm/generated"};
 
   // Pt for secondaries from weak decay
-  static constexpr std::string_view hPtItsTpcStr[nHistograms] = {"MC/el/pos/pt/its_tpc/str", "MC/mu/pos/pt/its_tpc/str", "MC/pi/pos/pt/its_tpc/str",
-                                                                 "MC/ka/pos/pt/its_tpc/str", "MC/pr/pos/pt/its_tpc/str", "MC/de/pos/pt/its_tpc/str",
-                                                                 "MC/tr/pos/pt/its_tpc/str", "MC/he/pos/pt/its_tpc/str", "MC/al/pos/pt/its_tpc/str",
-                                                                 "MC/all/pos/pt/its_tpc/str",
-                                                                 "MC/el/neg/pt/its_tpc/str", "MC/mu/neg/pt/its_tpc/str", "MC/pi/neg/pt/its_tpc/str",
-                                                                 "MC/ka/neg/pt/its_tpc/str", "MC/pr/neg/pt/its_tpc/str", "MC/de/neg/pt/its_tpc/str",
-                                                                 "MC/tr/neg/pt/its_tpc/str", "MC/he/neg/pt/its_tpc/str", "MC/al/neg/pt/its_tpc/str",
-                                                                 "MC/all/neg/pt/its_tpc/str"};
-  static constexpr std::string_view hPtTrkItsTpcStr[nHistograms] = {"MC/el/pos/pt/its_tpc/trk/str", "MC/mu/pos/pt/its_tpc/trk/str", "MC/pi/pos/pt/its_tpc/trk/str",
-                                                                    "MC/ka/pos/pt/its_tpc/trk/str", "MC/pr/pos/pt/its_tpc/trk/str", "MC/de/pos/pt/its_tpc/trk/str",
-                                                                    "MC/tr/pos/pt/its_tpc/trk/str", "MC/he/pos/pt/its_tpc/trk/str", "MC/al/pos/pt/its_tpc/trk/str",
-                                                                    "MC/all/pos/pt/its_tpc/trk/str",
-                                                                    "MC/el/neg/pt/its_tpc/trk/str", "MC/mu/neg/pt/its_tpc/trk/str", "MC/pi/neg/pt/its_tpc/trk/str",
-                                                                    "MC/ka/neg/pt/its_tpc/trk/str", "MC/pr/neg/pt/its_tpc/trk/str", "MC/de/neg/pt/its_tpc/trk/str",
-                                                                    "MC/tr/neg/pt/its_tpc/trk/str", "MC/he/neg/pt/its_tpc/trk/str", "MC/al/neg/pt/its_tpc/trk/str",
-                                                                    "MC/all/neg/pt/its_tpc/trk/str"};
-  static constexpr std::string_view hPtItsTpcTofStr[nHistograms] = {"MC/el/pos/pt/its_tpc_tof/str", "MC/mu/pos/pt/its_tpc_tof/str", "MC/pi/pos/pt/its_tpc_tof/str",
-                                                                    "MC/ka/pos/pt/its_tpc_tof/str", "MC/pr/pos/pt/its_tpc_tof/str", "MC/de/pos/pt/its_tpc_tof/str",
-                                                                    "MC/tr/pos/pt/its_tpc_tof/str", "MC/he/pos/pt/its_tpc_tof/str", "MC/al/pos/pt/its_tpc_tof/str",
-                                                                    "MC/all/pos/pt/its_tpc_tof/str",
-                                                                    "MC/el/neg/pt/its_tpc_tof/str", "MC/mu/neg/pt/its_tpc_tof/str", "MC/pi/neg/pt/its_tpc_tof/str",
-                                                                    "MC/ka/neg/pt/its_tpc_tof/str", "MC/pr/neg/pt/its_tpc_tof/str", "MC/de/neg/pt/its_tpc_tof/str",
-                                                                    "MC/tr/neg/pt/its_tpc_tof/str", "MC/he/neg/pt/its_tpc_tof/str", "MC/al/neg/pt/its_tpc_tof/str",
-                                                                    "MC/all/neg/pt/its_tpc_tof/str"};
-  static constexpr std::string_view hPtGeneratedStr[nHistograms] = {"MC/el/pos/pt/generated/str", "MC/mu/pos/pt/generated/str", "MC/pi/pos/pt/generated/str",
-                                                                    "MC/ka/pos/pt/generated/str", "MC/pr/pos/pt/generated/str", "MC/de/pos/pt/generated/str",
-                                                                    "MC/tr/pos/pt/generated/str", "MC/he/pos/pt/generated/str", "MC/al/pos/pt/generated/str",
-                                                                    "MC/all/pos/pt/generated/str",
-                                                                    "MC/el/neg/pt/generated/str", "MC/mu/neg/pt/generated/str", "MC/pi/neg/pt/generated/str",
-                                                                    "MC/ka/neg/pt/generated/str", "MC/pr/neg/pt/generated/str", "MC/de/neg/pt/generated/str",
-                                                                    "MC/tr/neg/pt/generated/str", "MC/he/neg/pt/generated/str", "MC/al/neg/pt/generated/str",
-                                                                    "MC/all/neg/pt/generated/str"};
+  static constexpr std::string_view hPtItsTpcStr[nHistograms] = {"MC/el/pos/pt/str/its_tpc", "MC/mu/pos/pt/str/its_tpc", "MC/pi/pos/pt/str/its_tpc",
+                                                                 "MC/ka/pos/pt/str/its_tpc", "MC/pr/pos/pt/str/its_tpc", "MC/de/pos/pt/str/its_tpc",
+                                                                 "MC/tr/pos/pt/str/its_tpc", "MC/he/pos/pt/str/its_tpc", "MC/al/pos/pt/str/its_tpc",
+                                                                 "MC/all/pos/pt/str/its_tpc",
+                                                                 "MC/el/neg/pt/str/its_tpc", "MC/mu/neg/pt/str/its_tpc", "MC/pi/neg/pt/str/its_tpc",
+                                                                 "MC/ka/neg/pt/str/its_tpc", "MC/pr/neg/pt/str/its_tpc", "MC/de/neg/pt/str/its_tpc",
+                                                                 "MC/tr/neg/pt/str/its_tpc", "MC/he/neg/pt/str/its_tpc", "MC/al/neg/pt/str/its_tpc",
+                                                                 "MC/all/neg/pt/str/its_tpc"};
+  static constexpr std::string_view hPtTrkItsTpcStr[nHistograms] = {"MC/el/pos/pt/str/trk/its_tpc", "MC/mu/pos/pt/str/trk/its_tpc", "MC/pi/pos/pt/str/trk/its_tpc",
+                                                                    "MC/ka/pos/pt/str/trk/its_tpc", "MC/pr/pos/pt/str/trk/its_tpc", "MC/de/pos/pt/str/trk/its_tpc",
+                                                                    "MC/tr/pos/pt/str/trk/its_tpc", "MC/he/pos/pt/str/trk/its_tpc", "MC/al/pos/pt/str/trk/its_tpc",
+                                                                    "MC/all/pos/pt/str/trk/its_tpc",
+                                                                    "MC/el/neg/pt/str/trk/its_tpc", "MC/mu/neg/pt/str/trk/its_tpc", "MC/pi/neg/pt/str/trk/its_tpc",
+                                                                    "MC/ka/neg/pt/str/trk/its_tpc", "MC/pr/neg/pt/str/trk/its_tpc", "MC/de/neg/pt/str/trk/its_tpc",
+                                                                    "MC/tr/neg/pt/str/trk/its_tpc", "MC/he/neg/pt/str/trk/its_tpc", "MC/al/neg/pt/str/trk/its_tpc",
+                                                                    "MC/all/neg/pt/str/trk/its_tpc"};
+  static constexpr std::string_view hPtItsTpcTofStr[nHistograms] = {"MC/el/pos/pt/str/its_tpc_tof", "MC/mu/pos/pt/str/its_tpc_tof", "MC/pi/pos/pt/str/its_tpc_tof",
+                                                                    "MC/ka/pos/pt/str/its_tpc_tof", "MC/pr/pos/pt/str/its_tpc_tof", "MC/de/pos/pt/str/its_tpc_tof",
+                                                                    "MC/tr/pos/pt/str/its_tpc_tof", "MC/he/pos/pt/str/its_tpc_tof", "MC/al/pos/pt/str/its_tpc_tof",
+                                                                    "MC/all/pos/pt/str/its_tpc_tof",
+                                                                    "MC/el/neg/pt/str/its_tpc_tof", "MC/mu/neg/pt/str/its_tpc_tof", "MC/pi/neg/pt/str/its_tpc_tof",
+                                                                    "MC/ka/neg/pt/str/its_tpc_tof", "MC/pr/neg/pt/str/its_tpc_tof", "MC/de/neg/pt/str/its_tpc_tof",
+                                                                    "MC/tr/neg/pt/str/its_tpc_tof", "MC/he/neg/pt/str/its_tpc_tof", "MC/al/neg/pt/str/its_tpc_tof",
+                                                                    "MC/all/neg/pt/str/its_tpc_tof"};
+  static constexpr std::string_view hPtGeneratedStr[nHistograms] = {"MC/el/pos/pt/str/generated", "MC/mu/pos/pt/str/generated", "MC/pi/pos/pt/str/generated",
+                                                                    "MC/ka/pos/pt/str/generated", "MC/pr/pos/pt/str/generated", "MC/de/pos/pt/str/generated",
+                                                                    "MC/tr/pos/pt/str/generated", "MC/he/pos/pt/str/generated", "MC/al/pos/pt/str/generated",
+                                                                    "MC/all/pos/pt/str/generated",
+                                                                    "MC/el/neg/pt/str/generated", "MC/mu/neg/pt/str/generated", "MC/pi/neg/pt/str/generated",
+                                                                    "MC/ka/neg/pt/str/generated", "MC/pr/neg/pt/str/generated", "MC/de/neg/pt/str/generated",
+                                                                    "MC/tr/neg/pt/str/generated", "MC/he/neg/pt/str/generated", "MC/al/neg/pt/str/generated",
+                                                                    "MC/all/neg/pt/str/generated"};
 
   // Pt for secondaries from material
-  static constexpr std::string_view hPtItsTpcMat[nHistograms] = {"MC/el/pos/pt/its_tpc/mat", "MC/mu/pos/pt/its_tpc/mat", "MC/pi/pos/pt/its_tpc/mat",
-                                                                 "MC/ka/pos/pt/its_tpc/mat", "MC/pr/pos/pt/its_tpc/mat", "MC/de/pos/pt/its_tpc/mat",
-                                                                 "MC/tr/pos/pt/its_tpc/mat", "MC/he/pos/pt/its_tpc/mat", "MC/al/pos/pt/its_tpc/mat",
-                                                                 "MC/all/pos/pt/its_tpc/mat",
-                                                                 "MC/el/neg/pt/its_tpc/mat", "MC/mu/neg/pt/its_tpc/mat", "MC/pi/neg/pt/its_tpc/mat",
-                                                                 "MC/ka/neg/pt/its_tpc/mat", "MC/pr/neg/pt/its_tpc/mat", "MC/de/neg/pt/its_tpc/mat",
-                                                                 "MC/tr/neg/pt/its_tpc/mat", "MC/he/neg/pt/its_tpc/mat", "MC/al/neg/pt/its_tpc/mat",
-                                                                 "MC/all/neg/pt/its_tpc/mat"};
-  static constexpr std::string_view hPtTrkItsTpcMat[nHistograms] = {"MC/el/pos/pt/its_tpc/trk/mat", "MC/mu/pos/pt/its_tpc/trk/mat", "MC/pi/pos/pt/its_tpc/trk/mat",
-                                                                    "MC/ka/pos/pt/its_tpc/trk/mat", "MC/pr/pos/pt/its_tpc/trk/mat", "MC/de/pos/pt/its_tpc/trk/mat",
-                                                                    "MC/tr/pos/pt/its_tpc/trk/mat", "MC/he/pos/pt/its_tpc/trk/mat", "MC/al/pos/pt/its_tpc/trk/mat",
-                                                                    "MC/all/pos/pt/its_tpc/trk/mat",
-                                                                    "MC/el/neg/pt/its_tpc/trk/mat", "MC/mu/neg/pt/its_tpc/trk/mat", "MC/pi/neg/pt/its_tpc/trk/mat",
-                                                                    "MC/ka/neg/pt/its_tpc/trk/mat", "MC/pr/neg/pt/its_tpc/trk/mat", "MC/de/neg/pt/its_tpc/trk/mat",
-                                                                    "MC/tr/neg/pt/its_tpc/trk/mat", "MC/he/neg/pt/its_tpc/trk/mat", "MC/al/neg/pt/its_tpc/trk/mat",
-                                                                    "MC/all/neg/pt/its_tpc/trk/mat"};
-  static constexpr std::string_view hPtItsTpcTofMat[nHistograms] = {"MC/el/pos/pt/its_tpc_tof/mat", "MC/mu/pos/pt/its_tpc_tof/mat", "MC/pi/pos/pt/its_tpc_tof/mat",
-                                                                    "MC/ka/pos/pt/its_tpc_tof/mat", "MC/pr/pos/pt/its_tpc_tof/mat", "MC/de/pos/pt/its_tpc_tof/mat",
-                                                                    "MC/tr/pos/pt/its_tpc_tof/mat", "MC/he/pos/pt/its_tpc_tof/mat", "MC/al/pos/pt/its_tpc_tof/mat",
-                                                                    "MC/all/pos/pt/its_tpc_tof/mat",
-                                                                    "MC/el/neg/pt/its_tpc_tof/mat", "MC/mu/neg/pt/its_tpc_tof/mat", "MC/pi/neg/pt/its_tpc_tof/mat",
-                                                                    "MC/ka/neg/pt/its_tpc_tof/mat", "MC/pr/neg/pt/its_tpc_tof/mat", "MC/de/neg/pt/its_tpc_tof/mat",
-                                                                    "MC/tr/neg/pt/its_tpc_tof/mat", "MC/he/neg/pt/its_tpc_tof/mat", "MC/al/neg/pt/its_tpc_tof/mat",
-                                                                    "MC/all/neg/pt/its_tpc_tof/mat"};
-  static constexpr std::string_view hPtGeneratedMat[nHistograms] = {"MC/el/pos/pt/generated/mat", "MC/mu/pos/pt/generated/mat", "MC/pi/pos/pt/generated/mat",
-                                                                    "MC/ka/pos/pt/generated/mat", "MC/pr/pos/pt/generated/mat", "MC/de/pos/pt/generated/mat",
-                                                                    "MC/tr/pos/pt/generated/mat", "MC/he/pos/pt/generated/mat", "MC/al/pos/pt/generated/mat",
-                                                                    "MC/all/pos/pt/generated/mat",
-                                                                    "MC/el/neg/pt/generated/mat", "MC/mu/neg/pt/generated/mat", "MC/pi/neg/pt/generated/mat",
-                                                                    "MC/ka/neg/pt/generated/mat", "MC/pr/neg/pt/generated/mat", "MC/de/neg/pt/generated/mat",
-                                                                    "MC/tr/neg/pt/generated/mat", "MC/he/neg/pt/generated/mat", "MC/al/neg/pt/generated/mat",
-                                                                    "MC/all/neg/pt/generated/mat"};
+  static constexpr std::string_view hPtItsTpcMat[nHistograms] = {"MC/el/pos/pt/mat/its_tpc", "MC/mu/pos/pt/mat/its_tpc", "MC/pi/pos/pt/mat/its_tpc",
+                                                                 "MC/ka/pos/pt/mat/its_tpc", "MC/pr/pos/pt/mat/its_tpc", "MC/de/pos/pt/mat/its_tpc",
+                                                                 "MC/tr/pos/pt/mat/its_tpc", "MC/he/pos/pt/mat/its_tpc", "MC/al/pos/pt/mat/its_tpc",
+                                                                 "MC/all/pos/pt/mat/its_tpc",
+                                                                 "MC/el/neg/pt/mat/its_tpc", "MC/mu/neg/pt/mat/its_tpc", "MC/pi/neg/pt/mat/its_tpc",
+                                                                 "MC/ka/neg/pt/mat/its_tpc", "MC/pr/neg/pt/mat/its_tpc", "MC/de/neg/pt/mat/its_tpc",
+                                                                 "MC/tr/neg/pt/mat/its_tpc", "MC/he/neg/pt/mat/its_tpc", "MC/al/neg/pt/mat/its_tpc",
+                                                                 "MC/all/neg/pt/mat/its_tpc"};
+  static constexpr std::string_view hPtTrkItsTpcMat[nHistograms] = {"MC/el/pos/pt/mat/trk/its_tpc", "MC/mu/pos/pt/mat/trk/its_tpc", "MC/pi/pos/pt/mat/trk/its_tpc",
+                                                                    "MC/ka/pos/pt/mat/trk/its_tpc", "MC/pr/pos/pt/mat/trk/its_tpc", "MC/de/pos/pt/mat/trk/its_tpc",
+                                                                    "MC/tr/pos/pt/mat/trk/its_tpc", "MC/he/pos/pt/mat/trk/its_tpc", "MC/al/pos/pt/mat/trk/its_tpc",
+                                                                    "MC/all/pos/pt/mat/trk/its_tpc",
+                                                                    "MC/el/neg/pt/mat/trk/its_tpc", "MC/mu/neg/pt/mat/trk/its_tpc", "MC/pi/neg/pt/mat/trk/its_tpc",
+                                                                    "MC/ka/neg/pt/mat/trk/its_tpc", "MC/pr/neg/pt/mat/trk/its_tpc", "MC/de/neg/pt/mat/trk/its_tpc",
+                                                                    "MC/tr/neg/pt/mat/trk/its_tpc", "MC/he/neg/pt/mat/trk/its_tpc", "MC/al/neg/pt/mat/trk/its_tpc",
+                                                                    "MC/all/neg/pt/mat/trk/its_tpc"};
+  static constexpr std::string_view hPtItsTpcTofMat[nHistograms] = {"MC/el/pos/pt/mat/its_tpc_tof", "MC/mu/pos/pt/mat/its_tpc_tof", "MC/pi/pos/pt/mat/its_tpc_tof",
+                                                                    "MC/ka/pos/pt/mat/its_tpc_tof", "MC/pr/pos/pt/mat/its_tpc_tof", "MC/de/pos/pt/mat/its_tpc_tof",
+                                                                    "MC/tr/pos/pt/mat/its_tpc_tof", "MC/he/pos/pt/mat/its_tpc_tof", "MC/al/pos/pt/mat/its_tpc_tof",
+                                                                    "MC/all/pos/pt/mat/its_tpc_tof",
+                                                                    "MC/el/neg/pt/mat/its_tpc_tof", "MC/mu/neg/pt/mat/its_tpc_tof", "MC/pi/neg/pt/mat/its_tpc_tof",
+                                                                    "MC/ka/neg/pt/mat/its_tpc_tof", "MC/pr/neg/pt/mat/its_tpc_tof", "MC/de/neg/pt/mat/its_tpc_tof",
+                                                                    "MC/tr/neg/pt/mat/its_tpc_tof", "MC/he/neg/pt/mat/its_tpc_tof", "MC/al/neg/pt/mat/its_tpc_tof",
+                                                                    "MC/all/neg/pt/mat/its_tpc_tof"};
+  static constexpr std::string_view hPtGeneratedMat[nHistograms] = {"MC/el/pos/pt/mat/generated", "MC/mu/pos/pt/mat/generated", "MC/pi/pos/pt/mat/generated",
+                                                                    "MC/ka/pos/pt/mat/generated", "MC/pr/pos/pt/mat/generated", "MC/de/pos/pt/mat/generated",
+                                                                    "MC/tr/pos/pt/mat/generated", "MC/he/pos/pt/mat/generated", "MC/al/pos/pt/mat/generated",
+                                                                    "MC/all/pos/pt/mat/generated",
+                                                                    "MC/el/neg/pt/mat/generated", "MC/mu/neg/pt/mat/generated", "MC/pi/neg/pt/mat/generated",
+                                                                    "MC/ka/neg/pt/mat/generated", "MC/pr/neg/pt/mat/generated", "MC/de/neg/pt/mat/generated",
+                                                                    "MC/tr/neg/pt/mat/generated", "MC/he/neg/pt/mat/generated", "MC/al/neg/pt/mat/generated",
+                                                                    "MC/all/neg/pt/mat/generated"};
 
   // P
   static constexpr std::string_view hPItsTpc[nHistograms] = {"MC/el/pos/p/its_tpc", "MC/mu/pos/p/its_tpc", "MC/pi/pos/p/its_tpc",
@@ -255,14 +263,14 @@ struct QaEfficiency {
                                                              "MC/ka/neg/p/its_tpc", "MC/pr/neg/p/its_tpc", "MC/de/neg/p/its_tpc",
                                                              "MC/tr/neg/p/its_tpc", "MC/he/neg/p/its_tpc", "MC/al/neg/p/its_tpc",
                                                              "MC/all/neg/p/its_tpc"};
-  static constexpr std::string_view hPTrkItsTpc[nHistograms] = {"MC/el/pos/p/its_tpc/trk", "MC/mu/pos/p/its_tpc/trk", "MC/pi/pos/p/its_tpc/trk",
-                                                                "MC/ka/pos/p/its_tpc/trk", "MC/pr/pos/p/its_tpc/trk", "MC/de/pos/p/its_tpc/trk",
-                                                                "MC/tr/pos/p/its_tpc/trk", "MC/he/pos/p/its_tpc/trk", "MC/al/pos/p/its_tpc/trk",
-                                                                "MC/all/pos/p/its_tpc/trk",
-                                                                "MC/el/neg/p/its_tpc/trk", "MC/mu/neg/p/its_tpc/trk", "MC/pi/neg/p/its_tpc/trk",
-                                                                "MC/ka/neg/p/its_tpc/trk", "MC/pr/neg/p/its_tpc/trk", "MC/de/neg/p/its_tpc/trk",
-                                                                "MC/tr/neg/p/its_tpc/trk", "MC/he/neg/p/its_tpc/trk", "MC/al/neg/p/its_tpc/trk",
-                                                                "MC/all/neg/p/its_tpc/trk"};
+  static constexpr std::string_view hPTrkItsTpc[nHistograms] = {"MC/el/pos/p/trk/its_tpc", "MC/mu/pos/p/trk/its_tpc", "MC/pi/pos/p/trk/its_tpc",
+                                                                "MC/ka/pos/p/trk/its_tpc", "MC/pr/pos/p/trk/its_tpc", "MC/de/pos/p/trk/its_tpc",
+                                                                "MC/tr/pos/p/trk/its_tpc", "MC/he/pos/p/trk/its_tpc", "MC/al/pos/p/trk/its_tpc",
+                                                                "MC/all/pos/p/trk/its_tpc",
+                                                                "MC/el/neg/p/trk/its_tpc", "MC/mu/neg/p/trk/its_tpc", "MC/pi/neg/p/trk/its_tpc",
+                                                                "MC/ka/neg/p/trk/its_tpc", "MC/pr/neg/p/trk/its_tpc", "MC/de/neg/p/trk/its_tpc",
+                                                                "MC/tr/neg/p/trk/its_tpc", "MC/he/neg/p/trk/its_tpc", "MC/al/neg/p/trk/its_tpc",
+                                                                "MC/all/neg/p/trk/its_tpc"};
   static constexpr std::string_view hPItsTpcTof[nHistograms] = {"MC/el/pos/p/its_tpc_tof", "MC/mu/pos/p/its_tpc_tof", "MC/pi/pos/p/its_tpc_tof",
                                                                 "MC/ka/pos/p/its_tpc_tof", "MC/pr/pos/p/its_tpc_tof", "MC/de/pos/p/its_tpc_tof",
                                                                 "MC/tr/pos/p/its_tpc_tof", "MC/he/pos/p/its_tpc_tof", "MC/al/pos/p/its_tpc_tof",
@@ -289,14 +297,14 @@ struct QaEfficiency {
                                                                "MC/ka/neg/eta/its_tpc", "MC/pr/neg/eta/its_tpc", "MC/de/neg/eta/its_tpc",
                                                                "MC/tr/neg/eta/its_tpc", "MC/he/neg/eta/its_tpc", "MC/al/neg/eta/its_tpc",
                                                                "MC/all/neg/eta/its_tpc"};
-  static constexpr std::string_view hEtaTrkItsTpc[nHistograms] = {"MC/el/pos/eta/its_tpc/trk", "MC/mu/pos/eta/its_tpc/trk", "MC/pi/pos/eta/its_tpc/trk",
-                                                                  "MC/ka/pos/eta/its_tpc/trk", "MC/pr/pos/eta/its_tpc/trk", "MC/de/pos/eta/its_tpc/trk",
-                                                                  "MC/tr/pos/eta/its_tpc/trk", "MC/he/pos/eta/its_tpc/trk", "MC/al/pos/eta/its_tpc/trk",
-                                                                  "MC/all/pos/eta/its_tpc/trk",
-                                                                  "MC/el/neg/eta/its_tpc/trk", "MC/mu/neg/eta/its_tpc/trk", "MC/pi/neg/eta/its_tpc/trk",
-                                                                  "MC/ka/neg/eta/its_tpc/trk", "MC/pr/neg/eta/its_tpc/trk", "MC/de/neg/eta/its_tpc/trk",
-                                                                  "MC/tr/neg/eta/its_tpc/trk", "MC/he/neg/eta/its_tpc/trk", "MC/al/neg/eta/its_tpc/trk",
-                                                                  "MC/all/neg/eta/its_tpc/trk"};
+  static constexpr std::string_view hEtaTrkItsTpc[nHistograms] = {"MC/el/pos/eta/trk/its_tpc", "MC/mu/pos/eta/trk/its_tpc", "MC/pi/pos/eta/trk/its_tpc",
+                                                                  "MC/ka/pos/eta/trk/its_tpc", "MC/pr/pos/eta/trk/its_tpc", "MC/de/pos/eta/trk/its_tpc",
+                                                                  "MC/tr/pos/eta/trk/its_tpc", "MC/he/pos/eta/trk/its_tpc", "MC/al/pos/eta/trk/its_tpc",
+                                                                  "MC/all/pos/eta/trk/its_tpc",
+                                                                  "MC/el/neg/eta/trk/its_tpc", "MC/mu/neg/eta/trk/its_tpc", "MC/pi/neg/eta/trk/its_tpc",
+                                                                  "MC/ka/neg/eta/trk/its_tpc", "MC/pr/neg/eta/trk/its_tpc", "MC/de/neg/eta/trk/its_tpc",
+                                                                  "MC/tr/neg/eta/trk/its_tpc", "MC/he/neg/eta/trk/its_tpc", "MC/al/neg/eta/trk/its_tpc",
+                                                                  "MC/all/neg/eta/trk/its_tpc"};
   static constexpr std::string_view hEtaItsTpcTof[nHistograms] = {"MC/el/pos/eta/its_tpc_tof", "MC/mu/pos/eta/its_tpc_tof", "MC/pi/pos/eta/its_tpc_tof",
                                                                   "MC/ka/pos/eta/its_tpc_tof", "MC/pr/pos/eta/its_tpc_tof", "MC/de/pos/eta/its_tpc_tof",
                                                                   "MC/tr/pos/eta/its_tpc_tof", "MC/he/pos/eta/its_tpc_tof", "MC/al/pos/eta/its_tpc_tof",
@@ -349,14 +357,14 @@ struct QaEfficiency {
                                                                "MC/ka/neg/phi/its_tpc", "MC/pr/neg/phi/its_tpc", "MC/de/neg/phi/its_tpc",
                                                                "MC/tr/neg/phi/its_tpc", "MC/he/neg/phi/its_tpc", "MC/al/neg/phi/its_tpc",
                                                                "MC/all/neg/phi/its_tpc"};
-  static constexpr std::string_view hPhiTrkItsTpc[nHistograms] = {"MC/el/pos/phi/its_tpc/trk", "MC/mu/pos/phi/its_tpc/trk", "MC/pi/pos/phi/its_tpc/trk",
-                                                                  "MC/ka/pos/phi/its_tpc/trk", "MC/pr/pos/phi/its_tpc/trk", "MC/de/pos/phi/its_tpc/trk",
-                                                                  "MC/tr/pos/phi/its_tpc/trk", "MC/he/pos/phi/its_tpc/trk", "MC/al/pos/phi/its_tpc/trk",
-                                                                  "MC/all/pos/phi/its_tpc/trk",
-                                                                  "MC/el/neg/phi/its_tpc/trk", "MC/mu/neg/phi/its_tpc/trk", "MC/pi/neg/phi/its_tpc/trk",
-                                                                  "MC/ka/neg/phi/its_tpc/trk", "MC/pr/neg/phi/its_tpc/trk", "MC/de/neg/phi/its_tpc/trk",
-                                                                  "MC/tr/neg/phi/its_tpc/trk", "MC/he/neg/phi/its_tpc/trk", "MC/al/neg/phi/its_tpc/trk",
-                                                                  "MC/all/neg/phi/its_tpc/trk"};
+  static constexpr std::string_view hPhiTrkItsTpc[nHistograms] = {"MC/el/pos/phi/trk/its_tpc", "MC/mu/pos/phi/trk/its_tpc", "MC/pi/pos/phi/trk/its_tpc",
+                                                                  "MC/ka/pos/phi/trk/its_tpc", "MC/pr/pos/phi/trk/its_tpc", "MC/de/pos/phi/trk/its_tpc",
+                                                                  "MC/tr/pos/phi/trk/its_tpc", "MC/he/pos/phi/trk/its_tpc", "MC/al/pos/phi/trk/its_tpc",
+                                                                  "MC/all/pos/phi/trk/its_tpc",
+                                                                  "MC/el/neg/phi/trk/its_tpc", "MC/mu/neg/phi/trk/its_tpc", "MC/pi/neg/phi/trk/its_tpc",
+                                                                  "MC/ka/neg/phi/trk/its_tpc", "MC/pr/neg/phi/trk/its_tpc", "MC/de/neg/phi/trk/its_tpc",
+                                                                  "MC/tr/neg/phi/trk/its_tpc", "MC/he/neg/phi/trk/its_tpc", "MC/al/neg/phi/trk/its_tpc",
+                                                                  "MC/all/neg/phi/trk/its_tpc"};
   static constexpr std::string_view hPhiItsTpcTof[nHistograms] = {"MC/el/pos/phi/its_tpc_tof", "MC/mu/pos/phi/its_tpc_tof", "MC/pi/pos/phi/its_tpc_tof",
                                                                   "MC/ka/pos/phi/its_tpc_tof", "MC/pr/pos/phi/its_tpc_tof", "MC/de/pos/phi/its_tpc_tof",
                                                                   "MC/tr/pos/phi/its_tpc_tof", "MC/he/pos/phi/its_tpc_tof", "MC/al/pos/phi/its_tpc_tof",
@@ -383,14 +391,14 @@ struct QaEfficiency {
                                                                  "MC/ka/neg/pteta/its_tpc", "MC/pr/neg/pteta/its_tpc", "MC/de/neg/pteta/its_tpc",
                                                                  "MC/tr/neg/pteta/its_tpc", "MC/he/neg/pteta/its_tpc", "MC/al/neg/pteta/its_tpc",
                                                                  "MC/all/neg/pteta/its_tpc"};
-  static constexpr std::string_view hPtEtaTrkItsTpc[nHistograms] = {"MC/el/pos/pteta/its_tpc/trk", "MC/mu/pos/pteta/its_tpc/trk", "MC/pi/pos/pteta/its_tpc/trk",
-                                                                    "MC/ka/pos/pteta/its_tpc/trk", "MC/pr/pos/pteta/its_tpc/trk", "MC/de/pos/pteta/its_tpc/trk",
-                                                                    "MC/tr/pos/pteta/its_tpc/trk", "MC/he/pos/pteta/its_tpc/trk", "MC/al/pos/pteta/its_tpc/trk",
-                                                                    "MC/all/pos/pteta/its_tpc/trk",
-                                                                    "MC/el/neg/pteta/its_tpc/trk", "MC/mu/neg/pteta/its_tpc/trk", "MC/pi/neg/pteta/its_tpc/trk",
-                                                                    "MC/ka/neg/pteta/its_tpc/trk", "MC/pr/neg/pteta/its_tpc/trk", "MC/de/neg/pteta/its_tpc/trk",
-                                                                    "MC/tr/neg/pteta/its_tpc/trk", "MC/he/neg/pteta/its_tpc/trk", "MC/al/neg/pteta/its_tpc/trk",
-                                                                    "MC/all/neg/pteta/its_tpc/trk"};
+  static constexpr std::string_view hPtEtaTrkItsTpc[nHistograms] = {"MC/el/pos/pteta/trk/its_tpc", "MC/mu/pos/pteta/trk/its_tpc", "MC/pi/pos/pteta/trk/its_tpc",
+                                                                    "MC/ka/pos/pteta/trk/its_tpc", "MC/pr/pos/pteta/trk/its_tpc", "MC/de/pos/pteta/trk/its_tpc",
+                                                                    "MC/tr/pos/pteta/trk/its_tpc", "MC/he/pos/pteta/trk/its_tpc", "MC/al/pos/pteta/trk/its_tpc",
+                                                                    "MC/all/pos/pteta/trk/its_tpc",
+                                                                    "MC/el/neg/pteta/trk/its_tpc", "MC/mu/neg/pteta/trk/its_tpc", "MC/pi/neg/pteta/trk/its_tpc",
+                                                                    "MC/ka/neg/pteta/trk/its_tpc", "MC/pr/neg/pteta/trk/its_tpc", "MC/de/neg/pteta/trk/its_tpc",
+                                                                    "MC/tr/neg/pteta/trk/its_tpc", "MC/he/neg/pteta/trk/its_tpc", "MC/al/neg/pteta/trk/its_tpc",
+                                                                    "MC/all/neg/pteta/trk/its_tpc"};
   static constexpr std::string_view hPtEtaItsTpcTof[nHistograms] = {"MC/el/pos/pteta/its_tpc_tof", "MC/mu/pos/pteta/its_tpc_tof", "MC/pi/pos/pteta/its_tpc_tof",
                                                                     "MC/ka/pos/pteta/its_tpc_tof", "MC/pr/pos/pteta/its_tpc_tof", "MC/de/pos/pteta/its_tpc_tof",
                                                                     "MC/tr/pos/pteta/its_tpc_tof", "MC/he/pos/pteta/its_tpc_tof", "MC/al/pos/pteta/its_tpc_tof",
@@ -459,6 +467,7 @@ struct QaEfficiency {
     auto makeHistogramsPerCharge = [&](const int chargeIndex) {
       const int histogramIndex = id + chargeIndex * nSpecies;
 
+      histos2.add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1F, {axisPt});
       histos.add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1F, {axisPt});
       histos.add(hPtTpc[histogramIndex].data(), "TPC tracks " + tagPt, kTH1F, {axisPt});
       histos.add(hPtItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisPt});
@@ -468,6 +477,7 @@ struct QaEfficiency {
       histos.add(hPtTrkItsTpc[histogramIndex].data(), "ITS-TPC track (reco) " + tagPt, kTH1F, {axisPt});
       histos.add(hPtGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1F, {axisPt});
 
+      histos.add(hPtItsPrm[histogramIndex].data(), "ITS tracks (primaries) " + tagPt, kTH1F, {axisPt});
       histos.add(hPtItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPt, kTH1F, {axisPt});
       histos.add(hPtTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
       histos.add(hPtItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1F, {axisPt});
@@ -987,7 +997,7 @@ struct QaEfficiency {
 
     const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
-    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(partName));
+    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(Form("%s_%s", pdgSign == 0 ? "Positive" : "Negative", partName)));
     if (!subList) {
       LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
