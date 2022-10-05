@@ -146,10 +146,6 @@ struct AnalysisQvector {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(fConfigNoLaterThan.value);
-    auto histCCDB = ccdb->get<TH1F>(fConfigCCDBPath.value);
-    if (!histCCDB) {
-      LOGF(fatal, "CCDB histogram not found");
-    }
 
     VarManager::SetDefaultVarNames();
 
