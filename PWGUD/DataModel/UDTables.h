@@ -161,6 +161,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
 // Barrel track kinematics
 DECLARE_SOA_TABLE(UDTracks, "AOD", "UDTRACK",
                   o2::soa::Index<>,
+                  udtrack::UDCollisionId,
                   udtrack::Px,
                   udtrack::Py,
                   udtrack::Pz,
@@ -177,9 +178,6 @@ DECLARE_SOA_TABLE(UDTracksCov, "AOD", "UDTRACKCOV",
 DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
-
-DECLARE_SOA_TABLE(UDTrackCollisionIDs, "AOD", "UDTRCOLID",
-                  udtrack::UDCollisionId);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::ITSClusterMap,
@@ -213,7 +211,6 @@ using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
 using UDTrackDCA = UDTracksDCA::iterator;
-using UDTrackCollisionID = UDTrackCollisionIDs::iterator;
 
 namespace udmctracklabel
 {
@@ -252,6 +249,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
 // Muon track kinematics
 DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   o2::soa::Index<>,
+                  udfwdtrack::UDCollisionId,
                   udfwdtrack::Px,
                   udfwdtrack::Py,
                   udfwdtrack::Pz,
@@ -259,9 +257,6 @@ DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   udfwdtrack::GlobalBC,
                   udfwdtrack::TrackTime,
                   udfwdtrack::TrackTimeRes);
-
-DECLARE_SOA_TABLE(UDFwdTrackCollisionIDs, "AOD", "UDFWDTRCOLID",
-                  udfwdtrack::UDCollisionId);
 
 // Muon track quality details
 DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
@@ -276,7 +271,6 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
 
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
-using UDFwdTrackCollisionID = UDFwdTrackCollisionIDs::iterator;
 
 namespace udmcfwdtracklabel
 {

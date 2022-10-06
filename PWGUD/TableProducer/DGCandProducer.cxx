@@ -79,7 +79,6 @@ struct DGCandProducer {
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
-  Produces<aod::UDTrackCollisionIDs> outputTracksCollisionsId;
 
   // MC tables
   Produces<aod::UDMcCollisions> outputMcCollisions;
@@ -109,7 +108,7 @@ struct DGCandProducer {
   template <typename TTrack, typename TBC>
   void updateUDTrackTables(TTrack const& track, TBC const& bc)
   {
-    outputTracks(track.px(), track.py(), track.pz(), track.sign(),
+    outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
                  bc.globalBC(), track.trackTime(), track.trackTimeRes());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -137,7 +136,6 @@ struct DGCandProducer {
                       track.length(),
                       track.tofExpMom(),
                       track.detectorMap());
-    outputTracksCollisionsId(outputCollisions.lastIndex());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value

@@ -124,9 +124,8 @@ struct UpcCandAnalyzer {
      {"Selection/TPC_nSigmaPi", ";#sigma;", {HistType::kTH1D, {{200, -10., 10.}}}}}};
 
   using Candidates = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSels>;
-  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra, o2::aod::UDTracksDCA,
-                                 o2::aod::UDTracksPID, o2::aod::UDTrackCollisionIDs>;
-  using FwdTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra>;
+  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra, o2::aod::UDTracksDCA, o2::aod::UDTracksPID>;
+  using FwdTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
 
   void init(InitContext&)
   {
