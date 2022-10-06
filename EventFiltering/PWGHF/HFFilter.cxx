@@ -253,6 +253,7 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
 namespace hfoptimisationTree
 {
 DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);           //!
+DECLARE_SOA_COLUMN(ParticleID, particleID, int);           //!
 DECLARE_SOA_COLUMN(BkgBDT, bkgBDT, float);           //!
 DECLARE_SOA_COLUMN(PromptBDT, promptBDT, float);           //!
 DECLARE_SOA_COLUMN(NonpromptBDT, nonpromptBDT, float);           //!
@@ -260,6 +261,7 @@ DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);           //!
 } // namespace hfoptimisationTree
 DECLARE_SOA_TABLE(HFOptimisationTree, "AOD", "HFOPTIMTREE", //!
                   hfoptimisationTree::CollisionIndex,
+                  hfoptimisationTree::ParticleID,
                   hfoptimisationTree::BkgBDT,
                   hfoptimisationTree::PromptBDT,
                   hfoptimisationTree::NonpromptBDT,
@@ -289,6 +291,7 @@ struct HfFilter { // Main struct for HF triggers
   Produces<aod::HfFilters> tags;
   Produces<aod::HFTrigTrain2P> train2P;
   Produces<aod::HFTrigTrain3P> train3P;
+  Produces<aod::HFOptimisationTree> optimisationTree;
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
@@ -956,7 +959,7 @@ struct HfFilter { // Main struct for HF triggers
               keepEvent[kBeauty3P] = true;
               // fill optimisation tree for D0
               if (applyOptimisation) {
-                optimisationTree(collision.globalIndex(), scores[0], scores[1], scores[2], track.dcaXY());
+                optimisationTree(collision.globalIndex(), pdg::Code::kD0, scores[0], scores[1], scores[2], track.dcaXY());
               }              
               if (activateQA) {
                 hMassVsPtB[kBplus]->Fill(ptCand, massCand);
@@ -971,6 +974,10 @@ struct HfFilter { // Main struct for HF triggers
                   auto massCandB0 = RecoDecay::m(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
                     keepEvent[kBeauty3P] = true;
+                    // fill optimisation tree for D0
+                  if (applyOptimisation) {
+                    optimisationTree(collision.globalIndex(), 413, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
+                  }  
                     if (activateQA) {
                       auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
                       auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
@@ -1035,6 +1042,9 @@ struct HfFilter { // Main struct for HF triggers
       std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
       std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
 
+      const int scoresSize = kNCharmParticles - 1;
+      float myscores[scoresSize][3];
+      for (int i=0; i< scoresSize; i++) { std::fill_n(myscores[i], 3, -1);} // initialize BDT scores array outside ML loop      
       // apply ML models
       if (applyML) {
         isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
@@ -1067,7 +1077,9 @@ struct HfFilter { // Main struct for HF triggers
             auto typeInfo = outputTensor[1].GetTensorTypeAndShapeInfo();
             assert(typeInfo.GetElementCount() == 3); // we need multiclass
             auto scores = outputTensor[1].GetTensorMutableData<float>();
-
+            myscores[iCharmPart][0] = scores[0];
+            myscores[iCharmPart][1] = scores[1];
+            myscores[iCharmPart][2] = scores[2];
             if (applyML && activateQA) {
               hBDTScoreBkg[iCharmPart + 1]->Fill(scores[0]);
               hBDTScorePrompt[iCharmPart + 1]->Fill(scores[1]);
@@ -1131,12 +1143,16 @@ struct HfFilter { // Main struct for HF triggers
         float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
+        int particleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4P) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
             if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
               auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty4P] = true;
+                if (applyOptimisation) {
+                  optimisationTree(collision.globalIndex(), particleID[iHypo], myscores[iHypo][0], myscores[iHypo][1], myscores[iHypo][2], track.dcaXY());
+                }
                 if (activateQA) {
                   auto pVecBeauty4Prong = RecoDecay::pVec(pVec3Prong, pVecFourth);
                   auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
