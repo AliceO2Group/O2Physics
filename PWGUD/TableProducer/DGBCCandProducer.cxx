@@ -159,7 +159,6 @@ struct DGBCCandProducer {
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
-  Produces<aod::UDTrackCollisionIDs> outputTracksCollisionsId;
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
@@ -192,7 +191,7 @@ struct DGBCCandProducer {
   template <typename TTrack, typename TBC>
   void updateUDTrackTables(TTrack const& track, TBC const& bc)
   {
-    outputTracks(track.px(), track.py(), track.pz(), track.sign(),
+    outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
                  bc.globalBC(), track.trackTime(), track.trackTimeRes());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -220,7 +219,6 @@ struct DGBCCandProducer {
                       track.length(),
                       track.tofExpMom(),
                       track.detectorMap());
-    outputTracksCollisionsId(outputCollisions.lastIndex());
   }
 
   void init(InitContext& context)
