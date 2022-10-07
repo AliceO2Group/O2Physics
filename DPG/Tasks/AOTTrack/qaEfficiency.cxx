@@ -76,6 +76,8 @@ struct QaEfficiency {
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosPos{"HistosPos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosNeg{"HistosNeg", {}, OutputObjHandlingPolicy::AnalysisObject};
   static constexpr int nHistograms = nSpecies * 2;
 
   // Pt
@@ -416,12 +418,30 @@ struct QaEfficiency {
                                                                     "MC/tr/neg/pteta/generated", "MC/he/neg/pteta/generated", "MC/al/neg/pteta/generated",
                                                                     "MC/all/neg/pteta/generated"};
 
-  template <o2::track::PID::ID id>
+  static const char* particleName(int charge, o2::track::PID::ID id)
+  {
+    return Form("%s %s", charge == 0 ? "Positive" : "Negative", id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id));
+  }
+
+  template <int charge, o2::track::PID::ID id>
   void makeMCHistograms(const bool doMakeHistograms)
   {
     if (!doMakeHistograms) {
       return;
     }
+
+    if constexpr (charge == 0) {
+      if (!doPositivePDG) { // Positive
+        return;
+      }
+    } else if constexpr (charge == 1) {
+      if (!doNegativePDG) { // Negative
+        return;
+      }
+    } else {
+      LOG(fatal) << "Can't interpret charge " << charge;
+    }
+
     AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, "#it{p} (GeV/#it{c})"};
     if (logPt) {
@@ -432,8 +452,8 @@ struct QaEfficiency {
     const AxisSpec axisY{yBins, "#it{y}"};
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
 
-    const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
-    LOG(debug) << "Preparing histograms for particle: " << partName;
+    const char* partName = particleName(charge, id);
+    LOG(info) << "Preparing histograms for particle: " << partName << " charge " << charge;
 
     const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                partName,
@@ -464,71 +484,67 @@ struct QaEfficiency {
                                   phiMin, phiMax,
                                   yMin, yMax);
 
-    auto makeHistogramsPerCharge = [&](const int chargeIndex) {
-      const int histogramIndex = id + chargeIndex * nSpecies;
-
-      histos.add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtTpc[histogramIndex].data(), "TPC tracks " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTof[histogramIndex].data(), "ITS-TOF tracks " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtTpcTof[histogramIndex].data(), "TPC-TOF tracks " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtTrkItsTpc[histogramIndex].data(), "ITS-TPC track (reco) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1F, {axisPt});
-
-      histos.add(hPtItsPrm[histogramIndex].data(), "ITS tracks (primaries) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPt, kTH1F, {axisPt});
-
-      histos.add(hPtItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtTrkItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTpcTofStr[histogramIndex].data(), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtGeneratedStr[histogramIndex].data(), "Generated (from weak decays) " + tagPt, kTH1F, {axisPt});
-
-      histos.add(hPtItsTpcMat[histogramIndex].data(), "ITS-TPC tracks (from material)" + tagPt, kTH1F, {axisPt});
-      histos.add(hPtTrkItsTpcMat[histogramIndex].data(), "ITS-TPC tracks (reco from material) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtItsTpcTofMat[histogramIndex].data(), "ITS-TPC-TOF tracks ( from material) " + tagPt, kTH1F, {axisPt});
-      histos.add(hPtGeneratedMat[histogramIndex].data(), "Generated ( from material) " + tagPt, kTH1F, {axisPt});
-
-      histos.add(hPItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisP});
-      histos.add(hPTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPt, kTH1F, {axisP});
-      histos.add(hPItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1F, {axisP});
-      histos.add(hPGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1F, {axisP});
-
-      histos.add(hEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagEta, kTH1F, {axisEta});
-      histos.add(hEtaTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagEta, kTH1F, {axisEta});
-      histos.add(hEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagEta, kTH1F, {axisEta});
-      histos.add(hEtaGenerated[histogramIndex].data(), "Generated " + tagEta, kTH1F, {axisEta});
-
-      histos.add(hYItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagY, kTH1F, {axisY});
-      histos.add(hYItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagY, kTH1F, {axisY});
-      histos.add(hYGenerated[histogramIndex].data(), "Generated " + tagY, kTH1F, {axisY});
-
-      histos.add(hPhiItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPhi, kTH1F, {axisPhi});
-      histos.add(hPhiTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPhi, kTH1F, {axisPhi});
-      histos.add(hPhiItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPhi, kTH1F, {axisPhi});
-      histos.add(hPhiGenerated[histogramIndex].data(), "Generated " + tagPhi, kTH1F, {axisPhi});
-
-      if (doPtEta) {
-        histos.add(hPtEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
-        histos.add(hPtEtaTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPtEta, kTH2D, {axisPt, axisEta});
-        histos.add(hPtEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
-        histos.add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
-      }
-    };
-
-    if (doPositivePDG) { // Positive
-      makeHistogramsPerCharge(0);
+    const int histogramIndex = id + charge * nSpecies;
+    HistogramRegistry* registry = &histosPos;
+    if (charge == 1) {
+      registry = &histosNeg;
     }
-    if (doNegativePDG) { // Negative
-      makeHistogramsPerCharge(1);
+
+    registry->add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTpc[histogramIndex].data(), "TPC tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTof[histogramIndex].data(), "ITS-TOF tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTpcTof[histogramIndex].data(), "TPC-TOF tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTrkItsTpc[histogramIndex].data(), "ITS-TPC track (reco) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1F, {axisPt});
+
+    registry->add(hPtItsPrm[histogramIndex].data(), "ITS tracks (primaries) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPt, kTH1F, {axisPt});
+
+    registry->add(hPtItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTrkItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcTofStr[histogramIndex].data(), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtGeneratedStr[histogramIndex].data(), "Generated (from weak decays) " + tagPt, kTH1F, {axisPt});
+
+    registry->add(hPtItsTpcMat[histogramIndex].data(), "ITS-TPC tracks (from material)" + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTrkItsTpcMat[histogramIndex].data(), "ITS-TPC tracks (reco from material) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcTofMat[histogramIndex].data(), "ITS-TPC-TOF tracks ( from material) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtGeneratedMat[histogramIndex].data(), "Generated ( from material) " + tagPt, kTH1F, {axisPt});
+
+    registry->add(hPItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisP});
+    registry->add(hPTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPt, kTH1F, {axisP});
+    registry->add(hPItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1F, {axisP});
+    registry->add(hPGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1F, {axisP});
+
+    registry->add(hEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagEta, kTH1F, {axisEta});
+    registry->add(hEtaTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagEta, kTH1F, {axisEta});
+    registry->add(hEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagEta, kTH1F, {axisEta});
+    registry->add(hEtaGenerated[histogramIndex].data(), "Generated " + tagEta, kTH1F, {axisEta});
+
+    registry->add(hYItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagY, kTH1F, {axisY});
+    registry->add(hYItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagY, kTH1F, {axisY});
+    registry->add(hYGenerated[histogramIndex].data(), "Generated " + tagY, kTH1F, {axisY});
+
+    registry->add(hPhiItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPhi, kTH1F, {axisPhi});
+    registry->add(hPhiTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPhi, kTH1F, {axisPhi});
+    registry->add(hPhiItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPhi, kTH1F, {axisPhi});
+    registry->add(hPhiGenerated[histogramIndex].data(), "Generated " + tagPhi, kTH1F, {axisPhi});
+
+    if (doPtEta) {
+      registry->add(hPtEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
+      registry->add(hPtEtaTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPtEta, kTH2D, {axisPt, axisEta});
+      registry->add(hPtEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
+      registry->add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
     }
-    LOG(debug) << "Done with particle: " << partName;
+
+    LOG(info) << "Done with particle: " << partName;
   }
 
-  template <o2::track::PID::ID id, int chargeIndex>
+  template <int charge, o2::track::PID::ID id>
   void makeMCEfficiency(const bool doMakeHistograms)
   {
     if (!doMakeHistograms) {
@@ -539,11 +555,11 @@ struct QaEfficiency {
       return;
     }
 
-    if constexpr (chargeIndex == 0) {
+    if constexpr (charge == 0) {
       if (!doPositivePDG) { // Positive
         return;
       }
-    } else if constexpr (chargeIndex == 1) {
+    } else if constexpr (charge == 1) {
       if (!doNegativePDG) { // Negative
         return;
       }
@@ -551,16 +567,20 @@ struct QaEfficiency {
       LOG(fatal) << "Can't interpret charge index";
     }
 
-    const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
-    LOG(debug) << "Making TEfficiency for MC for particle " << partName;
+    const char* partName = particleName(charge, id);
+    LOG(info) << "Making TEfficiency for MC for particle " << partName;
     THashList* subList = new THashList();
-    subList->SetName(Form("%s_%s", chargeIndex == 0 ? "Positive" : "Negative", partName));
+    subList->SetName(partName);
     listEfficiencyMC->Add(subList);
 
-    auto makeEfficiency = [&](TString effname, auto templateHisto) { // 1D efficiencies
-      effname = partName + effname;
-      LOG(debug) << " - " << effname;
-      const auto h = histos.get<TH1>(templateHisto);
+    HistogramRegistry* registry = &histosPos;
+    if (charge == 1) {
+      registry = &histosNeg;
+    }
+
+    auto makeEfficiency = [&](const TString effname, auto templateHisto) { // 1D efficiencies
+      const auto h = registry->get<TH1>(templateHisto);
+      LOG(debug) << " Making 1D TEfficiency " << effname<<" from "<<  h->GetName();
       const TAxis* axis = h->GetXaxis();
       TString efftitle = h->GetTitle();
       efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
@@ -572,7 +592,7 @@ struct QaEfficiency {
       }
     };
 
-    const int histogramIndex = id + chargeIndex * nSpecies;
+    const int histogramIndex = id + charge * nSpecies;
 
     makeEfficiency("ITS_vsPt", HIST(hPtIts[histogramIndex]));
     makeEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]));
@@ -602,10 +622,9 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPhi_Trk", HIST(hPhiTrkItsTpc[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPhi", HIST(hPhiItsTpcTof[histogramIndex]));
 
-    auto makeEfficiency2D = [&](TString effname, auto templateHisto) { // 2D efficiencies
-      effname = partName + effname;
-      LOG(debug) << " - " << effname;
-      const auto h = histos.get<TH2>(templateHisto);
+    auto makeEfficiency2D = [&](const TString effname, auto templateHisto) { // 2D efficiencies
+      const auto h = registry->get<TH2>(templateHisto);
+      LOG(debug) << " Making 2D TEfficiency " << effname<<" from "<<  h->GetName();
       const TAxis* axisX = h->GetXaxis();
       const TAxis* axisY = h->GetYaxis();
       TString efftitle = h->GetTitle();
@@ -621,6 +640,8 @@ struct QaEfficiency {
     if (doPtEta) {
       makeEfficiency2D("ITS-TPC_vsPt_vsEta", HIST(hPtEtaItsTpc[histogramIndex]));
     }
+
+    LOG(info) << "Done with particle: " << partName << " for efficiencies";
   }
 
   void initMC(const AxisSpec& axisSel)
@@ -660,28 +681,29 @@ struct QaEfficiency {
     histos.add("MC/trackLength", "Track length;Track length (cm)", kTH1F, {{2000, -1000, 1000}});
 
     listEfficiencyMC.setObject(new THashList);
-    makeMCHistograms<o2::track::PID::Electron>(doEl);
-    makeMCHistograms<o2::track::PID::Muon>(doMu);
-    makeMCHistograms<o2::track::PID::Pion>(doPi);
-    makeMCHistograms<o2::track::PID::Kaon>(doKa);
-    makeMCHistograms<o2::track::PID::Proton>(doPr);
-    makeMCHistograms<o2::track::PID::Deuteron>(doDe);
-    makeMCHistograms<o2::track::PID::Triton>(doTr);
-    makeMCHistograms<o2::track::PID::Helium3>(doHe);
-    makeMCHistograms<o2::track::PID::Alpha>(doAl);
-    makeMCHistograms<o2::track::PID::NIDs>(doUnId);
 
-    static_for<0, 1>([&](auto i) {
-      makeMCEfficiency<o2::track::PID::Electron, i>(doEl);
-      makeMCEfficiency<o2::track::PID::Muon, i>(doMu);
-      makeMCEfficiency<o2::track::PID::Pion, i>(doPi);
-      makeMCEfficiency<o2::track::PID::Kaon, i>(doKa);
-      makeMCEfficiency<o2::track::PID::Proton, i>(doPr);
-      makeMCEfficiency<o2::track::PID::Deuteron, i>(doDe);
-      makeMCEfficiency<o2::track::PID::Triton, i>(doTr);
-      makeMCEfficiency<o2::track::PID::Helium3, i>(doHe);
-      makeMCEfficiency<o2::track::PID::Alpha, i>(doAl);
-      makeMCEfficiency<o2::track::PID::NIDs, i>(doUnId);
+    static_for<0, 1>([&](auto charge) {
+      makeMCHistograms<charge, o2::track::PID::Electron>(doEl);
+      makeMCHistograms<charge, o2::track::PID::Muon>(doMu);
+      makeMCHistograms<charge, o2::track::PID::Pion>(doPi);
+      makeMCHistograms<charge, o2::track::PID::Kaon>(doKa);
+      makeMCHistograms<charge, o2::track::PID::Proton>(doPr);
+      makeMCHistograms<charge, o2::track::PID::Deuteron>(doDe);
+      makeMCHistograms<charge, o2::track::PID::Triton>(doTr);
+      makeMCHistograms<charge, o2::track::PID::Helium3>(doHe);
+      makeMCHistograms<charge, o2::track::PID::Alpha>(doAl);
+      makeMCHistograms<charge, o2::track::PID::NIDs>(doUnId);
+
+      makeMCEfficiency<charge, o2::track::PID::Electron>(doEl);
+      makeMCEfficiency<charge, o2::track::PID::Muon>(doMu);
+      makeMCEfficiency<charge, o2::track::PID::Pion>(doPi);
+      makeMCEfficiency<charge, o2::track::PID::Kaon>(doKa);
+      makeMCEfficiency<charge, o2::track::PID::Proton>(doPr);
+      makeMCEfficiency<charge, o2::track::PID::Deuteron>(doDe);
+      makeMCEfficiency<charge, o2::track::PID::Triton>(doTr);
+      makeMCEfficiency<charge, o2::track::PID::Helium3>(doHe);
+      makeMCEfficiency<charge, o2::track::PID::Alpha>(doAl);
+      makeMCEfficiency<charge, o2::track::PID::NIDs>(doUnId);
     });
   }
 
@@ -842,33 +864,33 @@ struct QaEfficiency {
     initMC(axisSel);
   }
 
-  template <int pdgSign, o2::track::PID::ID id, typename particleType>
+  template <int charge, o2::track::PID::ID id, typename particleType>
   bool isPdgSelected(particleType mcParticle)
   {
-    static_assert(pdgSign == 0 || pdgSign == 1);
+    static_assert(charge == 0 || charge == 1);
 
     // Selecting PDG code
     if constexpr (PDGs[id] == 0) { // All PDGs
-      if constexpr (pdgSign == 0) {
+      if constexpr (charge == 0) {
         return mcParticle.pdgCode() > 0; // Positive
       } else {
         return mcParticle.pdgCode() < 0; // Negative
       }
     }
     // Specific PDGs
-    if constexpr (pdgSign == 0) {
+    if constexpr (charge == 0) {
       return mcParticle.pdgCode() == PDGs[id];
     } else {
       return mcParticle.pdgCode() == -PDGs[id];
     }
   }
 
-  template <int pdgSign, o2::track::PID::ID id, typename trackType>
-  void fillMCTrackHistograms(const trackType& track)
+  template <int charge, o2::track::PID::ID id, typename trackType>
+  void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
   {
-    static_assert(pdgSign == 0 || pdgSign == 1);
+    static_assert(charge == 0 || charge == 1);
 
-    if constexpr (pdgSign == 0) {
+    if constexpr (charge == 0) {
       if (!doPositivePDG) {
         return;
       }
@@ -878,66 +900,75 @@ struct QaEfficiency {
       }
     }
 
-    constexpr int histogramIndex = id + pdgSign * nSpecies;
+    auto& h = histosPos;
+    if (charge == 1) {
+      h = histosNeg;
+    }
+
+    constexpr int histogramIndex = id + charge * nSpecies;
     LOG(debug) << "Filling track histograms for id " << static_cast<int>(id);
     const auto mcParticle = track.mcParticle();
 
-    if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
+    if (!isPdgSelected<charge, id>(mcParticle)) { // Selecting PDG code
       return;
     }
 
     histos.fill(HIST("MC/trackSelection"), 11 + id);
 
-    histos.fill(HIST(hPItsTpc[histogramIndex]), mcParticle.p());
-    histos.fill(HIST(hPtItsTpc[histogramIndex]), mcParticle.pt());
-    histos.fill(HIST(hEtaItsTpc[histogramIndex]), mcParticle.eta());
-    histos.fill(HIST(hYItsTpc[histogramIndex]), mcParticle.y());
-    histos.fill(HIST(hPhiItsTpc[histogramIndex]), mcParticle.phi());
+    h.fill(HIST(hPItsTpc[histogramIndex]), mcParticle.p());
+    h.fill(HIST(hPtItsTpc[histogramIndex]), mcParticle.pt());
+    h.fill(HIST(hEtaItsTpc[histogramIndex]), mcParticle.eta());
+    h.fill(HIST(hYItsTpc[histogramIndex]), mcParticle.y());
+    h.fill(HIST(hPhiItsTpc[histogramIndex]), mcParticle.phi());
     if (doPtEta) {
-      histos.fill(HIST(hPtEtaItsTpc[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+      h.fill(HIST(hPtEtaItsTpc[histogramIndex]), mcParticle.pt(), mcParticle.eta());
     }
 
-    histos.fill(HIST(hPTrkItsTpc[histogramIndex]), track.p());
-    histos.fill(HIST(hPtTrkItsTpc[histogramIndex]), track.pt());
-    histos.fill(HIST(hEtaTrkItsTpc[histogramIndex]), track.eta());
-    histos.fill(HIST(hPhiTrkItsTpc[histogramIndex]), track.phi());
+    h.fill(HIST(hPTrkItsTpc[histogramIndex]), track.p());
+    h.fill(HIST(hPtTrkItsTpc[histogramIndex]), track.pt());
+    h.fill(HIST(hEtaTrkItsTpc[histogramIndex]), track.eta());
+    h.fill(HIST(hPhiTrkItsTpc[histogramIndex]), track.phi());
 
     if (mcParticle.isPhysicalPrimary()) {
-      histos.fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
-      histos.fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
+      h.fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
+      h.fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
       if (track.hasTOF()) {
-        histos.fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
+        h.fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
       }
     } else {
       if (mcParticle.getProcess() == 4) { // Particle deday
-        histos.fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
-        histos.fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
+        h.fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
+        h.fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
         if (track.hasTOF()) {
-          histos.fill(HIST(hPtItsTpcTofStr[histogramIndex]), mcParticle.pt());
+          h.fill(HIST(hPtItsTpcTofStr[histogramIndex]), mcParticle.pt());
         }
       } else { // Material
-        histos.fill(HIST(hPtItsTpcMat[histogramIndex]), mcParticle.pt());
-        histos.fill(HIST(hPtTrkItsTpcMat[histogramIndex]), track.pt());
+        h.fill(HIST(hPtItsTpcMat[histogramIndex]), mcParticle.pt());
+        h.fill(HIST(hPtTrkItsTpcMat[histogramIndex]), track.pt());
         if (track.hasTOF()) {
-          histos.fill(HIST(hPtItsTpcTofMat[histogramIndex]), mcParticle.pt());
+          h.fill(HIST(hPtItsTpcTofMat[histogramIndex]), mcParticle.pt());
         }
       }
     }
     if (!track.hasTOF()) {
       return;
     }
-    histos.fill(HIST(hPItsTpcTof[histogramIndex]), mcParticle.p());
-    histos.fill(HIST(hPtItsTpcTof[histogramIndex]), mcParticle.pt());
-    histos.fill(HIST(hEtaItsTpcTof[histogramIndex]), mcParticle.eta());
-    histos.fill(HIST(hYItsTpcTof[histogramIndex]), mcParticle.y());
-    histos.fill(HIST(hPhiItsTpcTof[histogramIndex]), mcParticle.phi());
+    h.fill(HIST(hPItsTpcTof[histogramIndex]), mcParticle.p());
+    h.fill(HIST(hPtItsTpcTof[histogramIndex]), mcParticle.pt());
+    h.fill(HIST(hEtaItsTpcTof[histogramIndex]), mcParticle.eta());
+    h.fill(HIST(hYItsTpcTof[histogramIndex]), mcParticle.y());
+    h.fill(HIST(hPhiItsTpcTof[histogramIndex]), mcParticle.phi());
   }
 
-  template <int pdgSign, o2::track::PID::ID id, typename particleType>
-  void fillMCParticleHistograms(const particleType& mcParticle)
+  template <int charge, o2::track::PID::ID id, typename particleType>
+  void fillMCParticleHistograms(const particleType& mcParticle, const bool doMakeHistograms)
   {
-    static_assert(pdgSign == 0 || pdgSign == 1);
-    if constexpr (pdgSign == 0) {
+    if (!doMakeHistograms) {
+      return;
+    }
+
+    static_assert(charge == 0 || charge == 1);
+    if constexpr (charge == 0) {
       if (!doPositivePDG) {
         return;
       }
@@ -947,39 +978,48 @@ struct QaEfficiency {
       }
     }
 
-    constexpr int histogramIndex = id + pdgSign * nSpecies;
+    auto& h = histosPos;
+    if (charge == 1) {
+      h = histosNeg;
+    }
+
+    constexpr int histogramIndex = id + charge * nSpecies;
     LOG(debug) << "Filling particle histograms for id " << static_cast<int>(id);
-    if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
+    if (!isPdgSelected<charge, id>(mcParticle)) { // Selecting PDG code
       return;
     }
     histos.fill(HIST("MC/particleSelection"), 7 + id);
 
-    histos.fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
-    histos.fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
+    h.fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
+    h.fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
 
     if (mcParticle.isPhysicalPrimary()) {
-      histos.fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
+      h.fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
     } else {
       if (mcParticle.getProcess() == 4) { // Particle deday
-        histos.fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
+        h.fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
       } else { // Material
-        histos.fill(HIST(hPtGeneratedMat[histogramIndex]), mcParticle.pt());
+        h.fill(HIST(hPtGeneratedMat[histogramIndex]), mcParticle.pt());
       }
     }
 
-    histos.fill(HIST(hEtaGenerated[histogramIndex]), mcParticle.eta());
-    histos.fill(HIST(hYGenerated[histogramIndex]), mcParticle.y());
-    histos.fill(HIST(hPhiGenerated[histogramIndex]), mcParticle.phi());
+    h.fill(HIST(hEtaGenerated[histogramIndex]), mcParticle.eta());
+    h.fill(HIST(hYGenerated[histogramIndex]), mcParticle.y());
+    h.fill(HIST(hPhiGenerated[histogramIndex]), mcParticle.phi());
     if (doPtEta) {
-      histos.fill(HIST(hPtEtaGenerated[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+      h.fill(HIST(hPtEtaGenerated[histogramIndex]), mcParticle.pt(), mcParticle.eta());
     }
   }
 
-  template <int pdgSign, o2::track::PID::ID id>
-  void fillMCEfficiency()
+  template <int charge, o2::track::PID::ID id>
+  void fillMCEfficiency(const bool doMakeHistograms)
   {
-    static_assert(pdgSign == 0 || pdgSign == 1);
-    if constexpr (pdgSign == 0) {
+    if (!doMakeHistograms) {
+      return;
+    }
+
+    static_assert(charge == 0 || charge == 1);
+    if constexpr (charge == 0) {
       if (!doPositivePDG) {
         return;
       }
@@ -992,26 +1032,30 @@ struct QaEfficiency {
       return;
     }
 
-    constexpr int histogramIndex = id + pdgSign * nSpecies;
+    HistogramRegistry* registry = &histosPos;
+    if (charge == 1) {
+      registry = &histosNeg;
+    }
 
-    const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
+    constexpr int histogramIndex = id + charge * nSpecies;
+
+    const char* partName = particleName(charge, id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
-    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(Form("%s_%s", pdgSign == 0 ? "Positive" : "Negative", partName)));
+    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(partName));
     if (!subList) {
       LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
     }
 
     // Filling 1D efficiencies
-    auto doFillEfficiency = [&](TString effname, auto num, auto den) {
-      effname = partName + effname;
+    auto doFillEfficiency = [&](const TString effname, auto num, auto den) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
       }
-      eff->SetTotalHistogram(*histos.get<TH1>(den).get(), "f");
-      eff->SetPassedHistogram(*histos.get<TH1>(num).get(), "f");
+      eff->SetTotalHistogram(*registry->get<TH1>(den).get(), "f");
+      eff->SetPassedHistogram(*registry->get<TH1>(num).get(), "f");
     };
 
     doFillEfficiency("ITS_vsPt", HIST(hPtIts[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
@@ -1054,15 +1098,14 @@ struct QaEfficiency {
     }
 
     // Filling 2D efficiencies
-    auto fillEfficiency2D = [&](TString effname, auto num, auto den) {
-      effname = partName + effname;
+    auto fillEfficiency2D = [&](const TString effname, auto num, auto den) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
       }
-      eff->SetTotalHistogram(*histos.get<TH2>(den).get(), "f");
-      eff->SetPassedHistogram(*histos.get<TH2>(num).get(), "f");
+      eff->SetTotalHistogram(*registry->get<TH2>(den).get(), "f");
+      eff->SetPassedHistogram(*registry->get<TH2>(num).get(), "f");
     };
     fillEfficiency2D("ITS-TPC_vsPt_vsEta", HIST(hPtEtaItsTpc[histogramIndex]), HIST(hPtEtaGenerated[histogramIndex]));
   }
@@ -1267,46 +1310,18 @@ struct QaEfficiency {
         }
         // Filling variable histograms
         histos.fill(HIST("MC/trackLength"), track.length());
-        if (doEl) {
-          fillMCTrackHistograms<0, o2::track::PID::Electron>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Electron>(track);
-        }
-        if (doMu) {
-          fillMCTrackHistograms<0, o2::track::PID::Muon>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Muon>(track);
-        }
-        if (doPi) {
-          fillMCTrackHistograms<0, o2::track::PID::Pion>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Pion>(track);
-        }
-        if (doKa) {
-          fillMCTrackHistograms<0, o2::track::PID::Kaon>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Kaon>(track);
-        }
-        if (doPr) {
-          fillMCTrackHistograms<0, o2::track::PID::Proton>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Proton>(track);
-        }
-        if (doDe) {
-          fillMCTrackHistograms<0, o2::track::PID::Deuteron>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Deuteron>(track);
-        }
-        if (doTr) {
-          fillMCTrackHistograms<0, o2::track::PID::Triton>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Triton>(track);
-        }
-        if (doHe) {
-          fillMCTrackHistograms<0, o2::track::PID::Helium3>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Helium3>(track);
-        }
-        if (doAl) {
-          fillMCTrackHistograms<0, o2::track::PID::Alpha>(track);
-          fillMCTrackHistograms<1, o2::track::PID::Alpha>(track);
-        }
-        if (doUnId) {
-          fillMCTrackHistograms<0, o2::track::PID::NIDs>(track);
-          fillMCTrackHistograms<1, o2::track::PID::NIDs>(track);
-        }
+        static_for<0, 1>([&](auto charge) {
+          fillMCTrackHistograms<charge, o2::track::PID::Electron>(track, doEl);
+          fillMCTrackHistograms<charge, o2::track::PID::Muon>(track, doMu);
+          fillMCTrackHistograms<charge, o2::track::PID::Pion>(track, doPi);
+          fillMCTrackHistograms<charge, o2::track::PID::Kaon>(track, doKa);
+          fillMCTrackHistograms<charge, o2::track::PID::Proton>(track, doPr);
+          fillMCTrackHistograms<charge, o2::track::PID::Deuteron>(track, doDe);
+          fillMCTrackHistograms<charge, o2::track::PID::Triton>(track, doTr);
+          fillMCTrackHistograms<charge, o2::track::PID::Helium3>(track, doHe);
+          fillMCTrackHistograms<charge, o2::track::PID::Alpha>(track, doAl);
+          fillMCTrackHistograms<charge, o2::track::PID::NIDs>(track, doUnId);
+        });
       }
     }
 
@@ -1320,90 +1335,34 @@ struct QaEfficiency {
         continue;
       }
 
-      if (doEl) {
-        fillMCParticleHistograms<0, o2::track::PID::Electron>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Electron>(mcParticle);
-      }
-      if (doMu) {
-        fillMCParticleHistograms<0, o2::track::PID::Muon>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Muon>(mcParticle);
-      }
-      if (doPi) {
-        fillMCParticleHistograms<0, o2::track::PID::Pion>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Pion>(mcParticle);
-      }
-      if (doKa) {
-        fillMCParticleHistograms<0, o2::track::PID::Kaon>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Kaon>(mcParticle);
-      }
-      if (doPr) {
-        fillMCParticleHistograms<0, o2::track::PID::Proton>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Proton>(mcParticle);
-      }
-      if (doDe) {
-        fillMCParticleHistograms<0, o2::track::PID::Deuteron>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Deuteron>(mcParticle);
-      }
-      if (doTr) {
-        fillMCParticleHistograms<0, o2::track::PID::Triton>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Triton>(mcParticle);
-      }
-      if (doHe) {
-        fillMCParticleHistograms<0, o2::track::PID::Helium3>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Helium3>(mcParticle);
-      }
-      if (doAl) {
-        fillMCParticleHistograms<0, o2::track::PID::Alpha>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::Alpha>(mcParticle);
-      }
-      if (doUnId) {
-        fillMCParticleHistograms<0, o2::track::PID::NIDs>(mcParticle);
-        fillMCParticleHistograms<1, o2::track::PID::NIDs>(mcParticle);
-      }
+      static_for<0, 1>([&](auto charge) {
+        fillMCParticleHistograms<charge, o2::track::PID::Electron>(mcParticle, doEl);
+        fillMCParticleHistograms<charge, o2::track::PID::Muon>(mcParticle, doMu);
+        fillMCParticleHistograms<charge, o2::track::PID::Pion>(mcParticle, doPi);
+        fillMCParticleHistograms<charge, o2::track::PID::Kaon>(mcParticle, doKa);
+        fillMCParticleHistograms<charge, o2::track::PID::Proton>(mcParticle, doPr);
+        fillMCParticleHistograms<charge, o2::track::PID::Deuteron>(mcParticle, doDe);
+        fillMCParticleHistograms<charge, o2::track::PID::Triton>(mcParticle, doTr);
+        fillMCParticleHistograms<charge, o2::track::PID::Helium3>(mcParticle, doHe);
+        fillMCParticleHistograms<charge, o2::track::PID::Alpha>(mcParticle, doAl);
+        fillMCParticleHistograms<charge, o2::track::PID::NIDs>(mcParticle, doUnId);
+      });
     }
     histos.fill(HIST("MC/eventMultiplicity"), dNdEta * 0.5f / 2.f);
 
     // Fill TEfficiencies
-    if (doEl) {
-      fillMCEfficiency<0, o2::track::PID::Electron>();
-      fillMCEfficiency<1, o2::track::PID::Electron>();
-    }
-    if (doMu) {
-      fillMCEfficiency<0, o2::track::PID::Muon>();
-      fillMCEfficiency<1, o2::track::PID::Muon>();
-    }
-    if (doPi) {
-      fillMCEfficiency<0, o2::track::PID::Pion>();
-      fillMCEfficiency<1, o2::track::PID::Pion>();
-    }
-    if (doKa) {
-      fillMCEfficiency<0, o2::track::PID::Kaon>();
-      fillMCEfficiency<1, o2::track::PID::Kaon>();
-    }
-    if (doPr) {
-      fillMCEfficiency<0, o2::track::PID::Proton>();
-      fillMCEfficiency<1, o2::track::PID::Proton>();
-    }
-    if (doDe) {
-      fillMCEfficiency<0, o2::track::PID::Deuteron>();
-      fillMCEfficiency<1, o2::track::PID::Deuteron>();
-    }
-    if (doTr) {
-      fillMCEfficiency<0, o2::track::PID::Triton>();
-      fillMCEfficiency<1, o2::track::PID::Triton>();
-    }
-    if (doHe) {
-      fillMCEfficiency<0, o2::track::PID::Helium3>();
-      fillMCEfficiency<1, o2::track::PID::Helium3>();
-    }
-    if (doAl) {
-      fillMCEfficiency<0, o2::track::PID::Alpha>();
-      fillMCEfficiency<1, o2::track::PID::Alpha>();
-    }
-    if (doUnId) {
-      fillMCEfficiency<0, o2::track::PID::NIDs>();
-      fillMCEfficiency<1, o2::track::PID::NIDs>();
-    }
+    static_for<0, 1>([&](auto charge) {
+      fillMCEfficiency<charge, o2::track::PID::Electron>(doEl);
+      fillMCEfficiency<charge, o2::track::PID::Muon>(doMu);
+      fillMCEfficiency<charge, o2::track::PID::Pion>(doPi);
+      fillMCEfficiency<charge, o2::track::PID::Kaon>(doKa);
+      fillMCEfficiency<charge, o2::track::PID::Proton>(doPr);
+      fillMCEfficiency<charge, o2::track::PID::Deuteron>(doDe);
+      fillMCEfficiency<charge, o2::track::PID::Triton>(doTr);
+      fillMCEfficiency<charge, o2::track::PID::Helium3>(doHe);
+      fillMCEfficiency<charge, o2::track::PID::Alpha>(doAl);
+      fillMCEfficiency<charge, o2::track::PID::NIDs>(doUnId);
+    });
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
