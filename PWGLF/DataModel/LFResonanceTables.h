@@ -99,6 +99,8 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                       //! Z pos
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
+DECLARE_SOA_COLUMN(MothersIds, motherIds, int[2]);              //!
+DECLARE_SOA_COLUMN(DaughtersIdSlice, daughtersIdSlice, int[2]); //!
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   o2::soa::Index<>,
@@ -138,8 +140,8 @@ using ResoDaughter = ResoDaughters::iterator;
 DECLARE_SOA_TABLE(ResoDaughtersMC, "AOD", "RESODAUGHTERSMC",
                   o2::soa::Index<>,
                   mcparticle::PdgCode,
-                  mcparticle::MothersIds,
-                  mcparticle::DaughtersIdSlice,
+                  resodaughter::MothersIds,
+                  resodaughter::DaughtersIdSlice,
                   resodaughter::IsPhysicalPrimary,
                   resodaughter::ProducedByGenerator);
 
