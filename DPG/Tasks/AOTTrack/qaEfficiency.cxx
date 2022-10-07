@@ -858,6 +858,26 @@ struct QaEfficiency {
 
   void init(InitContext&)
   {
+
+    // Printing configuration
+    LOG(info) << "Printing configuration";
+    LOG(info) << "Set noFakesHits to: " << (noFakesHits ? "true" : "false");
+    LOG(info) << "Set doPositivePDG to: " << (doPositivePDG ? "true" : "false");
+    LOG(info) << "Set doNegativePDG to: " << (doNegativePDG ? "true" : "false");
+    LOG(info) << "Set doUnId to: " << (doUnId ? "true" : "false");
+    LOG(info) << "Set doEl to: " << (doEl ? "true" : "false");
+    LOG(info) << "Set doMu to: " << (doMu ? "true" : "false");
+    LOG(info) << "Set doPi to: " << (doPi ? "true" : "false");
+    LOG(info) << "Set doKa to: " << (doKa ? "true" : "false");
+    LOG(info) << "Set doPr to: " << (doPr ? "true" : "false");
+    LOG(info) << "Set doDe to: " << (doDe ? "true" : "false");
+    LOG(info) << "Set doTr to: " << (doTr ? "true" : "false");
+    LOG(info) << "Set doHe to: " << (doHe ? "true" : "false");
+    LOG(info) << "Set doAl to: " << (doAl ? "true" : "false");
+    LOG(info) << "Set trackSelection to: " << (trackSelection ? "true" : "false");
+    LOG(info) << "Set makeEff to: " << (makeEff ? "true" : "false");
+    LOG(info) << "Set doPtEta to: " << (doPtEta ? "true" : "false");
+
     auto doLimits = [&](double& min, double& max, const ConfigurableAxis& binning) {
       const AxisSpec a{binning, "dummy"};
       min = a.binEdges[0];
@@ -885,6 +905,7 @@ struct QaEfficiency {
   bool isPdgSelected(particleType mcParticle)
   {
     static_assert(charge == 0 || charge == 1);
+    static_assert(id > 0 || id < nSpecies);
 
     // Selecting PDG code
     if constexpr (PDGs[id] == 0) { // All PDGs
@@ -906,6 +927,9 @@ struct QaEfficiency {
   void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
   {
     static_assert(charge == 0 || charge == 1);
+    if (!doMakeHistograms) {
+      return;
+    }
 
     if constexpr (charge == 0) {
       if (!doPositivePDG) {
@@ -916,7 +940,6 @@ struct QaEfficiency {
         return;
       }
     }
-    LOG(info) << "fillMCTrackHistograms for charge " << charge << " id " << id;
 
     auto& h = histosPos;
     if (charge == 1) {
@@ -924,7 +947,7 @@ struct QaEfficiency {
     }
 
     constexpr int histogramIndex = id + charge * nSpecies;
-    LOG(debug) << "Filling track histograms for id " << static_cast<int>(id);
+    LOG(debug) << "fillMCTrackHistograms for charge '" << charge << "' and id '" << static_cast<int>(id) << "' " << particleName(charge, id) << " with index " << histogramIndex;
     const auto mcParticle = track.mcParticle();
 
     if (!isPdgSelected<charge, id>(mcParticle)) { // Selecting PDG code
@@ -981,11 +1004,11 @@ struct QaEfficiency {
   template <int charge, o2::track::PID::ID id, typename particleType>
   void fillMCParticleHistograms(const particleType& mcParticle, const bool doMakeHistograms)
   {
+    static_assert(charge == 0 || charge == 1);
     if (!doMakeHistograms) {
       return;
     }
 
-    static_assert(charge == 0 || charge == 1);
     if constexpr (charge == 0) {
       if (!doPositivePDG) {
         return;
@@ -996,15 +1019,13 @@ struct QaEfficiency {
       }
     }
 
-    LOG(info) << "fillMCParticleHistograms for charge " << charge << " id " << id;
-
     auto& h = histosPos;
     if (charge == 1) {
       h = histosNeg;
     }
 
     constexpr int histogramIndex = id + charge * nSpecies;
-    LOG(debug) << "Filling particle histograms for id " << static_cast<int>(id);
+    LOG(debug) << "fillMCParticleHistograms for charge '" << charge << "' and id '" << static_cast<int>(id) << "' " << particleName(charge, id) << " with index " << histogramIndex;
     if (!isPdgSelected<charge, id>(mcParticle)) { // Selecting PDG code
       return;
     }
