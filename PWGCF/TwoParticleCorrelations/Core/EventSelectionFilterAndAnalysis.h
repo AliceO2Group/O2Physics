@@ -106,11 +106,11 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   int CalculateMaskLength() override;
   virtual void StoreArmedMask() override;
 
-  std::vector<CutBrick<float>*> mBFieldSelection;        //! the magnetic field selection cuts
-  MultiplicityBrick* mMultiplicityClasses;               //! the multiplicity classes cuts
-  CutBrick<int>* mTriggerSelection;                      //! the trigger selection cuts
-  CutBrick<float>* mZVertex;                             //! the z vertex selection cuts
-  PileUpRejBrick* mPileUpRejection;                      //! the pile-up rejection criteria
+  std::vector<CutBrick<float>*> mBFieldSelection; //! the magnetic field selection cuts
+  MultiplicityBrick* mMultiplicityClasses;        //! the multiplicity classes cuts
+  CutBrick<int>* mTriggerSelection;               //! the trigger selection cuts
+  CutBrick<float>* mZVertex;                      //! the z vertex selection cuts
+  PileUpRejBrick* mPileUpRejection;               //! the pile-up rejection criteria
 
   ClassDef(EventSelectionFilterAndAnalysis, 1)
 };
