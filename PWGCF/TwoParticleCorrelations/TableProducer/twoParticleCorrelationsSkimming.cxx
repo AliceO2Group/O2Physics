@@ -14,6 +14,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 #include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
@@ -128,7 +129,7 @@ struct TwoParticleCorrelationsSkimming {
     LOGF(info, "DptDptSkimTask::init()");
 
     /* collision filtering configuration */
-    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
+    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, eventfilter.pileuprej);
     fEventFilter = new PWGCF::EventSelectionFilterAndAnalysis(eventsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
 
     /* track filtering configuration */
@@ -155,8 +156,8 @@ struct TwoParticleCorrelationsSkimming {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  template <typename Coll, typename BcInfo>
-  uint64_t filterRun2Collision(Coll const& collision, BcInfo const& bcinfo)
+  template <typename Coll, typename AssociatedTracks, typename BcInfo>
+  uint64_t filterRun2Collision(Coll const& collision, AssociatedTracks const& tracks, BcInfo const& bcinfo)
   {
     using namespace aod::run2;
     using namespace aod::collision;
@@ -199,20 +200,20 @@ struct TwoParticleCorrelationsSkimming {
       runNumber = bcinfo.runNumber();
     }
     if (accepted) {
-      return fEventFilter->Filter(collision, bfield);
+      return fEventFilter->Filter(collision, tracks, bfield);
     } else {
       return 0UL;
     }
   }
 
-  void processRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision,
+  void processRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& collision,
                    soa::Join<aod::BCs, aod::Timestamps, aod::Run2BCInfos> const&, soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks)
   {
     /* for the time being this will apply only to Run 1+2 converted data */
     LOGF(LOGTRACKCOLLISIONS, "Got a new collision with zvtx %.2f and V0M %.2f, CL0 %.2f, CL1 %.2f", collision.posZ(), collision.centRun2V0M(), collision.centRun2CL0(), collision.centRun2CL1());
 
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::Run2BCInfos>>();
-    auto colmask = filterRun2Collision(collision, bc);
+    auto colmask = filterRun2Collision(collision, tracks, bc);
     LOGF(LOGTRACKCOLLISIONS, "Got mask 0x%16lx", colmask);
 
     if (colmask != 0UL) {

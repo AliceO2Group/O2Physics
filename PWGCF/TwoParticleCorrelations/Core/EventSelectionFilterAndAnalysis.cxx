@@ -77,13 +77,15 @@ EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> 
   mMultSel = storeCutString(multsel, "centmult");
   mTriggerSel = storeCutString(trigsel, "trigger");
   mZVertexSel = storeCutString(zvtxsel, "zvtx");
-  mPileUpRejection = storeCutString(pileuprej, "pileup");
+  mPileUpRejection = storeCutString(pileuprej, "pileuprej");
 }
 
 ClassImp(EventSelectionFilterAndAnalysis);
 
 const int nNoOfMultiplicityEstimators = 3;
 const char* multiplicityEstimators[nNoOfMultiplicityEstimators] = {"V0M", "CL0", "CL1"};
+const int nNoOfPileUpCorrelators = 3;
+const char* multiplicityCorrelators[nNoOfPileUpCorrelators] = {"V0M_TPCOUT", "V0M_TRKLETS", "V0M_TPCCLSTS"};
 
 /// \brief Default constructor
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
@@ -92,10 +94,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
-    mPileUpRejection(nullptr),
-    mMultiplicities{},
-    mDefaultMultiplicityEstimatorIndex(-1),
-    mAlternateMultiplicityEstimatorIndex{}
+    mPileUpRejection(nullptr)
 {
 }
 
@@ -106,10 +105,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& 
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
-    mPileUpRejection(nullptr),
-    mMultiplicities{},
-    mDefaultMultiplicityEstimatorIndex(-1),
-    mAlternateMultiplicityEstimatorIndex{}
+    mPileUpRejection(nullptr)
 {
   ConstructCutFromString(cutstr);
 }
@@ -121,10 +117,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
-    mPileUpRejection(nullptr),
-    mMultiplicities{},
-    mDefaultMultiplicityEstimatorIndex(-1),
-    mAlternateMultiplicityEstimatorIndex{}
+    mPileUpRejection(nullptr)
 {
   TString cutString = "eventsel{";
   bool first = true;
@@ -178,63 +171,116 @@ int EventSelectionFilterAndAnalysis::CalculateMaskLength()
   return length;
 }
 
-void EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter()
+void EventSelectionFilterAndAnalysis::MultiplicityBrick::initialize()
 {
   /* initialize the storage of multiplicities from the differente estimators */
   for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
-    mMultiplicities.push_back(-1);
+    mValues.push_back(-1);
   }
   /* now initialize the filter machinery */
-  if (mMultiplicityClasses != nullptr) {
-    if (mMultiplicityClasses->IsA() != CutWithVariations<float>::Class()) {
-      /* no alternative estimators, just the default */
-      LOGF(info, "Searching for default multiplicity estimator %s", mMultiplicityClasses->GetName());
-      for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
-        LOGF(info, "Checking multiplicity estimator %s", multiplicityEstimators[i]);
-        if (strcmp(multiplicityEstimators[i], mMultiplicityClasses->GetName()) == 0) {
-          mDefaultMultiplicityEstimatorIndex = i;
-          break;
-        }
-      }
-      if (mDefaultMultiplicityEstimatorIndex < 0) {
-        LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() default multiplicity class estimator not implemented");
-      }
-    } else {
-      /* we have alternative estimators our brick is of kind cwv */
-      /* first the default */
-      TList& deflst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getDefaultBricks();
-      if (deflst.GetEntries() > 1) {
-        LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() expected only one default multiplicity class estimator");
-      }
-      LOGF(info, "Searching for default multiplicity estimator %s", deflst.At(0)->GetName());
-      for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
-        LOGF(info, "Checking multiplicity estimator %s", multiplicityEstimators[i]);
-        if (strcmp(multiplicityEstimators[i], deflst.At(0)->GetName()) == 0) {
-          mDefaultMultiplicityEstimatorIndex = i;
-          break;
-        }
-      }
-      if (mDefaultMultiplicityEstimatorIndex < 0) {
-        LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() default multiplicity class estimator not implemented");
-      }
-      /* and now the variants */
-      TList& varlst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getVariantBricks();
-      for (int ivar = 0; ivar < varlst.GetEntries(); ++ivar) {
-        LOGF(info, "Searching for variant multiplicity estimator %s", varlst.At(ivar)->GetName());
-        for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
-          LOGF(info, "Checking multiplicity estimator %s", multiplicityEstimators[i]);
-          if (strcmp(multiplicityEstimators[i], varlst.At(ivar)->GetName()) == 0) {
-            mAlternateMultiplicityEstimatorIndex.push_back(i);
-            break;
-          }
-        }
-      }
-      if (mAlternateMultiplicityEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
-        LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant multiplicity class estimators not all implemented");
+  if (mBrick->IsA() != CutWithVariations<float>::Class()) {
+    /* no alternative estimators, just the default */
+    LOGF(info, "Searching for default multiplicity estimator %s", mBrick->GetName());
+    for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
+      LOGF(info, "Checking multiplicity estimator %s", multiplicityEstimators[i]);
+      if (strcmp(multiplicityEstimators[i], mBrick->GetName()) == 0) {
+        mDefaultEstimatorIndex = i;
+        break;
       }
     }
+    if (mDefaultEstimatorIndex < 0) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() default multiplicity class estimator not implemented");
+    }
   } else {
-    LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter expected a multiplicity filter but it is not there");
+    /* we have alternative estimators our brick is of kind cwv */
+    /* first the default */
+    TList& deflst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getDefaultBricks();
+    if (deflst.GetEntries() > 1) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() expected only one default multiplicity class estimator");
+    }
+    LOGF(info, "Searching for default multiplicity estimator %s", deflst.At(0)->GetName());
+    for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
+      LOGF(info, "Checking multiplicity estimator %s", multiplicityEstimators[i]);
+      if (strcmp(multiplicityEstimators[i], deflst.At(0)->GetName()) == 0) {
+        mDefaultEstimatorIndex = i;
+        break;
+      }
+    }
+    if (mDefaultEstimatorIndex < 0) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() default multiplicity class estimator not implemented");
+    }
+    /* and now the variants */
+    TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
+    for (int ivar = 0; ivar < varlst.GetEntries(); ++ivar) {
+      LOGF(info, "Searching for variant multiplicity estimator %s", varlst.At(ivar)->GetName());
+      for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
+        LOGF(info, "Checking multiplicity estimator %s", multiplicityEstimators[i]);
+        if (strcmp(multiplicityEstimators[i], varlst.At(ivar)->GetName()) == 0) {
+          mAlternateEstimatorIndex.push_back(i);
+          break;
+        }
+      }
+    }
+    if (mAlternateEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant multiplicity class estimators not all implemented");
+    }
+  }
+}
+
+void EventSelectionFilterAndAnalysis::PileUpRejBrick::initialize()
+{
+  /* initialize the storage of multiplicities from the differente pile-up correlator estimators */
+  for (int i = 0; i < nNoOfPileUpCorrelators; ++i) {
+    mValues.push_back(-1);
+    mIndepVar.push_back(-1);
+  }
+  /* now initialize the filter machinery */
+  if (mBrick->IsA() != CutWithVariations<float>::Class()) {
+    /* no alternative estimators, just the default */
+    LOGF(info, "Searching for default pile-up correlator estimator %s", mBrick->GetName());
+    for (int i = 0; i < nNoOfPileUpCorrelators; ++i) {
+      LOGF(info, "Checking pile-up correlator estimator %s", multiplicityCorrelators[i]);
+      if (strcmp(multiplicityCorrelators[i], mBrick->GetName()) == 0) {
+        mDefaultEstimatorIndex = i;
+        break;
+      }
+    }
+    if (mDefaultEstimatorIndex < 0) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() default pile-up correlator estimator not implemented");
+    }
+  } else {
+    /* we have alternative estimators our brick is of kind cwv */
+    /* first the default */
+    TList& deflst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getDefaultBricks();
+    if (deflst.GetEntries() > 1) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() expected only one default multiplicity class estimator");
+    }
+    LOGF(info, "Searching for default pile-up correlator estimator %s", deflst.At(0)->GetName());
+    for (int i = 0; i < nNoOfPileUpCorrelators; ++i) {
+      LOGF(info, "Checking pile-up correlator estimator %s", multiplicityCorrelators[i]);
+      if (strcmp(multiplicityCorrelators[i], deflst.At(0)->GetName()) == 0) {
+        mDefaultEstimatorIndex = i;
+        break;
+      }
+    }
+    if (mDefaultEstimatorIndex < 0) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() default pile-up correlator estimator not implemented");
+    }
+    /* and now the variants */
+    TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
+    for (int ivar = 0; ivar < varlst.GetEntries(); ++ivar) {
+      LOGF(info, "Searching for variant pile-up correlator estimator %s", varlst.At(ivar)->GetName());
+      for (int i = 0; i < nNoOfPileUpCorrelators; ++i) {
+        LOGF(info, "Checking pile-up correlator estimator %s", multiplicityCorrelators[i]);
+        if (strcmp(multiplicityCorrelators[i], varlst.At(ivar)->GetName()) == 0) {
+          mAlternateEstimatorIndex.push_back(i);
+          break;
+        }
+      }
+    }
+    if (mAlternateEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant pile-up correlator estimators not all implemented");
+    }
   }
 }
 
@@ -242,13 +288,13 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
 {
   LOGF(info, "Cut string: %s", cutstr);
   /* let's catch the first level */
-  regex cutregex("^eventsel\\{?(\\w+\\{[\\w\\d.,:{}-]+})*}$", regex_constants::ECMAScript | regex_constants::icase);
+  regex cutregex("^eventsel\\{?(\\w+\\{[\\w\\d.,:{}=\\-\\+\\*\\/]+})*}$", regex_constants::ECMAScript | regex_constants::icase);
   std::string in(cutstr.Data());
   smatch m;
 
   bool res = regex_search(in, m, cutregex);
   if (not res or m.empty() or (m.size() > 2)) {
-    Fatal("EventSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE: %s, try tracksel{ttype{FB32,FB96};ncls{th{70}},nxr{cwv{th{70},th{80}}}} for instance", cutstr.Data());
+    LOGF(fatal, "EventSelectionFilterAndAnalysis::ConstructCutFromString", "Wrong RE: %s, try eventsel{bfield{positive-yes,negative-yes},zvtx{cwv{rg{-7.0,7.0}-yes:rg{-10.0,10.0}-no,rg{-3.0,3.0}-no}}} for instance", cutstr.Data());
   }
   this->SetName("EventSelectionFilterAndAnalysisCuts");
   this->SetTitle(cutstr.Data());
@@ -258,7 +304,7 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
     LOGF(info, "Captured %s", m[1].str().c_str());
     TString lev2str = m[1].str();
     while (lev2str.Length() != 0) {
-      std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "cwv", "mrg"};
+      std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "fnlim", "fnth", "fnrg", "fnxrg", "cwv", "mrg"};
       lev2str.Remove(TString::kLeading, ' ');
       lev2str.Remove(TString::kLeading, ',');
       lev2str.Remove(TString::kLeading, ' ');
@@ -313,20 +359,63 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
       if (m[1].str() == "bfield") {
         storeBFieldCut(mBFieldSelection);
       } else if (m[1].str() == "centmult") {
-        storeFloatCut(mMultiplicityClasses);
-        InitializeMultiplicityFilter();
+        mMultiplicityClasses = new MultiplicityBrick();
+        storeFloatCut(mMultiplicityClasses->mBrick);
+        mMultiplicityClasses->initialize();
       } else if (m[1].str() == "mtrigg") {
         storeIntCut(mTriggerSelection);
       } else if (m[1].str() == "zvtx") {
         storeFloatCut(mZVertex);
-      } else if (m[1].str() == "pileup") {
-        storeIntCut(mPileUpRejection);
+      } else if (m[1].str() == "pileuprej") {
+        mPileUpRejection = new PileUpRejBrick();
+        storeFloatCut(mPileUpRejection->mBrick);
+        mPileUpRejection->initialize();
       }
       /* removing the already handled event characteristics cut */
       lev2str.Remove(0, m[0].length());
     }
   }
   mMaskLength = CalculateMaskLength();
+}
+
+///
+void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& armedmask, uint64_t& optmask, uint64_t& forcedmask, int& bit)
+{
+  auto armedBrick = [&](auto brick, bool opt = false) {
+    std::vector<bool> res = brick->IsArmed();
+    for (auto b : res) {
+      if (b) {
+        SETBIT(armedmask, bit);
+        if (opt) {
+          SETBIT(optmask, bit);
+        } else {
+          SETBIT(forcedmask, bit);
+        }
+      }
+      bit++;
+    }
+  };
+
+  if (mAlternateEstimatorIndex.size() > 0) {
+    /* we have alternative estimators so our brick is of kind cwv */
+    if (mBrick->IsA() != CutWithVariations<float>::Class()) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected class with variations cut but it is not there");
+    }
+    /* first the default */
+    TList& deflst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getDefaultBricks();
+    if (deflst.GetEntries() > 1) {
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected only one default multiplicity class estimator");
+    }
+    armedBrick((CutBrick<float>*)deflst.At(0), true);
+    /* and now the variants */
+    TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
+    for (int i = 0; i < varlst.GetEntries(); ++i) {
+      armedBrick((CutBrick<float>*)varlst.At(i), true);
+    }
+  } else {
+    /* no alternative estimators, just the default */
+    armedBrick(mBrick, true);
+  }
 }
 
 /// \brief Fills the filter cuts mask
@@ -362,29 +451,7 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   mOptArmedMask.push_back(optMask);
   optMask = 0UL;
   if (mMultiplicityClasses != nullptr) {
-    if (mAlternateMultiplicityEstimatorIndex.size() > 0) {
-      /* we have alternative estimators so our brick is of kind cwv */
-      if (mMultiplicityClasses->IsA() != CutWithVariations<float>::Class()) {
-        LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected class with variations cut but it is not there");
-      }
-      /* first the default */
-      TList& deflst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getDefaultBricks();
-      if (deflst.GetEntries() > 1) {
-        LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected only one default multiplicity class estimator");
-      }
-      armedBrick((CutBrick<float>*)deflst.At(0), true);
-      /* and now the variants */
-      TList& varlst = dynamic_cast<CutWithVariations<float>*>(mMultiplicityClasses)->getVariantBricks();
-      for (int i = 0; i < varlst.GetEntries(); ++i) {
-        if (varlst.At(i)->IsA() != CutBrickSelectorMultipleRanges<float>::Class()) {
-          LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter, expected a multirange selector");
-        }
-        armedBrick((CutBrick<float>*)varlst.At(i), true);
-      }
-    } else {
-      /* no alternative estimators, just the default */
-      armedBrick(mMultiplicityClasses, true);
-    }
+    mMultiplicityClasses->armedBrick(armedMask, optMask, forcedMask, bit);
   }
   mOptArmedMask.push_back(optMask);
   optMask = 0UL;
@@ -394,6 +461,7 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
     armedBrick(mZVertex);
   }
   if (mPileUpRejection != nullptr) {
+    mPileUpRejection->armedBrick(armedMask, optMask, forcedMask, bit);
   }
   LOGF(info, "EventSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%016lx, %s, 0x%016lx", armedMask, printOptionalMasks().Data(), forcedMask);
   mArmedMask = armedMask;

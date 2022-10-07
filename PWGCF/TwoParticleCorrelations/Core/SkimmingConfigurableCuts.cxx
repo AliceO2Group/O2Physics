@@ -64,7 +64,7 @@ CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick(const char* n
   } else if (TString(regex).BeginsWith("cwv")) {
     thebrick = new CutWithVariations<TValueToFilter>(brickregex);
   } else {
-    ::Fatal("CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick", "Wrong RE: %s, trying to construct an unknown basic cut brick", regex);
+    LOGF(fatal, "CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick", "Wrong RE: %s, trying to construct an unknown basic cut brick", regex);
   }
   return thebrick;
 }
@@ -136,7 +136,7 @@ void CutBrickLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr
 
   std::regex_search(in, m, cutregex);
   if (m.empty() or (m.size() < 3)) {
-    Fatal("CutBrickLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{lim{2.0}} for instance", cutstr.Data());
+    LOGF(fatal, "CutBrickLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{lim{2.0}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -203,19 +203,19 @@ void CutBrickFnLimit<TValueToFilter>::ConstructCutFromString(const TString& cuts
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
-  std::regex cutregex("^(\\w+)\\{fnlim\\{([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::regex cutregex("^(\\w+)\\{fnlim\\{(\\w+)=([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
   std::string in(cutstr.Data());
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 3)) {
-    Fatal("CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnlim{2.0*sin(x)/x}} for instance", cutstr.Data());
+  if (m.empty() or (m.size() < 4)) {
+    LOGF(fatal, "CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnlim{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
-    this->SetName(m[1].str().c_str());
+    this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
-    mFunction = TF1(m[1].str().c_str(), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mFunction = TF1(m[1].str().c_str(), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mFunction.IsValid()) {
-      Fatal("CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnlim{2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnlim{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
@@ -270,7 +270,7 @@ void CutBrickThreshold<TValueToFilter>::ConstructCutFromString(const TString& cu
 
   std::regex_search(in, m, cutregex);
   if (m.empty() or (m.size() < 3)) {
-    Fatal("CutBrickThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{th{0.2}} for instance", cutstr.Data());
+    LOGF(fatal, "CutBrickThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{th{0.2}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -337,19 +337,19 @@ void CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString(const TString& 
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
-  std::regex cutregex("^(\\w+)\\{fnth\\{([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::regex cutregex("^(\\w+)\\{fnth\\{(\\w+)=([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
   std::string in(cutstr.Data());
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 3)) {
-    Fatal("CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnth{2.0*sin(x)/x}} for instance", cutstr.Data());
+  if (m.empty() or (m.size() < 4)) {
+    LOGF(fatal, "CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnth{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
-    this->SetName(m[1].str().c_str());
+    this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
-    mFunction = TF1(m[1].str().c_str(), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mFunction = TF1(m[1].str().c_str(), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mFunction.IsValid()) {
-      Fatal("CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnth{2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnth{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
@@ -408,7 +408,7 @@ void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr
 
   std::regex_search(in, m, cutregex);
   if (m.empty() or (m.size() < 4)) {
-    Fatal("CutBrickRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{rg{0.2,2.0}} for instance", cutstr.Data());
+    LOGF(fatal, "CutBrickRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{rg{0.2,2.0}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -480,20 +480,20 @@ void CutBrickFnRange<TValueToFilter>::ConstructCutFromString(const TString& cuts
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
-  std::regex cutregex("^(\\w+)\\{fnrg\\{([\\w\\-\\*\\/\\+\\()\\.]+),([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::regex cutregex("^(\\w+)\\{fnrg\\{(\\w+)=([\\w\\-\\*\\/\\+\\()\\.]+),([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
   std::string in(cutstr.Data());
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 4)) {
-    Fatal("CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+  if (m.empty() or (m.size() < 5)) {
+    LOGF(fatal, "CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
-    this->SetName(m[1].str().c_str());
+    this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
-    mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
-    mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[4].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mLowFunction.IsValid() or not mUpFunction.IsValid()) {
-      Fatal("CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
@@ -552,7 +552,7 @@ void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& c
 
   std::regex_search(in, m, cutregex);
   if (m.empty() or (m.size() < 4)) {
-    Fatal("CutBrickExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use minv{xrg{0.02,0.04}} for instance", cutstr.Data());
+    LOGF(fatal, "CutBrickExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use minv{xrg{0.02,0.04}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -623,20 +623,20 @@ void CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString(const TString&
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
-  std::regex cutregex("^(\\w+)\\{fnxrg\\{([\\w\\-\\*\\/\\+\\()\\.]+),([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::regex cutregex("^(\\w+)\\{fnxrg\\{(\\w+)=([\\w\\-\\*\\/\\+\\()\\.]+),([\\w\\-\\*\\/\\+\\()\\.]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
   std::string in(cutstr.Data());
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 4)) {
-    Fatal("CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnxrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+  if (m.empty() or (m.size() < 5)) {
+    LOGF(fatal, "CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnxrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
-    this->SetName(m[1].str().c_str());
+    this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
-    mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[2].str().c_str(), 0, 1, TF1::EAddToList::kNo);
-    mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
+    mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[4].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mLowFunction.IsValid() or not mUpFunction.IsValid()) {
-      Fatal("CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnxrg{2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnxrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
@@ -704,7 +704,7 @@ void CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString(cons
 
   bool res = std::regex_search(in, m, cutregex);
   if (not res or m.empty() or (m.size() < 5)) {
-    Fatal("CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use centmult{mrg{V0M,0,5,10,20,30,40,50,60,70,80}} for instance", cutstr.Data());
+    LOGF(fatal, "CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use centmult{mrg{V0M,0,5,10,20,30,40,50,60,70,80}} for instance", cutstr.Data());
   } else {
     this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -822,13 +822,13 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
   /* let's catch the first level */
   LOGF(info, "Cut with variations: cut string: %s", cutstr.Data());
 
-  std::regex cutregex("^(\\w+)\\{cwv\\{([\\w\\d.,:{}-]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+  std::regex cutregex("^(\\w+)\\{cwv\\{([\\w\\d.,:{}=\\-\\+\\*\\/]+)}}$", std::regex_constants::ECMAScript | std::regex_constants::icase);
   std::string in(cutstr.Data());
   std::smatch m;
 
   bool res = std::regex_search(in, m, cutregex);
   if (not res or m.empty() or (m.size() < 3)) {
-    Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
+    LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
   }
   this->SetName(m[1].str().c_str());
   this->SetTitle(cutstr.Data());
@@ -836,17 +836,17 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
   /* let's split default and variations */
   TObjArray* lev1toks = TString(m[2]).Tokenize(":");
   if (lev1toks->GetEntries() > 2) {
-    Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
+    LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
   }
   bool atleastonearmed = false;
   auto addCuts = [&](TList& cutlist, std::string cuttxt, bool reqflag) {
     std::smatch m;
     while (cuttxt.length() > 0) {
-      std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "mrg"};
-      std::regex cutregex("(\\w+\\{[\\w.,-]+}(?:-(?:no|yes))*)");
+      std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "mrg", "fnlim", "fnth", "fnrg", "fnxrg"};
+      std::regex cutregex("(\\w+\\{[\\w.,=\\-\\+\\*\\/]+}(?:-(?:no|yes))*)");
       bool res = regex_search(cuttxt, m, cutregex);
       if (not res or m.empty() or m.size() != 2) {
-        Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Cut with variations malformed RE %s", cuttxt.c_str());
+        LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Cut with variations malformed RE %s", cuttxt.c_str());
       }
       TString brickre = m[1].str().c_str();
       bool isarmed = brickre.EndsWith("-yes");
@@ -855,7 +855,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
       } else if (brickre.EndsWith("-no")) {
         brickre.Remove(brickre.Index("-no"), strlen("-no"));
       } else if (reqflag) {
-        Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, alternatives not correctly flagged", cuttxt.c_str());
+        LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, alternatives not correctly flagged", cuttxt.c_str());
       }
       CutBrick<TValueToFilter>* brick = CutBrick<TValueToFilter>::constructBrick(this->GetName(), brickre, allowed);
       brick->Arm(isarmed);
@@ -870,7 +870,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
     addCuts(mDefaultBricks, lev1toks->At(0)->GetName(), true);
     if (mDefaultBricks.GetEntries() > 1) {
       /* TODO: several default options for track type and for track pid selection */
-      Fatal("CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, several defaults only for trktype or trkpid pending of implementation", cutstr.Data());
+      LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, several defaults only for trktype or trkpid pending of implementation", cutstr.Data());
     }
   }
   /* let's now handle the variations if any */
@@ -1085,7 +1085,7 @@ TrackSelectionBrick::TrackSelectionBrick(const TString& regex) : SpecialCutBrick
   } else if (name.EqualTo("FB64")) {
     constructFB64LHC2011();
   } else {
-    ::Fatal("TrackSelectionBrick::TrackSelectionBrick", "Wrong RE: %s, trying to construct an unknown track type selector", regex.Data());
+    LOGF(fatal, "TrackSelectionBrick::TrackSelectionBrick", "Wrong RE: %s, trying to construct an unknown track type selector", regex.Data());
   }
   this->Arm(armed);
 }

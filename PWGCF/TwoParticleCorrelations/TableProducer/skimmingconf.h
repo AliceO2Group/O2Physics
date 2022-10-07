@@ -15,9 +15,10 @@
 #include "Framework/ASoAHelpers.h"
 
 struct : o2::framework::ConfigurableGroup {
-  o2::framework::Configurable<std::vector<std::string>> bfield{"evtflt_bfield", {"positive-yes", "negative-yes"}, "B filed polarity cut"};
+  o2::framework::Configurable<std::vector<std::string>> bfield{"evtflt_bfield", {"positive-yes", "negative-yes"}, "B filed polarity cut: both 'yes' default, anything else alternative"};
   o2::framework::Configurable<std::vector<std::string>> zvtxsel{"evtflt_zvtx", {"rg{-7.0,7.0}-yes", "rg{-10.0,10.0}-no", "rg{-3.0,3.0}-no"}, "Z vertex cut: first, default value, next, alternatives"};
-  o2::framework::Configurable<std::vector<std::string>> centmultsel{"evtflt_centmult", {"mrg{V0M,0,5,10,20,30,40,50,60,70,80}-yes", "mrg{CL1,0,5,10,20,30,40,50,60,70,80}-no"}, "Centrality/Multiplicity cut:: first; default, next, alternatives"};
+  o2::framework::Configurable<std::vector<std::string>> centmultsel{"evtflt_centmult", {"mrg{V0M,0,5,10,20,30,40,50,60,70,80}-yes", "mrg{CL1,0,5,10,20,30,40,50,60,70,80}-no"}, "Centrality/Multiplicity cut: first, default, next, alternatives"};
+  o2::framework::Configurable<std::vector<std::string>> pileuprej{"evtflt_pileuprej", {"fnrg{V0M_TPCOUT=-0.5+3.7*x-0.14*x*x, 0.5-3.7*x+0.14*x*x}-yes", "fnrg{V0M_TRKLETS=-0.5+3.7*x-0.14*x*x, 0.5-3.7*x+0.14*x*x}-no"}, "Advanced pile-up rejection cut: first, default, next, alternatives"};
 } eventfilter;
 
 struct : o2::framework::ConfigurableGroup {

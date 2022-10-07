@@ -628,4 +628,5 @@ class TrackSelectionBrick : public SpecialCutBrick
 } // namespace PWGCF
 } // namespace analysis
 } // namespace o2
+
 #endif // SKIMMING_CONFIGURABLE_CUTS_CLASSES_H

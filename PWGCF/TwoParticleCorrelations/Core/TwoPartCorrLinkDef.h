@@ -43,4 +43,7 @@
 #pragma link C++ class o2::analysis::PWGCF::PIDSelectionConfigurable + ;
 #pragma link C++ class o2::analysis::PWGCF::PIDSelectionFilterAndAnalysis + ;
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionConfigurable + ;
+#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::ComplexBrickHelper + ;
+#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::MultiplicityBrick + ;
+#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::PileUpRejBrick + ;
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis + ;
