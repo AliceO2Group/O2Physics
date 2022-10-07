@@ -86,7 +86,18 @@ struct reso2initializer {
   Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                      // Global track cuts
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
-  void init(InitContext&)
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
+  using ResoTracks = aod::Reso2TracksPIDExt;
+  using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
+  using ResoV0s = aod::V0Datas;
+  using ResoV0sMC = soa::Join<ResoV0s, aod::McV0Labels>;
+
+  Preslice<soa::Filtered<ResoTracks>> tracksbyCollisionID = aod::track::collisionId;
+  Preslice<ResoV0s> v0sbyCollisionID = aod::v0data::collisionId;
+
+  template <bool isMC, typename CollisionType, typename TrackType>
+  bool IsTrackSelected(CollisionType const& collision, TrackType const& track)
   {
     // Track selection
     qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
@@ -194,18 +205,8 @@ struct reso2initializer {
       if constexpr (isMC) {
         fillMCTracks(track);
       }
-    /// V0s
-    if (ConfStoreV0) {
-      for (auto& v0 : V0s) {
-        qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
-        auto postrack = v0.posTrack_as<aod::Reso2TracksPIDExt>();
-        auto negtrack = v0.negTrack_as<aod::Reso2TracksPIDExt>();
-
-        if (postrack.tpcNClsCrossedRows() < mincrossedrows)
-          continue;
-        if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
-          continue;
-        qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
+    }
+  }
 
   // Filter for all V0s
   template <bool isMC, typename CollisionType, typename V0Type, typename TrackType>
