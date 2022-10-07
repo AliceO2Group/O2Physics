@@ -15,6 +15,7 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
+/// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -246,7 +247,7 @@ struct HfTagSelTracks {
   Configurable<bool> debug{"debug", true, "debug mode"};
   Configurable<double> bz{"bz", 5., "bz field"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
-  Configurable<bool> isRun2GRP{"isRun2GRP", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
@@ -407,7 +408,7 @@ struct HfTagSelTracks {
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
 
-      if (isRun2GRP) { // Run 2 GRP object
+      if (isRun2) { // Run 2 GRP object
         o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
         if (grpo != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpo);
@@ -830,7 +831,7 @@ struct HfTrackIndexSkimsCreator {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<int> do3prong{"do3prong", 0, "do 3 prong"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
-  Configurable<bool> isRun2GRP{"isRun2GRP", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // preselection parameters
   Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
@@ -1271,7 +1272,7 @@ struct HfTrackIndexSkimsCreator {
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
 
-      if (isRun2GRP) { // Run 2 GRP object
+      if (isRun2) { // Run 2 GRP object
         o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
         if (grpo != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpo);
