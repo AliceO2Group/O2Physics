@@ -56,7 +56,8 @@ struct QaEfficiency {
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
   // Track only selection, options to select only specific tracks
-  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
+  Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
@@ -567,7 +568,7 @@ struct QaEfficiency {
       LOG(fatal) << "Can't interpret charge index";
     }
 
-    const char* partName = particleName(charge, id);
+    const TString partName = particleName(charge, id);
     LOG(info) << "Making TEfficiency for MC for particle " << partName;
     THashList* subList = new THashList();
     subList->SetName(partName);
@@ -580,7 +581,7 @@ struct QaEfficiency {
 
     auto makeEfficiency = [&](const TString effname, auto templateHisto) { // 1D efficiencies
       const auto h = registry->get<TH1>(templateHisto);
-      LOG(debug) << " Making 1D TEfficiency " << effname<<" from "<<  h->GetName();
+      LOG(debug) << " Making 1D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axis = h->GetXaxis();
       TString efftitle = h->GetTitle();
       efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
@@ -624,7 +625,7 @@ struct QaEfficiency {
 
     auto makeEfficiency2D = [&](const TString effname, auto templateHisto) { // 2D efficiencies
       const auto h = registry->get<TH2>(templateHisto);
-      LOG(debug) << " Making 2D TEfficiency " << effname<<" from "<<  h->GetName();
+      LOG(debug) << " Making 2D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axisX = h->GetXaxis();
       const TAxis* axisY = h->GetYaxis();
       TString efftitle = h->GetTitle();
@@ -653,28 +654,36 @@ struct QaEfficiency {
     auto h = histos.add<TH1>("MC/trackSelection", "Track Selection", kTH1F, {axisSel});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "Passed has MC part.");
-    h->GetXaxis()->SetBinLabel(3, "Passed Ev. Reco.");
-    h->GetXaxis()->SetBinLabel(4, "Passed #it{p}_{T}");
-    h->GetXaxis()->SetBinLabel(5, "Passed #it{#eta}");
-    h->GetXaxis()->SetBinLabel(6, "Passed #it{#varphi}");
-    h->GetXaxis()->SetBinLabel(7, "Passed y");
-    h->GetXaxis()->SetBinLabel(8, "Passed Fake");
-    h->GetXaxis()->SetBinLabel(9, "Passed standard quality cuts");
-    h->GetXaxis()->SetBinLabel(10, "Passed has collision");
+    h->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
+    h->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
+    h->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
+    h->GetXaxis()->SetBinLabel(6, "Passed y");
+    h->GetXaxis()->SetBinLabel(7, "Passed Fake");
+    h->GetXaxis()->SetBinLabel(8, "Passed has collision");
+    h->GetXaxis()->SetBinLabel(9, "passedTrackType");
+    h->GetXaxis()->SetBinLabel(10, "passedPtRange");
+    h->GetXaxis()->SetBinLabel(11, "passedEtaRange");
+    h->GetXaxis()->SetBinLabel(12, "passedDCAxy");
+    h->GetXaxis()->SetBinLabel(13, "passedDCAz");
+    h->GetXaxis()->SetBinLabel(14, "passedGoldenChi2");
+    h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
+    h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
+    h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
+    h->GetXaxis()->SetBinLabel(18, "Passed globalCut");
+
     for (int i = 0; i < nSpecies; i++) {
-      h->GetXaxis()->SetBinLabel(11 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
+      h->GetXaxis()->SetBinLabel(19 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
     }
     histos.add("MC/fakeTrackNoiseHits", "Fake tracks from noise hits", kTH1F, {{1, 0, 1}});
 
     h = histos.add<TH1>("MC/particleSelection", "Particle Selection", kTH1F, {axisSel});
     h->GetXaxis()->SetBinLabel(1, "Particles read");
-    h->GetXaxis()->SetBinLabel(2, "Passed Ev. Reco.");
-    h->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
-    h->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
-    h->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
-    h->GetXaxis()->SetBinLabel(6, "Passed y");
+    h->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
+    h->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
+    h->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
+    h->GetXaxis()->SetBinLabel(5, "Passed y");
     for (int i = 0; i < nSpecies; i++) {
-      h->GetXaxis()->SetBinLabel(7 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
+      h->GetXaxis()->SetBinLabel(6 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
     }
     histos.add("MC/eventMultiplicity", "Event Selection", kTH1F, {{1000, 0, 5000}});
 
@@ -715,16 +724,23 @@ struct QaEfficiency {
 
     auto h = histos.add<TH1>("Data/trackSelection", "Track Selection", kTH1F, {axisSel});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
-    h->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
-    h->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
-    h->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
-    h->GetXaxis()->SetBinLabel(5, "Passed TrackType");
-    h->GetXaxis()->SetBinLabel(6, "Passed PtRange");
-    h->GetXaxis()->SetBinLabel(7, "Passed EtaRange");
-    h->GetXaxis()->SetBinLabel(8, "Passed DCAxy");
-    h->GetXaxis()->SetBinLabel(9, "Passed DCAz");
-    h->GetXaxis()->SetBinLabel(10, "Passed GoldenChi2");
-    h->GetXaxis()->SetBinLabel(11, "Passed quality cuts");
+    h->GetXaxis()->SetBinLabel(2, "");
+    h->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
+    h->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
+    h->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
+    h->GetXaxis()->SetBinLabel(6, "");
+    h->GetXaxis()->SetBinLabel(7, "");
+    h->GetXaxis()->SetBinLabel(8, "Passed has collision");
+    h->GetXaxis()->SetBinLabel(9, "passedTrackType");
+    h->GetXaxis()->SetBinLabel(10, "passedPtRange");
+    h->GetXaxis()->SetBinLabel(11, "passedEtaRange");
+    h->GetXaxis()->SetBinLabel(12, "passedDCAxy");
+    h->GetXaxis()->SetBinLabel(13, "passedDCAz");
+    h->GetXaxis()->SetBinLabel(14, "passedGoldenChi2");
+    h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
+    h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
+    h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
+    h->GetXaxis()->SetBinLabel(18, "Passed globalCut");
 
     const TString tagPt = Form("#it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                etaMin, etaMax,
@@ -844,8 +860,9 @@ struct QaEfficiency {
   {
     auto doLimits = [&](double& min, double& max, const ConfigurableAxis& binning) {
       const AxisSpec a{binning, "dummy"};
-      min = a.binEdges[1];
-      max = a.binEdges[a.getNbins() - 1];
+      min = a.binEdges[0];
+      max = a.binEdges[1];
+      LOG(info) << "Making limits from " << min << ", " << max << " size " << a.getNbins();
     };
 
     doLimits(ptMin, ptMax, ptBins);
@@ -853,7 +870,7 @@ struct QaEfficiency {
     doLimits(phiMin, phiMax, phiBins);
     doLimits(yMin, yMax, yBins);
 
-    const AxisSpec axisSel{30, 0.5, 30.5, "Selection"};
+    const AxisSpec axisSel{40, 0.5, 40.5, "Selection"};
     histos.add("eventSelection", "Event Selection", kTH1F, {axisSel});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
@@ -899,6 +916,7 @@ struct QaEfficiency {
         return;
       }
     }
+    LOG(info) << "fillMCTrackHistograms for charge " << charge << " id " << id;
 
     auto& h = histosPos;
     if (charge == 1) {
@@ -913,7 +931,7 @@ struct QaEfficiency {
       return;
     }
 
-    histos.fill(HIST("MC/trackSelection"), 11 + id);
+    histos.fill(HIST("MC/trackSelection"), 19 + id);
 
     h.fill(HIST(hPItsTpc[histogramIndex]), mcParticle.p());
     h.fill(HIST(hPtItsTpc[histogramIndex]), mcParticle.pt());
@@ -977,6 +995,8 @@ struct QaEfficiency {
         return;
       }
     }
+
+    LOG(info) << "fillMCParticleHistograms for charge " << charge << " id " << id;
 
     auto& h = histosPos;
     if (charge == 1) {
@@ -1150,24 +1170,23 @@ struct QaEfficiency {
   template <bool isMC = true, typename particleType, typename histoType>
   bool isInAcceptance(const particleType& particle, const histoType& countingHisto, const int offset = 0)
   {
-    histos.fill(countingHisto, 1 + offset);
     if ((particle.pt() < ptMin || particle.pt() > ptMax)) { // Check pt
       return false;
     }
-    histos.fill(countingHisto, 2 + offset);
+    histos.fill(countingHisto, 1 + offset);
     if ((particle.eta() < etaMin || particle.eta() > etaMax)) { // Check eta
       return false;
     }
-    histos.fill(countingHisto, 3 + offset);
+    histos.fill(countingHisto, 2 + offset);
     if ((particle.phi() < phiMin || particle.phi() > phiMax)) { // Check phi
       return false;
     }
-    histos.fill(countingHisto, 4 + offset);
+    histos.fill(countingHisto, 3 + offset);
     if constexpr (isMC) {
       if ((particle.y() < yMin || particle.y() > yMax)) { // Check rapidity
         return false;
       }
-      histos.fill(countingHisto, 5 + offset);
+      histos.fill(countingHisto, 4 + offset);
     }
 
     return true;
@@ -1210,7 +1229,7 @@ struct QaEfficiency {
           return false;
         }
       }
-      histos.fill(countingHisto, 8);
+      histos.fill(countingHisto, 7);
     } else { // Data only
       if (!isInAcceptance<false>(track, countingHisto, 2)) {
         return false;
@@ -1220,33 +1239,33 @@ struct QaEfficiency {
     if (!track.has_collision()) {
       return false;
     }
-    histos.fill(countingHisto, 9);
+    histos.fill(countingHisto, 8);
 
-    if (trackSelection.value > 0) { // Check general cuts
+    if (trackSelection) { // Check general cuts
       if (!track.passedTrackType()) {
         return false;
       }
-      histos.fill(countingHisto, 5);
+      histos.fill(countingHisto, 9);
       if (!track.passedPtRange()) {
         return false;
       }
-      histos.fill(countingHisto, 6);
+      histos.fill(countingHisto, 10);
       if (!track.passedEtaRange()) {
         return false;
       }
-      histos.fill(countingHisto, 7);
+      histos.fill(countingHisto, 11);
       if (!track.passedDCAxy()) {
         return false;
       }
-      histos.fill(countingHisto, 8);
+      histos.fill(countingHisto, 12);
       if (!track.passedDCAz()) {
         return false;
       }
-      histos.fill(countingHisto, 9);
+      histos.fill(countingHisto, 13);
       if (!track.passedGoldenChi2()) {
         return false;
       }
-      histos.fill(countingHisto, 10);
+      histos.fill(countingHisto, 14);
 
       passedITS = track.passedITSNCls() &&
                   track.passedITSChi2NDF() &&
@@ -1267,7 +1286,19 @@ struct QaEfficiency {
       passedTOF = track.hasTOF();
     }
 
-    switch (trackSelection.value) {
+    if (passedITS) { // Partial
+      histos.fill(countingHisto, 15);
+    }
+
+    if (passedTPC) { // Partial
+      histos.fill(countingHisto, 16);
+    }
+
+    if (passedTOF) { // Partial
+      histos.fill(countingHisto, 17);
+    }
+
+    switch (globalTrackSelection) {
       case 0:
         return true;
       case 1:
@@ -1283,6 +1314,8 @@ struct QaEfficiency {
       default:
         LOG(fatal) << "Can't interpret track asked selection";
     }
+    histos.fill(countingHisto, 18);
+
     return false;
   }
 
@@ -1377,48 +1410,6 @@ struct QaEfficiency {
     for (const auto& track : tracks) {
       if (!isTrackSelected<false>(track, HIST("Data/trackSelection"))) {
         continue;
-      }
-      if (trackSelection.value > 0) { // Check general cuts
-        if (!track.passedTrackType()) {
-          continue;
-        }
-        histos.fill(HIST("Data/trackSelection"), 5);
-        if (!track.passedPtRange()) {
-          continue;
-        }
-        histos.fill(HIST("Data/trackSelection"), 6);
-        if (!track.passedEtaRange()) {
-          continue;
-        }
-        histos.fill(HIST("Data/trackSelection"), 7);
-        if (!track.passedDCAxy()) {
-          continue;
-        }
-        histos.fill(HIST("Data/trackSelection"), 8);
-        if (!track.passedDCAz()) {
-          continue;
-        }
-        histos.fill(HIST("Data/trackSelection"), 9);
-        if (!track.passedGoldenChi2()) {
-          continue;
-        }
-        histos.fill(HIST("Data/trackSelection"), 10);
-
-        passedITS = track.passedITSNCls() &&
-                    track.passedITSChi2NDF() &&
-                    track.passedITSRefit() &&
-                    track.passedITSHits() &&
-                    track.hasITS();
-
-        passedTPC = track.passedTPCNCls() &&
-                    track.passedTPCCrossedRows() &&
-                    track.passedTPCCrossedRowsOverNCls() &&
-                    track.passedTPCChi2NDF() &&
-                    track.passedTPCRefit() &&
-                    track.hasTPC();
-      } else {
-        passedITS = track.hasITS();
-        passedTPC = track.hasTPC();
       }
 
       histos.fill(HIST("Data/trackSelection"), 11);
