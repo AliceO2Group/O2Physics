@@ -110,8 +110,7 @@ struct phianalysis {
         histos.fill(HIST("TOF_Nsigma2"), trk2.pt(), trk2.tofNSigmaKa());
         histos.fill(HIST("TPC_Nsigma2"), trk2.pt(), trk2.tpcNSigmaKa());
         histos.fill(HIST("TOF_TPC_Map2"), trk2.tofNSigmaKa(), trk2.tpcNSigmaKa());
-      }
-      else {
+      } else {
         //  --- PID QA Kaons +
         histos.fill(HIST("TOF_Nsigma1"), trk2.pt(), trk2.tofNSigmaKa());
         histos.fill(HIST("TPC_Nsigma1"), trk2.pt(), trk2.tpcNSigmaKa());
