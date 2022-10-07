@@ -269,15 +269,14 @@ struct reso2initializer {
         mothers = getMothersIndeces(particle);
       if (particle.has_daughters())
         daughters = getDaughtersIndeces(particle);
-      reso2mctracks(reso2tracks.lastIndex(),
-                    particle.pdgCode(),
-                    mothers,
-                    daughters,
+      reso2mctracks(particle.pdgCode(),
+                    &mothers[0],
+                    &daughters[0],
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
     } else
       // No MC particle associated
-      reso2mctracks(reso2tracks.lastIndex(), 0, mothers, daughters, 0, 0);
+      reso2mctracks(0, &mothers[0], &daughters[0], 0, 0);
   }
 
   void init(InitContext&)
@@ -332,7 +331,7 @@ struct reso2initializer {
       // Loop over tracks
       const auto& tracksInCollision = tracks.sliceBy(tracksbyCollisionID, collision.globalIndex());
       const auto& v0sInCollision = V0s.sliceBy(v0sbyCollisionID, collision.globalIndex());
-      // fillTracks<true>(collision, tracksInCollision);
+      fillTracks<true>(collision, tracksInCollision);
       // if (ConfStoreV0) {
       //   fillV0s<true>(collision, v0sInCollision, tracksInCollision);
       // }
