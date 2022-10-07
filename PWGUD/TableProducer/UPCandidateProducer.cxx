@@ -942,6 +942,7 @@ struct UpcCandProducer {
   {
     fDoMC = true;
     fDoSemiFwd = true;
+    skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidates(&fwdTracks, &barrelTracks,
                      &ambFwdTracks, &ambTracks,
                      bcs, collisions,
@@ -963,6 +964,7 @@ struct UpcCandProducer {
   {
     fDoMC = true;
     fDoSemiFwd = false;
+    skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidates((ForwardTracks*)nullptr, &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
