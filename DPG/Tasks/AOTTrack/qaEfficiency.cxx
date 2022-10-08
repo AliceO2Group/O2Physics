@@ -1010,7 +1010,7 @@ struct QaEfficiency {
       if (passedITS && passedTPC) {
         h.fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
         h.fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
-        if (track.hasTOF()) {
+        if (passedTOF) {
           h.fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
         }
       }
@@ -1018,7 +1018,7 @@ struct QaEfficiency {
       if (passedITS && passedTPC) {
         h.fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
         h.fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
-        if (track.hasTOF()) {
+        if (passedTOF) {
           h.fill(HIST(hPtItsTpcTofStr[histogramIndex]), mcParticle.pt());
         }
       }
@@ -1026,7 +1026,7 @@ struct QaEfficiency {
       if (passedITS && passedTPC) {
         h.fill(HIST(hPtItsTpcMat[histogramIndex]), mcParticle.pt());
         h.fill(HIST(hPtTrkItsTpcMat[histogramIndex]), track.pt());
-        if (track.hasTOF()) {
+        if (passedTOF) {
           h.fill(HIST(hPtItsTpcTofMat[histogramIndex]), mcParticle.pt());
         }
       }
@@ -1468,8 +1468,6 @@ struct QaEfficiency {
         continue;
       }
 
-      histos.fill(HIST("Data/trackSelection"), 11);
-
       histos.fill(HIST("Data/trackLength"), track.length());
 
       if (passedITS) {
@@ -1485,6 +1483,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
         }
       }
+
       if (passedTPC) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
@@ -1497,33 +1496,33 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
           histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
         }
+      }
 
-        if (passedITS && passedTPC) {
-          if (track.sign() > 0) {
-            histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-            histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
-            histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
-            histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
-          } else {
-            histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-            histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
-            histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
-            histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
-          }
+      if (passedITS && passedTPC) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
         }
+      }
 
-        if (track.hasITS() && passedTPC && track.hasTOF()) {
-          if (track.sign() > 0) {
-            histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-            histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
-            histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
-            histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
-          } else {
-            histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-            histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
-            histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
-            histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
-          }
+      if (passedITS && passedTPC && passedTOF) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
         }
       }
 
@@ -1532,12 +1531,12 @@ struct QaEfficiency {
           static_cast<TEfficiency*>(listEfficiencyData->At(0))->Fill(passedTPC, track.pt());
         }
         if (passedITS && passedTPC) {
-          static_cast<TEfficiency*>(listEfficiencyData->At(1))->Fill(track.hasTOF(), track.pt());
-          static_cast<TEfficiency*>(listEfficiencyData->At(2))->Fill(track.hasTOF(), track.p());
-          static_cast<TEfficiency*>(listEfficiencyData->At(3))->Fill(track.hasTOF(), track.eta());
-          static_cast<TEfficiency*>(listEfficiencyData->At(4))->Fill(track.hasTOF(), track.phi());
-          static_cast<TEfficiency*>(listEfficiencyData->At(5))->Fill(track.hasTOF(), track.pt(), track.eta());
-          static_cast<TEfficiency*>(listEfficiencyData->At(6))->Fill(track.hasTOF(), track.pt(), track.phi());
+          static_cast<TEfficiency*>(listEfficiencyData->At(1))->Fill(passedTOF, track.pt());
+          static_cast<TEfficiency*>(listEfficiencyData->At(2))->Fill(passedTOF, track.p());
+          static_cast<TEfficiency*>(listEfficiencyData->At(3))->Fill(passedTOF, track.eta());
+          static_cast<TEfficiency*>(listEfficiencyData->At(4))->Fill(passedTOF, track.phi());
+          static_cast<TEfficiency*>(listEfficiencyData->At(5))->Fill(passedTOF, track.pt(), track.eta());
+          static_cast<TEfficiency*>(listEfficiencyData->At(6))->Fill(passedTOF, track.pt(), track.phi());
         }
       }
     }
