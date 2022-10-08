@@ -99,8 +99,8 @@ using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod:
                                              aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                              aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta,
                                              aod::DQBarrelTrackCuts>;
-using MyMuons = aod::FwdTracks;
-using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::DQMuonsCuts>;
+using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
+using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::DQMuonsCuts>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;

@@ -557,7 +557,8 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   v0data::V0CosPA<v0data::X, v0data::Y, v0data::Z, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, collision::PosZ>,
                   v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                   v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                  v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>);
+                  v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>);
 //                  ,
 //                  v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 //                  v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -697,7 +698,7 @@ DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); //! resonant
 // mapping of decay types
 enum DecayType { DPlusToPiKPi = 0,
                  LcToPKPi,
-                 DsToPiKK,
+                 DsToKKPi,
                  XicToPKPi,
                  N3ProngDecays }; // always keep N3ProngDecays at the end
 
@@ -727,6 +728,38 @@ template <typename T>
 auto InvMassDPlus(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+// Ds± → K± K∓ π±
+
+template <typename T>
+auto CtDs(const T& candidate)
+{
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto YDs(const T& candidate)
+{
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto EDs(const T& candidate)
+{
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto InvMassDsKKPi(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+template <typename T>
+auto InvMassDsPiKK(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
 }
 
 // Λc± → p± K∓ π±
@@ -1310,6 +1343,103 @@ DECLARE_SOA_TABLE(HfCandLbMCRec, "AOD", "HFCANDLBMCREC", //!
 DECLARE_SOA_TABLE(HfCandLbMCGen, "AOD", "HFCANDLBMCGEN", //!
                   hf_cand_lb::FlagMCMatchGen,
                   hf_cand_lb::OriginMCGen);
+
+// specific B0 candidate properties
+namespace hf_cand_b0
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng3, "_0"); // D index
+// MC matching result:
+DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(OriginMCRec, originMCRec, int8_t);       // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);       // particle origin, generator level
+DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);         // debug flag for mis-association reconstruction level
+
+// mapping of decay types
+enum DecayType { B0ToDPi };
+
+// B0(B0bar) → D∓ π±
+template <typename T>
+auto CtB0(const T& candidate)
+{
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kB0));
+}
+
+template <typename T>
+auto YB0(const T& candidate)
+{
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kB0));
+}
+
+template <typename T>
+auto EB0(const T& candidate)
+{
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kB0));
+}
+
+template <typename T>
+auto InvMassB0(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+template <typename T>
+auto CosThetaStarB0(const T& candidate)
+{
+  return candidate.cosThetaStar(array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kB0), 1);
+}
+} // namespace hf_cand_b0
+
+// declare dedicated B0 decay candidate table
+DECLARE_SOA_TABLE(HfCandB0Base, "AOD", "HFCANDB0BASE",
+                  // general columns
+                  HFCAND_COLUMNS,
+                  // 2-prong specific columns
+                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
+                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand_b0::Index0Id, hf_track_index::Index1Id,
+                  hf_track_index::HFflag,
+                  /* dynamic columns */
+                  hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand_prong2::CosThetaStar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  /* dynamic columns that use candidate momentum components */
+                  hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::P<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::P2<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::PVector<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::CPA<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::CPAXY<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::ImpactParameterXY<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand_prong2::MaxNormalisedDeltaIP<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ErrorDecayLengthXY, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_cand::Eta<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::Phi<hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::Y<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::E<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::E2<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>);
+
+// extended table with expression columns that can be used as arguments of dynamic columns
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandB0Ext, HfCandB0Base, "HFCANDB0EXT",
+                                hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz);
+
+using HfCandB0 = HfCandB0Ext;
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfCandB0MCRec, "AOD", "HFCANDB0MCREC",
+                  hf_cand_b0::FlagMCMatchRec,
+                  hf_cand_b0::OriginMCRec,
+                  hf_cand_b0::DebugMCRec);
+
+// table with results of generator level MC matching
+DECLARE_SOA_TABLE(HfCandB0MCGen, "AOD", "HFCANDB0MCGEN",
+                  hf_cand_b0::FlagMCMatchGen,
+                  hf_cand_b0::OriginMCGen);
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_HFSECONDARYVERTEX_H_
