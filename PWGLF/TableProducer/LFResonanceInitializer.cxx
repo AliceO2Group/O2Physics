@@ -285,56 +285,47 @@ struct reso2initializer {
     colCuts.init(&qaRegistry);
   }
 
-  void process(soa::Filtered<ResoEvents> const& collisions,
+  void process(soa::Filtered<ResoEvents>::iterator const& collision,
                soa::Filtered<ResoTracks> const& tracks, ResoV0s const& V0s, aod::BCsWithTimestamps const&)
   {
-    for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-      // Default event selection
-      if (!colCuts.isSelected(collision))
-        return;
-      colCuts.fillQA(collision);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    // Default event selection
+    if (!colCuts.isSelected(collision))
+      return;
+    colCuts.fillQA(collision);
 
-      if (ConfIsRun3) {
-        resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
-      } else {
-        resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
-      }
+    if (ConfIsRun3) {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    } else {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    }
 
-      const auto& tracksInCollision = tracks.sliceBy(tracksbyCollisionID, collision.globalIndex());
-      const auto& v0sInCollision = V0s.sliceBy(v0sbyCollisionID, collision.globalIndex());
-
-      fillTracks<false>(collision, tracksInCollision);
-      if (ConfStoreV0) {
-        fillV0s<false>(collision, v0sInCollision, tracksInCollision);
-      }
+    fillTracks<false>(collision, tracks);
+    if (ConfStoreV0) {
+      fillV0s<false>(collision, V0s, tracks);
     }
   }
   PROCESS_SWITCH(reso2initializer, process, "Process for data", true);
 
-  void processMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>> const& collisions,
+  void processMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
                  aod::McCollisions const& mcCols, soa::Filtered<ResoTracksMC> const& tracks,
                  ResoV0sMC const& V0s, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
   {
-    for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-      if (!colCuts.isSelected(collision))
-        continue;
-      colCuts.fillQA(collision);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    if (!colCuts.isSelected(collision))
+      return;
+    colCuts.fillQA(collision);
 
-      if (ConfIsRun3) {
-        resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
-      } else {
-        resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
-      }
+    if (ConfIsRun3) {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    } else {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    }
 
-      // Loop over tracks
-      const auto& tracksInCollision = tracks.sliceBy(tracksbyCollisionID, collision.globalIndex());
-      const auto& v0sInCollision = V0s.sliceBy(v0sbyCollisionID, collision.globalIndex());
-      fillTracks<true>(collision, tracksInCollision);
-      // if (ConfStoreV0) {
-      //   fillV0s<true>(collision, v0sInCollision, tracksInCollision);
-      // }
+    // Loop over tracks
+    fillTracks<true>(collision, tracks);
+    if (ConfStoreV0) {
+      fillV0s<true>(collision, V0s, tracks);
     }
   }
   PROCESS_SWITCH(reso2initializer, processMC, "Process for MC", false);
