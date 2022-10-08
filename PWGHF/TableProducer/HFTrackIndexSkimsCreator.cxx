@@ -15,6 +15,7 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
+/// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -27,12 +28,13 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
-#include "DetectorsVertexing/PVertexer.h"     // for PV refit
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-#include "CCDB/BasicCCDBManager.h"            // for PV refit
-#include "DataFormatsParameters/GRPObject.h"  // for PV refit
-#include "DetectorsBase/Propagator.h"         // for PV refit
-#include "DetectorsBase/GeometryManager.h"    // for PV refit
+#include "DetectorsVertexing/PVertexer.h"      // for PV refit
+#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
+#include "CCDB/BasicCCDBManager.h"             // for PV refit
+#include "DataFormatsParameters/GRPObject.h"   // for PV refit
+#include "DetectorsBase/Propagator.h"          // for PV refit
+#include "DetectorsBase/GeometryManager.h"     // for PV refit
+#include "DataFormatsParameters/GRPMagField.h" // for PV refit
 
 #include <algorithm>
 
@@ -245,6 +247,7 @@ struct HfTagSelTracks {
   Configurable<bool> debug{"debug", true, "debug mode"};
   Configurable<double> bz{"bz", 5., "bz field"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
@@ -268,6 +271,10 @@ struct HfTagSelTracks {
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -279,10 +286,6 @@ struct HfTagSelTracks {
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbPathLut = "GLO/Param/MatLUT";
-  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
-  const char* ccdbPathGrp = "GLO/GRP/GRP";
-  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -404,14 +407,27 @@ struct HfTagSelTracks {
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+
+      if (isRun2) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+        } else {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
       }
+
       mRunNumber = bc.runNumber();
     }
 
@@ -815,6 +831,7 @@ struct HfTrackIndexSkimsCreator {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<int> do3prong{"do3prong", 0, "do 3 prong"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // preselection parameters
   Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
@@ -850,14 +867,14 @@ struct HfTrackIndexSkimsCreator {
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbPathLut = "GLO/Param/MatLUT";
-  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
-  const char* ccdbPathGrp = "GLO/GRP/GRP";
-  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -1254,14 +1271,27 @@ struct HfTrackIndexSkimsCreator {
     // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+
+      if (isRun2) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+        } else {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
       }
+
       mRunNumber = bc.runNumber();
     }
 
