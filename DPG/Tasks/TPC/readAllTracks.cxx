@@ -34,20 +34,20 @@ DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 } // namespace tpcskims
 
-DECLARE_SOA_TABLE(table, "AOD", "AllTracks",
+DECLARE_SOA_TABLE(ALLTRACKSTABLE, "AOD", "ALLTRACKS",
                   o2::aod::track::TPCSignal,
                   o2::aod::track::TPCInnerParam,
                   o2::aod::track::Tgl,
                   o2::aod::track::Signed1Pt,
                   o2::aod::track::Eta,
-                  tpcskims::NormMultTPC,
-                  tpcskims::NormNClustersTPC);
+                  o2::aod::tableProducer::NormMultTPC,
+                  o2::aod::tableProducer::NormNClustersTPC);
 };
 
 
 struct tableWriter {
 
-    Produces<o2::aod::table> table;
+    Produces<o2::aod::ALLTRACKSTABLE> allTracksTable;
 
     Configurable<bool> isRun2{"isRun2", false, "Normalization for the number of clusters"};
     Configurable<bool> useEventSel{"useEventSel", true, "Whether or not to use the event selection"};
@@ -63,7 +63,7 @@ struct tableWriter {
         const double ncl = track.tpcNClsFound();
         const int multTPC = collision.multTPC();
 
-        table(track.tpcSignal(),
+        allTracksTable(track.tpcSignal(),
             track.tpcInnerParam(),
             track.tgl(),
             track.signed1Pt(),
@@ -78,13 +78,19 @@ struct tableWriter {
     bool isEvSel(const CollisionType& collision, const TrackType& tracks)
     {
         if (isRun2) {
-        if (!collision.sel7()) {
-            return false;
-        }
+            if (!collision.sel7()) {
+                return false;
+            }
+            else{
+                return true;
+            }
         } else {
-        if (!collision.sel8()) {
-            return false;
-        }
+            if (!collision.sel8()) {
+                return false;
+            }
+            else{
+                return true;
+            }
         }
     };
 
@@ -93,13 +99,13 @@ struct tableWriter {
     bool isTrkSel(const CollisionType& collision, const TrackType& track)
     {
         if (!track.isGlobalTrack()) { // Skipping non global tracks
-        return false;
+            return false;
         }
         if (!track.hasITS()) { // Skipping tracks without ITS
-        return false;
+            return false;
         }
         if (!track.hasTPC()) { // Skipping tracks without TPC
-        return false;
+            return false;
         }
         return true;
     };
