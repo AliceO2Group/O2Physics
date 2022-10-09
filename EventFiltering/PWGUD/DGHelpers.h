@@ -170,7 +170,7 @@ struct DGSelector {
     if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
       return 10;
     }
-        // invariant mass
+    // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
       return 11;
     }
