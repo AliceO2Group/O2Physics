@@ -50,7 +50,7 @@ struct DGCandAnalyzer {
   // get a DGCutparHolder and DGAnaparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   MutableConfigurable<bool> verbose{"Verbose", {}, "Additional print outs"};
-  MutableConfigurable<int> candCase{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
+  MutableConfigurable<int> candCaseSel{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   DGAnaparHolder anaPars = DGAnaparHolder();
   MutableConfigurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
@@ -131,9 +131,10 @@ struct DGCandAnalyzer {
   {
 
     // skip unwanted cases
-    if (candCase < 0 && dgcand.rgtrwTOF() >= 0) {
+    auto candCase = (dgcand.posX() == -1. && dgcand.posY() == 1. && dgcand.posZ() == -1.) ? -1 : 1;
+    if (candCaseSel < 0 && candCase >= 0) {
       return;
-    } else if (candCase > 0 && dgcand.rgtrwTOF() < 0) {
+    } else if (candCaseSel > 0 && candCase < 0) {
       return;
     }
 
