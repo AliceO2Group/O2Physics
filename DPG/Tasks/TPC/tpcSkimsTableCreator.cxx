@@ -46,6 +46,7 @@ struct TreeWriterTpcV0 {
 
   /// Tables to be produced
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
+  Produces<o2::aod::V0MotherTree> v0MotherTree;
 
   /// Configurables
   Configurable<float> cutPAV0{"cutPAV0", 0., "Cut on the cos(pointing angle) of the decay"};
@@ -75,9 +76,11 @@ struct TreeWriterTpcV0 {
   Configurable<float> cutAlphamaxL{"cutAlphamaxL", 0.7, "maximum alpha for Lambda"};
   Configurable<float> cutAlphaminAL{"cutAlphaminAL", -0.7, "minimum alpha for Anti-Lambda"};
   Configurable<float> cutAlphamaxAL{"cutAlphamaxAL", -0.35, "maximum alpha for Anti-Lambda"};
-  Configurable<float> cutAPL0{"cutAPL0", 0.10, "cutAPL par0"};
-  Configurable<float> cutAPL1{"cutAPL1", 0.69, "cutAPL par1"};
-  Configurable<float> cutAPL2{"cutAPL2", 0.5, "cutAPL par2"};
+  Configurable<float> cutAPL_AS{"cutAPL_AS", 0.69, "Shift of the Lambda ellipses on the alpha-axis"};
+  Configurable<float> cutAPL_QR_o{"cutAPL_QR_o", 0.1075, "Outer radius in q of the Lamdba ellipses"};
+  Configurable<float> cutAPL_AR_o{"cutAPL_AR_o", 0.37, "Outer radius in alpha of the Lamdba ellipses"};
+  Configurable<float> cutAPL_QR_i{"cutAPL_QR_i", 0.093, "Inner radius in q of the Lamdba ellipses"};
+  Configurable<float> cutAPL_AR_i{"cutAPL_AR_i", 0.17, "Inner radius in alpha of the Lamdba ellipses"};
   /// Configurables gamma
   Configurable<float> gammaAsymmetryMax{"gammaAsymmetryMax", 0.95, "maximum photon asymetry."};
   Configurable<float> gammaPsiPairMax{"gammaPsiPairMax", 0.1, "maximum psi angle of the track pair. "};
@@ -140,9 +143,10 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    const float q_L = cutAPL0 * std::sqrt(std::abs(1 - (((alpha - cutAPL1) * (alpha - cutAPL1)) / (cutAPL2 * cutAPL2))));
+    const float q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
+    const float q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
     /// Armenteros-Podolanski cut
-    if ((alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < cutQTmin) || (qt > q_L)) {
+    if ((alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < q_L_lower) || (qt > q_L_upper)) {
       return false;
     }
     /// Cut on cosine pointing angle
@@ -180,9 +184,10 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    const float q_L = cutAPL0 * std::sqrt(std::abs(1 - (((alpha + cutAPL1) * (alpha + cutAPL1)) / (cutAPL2 * cutAPL2))));
+    const float q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
+    const float q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
     /// Armenteros-Podolanski cut
-    if ((alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < cutQTmin) || (qt > q_L)) {
+    if ((alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < q_L_lower) || (qt > q_L_upper)) {
       return false;
     }
     /// Cut on cosine pointing angle
@@ -285,6 +290,26 @@ struct TreeWriterTpcV0 {
     }
   };
 
+  template <typename C, typename V0>
+  void fillV0MotherTable(C const& collision, V0 const& v0, const double mass, const int id)
+  {
+    const float alpha = v0.alpha();
+    const float qt = v0.qtarm();
+    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float pT = v0.pt();
+    const float v0radius = v0.v0radius();
+    const float gammapsipair = v0.psipair();
+
+    v0MotherTree(mass,
+                 alpha,
+                 qt,
+                 cosPA,
+                 pT,
+                 v0radius,
+                 gammapsipair,
+                 id);
+  };
+
   double tsalisCharged(double pt, double mass, double sqrts)
   {
     const double a = 6.81, b = 59.24;
@@ -347,6 +372,7 @@ struct TreeWriterTpcV0 {
       auto negTrack = v0.negTrack_as<Trks>();
       /// Fill table for Kaons
       if (selectionKaon(collision, v0)) {
+        fillV0MotherTable(collision, v0, v0.mK0Short(), 1);
         if (selectionPion(posTrack)) {
           fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
@@ -356,6 +382,7 @@ struct TreeWriterTpcV0 {
       }
       /// Fill table for Lambdas
       if (selectionLambda(collision, v0)) {
+        fillV0MotherTable(collision, v0, v0.mLambda(), 2);
         if (selectionProton(posTrack)) {
           fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
         }
@@ -365,6 +392,7 @@ struct TreeWriterTpcV0 {
       }
       /// Fill table for Antilambdas
       if (selectionAntiLambda(collision, v0)) {
+        fillV0MotherTable(collision, v0, v0.mAntiLambda(), 3);
         if (selectionPion(posTrack)) {
           fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
@@ -374,6 +402,7 @@ struct TreeWriterTpcV0 {
       }
       /// Fill table for Gammas
       if (selectionGamma(collision, v0)) {
+        fillV0MotherTable(collision, v0, v0.mGamma(), 0);
         if (selectionElectron(posTrack)) {
           fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(posTrack.tpcSignal()), o2::track::PID::Electron, dwnSmplFactor_El);
         }
