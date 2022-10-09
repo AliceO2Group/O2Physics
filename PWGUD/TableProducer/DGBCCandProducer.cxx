@@ -65,7 +65,7 @@ struct tracksWGTInBCs {
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
           closestBC = (uint64_t)(firstCompatibleBC +
-                               (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+                                 (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
           closestBC = track.collision_as<CCs>().bc_as<BCs>().globalBC();
@@ -75,7 +75,7 @@ struct tracksWGTInBCs {
         tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
       }
     }
-    
+
     // fill tracksWGTInBCs
     int indBCToStart = 0;
     int indBCToSave;
@@ -118,7 +118,7 @@ struct tracksWGTInBCs {
           // compute the BC closest in time
           auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();
           closestBC = (uint64_t)(firstCompatibleBC +
-                                (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+                                 (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
           closestBC = fwdTrack.collision_as<CCs>().bc_as<BCs>().globalBC();
@@ -244,7 +244,7 @@ struct DGBCCandProducer {
   void process(TIBC& tibc, BCs& bcs, CCs& collisions, TCs& tracks, aod::FwdTracks& fwdtracks, FTIBCs& ftibcs,
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-    
+
     // leave if tibc has no associated BC
     if (!tibc.has_bc()) {
       return;
