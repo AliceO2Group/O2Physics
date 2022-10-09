@@ -144,7 +144,8 @@ struct DGCandAnalyzer {
     }
 
     // skip events with out-of-range net charge
-    if (dgcand.netCharge() < diffCuts.minNetCharge() || dgcand.netCharge() > diffCuts.maxNetCharge()) {
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
       return;
     }
 
