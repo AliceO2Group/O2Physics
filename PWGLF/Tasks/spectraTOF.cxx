@@ -176,7 +176,7 @@ struct tofSpectra {
 
   void init(o2::framework::InitContext&)
   {
-    if (doprocessRun2 == true && doprocessRun2 == true) {
+    if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
     if (doprocessFullEl == true && doprocessTinyEl == true) {
@@ -493,13 +493,13 @@ struct tofSpectra {
     }
   }
 
-  template <bool fillHistograms, bool fillMultiplicity, typename CollisionType>
+  template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType>
   bool isEventSelected(CollisionType const& collision)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1);
     }
-    if (doprocessRun2 && !collision.sel7()) {
+    if (doprocessRun2 == true && !collision.sel7()) {
       return false;
 
     } else if (!collision.sel8()) {
