@@ -289,34 +289,36 @@ struct AnalysisQvector {
     //      FillFC(corrconfigs.at(l_ind), collision.centRun2V0M(), l_Random, fillFlag, DQEventFlag);
     //    };
 
+    int nentriesN = 0, nentriesP = 0, nentriesFull = 0;
+    TComplex Q2vecN, Q2vecP, Q2vecFull;
+    TComplex Q3vecN, Q3vecP, Q3vecFull;
+
     // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
-    GFWCumulant gfwCumN = fGFW->GetCumulant(0);
-    GFWCumulant gfwCumP = fGFW->GetCumulant(1);
-    GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
+    if (fGFW && (tracks1.size() > 1)) {
+      // Get Q vectors for positive, negative and full eta gaps
+      // and the multiplicity of the event in this region
+      GFWCumulant gfwCumN = fGFW->GetCumulant(0);
+      nentriesN = gfwCumN.GetN();
+      GFWCumulant gfwCumP = fGFW->GetCumulant(1);
+      nentriesP = gfwCumP.GetN();
+      GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
+      nentriesFull = gfwCumFull.GetN();
 
-    // Get the multiplicity of the event in this region
-    int nentriesN = gfwCumN.GetN();
-    int nentriesP = gfwCumP.GetN();
-    int nentriesFull = gfwCumFull.GetN();
+      // Get the Q vector for selected harmonic, power (for minPt=0)
+      Q2vecN = gfwCumN.Vec(2, fConfigNPow);
+      Q2vecP = gfwCumP.Vec(2, fConfigNPow);
+      Q2vecFull = gfwCumFull.Vec(2, fConfigNPow);
+      Q3vecN = gfwCumN.Vec(3, fConfigNPow);
+      Q3vecP = gfwCumP.Vec(3, fConfigNPow);
+      Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
 
-    // Get the Q vector for selected harmonic, power (for minPt=0)
-    TComplex Q2vecN = gfwCumN.Vec(2, fConfigNPow);
-    TComplex Q2vecP = gfwCumP.Vec(2, fConfigNPow);
-    TComplex Q2vecFull = gfwCumFull.Vec(2, fConfigNPow);
-    TComplex Q3vecN = gfwCumN.Vec(3, fConfigNPow);
-    TComplex Q3vecP = gfwCumP.Vec(3, fConfigNPow);
-    TComplex Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
+      // Fill the VarManager::fgValues with the Q vector quantities
+      VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
+    }
 
-    // Fill the VarManager::fgValues with the Q vector quantities
-    VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
-
-    if (fConfigQA) {
-      if (nentriesN * nentriesP * nentriesFull != 0) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
-        if (fEventCut->IsSelected(VarManager::fgValues)) {
-          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
-        }
-      }
+    fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
