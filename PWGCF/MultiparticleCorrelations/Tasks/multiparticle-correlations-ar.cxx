@@ -178,6 +178,8 @@ namespace AR = MultiParticleCorrelationsARTaskGlobalVariables;
 
 struct MultiParticleCorrelationsARTask {
 
+  Configurable<bool> cfgVerbosity = {"verbose", false, "Set to false to silence all info and warning messages"};
+
   // event configurables and cuts
   Configurable<std::vector<float>> cfgVX = {std::string(AR::EventVariableNames[AR::kVX]),
                                             {400., -2., 2., -1., 1., 1.},
@@ -698,7 +700,7 @@ struct MultiParticleCorrelationsARTask {
         // loop over all correlators
         for (auto correlator : fCorrelators) {
           // check if there are enough tracks for computing the correlator
-          if (fAzimuthalAnglesTrackDep[trackDep].at(bin).size() <= correlator.size()) {
+          if (fAzimuthalAnglesTrackDep[trackDep].at(bin).size() <= correlator.size() && cfgVerbosity.value) {
             LOG(warning) << "BEGIN WARNING";
             LOG(warning) << "Not enough tracks to compute the correlator v_{";
             std::for_each(correlator.begin(), correlator.end(), [](const auto& e) { LOG(warning) << e << ","; });
@@ -760,7 +762,7 @@ struct MultiParticleCorrelationsARTask {
   {
     // return Qvector from fQvectors array
     if (n > AR::MaxHarmonic || p > AR::MaxPower) {
-      LOG(fatal) << "Harmonic " << n << ">" << AR::MaxHarmonic << " or the power " << p << ">" << AR::MaxPower;
+      LOG(fatal) << "Harmonic " << n << ">" << AR::MaxHarmonic << "(MaxHarmonic) or the power " << p << ">" << AR::MaxPower << "(MaxPower)";
     }
     if (n >= 0) {
       return fQvectors[n][p];
@@ -1127,12 +1129,14 @@ struct MultiParticleCorrelationsARTask {
       }
     }
 
-    LOG(info) << "Process event: " << collision.index();
+    if (cfgVerbosity.value) {
+      LOG(info) << "Process event: " << collision.index();
+    }
 
     FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, fRegistry);
     FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(fRegistry, collision.size(), collision.size());
 
-    if (!SurviveEventCuts(collision, tracks)) {
+    if (!SurviveEventCuts(collision, tracks) && cfgVerbosity.value) {
       LOG(info) << "Event was CUT";
       return;
     }
