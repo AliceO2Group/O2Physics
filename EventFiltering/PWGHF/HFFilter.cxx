@@ -249,6 +249,23 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::FlagOrigin,
                   hftraining3p::Channel,
                   hftraining3p::HFSelBit);
+
+namespace hfoptimisationTree
+{
+DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int); //!
+DECLARE_SOA_COLUMN(ParticleID, particleID, int);         //!
+DECLARE_SOA_COLUMN(BkgBDT, bkgBDT, float);               //!
+DECLARE_SOA_COLUMN(PromptBDT, promptBDT, float);         //!
+DECLARE_SOA_COLUMN(NonpromptBDT, nonpromptBDT, float);   //!
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);                 //!
+} // namespace hfoptimisationTree
+DECLARE_SOA_TABLE(HFOptimisationTree, "AOD", "HFOPTIMTREE", //!
+                  hfoptimisationTree::CollisionIndex,
+                  hfoptimisationTree::ParticleID,
+                  hfoptimisationTree::BkgBDT,
+                  hfoptimisationTree::PromptBDT,
+                  hfoptimisationTree::NonpromptBDT,
+                  hfoptimisationTree::DCAXY);
 } // namespace o2::aod
 
 struct AddCollisionId {
@@ -274,6 +291,7 @@ struct HfFilter { // Main struct for HF triggers
   Produces<aod::HfFilters> tags;
   Produces<aod::HFTrigTrain2P> train2P;
   Produces<aod::HFTrigTrain3P> train3P;
+  Produces<aod::HFOptimisationTree> optimisationTree;
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
@@ -337,6 +355,9 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  // parameter for Optimisation Tree
+  Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
 
   // array of ONNX config and BDT thresholds
   std::array<std::string, kNCharmParticles> onnxFiles;
@@ -437,7 +458,7 @@ struct HfFilter { // Main struct for HF triggers
           std::map<std::string, std::string> metadata;
           std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
           bool retrieve_success = true;
-          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos) {
+          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos && loadModelsFromCCDB) {
             retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
           }
           if (retrieve_success) {
@@ -459,6 +480,10 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
       }
+    }
+    // safety for optimisation tree
+    if (applyOptimisation && !applyML) {
+      LOG(fatal) << "Can't apply optimisation if ML is not applied.";
     }
   }
   /// Single-track cuts for bachelor track of beauty candidates
@@ -755,10 +780,10 @@ struct HfFilter { // Main struct for HF triggers
     if (scores[0] > thresholdBDTScores[candType].get(0u, "BDTbkg")) {
       return retValue;
     }
-    if (scores[1] < thresholdBDTScores[candType].get(0u, "BDTprompt")) {
+    if (scores[1] > thresholdBDTScores[candType].get(0u, "BDTprompt")) {
       retValue |= BIT(RecoDecay::OriginType::Prompt);
     }
-    if (scores[2] < thresholdBDTScores[candType].get(0u, "BDTnonprompt")) {
+    if (scores[2] > thresholdBDTScores[candType].get(0u, "BDTnonprompt")) {
       retValue |= BIT(RecoDecay::OriginType::NonPrompt);
     }
 
@@ -814,7 +839,10 @@ struct HfFilter { // Main struct for HF triggers
           }
           std::map<std::string, std::string> metadata;
           std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
+          bool retrieve_success = true;
+          if (loadModelsFromCCDB) {
+            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
+          }
           if (retrieve_success) {
 
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
@@ -858,6 +886,7 @@ struct HfFilter { // Main struct for HF triggers
 
       bool isCharmTagged{true}, isBeautyTagged{true};
 
+      float scores[3] = {-1, -1, -1}; // initialize BDT scores array outside ML loop
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
         isCharmTagged = false;
@@ -883,7 +912,9 @@ struct HfFilter { // Main struct for HF triggers
           assert(outputTensorD0.size() == outputNamesML[kD0].size() && outputTensorD0[1].IsTensor());
           auto typeInfo = outputTensorD0[1].GetTensorTypeAndShapeInfo();
           assert(typeInfo.GetElementCount() == 3); // we need multiclass
-          auto scores = outputTensorD0[1].GetTensorMutableData<float>();
+          scores[0] = outputTensorD0[1].GetTensorMutableData<float>()[0];
+          scores[1] = outputTensorD0[1].GetTensorMutableData<float>()[1];
+          scores[2] = outputTensorD0[1].GetTensorMutableData<float>()[2];
 
           if (applyML && activateQA) {
             hBDTScoreBkg[kD0]->Fill(scores[0]);
@@ -934,6 +965,10 @@ struct HfFilter { // Main struct for HF triggers
             auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
             if (isTrackSelected == kRegular && std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty3P] = true;
+              // fill optimisation tree for D0
+              if (applyOptimisation) {
+                optimisationTree(collision.globalIndex(), pdg::Code::kD0, scores[0], scores[1], scores[2], track.dcaXY());
+              }
               if (activateQA) {
                 hMassVsPtB[kBplus]->Fill(ptCand, massCand);
               }
@@ -947,6 +982,10 @@ struct HfFilter { // Main struct for HF triggers
                   auto massCandB0 = RecoDecay::m(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
                     keepEvent[kBeauty3P] = true;
+                    // fill optimisation tree for D0
+                    if (applyOptimisation) {
+                      optimisationTree(collision.globalIndex(), 413, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
+                    }
                     if (activateQA) {
                       auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
                       auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
@@ -1011,6 +1050,11 @@ struct HfFilter { // Main struct for HF triggers
       std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
       std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
 
+      const int scoresSize = kNCharmParticles - 1;
+      float myscores[scoresSize][3];
+      for (int i = 0; i < scoresSize; i++) {
+        std::fill_n(myscores[i], 3, -1);
+      } // initialize BDT scores array outside ML loop
       // apply ML models
       if (applyML) {
         isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
@@ -1043,7 +1087,9 @@ struct HfFilter { // Main struct for HF triggers
             auto typeInfo = outputTensor[1].GetTensorTypeAndShapeInfo();
             assert(typeInfo.GetElementCount() == 3); // we need multiclass
             auto scores = outputTensor[1].GetTensorMutableData<float>();
-
+            myscores[iCharmPart][0] = scores[0];
+            myscores[iCharmPart][1] = scores[1];
+            myscores[iCharmPart][2] = scores[2];
             if (applyML && activateQA) {
               hBDTScoreBkg[iCharmPart + 1]->Fill(scores[0]);
               hBDTScorePrompt[iCharmPart + 1]->Fill(scores[1]);
@@ -1107,12 +1153,16 @@ struct HfFilter { // Main struct for HF triggers
         float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
+        int particleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4P) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
             if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
               auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty4P] = true;
+                if (applyOptimisation) {
+                  optimisationTree(collision.globalIndex(), particleID[iHypo], myscores[iHypo][0], myscores[iHypo][1], myscores[iHypo][2], track.dcaXY());
+                }
                 if (activateQA) {
                   auto pVecBeauty4Prong = RecoDecay::pVec(pVec3Prong, pVecFourth);
                   auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
