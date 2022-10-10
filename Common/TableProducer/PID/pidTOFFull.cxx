@@ -309,9 +309,9 @@ struct tofPidFull {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-#define doReserveTable(Particle)  \
-  if (pid##Particle.value == 1) { \
-    table.reserve(tracks.size()); \
+#define doReserveTable(Particle)               \
+  if (pid##Particle.value == 1) {              \
+    tablePID##Particle.reserve(tracks.size()); \
   }
 
     doReserveTable(El);
