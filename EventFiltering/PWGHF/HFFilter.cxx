@@ -252,12 +252,12 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
 
 namespace hfoptimisationTree
 {
-DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);           //!
-DECLARE_SOA_COLUMN(ParticleID, particleID, int);           //!
-DECLARE_SOA_COLUMN(BkgBDT, bkgBDT, float);           //!
-DECLARE_SOA_COLUMN(PromptBDT, promptBDT, float);           //!
-DECLARE_SOA_COLUMN(NonpromptBDT, nonpromptBDT, float);           //!
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);           //!
+DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int); //!
+DECLARE_SOA_COLUMN(ParticleID, particleID, int);         //!
+DECLARE_SOA_COLUMN(BkgBDT, bkgBDT, float);               //!
+DECLARE_SOA_COLUMN(PromptBDT, promptBDT, float);         //!
+DECLARE_SOA_COLUMN(NonpromptBDT, nonpromptBDT, float);   //!
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);                 //!
 } // namespace hfoptimisationTree
 DECLARE_SOA_TABLE(HFOptimisationTree, "AOD", "HFOPTIMTREE", //!
                   hfoptimisationTree::CollisionIndex,
@@ -483,7 +483,7 @@ struct HfFilter { // Main struct for HF triggers
     }
     // safety for optimisation tree
     if (applyOptimisation && !applyML) {
-      LOG(fatal) << "Can't apply optimisation if ML is not applied." ;
+      LOG(fatal) << "Can't apply optimisation if ML is not applied.";
     }
   }
   /// Single-track cuts for bachelor track of beauty candidates
@@ -983,9 +983,9 @@ struct HfFilter { // Main struct for HF triggers
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
                     keepEvent[kBeauty3P] = true;
                     // fill optimisation tree for D0
-                  if (applyOptimisation) {
-                    optimisationTree(collision.globalIndex(), 413, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
-                  }
+                    if (applyOptimisation) {
+                      optimisationTree(collision.globalIndex(), 413, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
+                    }
                     if (activateQA) {
                       auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
                       auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
@@ -1052,7 +1052,9 @@ struct HfFilter { // Main struct for HF triggers
 
       const int scoresSize = kNCharmParticles - 1;
       float myscores[scoresSize][3];
-      for (int i=0; i< scoresSize; i++) { std::fill_n(myscores[i], 3, -1);} // initialize BDT scores array outside ML loop
+      for (int i = 0; i < scoresSize; i++) {
+        std::fill_n(myscores[i], 3, -1);
+      } // initialize BDT scores array outside ML loop
       // apply ML models
       if (applyML) {
         isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
