@@ -355,6 +355,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
 
@@ -457,7 +458,7 @@ struct HfFilter { // Main struct for HF triggers
           std::map<std::string, std::string> metadata;
           std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
           bool retrieve_success = true;
-          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos) {
+          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos && loadModelsFromCCDB) {
             retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
           }
           if (retrieve_success) {
@@ -834,7 +835,10 @@ struct HfFilter { // Main struct for HF triggers
           }
           std::map<std::string, std::string> metadata;
           std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
+          bool retrieve_success = true;
+          if (loadModelsFromCCDB) {
+            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
+          }
           if (retrieve_success) {
 
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
@@ -960,7 +964,7 @@ struct HfFilter { // Main struct for HF triggers
               // fill optimisation tree for D0
               if (applyOptimisation) {
                 optimisationTree(collision.globalIndex(), pdg::Code::kD0, scores[0], scores[1], scores[2], track.dcaXY());
-              }              
+              }
               if (activateQA) {
                 hMassVsPtB[kBplus]->Fill(ptCand, massCand);
               }
@@ -977,7 +981,7 @@ struct HfFilter { // Main struct for HF triggers
                     // fill optimisation tree for D0
                   if (applyOptimisation) {
                     optimisationTree(collision.globalIndex(), 413, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
-                  }  
+                  }
                     if (activateQA) {
                       auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
                       auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
@@ -1044,7 +1048,7 @@ struct HfFilter { // Main struct for HF triggers
 
       const int scoresSize = kNCharmParticles - 1;
       float myscores[scoresSize][3];
-      for (int i=0; i< scoresSize; i++) { std::fill_n(myscores[i], 3, -1);} // initialize BDT scores array outside ML loop      
+      for (int i=0; i< scoresSize; i++) { std::fill_n(myscores[i], 3, -1);} // initialize BDT scores array outside ML loop
       // apply ML models
       if (applyML) {
         isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
