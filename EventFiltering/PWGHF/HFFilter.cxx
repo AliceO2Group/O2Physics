@@ -481,6 +481,10 @@ struct HfFilter { // Main struct for HF triggers
         }
       }
     }
+    // safety for optimisation tree
+    if (applyOptimisation && !applyML) {
+      LOG(fatal) << "Can't apply optimisation if ML is not applied." ;
+    }
   }
   /// Single-track cuts for bachelor track of beauty candidates
   /// \param track is a track
