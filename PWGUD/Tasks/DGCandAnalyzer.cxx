@@ -84,7 +84,7 @@ struct DGCandAnalyzer {
       {"nSigmaTOFPtPr", "#nSigmaTOFPtPr", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
     }};
 
-  void fillNSigmaHist(DGParticle ivm, UDTracksFull dgtracks, DGPIDSelector pidsel)
+  void fillSignalHists(DGParticle ivm, UDTracksFull dgtracks, DGPIDSelector pidsel)
   {
     // process only events with 2 tracks
     if (ivm.trkinds().size() != 2) {
@@ -125,6 +125,10 @@ struct DGCandAnalyzer {
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
     registry.add("IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {axisIVM, axispt}});
     registry.add("IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {axisIVM, axispt}});
+    registry.add("dcaXYDG", "#dcaXYDG", {HistType::kTH1F, {{100, -2., 2.}}});
+    registry.add("ptTrkdcaXYDG", "#ptTrkdcaXYDG", {HistType::kTH2F, {axispt, {100, -2., 2.}}});
+    registry.add("dcaZDG", "#dcaZDG", {HistType::kTH1F, {{100, -5., 5.}}});
+    registry.add("ptTrkdcaZDG", "#ptTrkdcaZDG", {HistType::kTH2F, {axispt, {100, -5., 5.}}});
   }
 
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
@@ -164,6 +168,10 @@ struct DGCandAnalyzer {
       for (auto ind : ivm.trkinds()) {
         auto track = dgtracks.rawIteratorAt(ind);
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
+        registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
+        registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
+        registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
+        registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
 
         // fill nSigma histograms
         registry.get<TH2>(HIST("nSigmaTPCPtEl"))->Fill(track.pt(), track.tpcNSigmaEl());
@@ -179,7 +187,7 @@ struct DGCandAnalyzer {
           registry.get<TH2>(HIST("nSigmaTOFPtPr"))->Fill(track.pt(), track.tofNSigmaPr());
         }
       }
-      fillNSigmaHist(ivm, dgtracks, pidsel);
+      fillSignalHists(ivm, dgtracks, pidsel);
     }
   }
 };

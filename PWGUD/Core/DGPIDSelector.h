@@ -19,7 +19,7 @@
 
 using namespace o2;
 
-using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra>;
+using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksDCA>;
 using UDTrackFull = UDTracksFull::iterator;
 
 const int numDGPIDCutParameters = 9;
