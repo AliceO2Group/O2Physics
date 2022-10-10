@@ -309,22 +309,22 @@ struct tofPidFull {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
-      if (flag.value != 1) {
-        return;
-      }
-      table.reserve(tracks.size());
-    };
+#define doReserveTable(Particle)  \
+  if (pid##Particle.value == 1) { \
+    table.reserve(tracks.size()); \
+  }
 
-    reserveTable(pidEl, tablePIDEl);
-    reserveTable(pidMu, tablePIDMu);
-    reserveTable(pidPi, tablePIDPi);
-    reserveTable(pidKa, tablePIDKa);
-    reserveTable(pidPr, tablePIDPr);
-    reserveTable(pidDe, tablePIDDe);
-    reserveTable(pidTr, tablePIDTr);
-    reserveTable(pidHe, tablePIDHe);
-    reserveTable(pidAl, tablePIDAl);
+    doReserveTable(El);
+    doReserveTable(Mu);
+    doReserveTable(Pi);
+    doReserveTable(Ka);
+    doReserveTable(Pr);
+    doReserveTable(De);
+    doReserveTable(Tr);
+    doReserveTable(He);
+    doReserveTable(Al);
+
+#undef doReserveTable
 
     int lastCollisionId = -1;          // Last collision ID analysed
     for (auto const& track : tracks) { // Loop on all tracks
