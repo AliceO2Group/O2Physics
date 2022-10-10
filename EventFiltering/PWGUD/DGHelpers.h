@@ -166,7 +166,8 @@ struct DGSelector {
     }
 
     // net charge
-    if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
       return 10;
     }
     // invariant mass
@@ -233,9 +234,11 @@ struct DGSelector {
     }
 
     // net charge
-    if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
       return 10;
     }
+
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
       return 11;
