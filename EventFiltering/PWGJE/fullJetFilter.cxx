@@ -173,9 +173,8 @@ struct fullJetFilter {
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
 
-  // std::vector<o2::emcal::Cell> mEmcalCells;
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
+  // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
   // TODO: Should be fiducial jet cut. I.e.: eta_jet < eta_max - R
   // Filter jetEtaFilter = (nabs(aod::jet::eta) < cfgJetEtaCut);
   // Filter jetPhiFilter = ((aod::jet::phi < cfgJetPhiMax) && (aod::jet::phi > cfgJetPhiMin));
@@ -193,171 +192,108 @@ struct fullJetFilter {
     // In the backend, the process function matches the tables via their shared identifiers. Here: the bcID
     // This means we only get events that also have cells
     // We can circumvent this by using two process functions: one that knows about the cells and one that doesn't
-  void process(//aod::BC const& bc,
-               soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-               aod::BCs const& bcs,
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+              //  soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision
+              // soa::Join<aod::Collisions, aod::EvSels> const& collisions
                aod::Jets const& jets,
-               selectedClusters const& clusters,
-               aod::JetClusterConstituents const& clusterConstituents,
-               o2::aod::Calos const& allCells)
-                // aod::Jet const& jet, // Should not loop over jets but over events
-              //  aod::Tracks const& tracks,
-              //  aod::JetTrackConstituents const& constituents,
-              //  aod::JetClusterConstituents const& clusterConstituents,
-              //  aod::EMCALClusters const& emcalClusters,
-              //  aod::JetConstituentsSub const& constituentsSub,
-              //  aod::JetFilters const& jetFilter)
+               selectedClusters const& clusters
+              //  aod::JetClusterConstituents const& clusterConstituents
+              //  aod::BCs const& bcs,
+              //  o2::aod::Calos const& allCells
+               )
   {
     bool keepEvent[kCategories]{false};
 
     double L0emcal = 2.5, L1emcal = 19; // EMCAL hardware JE trigger thresholds
+    double maxJetPt = -1., maxClusterPt = -1., maxJetClusterPt = -1., maxCellAmp = -1.;
+    int nJets = 0, nClusters = 0, nClustersMethod2 = 0, nClusterConstituents = 0;
 
-    // for colliosons in vc
+    // for (const auto& coll : collisions){
     hNEvents->Fill(0.5); // All events, not just ones with jets and clusters
-    // if (collisions.size() > 1){
-    //   LOG(error) << "More than one collision in the bc. This is not supported.";
-    // }
-    // else{
-    //   for (const auto& coll : collisions){
-        double maxJetPt = -1., maxClusterPt = -1., maxJetClusterPt = -1.;//, maxCellAmp = -1.;
-        int nJets = 0, nClusters = 0, nClusterConstituents = 0;
-        double maxCellAmp = -1.;
-        // if (cell.bc() != coll.bc()) continue;
-        for (const auto& cell : allCells){
-          if (cell.bc() != collision.bc()) continue;
-          if (cell.caloType() != 1) continue; // Check if EMCAL cell
-          // if (isCellMasked(cell.cellNumber())) continue;
-          // TODO: isCellMasked?
-          hCellAmp->Fill(cell.amplitude());
-          if (cell.amplitude() < minCellAmplitude) continue;
-          if (cell.amplitude() > maxCellAmp){
-            maxCellAmp = cell.amplitude();
-          }
-        }
-        if (maxCellAmp > minCellAmplitude){
-          hCellMaxAmp->Fill(maxCellAmp);
-          hNEmcEvents->Fill(0.5);
-        }
-        else return;
-
-        for (const auto& jet : jets){
-          hJetPt->Fill(jet.pt());
-          hJetEtaPhi->Fill(jet.eta(), jet.phi());
-          nJets++;
-          if (jet.pt() > maxJetPt){
-            maxJetPt = jet.pt();
-            for (const auto& clusterConstituent : clusterConstituents){
-              const auto& jetCluster = clusterConstituent.cluster();
-              double jetClusterPt = jetCluster.energy() / std::cosh(jetCluster.eta());
-              if (jetClusterPt > maxJetClusterPt) maxJetClusterPt = jetClusterPt;
-            }
-          }
-        }
-        for (const auto& cluster : clusters){
-          double clusterPt = cluster.energy() / std::cosh(cluster.eta());
-          hClusterPt->Fill(clusterPt);
-          hClusterEtaPhi->Fill(cluster.eta(), cluster.phi());
-          nClusters++;
-          if (clusterPt > maxClusterPt) maxClusterPt = clusterPt;
-        }
-        hNjets->Fill(nJets);
-        hNclusters->Fill(nClusters);
-        if (maxJetPt >= 0 && maxClusterPt >= 0){
-          hMBSpectrum->Fill(maxJetPt, maxClusterPt);
-          for (const auto& jet : jets){
-            hJetSelectedEtaPhi->Fill(jet.eta(), jet.phi());
-          }
-          for (const auto& cluster : clusters){
-            hClusterSelectedEtaPhi->Fill(cluster.eta(), cluster.phi());
-          }
-        }
-        if (maxClusterPt >= 0 && maxJetClusterPt >= 0) hClusterComparison->Fill(maxJetClusterPt, maxClusterPt);
-        // TODO:
-        // Check if EMCAL trigger is fired. Skip otherwise.
-        // -> Filter on collision table?
-        // Construct patch proxy from cells
-        // -> Maybe do this in a different task?
-        // Match cluster with cells
-        // Set flags
-        // collision process loop
-
-
-
-        // if (collision.alias()[kINT7]){
-        //   LOG(debug) << "Event is not Minimum Bias. Skipping";
-        //   return;
-        // }
-        // if ( !(collision.alias()[kEJ1] || collision.alias()[kEJ2]) ){
-        // if ( !(collision.alias()[kEG1] || collision.alias()[kEG2]) ){
-        //   LOG(debug) << "Event did not trigger EMCAL gamma trigger. Skipping";
-        //   tags(keepEvent[0], keepEvent[1]); // Minimum Bias event
-        //   return;
-        // }
-
-        // for (const auto& jet : jets){
-        //   spectra.fill(HIST("fJet"), 0., jet.phi(), jet.eta());
-        //   spectra.fill(HIST("fJetMB"), jet.pt());
-        // }
-        // for (const auto& cluster : clusters){
-        //   spectra.fill(HIST("fCluster"), cluster.energy(), cluster.phi(), cluster.eta());
-        //   spectra.fill(HIST("fClusterMB"), cluster.energy());
-        // }
-
-        // TODO: Use jet cluster constituents
-        // for (const auto& jet : jets){
-        //   for (const auto& clusterConstituent : clusterConstituents){
-        //     const auto& cluster = clusterConstituent.cluster();
-        //     double e = cluster.energy();
-        //     std::cout << "E: " << e << std::endl;
-        //   }
-        // }
-
-        // TODO: check if cluster is above jet patch threshold. Then it should always be found
-        //  if clus.E > 19 GeV, it must fire the jet patch
-        // for (const auto& cluster : clusters){
-        //   if (cluster.energy() > selectionHighECluster){
-        //     keepEvent[kPatch] = true;
-        //     spectra.fill(HIST("fClusterESelected"), cluster.energy());
-        //     break;
-        //   }
-        // }
-
-        // for (const auto& jet : jets){
-        //   for (const auto& cluster : clusters){
-        //     double dist = TMath::Sqrt(TMath::Power(cluster.phi() - jet.phi(), 2) + TMath::Power(cluster.eta() - jet.eta(), 2));
-        //     if (dist > jet.r()) continue;
-        //     if (cluster.energy() > selectionHighECluster){
-        //       keepEvent[kPatch] = true;
-        //       spectra.fill(HIST("fClusterDistSelected"), cluster.energy(), dist);
-        //       break;
-        //     }
-        //   }
-        // }
-
-        // for (const auto& jet : jets){
-        //   if (jet.pt() < selectionJetPt) continue;
-        //   if (TMath::Abs(jet.eta() > cfgJetEtaCut || jet.phi() < cfgJetPhiMin || jet.phi() > cfgJetPhiMax)) continue;
-        //   keepEvent[kMatchedJet] = true;
-        //   spectra.fill(HIST("fJetPtSelected"), jet.pt());
-        // }
-
-        // for (const auto& jet : jets){
-        //   for (const auto& clusterConstituent : clusterConstituents){
-        //     const auto& cluster = clusterConstituent.cluster();
-        //     double e = cluster.energy();
-        //     std::cout << "E: " << e << std::endl;
-        //   }
-        // }
-
-        for (int iDecision{0}; iDecision < kCategories; iDecision++){
-          if (keepEvent[iDecision]) {
-            hProcessedEvents->Fill(iDecision);
-            // spectra.fill(HIST("fProcessedEvents"), iDecision);
-          }
-        }
-      // }
     // }
 
+    /*
+    for (const auto& cell : allCells){
+      // if (cell.bc() != collision.bc()) continue;
+      if (cell.caloType() != 1) continue; // Check if EMCAL cell
+      hCellAmp->Fill(cell.amplitude());
+      if (cell.amplitude() < minCellAmplitude) continue;
+      if (cell.amplitude() > maxCellAmp){
+        maxCellAmp = cell.amplitude();
+      }
+    }
+    if (maxCellAmp > minCellAmplitude){
+      hCellMaxAmp->Fill(maxCellAmp);
+      hNEmcEvents->Fill(0.5);
+    }
+    // */
+    // else return;
+
+    // /*
+    for (const auto& jet : jets){
+      hJetPt->Fill(jet.pt());
+      hJetEtaPhi->Fill(jet.eta(), jet.phi());
+      nJets++;
+      if (jet.pt() > maxJetPt){
+        maxJetPt = jet.pt();
+        // for (const auto& clusterConstituent : clusterConstituents){
+        //   const auto& jetCluster = clusterConstituent.cluster();
+        //   double jetClusterPt = jetCluster.energy() / std::cosh(jetCluster.eta());
+        //   if (jetClusterPt > maxJetClusterPt) maxJetClusterPt = jetClusterPt;
+        // }
+      }
+    }
+    // */
+    // /*
+    for (const auto& cluster : clusters){
+      double clusterPt = cluster.energy() / std::cosh(cluster.eta());
+      hClusterPt->Fill(clusterPt);
+      hClusterEtaPhi->Fill(cluster.eta(), cluster.phi());
+      nClusters++;
+      if (clusterPt > maxClusterPt) maxClusterPt = clusterPt;
+    }
+    // */
+
+    // /*
+    hNjets->Fill(nJets);
+    hNclusters->Fill(nClusters);
+
+    // For now, use events with a cluster as nEmcEvents
+    if (nClusters > 0) hNEmcEvents->Fill(0.5);
+    nClustersMethod2 = clusters.size();
+    if (nClustersMethod2 > 0) hNEmcEvents->Fill(1.5);
+
+    if (maxJetPt >= 0 && maxClusterPt >= 0){
+      hMBSpectrum->Fill(maxJetPt, maxClusterPt);
+      for (const auto& jet : jets){
+        hJetSelectedEtaPhi->Fill(jet.eta(), jet.phi());
+      }
+      for (const auto& cluster : clusters){
+        hClusterSelectedEtaPhi->Fill(cluster.eta(), cluster.phi());
+      }
+    }
+    if (maxClusterPt >= 0 && maxJetClusterPt >= 0) hClusterComparison->Fill(maxJetClusterPt, maxClusterPt);
+    // */
+
+    // if (collision.alias()[kINT7]){
+    //   LOG(debug) << "Event is not Minimum Bias. Skipping";
+    //   return;
+    // }
+    // if ( !(collision.alias()[kEJ1] || collision.alias()[kEJ2]) ){
+    // if ( !(collision.alias()[kEG1] || collision.alias()[kEG2]) ){
+    //   LOG(debug) << "Event did not trigger EMCAL gamma trigger. Skipping";
+    //   tags(keepEvent[0], keepEvent[1]); // Minimum Bias event
+    //   return;
+    // }
+
+    // /*
+    for (int iDecision{0}; iDecision < kCategories; iDecision++){
+      if (keepEvent[iDecision]) {
+        hProcessedEvents->Fill(iDecision);
+        // spectra.fill(HIST("fProcessedEvents"), iDecision);
+      }
+    }
+    // */
     // tags(keepEvent[0], keepEvent[1]);
   } // process()
 };
