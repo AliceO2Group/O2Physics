@@ -82,6 +82,7 @@ struct TreeWriterTpcV0 {
   Configurable<float> cutAPL_QR_i{"cutAPL_QR_i", 0.093, "Inner radius in q of the Lamdba ellipses"};
   Configurable<float> cutAPL_AR_i{"cutAPL_AR_i", 0.17, "Inner radius in alpha of the Lamdba ellipses"};
   /// Configurables gamma
+  Configurable<float> invariantMassCutGamma{"invariantMassCutGamma", 0.03, "Mass cut for Gamma to supress the Dalitz-decay"};
   Configurable<float> gammaAsymmetryMax{"gammaAsymmetryMax", 0.95, "maximum photon asymetry."};
   Configurable<float> gammaPsiPairMax{"gammaPsiPairMax", 0.1, "maximum psi angle of the track pair. "};
   Configurable<float> gammaQtPtMultiplicator{"gammaQtPtMultiplicator", 0.11, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
@@ -111,7 +112,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Invariant mass cut
-    if (std::abs(v0.mK0Short() - 0.497611) > invariantMassCutK0Short) {
+    if (std::abs(v0.mK0Short() - 0.497611)/0.497611 > invariantMassCutK0Short) {
       return false;
     }
 
@@ -143,10 +144,18 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    const float q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
-    const float q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
+    float q_L_upper =  cutAPL_QR_o;
+    float q_L_lower =  cutQTmin;
+
+    if(std::abs(alpha-cutAPL_AS) < cutAPL_AR_o){
+      q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
+    }
+    if(std::abs(alpha-cutAPL_AS) < cutAPL_AR_i){
+      q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
+    }
+
     /// Armenteros-Podolanski cut
-    if ((alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < q_L_lower) || (qt > q_L_upper)) {
+    if ((alpha < 0.) || (alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < q_L_lower) || (qt > q_L_upper) || (qt < cutQTmin)) {
       return false;
     }
     /// Cut on cosine pointing angle
@@ -154,7 +163,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Invariant mass cut
-    if (std::abs(v0.mLambda() - 1.115683) > invariantMassCutLambda) {
+    if (std::abs(v0.mLambda() - 1.115683)/1.115683 > invariantMassCutLambda) {
       return false;
     }
     return true;
@@ -184,10 +193,18 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    const float q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
-    const float q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
+    float q_AL_upper =  cutAPL_QR_o;
+    float q_AL_lower =  cutQTmin;
+
+    if(std::abs(alpha+cutAPL_AS) < cutAPL_AR_o){
+      q_AL_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
+    }
+    if(std::abs(alpha+cutAPL_AS) < cutAPL_AR_i){
+      q_AL_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
+    }
+
     /// Armenteros-Podolanski cut
-    if ((alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < q_L_lower) || (qt > q_L_upper)) {
+    if ((alpha > 0.) || (alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < q_AL_lower) || (qt > q_AL_upper) || (qt < cutQTmin)) {
       return false;
     }
     /// Cut on cosine pointing angle
@@ -195,7 +212,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Invariant mass cut
-    if (std::abs(v0.mAntiLambda() - 1.115683) > invariantMassCutLambda) {
+    if (std::abs(v0.mAntiLambda() - 1.115683)/1.115683 > invariantMassCutLambda) {
       return false;
     }
     return true;
@@ -229,7 +246,12 @@ struct TreeWriterTpcV0 {
     if (cosPA < cutPAV0) {
       return false;
     }
-    if ((std::abs(v0.psipair()) < gammaPsiPairMax)) {
+    // Psi-pair cut
+    if (std::abs(v0.psipair()) < gammaPsiPairMax) {
+      return false;
+    }
+    // invariant mass cut to reduce dalitz decay
+    if (v0.mGamma() > invariantMassCutGamma){ // here the value is absolute in GeV
       return false;
     }
     return true;
