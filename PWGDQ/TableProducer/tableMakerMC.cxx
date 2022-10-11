@@ -60,7 +60,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                         aod::McTrackLabels>;
-using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
@@ -78,7 +78,7 @@ constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | Va
 constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
-constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMapWithCov | VarManager::ObjTypes::DalitzBits;
+constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
@@ -116,7 +116,8 @@ struct TableMakerMC {
   Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddMCTruthHistogram{"cfgAddMCTruthHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigDalitzCuts{"cfgDalitzCuts", "", "Dalitz cuts names corresponding to the bits in Dalitz selection task"}; // for now, only used to name the histograms (and count them)
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track cuts "};
+  Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair cuts "};
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 1.0f, "Low pt cut for tracks in the barrel"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
   Configurable<float> fConfigMinTpcSignal{"cfgMinTpcSignal", 30.0, "Minimum TPC signal"};
@@ -131,7 +132,9 @@ struct TableMakerMC {
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
-  std::vector<AnalysisCompositeCut> fDalitzCuts;  //! Dalitz cuts names
+  std::vector<AnalysisCompositeCut> fDalitzTrackCuts;  //! Dalitz track cuts
+  std::vector<AnalysisCompositeCut> fDalitzPairCuts;  //! Dalitz pair cuts
+  int nDalitzCuts;
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
 
@@ -156,14 +159,25 @@ struct TableMakerMC {
       }
     }
     
-    // Dalitz cuts
-    cutNamesStr = fConfigDalitzCuts.value;
+    // Dalitz track cuts
+    cutNamesStr = fConfigDalitzTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fDalitzCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fDalitzTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
+    
+    // Dalitz pair cuts
+    cutNamesStr = fConfigDalitzPairCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fDalitzPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    
+    nDalitzCuts = std::min(fDalitzTrackCuts.size(), fDalitzPairCuts.size());
 
     // Muon cuts
     cutNamesStr = fConfigMuonCuts.value;
@@ -209,8 +223,8 @@ struct TableMakerMC {
         }
       }
       if (fQADalitz) {
-        for (auto& cut : fDalitzCuts) {
-          histClasses += Form("TrackBarrelDalitz_%s;", cut.GetName());
+        for (int i = 0; i < nDalitzCuts; i++) {
+          histClasses += Form("TrackBarrelDalitz_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName());
         }
       }
     }
@@ -245,8 +259,8 @@ struct TableMakerMC {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
             if (fQADalitz) {
-              for (auto& cut : fDalitzCuts) {
-                histClasses += Form("TrackBarrelDalitz_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
+              for (int i = 0; i < nDalitzCuts; i++) {
+                histClasses += Form("TrackBarrelDalitz_%s_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName(), objArray->At(isig)->GetName());
               }
             }          }
           if (enableMuonHistos) {
@@ -426,12 +440,10 @@ struct TableMakerMC {
           }  
           
           if  (fQADalitz) {
-            int i = 0;
-	    for (auto cut : fDalitzCuts) {
+	    for (int i = 0; i < nDalitzCuts; i++) {
 	      if (dalitzMap & (uint8_t(1) << i)) {
-	        fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s", cut.GetName()), VarManager::fgValues);
+	        fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName()), VarManager::fgValues);
 	      }
-	      i++;
 	    }
           }
           
@@ -489,13 +501,11 @@ struct TableMakerMC {
                   j++;
                 }
                 if (fQADalitz) {
-                  j = 0;
-                  for (auto& cut : fDalitzCuts) {
-                    if (dalitzMap & (uint8_t(1) << j)) {
-                      fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
-                      ((TH2I*) fStatsList->At(4))->Fill(j, i);
+                  for (int icut = 0; icut < nDalitzCuts; icut++) {
+                    if (dalitzMap & (uint8_t(1) << icut)) {
+                      fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName(), sig.GetName()), VarManager::fgValues); 
+                      ((TH2I*) fStatsList->At(4))->Fill(icut, i);
                     }
-                    j++;
                   }                
                 }
               }
@@ -833,10 +843,10 @@ struct TableMakerMC {
     
     if (fQADalitz) {
       // Dalitz electron - MC signal correspondence statistics
-      TH2I* histMCDalitz = new TH2I("TrackStatsMCDalitz", "Dalitz selection statistics for MCsignals", fDalitzCuts.size(), -0.5, fDalitzCuts.size()- 0.5, fMCSignals.size(), -0.5, fMCSignals.size() - 0.5 );
+      TH2I* histMCDalitz = new TH2I("TrackStatsMCDalitz", "Dalitz selection statistics for MCsignals", nDalitzCuts, -0.5, nDalitzCuts - 0.5, fMCSignals.size(), -0.5, fMCSignals.size() - 0.5 );
       ib = 1;      
-      for (auto cut = fDalitzCuts.begin(); cut != fDalitzCuts.end(); cut++, ib++) {
-        histMCDalitz->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
+      for (int icut = 0; icut < nDalitzCuts; icut++, ib++) {
+        histMCDalitz->GetXaxis()->SetBinLabel(ib, Form("%s_%s", fDalitzTrackCuts.at(icut).GetName(), fDalitzPairCuts.at(icut).GetName()));
       }          
       ib = 1;
       for (auto mcsig = fMCSignals.begin(); mcsig != fMCSignals.end(); mcsig++, ib++) {

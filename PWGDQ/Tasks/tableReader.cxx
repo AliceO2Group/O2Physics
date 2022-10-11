@@ -76,15 +76,13 @@ using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, a
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
-using MyBarrelTracksSelectedDalitzBits = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::DalitzBits>;
-using MyBarrelTracksSelectedWithCovDalitzBits = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::DalitzBits>;
+using MyBarrelTracksSelectedDalitzBits = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::DalitzBitsReduced>;
 
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
 using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
 using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
-using MyMuonTracksSelectedDalitzBits = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts, aod::DalitzBits>;
-using MyMuonTracksSelectedWithCovDalitzBits = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts, aod::DalitzBits>;
+
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -682,23 +680,21 @@ struct AnalysisSameEventPairing {
         std::unique_ptr<TObjArray> dalitzTrackCuts(dalitzTrackCutNames.Tokenize(","));
         std::unique_ptr<TObjArray> dalitzPairCuts(dalitzPairCutNames.Tokenize(","));
         int hNSize = (int) fTrackHistNames.size();
-        //if (!dalitzTrackCutNames.IsNull()  &&  !dalitzPairCutNames.IsNull()) {
-          nDalitzCuts = dalitzTrackCuts->GetEntries()*dalitzPairCuts->GetEntries();            
-          for (int dalitzPCut = 0; dalitzPCut < dalitzPairCuts->GetEntries(); dalitzPCut++) {
-            for (int dalitzTCut = 0; dalitzTCut < dalitzTrackCuts->GetEntries(); dalitzTCut++) {
-              for (int icut = 0; icut < hNSize; ++icut) {
-                std::vector<TString> names = {
-                  Form("%s_%s_%s", fTrackHistNames[icut][0].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName()),
-                  Form("%s_%s_%s", fTrackHistNames[icut][1].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName()),
-                  Form("%s_%s_%s", fTrackHistNames[icut][2].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName())}; 
-                histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-                fTrackHistNames.push_back(names);
-                // Histograms order is: AllTrackCuts, AllTrackCuts+rejectConv, AllTrackCuts+dalitzcut1, AllTrackCuts+rejectConv+dalitzcut1,  AllTrackCuts+dalitzcut2 ...         
-              }
-            } // end loop dalitz track cuts
-          }// end loop dalitz pair cuts
-        //}// end if (non null)    
-      }// end if reject dalitz
+        nDalitzCuts = std::min(dalitzTrackCuts->GetEntries(), dalitzPairCuts->GetEntries()); 
+           
+        for (int iDalitzCut = 0; iDalitzCut < nDalitzCuts; iDalitzCut++) { // Loop on dalitz cuts
+          for (int icut = 0; icut < hNSize; ++icut) { // Loop on track cuts
+            std::vector<TString> names = {
+              Form("%s_%s_%s", fTrackHistNames[icut][0].Data(), dalitzTrackCuts->At(iDalitzCut)->GetName(), dalitzPairCuts->At(iDalitzCut)->GetName()),
+              Form("%s_%s_%s", fTrackHistNames[icut][1].Data(), dalitzTrackCuts->At(iDalitzCut)->GetName(), dalitzPairCuts->At(iDalitzCut)->GetName()),
+              Form("%s_%s_%s", fTrackHistNames[icut][2].Data(), dalitzTrackCuts->At(iDalitzCut)->GetName(), dalitzPairCuts->At(iDalitzCut)->GetName())}; 
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+            fTrackHistNames.push_back(names);
+            // Histograms order is: AllTrackCuts, AllTrackCuts+rejectConv, AllTrackCuts+dalitzcut1, AllTrackCuts+rejectConv+dalitzcut1,  AllTrackCuts+dalitzcut2 ...         
+          } // end loop track cuts
+        }// end loop dalitz cuts
+
+      }// end if prefilter dalitz
     }
     if (context.mOptions.get<bool>("processJpsiToMuMuSkimmed") || context.mOptions.get<bool>("processJpsiToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processVnJpsiToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigMuonCuts.value;
@@ -799,7 +795,15 @@ struct AnalysisSameEventPairing {
       }
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
-      dileptonFilterMap = twoTrackFilter; //TODO: add prefilter to the filter map
+      dileptonFilterMap = twoTrackFilter;
+      
+      uint8_t twoTracksDalitzFilter;
+      if (fPrefilterDalitz) {
+        twoTracksDalitzFilter = (uint8_t) ((t1.filteringFlags() >> 15) | (t2.filteringFlags() >> 15));
+        if constexpr (TTrackFillMap & VarManager::ObjTypes::DalitzBits) twoTracksDalitzFilter = t1.dalitzBitsReduced() | t2.dalitzBitsReduced();
+        dileptonFilterMap |= (uint32_t(twoTracksDalitzFilter) << 16); //also store prefilter information in BITS 16-23
+      }
+      
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
 
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
@@ -838,10 +842,9 @@ struct AnalysisSameEventPairing {
             } //end if reject conv
             // Dalitz cuts
             if(fPrefilterDalitz) {
-              uint32_t twoTracksDalitzFilter = (t1.filteringFlags() >> 15) | (t2.filteringFlags() >> 15);
-              if constexpr (TTrackFillMap & VarManager::ObjTypes::DalitzBits) twoTracksDalitzFilter = t1.dalitzBits() | t2.dalitzBits();
+              // By default take the bits from table maker, but uses the one newly calculated if we have the process function WithDalitzBits
               for (int dalitzCut = 0; dalitzCut < nDalitzCuts; dalitzCut++) {
-                if (!((uint32_t(1) << dalitzCut) & twoTracksDalitzFilter)) {
+                if (!((uint8_t(1) << dalitzCut) & twoTracksDalitzFilter)) { // check that none of the track is tagged as dalitz
                   //TrackCut_DalitzCuts histograms
                   if (t1.sign() * t2.sign() < 0) {
                     fHistMan->FillHistClass(histNames[(1+fPrefilterConv)*nTrackCuts*(1+dalitzCut)+icut][0].Data(), VarManager::fgValues);
