@@ -25,9 +25,14 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
+#ifdef INCORPORATEBAYESIANPID
 PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
                                                    std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr,
                                                    std::vector<std::string> pidbayel, std::vector<std::string> pidbaymu, std::vector<std::string> pidbaypi, std::vector<std::string> pidbayka, std::vector<std::string> pidbaypr)
+#else
+PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
+                                                   std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr)
+#endif
   : mPidTpcSel_el{},
     mPidTpcSel_mu{},
     mPidTpcSel_pi{},
@@ -84,11 +89,13 @@ PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidt
   mPidTofSel_pi = storeCutString(pidtofpi, "tofpi");
   mPidTofSel_ka = storeCutString(pidtofka, "tofka");
   mPidTofSel_pr = storeCutString(pidtofpr, "tofpr");
+#ifdef INCORPORATEBAYESIANPID
   mPidBaySel_el = storeCutString(pidbayel, "bayel");
   mPidBaySel_mu = storeCutString(pidbaymu, "baymu");
   mPidBaySel_pi = storeCutString(pidbaypi, "baypi");
   mPidBaySel_ka = storeCutString(pidbayka, "bayka");
   mPidBaySel_pr = storeCutString(pidbaypr, "baypr");
+#endif
 }
 
 ClassImp(PIDSelectionFilterAndAnalysis);
