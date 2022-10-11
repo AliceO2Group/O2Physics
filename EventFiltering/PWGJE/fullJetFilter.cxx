@@ -159,39 +159,15 @@ struct fullJetFilter {
                ));
   } // init()
 
-  // bool isCellMasked(int towerID)
-  // {
-  //   bool masked = false;
-  //   if (mBadChannels) {
-  //     auto maskStatus = mBadChannels->getChannelStatus(towerID);
-  //     masked = (maskStatus != o2::emcal::BadChannelMap::MaskType_t::GOOD_CELL);
-  //   }
-  //   return masked;
-  // }
-
   // Declare filters
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
 
-
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
-  // TODO: Should be fiducial jet cut. I.e.: eta_jet < eta_max - R
-  // Filter jetEtaFilter = (nabs(aod::jet::eta) < cfgJetEtaCut);
-  // Filter jetPhiFilter = ((aod::jet::phi < cfgJetPhiMax) && (aod::jet::phi > cfgJetPhiMin));
-  // Filter trackFilter = (nabs(aod::track::eta) < cfgTrackEtaCut) && (aod::track::isGlobalTrack == (uint8_t) true) && (aod::track::pt > cfgTrackLowPtCut);
 
-  //using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
-
-  // void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-  //              aod::Jets const& jets,
-  //              aod::JetClusterConstituents const& clusterConstituents,
-  //              selectedClusters const& clusters
-  //             )
-  // {
-
-    // In the backend, the process function matches the tables via their shared identifiers. Here: the bcID
-    // This means we only get events that also have cells
-    // We can circumvent this by using two process functions: one that knows about the cells and one that doesn't
+  // In the backend, the process function matches the tables via their shared identifiers. Here: the bcID
+  // This means we only get events that also have cells
+  // We can circumvent this by using two process functions: one that knows about the cells and one that doesn't
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
               //  soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision
               // soa::Join<aod::Collisions, aod::EvSels> const& collisions
