@@ -23,14 +23,14 @@ class DGCutparHolder
                  bool globalTracksOnly = false,
                  float minrgtrwTOF = 0.,
                  int MinNTracks = 0, int MaxNTracks = 10000,
-                 int MinNetCharge = 0, int MaxNetCharge = 0,
+                 std::vector<int> NetCharges = {0},
                  int pidHypo = 211,
                  float MinPosz = -1000., float MaxPosz = 1000.,
                  float minPt = 0., float maxPt = 1000.,
                  float minEta = -1.0, float maxEta = 1.0,
                  float minIVM = 0.0, float maxIVM = 1000.,
                  float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
@@ -40,7 +40,7 @@ class DGCutparHolder
   void SetGlobalTracksOnly(bool);
   void SetMinRgtrwTOF(float);
   void SetNTracks(int MinNTracks, int MaxNTracks);
-  void SetNetCharge(int minNetCharge, int maxNetCharge);
+  void SetNetCharges(std::vector<int> netCharges);
   void SetPidHypothesis(int pidHypo);
   void SetPoszRange(float MinPosz, float MaxPosz);
   void SetPtRange(float minPt, float maxPt);
@@ -57,8 +57,7 @@ class DGCutparHolder
   float minRgtrwTOF() const;
   int minNTracks() const;
   int maxNTracks() const;
-  int minNetCharge() const;
-  int maxNetCharge() const;
+  std::vector<int> netCharges() const;
   int pidHypothesis() const;
   float minPosz() const;
   float maxPosz() const;
@@ -87,8 +86,7 @@ class DGCutparHolder
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
 
   // net charge of all tracks
-  int mMinNetCharge;
-  int mMaxNetCharge;
+  std::vector<int> mNetCharges;
 
   // PID hypothesis
   int mPidHypo;

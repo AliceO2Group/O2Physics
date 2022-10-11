@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file pidONNXModel.h
-/// \brief A class that wraps PID ML ONNX model. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
+/// \brief A class that wraps PID ML ONNX model. See README.md for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 

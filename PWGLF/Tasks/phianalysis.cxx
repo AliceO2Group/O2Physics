@@ -24,6 +24,7 @@
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "DataFormatsParameters/GRPObject.h"
+#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,14 +46,16 @@ struct phianalysis {
 
   /// DCA Selections
   // DCAr to PV
-  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1, "Track DCAr cut to PV Maximum"};
+  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
   // DCAz to PV
-  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 5.0, "Track DCAz cut to PV Maximum"};
+  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
 
   /// Partition for firstTrack
   Partition<aod::ResoDaughters> parts1 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter() && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
   Partition<aod::ResoDaughters> parts2 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter() && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
+  // Partition<aod::ResoDaughters> parts1 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter(); // w/o Basic DCA cuts
+  // Partition<aod::ResoDaughters> parts2 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter(); // w/o Basic DCA cuts
   void init(o2::framework::InitContext&)
   {
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -69,12 +72,20 @@ struct phianalysis {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     // Mass QA (quick check)
-    histos.add("phiinvmass", "Invariant mass of Phi", kTH1F, {{500, 0.8, 1.3, "Invariant Mass (GeV/#it{c}^2)"}});
-    histos.add("phiinvmassME", "Invariant mass of Phi mixed event", kTH1F, {{500, 0.8, 1.3, "Invariant Mass (GeV/#it{c}^2)"}});
+    histos.add("phiinvmass", "Invariant mass of Phi", kTH1F, {{700, 0.8, 1.5, "Invariant Mass (GeV/#it{c}^2)"}});
+    histos.add("phiinvmassME", "Invariant mass of Phi mixed event", kTH1F, {{700, 0.8, 1.5, "Invariant Mass (GeV/#it{c}^2)"}});
+    histos.add("trk1pT", "pT distribution of track1", kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+    histos.add("trk2pT", "pT distribution of track1", kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+    histos.add("TOF_TPC_Map1", "TOF + TPC Combined PID for Kaons;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("TOF_Nsigma1", "TOF NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("TPC_Nsigma1", "TPC NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("TOF_TPC_Map2", "TOF + TPC Combined PID for Kaons;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("TOF_Nsigma2", "TOF NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("TPC_Nsigma2", "TPC NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
 
     // 3d histogram
-    histos.add("h3phiinvmass", "Invariant mass of Phi", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 0.8, 1.3}});
-    histos.add("h3phiinvmassME", "Invariant mass of Phi mixed event", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 0.8, 1.3}});
+    histos.add("h3phiinvmass", "Invariant mass of Phi", kTH3F, {{300, 0, 3000}, {100, 0.0f, 10.0f}, {700, 0.8, 1.5}});
+    histos.add("h3phiinvmassME", "Invariant mass of Phi mixed event", kTH3F, {{300, 0, 3000}, {100, 0.0f, 10.0f}, {700, 0.8, 1.5}});
   }
 
   double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
@@ -85,20 +96,43 @@ struct phianalysis {
     // LOGF(info, "event id: %d", collision.bcId());
     auto group1 = parts1->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
     auto group2 = parts2->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
-
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(group1, group2))) {
       // Un-like sign pair only
       if (trk1.sign() * trk2.sign() > 0)
         continue;
+      if (trk1.sign() > 0) {
+        //  --- PID QA Kaons +
+        histos.fill(HIST("TOF_Nsigma1"), trk1.pt(), trk1.tofNSigmaKa());
+        histos.fill(HIST("TPC_Nsigma1"), trk1.pt(), trk1.tpcNSigmaKa());
+        histos.fill(HIST("TOF_TPC_Map1"), trk1.tofNSigmaKa(), trk1.tpcNSigmaKa());
+        //  --- PID QA Kaons -
+        histos.fill(HIST("TOF_Nsigma2"), trk2.pt(), trk2.tofNSigmaKa());
+        histos.fill(HIST("TPC_Nsigma2"), trk2.pt(), trk2.tpcNSigmaKa());
+        histos.fill(HIST("TOF_TPC_Map2"), trk2.tofNSigmaKa(), trk2.tpcNSigmaKa());
+      } else {
+        //  --- PID QA Kaons +
+        histos.fill(HIST("TOF_Nsigma1"), trk2.pt(), trk2.tofNSigmaKa());
+        histos.fill(HIST("TPC_Nsigma1"), trk2.pt(), trk2.tpcNSigmaKa());
+        histos.fill(HIST("TOF_TPC_Map1"), trk2.tofNSigmaKa(), trk2.tpcNSigmaKa());
+        //  --- PID QA Kaons -
+        histos.fill(HIST("TOF_Nsigma2"), trk1.pt(), trk1.tofNSigmaKa());
+        histos.fill(HIST("TPC_Nsigma2"), trk1.pt(), trk1.tpcNSigmaKa());
+        histos.fill(HIST("TOF_TPC_Map2"), trk1.tofNSigmaKa(), trk1.tpcNSigmaKa());
+      }
 
-      auto arrMom = array{
-        array{trk1.px(), trk1.py(), trk1.pz()},
-        array{trk2.px(), trk2.py(), trk2.pz()}};
-      auto resoPt = RecoDecay::sqrtSumOfSquares(trk1.px() + trk2.px(), trk1.py() + trk2.py());
-      auto arrMass = array{massKa, massKa};
-      auto mass = RecoDecay::m(arrMom, arrMass);
-      histos.fill(HIST("phiinvmass"), mass);
-      histos.fill(HIST("h3phiinvmass"), collision.multV0M(), resoPt, mass);
+      histos.fill(HIST("trk1pT"), trk1.pt());
+      histos.fill(HIST("trk2pT"), trk2.pt());
+
+      lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
+      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
+      lResonance = lDecayDaughter1 + lDecayDaughter2;
+
+      if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5)
+        continue;
+
+      histos.fill(HIST("phiinvmass"), lResonance.M());
+      histos.fill(HIST("h3phiinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
     }
   }
 
@@ -106,47 +140,28 @@ struct phianalysis {
   void processME(o2::aod::ResoCollisions& collision,
                  o2::aod::BCsWithTimestamps const&, aod::ResoDaughters const&, aod::Reso2TracksPIDExt const&)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collision, collision)) {
-
-      auto magFieldTesla1 = 0.0;
-      static o2::parameters::GRPObject* grpo1 = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", collision1.timestamp());
-      if (!grpo1) {
-        magFieldTesla1 = 0;
-      } else {
-        // LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", collision1.timestamp(), grpo1->getNominalL3Field());
-        magFieldTesla1 = 0.1 * (grpo1->getNominalL3Field());
-      }
-
-      auto magFieldTesla2 = 0.0;
-      static o2::parameters::GRPObject* grpo2 = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", collision2.timestamp());
-      if (!grpo2) {
-        magFieldTesla2 = 0;
-      } else {
-        // LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", collision2.timestamp(), grpo2->getNominalL3Field());
-        magFieldTesla2 = 0.1 * (grpo1->getNominalL3Field());
-      }
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 10, -1, collision, collision)) {
 
       auto group1 = parts1->sliceByCached(aod::resodaughter::resoCollisionId, collision1.globalIndex());
       auto group2 = parts2->sliceByCached(aod::resodaughter::resoCollisionId, collision2.globalIndex());
 
-      if (magFieldTesla1 != magFieldTesla2) {
-        continue;
-      }
+      TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
       for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(group1, group2))) {
         // Un-like sign pair only
         if (trk1.sign() * trk2.sign() > 0)
           continue;
 
-        auto arrMom = array{
-          array{trk1.px(), trk1.py(), trk1.pz()},
-          array{trk2.px(), trk2.py(), trk2.pz()}};
-        auto resoPt = RecoDecay::sqrtSumOfSquares(trk1.px() + trk2.px(), trk1.py() + trk2.py());
-        auto arrMass = array{massKa, massKa};
-        auto mass = RecoDecay::m(arrMom, arrMass);
-        histos.fill(HIST("phiinvmassME"), mass);
-        histos.fill(HIST("h3phiinvmassME"), collision1.multV0M(), resoPt, mass);
+        lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
+        lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
+        lResonance = lDecayDaughter1 + lDecayDaughter2;
+
+        if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5)
+          continue;
+
+        histos.fill(HIST("phiinvmassME"), lResonance.M());
+        histos.fill(HIST("h3phiinvmassME"), collision1.multV0M(), lResonance.Pt(), lResonance.M());
       }
     }
   };

@@ -16,8 +16,7 @@
 ///           DiffCuts.mMinNBCs(7)
 ///           DiffCuts.mMinNTracks(0)
 ///           DiffCuts.mMaxNTracks(10000)
-///           DiffCuts.mMinNetCharge(0)
-///           DiffCuts.mMaxNetCharge(0)
+///           DiffCuts.mNetCharges({0})
 ///           DiffCuts.mPidHypo(211)
 ///           DiffCuts.mMinPosz(-1000.)
 ///           DiffCuts.mMaxPosz(1000.)
@@ -529,6 +528,7 @@ struct DiffMCQA {
     // net charge and invariant mass
     bool goodetas = true;
     bool goodpts = true;
+    bool goodnchs = true;
     auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
@@ -630,7 +630,11 @@ struct DiffMCQA {
     } else {
       registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
     }
-    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
+      goodnchs = false;
+    }
+    isDGcandidate &= goodnchs;
     if (isPythiaDiff) {
       registry.get<TH1>(HIST("StatDiff1"))->Fill(16., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
@@ -638,7 +642,6 @@ struct DiffMCQA {
     } else {
       registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
     }
-    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
     if (isPythiaDiff) {
       registry.get<TH1>(HIST("StatDiff1"))->Fill(17., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {

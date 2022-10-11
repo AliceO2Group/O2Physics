@@ -41,6 +41,7 @@ struct reso2initializer {
 
   Produces<aod::ResoCollisions> resoCollisions;
   Produces<aod::ResoDaughters> reso2tracks;
+  Produces<aod::ResoDaughtersMC> reso2mctracks;
 
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
@@ -83,16 +84,76 @@ struct reso2initializer {
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
   Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                      // Global track cuts
+  Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
+
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
+  using ResoTracks = aod::Reso2TracksPIDExt;
+  using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
+  using ResoV0s = aod::V0Datas;
+  using ResoV0sMC = soa::Join<ResoV0s, aod::McV0Labels>;
+
+  Preslice<soa::Filtered<ResoTracks>> tracksbyCollisionID = aod::track::collisionId;
+  Preslice<ResoV0s> v0sbyCollisionID = aod::v0data::collisionId;
+
+  template <bool isMC, typename CollisionType, typename TrackType>
+  bool IsTrackSelected(CollisionType const& collision, TrackType const& track)
+  {
+    // Track selection
+    qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
+    // MC case can be handled here
+    // if constexpr (isMC) {
+    //   // MC check
+    // }
+    qaRegistry.fill(HIST("hGoodTrackIndices"), 1.5);
+    return true;
+  }
+
+  template <bool isMC, typename CollisionType, typename V0Type, typename TrackType>
+  bool IsV0Selected(CollisionType const& collision, V0Type const& v0, TrackType const& track)
+  {
+    // V0 selection
+    qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
+
+    auto postrack = v0.template posTrack_as<TrackType>();
+    auto negtrack = v0.template negTrack_as<TrackType>();
+
+    if (postrack.tpcNClsCrossedRows() < mincrossedrows)
+      return false;
+    if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
+      return false;
+    qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
+
+    if (fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
+      return false;
+    if (fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
+      return false;
+    qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
+
+    if ((v0.v0radius() > cMaxV0Radius) || (v0.v0radius() < cMinV0Radius))
+      return false;
+    qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
+    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
+      return false;
+    qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
+
+    // MC case can be handled here
+    // if constexpr (isMC) {
+    //   // MC check
+    // }
+    return true;
+  }
 
   // Filter for all tracks
-  template <bool isMC, typename CollisionType, typename TrackType>
+  template <bool isMC, typename TrackType, typename CollisionType>
   void fillTracks(CollisionType const& collision, TrackType const& tracks)
   {
     int childIDs[2] = {0, 0}; // Dummy lists for V0s
     // Loop over tracks
     for (auto& track : tracks) {
-      // Tracks are already filtered by the pre-filters
-      qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
+      // LOGF(info, "Track ID: %d", track.globalIndex());
+      if (!IsTrackSelected<isMC>(collision, track))
+        continue;
 
       // Add PID selection criteria here
       uint8_t tpcPIDselections = 0;
@@ -141,37 +202,21 @@ struct reso2initializer {
                   track.tofNSigmaPr(),
                   0, 0, 0,
                   0, 0, 0, 0);
+      if constexpr (isMC) {
+        fillMCTracks(track);
+      }
     }
   }
 
   // Filter for all V0s
-  template <bool isMC, typename CollisionType, typename TrackType>
-  void fillV0s(CollisionType const& collision, aod::V0Datas const& v0s, TrackType const& tracks)
+  template <bool isMC, typename CollisionType, typename V0Type, typename TrackType>
+  void fillV0s(CollisionType const& collision, V0Type const& v0s, TrackType const& tracks)
   {
     int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     for (auto& v0 : v0s) {
-      qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
-      auto postrack = v0.posTrack_as<TrackType>();
-      auto negtrack = v0.negTrack_as<TrackType>();
-
-      if (postrack.tpcNClsCrossedRows() < mincrossedrows)
+      // LOGF(info, "V0 ID: %d", v0.globalIndex());
+      if (!IsV0Selected<isMC>(collision, v0, tracks))
         continue;
-      if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
-        continue;
-      qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
-
-      if (fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
-        continue;
-      if (fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
-        continue;
-      qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
-
-      if ((v0.v0radius() > cMaxV0Radius) || (v0.v0radius() < cMinV0Radius))
-        continue;
-      qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
-        continue;
-      qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
       childIDs[0] = v0.posTrackId();
       childIDs[1] = v0.negTrackId();
       reso2tracks(resoCollisions.lastIndex(),
@@ -194,14 +239,54 @@ struct reso2initializer {
     }
   }
 
+  template <typename TrackType>
+  void fillMCTracks(TrackType const& track)
+  {
+    std::vector<int> mothers = {-1, -1};
+    std::vector<int> daughters = {-1, -1};
+    if (track.has_mcParticle()) {
+      // Tempora lambda function to prevent error in build
+      auto getMothersIndeces = [&](auto const& theMcParticle) {
+        std::vector<int> lMothersIndeces{};
+        for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+          LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+          lMothersIndeces.push_back(lMother.globalIndex());
+        }
+        return lMothersIndeces;
+      };
+      auto getDaughtersIndeces = [&](auto const& theMcParticle) {
+        std::vector<int> lDaughtersIndeces{};
+        for (auto& lMother : theMcParticle.template daughters_as<aod::McParticles>()) {
+          LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+          lDaughtersIndeces.push_back(lMother.globalIndex());
+        }
+        return lDaughtersIndeces;
+      };
+      //
+      // Get the MC particle
+      const auto& particle = track.mcParticle();
+      if (particle.has_mothers())
+        mothers = getMothersIndeces(particle);
+      if (particle.has_daughters())
+        daughters = getDaughtersIndeces(particle);
+      reso2mctracks(particle.pdgCode(),
+                    &mothers[0],
+                    &daughters[0],
+                    particle.isPhysicalPrimary(),
+                    particle.producedByGenerator());
+    } else
+      // No MC particle associated
+      reso2mctracks(0, &mothers[0], &daughters[0], 0, 0);
+  }
+
   void init(InitContext&)
   {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
   }
 
-  void process(const soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator& collision,
-               soa::Filtered<aod::Reso2TracksPIDExt> const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void process(soa::Filtered<ResoEvents>::iterator const& collision,
+               soa::Filtered<ResoTracks> const& tracks, ResoV0s const& V0s, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     // Default event selection
@@ -210,17 +295,40 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    }
+
+    fillTracks<false>(collision, tracks);
+    if (ConfStoreV0) {
+      fillV0s<false>(collision, V0s, tracks);
+    }
+  }
+  PROCESS_SWITCH(reso2initializer, process, "Process for data", true);
+
+  void processMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
+                 aod::McCollisions const& mcCols, soa::Filtered<ResoTracksMC> const& tracks,
+                 ResoV0sMC const& V0s, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    if (!colCuts.isSelected(collision))
+      return;
+    colCuts.fillQA(collision);
+
+    if (ConfIsRun3) {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+    } else {
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
 
     // Loop over tracks
-    fillTracks<false>(collision, tracks);
-    /// V0s
-    if (ConfStoreV0)
-      fillV0s<false>(collision, V0s, tracks);
+    fillTracks<true>(collision, tracks);
+    if (ConfStoreV0) {
+      fillV0s<true>(collision, V0s, tracks);
+    }
   }
+  PROCESS_SWITCH(reso2initializer, processMC, "Process for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

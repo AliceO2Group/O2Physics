@@ -261,17 +261,19 @@ struct AnalysisTrackSelection {
   Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
 
-  // 3D histos
-  Configurable<bool> fConfigUsePtVec{"cfgUsePtVec", true, "If true, non-linear pt bins predefined"};
-  Configurable<double> fConfigMinPt{"cfgMinPt", 0., "min Pt in 3D histos"};
-  Configurable<double> fConfigMaxPt{"cfgMaxPt", 10., "max Pt in 3D histos"};
-  Configurable<int> fConfigStepPt{"cfgStepPt", 1, "Nb of steps in pt in 3D histos"};
-  Configurable<double> fConfigMinEta{"cfgMinEta", -0.8, "min Eta in 3D histos"};
-  Configurable<double> fConfigMaxEta{"cfgMaxEta", 0.8, "max Eta in 3D histos"};
-  Configurable<int> fConfigStepEta{"cfgStepEta", 16, "Nb of steps in Eta in 3D histos"};
-  Configurable<double> fConfigMinPhi{"cfgMinPhi", 0., "min Phi in 3D histos"};
-  Configurable<double> fConfigMaxPhi{"cfgMaxPhi", 6.3, "max Phi in 3D histos"};
-  Configurable<int> fConfigStepPhi{"cfgStepPhi", 63, "Nb of steps in Phi in 3D histos"};
+  // 3D histos for efficiency
+  Configurable<bool> fConfigUsePtVec{"cfgUsePtVecEff", true, "If true, non-linear pt bins predefined"};
+  Configurable<double> fConfigMinPt{"cfgMinPtEff", 0., "min Pt in 3D histos"};
+  Configurable<double> fConfigMaxPt{"cfgMaxPtEff", 10., "max Pt in 3D histos"};
+  Configurable<int> fConfigStepPt{"cfgStepPtEff", 1, "Nb of steps in pt in 3D histos"};
+  Configurable<double> fConfigMinEta{"cfgMinEtaEff", -0.8, "min Eta in 3D histos"};
+  Configurable<double> fConfigMaxEta{"cfgMaxEtaEff", 0.8, "max Eta in 3D histos"};
+  Configurable<int> fConfigStepEta{"cfgStepEtaEff", 16, "Nb of steps in Eta in 3D histos"};
+  Configurable<double> fConfigMinPhi{"cfgMinPhiEff", 0., "min Phi in 3D histos"};
+  Configurable<double> fConfigMaxPhi{"cfgMaxPhiEff", 6.3, "max Phi in 3D histos"};
+  Configurable<int> fConfigStepPhi{"cfgStepPhiEff", 63, "Nb of steps in Phi in 3D histos"};
+
+  Configurable<bool> fConfigRecWithMC{"cfgEffRecWithMCVars", false, "If true, fill also 3D histograms at reconstructed level with mc variables"};
 
   // Resolution histos
   Configurable<bool> fConfigResolutionOn{"cfgResolution", false, "If true, fill resolution histograms"};
@@ -279,13 +281,13 @@ struct AnalysisTrackSelection {
   Configurable<double> fConfigMinPtRes{"cfgMinPtRes", 0., "min Pt in res histos"};
   Configurable<double> fConfigMaxPtRes{"cfgMaxPtRes", 20., "max Pt in res histos"};
   Configurable<int> fConfigStepPtRes{"cfgStepPtRes", 1, "Nb of steps in pt in res histos"};
-  Configurable<int> fConfigStepDeltaPt{"cfgStepDeltaPt", 1, "Nb of steps in delta pt in res histos"};
-  Configurable<double> fConfigMinDeltaEta{"cfgMinDeltaEta", -0.5, "min delta Eta in res histos"};
-  Configurable<double> fConfigMaxDeltaEta{"cfgMaxDeltaEta", 0.5, "max delta Eta in res histos"};
-  Configurable<int> fConfigStepDeltaEta{"cfgStepDeltaEta", 500, "Nb of steps in detla Eta in res histos"};
-  Configurable<double> fConfigMinDeltaPhi{"cfgMinDeltaPhi", -0.5, "min delta Phi in res histos"};
-  Configurable<double> fConfigMaxDeltaPhi{"cfgMaxDeltaPhi", 0.5, "max delta Phi in res histos"};
-  Configurable<int> fConfigStepDeltaPhi{"cfgStepDeltaPhi", 500, "Nb of steps in delta Phi in res histos"};
+  Configurable<int> fConfigStepDeltaPt{"cfgStepDeltaPtRes", 1, "Nb of steps in delta pt in res histos"};
+  Configurable<double> fConfigMinDeltaEta{"cfgMinDeltaEtaRes", -0.5, "min delta Eta in res histos"};
+  Configurable<double> fConfigMaxDeltaEta{"cfgMaxDeltaEtaRes", 0.5, "max delta Eta in res histos"};
+  Configurable<int> fConfigStepDeltaEta{"cfgStepDeltaEtaRes", 500, "Nb of steps in detla Eta in res histos"};
+  Configurable<double> fConfigMinDeltaPhi{"cfgMinDeltaPhiRes", -0.5, "min delta Phi in res histos"};
+  Configurable<double> fConfigMaxDeltaPhi{"cfgMaxDeltaPhiRes", 0.5, "max delta Phi in res histos"};
+  Configurable<int> fConfigStepDeltaPhi{"cfgStepDeltaPhiRes", 500, "Nb of steps in delta Phi in res histos"};
 
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
 
@@ -310,6 +312,8 @@ struct AnalysisTrackSelection {
   std::vector<TH3D*> fHistGenSmearedNegPart;
   std::vector<TH3D*> fHistRecPosPart;
   std::vector<TH3D*> fHistRecNegPart;
+  std::vector<TH3D*> fHistRecPosPartMC;
+  std::vector<TH3D*> fHistRecNegPartMC;
   // Binning
   std::vector<double> fPtBins;
   std::vector<double> fEtaBins;
@@ -419,7 +423,7 @@ struct AnalysisTrackSelection {
     fSingleElectronList->Add(Generated);
     fSingleElectronList->Add(GeneratedSmeared);
 
-    // Generated reconstructed lists for every cutsetting one list and every MCsignal 2 histograms with pos and neg charge
+    // For every cutsetting one list and every MCsignal 2 histograms with pos and neg charge
     for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
       TList* list = new TList();
       list->SetName(fTrackCuts.at(list_i).GetName());
@@ -438,6 +442,28 @@ struct AnalysisTrackSelection {
         list->Add(th3_tmp_neg);
       }
       fSingleElectronList->Add(list);
+    }
+    // For every cutsetting one list and every MCsignal 2 histograms with pos and neg charge, filled with mc variables
+    if (fConfigRecWithMC) {
+      for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
+        TList* list = new TList();
+        list->SetName(Form("%s_MCVars", fTrackCuts.at(list_i).GetName()));
+        list->SetOwner();
+
+        for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
+          TH3D* th3_tmp_pos = new TH3D(Form("Nrec_Pos_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
+          th3_tmp_pos->Sumw2();
+          th3_tmp_pos->SetDirectory(0x0);
+          fHistRecPosPartMC.push_back(th3_tmp_pos);
+          list->Add(th3_tmp_pos);
+          TH3D* th3_tmp_neg = new TH3D(Form("Nrec_Neg_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
+          th3_tmp_neg->Sumw2();
+          th3_tmp_neg->SetDirectory(0x0);
+          fHistRecNegPartMC.push_back(th3_tmp_neg);
+          list->Add(th3_tmp_neg);
+        }
+        fSingleElectronList->Add(list);
+      }
     }
     fMainList->Add(fSingleElectronList);
 
@@ -463,7 +489,6 @@ struct AnalysisTrackSelection {
       fResolutionList->SetOwner(kTRUE);
       fResolutionList->SetName("Resolution");
 
-      printf("Histos\n");
       TH2D* thPtGen_DeltaPtOverPtGen = new TH2D("PtGen_DeltaPtOverPtGen", "", fNptresBins, fPtResBins.data(), fConfigStepDeltaPt, -1., +1.);
       TH2D* thPtGen_DeltaEta = new TH2D("PtGen_DeltaEta", "", fNptresBins, fPtResBins.data(), fNDeltaetaBins, fDeltaEtaBins.data());
       TH2D* thPtGen_DeltaPhi_Ele = new TH2D("PtGen_DeltaPhi_Ele", "", fNptresBins, fPtResBins.data(), fNDeltaphiBins, fDeltaPhiBins.data());
@@ -586,7 +611,6 @@ struct AnalysisTrackSelection {
         auto groupedTracks = tracks.sliceBy(perReducedEventTracks, event.globalIndex());
         runRecTrack<gkTrackFillMap>(groupedTracks, tracksMC);
       }
-
     } // end loop over events
   }
 
@@ -672,6 +696,27 @@ struct AnalysisTrackSelection {
             } else {
               dynamic_cast<TH3D*>(fHistRecPosPart.at(j * fMCSignals.size() + i))->Fill(track.pt(), track.eta(), track.phi());
             }
+
+            if (fConfigRecWithMC) {
+
+              Double_t mcpt = -10000.;
+              Double_t mceta = -10000.;
+              Double_t mcphi = -1000.;
+
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
+                auto mctrack = track.reducedMCTrack();
+                mcpt = mctrack.pt();
+                mceta = mctrack.eta();
+                mcphi = mctrack.phi();
+              }
+
+              if (track.sign() < 0) {
+                dynamic_cast<TH3D*>(fHistRecNegPartMC.at(j * fMCSignals.size() + i))->Fill(mcpt, mceta, mcphi);
+              } else {
+                dynamic_cast<TH3D*>(fHistRecPosPartMC.at(j * fMCSignals.size() + i))->Fill(mcpt, mceta, mcphi);
+              }
+            }
+
             if (fConfigResolutionOn && (i == 0) && (j == 0)) {
 
               Double_t mcpt = -10000.;
@@ -729,11 +774,13 @@ struct AnalysisSameEventPairing {
 
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgBarrelMCSignals", "", "Comma separated list of MC signals"};
-  Configurable<double> fConfigMinPt{"cfgMinPt", 0., "Fiducial min Pt for MC signal"};
-  Configurable<double> fConfigMaxPt{"cfgMaxPt", 10., "Fiducial max Pt for MC signal"};
-  Configurable<double> fConfigMinEta{"cfgMinEta", -0.8, "Fiducial min eta for MC signal"};
-  Configurable<double> fConfigMaxEta{"cfgMaxEta", 0.8, "Fiducial max eta for MC signal"};
+  Configurable<double> fConfigMinPt{"cfgMinPtFidCut", 0., "Fiducial min Pt for MC signal"};
+  Configurable<double> fConfigMaxPt{"cfgMaxPtFidCut", 10., "Fiducial max Pt for MC signal"};
+  Configurable<double> fConfigMinEta{"cfgMinEtaFidCut", -0.8, "Fiducial min eta for MC signal"};
+  Configurable<double> fConfigMaxEta{"cfgMaxEtaFidCut", 0.8, "Fiducial max eta for MC signal"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
+  Configurable<bool> fConfigRecWithMC{"cfgEffRecWithMCVars", false, "If true, fill also 3D histograms at reconstructed level with mc variables"};
+  Configurable<bool> fConfigFillLS{"cfgEffFillLS", false, "If true, fill LS histograms"};
 
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
@@ -763,6 +810,7 @@ struct AnalysisSameEventPairing {
   std::vector<TH2D*> fHistGenPair;
   std::vector<TH2D*> fHistGenSmearedPair;
   std::vector<TH2D*> fHistRecPair;
+  std::vector<TH2D*> fHistRecPairMC;
   // Binning
   std::vector<double> fPteeBins;
   std::vector<double> fMeeBins;
@@ -771,8 +819,6 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-
-    printf("Start init\n");
 
     // Create list output
     fMainList = new THashList;
@@ -825,10 +871,16 @@ struct AnalysisSameEventPairing {
     Generated->SetOwner();
     Generated->SetName("Generated");
     for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-      TH2D* th2_tmp = new TH2D(Form("Ngen_Pair_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+      TH2D* th2_tmp = new TH2D(Form("Ngen_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
       th2_tmp->Sumw2();
       fHistGenPair.push_back(th2_tmp);
       Generated->Add(th2_tmp);
+      if (fConfigFillLS) {
+        TH2D* th3_tmp = new TH2D(Form("Ngen_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+        th3_tmp->Sumw2();
+        fHistGenPair.push_back(th3_tmp);
+        Generated->Add(th3_tmp);
+      }
     }
 
     // Create List with generated+smeared particles
@@ -836,29 +888,67 @@ struct AnalysisSameEventPairing {
     GeneratedSmeared->SetName("GeneratedSmeared");
     GeneratedSmeared->SetOwner();
     for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-      TH2D* th2_tmp = new TH2D(Form("NgenSmeared_Pair_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+      TH2D* th2_tmp = new TH2D(Form("NgenSmeared_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
       th2_tmp->Sumw2();
       fHistGenSmearedPair.push_back(th2_tmp);
       GeneratedSmeared->Add(th2_tmp);
+      if (fConfigFillLS) {
+        TH2D* th3_tmp = new TH2D(Form("NgenSmeared_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+        th3_tmp->Sumw2();
+        fHistGenSmearedPair.push_back(th3_tmp);
+        GeneratedSmeared->Add(th3_tmp);
+      }
     }
 
     fPairList->Add(Generated);
     fPairList->Add(GeneratedSmeared);
 
-    // Generated reconstructed lists for every cutsetting one list and every MCsignal 2 histograms with pos and neg charge
+    // Rec with reconstructed variables
     for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
       TList* list = new TList();
       list->SetName(fTrackCuts.at(list_i).GetName());
       list->SetOwner();
 
       for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-        TH2D* th2_tmp = new TH2D(Form("Nrec_Pair_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+        TH2D* th2_tmp = new TH2D(Form("Nrec_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
         th2_tmp->Sumw2();
         th2_tmp->SetDirectory(0x0);
         fHistRecPair.push_back(th2_tmp);
         list->Add(th2_tmp);
+        if (fConfigFillLS) {
+          TH2D* th3_tmp = new TH2D(Form("Nrec_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+          th3_tmp->Sumw2();
+          th3_tmp->SetDirectory(0x0);
+          fHistRecPair.push_back(th3_tmp);
+          list->Add(th3_tmp);
+        }
       }
       fPairList->Add(list);
+    }
+
+    // Rec with MC variables
+    if (fConfigRecWithMC) {
+      for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
+        TList* list = new TList();
+        list->SetName(Form("%s_MCVars", fTrackCuts.at(list_i).GetName()));
+        list->SetOwner();
+
+        for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
+          TH2D* th2_tmp = new TH2D(Form("Nrec_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+          th2_tmp->Sumw2();
+          th2_tmp->SetDirectory(0x0);
+          fHistRecPairMC.push_back(th2_tmp);
+          list->Add(th2_tmp);
+          if (fConfigFillLS) {
+            TH2D* th3_tmp = new TH2D(Form("Nrec_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
+            th3_tmp->Sumw2();
+            th3_tmp->SetDirectory(0x0);
+            fHistRecPairMC.push_back(th3_tmp);
+            list->Add(th3_tmp);
+          }
+        }
+        fPairList->Add(list);
+      }
     }
     fMainList->Add(fPairList);
     fOutputList.setObject(fMainList);
@@ -924,11 +1014,12 @@ struct AnalysisSameEventPairing {
     //
     Double_t masse = 0.00051099895; // 0.5 MeV/c2 -> 0.0005 GeV/c2
 
-    for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
+    for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(groupedMCTracks, groupedMCTracks))) {
+      // for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
 
       if ((abs(t1.pdgCode()) != 11) || (abs(t2.pdgCode()) != 11))
         continue;
-      if (t1.pdgCode() * t2.pdgCode() > 0)
+      if (!fConfigFillLS && (t1.pdgCode() * t2.pdgCode() > 0))
         continue; // ULS only
 
       TLorentzVector Lvec1;
@@ -940,7 +1031,6 @@ struct AnalysisSameEventPairing {
       double pairpt = LvecM.Pt();
       // double opangle = Lvec1.Angle(Lvec2.Vect());
 
-      // printf("Check before\n");
       // Fiducial cut
       Bool_t genfidcut = kTRUE;
       if ((t1.eta() > fConfigMaxEta) || (t2.eta() > fConfigMaxEta) || (t1.eta() < fConfigMinEta) || (t2.eta() < fConfigMinEta) || (t1.pt() > fConfigMaxPt) || (t2.pt() > fConfigMaxPt) || (t1.pt() < fConfigMinPt) || (t2.pt() < fConfigMinPt))
@@ -950,9 +1040,18 @@ struct AnalysisSameEventPairing {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if ((*sig).CheckSignal(true, groupedMCTracks, t1, t2)) {
 
-          // not smeared
-          if (genfidcut)
-            dynamic_cast<TH2D*>(fHistGenPair.at(isig))->Fill(mass, pairpt);
+          // not smeared after fiducial cuts
+          if (genfidcut) {
+            if (!fConfigFillLS)
+              dynamic_cast<TH2D*>(fHistGenPair.at(isig))->Fill(mass, pairpt);
+            else {
+              if (t1.pdgCode() * t2.pdgCode() < 0) {
+                dynamic_cast<TH2D*>(fHistGenPair.at(isig * 2))->Fill(mass, pairpt);
+              } else {
+                dynamic_cast<TH2D*>(fHistGenPair.at(isig * 2 + 1))->Fill(mass, pairpt);
+              }
+            }
+          }
           // need to implement smeared
         }
       }
@@ -961,19 +1060,39 @@ struct AnalysisSameEventPairing {
   template <uint32_t TTrackFillMap, typename TTracks, typename TTracksMC>
   void runRecPair(TTracks const& tracks, TTracksMC const& tracksMC)
   {
+    //
+    Double_t masse = 0.00051099895; // 0.5 MeV/c2 -> 0.0005 GeV/c2 , to be taken differently
+    Bool_t uls = kTRUE;
+
     // Loop over two track combinations
     uint8_t twoTrackFilter = 0;
     // uint32_t dileptonFilterMap = 0;
     // uint32_t dileptonMcDecision = 0;
     // dileptonList.reserve(1);
 
-    for (auto& [t1, t2] : combinations(tracks, tracks)) {
+    for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+      // for (auto& [t1, t2] : combinations(tracks, tracks)) {
 
       twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected());
 
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
       }
+
+      if (t1.sign() * t2.sign() > 0)
+        uls = kFALSE;
+      else
+        uls = kTRUE;
+
+      if (!fConfigFillLS && !uls)
+        continue;
+
+      // Fiducial cut in case they are not done in the reconstructed cuts
+      Bool_t recfidcut = kTRUE;
+      if ((t1.eta() > fConfigMaxEta) || (t2.eta() > fConfigMaxEta) || (t1.eta() < fConfigMinEta) || (t2.eta() < fConfigMinEta) || (t1.pt() > fConfigMaxPt) || (t2.pt() > fConfigMaxPt) || (t1.pt() < fConfigMinPt) || (t2.pt() < fConfigMinPt))
+        recfidcut = kFALSE;
+
+      //
       VarManager::FillPair<VarManager::kJpsiToEE, TTrackFillMap>(t1, t2);
 
       // run MC matching for this pair
@@ -997,9 +1116,53 @@ struct AnalysisSameEventPairing {
         if (!(mcDecision & (uint32_t(1) << i))) {
           continue;
         }
-        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (twoTrackFilter & (uint8_t(1) << j)) {
-            dynamic_cast<TH2D*>(fHistRecPair.at(j * fMCSignals.size() + i))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+        if (recfidcut) {
+          for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
+            if (twoTrackFilter & (uint8_t(1) << j)) {
+              if (!fConfigFillLS) {
+                dynamic_cast<TH2D*>(fHistRecPair.at(j * fMCSignals.size() + i))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+              } else {
+                if (uls) {
+                  dynamic_cast<TH2D*>(fHistRecPair.at(j * (2 * fMCSignals.size()) + 2 * i))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                } else {
+                  dynamic_cast<TH2D*>(fHistRecPair.at(j * (2 * fMCSignals.size()) + 2 * i + 1))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                }
+              }
+            }
+          }
+        }
+
+        if (fConfigRecWithMC) {
+          Double_t mass = -1000.;
+          Double_t pairpt = 1000.;
+          // Fiducial cut in case they are not done in the reconstructed cuts
+          Bool_t genfidcut = kTRUE;
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
+            auto mctrack1 = t1.reducedMCTrack();
+            auto mctrack2 = t2.reducedMCTrack();
+            TLorentzVector Lvec2, Lvec1;
+            Lvec1.SetPtEtaPhiM(mctrack1.pt(), mctrack1.eta(), mctrack1.phi(), masse);
+            Lvec2.SetPtEtaPhiM(mctrack2.pt(), mctrack2.eta(), mctrack2.phi(), masse);
+            TLorentzVector LvecM = Lvec1 + Lvec2;
+            mass = LvecM.M();
+            pairpt = LvecM.Pt();
+            if ((mctrack1.eta() > fConfigMaxEta) || (mctrack2.eta() > fConfigMaxEta) || (mctrack1.eta() < fConfigMinEta) || (mctrack2.eta() < fConfigMinEta) || (mctrack1.pt() > fConfigMaxPt) || (mctrack2.pt() > fConfigMaxPt) || (mctrack1.pt() < fConfigMinPt) || (mctrack2.pt() < fConfigMinPt))
+              genfidcut = kFALSE;
+          }
+          if (genfidcut) {
+            for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
+              if (twoTrackFilter & (uint8_t(1) << j)) {
+                if (!fConfigFillLS) {
+                  dynamic_cast<TH2D*>(fHistRecPairMC.at(j * fMCSignals.size() + i))->Fill(mass, pairpt);
+                } else {
+                  if (uls) {
+                    dynamic_cast<TH2D*>(fHistRecPairMC.at(j * (2 * fMCSignals.size()) + 2 * i))->Fill(mass, pairpt);
+                  } else {
+                    dynamic_cast<TH2D*>(fHistRecPairMC.at(j * (2 * fMCSignals.size()) + 2 * i + 1))->Fill(mass, pairpt);
+                  }
+                }
+              }
+            }
           }
         }
       }

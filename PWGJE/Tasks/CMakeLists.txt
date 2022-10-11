@@ -27,5 +27,9 @@ o2physics_add_dpl_workflow(jet-charged-trigger-qa
                     SOURCES ChJetTriggerQATask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(jet-matching-hf-qa
+                    SOURCES jetmatchinghfqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 endif()
 
