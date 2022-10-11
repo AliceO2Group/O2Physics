@@ -425,7 +425,7 @@ struct UpcCandProducer {
   template <typename TTrack, typename TAmbTracks>
   uint64_t getTrackBC(TTrack track,
                       TAmbTracks* ambTracks,
-                      std::unordered_map<int32_t, int32_t> ambTrIDs,
+                      std::unordered_map<int32_t, int32_t>& ambTrIDs,
                       o2::aod::Collisions const& collisions,
                       o2::aod::BCs const& bcs)
   {
