@@ -186,9 +186,9 @@ struct AnalysisQvector {
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
     // Define regions of positive and negative eta in order to create gaps
-    fGFW->AddRegion("refN", 7, pows, -fConfigCutEta, -fConfigEtaLimit, 1, 1);
-    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit, fConfigCutEta, 1, 1);
-    fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta, fConfigCutEta, 1, 2);
+    fGFW->AddRegion("refN", 7, pows, -fConfigCutEta.value, -fConfigEtaLimit.value, 1, 1);
+    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit.value, fConfigCutEta.value, 1, 1);
+    fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta.value, fConfigCutEta.value, 1, 2);
 
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
@@ -289,19 +289,18 @@ struct AnalysisQvector {
     //      FillFC(corrconfigs.at(l_ind), collision.centRun2V0M(), l_Random, fillFlag, DQEventFlag);
     //    };
 
-    int nentriesN = 0, nentriesP = 0, nentriesFull = 0;
+    int nentriesN = 1.0, nentriesP = 1.0, nentriesFull = 1.0;
     TComplex Q2vecN, Q2vecP, Q2vecFull;
     TComplex Q3vecN, Q3vecP, Q3vecFull;
 
-    // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
-    if (fGFW && (tracks1.size() > 1)) {
-      // Get Q vectors for positive, negative and full eta gaps
+    if (fGFW && (tracks1.size() > 0)) {
+      // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
       // and the multiplicity of the event in this region
       GFWCumulant gfwCumN = fGFW->GetCumulant(0);
-      nentriesN = gfwCumN.GetN();
       GFWCumulant gfwCumP = fGFW->GetCumulant(1);
-      nentriesP = gfwCumP.GetN();
       GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
+      nentriesN = gfwCumN.GetN();
+      nentriesP = gfwCumP.GetN();
       nentriesFull = gfwCumFull.GetN();
 
       // Get the Q vector for selected harmonic, power (for minPt=0)
@@ -311,14 +310,18 @@ struct AnalysisQvector {
       Q3vecN = gfwCumN.Vec(3, fConfigNPow);
       Q3vecP = gfwCumP.Vec(3, fConfigNPow);
       Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
-
-      // Fill the VarManager::fgValues with the Q vector quantities
-      VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
     }
 
-    fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      // Fill the VarManager::fgValues with the Q vector quantities
+    VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
+
+    if (fConfigQA) {
+      if ((tracks1.size() > 0) && (nentriesFull * nentriesN * nentriesP != 0.0)) {
+        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+        if (fEventCut->IsSelected(VarManager::fgValues)) {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        }
+      }
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
