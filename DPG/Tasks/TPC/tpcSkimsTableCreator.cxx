@@ -233,7 +233,7 @@ struct TreeWriterTpcV0 {
     }
 
     /// Armenteros-Podolanski cut
-    if ((((qt > gammaQtMax) || (std::abs(alpha) > cutAlphaG1)) || ((qt > cutQTG) || (std::abs(alpha) < cutAlphaG2min) || (std::abs(alpha) > cutAlphaG2max)))) {
+    if ((((qt > gammaQtMax) || (std::abs(alpha) > cutAlphaG1)) || ((qt > cutQTG) || (std::abs(alpha) > cutAlphaG2min && std::abs(alpha) < cutAlphaG2max)))) {
       return false;
     }
     if ((std::pow(alpha / gammaAsymmetryMax, 2) + std::pow(qt / lQtMaxPtDep, 2)) < 1) {
