@@ -186,9 +186,9 @@ struct AnalysisQvector {
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
     // Define regions of positive and negative eta in order to create gaps
-    fGFW->AddRegion("refN", 7, pows, -fConfigCutEta.value, -fConfigEtaLimit.value, 1, 1);
-    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit.value, fConfigCutEta.value, 1, 1);
-    fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta.value, fConfigCutEta.value, 1, 2);
+    fGFW->AddRegion("refN", 7, pows, -fConfigCutEta, -fConfigEtaLimit, 1, 1);
+    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit, fConfigCutEta, 1, 1);
+    fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta, fConfigCutEta, 1, 2);
 
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
