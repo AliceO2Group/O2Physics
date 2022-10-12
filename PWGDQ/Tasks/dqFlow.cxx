@@ -289,16 +289,18 @@ struct AnalysisQvector {
     //      FillFC(corrconfigs.at(l_ind), collision.centRun2V0M(), l_Random, fillFlag, DQEventFlag);
     //    };
 
-    int nentriesN = 1.0, nentriesP = 1.0, nentriesFull = 1.0;
+    int nentriesN = 0.0;
+    int nentriesP = 0.0;
+    int nentriesFull = 0.0;
     TComplex Q2vecN, Q2vecP, Q2vecFull;
     TComplex Q3vecN, Q3vecP, Q3vecFull;
 
     if (fGFW && (tracks1.size() > 0)) {
       // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
-      // and the multiplicity of the event in this region
       GFWCumulant gfwCumN = fGFW->GetCumulant(0);
       GFWCumulant gfwCumP = fGFW->GetCumulant(1);
       GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
+      // and the multiplicity of the event in each region
       nentriesN = gfwCumN.GetN();
       nentriesP = gfwCumP.GetN();
       nentriesFull = gfwCumFull.GetN();
