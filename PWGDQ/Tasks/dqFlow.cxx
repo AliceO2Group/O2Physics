@@ -304,6 +304,7 @@ struct AnalysisQvector {
       GFWCumulant gfwCumN = fGFW->GetCumulant(0);
       GFWCumulant gfwCumP = fGFW->GetCumulant(1);
       GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
+
       // and the multiplicity of the event in each region
       nentriesN = gfwCumN.GetN();
       nentriesP = gfwCumP.GetN();
@@ -318,7 +319,7 @@ struct AnalysisQvector {
       Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
     }
 
-      // Fill the VarManager::fgValues with the Q vector quantities
+    // Fill the VarManager::fgValues with the Q vector quantities
     VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
 
     if (fConfigQA) {
