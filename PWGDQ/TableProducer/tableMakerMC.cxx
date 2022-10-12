@@ -712,7 +712,7 @@ struct TableMakerMC {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
     }
     for (int ib = 1; ib <= kNaliases; ib++) {
-      histEvents->GetYaxis()->SetBinLabel(ib, aliasLabels[ib - 1]);
+      histEvents->GetYaxis()->SetBinLabel(ib, aliasLabels[ib - 1].data());
     }
     histEvents->GetYaxis()->SetBinLabel(kNaliases + 1, "Total");
     fStatsList->Add(histEvents);
