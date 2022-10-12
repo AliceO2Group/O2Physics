@@ -111,9 +111,9 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
   CutBrickLimit(const CutBrickLimit&) = delete;
   CutBrickLimit& operator=(const CutBrickLimit&) = delete;
 
-  virtual std::vector<bool> IsArmed();
-  virtual std::vector<bool> Filter(const TValueToFilter&);
-  virtual int Length() { return 1; }
+  virtual std::vector<bool> IsArmed() override;
+  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  virtual int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -253,9 +253,9 @@ class CutBrickRange : public CutBrick<TValueToFilter>
   CutBrickRange(const CutBrickRange&) = delete;
   CutBrickRange& operator=(const CutBrickRange&) = delete;
 
-  virtual std::vector<bool> IsArmed();
-  virtual std::vector<bool> Filter(const TValueToFilter&);
-  virtual int Length() { return 1; }
+  virtual std::vector<bool> IsArmed() override;
+  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  virtual int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -327,9 +327,9 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
   CutBrickExtToRange(const CutBrickExtToRange&) = delete;
   CutBrickExtToRange& operator=(const CutBrickExtToRange&) = delete;
 
-  virtual std::vector<bool> IsArmed();
-  virtual std::vector<bool> Filter(const TValueToFilter&);
-  virtual int Length() { return 1; }
+  virtual std::vector<bool> IsArmed() override;
+  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  virtual int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -437,10 +437,10 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   bool AddVariationBrick(CutBrick<TValueToFilter>* brick);
   TList& getDefaultBricks() { return mDefaultBricks; }
   TList& getVariantBricks() { return mVariationBricks; }
-  virtual std::vector<bool> IsArmed();
-  virtual std::vector<bool> Filter(const TValueToFilter&);
-  virtual int Length();
-  virtual int getArmedIndex();
+  virtual std::vector<bool> IsArmed() override;
+  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  virtual int Length() override;
+  virtual int getArmedIndex() override;
 
  private:
   void ConstructCutFromString(const TString&);
