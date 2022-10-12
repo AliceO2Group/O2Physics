@@ -292,8 +292,12 @@ struct AnalysisQvector {
     int nentriesN = 0.0;
     int nentriesP = 0.0;
     int nentriesFull = 0.0;
-    TComplex Q2vecN, Q2vecP, Q2vecFull;
-    TComplex Q3vecN, Q3vecP, Q3vecFull;
+    TComplex Q2vecN;
+    TComplex Q2vecP;
+    TComplex Q2vecFull;
+    TComplex Q3vecN;
+    TComplex Q3vecP;
+    TComplex Q3vecFull;
 
     if (fGFW && (tracks1.size() > 0)) {
       // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
