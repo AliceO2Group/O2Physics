@@ -238,6 +238,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
