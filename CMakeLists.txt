@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
 project(O2Physics
         VERSION 0.0.1
-        LANGUAGES CXX
+        LANGUAGES C CXX
         DESCRIPTION "Physics Analysis for O2")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
