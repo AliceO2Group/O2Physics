@@ -13,8 +13,6 @@
 /// \brief multiparticle-correlations-ar - Task belonging to Anton Riedel for computing multiparticle correlations
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include <Framework/Array2D.h>
-#include <Framework/Configurable.h>
 #include <TMath.h>
 #include "fairlogger/Logger.h"
 #include <algorithm>
