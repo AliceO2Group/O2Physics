@@ -109,12 +109,14 @@ struct HfTagSelCollisions {
   Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
-  int triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+  int triggerClass;
 
   HistogramRegistry registry{"registry", {{"hNContributors", "Number of vertex contributors;entries", {HistType::kTH1F, {{20001, -0.5, 20000.5}}}}}};
 
   void init(InitContext const&)
   {
+    triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+
     const int nBinsEvents = 2 + EventRejection::NEventRejection;
     std::string labels[nBinsEvents];
     labels[0] = "processed";
@@ -130,6 +132,10 @@ struct HfTagSelCollisions {
     for (int iBin = 0; iBin < nBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
+    // primary vertex histograms
+    registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
+    registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
+    registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -20., 20.}}});
   }
 
   /// Primary-vertex selection
@@ -205,6 +211,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
@@ -229,6 +238,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
