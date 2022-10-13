@@ -109,7 +109,8 @@ struct TableMaker {
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
   Configurable<float> fConfigMinTpcSignal{"cfgMinTpcSignal", 30.0, "Minimum TPC signal"};
   Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 300.0, "Maximum TPC signal"};
-  Configurable<bool> fConfigNoQA{"cfgNoQA", false, "If true, no QA histograms"};
+  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
 
@@ -133,7 +134,7 @@ struct TableMaker {
 
     // Create the histogram class names to be added to the histogram manager
     TString histClasses = "";
-    if (!fConfigNoQA) {
+    if (fConfigDetailedQA) {
       histClasses += "Event_BeforeCuts;";
     }
     histClasses += "Event_AfterCuts;";
@@ -148,7 +149,7 @@ struct TableMaker {
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter"));
 
     if (enableBarrelHistos) {
-      if (!fConfigNoQA) {
+      if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_TrackBarrel_BeforeCuts;";
@@ -162,7 +163,7 @@ struct TableMaker {
       }
     }
     if (enableMuonHistos) {
-      if (!fConfigNoQA) {
+      if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
@@ -234,7 +235,7 @@ struct TableMaker {
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
-    if (!fConfigNoQA) {
+    if (fConfigDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
     }
 
@@ -258,9 +259,7 @@ struct TableMaker {
     }
     ((TH2I*)fStatsList->At(0))->Fill(3.0, float(kNaliases));
 
-    if (!fConfigNoQA) {
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
-    }
+    fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
 
     // create the event tables
     event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
@@ -293,7 +292,7 @@ struct TableMaker {
         trackFilteringTag = uint64_t(0);
         trackTempFilterMap = uint8_t(0);
         VarManager::FillTrack<TTrackFillMap>(track);
-        if (!fConfigNoQA) {
+        if (fConfigDetailedQA) {
           fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
           if (fIsAmbiguous && isAmbiguous == 1) {
             fHistMan->FillHistClass("Ambiguous_TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -304,8 +303,8 @@ struct TableMaker {
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
           if ((*cut).IsSelected(VarManager::fgValues)) {
             trackTempFilterMap |= (uint8_t(1) << i);
-            if (!fConfigNoQA) {
-              fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            if (fConfigQA) {
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
               }
@@ -411,7 +410,7 @@ struct TableMaker {
         trackTempFilterMap = uint8_t(0);
 
         VarManager::FillTrack<TMuonFillMap>(muon);
-        if (!fConfigNoQA) {
+        if (fConfigDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
           if (fIsAmbiguous && isAmbiguous == 1) {
             fHistMan->FillHistClass("Ambiguous_Muons_BeforeCuts", VarManager::fgValues);
@@ -422,8 +421,8 @@ struct TableMaker {
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
           if ((*cut).IsSelected(VarManager::fgValues)) {
             trackTempFilterMap |= (uint8_t(1) << i);
-            if (!fConfigNoQA) {
-              fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);
+            if (fConfigQA) {
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", (*cut).GetName()), VarManager::fgValues);
               }
@@ -482,8 +481,10 @@ struct TableMaker {
 
       TString histEventStr = fConfigAddEventHistogram.value;
       if (classStr.Contains("Event")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", "triggerall,cent");
-
+        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event");
+        if (fConfigQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", "triggerall,cent");
+        }
         if (!histEventStr.IsNull()) {
           std::unique_ptr<TObjArray> histEventArray(histEventStr.Tokenize(","));
           for (int ihist = 0; ihist < histEventArray->GetEntries(); ++ihist) {

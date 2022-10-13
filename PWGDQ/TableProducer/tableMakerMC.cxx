@@ -113,7 +113,8 @@ struct TableMakerMC {
   Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 300.0, "Maximum TPC signal"};
   Configurable<std::string> fConfigMCSignals{"cfgMCsignals", "", "Comma separated list of MC signals"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
-  Configurable<bool> fConfigNoQA{"cfgNoQA", false, "If true, no QA histograms"};
+  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
@@ -156,7 +157,7 @@ struct TableMakerMC {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString histClasses = "";
-    if (!fConfigNoQA) {
+    if (fConfigDetailedQA) {
       histClasses += "Event_BeforeCuts;";
     }
     histClasses += "Event_AfterCuts;";
@@ -168,7 +169,7 @@ struct TableMakerMC {
                              context.mOptions.get<bool>("processMuonOnlyWithCent") || context.mOptions.get<bool>("processMuonOnlyWithCov"));
     // TODO: switch on/off histogram classes depending on which process function we run
     if (enableBarrelHistos) {
-      if (!fConfigNoQA) {
+      if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
       }
       for (auto& cut : fTrackCuts) {
@@ -177,7 +178,7 @@ struct TableMakerMC {
     }
 
     if (enableMuonHistos) {
-      if (!fConfigNoQA) {
+      if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
       }
       for (auto& cut : fMuonCuts) {
@@ -196,7 +197,7 @@ struct TableMakerMC {
         } else {
           continue;
         }
-        if (!fConfigNoQA) {
+        if (fConfigDetailedQA) {
           if (enableBarrelHistos) {
             for (auto& cut : fTrackCuts) {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
@@ -270,7 +271,7 @@ struct TableMakerMC {
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
       VarManager::FillEvent<gkEventMCFillMap>(mcCollision);
 
-      if (!fConfigNoQA) {
+      if (fConfigDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
       }
       // fill stats information, before selections
@@ -285,9 +286,7 @@ struct TableMakerMC {
         continue;
       }
 
-      if (!fConfigNoQA) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
-      }
+      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
 
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
@@ -334,7 +333,7 @@ struct TableMakerMC {
 
           // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
           // fill histograms for each of the signals, if found
-          if (!fConfigNoQA) {
+          if (fConfigQA) {
             VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
             int j = 0;
             for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
@@ -369,7 +368,7 @@ struct TableMakerMC {
           auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
-          if (!fConfigNoQA) {
+          if (fConfigDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
           }
           // apply track cuts and fill stats histogram
@@ -377,9 +376,7 @@ struct TableMakerMC {
           for (auto& cut : fTrackCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (!fConfigNoQA) {
-                fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
-              }
+              fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
               ((TH1I*)fStatsList->At(1))->Fill(float(i));
             }
             i++;
@@ -412,7 +409,7 @@ struct TableMakerMC {
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
-              if (!fConfigNoQA) {
+              if (fConfigDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
@@ -496,9 +493,7 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (!fConfigNoQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
+              fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               ((TH1I*)fStatsList->At(2))->Fill(float(i));
             }
             i++;
@@ -523,7 +518,7 @@ struct TableMakerMC {
           VarManager::FillTrack<TMuonFillMap>(muon);
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
-          if (!fConfigNoQA) {
+          if (fConfigDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
           }
           // apply the muon selection cuts and fill the stats histogram
@@ -531,9 +526,7 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (!fConfigNoQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
+              fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               ((TH1I*)fStatsList->At(2))->Fill(float(i));
             }
             i++;
@@ -551,7 +544,7 @@ struct TableMakerMC {
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
-              if (!fConfigNoQA) {
+              if (fConfigQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -684,8 +677,10 @@ struct TableMakerMC {
 
       TString histEventStr = fConfigAddEventHistogram.value;
       if (classStr.Contains("Event")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", "triggerall,cent,mc");
-
+        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event");
+        if (fConfigQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", "triggerall,cent,mc");
+        }
         if (!histEventStr.IsNull()) {
           std::unique_ptr<TObjArray> histEventArray(histEventStr.Tokenize(","));
           for (int ihist = 0; ihist < histEventArray->GetEntries(); ++ihist) {
