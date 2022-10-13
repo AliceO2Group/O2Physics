@@ -239,7 +239,117 @@ struct tofSpectra {
     if (doprocessTinyAl) {
       LOG(info) << "Enabling process function processTinyAl";
     }
-
+    // Full Run 2
+    if (doprocessFullRun2El) {
+      LOG(info) << "Enabling process function processFullRun2El";
+      if (doprocessFullEl) {
+        LOG(fatal) << "Cannot have doprocessFullEl as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Mu) {
+      LOG(info) << "Enabling process function processFullRun2Mu";
+      if (doprocessFullMu) {
+        LOG(fatal) << "Cannot have doprocessFullMu as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Pi) {
+      LOG(info) << "Enabling process function processFullRun2Pi";
+      if (doprocessFullPi) {
+        LOG(fatal) << "Cannot have doprocessFullPi as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Ka) {
+      LOG(info) << "Enabling process function processFullRun2Ka";
+      if (doprocessFullKa) {
+        LOG(fatal) << "Cannot have doprocessFullKa as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Pr) {
+      LOG(info) << "Enabling process function processFullRun2Pr";
+      if (doprocessFullPr) {
+        LOG(fatal) << "Cannot have doprocessFullPr as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2De) {
+      LOG(info) << "Enabling process function processFullRun2De";
+      if (doprocessFullDe) {
+        LOG(fatal) << "Cannot have doprocessFullDe as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Tr) {
+      LOG(info) << "Enabling process function processFullRun2Tr";
+      if (doprocessFullTr) {
+        LOG(fatal) << "Cannot have doprocessFullTr as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2He) {
+      LOG(info) << "Enabling process function processFullRun2He";
+      if (doprocessFullHe) {
+        LOG(fatal) << "Cannot have doprocessFullHe as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Al) {
+      LOG(info) << "Enabling process function processFullRun2Al";
+      if (doprocessFullAl) {
+        LOG(fatal) << "Cannot have doprocessFullAl as well, please pick one";
+      }
+    }
+    // Tiny Run2
+    if (doprocessTinyRun2El) {
+      LOG(info) << "Enabling process function processTinyRun2El";
+      if (doprocessTinyEl) {
+        LOG(fatal) << "Cannot have doprocessTinyEl as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Mu) {
+      LOG(info) << "Enabling process function processTinyRun2Mu";
+      if (doprocessTinyMu) {
+        LOG(fatal) << "Cannot have doprocessTinyMu as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Pi) {
+      LOG(info) << "Enabling process function processTinyRun2Pi";
+      if (doprocessTinyPi) {
+        LOG(fatal) << "Cannot have doprocessTinyPi as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Ka) {
+      LOG(info) << "Enabling process function processTinyRun2Ka";
+      if (doprocessTinyKa) {
+        LOG(fatal) << "Cannot have doprocessTinyKa as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Pr) {
+      LOG(info) << "Enabling process function processTinyRun2Pr";
+      if (doprocessTinyPr) {
+        LOG(fatal) << "Cannot have doprocessTinyPr as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2De) {
+      LOG(info) << "Enabling process function processTinyRun2De";
+      if (doprocessTinyDe) {
+        LOG(fatal) << "Cannot have doprocessTinyDe as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Tr) {
+      LOG(info) << "Enabling process function processTinyRun2Tr";
+      if (doprocessTinyTr) {
+        LOG(fatal) << "Cannot have doprocessTinyTr as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2He) {
+      LOG(info) << "Enabling process function processTinyRun2He";
+      if (doprocessTinyHe) {
+        LOG(fatal) << "Cannot have doprocessTinyHe as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Al) {
+      LOG(info) << "Enabling process function processTinyRun2Al";
+      if (doprocessTinyAl) {
+        LOG(fatal) << "Cannot have doprocessTinyAl as well, please pick one";
+      }
+    }
+    // Checking consistency
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
