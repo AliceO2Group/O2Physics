@@ -798,7 +798,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processJpsiToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
-                              	       soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
+                                       soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
                                        ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
