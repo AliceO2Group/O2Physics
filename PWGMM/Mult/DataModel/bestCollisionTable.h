@@ -45,11 +45,11 @@ DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD",
                   fwdtrack::Z, fwdtrack::Tgl, fwdtrack::Signed1Pt,
                   fwdtrack::PtStatic, fwdtrack::PStatic, fwdtrack::EtaStatic,
                   fwdtrack::PhiStatic); // Snp does not exist
-namespace indices
+namespace pwgmm::indices
 {
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
 }
 
 DECLARE_SOA_TABLE(MatchedMulti, "AOD", "MAMU",
-                  indices::BCId, indices::CollisionIds);
+                  indices::BCId, pwgmm::indices::CollisionIds);
 } // namespace o2::aod
