@@ -176,7 +176,7 @@ struct DGCandAnalyzer {
         registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
         registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
         registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
-        
+
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 
         // fill nSigma histograms
