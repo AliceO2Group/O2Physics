@@ -425,7 +425,7 @@ struct UpcCandProducer {
   template <typename TTrack, typename TAmbTracks>
   uint64_t getTrackBC(TTrack track,
                       TAmbTracks* ambTracks,
-                      std::unordered_map<int32_t, int32_t> ambTrIDs,
+                      std::unordered_map<int32_t, int32_t>& ambTrIDs,
                       o2::aod::Collisions const& collisions,
                       o2::aod::BCs const& bcs)
   {
@@ -942,6 +942,7 @@ struct UpcCandProducer {
   {
     fDoMC = true;
     fDoSemiFwd = true;
+    skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidates(&fwdTracks, &barrelTracks,
                      &ambFwdTracks, &ambTracks,
                      bcs, collisions,
@@ -963,6 +964,7 @@ struct UpcCandProducer {
   {
     fDoMC = true;
     fDoSemiFwd = false;
+    skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidates((ForwardTracks*)nullptr, &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,

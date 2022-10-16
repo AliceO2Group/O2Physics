@@ -194,7 +194,7 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
     // count filtered tracks matched to a collision
-    auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Filtered track - collision matching", kTH1F, {{5, 0.5, 5.5, ""}});
+    auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Filtered track - collision matching", kTH1D, {{5, 0.5, 5.5, ""}});
     h1->GetXaxis()->SetBinLabel(h1->FindBin(1), "all tracks");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(2), "tracks matched to coll.");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(3), "tracks unmatched");
@@ -205,7 +205,7 @@ struct qaEventTrack {
     histos.add("Tracks/KineUnmatchTracks/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/KineUnmatchTracks/phi", "#varphi", kTH1D, {axisPhi});
     // count unfiltered tracks matched to a collision
-    auto h1Unfiltered = histos.add<TH1>("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch", "Unfiltered track - collision matching", kTH1F, {{5, 0.5, 5.5, ""}});
+    auto h1Unfiltered = histos.add<TH1>("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch", "Unfiltered track - collision matching", kTH1D, {{5, 0.5, 5.5, ""}});
     h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(1), "all tracks");
     h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(2), "tracks matched to coll.");
     h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(3), "tracks unmatched");
