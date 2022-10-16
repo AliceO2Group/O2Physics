@@ -30,6 +30,7 @@ namespace o2::aod
 
 namespace tableProducer
 {
+DECLARE_SOA_COLUMN(Momentum, momentum, float);
 DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 } // namespace tpcskims
@@ -41,7 +42,8 @@ DECLARE_SOA_TABLE(ALLTRACKSTABLE, "AOD", "ALLTRACKS",
                   o2::aod::track::Signed1Pt,
                   o2::aod::track::Eta,
                   o2::aod::tableProducer::NormMultTPC,
-                  o2::aod::tableProducer::NormNClustersTPC);
+                  o2::aod::tableProducer::NormNClustersTPC,
+                  o2::aod::tableProducer::Momentum);
 };
 
 
@@ -60,16 +62,14 @@ struct tableWriter {
     void fillTracksTable(T const& track, C const& collision)
     {
 
-        const double ncl = track.tpcNClsFound();
-        const int multTPC = collision.multTPC();
-
         allTracksTable(track.tpcSignal(),
             track.tpcInnerParam(),
             track.tgl(),
             track.signed1Pt(),
             track.eta(),
-            multTPC / 11000.,
-            std::sqrt(nClNorm / ncl));
+            collision.multTPC() / 11000.,
+            std::sqrt(nClNorm / track.tpcNClsFound()),
+            track.p());
 
     };
 
