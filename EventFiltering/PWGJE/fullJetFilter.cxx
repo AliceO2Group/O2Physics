@@ -169,13 +169,8 @@ struct fullJetFilter {
   // This means we only get events that also have cells
   // We can circumvent this by using two process functions: one that knows about the cells and one that doesn't
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-              //  soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision
-              // soa::Join<aod::Collisions, aod::EvSels> const& collisions
                aod::Jets const& jets,
                selectedClusters const& clusters
-              //  aod::JetClusterConstituents const& clusterConstituents
-              //  aod::BCs const& bcs,
-              //  o2::aod::Calos const& allCells
                )
   {
     bool keepEvent[kCategories]{false};
@@ -187,23 +182,6 @@ struct fullJetFilter {
     // for (const auto& coll : collisions){
     hNEvents->Fill(0.5); // All events, not just ones with jets and clusters
     // }
-
-    /*
-    for (const auto& cell : allCells){
-      // if (cell.bc() != collision.bc()) continue;
-      if (cell.caloType() != 1) continue; // Check if EMCAL cell
-      hCellAmp->Fill(cell.amplitude());
-      if (cell.amplitude() < minCellAmplitude) continue;
-      if (cell.amplitude() > maxCellAmp){
-        maxCellAmp = cell.amplitude();
-      }
-    }
-    if (maxCellAmp > minCellAmplitude){
-      hCellMaxAmp->Fill(maxCellAmp);
-      hNEmcEvents->Fill(0.5);
-    }
-    // */
-    // else return;
 
     // /*
     for (const auto& jet : jets){
@@ -251,22 +229,10 @@ struct fullJetFilter {
     if (maxClusterPt >= 0 && maxJetClusterPt >= 0) hClusterComparison->Fill(maxJetClusterPt, maxClusterPt);
     // */
 
-    // if (collision.alias()[kINT7]){
-    //   LOG(debug) << "Event is not Minimum Bias. Skipping";
-    //   return;
-    // }
-    // if ( !(collision.alias()[kEJ1] || collision.alias()[kEJ2]) ){
-    // if ( !(collision.alias()[kEG1] || collision.alias()[kEG2]) ){
-    //   LOG(debug) << "Event did not trigger EMCAL gamma trigger. Skipping";
-    //   tags(keepEvent[0], keepEvent[1]); // Minimum Bias event
-    //   return;
-    // }
-
     // /*
     for (int iDecision{0}; iDecision < kCategories; iDecision++){
       if (keepEvent[iDecision]) {
         hProcessedEvents->Fill(iDecision);
-        // spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
     // */
