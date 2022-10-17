@@ -156,11 +156,18 @@ struct TableMakerMC {
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
+    // Only use detailed QA when QA is set true
+    if (!fConfigQA && fConfigDetailedQA) {
+      Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
+    }
+
     TString histClasses = "";
     if (fConfigDetailedQA) {
       histClasses += "Event_BeforeCuts;";
     }
-    histClasses += "Event_AfterCuts;";
+    if (fConfigQA) {
+      histClasses += "Event_AfterCuts;";
+    }
 
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                                context.mOptions.get<bool>("processBarrelOnly") ||
@@ -172,8 +179,10 @@ struct TableMakerMC {
       if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
       }
-      for (auto& cut : fTrackCuts) {
-        histClasses += Form("TrackBarrel_%s;", cut.GetName());
+      if (fConfigQA) {
+        for (auto& cut : fTrackCuts) {
+          histClasses += Form("TrackBarrel_%s;", cut.GetName());
+        }
       }
     }
 
@@ -181,8 +190,10 @@ struct TableMakerMC {
       if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
       }
-      for (auto& cut : fMuonCuts) {
-        histClasses += Form("Muons_%s;", cut.GetName());
+      if (fConfigQA) {
+        for (auto& cut : fMuonCuts) {
+          histClasses += Form("Muons_%s;", cut.GetName());
+        }
       }
     }
 
@@ -193,7 +204,9 @@ struct TableMakerMC {
         MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objArray->At(isig)->GetName());
         if (sig) {
           fMCSignals.push_back(*sig);
-          histClasses += Form("MCTruth_%s;", objArray->At(isig)->GetName());
+          if (fConfigQA) {
+            histClasses += Form("MCTruth_%s;", objArray->At(isig)->GetName());
+          }
         } else {
           continue;
         }
@@ -286,7 +299,9 @@ struct TableMakerMC {
         continue;
       }
 
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      if (fConfigQA) {
+        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      }
 
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
@@ -376,7 +391,9 @@ struct TableMakerMC {
           for (auto& cut : fTrackCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
+              if (fConfigQA) {
+                fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
+              }
               ((TH1I*)fStatsList->At(1))->Fill(float(i));
             }
             i++;
@@ -493,7 +510,9 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
+              if (fConfigQA) {
+                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
+              }
               ((TH1I*)fStatsList->At(2))->Fill(float(i));
             }
             i++;
@@ -544,7 +563,7 @@ struct TableMakerMC {
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
-              if (fConfigQA) {
+              if (fConfigDetailedQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -673,56 +692,35 @@ struct TableMakerMC {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
     for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
       TString classStr = objArray->At(iclass)->GetName();
-      fHistMan->AddHistClass(classStr.Data());
+      if (fConfigQA) {
+        fHistMan->AddHistClass(classStr.Data());
+      }
 
-      TString histEventStr = fConfigAddEventHistogram.value;
+      TString histEventName = fConfigAddEventHistogram.value;
       if (classStr.Contains("Event")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event");
         if (fConfigQA) {
-          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", "triggerall,cent,mc");
-        }
-        if (!histEventStr.IsNull()) {
-          std::unique_ptr<TObjArray> histEventArray(histEventStr.Tokenize(","));
-          for (int ihist = 0; ihist < histEventArray->GetEntries(); ++ihist) {
-            TString histEventName = histEventArray->At(ihist)->GetName();
-            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", histEventName);
-          }
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", histEventName);
         }
       }
 
-      TString histTrackStr = fConfigAddTrackHistogram.value;
+      TString histTrackName = fConfigAddTrackHistogram.value;
       if (classStr.Contains("Track")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track");
-        if (!histTrackStr.IsNull()) {
-          std::unique_ptr<TObjArray> histTrackArray(histTrackStr.Tokenize(","));
-          for (int ihist = 0; ihist < histTrackArray->GetEntries(); ++ihist) {
-            TString histTrackName = histTrackArray->At(ihist)->GetName();
-            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
-          }
+        if (fConfigQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
         }
       }
 
-      TString histMuonStr = fConfigAddMuonHistogram.value;
+      TString histMuonName = fConfigAddMuonHistogram.value;
       if (classStr.Contains("Muons")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track");
-        if (!histMuonStr.IsNull()) {
-          std::unique_ptr<TObjArray> histMuonArray(histMuonStr.Tokenize(","));
-          for (int ihist = 0; ihist < histMuonArray->GetEntries(); ++ihist) {
-            TString histMuonName = histMuonArray->At(ihist)->GetName();
-            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMuonName);
-          }
+        if (fConfigQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMuonName);
         }
       }
 
-      TString histMCTruthStr = fConfigAddMCTruthHistogram.value;
+      TString histMCTruthName = fConfigAddMCTruthHistogram.value;
       if (classStr.Contains("MCTruth")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "mctruth");
-        if (!histMCTruthStr.IsNull()) {
-          std::unique_ptr<TObjArray> histMCTruthArray(histMCTruthStr.Tokenize(","));
-          for (int ihist = 0; ihist < histMCTruthArray->GetEntries(); ++ihist) {
-            TString histMCTruthName = histMCTruthArray->At(ihist)->GetName();
-            dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "mctruth", histMCTruthName);
-          }
+        if (fConfigQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "mctruth", histMCTruthName);
         }
       }
     }
@@ -841,7 +839,7 @@ struct TableMakerMC {
   PROCESS_SWITCH(TableMakerMC, processBarrelOnly, "Produce barrel skims", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCent, "Produce barrel skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCov, "Produce barrel skims, with track covariance matrix", false);
-  //PROCESS_SWITCH(TableMakerMC, processMuonOnly, "Produce muon skims", false);
+  // PROCESS_SWITCH(TableMakerMC, processMuonOnly, "Produce muon skims", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCov, "Produce muon skims, with muon covariance matrix", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCent, "Produce muon skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
