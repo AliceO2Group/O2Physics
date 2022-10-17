@@ -95,7 +95,7 @@ struct v0qaanalysis {
   Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
   Configurable<float> rapidity{"rapidity", 0.5, "Rapidity"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
-  
+
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
