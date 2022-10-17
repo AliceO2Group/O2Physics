@@ -120,6 +120,8 @@ struct TableMakerMC {
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
 
+  bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
+
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
   Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f;
 
@@ -157,12 +159,12 @@ struct TableMakerMC {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     // Only use detailed QA when QA is set true
-    if (!fConfigQA && fConfigDetailedQA) {
-      Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
+    if (fConfigQA && fConfigDetailedQA) {
+      fDoDetailedQA = true;
     }
 
     TString histClasses = "";
-    if (fConfigDetailedQA) {
+    if (fDoDetailedQA) {
       histClasses += "Event_BeforeCuts;";
     }
     if (fConfigQA) {
@@ -176,7 +178,7 @@ struct TableMakerMC {
                              context.mOptions.get<bool>("processMuonOnlyWithCent") || context.mOptions.get<bool>("processMuonOnlyWithCov"));
     // TODO: switch on/off histogram classes depending on which process function we run
     if (enableBarrelHistos) {
-      if (fConfigDetailedQA) {
+      if (fDoDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
       }
       if (fConfigQA) {
@@ -187,7 +189,7 @@ struct TableMakerMC {
     }
 
     if (enableMuonHistos) {
-      if (fConfigDetailedQA) {
+      if (fDoDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
       }
       if (fConfigQA) {
@@ -210,7 +212,7 @@ struct TableMakerMC {
         } else {
           continue;
         }
-        if (fConfigDetailedQA) {
+        if (fDoDetailedQA) {
           if (enableBarrelHistos) {
             for (auto& cut : fTrackCuts) {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
@@ -284,7 +286,7 @@ struct TableMakerMC {
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
       VarManager::FillEvent<gkEventMCFillMap>(mcCollision);
 
-      if (fConfigDetailedQA) {
+      if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
       }
       // fill stats information, before selections
@@ -383,7 +385,7 @@ struct TableMakerMC {
           auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
-          if (fConfigDetailedQA) {
+          if (fDoDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
           }
           // apply track cuts and fill stats histogram
@@ -426,7 +428,7 @@ struct TableMakerMC {
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
-              if (fConfigDetailedQA) {
+              if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
@@ -537,7 +539,7 @@ struct TableMakerMC {
           VarManager::FillTrack<TMuonFillMap>(muon);
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
-          if (fConfigDetailedQA) {
+          if (fDoDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
           }
           // apply the muon selection cuts and fill the stats histogram
@@ -563,7 +565,7 @@ struct TableMakerMC {
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
-              if (fConfigDetailedQA) {
+              if (fDoDetailedQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
