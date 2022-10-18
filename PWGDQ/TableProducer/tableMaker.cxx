@@ -148,13 +148,13 @@ struct TableMaker {
     if (enableBarrelHistos) {
       if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
-        if (fIsAmbiguous) {
+        if (fIsAmbiguous && !fIsRun2) {
           histClasses += "Ambiguous_TrackBarrel_BeforeCuts;";
         }
       }
       for (auto& cut : fTrackCuts) {
         histClasses += Form("TrackBarrel_%s;", cut.GetName());
-        if (fIsAmbiguous) {
+        if (fIsAmbiguous && !fIsRun2) {
           histClasses += Form("Ambiguous_TrackBarrel_%s;", cut.GetName());
         }
       }
@@ -162,13 +162,13 @@ struct TableMaker {
     if (enableMuonHistos) {
       if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
-        if (fIsAmbiguous) {
+        if (fIsAmbiguous && !fIsRun2) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
         }
       }
       for (auto& muonCut : fMuonCuts) {
         histClasses += Form("Muons_%s;", muonCut.GetName());
-        if (fIsAmbiguous) {
+        if (fIsAmbiguous && !fIsRun2) {
           histClasses += Form("Ambiguous_Muons_%s;", muonCut.GetName());
         }
       }
@@ -278,7 +278,7 @@ struct TableMaker {
 
       // loop over tracks
       for (auto& track : tracksBarrel) {
-        if (fIsAmbiguous) {
+        if (fIsAmbiguous && !fIsRun2) {
           isAmbiguous = 0;
           for (auto& ambiTrackMid : ambiTracksMid) {
             auto ambiTrack = ambiTrackMid.template track_as<MyBarrelTracks>();
@@ -294,7 +294,7 @@ struct TableMaker {
         VarManager::FillTrack<TTrackFillMap>(track);
         if (fConfigDetailedQA) {
           fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
-          if (fIsAmbiguous && isAmbiguous == 1) {
+          if (fIsAmbiguous && isAmbiguous == 1 && !fIsRun2) {
             fHistMan->FillHistClass("Ambiguous_TrackBarrel_BeforeCuts", VarManager::fgValues);
           }
         }
@@ -305,7 +305,7 @@ struct TableMaker {
             trackTempFilterMap |= (uint8_t(1) << i);
             if (!fConfigNoQA) {
               fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
-              if (fIsAmbiguous && isAmbiguous == 1) {
+              if (fIsAmbiguous && isAmbiguous == 1 && !fIsRun2) {
                 fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
               }
             }
@@ -396,7 +396,7 @@ struct TableMaker {
 
       // now let's save the muons with the correct indices and matches
       for (auto& muon : tracksMuon) {
-        if (fIsAmbiguous) {
+        if (fIsAmbiguous && !fIsRun2) {
           isAmbiguous = 0;
           for (auto& ambiTrackFwd : ambiTracksFwd) {
             auto ambiMuon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
@@ -413,7 +413,7 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fConfigDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
-          if (fIsAmbiguous && isAmbiguous == 1) {
+          if (fIsAmbiguous && isAmbiguous == 1 && !fIsRun2) {
             fHistMan->FillHistClass("Ambiguous_Muons_BeforeCuts", VarManager::fgValues);
           }
         }
@@ -424,7 +424,7 @@ struct TableMaker {
             trackTempFilterMap |= (uint8_t(1) << i);
             if (!fConfigNoQA) {
               fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);
-              if (fIsAmbiguous && isAmbiguous == 1) {
+              if (fIsAmbiguous && isAmbiguous == 1 && !fIsRun2) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", (*cut).GetName()), VarManager::fgValues);
               }
             }
