@@ -58,8 +58,8 @@ struct ChJetTriggerQATask {
   Configurable<float> cfgJetR{"cfgJetR", 0.4,
                               "jet resolution parameter"}; // jet cone radius
   Configurable<float> cfgJetPtMin{
-    "cfgJetPtMin", 0.05,
-    "minimum jet pT constituent cut"}; // minimum jet constituent pT
+      "cfgJetPtMin", 0.05,
+      "minimum jet pT constituent cut"}; // minimum jet constituent pT
   Configurable<int> bTriggerDecision{
     "bTriggerDecision", 0,
     "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
