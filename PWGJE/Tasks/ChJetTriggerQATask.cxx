@@ -54,9 +54,9 @@ struct ChJetTriggerQATask {
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
                                    "Accepted z-vertex range"};
   Configurable<double> cfgTPCVolume{"cfgTPCVolume", 0.9,
-                                    "Full eta range"}; // eta range of TPC
+                                   "Full eta range"}; // eta range of TPC
   Configurable<double> cfgJetR{"cfgJetR", 0.4,
-                               "jet resolution parameter"}; // jet cone radius
+                              "jet resolution parameter"}; // jet cone radius
   Configurable<double> cfgJetPtMin{
     "cfgJetPtMin", 0.05,
     "minimum jet pT constituent cut"}; // minimum jet constituent pT
