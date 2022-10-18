@@ -267,8 +267,6 @@ struct TableMaker {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
   void fullSkimming(TEvent const& collision, aod::BCs const& bcs, aod::AmbiguousTracksMid const& ambiTracksMid, aod::AmbiguousTracksFwd const& ambiTracksFwd, TTracks const& tracksBarrel, TMuons const& tracksMuon)
   {
-  
-    std::cout<<"Full skimming"<<std::endl;
     // get the trigger aliases
     uint32_t triggerAliases = 0;
     for (int i = 0; i < kNaliases; i++) {
@@ -637,9 +635,9 @@ struct TableMaker {
   }
   // Produce barrel only tables, with DalitzBits ------------------------------------------------------------------------------------------------
   void processBarrelOnlyWithDalitzBits(MyEvents::iterator const& collision, aod::BCs const& bcs,
-                                   soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel)
+                                   soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collision, bcs, tracksBarrel, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collision, bcs, ambiTracksMid, ambiTracksFwd, tracksBarrel, nullptr);
   }
   // Produce barrel only tables, with event filtering ----------------------------------------------------------------------------------------
   void processBarrelOnlyWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,

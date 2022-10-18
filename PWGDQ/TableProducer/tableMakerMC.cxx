@@ -438,15 +438,15 @@ struct TableMakerMC {
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
             dalitzMap = track.dalitzBits();
           }  
-          
+
           if  (fQADalitz) {
 	    for (int i = 0; i < nDalitzCuts; i++) {
 	      if (dalitzMap & (uint8_t(1) << i)) {
-	        fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName()), VarManager::fgValues);
+	        fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName()), VarManager::fgValues);
 	      }
 	    }
           }
-          
+
           // apply track cuts and fill stats histogram
           int i = 0;
           for (auto& cut : fTrackCuts) {
@@ -463,7 +463,6 @@ struct TableMakerMC {
             continue;
           }
 
- 
           // store filtering information
           if (track.isGlobalTrack()) {
             trackFilteringTag |= (uint64_t(1) << 0); // BIT0: global track
@@ -503,7 +502,7 @@ struct TableMakerMC {
                 if (fQADalitz) {
                   for (int icut = 0; icut < nDalitzCuts; icut++) {
                     if (dalitzMap & (uint8_t(1) << icut)) {
-                      fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName(), sig.GetName()), VarManager::fgValues); 
+                      fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s_%s", fDalitzTrackCuts.at(icut).GetName(), fDalitzPairCuts.at(icut).GetName(), sig.GetName()), VarManager::fgValues); 
                       ((TH2I*) fStatsList->At(4))->Fill(icut, i);
                     }
                   }                

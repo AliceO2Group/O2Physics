@@ -11,6 +11,11 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+
+#include <chrono>
+using namespace std::chrono;
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -611,15 +616,16 @@ struct AnalysisSameEventPairing {
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fPrefilterConv{"fPrefilterConv", false, "If true, reject tracks from gamma conversions in material"};
   Configurable<bool> fPrefilterDalitz{"fPrefilterDalitz", false, "If true, reject tracks from Dalitz decays"}; //By default, takes the bits from skimmed table, unless the process function withDalitzBits is activated
-  Configurable<std::string> fConfigTrackCutsDalitz{"cfgTrackCutsDalitz", "", "Dalitz track selection cuts, separated by a comma"}; // For now must be exactly the same as in the dalitz selection
-  Configurable<std::string> fConfigPairCutsDalitz{"cfgPairCutsDalitz", "", "Dalitz pair selection cuts"};
-
+  Configurable<std::string> fConfigTrackCutsDalitz{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"}; // For now must be exactly the same as in the dalitz selection
+  Configurable<std::string> fConfigPairCutsDalitz{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
+
+  Preslice<MyBarrelTracksSelected> perCollision = aod::reducedtrack::reducedeventId;
 
   HistogramManager* fHistMan;
 
@@ -797,7 +803,7 @@ struct AnalysisSameEventPairing {
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
       dileptonFilterMap = twoTrackFilter;
       
-      uint8_t twoTracksDalitzFilter;
+      uint8_t twoTracksDalitzFilter = 0;
       if (fPrefilterDalitz) {
         twoTracksDalitzFilter = (uint8_t) ((t1.filteringFlags() >> 15) | (t2.filteringFlags() >> 15));
         if constexpr (TTrackFillMap & VarManager::ObjTypes::DalitzBits) twoTracksDalitzFilter = t1.dalitzBitsReduced() | t2.dalitzBitsReduced();
@@ -884,6 +890,7 @@ struct AnalysisSameEventPairing {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMapDalitzBits>(event, tracks, tracks);
+
   }
   void processJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {

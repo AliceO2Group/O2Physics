@@ -4,6 +4,9 @@
 // produces pair and single track qa plots for every (electron cut, pair cut) combination
 
 
+#include <chrono>
+using namespace std::chrono;
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -55,6 +58,7 @@ DECLARE_SOA_TABLE(ReducedBarrelSelectedDal, "AOD", "DQREDTRSELDAL", dqdalitzflag
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyReducedEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+using MyReducedEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, o2::aod::ReducedEventSelectedDal>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullMu,
@@ -76,8 +80,8 @@ constexpr static uint32_t gkReducedTrackFillMap = VarManager::ObjTypes::ReducedT
 std::map<int, int> eventmap; //only select events with at least 2 dalitz candidates
 std::map<int, int> trackmap;
 std::map<int, uint8_t> dalitzmap; 
-int nCuts;
-bool fQA;
+int nCuts = 0;
+bool fQA = false;
 
 HistogramManager* fHistMan;
 TList* statsList;
@@ -107,7 +111,7 @@ struct dalitzTrackSelection {
   Produces<aod::BarrelSelectedDal> trackSel;
   Produces<aod::EventSelectedDal> eventSel;
   
-  Configurable<std::string> fConfigTrackCuts{"cfgDalitzTrackCuts", "", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandardNoINT7", "Event selection"};
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 0.1f, "Low pt cut for tracks in the barrel"};
   
@@ -116,7 +120,7 @@ struct dalitzTrackSelection {
   
   void init(o2::framework::InitContext& context)
   {
-    InitTrackSelection(context, fConfigTrackCuts, fConfigEventCuts);
+    InitTrackSelection(context, fConfigDalitzTrackCuts, fConfigEventCuts);
   }   
   
   void processFullTracks(MyEvents const& collisions, MyBarrelTracks const& tracks)
@@ -124,16 +128,28 @@ struct dalitzTrackSelection {
     eventmap.clear();
     trackmap.clear();
     
+    //auto start = high_resolution_clock::now();
     runTrackSelection<gkEventFillMap,gkTrackFillMap>(collisions, barrelTracksFilter);
-    
+    //auto stop = high_resolution_clock::now();
+    //auto dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"track processing time "<<dur.count()<<std::endl;
+
+    //start = high_resolution_clock::now();
     for (auto& collision : collisions) {
       eventSel(eventmap[collision.globalIndex()]);
     }
+    //stop = high_resolution_clock::now();
+    //dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"event filling time "<<dur.count()<<std::endl;
     
+    //start = high_resolution_clock::now();
     trackSel.reserve(tracks.size());
     for (auto& track : tracks) {
       trackSel(trackmap[track.globalIndex()]);
     }
+    //stop = high_resolution_clock::now();
+    //dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"track filling time "<<dur.count()<<std::endl;
 
   }
   
@@ -156,7 +172,7 @@ struct dalitzReducedTrackSelection {
   Produces<aod::ReducedBarrelSelectedDal> trackSel;
   Produces<aod::ReducedEventSelectedDal> eventSel;
   
-  Configurable<std::string> fConfigTrackCuts{"cfgDalitzTrackCuts", "", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandardNoINT7", "Event selection"};
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 0.1f, "Low pt cut for tracks in the barrel"};
   
@@ -164,25 +180,39 @@ struct dalitzReducedTrackSelection {
     
   void init(o2::framework::InitContext& context)
   {
-    InitTrackSelection(context, fConfigTrackCuts, fConfigEventCuts);
+    InitTrackSelection(context, fConfigDalitzTrackCuts, fConfigEventCuts);
   }   
   
   void processReducedTracks(MyReducedEvents const& collisions, BarrelReducedTracks const& tracks)
   {
     eventmap.clear();
     trackmap.clear();
-    
+    //auto start = high_resolution_clock::now();
     runTrackSelection<gkReducedEventFillMap,gkReducedTrackFillMap>(collisions, barrelReducedTracksFilter);
+    //auto stop = high_resolution_clock::now();
+    //auto dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"track processing time "<<dur.count()<<std::endl;
     
+    //start = high_resolution_clock::now();
     for (auto& collision : collisions) {
       eventSel(eventmap[collision.globalIndex()]);
     }
+    
+    //stop = high_resolution_clock::now();
+    //dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"event filling time "<<dur.count()<<std::endl;
+    
+    //start = high_resolution_clock::now();
     for (auto& track : tracks) {
       trackSel(trackmap[track.globalIndex()]);
     } 
+    
+    //stop = high_resolution_clock::now();
+    //dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"track filling time "<<dur.count()<<std::endl;
   }
   
-  void processDummy(MyEvents&)
+  void processDummy(MyReducedEvents&)
   {
   }
 
@@ -205,8 +235,8 @@ struct dalitzPairing {
   Partition<MyBarrelSelectedTracks> barrelTrackSelN = o2::aod::dqdalitzflags::isBarrelSelectedDal > 0 && o2::aod::track::signed1Pt < 0.f;  
 
   //Configurables
-  Configurable<std::string> fConfigTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
-  Configurable<std::string> fConfigPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
+  Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
   Configurable<bool> cfgQA{"cfgQA", true, "QA histograms"};
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
@@ -214,7 +244,7 @@ struct dalitzPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    InitPairing(context, fConfigTrackCuts, fConfigPairCuts, cfgQA); 
+    InitPairing(context, fConfigDalitzTrackCuts, fConfigDalitzPairCuts, cfgQA); 
     if (context.mOptions.get<bool>("processDummy")) return;
     fStatsList.setObject(statsList); 
     fOutputList.setObject(fHistMan->GetMainHistogramList());  
@@ -224,16 +254,24 @@ struct dalitzPairing {
   {
     dalitzmap.clear();
 
+    //auto start = high_resolution_clock::now();
     for (auto& collision : collisions) {
       auto groupedTracksP = barrelTrackSelP->sliceByCached(aod::track::collisionId, collision.globalIndex());
       auto groupedTracksN = barrelTrackSelN->sliceByCached(aod::track::collisionId, collision.globalIndex());
       runDalitzPairing<gkEventFillMap,gkTrackFillMap>(collision, groupedTracksP, groupedTracksN);
     }
+    //auto stop = high_resolution_clock::now();
+    //auto dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"dalitz track processing time "<<dur.count()<<std::endl;
     
+    //start = high_resolution_clock::now();
     //Fill dalitz bits
     for (auto& track : tracks) {
       dalitzbits(dalitzmap[track.globalIndex()]);
     } 
+    //stop = high_resolution_clock::now();
+    //dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"dalitz track filling time "<<dur.count()<<std::endl;
   }
  
   void processDummy(MyEvents&)
@@ -255,12 +293,12 @@ struct dalitzReducedPairing {
   Produces<o2::aod::DalitzBitsReduced> dalitzbits;
    
   Filter eventSel = o2::aod::dqdalitzflags::isReducedEventSelectedDal == 1;
-  Partition<MyBarrelSelectedReducedTracks> barrelReducedTrackSelP = o2::aod::dqdalitzflags::isReducedBarrelSelectedDal > 0 && o2::aod::reducedtrack::sign > 0.f;
-  Partition<MyBarrelSelectedReducedTracks> barrelReducedTrackSelN = o2::aod::dqdalitzflags::isReducedBarrelSelectedDal > 0 && o2::aod::reducedtrack::sign < 0.f; 
+  Partition<MyBarrelSelectedReducedTracks> barrelReducedTrackSelP = o2::aod::dqdalitzflags::isReducedBarrelSelectedDal > 0 && o2::aod::reducedtrack::sign > 0;
+  Partition<MyBarrelSelectedReducedTracks> barrelReducedTrackSelN = o2::aod::dqdalitzflags::isReducedBarrelSelectedDal > 0 && o2::aod::reducedtrack::sign < 0;
 
   //Configurables
-  Configurable<std::string> fConfigTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
-  Configurable<std::string> fConfigPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
+  Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
   Configurable<bool> cfgQA{"cfgQA", true, "QA histograms"};
   
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
@@ -269,25 +307,33 @@ struct dalitzReducedPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    InitPairing(context, fConfigTrackCuts, fConfigPairCuts, cfgQA); 
+    InitPairing(context, fConfigDalitzTrackCuts, fConfigDalitzPairCuts, cfgQA); 
     if (context.mOptions.get<bool>("processDummy")) return; 
     fStatsList.setObject(statsList);  
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
-  void processReducedTracks(soa::Filtered<soa::Join<MyReducedEvents, o2::aod::ReducedEventSelectedDal>> const& events, MyBarrelSelectedReducedTracks const& tracks)
+  void processReducedTracks(soa::Filtered<MyReducedEventsSelected> const& events, MyBarrelSelectedReducedTracks const& tracks)
   {
     dalitzmap.clear();
-    
-    for (auto& event : events) {
+    //auto start = high_resolution_clock::now();
+    for (auto& event : events) {     
       auto groupedTracksP = barrelReducedTrackSelP->sliceByCached(aod::reducedtrack::reducedeventId, event.globalIndex());
       auto groupedTracksN = barrelReducedTrackSelN->sliceByCached(aod::reducedtrack::reducedeventId, event.globalIndex());
       runDalitzPairing<gkReducedEventFillMap,gkReducedTrackFillMap>(event, groupedTracksP, groupedTracksN);
     }
+    //auto stop = high_resolution_clock::now();
+    //auto dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"dalitz track processing time "<<dur.count()<<std::endl;
     
+    
+    //start = high_resolution_clock::now();
     for (auto& track : tracks) {
       dalitzbits(dalitzmap[track.globalIndex()]);
     }
+    //stop = high_resolution_clock::now();
+    //dur = duration_cast<microseconds>(stop - start);
+    //std::cout<<"dalitz track filling time "<<dur.count()<<std::endl;
   }
   
   void processDummy(MyEvents&)
@@ -304,9 +350,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<dalitzTrackSelection>(cfgc),
-    adaptAnalysisTask<dalitzReducedTrackSelection>(cfgc),
-    adaptAnalysisTask<dalitzPairing>(cfgc),
-    adaptAnalysisTask<dalitzReducedPairing>(cfgc)    
+    //adaptAnalysisTask<dalitzReducedTrackSelection>(cfgc),
+    adaptAnalysisTask<dalitzPairing>(cfgc)//,
+    //adaptAnalysisTask<dalitzReducedPairing>(cfgc)    
   };
 }
 
@@ -359,7 +405,7 @@ void runTrackSelection(TEvent const& collisions, TTracks const& tracksBarrel)
             filterMap |= (uint8_t(1) << i);
           }
         }
-        if (filterMap) {// Fill event selection
+        if (filterMap) {// Event selected only when 2 dalitz candidates with common cut
           if (eventOneTrackSelected & filterMap) {
             eventmap[CollisionId] = 1;
           }
@@ -408,11 +454,11 @@ void runDalitzPairing(TEvent const& event, TTracks const& tracksP, TTracks const
           
         // Check if tracks were already tagged       
         bool b1 = dalitzmap[track1.globalIndex()] & (uint8_t(1) << icut);
-        bool b2 = dalitzmap[track2.globalIndex()] & (uint8_t(1) << icut);
         if(!b1) {
           track1Untagged |= (uint8_t(1) << icut);
           ((TH1I*) statsList->At(0))->Fill(icut);
         }
+        bool b2 = dalitzmap[track2.globalIndex()] & (uint8_t(1) << icut);
         if(!b2) {
           track2Untagged |= (uint8_t(1) << icut);
           ((TH1I*) statsList->At(0))->Fill(icut);
@@ -441,7 +487,7 @@ void runDalitzPairing(TEvent const& event, TTracks const& tracksP, TTracks const
           AnalysisCompositeCut pairCut = fPairCuts.at(icut);
           fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
         }
-      }
+      }  
     } 
       
   } //end of tracksP,N loop
@@ -453,13 +499,13 @@ void runDalitzPairing(TEvent const& event, TTracks const& tracksP, TTracks const
 ////// Initialization for track selection ///////
 /////////////////////////////////////////////////
 
-void InitTrackSelection(o2::framework::InitContext& context, std::string fConfigTrackCuts, std::string fConfigEventCuts) 
+void InitTrackSelection(o2::framework::InitContext& context, std::string fConfigDalitzTrackCuts, std::string fConfigEventCuts) 
 {
 
   if (context.mOptions.get<bool>("processDummy")) return;
 
   // Track cuts
-  TString cutNamesStr = (TString) fConfigTrackCuts.data();
+  TString cutNamesStr = (TString) fConfigDalitzTrackCuts.data();
   if (!cutNamesStr.IsNull()) {
     std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
     for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -481,13 +527,13 @@ void InitTrackSelection(o2::framework::InitContext& context, std::string fConfig
 /////// Initialization for track pairing ////////
 /////////////////////////////////////////////////
 
-void InitPairing(o2::framework::InitContext& context, std::string fConfigTrackCuts, std::string fConfigPairCuts, bool cfgQA) 
+void InitPairing(o2::framework::InitContext& context, std::string fConfigDalitzTrackCuts, std::string fConfigDalitzPairCuts, bool cfgQA) 
 {
   
   if (context.mOptions.get<bool>("processDummy")) return;
   
   // Barrel track cuts
-  TString cutNamesStr = (TString) fConfigTrackCuts.data();
+  TString cutNamesStr = (TString) fConfigDalitzTrackCuts.data();
   if (!cutNamesStr.IsNull()) {
     std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
     for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -496,7 +542,7 @@ void InitPairing(o2::framework::InitContext& context, std::string fConfigTrackCu
   }
     
   // Pair cuts
-  TString cutNamesPairStr = (TString) fConfigPairCuts.data();
+  TString cutNamesPairStr = (TString) fConfigDalitzPairCuts.data();
   if (!cutNamesPairStr.IsNull()) {
     std::unique_ptr<TObjArray> objArray(cutNamesPairStr.Tokenize(","));
     for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -514,6 +560,8 @@ void InitPairing(o2::framework::InitContext& context, std::string fConfigTrackCu
   // Create the histogram class names to be added to the histogram manager
   TString histClasses = "";
 
+  
+  nCuts = std::min(fTrackCuts.size(), fPairCuts.size());
   if (cfgQA) { 
     for (int icut = 0; icut < nCuts; icut++) {
       AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
@@ -528,9 +576,8 @@ void InitPairing(o2::framework::InitContext& context, std::string fConfigTrackCu
 
   if(fTrackCuts.size() != fPairCuts.size() ) {
     std::cout<<"WARNING: YOU NEED THE SAME NUMBER OF TRACK AND PAIR CUTS"<<std::endl;
-  }   
-  
-  nCuts = std::min(fTrackCuts.size(), fPairCuts.size());
+  } 
+
   fQA = cfgQA;
 }
 
@@ -569,7 +616,7 @@ void DefineHistograms(TString histClasses, o2::framework::InitContext& context)
   for (int icut = 0; icut < nCuts; icut++) {
     AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
     AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-    histTracks->GetXaxis()->SetBinLabel(icut, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
+    histTracks->GetXaxis()->SetBinLabel(icut+1, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
   }
   statsList->Add(histTracks);    
 }
