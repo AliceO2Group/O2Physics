@@ -72,9 +72,7 @@ struct ChJetTriggerQATask {
   HistogramRegistry spectra{
     "spectra",
     {
-      {"vertexZ",
-      "z vertex",
-      {HistType::kTH1F, {{400, -20., +20.}}}}, //
+      {"vertexZ","z vertex",{HistType::kTH1F, {{400, -20., +20.}}}}, //
       {"ptphiTrackInclGood",
        "pT vs phi inclusive good tracks",
        {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
