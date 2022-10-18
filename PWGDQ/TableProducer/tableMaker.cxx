@@ -66,6 +66,7 @@ using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, ao
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::DalitzBits>;
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;

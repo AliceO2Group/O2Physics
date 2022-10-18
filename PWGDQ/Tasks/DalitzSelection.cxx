@@ -26,9 +26,6 @@ using namespace std::chrono;
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MCSignal.h"
-#include "PWGDQ/Core/MCSignalLibrary.h"
-
 
 
 using namespace o2;
@@ -37,7 +34,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::soa;
 using std::array;
-
 
 namespace o2::aod
 {
@@ -342,8 +338,6 @@ struct dalitzReducedPairing {
 
   PROCESS_SWITCH(dalitzReducedPairing, processReducedTracks, "Run Dalitz selection on skimmed tables", false);
   PROCESS_SWITCH(dalitzReducedPairing, processDummy, "Do nothing", false);
-
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -580,8 +574,6 @@ void InitPairing(o2::framework::InitContext& context, std::string fConfigDalitzT
 
   fQA = cfgQA;
 }
-
-
 
 
 ////////////////////////////////////////////////
