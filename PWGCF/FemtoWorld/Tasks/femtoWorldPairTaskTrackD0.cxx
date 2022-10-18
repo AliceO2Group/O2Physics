@@ -104,7 +104,7 @@ struct femtoWorldPairTaskTrackD0 {
   /// Histogramming for particle 1
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 0> trackHistoPartOne;
 
-  //Histogram for D0/D0bar candidates
+  // Histogram for D0/D0bar candidates
   HistogramRegistry hfhfHistos{"hfhfHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // configurables for HF candidates
@@ -118,7 +118,7 @@ struct femtoWorldPairTaskTrackD0 {
   using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>;
   using hfCandidate = hfCandidates::iterator;
   // HF candidate partition
-  //Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
+  // Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
 
   /// Histogramming for Event
   FemtoWorldEventHisto eventHisto;
@@ -146,8 +146,6 @@ struct femtoWorldPairTaskTrackD0 {
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCP, float nsigmaTOFP) // from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -218,11 +216,11 @@ struct femtoWorldPairTaskTrackD0 {
     hfHistos.add("hPhi", ";#varphi (rad)", kTH1F, {{10, -TMath::TwoPi(), TMath::TwoPi()}});
     hfHistos.add("hDeltaPhi", ";#Delta #varphi (rad)", kTH1F, {{10, -TMath::TwoPi(), TMath::TwoPi()}});
   }
-  
+
   /// The function process takes a track and D0 meson
   void process(o2::aod::FemtoWorldCollision const& coll,
-                           o2::aod::FemtoWorldParticles const& parts,
-                           hfCandidate const& d0Cans)
+               o2::aod::FemtoWorldParticles const& parts,
+               hfCandidate const& d0Cans)
   {
 
     hfHistos.fill(HIST("hZvtx"), coll.posZ());
@@ -231,11 +229,11 @@ struct femtoWorldPairTaskTrackD0 {
     hfHistos.fill(HIST("hEta"), d0Cans.eta());
     hfHistos.fill(HIST("hPhi"), d0Cans.phi());
 
-    for(auto part : parts){
-        for(auto d0meson : d0Cans){
-          hfHistos.fill(HIST("hDeltaPhi", part.phi() - d0meson.phi()));
-        }
+    for (auto part : parts) {
+      for (auto d0meson : d0Cans) {
+        hfHistos.fill(HIST("hDeltaPhi", part.phi() - d0meson.phi()));
       }
+    }
   }
 };
 
