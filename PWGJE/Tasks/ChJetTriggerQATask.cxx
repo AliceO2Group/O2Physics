@@ -58,8 +58,8 @@ struct ChJetTriggerQATask {
   Configurable<float> cfgJetR{"cfgJetR", 0.4,
                               "jet resolution parameter"}; // jet cone radius
   Configurable<float> cfgJetPtMin{
-      "cfgJetPtMin", 0.05,
-      "minimum jet pT constituent cut"}; // minimum jet constituent pT
+    "cfgJetPtMin", 0.05,
+    "minimum jet pT constituent cut"}; // minimum jet constituent pT
   Configurable<int> bTriggerDecision{
     "bTriggerDecision", 0,
     "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
@@ -72,7 +72,7 @@ struct ChJetTriggerQATask {
   HistogramRegistry spectra{
     "spectra",
     {
-      {"vertexZ","z vertex",{HistType::kTH1F, {{400, -20., +20.}}}}, //
+      {"vertexZ", "z vertex", {HistType::kTH1F, {{400, -20., +20.}}}}, //
       {"ptphiTrackInclGood",
        "pT vs phi inclusive good tracks",
        {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
@@ -130,7 +130,8 @@ struct ChJetTriggerQATask {
     }};
 
   // TrackSelection globalTracks;
-  void init(o2::framework::InitContext&) {
+  void init(o2::framework::InitContext&)
+  {
 
     // globalTracks = getGlobalTrackSelection();
     // globalTracks.SetEtaRange(-cfgTPCVolume, cfgTPCVolume);
