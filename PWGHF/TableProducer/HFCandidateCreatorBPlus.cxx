@@ -23,7 +23,6 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 

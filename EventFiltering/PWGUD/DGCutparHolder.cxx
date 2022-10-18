@@ -33,10 +33,9 @@ void DGCutparHolder::SetNTracks(int MinNTracks, int MaxNTracks)
   mMinNTracks = MinNTracks;
   mMaxNTracks = MaxNTracks;
 }
-void DGCutparHolder::SetNetCharge(int MinNetCharge, int MaxNetCharge)
+void DGCutparHolder::SetNetCharges(std::vector<int> netCharges)
 {
-  mMinNetCharge = MinNetCharge;
-  mMaxNetCharge = MaxNetCharge;
+  mNetCharges = netCharges;
 }
 void DGCutparHolder::SetPidHypothesis(int pidHypo)
 {
@@ -84,8 +83,7 @@ bool DGCutparHolder::globalTracksOnly() const { return mGlobalTracksOnly; }
 float DGCutparHolder::minRgtrwTOF() const { return mMinRgtrwTOF; }
 int DGCutparHolder::minNTracks() const { return mMinNTracks; }
 int DGCutparHolder::maxNTracks() const { return mMaxNTracks; }
-int DGCutparHolder::minNetCharge() const { return mMinNetCharge; }
-int DGCutparHolder::maxNetCharge() const { return mMaxNetCharge; }
+std::vector<int> DGCutparHolder::netCharges() const { return mNetCharges; }
 int DGCutparHolder::pidHypothesis() const { return mPidHypo; }
 float DGCutparHolder::minPosz() const { return mMinVertexPosz; }
 float DGCutparHolder::maxPosz() const { return mMaxVertexPosz; }

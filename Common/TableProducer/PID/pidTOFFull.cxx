@@ -78,8 +78,11 @@ struct tofPidFull {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (doprocessWSlice == true && doprocessWoSlice == true) {
-      LOGF(fatal, "Cannot enable processWoSlice and processWSlice at the same time. Please choose one.");
+    if (doprocessWSlice == true && doprocessWoSlice == true && doprocessWoSliceDev == true) {
+      LOGF(fatal, "Cannot enable processWoSlice and processWSlice and doprocessWoSliceDev at the same time. Please choose one.");
+    }
+    if (doprocessWSlice == false && doprocessWoSlice == false && doprocessWoSliceDev == false) {
+      LOGF(fatal, "Cannot run without any of processWoSlice and processWSlice and doprocessWoSliceDev enabled. Please choose one.");
     }
 
     // Checking the tables are requested in the workflow and enabling them
@@ -293,6 +296,89 @@ struct tofPidFull {
     }
   }
   PROCESS_SWITCH(tofPidFull, processWoSlice, "Process without track slices", false);
+
+  void processWoSliceDev(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  {
+    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+
+#define doReserveTable(Particle)               \
+  if (pid##Particle.value == 1) {              \
+    tablePID##Particle.reserve(tracks.size()); \
+  }
+
+    doReserveTable(El);
+    doReserveTable(Mu);
+    doReserveTable(Pi);
+    doReserveTable(Ka);
+    doReserveTable(Pr);
+    doReserveTable(De);
+    doReserveTable(Tr);
+    doReserveTable(He);
+    doReserveTable(Al);
+
+#undef doReserveTable
+
+    int lastCollisionId = -1;          // Last collision ID analysed
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+
+#define doFillTableEmpty(Particle) \
+  if (pid##Particle.value == 1) {  \
+    tablePID##Particle(-999.f,     \
+                       -999.f);    \
+  }
+
+        doFillTableEmpty(El);
+        doFillTableEmpty(Mu);
+        doFillTableEmpty(Pi);
+        doFillTableEmpty(Ka);
+        doFillTableEmpty(Pr);
+        doFillTableEmpty(De);
+        doFillTableEmpty(Tr);
+        doFillTableEmpty(He);
+        doFillTableEmpty(Al);
+
+#undef doFillTableEmpty
+
+        continue;
+      }
+
+      if (enableTimeDependentResponse && (track.collisionId() != lastCollisionId)) { // Time dependent calib is enabled and this is a new collision
+        lastCollisionId = track.collisionId();                                       // Cache last collision ID
+        timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
+        LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
+        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+      }
+
+// Check and fill enabled tables
+#define doFillTable(Particle)                                                   \
+  if (pid##Particle.value == 1) {                                               \
+    tablePID##Particle(response##Particle.GetExpectedSigma(mRespParams, track), \
+                       response##Particle.GetSeparation(mRespParams, track));   \
+  }
+
+      doFillTable(El);
+      doFillTable(Mu);
+      doFillTable(Pi);
+      doFillTable(Ka);
+      doFillTable(Pr);
+      doFillTable(De);
+      doFillTable(Tr);
+      doFillTable(He);
+      doFillTable(Al);
+
+#undef doFillTable
+    }
+  }
+  PROCESS_SWITCH(tofPidFull, processWoSliceDev, "Process without track slices dev", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

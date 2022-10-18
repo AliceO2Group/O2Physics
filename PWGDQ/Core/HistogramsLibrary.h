@@ -168,6 +168,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "TPCnSigPiRandomized_pIN", "TPC n-#sigma(#pi) - randomized - vs pIN", false, 200, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaPiRandomized);
       hm->AddHistogram(histClass, "TPCnSigPrRandomized_pIN", "TPC n-#sigma(p) - randomized - vs pIN", false, 200, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaPrRandomized);
     }
+    if (subGroupStr.Contains("lowpiddedx")) {
+      hm->AddHistogram(histClass, "TPCdedx_lowpIN", "TPC dE/dx vs low pIN", false, 2000, 0.0, 10.0, VarManager::kPin, 200, 0.0, 200., VarManager::kTPCsignal);
+      hm->AddHistogram(histClass, "TPCnSigEle_lowpIN", "TPC n-#sigma(e) vs low pIN", false, 2000, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaEl);
+      hm->AddHistogram(histClass, "TOFbeta_lowpIN", "TOF #beta vs low pIN", false, 2000, 0.0, 20.0, VarManager::kPin, 120, 0.0, 1.2, VarManager::kTOFbeta);
+      hm->AddHistogram(histClass, "TOFnSigEle_lowpIN", "TOF n-#sigma(e) vs low pIN", false, 2000, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTOFnSigmaEl);
+    }
     if (subGroupStr.Contains("tofpid")) {
       hm->AddHistogram(histClass, "TOFbeta_pIN", "TOF #beta vs pIN", false, 200, 0.0, 20.0, VarManager::kPin, 120, 0.0, 1.2, VarManager::kTOFbeta);
       hm->AddHistogram(histClass, "TOFnSigEle_pIN", "TOF n-#sigma(e) vs pIN", false, 200, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTOFnSigmaEl);

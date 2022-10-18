@@ -21,7 +21,7 @@ o2physics_add_dpl_workflow(alice3-qa-singleparticle
 
 o2physics_add_dpl_workflow(alice3-lutmaker
                     SOURCES alice3-lutmaker.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework FairRoot::Base O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-pid-rich-qa

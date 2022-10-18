@@ -50,6 +50,7 @@ struct DGCandAnalyzer {
   // get a DGCutparHolder and DGAnaparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   MutableConfigurable<bool> verbose{"Verbose", {}, "Additional print outs"};
+  MutableConfigurable<int> candCaseSel{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   DGAnaparHolder anaPars = DGAnaparHolder();
   MutableConfigurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
@@ -67,7 +68,10 @@ struct DGCandAnalyzer {
       {"nIVMs", "#nIVMs", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
       {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 100.0}}}},
       {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 100.0}}}},
-      {"nSTwoTracks", "#nSTwoTracks", {HistType::kTH2F, {{100, -5., 5.}, {100, -5., 5.0}}}},
+      {"sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}}},
+      {"TOFsignal1", "#TOFsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 50000.0}}}},
+      {"TOFsignal2", "#TOFsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, 0., 50000.0}}}},
+      {"sig1VsSig2TOF", "#sig1VsSig2TOF", {HistType::kTH2F, {{100, 0., 50000.}, {100, 0., 50000.}}}},
       {"nSigmaTPCPtEl", "#nSigmaTPCPtEl", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
       {"nSigmaTPCPtPi", "#nSigmaTPCPtPi", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
       {"nSigmaTPCPtMu", "#nSigmaTPCPtMu", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
@@ -80,7 +84,7 @@ struct DGCandAnalyzer {
       {"nSigmaTOFPtPr", "#nSigmaTOFPtPr", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
     }};
 
-  void fillNSigmaHist(DGParticle ivm, UDTracksFull dgtracks, DGPIDSelector pidsel)
+  void fillSignalHists(DGParticle ivm, UDTracksFull dgtracks, DGPIDSelector pidsel)
   {
     // process only events with 2 tracks
     if (ivm.trkinds().size() != 2) {
@@ -92,17 +96,20 @@ struct DGCandAnalyzer {
 
     // fill histogram
     auto tr1 = dgtracks.rawIteratorAt(ivm.trkinds()[0]);
-    auto pid1 = anaPars.PIDs()[0];
     auto signalTPC1 = tr1.tpcSignal();
-    auto nSigma1 = pidsel.getTPCnSigma(tr1, pid1);
     auto tr2 = dgtracks.rawIteratorAt(ivm.trkinds()[1]);
     auto signalTPC2 = tr2.tpcSignal();
-    auto pid2 = anaPars.PIDs()[1];
-    auto nSigma2 = pidsel.getTPCnSigma(tr2, pid2);
 
     registry.get<TH2>(HIST("TPCsignal1"))->Fill(tr1.pt(), signalTPC1);
     registry.get<TH2>(HIST("TPCsignal2"))->Fill(tr2.pt(), signalTPC2);
-    registry.get<TH2>(HIST("nSTwoTracks"))->Fill(nSigma1, nSigma2);
+    registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
+
+    auto signalTOF1 = tr1.tofSignal();
+    auto signalTOF2 = tr2.tofSignal();
+
+    registry.get<TH2>(HIST("TOFsignal1"))->Fill(tr1.pt(), signalTOF1);
+    registry.get<TH2>(HIST("TOFsignal2"))->Fill(tr2.pt(), signalTOF2);
+    registry.get<TH2>(HIST("sig1VsSig2TOF"))->Fill(signalTOF1, signalTOF2);
   }
 
   void init(InitContext&)
@@ -116,6 +123,11 @@ struct DGCandAnalyzer {
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
+    registry.add("trackQC", "#trackQC", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+    registry.add("dcaXYDG", "#dcaXYDG", {HistType::kTH1F, {{400, -2., 2.}}});
+    registry.add("ptTrkdcaXYDG", "#ptTrkdcaXYDG", {HistType::kTH2F, {axispt, {100, -2., 2.}}});
+    registry.add("dcaZDG", "#dcaZDG", {HistType::kTH1F, {{1000, -5., 5.}}});
+    registry.add("ptTrkdcaZDG", "#ptTrkdcaZDG", {HistType::kTH2F, {axispt, {100, -5., 5.}}});
     registry.add("IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {axisIVM, axispt}});
     registry.add("IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {axisIVM, axispt}});
   }
@@ -123,18 +135,27 @@ struct DGCandAnalyzer {
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
   {
 
+    // skip unwanted cases
+    auto candCase = (dgcand.posX() == -1. && dgcand.posY() == 1. && dgcand.posZ() == -1.) ? -1 : 1;
+    if (candCaseSel < 0 && candCase >= 0) {
+      return;
+    } else if (candCaseSel > 0 && candCase < 0) {
+      return;
+    }
+
     // skip events with too few/many tracks
     if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
       return;
     }
 
     // skip events with out-of-range net charge
-    if (dgcand.netCharge() < diffCuts.minNetCharge() || dgcand.netCharge() > diffCuts.maxNetCharge()) {
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
       return;
     }
 
     // skip events with out-of-range rgtrwTOF
-    if (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF()) {
+    if (dgcand.rgtrwTOF() >= 0 && dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF()) {
       return;
     }
 
@@ -147,6 +168,15 @@ struct DGCandAnalyzer {
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = dgtracks.rawIteratorAt(ind);
+        registry.get<TH1>(HIST("trackQC"))->Fill(0., track.hasITS() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasTPC() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTRD() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTOF() * 1.);
+        registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
+        registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
+        registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
+        registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
+
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 
         // fill nSigma histograms
@@ -163,7 +193,7 @@ struct DGCandAnalyzer {
           registry.get<TH2>(HIST("nSigmaTOFPtPr"))->Fill(track.pt(), track.tofNSigmaPr());
         }
       }
-      fillNSigmaHist(ivm, dgtracks, pidsel);
+      fillSignalHists(ivm, dgtracks, pidsel);
     }
   }
 };
