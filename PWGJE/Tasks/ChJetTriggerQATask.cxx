@@ -53,7 +53,6 @@ struct ChJetTriggerQATask {
 
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
                                    "Accepted z-vertex range"};
-
   Configurable<double> cfgTPCVolume{"cfgTPCVolume", 0.9,
                                     "Full eta range"}; // eta range of TPC
   Configurable<double> cfgJetR{"cfgJetR", 0.4,
