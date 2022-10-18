@@ -46,6 +46,12 @@ class TrackSelection
     kNCuts
   };
 
+  enum GlobalTrackRun3ITSMatching {
+    Run3ITSibAny,
+    Run3ITSallAny,
+    Run3ITSall7Layers
+  };
+
   static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.

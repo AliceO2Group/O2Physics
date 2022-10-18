@@ -15,6 +15,7 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
+/// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -27,12 +28,13 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
-#include "DetectorsVertexing/PVertexer.h"     // for PV refit
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-#include "CCDB/BasicCCDBManager.h"            // for PV refit
-#include "DataFormatsParameters/GRPObject.h"  // for PV refit
-#include "DetectorsBase/Propagator.h"         // for PV refit
-#include "DetectorsBase/GeometryManager.h"    // for PV refit
+#include "DetectorsVertexing/PVertexer.h"      // for PV refit
+#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
+#include "CCDB/BasicCCDBManager.h"             // for PV refit
+#include "DataFormatsParameters/GRPObject.h"   // for PV refit
+#include "DetectorsBase/Propagator.h"          // for PV refit
+#include "DetectorsBase/GeometryManager.h"     // for PV refit
+#include "DataFormatsParameters/GRPMagField.h" // for PV refit
 
 #include <algorithm>
 
@@ -107,12 +109,14 @@ struct HfTagSelCollisions {
   Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
-  int triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+  int triggerClass;
 
   HistogramRegistry registry{"registry", {{"hNContributors", "Number of vertex contributors;entries", {HistType::kTH1F, {{20001, -0.5, 20000.5}}}}}};
 
   void init(InitContext const&)
   {
+    triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+
     const int nBinsEvents = 2 + EventRejection::NEventRejection;
     std::string labels[nBinsEvents];
     labels[0] = "processed";
@@ -128,6 +132,10 @@ struct HfTagSelCollisions {
     for (int iBin = 0; iBin < nBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
+    // primary vertex histograms
+    registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
+    registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
+    registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -20., 20.}}});
   }
 
   /// Primary-vertex selection
@@ -203,6 +211,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
@@ -227,6 +238,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
@@ -245,6 +259,7 @@ struct HfTagSelTracks {
   Configurable<bool> debug{"debug", true, "debug mode"};
   Configurable<double> bz{"bz", 5., "bz field"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
@@ -268,6 +283,10 @@ struct HfTagSelTracks {
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -279,10 +298,6 @@ struct HfTagSelTracks {
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbPathLut = "GLO/Param/MatLUT";
-  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
-  const char* ccdbPathGrp = "GLO/GRP/GRP";
-  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -404,14 +419,27 @@ struct HfTagSelTracks {
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+
+      if (isRun2) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+        } else {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
       }
+
       mRunNumber = bc.runNumber();
     }
 
@@ -815,6 +843,7 @@ struct HfTrackIndexSkimsCreator {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<int> do3prong{"do3prong", 0, "do 3 prong"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // preselection parameters
   Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
@@ -838,8 +867,8 @@ struct HfTrackIndexSkimsCreator {
   Configurable<std::vector<double>> pTBinsDPlusToPiKPi{"pTBinsDPlusToPiKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for D+->piKpi pT-depentend cuts"};
   Configurable<LabeledArray<double>> cutsDPlusToPiKPi{"cutsDPlusToPiKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "D+->piKpi selections per pT bin"};
   // Ds+ cuts
-  Configurable<std::vector<double>> pTBinsDsToPiKK{"pTBinsDsToPiKK", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Ds+->KKpi pT-depentend cuts"};
-  Configurable<LabeledArray<double>> cutsDsToPiKK{"cutsDsToPiKK", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Ds+->KKpi selections per pT bin"};
+  Configurable<std::vector<double>> pTBinsDsToKKPi{"pTBinsDsToKKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Ds+->KKPi pT-depentend cuts"};
+  Configurable<LabeledArray<double>> cutsDsToKKPi{"cutsDsToKKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Ds+->KKPi selections per pT bin"};
   // Lc+ cuts
   Configurable<std::vector<double>> pTBinsLcToPKPi{"pTBinsLcToPKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Lc->pKpi pT-depentend cuts"};
   Configurable<LabeledArray<double>> cutsLcToPKPi{"cutsLcToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Lc->pKpi selections per pT bin"};
@@ -850,14 +879,14 @@ struct HfTrackIndexSkimsCreator {
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbPathLut = "GLO/Param/MatLUT";
-  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
-  const char* ccdbPathGrp = "GLO/GRP/GRP";
-  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -881,7 +910,7 @@ struct HfTrackIndexSkimsCreator {
      {"hNCand3ProngVsNTracks", "3-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2F, {{2500, 0., 25000.}, {5000, 0., 500000.}}}},
      {"hMassDPlusToPiKPi", "D^{#plus} candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      {"hMassLcToPKPi", "#Lambda_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hMassDsToPiKK", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassDsToKKPi", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      {"hMassXicToPKPi", "#Xi_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
   static const int n2ProngDecays = hf_cand_prong2::DecayType::N2ProngDecays; // number of 2-prong hadron types
@@ -915,7 +944,7 @@ struct HfTrackIndexSkimsCreator {
     arrMass3Prong[hf_cand_prong3::DecayType::LcToPKPi] = array{array{massProton, massK, massPi},
                                                                array{massPi, massK, massProton}};
 
-    arrMass3Prong[hf_cand_prong3::DecayType::DsToPiKK] = array{array{massK, massK, massPi},
+    arrMass3Prong[hf_cand_prong3::DecayType::DsToKKPi] = array{array{massK, massK, massPi},
                                                                array{massPi, massK, massK}};
 
     arrMass3Prong[hf_cand_prong3::DecayType::XicToPKPi] = array{array{massProton, massK, massPi},
@@ -925,8 +954,8 @@ struct HfTrackIndexSkimsCreator {
     cut2Prong = {cutsD0ToPiK, cutsJpsiToEE, cutsJpsiToMuMu};
     pTBins2Prong = {pTBinsD0ToPiK, pTBinsJpsiToEE, pTBinsJpsiToMuMu};
     // cuts for 3-prong decays retrieved by json. the order must be then one in hf_cand_prong3::DecayType
-    cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToPiKK, cutsXicToPKPi};
-    pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToPiKK, pTBinsXicToPKPi};
+    cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToKKPi, cutsXicToPKPi};
+    pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToKKPi, pTBinsXicToPKPi};
 
     // needed for PV refitting
     if (doPvRefit) {
@@ -1254,14 +1283,27 @@ struct HfTrackIndexSkimsCreator {
     // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+
+      if (isRun2) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+        } else {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
       }
+
       mRunNumber = bc.runNumber();
     }
 
@@ -1836,8 +1878,8 @@ struct HfTrackIndexSkimsCreator {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
                         registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
@@ -1850,8 +1892,8 @@ struct HfTrackIndexSkimsCreator {
                   if (whichHypo3Prong[iDecay3P] >= 2) {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
@@ -2039,8 +2081,8 @@ struct HfTrackIndexSkimsCreator {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
                         registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
@@ -2053,8 +2095,8 @@ struct HfTrackIndexSkimsCreator {
                   if (whichHypo3Prong[iDecay3P] >= 2) {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
-                      case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
+                      case hf_cand_prong3::DecayType::DsToKKPi:
+                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
                         registry.fill(HIST("hMassLcToPKPi"), mass3Prong);

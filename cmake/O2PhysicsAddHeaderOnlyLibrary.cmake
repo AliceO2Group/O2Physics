@@ -35,11 +35,11 @@ function(o2physics_add_header_only_library baseTargetName)
 
   # define the target and its O2:: alias
   add_library(${target} INTERFACE)
-  add_library(O2::${baseTargetName} ALIAS ${target})
+  add_library(O2Physics::${baseTargetName} ALIAS ${target})
 
-  # set the export name so that packages using O2 can reference the target as
-  # O2::${baseTargetName} as well (assuming the export is installed with
-  # namespace O2::)
+  # set the export name so that packages using O2Physics can reference the target as
+  # O2Physics::${baseTargetName} as well (assuming the export is installed with
+  # namespace O2Physics::)
   set_property(TARGET ${target} PROPERTY EXPORT_NAME ${baseTargetName})
 
   if(NOT A_INCLUDE_DIRECTORIES)
@@ -48,20 +48,20 @@ function(o2physics_add_header_only_library baseTargetName)
       set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${dir}>)
     else()
       set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
+      list(APPEND A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
     endif()
   endif()
 
   target_include_directories(
     ${target}
-    INTERFACE $<BUILD_INTERFACE:${A_INCLUDE_DIRECTORIES}>)
+    INTERFACE $<BUILD_INTERFACE:${A_INCLUDE_DIRECTORIES}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
   if(A_INTERFACE_LINK_LIBRARIES)
     target_link_libraries(${target} INTERFACE ${A_INTERFACE_LINK_LIBRARIES})
   endif()
-  install(DIRECTORY ${A_INCLUDE_DIRECTORIES}/
-          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
   install(TARGETS ${target}
-          EXPORT O2Targets
+          EXPORT O2PhysicsTargets
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endfunction()

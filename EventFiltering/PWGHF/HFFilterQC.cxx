@@ -24,45 +24,15 @@
 #include "Framework/runDataProcessing.h"
 
 #include "EventFiltering/filterTables.h"
+#include "HFFilterHelpers.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::filtering;
-
-namespace
-{
-
-enum HfTriggers {
-  kHighPt = 0,
-  kBeauty,
-  kFemto,
-  kDoubleCharm,
-  kNtriggersHF
-};
-
-enum particles {
-  kD0 = 0,
-  kDplus,
-  kDs,
-  kLc,
-  kXic,
-  kNParticles
-};
-
-static const std::array<std::string, kNtriggersHF> HfTriggerNames{"HighPt", "Beauty", "Femto", "DoubleCharm"};
-static const std::array<std::string, kNParticles> particleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
-static const std::array<int, kNParticles> pdgCodes{421, 411, 431, 4122, 4232};
-static const std::tuple pdgDaughters{
-  std::array{-321, 211},        // D0
-  std::array{-321, 211, 211},   // Dplus
-  std::array{321, -321, 211},   // Ds
-  std::array{2212, -321, 211},  // Lc
-  std::array{2212, -321, 211}}; // Xic
-
-}; // namespace
+using namespace o2::aod::hffilters;
+using namespace filtering;
 
 struct HfFilterQc { // Main struct for HF trigger QC
 
@@ -74,18 +44,18 @@ struct HfFilterQc { // Main struct for HF trigger QC
   void init(o2::framework::InitContext&)
   {
     // Initialize the histograms
-    hPartPerEvent[0] = registry.add<TH2>("hPartPerEventAll", "All events;;number of particles", HistType::kTH2F, {{kNParticles, -0.5, kNParticles - 0.5}, {11, -0.5, 10.5}});
-    hPartPerEvent[1] = registry.add<TH2>("hPartPerEventTriggered", "HF triggered events;;number of particles", HistType::kTH2F, {{kNParticles, -0.5, kNParticles - 0.5}, {11, -0.5, 10.5}});
-    hPtDistr[0] = registry.add<TH2>("hPtDistrAll", "All events;;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{kNParticles, -0.5, kNParticles - 0.5}, {50, -0.5, 10.5}});
-    hPtDistr[1] = registry.add<TH2>("hPtDistrTriggered", "HF triggered events;;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{kNParticles, -0.5, kNParticles - 0.5}, {11, -0.5, 10.5}});
+    hPartPerEvent[0] = registry.add<TH2>("hPartPerEventAll", "All events;;number of particles", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
+    hPartPerEvent[1] = registry.add<TH2>("hPartPerEventTriggered", "HF triggered events;;number of particles", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
+    hPtDistr[0] = registry.add<TH2>("hPtDistrAll", "All events;;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {50, -0.5, 10.5}});
+    hPtDistr[1] = registry.add<TH2>("hPtDistrTriggered", "HF triggered events;;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
     for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
-      hPartPerEvent[iTrig + 2] = registry.add<TH2>(Form("hPartPerEvent%s", HfTriggerNames[iTrig].data()), Form("%s Filtered events;;number of particles", HfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNParticles, -0.5, kNParticles - 0.5}, {11, -0.5, 10.5}});
-      hPtDistr[iTrig + 2] = registry.add<TH2>(Form("hPtDistr%s", HfTriggerNames[iTrig].data()), Form("%s Filtered events;;#it{p}_{T} (GeV/#it{c})", HfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNParticles, -0.5, kNParticles - 0.5}, {11, -0.5, 10.5}});
+      hPartPerEvent[iTrig + 2] = registry.add<TH2>(Form("hPartPerEvent%s", HfTriggerNames[iTrig].data()), Form("%s Filtered events;;number of particles", HfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
+      hPtDistr[iTrig + 2] = registry.add<TH2>(Form("hPtDistr%s", HfTriggerNames[iTrig].data()), Form("%s Filtered events;;#it{p}_{T} (GeV/#it{c})", HfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
     }
     for (auto iTrig = 0; iTrig < kNtriggersHF + 1; ++iTrig) {
-      for (auto iBin = 0; iBin < kNParticles; ++iBin) {
-        hPartPerEvent[iTrig]->GetXaxis()->SetBinLabel(iBin + 1, particleNames[iBin].data());
-        hPtDistr[iTrig]->GetXaxis()->SetBinLabel(iBin + 1, particleNames[iBin].data());
+      for (auto iBin = 0; iBin < kNCharmParticles; ++iBin) {
+        hPartPerEvent[iTrig]->GetXaxis()->SetBinLabel(iBin + 1, charmParticleNames[iBin].data());
+        hPtDistr[iTrig]->GetXaxis()->SetBinLabel(iBin + 1, charmParticleNames[iBin].data());
       }
     }
   }
@@ -110,7 +80,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
       return;
     } else {
       int8_t sign = 0;
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodes[I], std::get<I>(pdgDau), true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodesCharm[I], std::get<I>(pdgDau), true, &sign, 2)) {
         nParticles[I]++;
         hPtDistr[0]->Fill(static_cast<double>(I), static_cast<double>(particle.pt()));
         for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
@@ -128,21 +98,26 @@ struct HfFilterQc { // Main struct for HF trigger QC
   void process(HfFilter const& filterDecision,
                McParticles const& particlesMC)
   {
-    bool hasHighPt = filterDecision.hasHfHighPt();
-    bool hasBeauty = filterDecision.hasHfBeauty();
-    bool hasFemto = filterDecision.hasHfFemto();
-    bool hasDoubleCharm = filterDecision.hasHfDoubleCharm();
-    bool isTriggered = hasHighPt || hasBeauty || hasFemto || hasDoubleCharm;
-    auto triggerDecision = std::array{isTriggered, hasHighPt, hasBeauty, hasFemto, hasDoubleCharm};
+    bool hasHighPt2P = filterDecision.hasHfHighPt2P();
+    bool hasHighPt3P = filterDecision.hasHfHighPt3P();
+    bool hasBeauty3P = filterDecision.hasHfBeauty3P();
+    bool hasBeauty4P = filterDecision.hasHfBeauty4P();
+    bool hasFemto2P = filterDecision.hasHfFemto2P();
+    bool hasFemto3P = filterDecision.hasHfFemto3P();
+    bool hasDoubleCharm2P = filterDecision.hasHfDoubleCharm2P();
+    bool hasDoubleCharm3P = filterDecision.hasHfDoubleCharm3P();
+    bool hasDoubleCharmMix = filterDecision.hasHfDoubleCharmMix();
+    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix;
+    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix};
 
-    std::array<int, kNParticles> nPart{0};
+    std::array<int, kNCharmParticles> nPart{0};
     // Loop over the MC particles
     for (auto const& particle : particlesMC) {
       // Check if the particle is of interest
-      checkParticleDecay(pdgDaughters, particlesMC, particle, nPart, triggerDecision);
+      checkParticleDecay(pdgCharmDaughters, particlesMC, particle, nPart, triggerDecision);
     }
 
-    for (auto iPart = 0; iPart < kNParticles; ++iPart) {
+    for (auto iPart = 0; iPart < kNCharmParticles; ++iPart) {
       hPartPerEvent[0]->Fill(iPart, nPart[iPart]);
       for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
         if (triggerDecision[iTrig]) {

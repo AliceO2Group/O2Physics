@@ -16,8 +16,7 @@
 ///           DiffCuts.mMinNBCs(7)
 ///           DiffCuts.mMinNTracks(0)
 ///           DiffCuts.mMaxNTracks(10000)
-///           DiffCuts.mMinNetCharge(0)
-///           DiffCuts.mMaxNetCharge(0)
+///           DiffCuts.mNetCharges({0})
 ///           DiffCuts.mPidHypo(211)
 ///           DiffCuts.mMinPosz(-1000.)
 ///           DiffCuts.mMaxPosz(1000.)
@@ -65,6 +64,7 @@ struct DiffQA {
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
   Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
+  Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -105,12 +105,12 @@ struct DiffQA {
       {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
       {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{120, -6., 6.}, {1000, 0., 1000.}}}},
       {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
       {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
       {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{120, -6., 6.0}, {1000, 0., 1000.}}}},
       {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
       {"netChargeDG", "#netChargeDG", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
       {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
@@ -149,7 +149,7 @@ struct DiffQA {
       // This is used to efficiently check whether a given BC is contained in one of these ranges
       abcrs.reset();
       LOGF(debug, "<DiffQA> size of ambiguous tracks table %i", ambtracks.size());
-      for (auto ambtrack : ambtracks) {
+      for (auto const& ambtrack : ambtracks) {
         auto bcfirst = ambtrack.bc().rawIteratorAt(0);
         auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
         abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
@@ -166,7 +166,7 @@ struct DiffQA {
       // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
       afbcrs.reset();
       LOGF(debug, "<DiffQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
-      for (auto ambfwdtrack : ambfwdtracks) {
+      for (auto const& ambfwdtrack : ambfwdtracks) {
         auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
         auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
         afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
@@ -176,10 +176,10 @@ struct DiffQA {
   }
 
   void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtarcks,
-               aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+               TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
+               aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
                aod::Zdcs& zdcs, aod::Calos& calos,
-               aod::V0s& v0s, aod::Cascades& cascades)
+               aod::V0s const& v0s, aod::Cascades const& cascades)
   {
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
     bool isDGcandidate = true;
@@ -202,7 +202,7 @@ struct DiffQA {
     for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
       auto bcSlice = compatibleBCs(collision, NDtcoll, bct0s, 0);
       isDGcandidate = true;
-      for (auto& bc : bcSlice) {
+      for (auto const& bc : bcSlice) {
         isDGcandidate &= cleanFIT(bc, diffCuts.FITAmpLimits());
       }
       registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
@@ -210,11 +210,11 @@ struct DiffQA {
 
     // number of vertex tracks with TOF hit
     float rgtrwTOF = 0.;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       // update eta vs pt histogram
       registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
       // update dEdx histograms
-      registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
+      registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.p() * track.sign(), track.tpcSignal());
       if (track.tpcSignal() > maxdEdxTPC) {
         maxdEdxTPC = track.tpcSignal();
         LOGF(info, "<DiffQA> New maxdEdx TPC %f", maxdEdxTPC);
@@ -254,18 +254,24 @@ struct DiffQA {
     // get BCrange to test for FIT signals
     auto bcSlice = compatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
 
-    // no FIT signal in bcSlice
-    for (auto& bc : bcSlice) {
-      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+    // no FIT signal in bcSlice / collision
+    if (doCleanFITBC) {
+      for (auto const& bc : bcSlice) {
+        if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+          isDGcandidate = false;
+          break;
+        }
+      }
+    } else {
+      if (!cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
-        break;
       }
     }
     registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
 
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (!cleanZDC(bc, zdcs, lims)) {
         isDGcandidate = false;
         break;
@@ -274,7 +280,7 @@ struct DiffQA {
     registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
 
     // no Calo signal in bcSlice
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (!cleanCalo(bc, calos, lims)) {
         isDGcandidate = false;
         break;
@@ -297,7 +303,7 @@ struct DiffQA {
     // no global tracks which are no vtx tracks
     bool globalAndVtx = isDGcandidate;
     bool vtxAndGlobal = isDGcandidate;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         globalAndVtx = false;
       }
@@ -314,7 +320,7 @@ struct DiffQA {
 
     // check a given bc for possible ambiguous Tracks
     auto noAmbTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
         noAmbTracks = false;
         break;
@@ -324,7 +330,7 @@ struct DiffQA {
 
     // check a given bc for possible ambiguous FwdTracks
     auto noAmbFwdTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (afbcrs.isInRange(bc.globalIndex())) {
         noAmbFwdTracks = false;
         break;
@@ -345,6 +351,7 @@ struct DiffQA {
     // net charge and invariant mass
     bool goodetas = true;
     bool goodpts = true;
+    bool goodnchs = true;
     auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
@@ -357,7 +364,7 @@ struct DiffQA {
       }
 
       // check also pt and eta of tracks
-      for (auto& track : tracks) {
+      for (auto const& track : tracks) {
         // update histogram rejectedTracks
         if (!track.isPVContributor()) {
           registry.get<TH1>(HIST("rejectedTracks"))->Fill(0., 1.);
@@ -396,9 +403,12 @@ struct DiffQA {
     registry.get<TH1>(HIST("Stat"))->Fill(14., isDGcandidate * 1.);
     isDGcandidate &= goodetas;
     registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
+      goodnchs = false;
+    }
+    isDGcandidate &= goodnchs;
     registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(17., isDGcandidate * 1.);
     isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
     registry.get<TH1>(HIST("Stat"))->Fill(18., isDGcandidate * 1.);
@@ -414,10 +424,10 @@ struct DiffQA {
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
 
       // fill dEdx of DG event tracks
-      for (auto& track : tracks) {
+      for (auto const& track : tracks) {
         if (track.isPVContributor()) {
           LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
-          registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.pt(), track.tpcSignal());
+          registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.p() * track.sign(), track.tpcSignal());
           registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
           registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           if (track.hasTOF()) {

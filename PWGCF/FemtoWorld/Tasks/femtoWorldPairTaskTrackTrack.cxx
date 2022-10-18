@@ -191,7 +191,6 @@ struct femtoWorldPairTaskTrackTrack {
   // PID
   bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
   {
-    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
     if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
       return true;
     if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaK) < 1.0)
@@ -204,7 +203,6 @@ struct femtoWorldPairTaskTrackTrack {
 
   bool IsKaonTOFNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
   {
-    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
     if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
       return true;
     if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaK) < 1.5)
@@ -213,81 +211,6 @@ struct femtoWorldPairTaskTrackTrack {
       return true;
     return false;
   }
-
-  /*
-    void processSameEventPhiCand(o2::aod::FemtoWorldCollision& col,
-                          o2::aod::FemtoWorldParticlesMerged& parts){
-
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-      auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-      auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-
-      const auto& magFieldTesla = col.magField();
-        /// Now build the combinations
-      for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-        if ((p1.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-            continue;
-          }
-
-        } else if ((p1.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
-            continue;
-          }
-        }
-        if ((p2.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-            continue;
-          }
-
-        } else if ((p2.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
-            continue;
-          }
-        }
-        if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
-            continue;
-          }
-        }
-        // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-        float phiPx = p1.px() + p2.px();
-        float phiPy = p1.py() + p2.py();
-        float phiPz = p1.pz() + p2.pz();
-
-        TLorentzVector part1Vec;
-        TLorentzVector part2Vec;
-        float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-        float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
-        TLorentzVector sumVec(part1Vec);
-        sumVec += part2Vec;
-
-        part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
-        part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
-
-        //float phiEta = p1.eta() + p2.eta();
-        //float phiPhi = p1.phi() + p2.phi();
-        float phiEta = sumVec.Eta();
-        float phiPhi = sumVec.Phi();
-
-         outputPhiCan(//outputCollision.lastIndex(),
-                    phiPx,
-                    phiPy,
-                    phiPz,
-                    phiEta,
-                    phiPhi);
-        tmpIDtrack.push_back(p1.globalIndex());
-        std::cout<< "phi przeszło" << std::endl;
-        //Partition<aod::FemtoWorldPhiCandidates> Phiparts = (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);
-        //sameEventCont.setPair(p1, phi multCol);
-      }
-
-    }
-    PROCESS_SWITCH(femtoWorldPairTaskTrackTrack, processSameEventPhiCand, "Enable processing same event and filling phi candidates", true);*/
 
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...

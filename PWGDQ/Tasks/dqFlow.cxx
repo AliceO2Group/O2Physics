@@ -126,7 +126,7 @@ struct AnalysisQvector {
 
   // define global variables for generic framework
   GFW* fGFW = new GFW();
-  std::vector<GFW::CorrConfig> corrconfigs;
+  //std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
 
   // Initialize CCDB, efficiencies and acceptances from CCDB, histograms, GFW, FlowContainer
@@ -146,10 +146,6 @@ struct AnalysisQvector {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(fConfigNoLaterThan.value);
-    auto histCCDB = ccdb->get<TH1F>(fConfigCCDBPath.value);
-    if (!histCCDB) {
-      LOGF(fatal, "CCDB histogram not found");
-    }
 
     VarManager::SetDefaultVarNames();
 
@@ -190,11 +186,11 @@ struct AnalysisQvector {
     fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit, fConfigCutEta, 1, 1);
     fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta, fConfigCutEta, 1, 2);
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
   }
 
   // TODO: make available the flowcontainer output (add a dictionary somewhere...)
@@ -289,36 +285,41 @@ struct AnalysisQvector {
     //      FillFC(corrconfigs.at(l_ind), collision.centRun2V0M(), l_Random, fillFlag, DQEventFlag);
     //    };
 
-    // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
-    GFWCumulant gfwCumN = fGFW->GetCumulant(0);
-    GFWCumulant gfwCumP = fGFW->GetCumulant(1);
-    GFWCumulant gfwCum = fGFW->GetCumulant(2);
+    int nentriesN = 0.0;
+    int nentriesP = 0.0;
+    int nentriesFull = 0.0;
+    TComplex Q2vecN;
+    TComplex Q2vecP;
+    TComplex Q2vecFull;
+    TComplex Q3vecN;
+    TComplex Q3vecP;
+    TComplex Q3vecFull;
 
-    // Get the multiplicity of the event in this region
-    int nentriesN = gfwCumN.GetN();
-    int nentriesP = gfwCumP.GetN();
-    int nentries = gfwCum.GetN();
+    if (fGFW && (tracks1.size() > 0)) {
+      // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
+      GFWCumulant gfwCumN = fGFW->GetCumulant(0);
+      GFWCumulant gfwCumP = fGFW->GetCumulant(1);
+      GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
 
-    // Get the Q vector for selected harmonic, power (for minPt=0)
-    TComplex Q2vecN = gfwCumN.Vec(2, fConfigNPow);
-    TComplex Q2vecP = gfwCumP.Vec(2, fConfigNPow);
-    TComplex Q2vec = gfwCum.Vec(2, fConfigNPow);
-    TComplex Q3vecN = gfwCumN.Vec(3, fConfigNPow);
-    TComplex Q3vecP = gfwCumP.Vec(3, fConfigNPow);
-    TComplex Q3vec = gfwCum.Vec(3, fConfigNPow);
+      // and the multiplicity of the event in each region
+      nentriesN = gfwCumN.GetN();
+      nentriesP = gfwCumP.GetN();
+      nentriesFull = gfwCumFull.GetN();
 
-    // TODO: move this part to later analysis development
-    // compute the resolution from Q vectors estimated with different eta gaps
-    //    Double_t resGap = 0.0;
-    //    if (nentriesN > 0 && nentriesP > 0) {
-    //      resGap = (QvecP.Re() * QvecN.Re() + QvecP.Im() * QvecN.Im()) / (nentriesN * nentriesP);
-    //    }
+      // Get the Q vector for selected harmonic, power (for minPt=0)
+      Q2vecN = gfwCumN.Vec(2, fConfigNPow);
+      Q2vecP = gfwCumP.Vec(2, fConfigNPow);
+      Q2vecFull = gfwCumFull.Vec(2, fConfigNPow);
+      Q3vecN = gfwCumN.Vec(3, fConfigNPow);
+      Q3vecP = gfwCumP.Vec(3, fConfigNPow);
+      Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
+    }
 
     // Fill the VarManager::fgValues with the Q vector quantities
-    VarManager::FillQVectorFromGFW(collision, Q2vec, Q2vecN, Q2vecP, Q3vec, Q3vecN, Q3vecP, nentries, nentriesN, nentriesP);
+    VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
 
     if (fConfigQA) {
-      if (nentriesN * nentriesP * nentries != 0) {
+      if ((tracks1.size() > 0) && (nentriesFull * nentriesN * nentriesP != 0.0)) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
         if (fEventCut->IsSelected(VarManager::fgValues)) {
           fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
@@ -333,7 +334,7 @@ struct AnalysisQvector {
   }
 
   // Process to fill Q vector in a reduced event table for barrel/muon tracks flow related analyses
-  void processQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
@@ -344,7 +345,7 @@ struct AnalysisQvector {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisQvector, processQvector, "Run q-vector task", false);
+  PROCESS_SWITCH(AnalysisQvector, processBarrelQvector, "Run q-vector task on barrel tracks", false);
   PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function", false);
 };
 

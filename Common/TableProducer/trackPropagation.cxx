@@ -68,6 +68,7 @@ struct TrackPropagation {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -109,9 +110,9 @@ struct TrackPropagation {
   }
 
   template <typename TTrack, typename TTrackPar>
-  void FillTracksPar(TTrack& track, TTrackPar& trackPar)
+  void FillTracksPar(TTrack& track, aod::track::TrackTypeEnum trackType, TTrackPar& trackPar)
   {
-    tracksParPropagated(track.collisionId(), track.trackType(), trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
+    tracksParPropagated(track.collisionId(), trackType, trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
     tracksParExtensionPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
   }
 
@@ -127,17 +128,19 @@ struct TrackPropagation {
     for (auto& track : tracks) {
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
+      aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       auto trackPar = getTrackPar(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
         } else {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
         }
+        trackType = aod::track::Track;
       }
-      FillTracksPar(track, trackPar);
+      FillTracksPar(track, trackType, trackPar);
       if (fillTracksDCA) {
         tracksDCA(dcaInfo[0], dcaInfo[1]);
       }
@@ -158,8 +161,9 @@ struct TrackPropagation {
     for (auto& track : tracks) {
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
+      aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
@@ -170,8 +174,9 @@ struct TrackPropagation {
           vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         }
+        trackType = aod::track::Track;
       }
-      FillTracksPar(track, trackParCov);
+      FillTracksPar(track, trackType, trackParCov);
       if (fillTracksDCA) {
         tracksDCA(dcaInfoCov.getY(), dcaInfoCov.getZ());
       }

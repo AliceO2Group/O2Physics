@@ -13,11 +13,12 @@ add_subdirectory(PID)
 
 o2physics_add_dpl_workflow(trackextension
                     SOURCES trackextension.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework 
-                                          O2Physics::AnalysisCore 
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                                          O2Physics::AnalysisCore
                                           O2::ReconstructionDataFormats
                                           O2::DetectorsBase
                                           O2::DetectorsCommonDataFormats
+                                          O2Physics::DataModel
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(trackselection
@@ -53,7 +54,7 @@ o2physics_add_dpl_workflow(weak-decay-indices
 o2physics_add_dpl_workflow(ft0-corrected-table
                     SOURCES ft0CorrectedTable.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore  O2Physics::AnalysisCCDB O2::DetectorsBase O2::CCDB O2::CommonConstants
-		            COMPONENT_NAME Analysis)
+                COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-propagation
                     SOURCES trackPropagation.cxx
@@ -64,13 +65,22 @@ o2physics_add_dpl_workflow(mc-converter
                     SOURCES mcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
                     COMPONENT_NAME Analysis)
-		    
+
 o2physics_add_dpl_workflow(fdd-converter
                     SOURCES fddConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
-		            COMPONENT_NAME Analysis)
+                COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(calo-clusters  
+o2physics_add_dpl_workflow(calo-clusters
                     SOURCES caloClusterProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction                                     
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction O2Physics::DataModel
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fwdtrackextension
+                    SOURCES fwdtrackextension.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                                          O2Physics::AnalysisCore
+                                          O2::ReconstructionDataFormats
+                                          O2::DetectorsBase
+                                          O2::DetectorsCommonDataFormats
                     COMPONENT_NAME Analysis)

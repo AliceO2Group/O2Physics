@@ -31,8 +31,9 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
-DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity
+DECLARE_SOA_COLUMN(MultTPCtemp, multTPCtemp, float); //! TPC multiplicity (temporal)
+DECLARE_SOA_COLUMN(Sphericity, sphericity, float);   //! Sphericity of the event
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   o2::soa::Index<>,
@@ -40,6 +41,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   o2::aod::collision::PosY,
                   o2::aod::collision::PosZ,
                   resocollision::MultV0M,
+                  resocollision::MultTPCtemp,
                   resocollision::Sphericity,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
@@ -94,6 +96,11 @@ DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                   //! Trans
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                       //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                       //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                       //! Z position of the decay vertex
+// For MC
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
+DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
+DECLARE_SOA_COLUMN(MothersIds, motherIds, int[2]);              //!
+DECLARE_SOA_COLUMN(DaughtersIdSlice, daughtersIdSlice, int[2]); //!
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   o2::soa::Index<>,
@@ -130,10 +137,18 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::DecayVtxZ);
 using ResoDaughter = ResoDaughters::iterator;
 
-using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA>;
+DECLARE_SOA_TABLE(ResoDaughtersMC, "AOD", "RESODAUGHTERSMC",
+                  o2::soa::Index<>,
+                  mcparticle::PdgCode,
+                  resodaughter::MothersIds,
+                  resodaughter::DaughtersIdSlice,
+                  resodaughter::IsPhysicalPrimary,
+                  resodaughter::ProducedByGenerator);
+
+using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
 using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksExtra, aod::TracksDCA>;
+using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA>; // Without Extra
 
 } // namespace o2::aod
 #endif // O2_ANALYSIS_LFRESONANCETABLES_H_

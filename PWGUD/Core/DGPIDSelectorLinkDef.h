@@ -12,6 +12,8 @@
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
-#pragma link C++ nestedclasses;
+#pragma link C++ class DGPIDCut + ;
+#pragma link C++ class DGPIDCuts + ;
+#pragma link C++ class DGAnaparHolder + ;
 #pragma link C++ class DGParticle + ;
 #pragma link C++ class DGPIDSelector + ;

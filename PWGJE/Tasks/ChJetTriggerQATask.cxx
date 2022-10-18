@@ -53,6 +53,7 @@ struct ChJetTriggerQATask {
 
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
                                    "Accepted z-vertex range"};
+
   Configurable<double> cfgTPCVolume{"cfgTPCVolume", 0.9,
                                     "Full eta range"}; // eta range of TPC
   Configurable<double> cfgJetR{"cfgJetR", 0.4,
@@ -65,6 +66,7 @@ struct ChJetTriggerQATask {
       "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
                                                  // by EPN
   double fiducialVolume;                         // 0.9 - jetR
+  
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
@@ -132,6 +134,7 @@ struct ChJetTriggerQATask {
   // TrackSelection globalTracks;
   void init(o2::framework::InitContext &) {
 
+
     // globalTracks = getGlobalTrackSelection();
     // globalTracks.SetEtaRange(-cfgTPCVolume, cfgTPCVolume);
 
@@ -144,6 +147,7 @@ struct ChJetTriggerQATask {
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
                                     aod::TracksDCA, aod::TrackSelection>;
+
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVertexCut);
 
@@ -180,6 +184,8 @@ struct ChJetTriggerQATask {
             spectra.fill(
                 HIST("ptetaTrackInclRejected"), trk.pt(),
                 trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
+
+ 
 
             continue; // skip bad quality tracks
           }
@@ -254,6 +260,7 @@ struct ChJetTriggerQATask {
 
       // Inclusive Jet pT spectrum in Fiducial volume
       for (auto &jet : jetReclustered) {
+  
         if (fabs(jet.eta()) < fiducialVolume) {
           spectra.fill(HIST("ptJetChPtInclFidVol"), jet.pt());
           spectra.fill(HIST("ptphiJetChPtInclFidVol"), jet.pt(), jet.phi());

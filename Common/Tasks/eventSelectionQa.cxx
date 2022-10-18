@@ -80,6 +80,7 @@ struct EventSelectionQaTask {
     const AxisSpec axisGlobalBCs{nGlobalBCs, 0., double(nGlobalBCs), ""};
     const AxisSpec axisBCs{nBCsPerOrbit, 0., double(nBCsPerOrbit), ""};
     const AxisSpec axisNcontrib{150, 0., 150., "n contributors"};
+    const AxisSpec axisEta{100, -1., 1., "track #eta"};
     const AxisSpec axisColTimeRes{7000, 0., 7000., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
     const AxisSpec axisAliases{kNaliases, 0., double(kNaliases), ""};
@@ -161,6 +162,7 @@ struct EventSelectionQaTask {
     histos.add("hGlobalBcFDD", "", kTH1F, {axisGlobalBCs});
     histos.add("hBcAll", "", kTH1F, {axisBCs});
     histos.add("hBcCol", "", kTH1F, {axisBCs});
+    histos.add("hBcTVX", "", kTH1F, {axisBCs});
     histos.add("hBcFT0", "", kTH1F, {axisBCs});
     histos.add("hBcFV0", "", kTH1F, {axisBCs});
     histos.add("hBcFDD", "", kTH1F, {axisBCs});
@@ -209,9 +211,13 @@ struct EventSelectionQaTask {
     histos.add("hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribITSonly", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribWithTOF", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("hColTimeResVsNcontribWithTRD", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDif});
     histos.add("hColBcDiffVsNcontribITSonly", "", kTH2F, {axisNcontrib, axisBcDif});
     histos.add("hColBcDiffVsNcontribWithTOF", "", kTH2F, {axisNcontrib, axisBcDif});
+    histos.add("hColBcDiffVsNcontribWithTRD", "", kTH2F, {axisNcontrib, axisBcDif});
+
+    histos.add("hTrackBcDiffVsEta", "", kTH2F, {axisEta, axisBcDif});
 
     histos.add("hNcontribCol", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAcc", "", kTH1F, {axisNcontrib});
@@ -232,10 +238,14 @@ struct EventSelectionQaTask {
       histos.get<TH1>(HIST("hSelMask"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
     }
     for (int i = 0; i < kNaliases; i++) {
-      histos.get<TH1>(HIST("hColCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
-      histos.get<TH1>(HIST("hColCounterAcc"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
-      histos.get<TH1>(HIST("hBcCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
+      histos.get<TH1>(HIST("hColCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i].data());
+      histos.get<TH1>(HIST("hColCounterAcc"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i].data());
+      histos.get<TH1>(HIST("hBcCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i].data());
     }
+
+    histos.add("hParams", "", kTH1D, {{2, 0, 2.}});
+    histos.get<TH1>(HIST("hParams"))->GetXaxis()->SetBinLabel(1, "run");
+    histos.get<TH1>(HIST("hParams"))->GetXaxis()->SetBinLabel(2, "minOrbit");
   }
 
   void processRun2(
@@ -434,6 +444,7 @@ struct EventSelectionQaTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
+      histos.get<TH1>(HIST("hParams"))->SetBinContent(1, runNumber);
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -469,6 +480,7 @@ struct EventSelectionQaTask {
         // set nOrbits and minOrbit used for orbit-axis binning
         nOrbits = orbitEOR - orbitSOR;
         minOrbit = orbitSOR;
+        histos.get<TH1>(HIST("hParams"))->SetBinContent(2, minOrbit);
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -477,6 +489,7 @@ struct EventSelectionQaTask {
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitTVX", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFT0", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFV0", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
@@ -574,6 +587,11 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hGlobalBcAll"), globalBC - minGlobalBC);
       histos.fill(HIST("hOrbitAll"), orbit - minOrbit);
       histos.fill(HIST("hBcAll"), localBC);
+
+      if (bc.selection()[kIsTriggerTVX]) {
+        histos.fill(HIST("hOrbitTVX"), orbit - minOrbit);
+        histos.fill(HIST("hBcTVX"), localBC);
+      }
 
       // FV0
       if (bc.has_fv0a()) {
@@ -686,15 +704,19 @@ struct EventSelectionQaTask {
       if (col.sel8()) {
         histos.fill(HIST("hOrbitAcc"), orbit - minOrbit);
       }
+
+      // count tracks of different types
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nTPCtracks = 0;
       int nTOFtracks = 0;
+      int nTRDtracks = 0;
       for (auto& track : tracksGrouped) {
         if (!track.isPVContributor()) {
           continue;
         }
         nTPCtracks += track.hasTPC();
         nTOFtracks += track.hasTOF();
+        nTRDtracks += track.hasTRD();
       }
 
       // search for nearest ft0a&ft0c entry
@@ -746,6 +768,27 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hNcontribAccTOF"), nContributors);
         }
       }
+      if (nTRDtracks > 0) {
+        histos.fill(HIST("hColBcDiffVsNcontribWithTRD"), nContributors, bcDiff);
+        histos.fill(HIST("hColTimeResVsNcontribWithTRD"), nContributors, timeRes);
+      }
+
+      // fill track time histograms
+      for (auto& track : tracksGrouped) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+        if (track.hasTOF())
+          continue;
+        if (track.hasTRD())
+          continue;
+        if (!track.hasTPC() || !track.hasITS())
+          continue;
+        if (track.pt() < 1)
+          continue;
+        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      }
+
       histos.fill(HIST("hNcontribCol"), nContributors);
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();

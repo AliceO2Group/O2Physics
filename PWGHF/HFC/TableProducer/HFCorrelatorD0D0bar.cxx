@@ -149,7 +149,9 @@ struct HfCorrelatorD0D0bar {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    for (auto& candidate1 : selectedD0Candidates) {
+    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+
+    for (auto& candidate1 : selectedD0CandidatesGrouped) {
       if (cutYCandMax >= 0. && std::abs(YD0(candidate1)) > cutYCandMax) {
         continue;
       }
@@ -188,7 +190,7 @@ struct HfCorrelatorD0D0bar {
       if (candidate1.isSelD0() < selectionFlagD0) {
         continue;
       }
-      for (auto& candidate2 : selectedD0Candidates) {
+      for (auto& candidate2 : selectedD0CandidatesGrouped) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
@@ -258,12 +260,14 @@ struct HfCorrelatorD0D0bar {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
+    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+
     // MC reco level
     bool flagD0Signal = false;
     bool flagD0Reflection = false;
     bool flagD0barSignal = false;
     bool flagD0barReflection = false;
-    for (auto& candidate1 : selectedD0candidatesMC) {
+    for (auto& candidate1 : selectedD0CandidatesGroupedMC) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
@@ -317,7 +321,7 @@ struct HfCorrelatorD0D0bar {
       }
       flagD0Signal = candidate1.flagMCMatchRec() == 1 << DecayType::D0ToPiK;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
       flagD0Reflection = candidate1.flagMCMatchRec() == -(1 << DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
-      for (auto& candidate2 : selectedD0candidatesMC) {
+      for (auto& candidate2 : selectedD0CandidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }

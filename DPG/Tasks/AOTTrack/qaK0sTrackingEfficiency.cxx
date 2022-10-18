@@ -34,7 +34,7 @@ struct qaK0sTrackingEfficiency {
 
   void init(InitContext const&)
   {
-    const AxisSpec RAxis{100, 0.f, 10.f, "#it{R} (cm)"};
+    const AxisSpec RAxis{500, 0.f, 50.f, "#it{R} (cm)"};
     const AxisSpec pTAxis{200, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec mAxis{200, 0.4f, 0.6f, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec statusAxis{2, -0.5f, 1.5f, ""};

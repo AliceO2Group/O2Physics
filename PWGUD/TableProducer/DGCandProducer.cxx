@@ -79,7 +79,6 @@ struct DGCandProducer {
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
-  Produces<aod::UDTrackCollisionIDs> outputTracksCollisionsId;
 
   // MC tables
   Produces<aod::UDMcCollisions> outputMcCollisions;
@@ -109,7 +108,7 @@ struct DGCandProducer {
   template <typename TTrack, typename TBC>
   void updateUDTrackTables(TTrack const& track, TBC const& bc)
   {
-    outputTracks(track.px(), track.py(), track.pz(), track.sign(),
+    outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
                  bc.globalBC(), track.trackTime(), track.trackTimeRes());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -132,11 +131,11 @@ struct DGCandProducer {
                       track.trdChi2(),
                       track.tofChi2(),
                       track.tpcSignal(),
+                      track.tofSignal(),
                       track.trdSignal(),
                       track.length(),
                       track.tofExpMom(),
                       track.detectorMap());
-    outputTracksCollisionsId(outputCollisions.lastIndex());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value
@@ -220,7 +219,7 @@ struct DGCandProducer {
     auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
     // apply DG selection
-    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
+    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
     if (isDGEvent == 0) {
@@ -230,8 +229,7 @@ struct DGCandProducer {
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), netCharge(tracks),
-                       rPVtrwTOF(tracks, collision.numContrib()),
-                       0., 0., 0., 0., 0);
+                       rPVtrwTOF(tracks, collision.numContrib()));
 
       // update DGTracks tables
       for (auto& track : tracks) {
@@ -297,7 +295,7 @@ struct DGCandProducer {
       auto bcRange = MCcompatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
       // apply DG selection
-      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, collisionTracks, collisionFwdTracks);
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, collisionTracks, collisionFwdTracks);
       LOGF(debug, "  isDG %i", (int)isDGEvent);
 
       // save information of DG events
@@ -314,8 +312,7 @@ struct DGCandProducer {
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          collision.posX(), collision.posY(), collision.posZ(),
                          collision.numContrib(), netCharge(tracks),
-                         rPVtrwTOF(collisionTracks, collision.numContrib()),
-                         0., 0., 0., 0., 0);
+                         rPVtrwTOF(collisionTracks, collision.numContrib()));
 
         // UDTracks, UDTrackCollisionID, UDTracksExtras, UDMcTrackLabels
         for (auto& track : collisionTracks) {

@@ -147,14 +147,14 @@ struct CFFilter {
     registry.add("fZvtxBefore", "Zvtx of all processed events", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("fZvtxAfter", "Zvtx of events which passed ppp trigger", HistType::kTH1F, {{1000, -15, 15}});
 
+    registry.add("fPtBeforePPP", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("fPtAfterPPP", "Transverse momentum  of processed tracks which passed  selections", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("fPtBeforeAntiPPP", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("fPtAfterAntiPPP", "Transverse momentum  of processed antitracks passed selection", HistType::kTH1F, {{1000, 0, 10}});
+
     if (Q3Trigger == 0 || Q3Trigger == 11 || Q3Trigger == 1111) {
       registry.add("fSameEventPartPPP", "CF - same event ppp distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPP", "CF - same event ppp distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
-
-      registry.add("fPtBeforePPP", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtAfterPPP", "Transverse momentum  of processed tracks which passed  selections", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtBeforeAntiPPP", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtAfterAntiPPP", "Transverse momentum  of processed antitracks passed selection", HistType::kTH1F, {{1000, 0, 10}});
     }
     if (Q3Trigger == 1 || Q3Trigger == 11 || Q3Trigger == 1111) {
       registry.add("fSameEventPartPPL", "CF - same event ppL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
@@ -378,7 +378,7 @@ struct CFFilter {
           }
         } // end if
 
-        if (lowQ3Triplets[1] == 0) { // if at least one triplet found in particles, no need to check antiparticles
+        if (lowQ3Triplets[2] == 0) { // if at least one triplet found in particles, no need to check antiparticles
           if (partsLambda1.size() >= 2 && antiprot >= 1) {
             for (auto& p1 : partsProton1) {
               if (!isFullPIDSelectedProton(p1.pidcut(), p1.p())) {
@@ -440,7 +440,7 @@ struct CFFilter {
           }
         } // end if
 
-        if (lowQ3Triplets[0] == 0) { // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
+        if (lowQ3Triplets[3] == 0) { // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
 
           if (partsLambda1.size() >= 3) {
             // test default combinations options

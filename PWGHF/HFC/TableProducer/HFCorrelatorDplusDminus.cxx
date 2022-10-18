@@ -149,7 +149,9 @@ struct HfCorrelatorDplusDminus {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    for (auto& candidate1 : selectedDPlusCandidates) {
+    auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+
+    for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
       if (cutYCandMax >= 0. && std::abs(YDPlus(candidate1)) > cutYCandMax) {
         continue;
       }
@@ -194,7 +196,7 @@ struct HfCorrelatorDplusDminus {
       if (outerParticleSign != 1) {
         continue;
       }
-      for (auto& candidate2 : selectedDPlusCandidates) {
+      for (auto& candidate2 : selectedDPlusCandidatesGrouped) {
         // check decay channel flag for candidate2
         if (!(candidate2.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // probably dummy since already selected? not sure...
           continue;
@@ -257,10 +259,12 @@ struct HfCorrelatorDplusDminus {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
+    auto selectedDPlusCandidatesGroupedMC = selectedDPlusCandidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+
     // MC reco level
     bool flagDplusSignal = false;
     bool flagDminusSignal = false;
-    for (auto& candidate1 : selectedDPlusCandidatesMC) {
+    for (auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
@@ -311,7 +315,7 @@ struct HfCorrelatorDplusDminus {
         continue; // reject Dminus in outer loop
       }
       flagDplusSignal = std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
-      for (auto& candidate2 : selectedDPlusCandidatesMC) {
+      for (auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // check decay channel flag for candidate2
           continue;
         }

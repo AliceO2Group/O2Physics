@@ -10,16 +10,16 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(dgcand-producer
-                    SOURCES DGCandProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
-                    COMPONENT_NAME Analysis)
+                           SOURCES DGCandProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upctrack-skimmer
-                           SOURCES UPCTrackSkimmer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(dgbccand-producer
+                           SOURCES DGBCCandProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upccand-producer
-                           SOURCES UPCandidateProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           SOURCES UPCCandidateProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)

@@ -52,6 +52,7 @@ struct qaEventTrack {
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
+  Configurable<bool> doDebug{"doDebug", false, "Bool to enable debug outputs"};
 
   // options to select specific events
   Configurable<bool> selectGoodEvents{"selectGoodEvents", true, "select good events"};
@@ -112,7 +113,7 @@ struct qaEventTrack {
   // constexpr char* strAllUnfilteredTracks = "KineUnmatchUnfilteredTracks";
   void init(InitContext const&)
   {
-    if (!doprocessData && !doprocessMC && !doprocessDataIU && !doprocessDataIUFiltered && !doprocessRun2ConvertedData && !doprocessRun2ConvertedMC) {
+    if (!doprocessData && !doprocessTrackMatch && !doprocessMC && !doprocessDataIU && !doprocessDataIUFiltered && !doprocessRun2ConvertedData && !doprocessRun2ConvertedMC) {
       LOGF(info, "No enabled QA, all histograms are disabled");
       return;
     }
@@ -193,7 +194,7 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
     // count filtered tracks matched to a collision
-    auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Filtered track - collision matching", kTH1F, {{5, 0.5, 5.5, ""}});
+    auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Filtered track - collision matching", kTH1D, {{5, 0.5, 5.5, ""}});
     h1->GetXaxis()->SetBinLabel(h1->FindBin(1), "all tracks");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(2), "tracks matched to coll.");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(3), "tracks unmatched");
@@ -204,7 +205,7 @@ struct qaEventTrack {
     histos.add("Tracks/KineUnmatchTracks/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/KineUnmatchTracks/phi", "#varphi", kTH1D, {axisPhi});
     // count unfiltered tracks matched to a collision
-    auto h1Unfiltered = histos.add<TH1>("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch", "Unfiltered track - collision matching", kTH1F, {{5, 0.5, 5.5, ""}});
+    auto h1Unfiltered = histos.add<TH1>("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch", "Unfiltered track - collision matching", kTH1D, {{5, 0.5, 5.5, ""}});
     h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(1), "all tracks");
     h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(2), "tracks matched to coll.");
     h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(3), "tracks unmatched");
@@ -460,20 +461,48 @@ struct qaEventTrack {
   // Process function for data
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   // using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
-  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered, aod::AmbiguousTracks const& ambitracks)
+  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
   {
-    /// work with all filtered tracks
-    fillRecoHistogramsAllTracks<false, true>(tracks, ambitracks);
-    /// work with all unfiltered tracks
-    fillRecoHistogramsAllTracks<false, false>(tracksUnfiltered, ambitracks);
     /// work with collision grouping
-    for (auto const& collision : collisions) {
-      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
-      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
-      fillRecoHistogramsGroupedTracks<false>(collision, tracksColl, tracksUnfilteredColl);
-    }
+    fillRecoHistogramsGroupedTracks<false>(collision, tracks, tracksUnfiltered);
   }
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
+
+  // process function for all tracks, w/o requiring the collision grouping
+  void processTrackMatch(soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered, aod::AmbiguousTracks const& ambitracks)
+  {
+    if (doDebug) {
+      LOG(info) << "================================";
+      LOG(info) << "=== soa::Filtered<TrackTableData> const& tracks, size=" << tracks.size();
+      int iTrack = 0;
+      for (auto& t : tracks) {
+        LOG(info) << "[" << iTrack << "] .index()=" << t.index() << ", .globalIndex()=" << t.globalIndex();
+        iTrack++;
+      }
+      LOG(info) << "=== aod::FullTracks const& tracksUnfiltered, size=" << tracksUnfiltered.size();
+      int iTrackUnfiltered = 0;
+      for (auto& tuf : tracksUnfiltered) {
+        LOG(info) << "[" << iTrackUnfiltered << "] .index()=" << tuf.index() << ", .globalIndex()=" << tuf.globalIndex();
+        iTrackUnfiltered++;
+      }
+      LOG(info) << "=== aod::AmbiguousTracks const& ambitracks, size=" << ambitracks.size();
+      int iTrackAmbi = 0;
+      for (auto& tamb : ambitracks) {
+        LOG(info) << "[" << iTrackAmbi << "] .index()=" << tamb.index() << ", .globalIndex()=" << tamb.globalIndex() << ", .trackId()=" << tamb.trackId();
+        iTrackAmbi++;
+      }
+      LOG(info) << "================================";
+    }
+    /// work with all filtered tracks
+    if (doDebug)
+      LOG(info) << ">>>>>>>>>>>>> calling fillRecoHistogramsAllTracks for filtered tracks";
+    fillRecoHistogramsAllTracks<false, true>(tracks, ambitracks);
+    /// work with all unfiltered tracks
+    if (doDebug)
+      LOG(info) << ">>>>>>>>>>>>> calling fillRecoHistogramsAllTracks for unfiltered tracks";
+    fillRecoHistogramsAllTracks<false, false>(tracksUnfiltered, ambitracks);
+  }
+  PROCESS_SWITCH(qaEventTrack, processTrackMatch, "process for track-to-collision matching studies", false);
 
   // Process function for Run2 converted data
   void processRun2ConvertedData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
@@ -696,13 +725,25 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 template <bool IS_MC, bool FILL_FILTERED, typename T>
 void qaEventTrack::fillRecoHistogramsAllTracks(const T& tracks, const aod::AmbiguousTracks& tracksAmbiguous)
 {
+  /////////////////////////////////////////////   Start of Ambiguous tracks search   ///////////////////////////////////////////////////////////////////////
+  /// Look for ambiguous tracks.
+  /// The algorithm exploits the fact that tracks and amb. tracks tables are ordered by trackId.
+  /// Idea: loop over each track considered in analysis and see if its globalIndex() corresponds to the trackId() of an amb. track.
+  /// When the track.globalIndex is found to be equal to the current amb. track trackId(), the amb. track iterator is updated (++).
+  ///
+  /// Necessary condition for the algorithm to work: the iterator of the amb. track must point t a trackId() which is >= than the track.globalIndex().
+  /// If this is not the case, the track loop continuous but the amb. track iterator never changes and the amb. track table is never queried completely.
+  /// This justifies the 'while' cycle in (*)
 
-  /// look at ambiguous tracks
-  std::vector<int> ambTrackGlobIndices{};
-  for (auto& trackAmbiguous : tracksAmbiguous) {
-    ambTrackGlobIndices.push_back(trackAmbiguous.globalIndex());
-  }
+  //  Define the iterator to search for ambiguous tracks
+  //  This will be updated when the ambiguous track is found
+  auto iterAmbiguous = tracksAmbiguous.begin();
 
+  /// loop over all tracks
+  bool searchAmbiguous = true;
+  int nAmbTracks = 0;
+  if (doDebug)
+    LOG(info) << "===== tracks.size()=" << tracks.size() << ", tracksAmbiguous.size()=" << tracksAmbiguous.size();
   for (const auto& track : tracks) {
     /// all tracks
     if constexpr (FILL_FILTERED) {
@@ -710,15 +751,51 @@ void qaEventTrack::fillRecoHistogramsAllTracks(const T& tracks, const aod::Ambig
     } else {
       histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 1.f);
     }
+
     /// look if the current track was flagged as ambiguous
-    auto iter = std::find(ambTrackGlobIndices.begin(), ambTrackGlobIndices.end(), track.globalIndex());
-    if (iter != ambTrackGlobIndices.end()) {
-      if constexpr (FILL_FILTERED) {
-        histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 5.f);
-      } else {
-        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 5.f);
+    if (searchAmbiguous) {
+      // Adjust the amb. track iterator, if needed.
+      // Case in which the track.globalIndex() is larger than the trackId of the current amb. track:
+      // we need to make the amb. iterator to point always to a track with an ID >= the current track.index,
+      // otherwise the algorithm stops (the loop is over tracks, not amb. tracks!)
+      bool goFillHisto = (iterAmbiguous != tracksAmbiguous.end());
+      if (goFillHisto) {
+        /// still not at the end, let's go on
+        while (track.globalIndex() > iterAmbiguous.trackId()) { // (*)
+          iterAmbiguous++;
+          if (iterAmbiguous == tracksAmbiguous.end()) { /// all ambiguous tracks found
+            searchAmbiguous = false;
+            goFillHisto = false;
+            break;
+          }
+        }
+      }
+
+      // go on only if we did not arrive at the and of amb. tracks table yet
+      if (goFillHisto) {
+        if (doDebug)
+          LOG(info) << "track.index()=" << track.index() << " track.globalIndex()=" << track.globalIndex() << " ||| iterAmbiguous.trackId()=" << iterAmbiguous.trackId() << ", iterAmbiguous.globalIndex()=" << iterAmbiguous.globalIndex();
+        /// check if this is an ambiguous track
+        if (track.globalIndex() == iterAmbiguous.trackId()) {
+          /// this is an ambiguous track!
+          nAmbTracks++;
+          if (doDebug)
+            LOG(info) << "   >>> FOUND AMBIGUOUS TRACK! track.index()=" << track.index() << " track.globalIndex()=" << track.globalIndex() << " ||| iterAmbiguous.trackId()=" << iterAmbiguous.trackId() << ", iterAmbiguous.globalIndex()=" << iterAmbiguous.globalIndex();
+          /// fill the histogram
+          if constexpr (FILL_FILTERED) {
+            histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 5.f);
+          } else {
+            histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 5.f);
+          }
+          /// update the iterator of the ambiguous track, to search for the next one at the next loop iteration
+          /// if we are already at the end, then avoid redoing this search later
+          iterAmbiguous++;
+          if (iterAmbiguous == tracksAmbiguous.end())
+            searchAmbiguous = false;
+        }
       }
     }
+    /////////////////////////////////////////////   End of Ambiguous tracks search   ///////////////////////////////////////////////////////////////////////
 
     if (track.has_collision()) {
       /// tracks assigned to a collision
@@ -755,6 +832,7 @@ void qaEventTrack::fillRecoHistogramsAllTracks(const T& tracks, const aod::Ambig
       }
     }
   }
+  LOG(info) << "### nAmbTracks=" << nAmbTracks;
 }
 ///////////////////////////////////////////////////////////////
 template <bool IS_MC, typename C, typename T, typename T_UNF>

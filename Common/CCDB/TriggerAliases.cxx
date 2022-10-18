@@ -12,7 +12,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/Logger.h"
 
-const char* aliasLabels[kNaliases] = {
+std::string aliasLabels[kNaliases] = {
   "kINT7",
   "kEMC7",
   "kINT7inMUON",

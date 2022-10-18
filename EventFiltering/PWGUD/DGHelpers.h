@@ -41,15 +41,15 @@ template <typename T>
 bool cleanFDD(T& bc, float limitA, float limitC);
 
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>&& lims);
+bool cleanFIT(T& bc, std::vector<float> lims);
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>& lims);
+bool cleanFITCollision(T& col, std::vector<float> lims);
 
 template <typename T>
-bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
 
 template <typename T>
-bool cleanCalo(T& bc, aod::Calos& calos, std::vector<float>& lims);
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims);
 
 template <typename TC>
 bool hasGoodPID(DGCutparHolder diffCuts, TC track);
@@ -68,10 +68,10 @@ struct DGSelector {
   }
 
   // Function to check if collisions passes filter
-  template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
-  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  template <typename CC, typename BCs, typename TCs, typename FWs>
+  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
-    LOGF(debug, "Collision %f BC %u", collision.collisionTime(), bc.globalBC());
+    LOGF(debug, "Collision %f", collision.collisionTime());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
 
     // check that there are no FIT signals in any of the compatible BCs
@@ -80,11 +80,11 @@ struct DGSelector {
 
     for (auto& bc : bcRange) {
       LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
-           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : 0.,
-           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : 0.,
-           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : 0.,
-           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : 0,
-           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : 0);
+           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : -1.,
+           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : -1.,
+           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : -1.,
+           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : -1,
+           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : -1);
       LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", cleanFV0(bc, lims[0]), cleanFT0(bc, lims[1], lims[2]), cleanFDD(bc, lims[3], lims[4]));
 
       if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
@@ -93,9 +93,9 @@ struct DGSelector {
     }
 
     // no activity in muon arm
-    LOGF(debug, "Muons %i", fwdtracks.size());
-    for (auto& muon : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
+    LOGF(debug, "FwdTracks %i", fwdtracks.size());
+    for (auto& fwdtrack : fwdtracks) {
+      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
     }
     if (fwdtracks.size() > 0) {
       return 2;
@@ -166,9 +166,79 @@ struct DGSelector {
     }
 
     // net charge
-    if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
       return 10;
     }
+    // invariant mass
+    if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
+      return 11;
+    }
+
+    // if we arrive here then the event is good!
+    return 0;
+  };
+
+  template <typename BCs, typename TCs, typename FWs>
+  int IsSelected(DGCutparHolder diffCuts, BCs& bc, TCs& tracks, FWs& fwdtracks)
+  {
+    // check that there are no FIT signals in bc
+    // Double Gap (DG) condition
+    if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+      return 1;
+    }
+
+    // no activity in muon arm
+    LOGF(debug, "FwdTracks %i", fwdtracks.size());
+    for (auto& fwdtrack : fwdtracks) {
+      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
+    }
+    if (fwdtracks.size() > 0) {
+      return 2;
+    }
+
+    // number of tracks
+    if ((int)tracks.size() < diffCuts.minNTracks() || (int)tracks.size() > diffCuts.maxNTracks()) {
+      return 6;
+    }
+
+    // PID, pt, and eta of tracks, invariant mass, and net charge
+    // which particle hypothesis?
+    auto mass2Use = 0.;
+    TParticlePDG* pdgparticle = fPDG->GetParticle(diffCuts.pidHypothesis());
+    if (pdgparticle != nullptr) {
+      mass2Use = pdgparticle->Mass();
+    }
+
+    auto netCharge = 0;
+    auto lvtmp = TLorentzVector();
+    auto ivm = TLorentzVector();
+    for (auto& track : tracks) {
+      // PID
+      if (!hasGoodPID(diffCuts, track)) {
+        return 7;
+      }
+
+      // pt
+      lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
+      if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
+        return 8;
+      }
+
+      // eta
+      if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
+        return 9;
+      }
+      netCharge += track.sign();
+      ivm += lvtmp;
+    }
+
+    // net charge
+    auto netChargeValues = diffCuts.netCharges();
+    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
+      return 10;
+    }
+
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
       return 11;
@@ -196,11 +266,17 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
-  auto bcIter = collision.bc_as<T>();
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
 
-  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
   // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
@@ -385,20 +461,30 @@ bool cleanFDD(T& bc, float limitA, float limitC)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>&& lims)
+bool cleanFIT(T& bc, std::vector<float> lims)
 {
   return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
 }
-
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float>& lims)
+bool cleanFITCollision(T& col, std::vector<float> lims)
 {
-  return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
+  bool isCleanFV0 = true;
+  if (col.has_foundFV0()) {
+    isCleanFV0 = (FV0AmplitudeA(col.foundFV0()) < lims[0]);
+  }
+  bool isCleanFT0 = true;
+  if (col.has_foundFT0()) {
+    isCleanFT0 = (FT0AmplitudeA(col.foundFT0()) < lims[1]) && (FT0AmplitudeC(col.foundFT0()) < lims[2]);
+  }
+  bool isCleanFDD = true;
+  if (col.has_foundFDD()) {
+    isCleanFDD = (FDDAmplitudeA(col.foundFDD()) < lims[3]) && (FDDAmplitudeC(col.foundFDD()) < lims[4]);
+  }
+  return (isCleanFV0 && isCleanFT0 && isCleanFDD);
 }
-
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
 {
   const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex());
   return (ZdcBC.size() == 0);
@@ -406,7 +492,7 @@ bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T& bc, aod::Calos& calos, std::vector<float>& lims)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims)
 {
   const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex());
   return (CaloBC.size() == 0);

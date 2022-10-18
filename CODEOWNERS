@@ -25,9 +25,9 @@
 /EventFiltering/PWGCF @alibuild @lauraser
 /EventFiltering/PWGMM @alibuild @aortizve
 /EventFiltering/PWGJE @alibuild @fkrizek
-/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
-/PWGDQ @alibuild @iarsene @dsekihat
-/PWGEM @alibuild @mikesas @rbailhac
+/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGDQ @alibuild @iarsene @dsekihat @feisenhu
+/PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar @cterrevo
@@ -41,4 +41,5 @@
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
 /PWGMM/UE @alibuild @aalkin @aortizve
 /PWGUD @alibuild @pbuehler
+/PWGJE @alibuild @lhavener @maoyx @nzardosh
 /Tools/PIDML @alibuild @saganatt
