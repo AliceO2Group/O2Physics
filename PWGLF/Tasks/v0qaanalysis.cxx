@@ -46,6 +46,10 @@ DECLARE_SOA_COLUMN(V0DCANegToPV, v0dcanegtopv, float);
 DECLARE_SOA_COLUMN(V0DCAV0Daughters, v0dcav0daughters, float);
 DECLARE_SOA_COLUMN(V0PosEta, v0poseta, float);
 DECLARE_SOA_COLUMN(V0NegEta, v0negeta, float);
+DECLARE_SOA_COLUMN(V0PosPhi, v0posphi, float);
+DECLARE_SOA_COLUMN(V0NegPhi, v0negphi, float);
+DECLARE_SOA_COLUMN(V0PosITSHits, v0positshits, float);
+DECLARE_SOA_COLUMN(V0NegITSHits, v0negitshits, float);
 DECLARE_SOA_COLUMN(CtauLambda, ctaulambda, float);
 DECLARE_SOA_COLUMN(CtauAntiLambda, ctauantilambda, float);
 DECLARE_SOA_COLUMN(CtauK0Short, ctauk0short, float);
@@ -64,8 +68,9 @@ DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
                   myv0candidates::CollisionId, myv0candidates::V0Pt, myv0candidates::RapLambda, myv0candidates::RapK0Short,
                   myv0candidates::MassLambda, myv0candidates::MassAntiLambda, myv0candidates::MassK0Short,
                   myv0candidates::V0Radius, myv0candidates::V0CosPA, myv0candidates::V0DCAPosToPV,
-                  myv0candidates::V0DCANegToPV, myv0candidates::V0DCAV0Daughters, myv0candidates::V0PosEta,
-                  myv0candidates::V0NegEta, myv0candidates::CtauLambda, myv0candidates::CtauAntiLambda, myv0candidates::CtauK0Short,
+                  myv0candidates::V0DCANegToPV, myv0candidates::V0DCAV0Daughters,
+                  myv0candidates::V0PosEta, myv0candidates::V0NegEta, myv0candidates::V0PosPhi, myv0candidates::V0NegPhi,
+                  myv0candidates::V0PosITSHits, myv0candidates::V0NegITSHits, myv0candidates::CtauLambda, myv0candidates::CtauAntiLambda, myv0candidates::CtauK0Short,
                   myv0candidates::NTPCSigmaNegPr, myv0candidates::NTPCSigmaPosPr, myv0candidates::NTPCSigmaNegPi, myv0candidates::NTPCSigmaPosPi,
                   myv0candidates::NTOFSigmaNegPr, myv0candidates::NTOFSigmaPosPr, myv0candidates::NTOFSigmaNegPi, myv0candidates::NTOFSigmaPosPi);
 
@@ -117,6 +122,16 @@ struct v0qaanalysis {
       float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(-3122);
       float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(310);
 
+      int posITSNhits = 0, negITSNhits = 0;
+      for (unsigned int i = 0; i < 7; i++) {
+        if (v0.posTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
+          posITSNhits++;
+        }
+        if (v0.negTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
+          negITSNhits++;
+        }
+      }
+
       if (v0.v0radius() > v0radius &&
           v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
           TMath::Abs(v0.posTrack_as<DauTracks>().eta()) < etadau &&
@@ -128,7 +143,8 @@ struct v0qaanalysis {
               v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
               v0.posTrack_as<DauTracks>().eta(), v0.negTrack_as<DauTracks>().eta(),
-              ctauLambda, ctauAntiLambda, ctauK0s,
+              v0.posTrack_as<DauTracks>().phi(), v0.negTrack_as<DauTracks>().phi(),
+              posITSNhits, negITSNhits, ctauLambda, ctauAntiLambda, ctauK0s,
               v0.negTrack_as<DauTracks>().tpcNSigmaPr(), v0.posTrack_as<DauTracks>().tpcNSigmaPr(),
               v0.negTrack_as<DauTracks>().tpcNSigmaPi(), v0.posTrack_as<DauTracks>().tpcNSigmaPi(),
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
@@ -154,7 +170,7 @@ struct myV0s {
     registry.add("V0Radius", "V0Radius", {HistType::kTH1D, {{100, 0.0f, 20.0f}}});
     registry.add("CosPA", "CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
     registry.add("V0DCANegToPV", "V0DCANegToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-    registry.add("V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{100, 0.0f, 1.0f}}});
+    registry.add("V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("V0DCAV0Daughters", "V0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
     registry.add("CtauK0s", "CtauK0s", {HistType::kTH1F, {{150, 0.0f, 30.0f}}});
     registry.add("CtauLambda", "CtauLambda", {HistType::kTH1F, {{200, 0.0f, 40.0f}}});
@@ -163,6 +179,8 @@ struct myV0s {
     registry.add("TPCNSigmaNegPi", "TPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
     registry.add("TPCNSigmaPosPr", "TPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
     registry.add("TPCNSigmaNegPr", "TPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("PosITSHits", "PosITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
+    registry.add("NegITSHits", "NegITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
   }
 
   void process(aod::MyV0Candidates const& myv0s)
@@ -187,7 +205,8 @@ struct myV0s {
       registry.fill(HIST("TPCNSigmaPosPi"), candidate.ntpcsigmapospi());
       registry.fill(HIST("TPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
       registry.fill(HIST("TPCNSigmaPosPr"), candidate.ntpcsigmapospr());
-      registry.fill(HIST("TPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
+      registry.fill(HIST("PosITSHits"), candidate.v0positshits());
+      registry.fill(HIST("NegITSHits"), candidate.v0negitshits());
     }
   }
 };
