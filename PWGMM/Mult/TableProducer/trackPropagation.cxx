@@ -59,22 +59,6 @@ using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::framework::expressions;
-
-struct MultiCollisionAssociation {
-  Produces<aod::MatchedMulti> mm;
-  struct {
-    std::vector<int> colids;
-  } filler;
-  void process(aod::BCs::iterator const& bc, soa::SmallGroups<aod::Collisions> const& collisions)
-  {
-    filler.colids.clear();
-    for (auto const& collision : collisions) {
-      filler.colids.emplace_back(collision.globalIndex());
-    }
-    mm(bc.globalIndex(), filler.colids);
-  }
-};
 
 struct AmbiguousTrackPropagation {
   Produces<aod::BestCollisions> tracksBestCollisions;
@@ -94,7 +78,7 @@ struct AmbiguousTrackPropagation {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
-  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedMulti>;
+  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -248,7 +232,6 @@ struct AmbiguousTrackPropagation {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc),
-                        adaptAnalysisTask<MultiCollisionAssociation>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
   return workflow;
 }
