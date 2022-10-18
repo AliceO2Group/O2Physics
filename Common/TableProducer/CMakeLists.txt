@@ -18,6 +18,7 @@ o2physics_add_dpl_workflow(trackextension
                                           O2::ReconstructionDataFormats
                                           O2::DetectorsBase
                                           O2::DetectorsCommonDataFormats
+                                          O2Physics::DataModel
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(trackselection
@@ -72,7 +73,7 @@ o2physics_add_dpl_workflow(fdd-converter
 
 o2physics_add_dpl_workflow(calo-clusters
                     SOURCES caloClusterProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction O2Physics::DataModel
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(fwdtrackextension
