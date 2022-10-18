@@ -130,8 +130,7 @@ struct ChJetTriggerQATask {
     }};
 
   // TrackSelection globalTracks;
-  void init(o2::framework::InitContext&)
-  {
+  void init(o2::framework::InitContext&) {
 
     // globalTracks = getGlobalTrackSelection();
     // globalTracks.SetEtaRange(-cfgTPCVolume, cfgTPCVolume);
