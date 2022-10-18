@@ -65,7 +65,7 @@ struct ChJetTriggerQATask {
     "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
                                                // by EPN
   double fiducialVolume;                       // 0.9 - jetR
-
+  
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
