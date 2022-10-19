@@ -233,7 +233,7 @@ struct TaskD0 {
           if (candidate.isRecoPID() >= d_selectionPID) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
           }
-        } else {
+        } else if (candidate.originMCRec() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
           if (candidate.isRecoHFFlag() >= d_selectionHFFlag) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoHFFlag"), ptRec, yRec);
@@ -335,7 +335,7 @@ struct TaskD0 {
         if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
-        } else {
+        } else if (particle.originMCGen() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
         }

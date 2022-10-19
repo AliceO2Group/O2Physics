@@ -156,7 +156,7 @@ struct TaskLc {
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-        } else {
+        } else if (candidate.originMCRec() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
         }
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
@@ -182,7 +182,7 @@ struct TaskLc {
         registry.fill(HIST("hPtGen"), ptGen);
         if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
-        } else {
+        } else if (particle.originMCGen() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());

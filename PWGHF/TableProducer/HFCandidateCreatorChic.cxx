@@ -249,7 +249,7 @@ struct HFCandidateCreatorChicMC {
       }
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
       }
       rowMCMatchRec(flag, origin, channel);
     }
