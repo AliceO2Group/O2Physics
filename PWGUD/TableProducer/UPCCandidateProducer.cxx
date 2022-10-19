@@ -118,6 +118,7 @@ struct UpcCandProducer {
   // candidate producer flags
   Configurable<int> fCheckTPCPID{"checkTPCPID", 0, "Check TPC PID. Useful for central selection -- see `tpcPIDSwitch` option"};
   Configurable<int> fTPCPIDSwitch{"tpcPIDSwitch", 0, "PID switch: 0 -- two muons/pions, 1 -- two electrons, 2 -- electron + muon/pion"};
+  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals at the same BC"};
   Configurable<int> fNFwdProngs{"nFwdProngs", 2, "Matched forward tracks per candidate"};
   Configurable<int> fNBarProngs{"nBarProngs", 0, "Matched barrel tracks per candidate"};
 
@@ -553,6 +554,26 @@ struct UpcCandProducer {
     return pass;
   }
 
+  bool checkFT0(FITInfo& info, bool isCentral)
+  {
+    const uint64_t presBitNum = 16;
+    const float ft0DummyTime = 32.767f;
+    const float ft0DefaultTime = -999;
+    const float fT0CBBlower = -1.0; // ns
+    const float fT0CBBupper = 1.0;  // ns
+    bool hasNoFT0 = false;
+    if (isCentral) {
+      bool isBB = TESTBIT(info.BBFT0Apf, presBitNum) || TESTBIT(info.BBFT0Cpf, presBitNum);
+      bool isBG = TESTBIT(info.BGFT0Apf, presBitNum) || TESTBIT(info.BGFT0Cpf, presBitNum);
+      hasNoFT0 = !isBB && !isBG;
+    } else {
+      bool checkA = std::abs(info.timeFT0A - ft0DummyTime) < 1e-3 || std::abs(info.timeFT0A - ft0DefaultTime) < 1e-3; // dummy or default time
+      bool checkC = info.timeFT0C > fT0CBBlower && info.timeFT0C < fT0CBBupper;
+      hasNoFT0 = checkA && checkC;
+    }
+    return hasNoFT0;
+  }
+
   template <typename TBCs>
   void processFITInfo(TBCs const& bcs,
                       o2::aod::FT0s const& ft0s,
@@ -849,16 +870,21 @@ struct UpcCandProducer {
         const auto& tr = fwdTracks->iteratorAt(id);
         netCharge += tr.sign();
       }
-      // store used tracks
-      fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
-      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels);
       // fetching FT0, FDD, FV0 information
       // if there is no relevant signal, dummy info will be used
       FITInfo fitInfo{};
       auto it = bcsWithFIT.find(bc);
       if (it != bcsWithFIT.end()) {
         fitInfo = it->second;
+        if (fFilterFT0) { // check FT0 signal in the same BC
+          bool hasNoFT0 = checkFT0(fitInfo, barrelTracks != nullptr && fwdTracks == nullptr);
+          if (!hasNoFT0)
+            continue;
+        }
       }
+      // store used tracks
+      fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels);
       eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
