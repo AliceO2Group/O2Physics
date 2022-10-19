@@ -321,4 +321,42 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhi);
     hm->AddHistogram(histClass, "DeltaEta_DeltaPhiSym", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhiSym);
   }
+
+  if (groupStr.Contains("postcalib")) {
+    const int kNvarsPID = 4;
+    const int kTPCnsigmaNbins = 70;
+    double tpcNsigmaBinLims[kTPCnsigmaNbins + 1];
+    for (int i = 0; i <= kTPCnsigmaNbins; ++i)
+      tpcNsigmaBinLims[i] = -7.0 + 0.2 * i;
+
+    const int kPinEleNbins = 10;
+    double pinEleBinLims[kPinEleNbins + 1] = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 4.0, 6.0};
+
+    const int kEtaNbins = 9;
+    double etaBinLimsI[kEtaNbins + 1] = {-0.9, -0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7, 0.9};
+
+    const int kTPCnClusterbins = 16;
+    double tpcNclusterBinLims[kTPCnClusterbins + 1];
+    for (int i = 0; i <= kTPCnClusterbins; ++i)
+      tpcNclusterBinLims[i] = 10 * i;
+
+    TArrayD nSigBinLimits[kNvarsPID];
+    nSigBinLimits[0] = TArrayD(kTPCnsigmaNbins + 1, tpcNsigmaBinLims);
+    nSigBinLimits[1] = TArrayD(kTPCnClusterbins + 1, tpcNclusterBinLims);
+    nSigBinLimits[2] = TArrayD(kPinEleNbins + 1, pinEleBinLims);
+    nSigBinLimits[3] = TArrayD(kEtaNbins + 1, etaBinLimsI);
+
+    if (subGroupStr.Contains("electron")) {
+      int varsPIDnSigEle[kNvarsPID] = {VarManager::kTPCnSigmaEl, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+      hm->AddHistogram(histClass, "nSigmaTPCelectron", "TPC n_{#sigma}(e) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigEle, nSigBinLimits);
+    }
+    if (subGroupStr.Contains("pion")) {
+      int varsPIDnSigPion[kNvarsPID] = {VarManager::kTPCnSigmaPi, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+      hm->AddHistogram(histClass, "nSigmaTPCpion", "TPC n_{#sigma}(pion) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigPion, nSigBinLimits);
+    }
+    if (subGroupStr.Contains("proton")) {
+      int varsPIDnSigProton[kNvarsPID] = {VarManager::kTPCnSigmaPr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+      hm->AddHistogram(histClass, "nSigmaTPCproton", "TPC n_{#sigma}(proton) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigProton, nSigBinLimits);
+    }
+  }
 }

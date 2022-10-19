@@ -142,6 +142,26 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("PIDCalibElectron")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_ele"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalibPion")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_pion"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalibProton")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_proton"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalib_basic")) {
+    cut->AddCut(GetAnalysisCut("pidbasic"));
+    return cut;
+  }
+
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(GetAnalysisCut("highPtHadron"));
     return cut;
@@ -779,6 +799,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pidcalib_ele")) {
     cut->AddCut(VarManager::kIsLegFromGamma, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidcalib_pion")) {
+    cut->AddCut(VarManager::kIsLegFromK0S, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidcalib_proton")) {
+    cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidbasic")) {
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    cut->AddCut(VarManager::kTPCchi2, 0, 4);
     return cut;
   }
 
