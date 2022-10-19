@@ -352,7 +352,7 @@ struct cascadeBuilder {
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
         tV0.setQ2Pt(0); // No bending, please
-        
+
         // Act on copies for minimization
         auto tV0Copy = o2::track::TrackParCov(tV0);
         auto bTrackCopy = o2::track::TrackParCov(bTrack);

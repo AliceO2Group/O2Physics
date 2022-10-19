@@ -127,7 +127,7 @@ struct lambdakzeroBuilder {
   // Configurables
   // Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", 1, "Use Abs DCAs"}; uncomment this once we want to use the weighted DCA
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  
+
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", true, "Vertices use cov matrices"};
 
