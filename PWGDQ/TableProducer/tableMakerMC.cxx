@@ -214,11 +214,13 @@ struct TableMakerMC {
         }
         if (fDoDetailedQA) {
           if (enableBarrelHistos) {
+            histClasses += Form("TrackBarrel_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fTrackCuts) {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
           }
           if (enableMuonHistos) {
+            histClasses += Form("Muons_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fMuonCuts) {
               histClasses += Form("Muons_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
@@ -430,6 +432,7 @@ struct TableMakerMC {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
+                fHistMan->FillHistClass(Form("TrackBarrel_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -566,6 +569,7 @@ struct TableMakerMC {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
+                fHistMan->FillHistClass(Form("Muons_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
