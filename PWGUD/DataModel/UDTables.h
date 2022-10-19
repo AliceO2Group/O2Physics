@@ -111,25 +111,25 @@ DECLARE_SOA_COLUMN(BGFDDAPF, bgFDDApf, int32_t); //! Beam-gas time in FDA
 DECLARE_SOA_COLUMN(BGFDDCPF, bgFDDCpf, int32_t); //! Beam-gas time in FDC
 
 DECLARE_SOA_DYNAMIC_COLUMN(BBFT0A, bbFT0A,
-                           [](uint8_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
+                           [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BBFT0C, bbFT0C,
-                           [](uint8_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
+                           [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFT0A, bgFT0A,
-                           [](uint8_t bgFT0Apf) -> bool { return TESTBIT(bgFT0Apf, 16); });
+                           [](int32_t bgFT0Apf) -> bool { return TESTBIT(bgFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFT0C, bgFT0C,
-                           [](uint8_t bgFT0Cpf) -> bool { return TESTBIT(bgFT0Cpf, 16); });
+                           [](int32_t bgFT0Cpf) -> bool { return TESTBIT(bgFT0Cpf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BBFDDA, bbFDDA,
-                           [](uint8_t bbFDDApf) -> bool { return TESTBIT(bbFDDApf, 16); });
+                           [](int32_t bbFDDApf) -> bool { return TESTBIT(bbFDDApf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BBFDDC, bbFDDC,
-                           [](uint8_t bbFDDCpf) -> bool { return TESTBIT(bbFDDCpf, 16); });
+                           [](int32_t bbFDDCpf) -> bool { return TESTBIT(bbFDDCpf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFDDA, bgFDDA,
-                           [](uint8_t bgFDDApf) -> bool { return TESTBIT(bgFDDApf, 16); });
+                           [](int32_t bgFDDApf) -> bool { return TESTBIT(bgFDDApf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFDDC, bgFDDC,
-                           [](uint8_t bgFDDCpf) -> bool { return TESTBIT(bgFDDCpf, 16); });
+                           [](int32_t bgFDDCpf) -> bool { return TESTBIT(bgFDDCpf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BBFV0A, bbFV0A,
-                           [](uint8_t bbFV0Apf) -> bool { return TESTBIT(bbFV0Apf, 16); });
+                           [](int32_t bbFV0Apf) -> bool { return TESTBIT(bbFV0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFV0A, bgFV0A,
-                           [](uint8_t bgFV0Apf) -> bool { return TESTBIT(bgFV0Apf, 16); });
+                           [](int32_t bgFV0Apf) -> bool { return TESTBIT(bgFV0Apf, 16); });
 
 } // namespace udcollision
 
