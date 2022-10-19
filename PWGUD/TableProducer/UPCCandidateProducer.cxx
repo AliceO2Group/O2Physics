@@ -286,7 +286,6 @@ struct UpcCandProducer {
     return pass;
   }
 
-  // template <typename TMcCollisions, typename TMcParticles, typename TBCs>
   void skimMCInfo(o2::aod::McCollisions const& mcCollisions,
                   o2::aod::McParticles const& mcParticles,
                   BCsWithBcSels const& bcs)
