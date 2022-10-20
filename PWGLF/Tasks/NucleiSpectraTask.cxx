@@ -24,132 +24,166 @@
 
 #include "Framework/HistogramRegistry.h"
 
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-
 #include <cmath>
+
+#include <Math/Vector4D.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
+
+namespace nuclei
+{
+constexpr double betheBlochDefault[4][6]{
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr double nSigmaTPCdefault[4][2]{
+  {-5., 5.},
+  {-5., 5.},
+  {-5., 5.},
+  {-5., 5.}};
+constexpr double nSigmaTOFdefault[4][2]{
+  {-5., 5.},
+  {-5., 5.},
+  {-5., 5.},
+  {-5., 5.}};
+constexpr double DCAcutDefault[4][2]{
+  {1., 1.},
+  {1., 1.},
+  {1., 1.},
+  {1., 1.}};
+// constexpr bool storeTreesDefault[4]{false, false, false, false};
+constexpr int species{4};
+// constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
+constexpr float charges[4]{1.f, 1.f, 2.f, 2.f};
+constexpr float masses[4]{MassDeuteron, MassTriton, MassHelium3, MassAlpha};
+static const std::string matter[2]{"M", "A"};
+static const std::string pidName[2]{"TPC", "TOF"};
+static const std::vector<std::string> names{"deuteron", "triton", "He3", "alpha"};
+static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
+static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
+static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+
+float pidCuts[2][4][2];
+std::shared_ptr<TH3> hNsigma[2][4][2];
+std::shared_ptr<TH3> hDCAxy[2][4][2];
+} // namespace nuclei
 
 struct NucleiSpectraTask {
+
+  Configurable<std::string> cfgCentralityEstimator{"cfgCentralityEstimator", "V0A", "Centrality estimator name"};
+  Configurable<float> cfgCMrapidity{"cfgCMrapidity", 0.f, "Rapidity of the center of mass (only for p-Pb)"};
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutRapidityMin{"cfgCutRapidityMin", -0.5, "Minimum rapidity for tracks"};
+  Configurable<float> cfgCutRapidityMax{"cfgCutRapidityMax", 0.5, "Maximum rapidity for tracks"};
+  Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 4, "Minimum number of ITS clusters"};
+  Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
+
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 4, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgNsigmaTOF{"cfgNsigmaTOF", {nuclei::nSigmaTOFdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TOF nsigma selection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 4, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
+
+  ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {300, -3.f, 3.f}, "DCAxy binning for Deuterons"};
+  ConfigurableAxis cfgDCAxyBinsTritons{"cfgDCAxyBinsTritons", {300, -3.f, 3.f}, "DCAxy binning for Tritons"};
+  ConfigurableAxis cfgDCAxyBinsHe3{"cfgDCAxyBinsHe3", {300, -3.f, 3.f}, "DCAxy binning for He3"};
+  ConfigurableAxis cfgDCAxyBinsAlpha{"cfgDCAxyBinsAlpha", {300, -3.f, 3.f}, "DCAxy binning for Alpha"};
+
+  ConfigurableAxis cfgPtBinsDeuterons{"cfgPtBinsDeuterons", {100, 0., 10.}, "Pt binning for Deuterons"};
+  ConfigurableAxis cfgPtBinsTritons{"cfgPtBinsTritons", {100, 0., 10.}, "Pt binning for Tritons"};
+  ConfigurableAxis cfgPtBinsHe3{"cfgPtBinsHe3", {100, 0., 10.}, "Pt binning for He3"};
+  ConfigurableAxis cfgPtBinsAlpha{"cfgPtBinsAlpha", {100, 0., 10.}, "Pt binning for Alpha"};
+
+  ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {100, 0., 100.}, "Centrality binning"};
+  ConfigurableAxis cfgNsigmaTPCbins{"cfgNsigmaTPCbins", {100, -5., 5.}, "nsigma_TPC binning"};
+  ConfigurableAxis cfgNsigmaTOFbins{"cfgNsigmaTOFbins", {100, -5., 5.}, "nsigma_TOF binning"};
+
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
+
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
-                                     1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
-    std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
 
-    AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec centAxis = {centBinning, "V0M (%)"};
+    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", cfgCentralityEstimator)};
+    const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
 
-    spectra.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
-    spectra.add("histKeepEventData", "skimming histogram", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
-    spectra.add("histTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-    spectra.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {500, 0.0, 1.0, "#beta (TOF)"}});
-    spectra.add("histTpcNsigmaData", "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
-    spectra.add("histTofNsigmaData", "n-sigma TOF", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
-    spectra.add("histDcaVsPtData", "dca vs Pt", HistType::kTH2F, {ptAxis, {400, -0.2, 0.2, "dca"}});
-    spectra.add("histInvMassData", "Invariant mass", HistType::kTH2F, {ptAxis, {1000, 5.0, +20., "inv. mass GeV/c^{2}"}});
-    spectra.add("histPairCount", "Number of pairs", HistType::kTH2F, {{20, -0.5, 19.5, "number of negative particles in event"}, {20, -0.5, 19.5, "number of positive particles in event"}});
+    const AxisSpec ptAxes[4]{
+      {cfgPtBinsDeuterons, "#it{p}_{T} (GeV/#it{c})"},
+      {cfgPtBinsTritons, "#it{p}_{T} (GeV/#it{c})"},
+      {cfgPtBinsHe3, "#it{p}_{T} (GeV/#it{c})"},
+      {cfgPtBinsAlpha, "#it{p}_{T} (GeV/#it{c})"}};
+    const AxisSpec dcaAxes[4]{
+      {cfgDCAxyBinsDeuterons, "DCA_{xy} (cm)"},
+      {cfgDCAxyBinsTritons, "DCA_{xy} (cm)"},
+      {cfgDCAxyBinsHe3, "DCA_{xy} (cm)"},
+      {cfgDCAxyBinsAlpha, "DCA_{xy} (cm)"}};
+
+    spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+    for (int iC{0}; iC < 2; ++iC) {
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        for (int iPID{0}; iPID < 2; ++iPID) {
+          nuclei::hNsigma[iPID][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[iPID]});
+          nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA_{xy} {} {} {}", nuclei::pidName[iPID], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaAxes[iS]});
+        }
+      }
+    }
+
+    for (int iS{0}; iS < 4; ++iS) {
+      for (int iMax{0}; iMax < 2; ++iMax) {
+        nuclei::pidCuts[0][iS][iMax] = cfgNsigmaTPC->get(iS, iMax);
+        nuclei::pidCuts[1][iS][iMax] = cfgNsigmaTOF->get(iS, iMax);
+      }
+    }
   }
-
-  Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
-  Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
-
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
-  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
-
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
-
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TOFSignal>>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
-    //
     // collision process loop
-    //
-    bool keepEvent = kFALSE;
-    //
-    spectra.fill(HIST("histRecVtxZData"), collision.posZ());
-    //
-    std::vector<TLorentzVector> posTracks;
-    std::vector<TLorentzVector> negTracks;
-    //
-    for (auto track : tracks) { // start loop over tracks
+    spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
-      TLorentzVector lorentzVector{};
-      lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-      if (lorentzVector.Rapidity() < yMin || lorentzVector.Rapidity() > yMax) {
+    for (auto& track : tracks) { // start loop over tracks
+      if (track.itsNCls() < cfgCutNclusITS ||
+          track.tpcNClsFound() < cfgCutNclusTPC ||
+          std::abs(track.eta()) > cfgCutEta) {
         continue;
       }
-      //
-      // fill QA histograms
-      //
-      float nSigmaHe3 = track.tpcNSigmaHe();
-      nSigmaHe3 += 94.222101 * TMath::Exp(-0.905203 * track.tpcInnerParam());
-      //
-      spectra.fill(HIST("histTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
-      if (track.sign() < 0) {
-        spectra.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
-      }
-      //
-      // check offline-trigger (skimming) condidition
-      //
-      if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
-        keepEvent = kTRUE;
-        if (track.sign() < 0) {
-          spectra.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
-        }
-        //
-        // calculate beta
-        //
-        if (!track.hasTOF()) {
+      const int iC{track.sign() < 0};
+      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      const float nSigma[2][4]{
+        {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
+        {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        if (std::abs(track.dcaZ()) > cfgDCAcut->get(iS, 1)) {
           continue;
         }
-        Float_t tofTime = track.tofSignal();
-        Float_t tofLength = track.length();
-        Float_t beta = tofLength / (TMath::C() * 1e-10 * tofTime);
-        spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), beta);
-        spectra.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
-        if (abs(track.tofNSigmaHe()) < 4.0) {
-          //
-          // store tracks for invariant mass calculation
-          //
-          if (track.sign() < 0 && track.p() * 2.0 > 2.0) {
-            negTracks.push_back(lorentzVector);
-          }
-          if (track.sign() > 0 && track.p() * 2.0 > 4.0) {
-            posTracks.push_back(lorentzVector);
+        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{track.pt() * nuclei::charges[iS], track.eta(), track.phi(), nuclei::masses[iS]};
+        float y{fvector.Rapidity() + cfgCMrapidity};
+        if (y < cfgCutRapidityMin || y > cfgCutRapidityMax) {
+          continue;
+        }
+
+        for (int iPID{0}; iPID < 2; ++iPID) {
+          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] > nuclei::pidCuts[0][iS][1]) {
+            if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
+              continue;
+            }
+            nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), track.dcaXY());
+            if (std::abs(track.dcaXY()) < cfgDCAcut->get(iS, 0u)) {
+              nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+            }
           }
         }
       }
-
     } // end loop over tracks
-    //
-    // fill trigger (skimming) results
-    //
-    spectra.fill(HIST("histKeepEventData"), keepEvent);
-    //
-    // calculate invariant mass
-    //
-    spectra.fill(HIST("histPairCount"), negTracks.size(), posTracks.size());
-    //
-    for (unsigned int iPos = 0; iPos < posTracks.size(); iPos++) {
-      TLorentzVector& vecPos = posTracks[iPos];
-      for (unsigned int jNeg = 0; jNeg < negTracks.size(); jNeg++) {
-        TLorentzVector& vecNeg = negTracks[jNeg];
-        TLorentzVector vecMother = vecPos + vecNeg;
-        spectra.fill(HIST("histInvMassData"), vecMother.Pt(), vecMother.M());
-      }
-    }
   }
 };
 
