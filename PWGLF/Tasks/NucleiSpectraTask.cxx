@@ -10,19 +10,20 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "ReconstructionDataFormats/Track.h"
 
 #include <cmath>
 
@@ -158,7 +159,7 @@ struct NucleiSpectraTask {
       }
       const int iC{track.sign() < 0};
       spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
-      const float nSigma[2][4]{
+      float nSigma[2][4]{
         {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
         {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
       for (int iS{0}; iS < nuclei::species; ++iS) {
@@ -171,6 +172,11 @@ struct NucleiSpectraTask {
           continue;
         }
 
+        if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
+          double expBethe{tpc::BetheBlochAleph(double(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
+          double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
+          nSigma[0][iS] = float((track.tpcSignal() - expBethe) / expSigma);
+        }
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] > nuclei::pidCuts[0][iS][1]) {
             if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
