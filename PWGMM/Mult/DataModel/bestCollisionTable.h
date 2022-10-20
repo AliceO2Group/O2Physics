@@ -45,4 +45,17 @@ DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD",
                   fwdtrack::Z, fwdtrack::Tgl, fwdtrack::Signed1Pt,
                   fwdtrack::PtStatic, fwdtrack::PStatic, fwdtrack::EtaStatic,
                   fwdtrack::PhiStatic); // Snp does not exist
+
+namespace pwgmm::indices
+{
+DECLARE_SOA_INDEX_COLUMN(Track, track);
+}
+
+DECLARE_SOA_TABLE(ReassignedTracks, "AOD", "RATRACKS",
+                  aod::track::BestCollisionId, aod::track::BestDCAXY,
+                  aod::track::BestDCAZ, track::X, track::Alpha, track::Y,
+                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,
+                  track::PtStatic, track::PStatic, track::EtaStatic,
+                  track::PhiStatic, pwgmm::indices::TrackId);
+
 } // namespace o2::aod
