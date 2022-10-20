@@ -39,14 +39,8 @@ jobs:
           # https://oxsecurity.github.io/megalinter/configuration/
           # Validates all source when push on master, else just the diff with
           # master. Override with true if you always want to lint all sources.
-          # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Uncomment to disable copy-paste and spell checks
-          # DISABLE: COPYPASTE,SPELL
-          # The bandit check is overly broad and complains about subprocess
-          # usage in Scripts/update_ccdb.py.
-          DISABLE_ERRORS_LINTERS: PYTHON_BANDIT
 
       # Create or delete the cleanup branch
       - name: Update cleanup branch
