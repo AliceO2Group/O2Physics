@@ -46,7 +46,8 @@ DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD",
                   fwdtrack::PtStatic, fwdtrack::PStatic, fwdtrack::EtaStatic,
                   fwdtrack::PhiStatic); // Snp does not exist
 
-namespace pwgmm::indices {
+namespace pwgmm::indices
+{
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 }
 
