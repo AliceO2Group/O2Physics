@@ -54,8 +54,8 @@ struct qaMatchEff {
   Configurable<int> customITShitmap{"customITShitmap", 3, "ITS hitmap (think to the binary representation)"};
   Configurable<int> customMinITShits{"customMinITShits", 1, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
   // Other track settings
-  //  TRD presence -- MIND: this settings switch on the presence of TRD for ALL TRACKS analysed.Gnothi s'auton. 
-  Configurable<bool> b_TRDisThere{"b_TRDisThere", true, "Boolean to switch the requirement of TRD presence on/off (1/0)."};  
+  //  TRD presence -- MIND: this settings switch on the presence of TRD for ALL TRACKS analysed.Gnothi s'auton.
+  Configurable<bool> b_TRDisThere{"b_TRDisThere", true, "Boolean to switch the requirement of TRD presence on/off (1/0)."};
   //
   Configurable<bool> isitMC{"isitMC", false, "Reading MC files, data if false"};
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
@@ -408,8 +408,10 @@ struct qaMatchEff {
     for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
-      if (b_TRDisThere && !jT.hasTRD()) continue; 
-      if (!b_TRDisThere && jT.hasTRD()) continue; 
+      if (b_TRDisThere && !jT.hasTRD())
+        continue;
+      if (!b_TRDisThere && jT.hasTRD())
+        continue;
 
       if (!jT.has_mcParticle()) {
         countNoMC++;
@@ -447,7 +449,7 @@ struct qaMatchEff {
       count++;
       //
       // all tracks, no conditions
-      if ( jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+      if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
         histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
         histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
         histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
@@ -689,8 +691,10 @@ struct qaMatchEff {
     for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
-      if (b_TRDisThere && !jT.hasTRD()) continue; 
-      if (!b_TRDisThere && jT.hasTRD()) continue; 
+      if (b_TRDisThere && !jT.hasTRD())
+        continue;
+      if (!b_TRDisThere && jT.hasTRD())
+        continue;
 
       if (!jT.has_mcParticle()) {
         countNoMC++;
@@ -976,8 +980,10 @@ struct qaMatchEff {
     for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
-      if (b_TRDisThere && !jT.hasTRD()) continue; 
-      if (!b_TRDisThere && jT.hasTRD()) continue; 
+      if (b_TRDisThere && !jT.hasTRD())
+        continue;
+      if (!b_TRDisThere && jT.hasTRD())
+        continue;
 
       float trackPt = jT.pt();
       if (b_useTPCinnerWallPt) {
@@ -1064,8 +1070,10 @@ struct qaMatchEff {
     for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
-      if (b_TRDisThere && !jT.hasTRD()) continue; 
-      if (!b_TRDisThere && jT.hasTRD()) continue; 
+      if (b_TRDisThere && !jT.hasTRD())
+        continue;
+      if (!b_TRDisThere && jT.hasTRD())
+        continue;
 
       float trackPt = jT.pt();
       if (b_useTPCinnerWallPt) {
