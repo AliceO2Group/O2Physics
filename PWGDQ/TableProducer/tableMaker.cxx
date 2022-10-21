@@ -659,14 +659,14 @@ struct TableMaker {
 
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
   void processAmbiguousMuonOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
-                       soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
+                                soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMap, 0u, gkAmbiMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, ambiTracksFwd);
   }
 
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
   void processAmbiguousBarrelOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
-                         soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::AmbiguousTracksMid const& ambiTracksMid)
+                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, 0u, gkAmbiTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, ambiTracksMid, nullptr);
   }
