@@ -966,6 +966,15 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("Track")) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid");
+        if (classStr.Contains("PIDCalibElectron")) {
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "electron");
+        }
+        if (classStr.Contains("PIDCalibPion")) {
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "pion");
+        }
+        if (classStr.Contains("PIDCalibProton")) {
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "proton");
+        }
       }
       if (classStr.Contains("Muon")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
