@@ -165,7 +165,7 @@ struct tpcPidQa {
     }
 
     // Exp signal
-    const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[id])};
+    const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}(%s) A.U.", pT[id])};
     histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
 
     // Signal - Expected signal
