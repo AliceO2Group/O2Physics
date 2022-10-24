@@ -15,10 +15,10 @@
 #include <TMath.h>
 using namespace std;
 //////////////////////////////////////////////////////
-//  AliJBin
+//  JBin
 //////////////////////////////////////////////////////
 
-AliJNamed::AliJNamed(TString name, TString title, TString opt, int mode) : fName(name),
+JNamed::JNamed(TString name, TString title, TString opt, int mode) : fName(name),
                                                                            fTitle(title),
                                                                            fOption(opt),
                                                                            fMode(mode)
@@ -26,12 +26,12 @@ AliJNamed::AliJNamed(TString name, TString title, TString opt, int mode) : fName
   // constructor
 }
 
-AliJNamed::~AliJNamed()
+JNamed::~JNamed()
 {
   // virtual destructor for base class
 }
 
-TString AliJNamed::GetOption(TString key)
+TString JNamed::GetOption(TString key)
 {
   TPMERegexp a("&" + key + "=?([^&]*)", "i");
   int nMatch = a.Match(fOption);
@@ -39,7 +39,7 @@ TString AliJNamed::GetOption(TString key)
     return UndefinedOption();
   return a[1];
 }
-void AliJNamed::SetOption(TString key, TString value)
+void JNamed::SetOption(TString key, TString value)
 {
   TPMERegexp a("&" + key + "=?[^&]*", "i");
   int nMatch = a.Match(fOption);
@@ -51,11 +51,11 @@ void AliJNamed::SetOption(TString key, TString value)
   else
     fOption.ReplaceAll(a[0], newOpt);
 }
-void AliJNamed::RemoveOption(TString key)
+void JNamed::RemoveOption(TString key)
 {
   SetOption(key, UndefinedOption());
 }
-TString AliJNamed::UndefinedOption()
+TString JNamed::UndefinedOption()
 {
   // static TString undefinedOption = "Undefined";
   // return undefinedOption;
@@ -63,11 +63,11 @@ TString AliJNamed::UndefinedOption()
 }
 
 //////////////////////////////////////////////////////
-//  AliJBin
+//  JBin
 //////////////////////////////////////////////////////
 
 //_____________________________________________________
-AliJBin::AliJBin() : AliJNamed("AliJBin", "%.2f-%2.f", "&Mode=Range", kRange),
+JBin::JBin() : JNamed("JBin", "%.2f-%2.f", "&Mode=Range", kRange),
                      fBinD(0),
                      fBinStr(0),
                      fIsFixedBin(false),
@@ -77,7 +77,7 @@ AliJBin::AliJBin() : AliJNamed("AliJBin", "%.2f-%2.f", "&Mode=Range", kRange),
   ;
 }
 //_____________________________________________________
-AliJBin::AliJBin(TString config, AliJHistManager* hmg) : AliJNamed("AliJBin", "%.2f-%2.f", "&Mode=Range", kRange),
+JBin::JBin(TString config, JHistManager* hmg) : JNamed("JBin", "%.2f-%2.f", "&Mode=Range", kRange),
                                                          fBinD(0),
                                                          fBinStr(0),
                                                          fIsFixedBin(false),
@@ -85,7 +85,7 @@ AliJBin::AliJBin(TString config, AliJHistManager* hmg) : AliJNamed("AliJBin", "%
                                                          fHMG(NULL)
 {
   // cout<< config<<endl;
-  LOGF(info, "AliJBin: %s", config.Data());
+  LOGF(info, "JBin: %s", config.Data());
   std::vector<TString> t = Tokenize(config, " \t,");
   TString type = t[0];
   SetName(t[1]);
@@ -102,7 +102,7 @@ AliJBin::AliJBin(TString config, AliJHistManager* hmg) : AliJNamed("AliJBin", "%
 }
 
 //_____________________________________________________
-AliJBin::AliJBin(const AliJBin& obj) : AliJNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
+JBin::JBin(const JBin& obj) : JNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
                                        fBinD(obj.fBinD),
                                        fBinStr(obj.fBinStr),
                                        fIsFixedBin(obj.fIsFixedBin),
@@ -113,7 +113,7 @@ AliJBin::AliJBin(const AliJBin& obj) : AliJNamed(obj.fName, obj.fTitle, obj.fOpt
 }
 
 //_____________________________________________________
-AliJBin& AliJBin::operator=(const AliJBin& obj)
+JBin& JBin::operator=(const JBin& obj)
 {
   // assignment operator
   if (this != &obj) {
@@ -123,21 +123,21 @@ AliJBin& AliJBin::operator=(const AliJBin& obj)
 }
 
 //_____________________________________________________
-void AliJBin::FixBin()
+void JBin::FixBin()
 {
   if (fIsFixedBin)
     return;
   fIsFixedBin = true;
   if (!fHMG)
-    AddToManager(AliJHistManager::CurrentManager());
+    AddToManager(JHistManager::CurrentManager());
 }
 //_____________________________________________________
-void AliJBin::AddToManager(AliJHistManager* hmg)
+void JBin::AddToManager(JHistManager* hmg)
 {
   hmg->Add(this);
 }
 //_____________________________________________________
-AliJBin& AliJBin::Set(TString name, TString iname, TString title, int mode)
+JBin& JBin::Set(TString name, TString iname, TString title, int mode)
 {
   SetNameTitle(name, title);
   fIndexName = iname;
@@ -146,14 +146,14 @@ AliJBin& AliJBin::Set(TString name, TString iname, TString title, int mode)
   return *this;
 }
 //_____________________________________________________
-TString AliJBin::GetModeString(int i)
+TString JBin::GetModeString(int i)
 {
   static TString mode[] = {"Single", "Range", "String"};
   if (i < 0 || i > 2)
     return "";
   return mode[i];
 }
-int AliJBin::GetMode(TString mode)
+int JBin::GetMode(TString mode)
 {
   for (int i = 0; i < kNMode; i++)
     if (mode == GetModeString(i))
@@ -161,7 +161,7 @@ int AliJBin::GetMode(TString mode)
   return -1;
 }
 //_____________________________________________________
-AliJBin& AliJBin::SetBin(const int n, const float* v)
+JBin& JBin::SetBin(const int n, const float* v)
 {
   for (int i = 0; i < n; i++) {
     AddBin(v[i]);
@@ -170,7 +170,7 @@ AliJBin& AliJBin::SetBin(const int n, const float* v)
   return *this;
 }
 //_____________________________________________________
-AliJBin& AliJBin::SetBin(const int n, const double* v)
+JBin& JBin::SetBin(const int n, const double* v)
 {
   for (int i = 0; i < n; i++) {
     AddBin(v[i]);
@@ -178,7 +178,7 @@ AliJBin& AliJBin::SetBin(const int n, const double* v)
   FixBin();
   return *this;
 }
-AliJBin& AliJBin::SetBin(TVector* v)
+JBin& JBin::SetBin(TVector* v)
 {
   for (int i = 0; i < v->GetNrows(); i++) {
     AddBin((v->GetMatrixArray())[i]);
@@ -187,7 +187,7 @@ AliJBin& AliJBin::SetBin(TVector* v)
   return *this;
 }
 //_____________________________________________________
-AliJBin& AliJBin::SetBin(const TString v)
+JBin& JBin::SetBin(const TString v)
 {
   std::vector<TString> ar = Tokenize(v, "\t ,");
   for (UInt_t i = 0; i < ar.size(); i++) {
@@ -198,7 +198,7 @@ AliJBin& AliJBin::SetBin(const TString v)
 }
 
 //_____________________________________________________
-AliJBin& AliJBin::SetBin(const int n)
+JBin& JBin::SetBin(const int n)
 {
   for (UInt_t i = 0; i < UInt_t(n); i++) {
     AddBin(i);
@@ -207,7 +207,7 @@ AliJBin& AliJBin::SetBin(const int n)
   return *this;
 }
 //_____________________________________________________
-void AliJBin::AddBin(const TString& v)
+void JBin::AddBin(const TString& v)
 {
   if (fIsFixedBin) {
     JERROR("You can't Add Bini %s", GetName().Data());
@@ -216,7 +216,7 @@ void AliJBin::AddBin(const TString& v)
   fBinD.push_back(v.Atof());
 }
 //_____________________________________________________
-void AliJBin::AddBin(float v)
+void JBin::AddBin(float v)
 {
   if (fIsFixedBin) {
     JERROR("You can't Add Bin %s", GetName().Data());
@@ -225,7 +225,7 @@ void AliJBin::AddBin(float v)
   fBinStr.push_back(Form("%f", v));
 }
 //_____________________________________________________
-TString AliJBin::BuildTitle(int i)
+TString JBin::BuildTitle(int i)
 {
   if (i < 0 || i > Size())
     return "";
@@ -235,23 +235,23 @@ TString AliJBin::BuildTitle(int i)
     return TString(Form(fTitle.Data(), fBinD[i], fBinD[i + 1]));
   if (fMode == kString)
     return TString(Form(fTitle.Data(), fBinStr[i].Data()));
-  JERROR("Bad Mode of AliJBin type %d in %s", fMode, fName.Data());
+  JERROR("Bad Mode of JBin type %d in %s", fMode, fName.Data());
   return "";
 }
 //_____________________________________________________
-TString AliJBin::GetString()
+TString JBin::GetString()
 {
   SetOption("mode", GetModeString(fMode));
-  return "AliJBin\t" + fName + "\t" + fIndexName + "\t\"" + fTitle + "\"" + "\t" + fOption + "\t" + Join(fBinStr, " ");
+  return "JBin\t" + fName + "\t" + fIndexName + "\t\"" + fTitle + "\"" + "\t" + fOption + "\t" + Join(fBinStr, " ");
 }
 //_____________________________________________________
-void AliJBin::Print()
+void JBin::Print()
 {
   // std::cout<<"*"+GetString()<<std::endl;
   printf("*%s", GetString().Data());
 }
 
-int AliJBin::GetBin(double x)
+int JBin::GetBin(double x)
 {
   int i = TMath::BinarySearch(fBinD.size(), &fBinD[0], x);
   if (fMode == kRange && i + 1 >= int(fBinD.size()))
@@ -260,12 +260,12 @@ int AliJBin::GetBin(double x)
 }
 
 //////////////////////////////////////////////////////
-// AliJArrayBase
+// JArrayBase
 //////////////////////////////////////////////////////
 
 //_____________________________________________________
-AliJArrayBase::AliJArrayBase() : AliJNamed("AliJArayBase", "", "&Dir=default&Lazy", 0),
-                                 // AliJNamed("AliJArayBase","","&Dir=default&LessLazy",0),
+JArrayBase::JArrayBase() : JNamed("JArayBase", "", "&Dir=default&Lazy", 0),
+                                 // JNamed("JArayBase","","&Dir=default&LessLazy",0),
                                  fDim(0),
                                  fIndex(0),
                                  fArraySize(0),
@@ -277,7 +277,7 @@ AliJArrayBase::AliJArrayBase() : AliJNamed("AliJArayBase", "", "&Dir=default&Laz
   // constrctor
 }
 //_____________________________________________________
-AliJArrayBase::~AliJArrayBase()
+JArrayBase::~JArrayBase()
 {
   // destructor
   if (fAlg)
@@ -285,7 +285,7 @@ AliJArrayBase::~AliJArrayBase()
 }
 
 //_____________________________________________________
-AliJArrayBase::AliJArrayBase(const AliJArrayBase& obj) : AliJNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
+JArrayBase::JArrayBase(const JArrayBase& obj) : JNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
                                                          fDim(obj.fDim),
                                                          fIndex(obj.fIndex),
                                                          fArraySize(obj.fArraySize),
@@ -298,7 +298,7 @@ AliJArrayBase::AliJArrayBase(const AliJArrayBase& obj) : AliJNamed(obj.fName, ob
 }
 
 //_____________________________________________________
-AliJArrayBase& AliJArrayBase::operator=(const AliJArrayBase& obj)
+JArrayBase& JArrayBase::operator=(const JArrayBase& obj)
 {
   // assignment operator
   if (this != &obj) {
@@ -308,7 +308,7 @@ AliJArrayBase& AliJArrayBase::operator=(const AliJArrayBase& obj)
 }
 
 //_____________________________________________________
-void* AliJArrayBase::GetItem()
+void* JArrayBase::GetItem()
 {
   void* item = fAlg->GetItem();
   if (!item) {
@@ -318,7 +318,7 @@ void* AliJArrayBase::GetItem()
   return item;
 }
 //_____________________________________________________
-void* AliJArrayBase::GetSingleItem()
+void* JArrayBase::GetSingleItem()
 {
   if (fMode == kSingle)
     return GetItem();
@@ -326,7 +326,7 @@ void* AliJArrayBase::GetSingleItem()
   return NULL;
 }
 //_____________________________________________________
-void AliJArrayBase::FixBin()
+void JArrayBase::FixBin()
 {
   if (Dimension() == 0) {
     AddDim(1);
@@ -336,49 +336,49 @@ void AliJArrayBase::FixBin()
       RemoveOption("dir");
   }
   ClearIndex();
-  fAlg = new AliJArrayAlgorithmSimple(this);
+  fAlg = new JArrayAlgorithmSimple(this);
   fArraySize = fAlg->BuildArray();
 }
 //_____________________________________________________
-int AliJArrayBase::Index(int d)
+int JArrayBase::Index(int d)
 {
   if (OutOfDim(d))
     JERROR("Wrong Dim");
   return fIndex[d];
 }
-void AliJArrayBase::SetIndex(int i, int d)
+void JArrayBase::SetIndex(int i, int d)
 {
   if (OutOfSize(i, d))
     JERROR("Wrong Index");
   fIndex[d] = i;
 }
 
-void AliJArrayBase::InitIterator() { fAlg->InitIterator(); }
-bool AliJArrayBase::Next(void*& item) { return fAlg->Next(item); }
+void JArrayBase::InitIterator() { fAlg->InitIterator(); }
+bool JArrayBase::Next(void*& item) { return fAlg->Next(item); }
 
 //////////////////////////////////////////////////////
-//  AliJArrayAlgorithm
+//  JArrayAlgorithm
 //////////////////////////////////////////////////////
 
 //_____________________________________________________
-AliJArrayAlgorithm::AliJArrayAlgorithm(AliJArrayBase* cmd) : fCMD(cmd)
+JArrayAlgorithm::JArrayAlgorithm(JArrayBase* cmd) : fCMD(cmd)
 {
   // constructor
 }
 //_____________________________________________________
-AliJArrayAlgorithm::~AliJArrayAlgorithm()
+JArrayAlgorithm::~JArrayAlgorithm()
 {
   // destructor
 }
 
 //_____________________________________________________
-AliJArrayAlgorithm::AliJArrayAlgorithm(const AliJArrayAlgorithm& obj) : fCMD(obj.fCMD)
+JArrayAlgorithm::JArrayAlgorithm(const JArrayAlgorithm& obj) : fCMD(obj.fCMD)
 {
   // copy constructor TODO: proper handling of pointer data members
 }
 
 //_____________________________________________________
-AliJArrayAlgorithm& AliJArrayAlgorithm::operator=(const AliJArrayAlgorithm& obj)
+JArrayAlgorithm& JArrayAlgorithm::operator=(const JArrayAlgorithm& obj)
 {
   // assignment operator
   if (this != &obj) {
@@ -388,11 +388,11 @@ AliJArrayAlgorithm& AliJArrayAlgorithm::operator=(const AliJArrayAlgorithm& obj)
 }
 
 //////////////////////////////////////////////////////
-//  AliJArrayAlgorithmSimple
+//  JArrayAlgorithmSimple
 //////////////////////////////////////////////////////
 
 //_____________________________________________________
-AliJArrayAlgorithmSimple::AliJArrayAlgorithmSimple(AliJArrayBase* cmd) : AliJArrayAlgorithm(cmd),
+JArrayAlgorithmSimple::JArrayAlgorithmSimple(JArrayBase* cmd) : JArrayAlgorithm(cmd),
                                                                          fDimFactor(0),
                                                                          fArray(NULL),
                                                                          fPos(0)
@@ -400,7 +400,7 @@ AliJArrayAlgorithmSimple::AliJArrayAlgorithmSimple(AliJArrayBase* cmd) : AliJArr
   // constructor
 }
 //_____________________________________________________
-AliJArrayAlgorithmSimple::~AliJArrayAlgorithmSimple()
+JArrayAlgorithmSimple::~JArrayAlgorithmSimple()
 {
   // Dimension, GetEntries, SizeOf
   if (fArray)
@@ -408,7 +408,7 @@ AliJArrayAlgorithmSimple::~AliJArrayAlgorithmSimple()
 }
 
 //_____________________________________________________
-AliJArrayAlgorithmSimple::AliJArrayAlgorithmSimple(const AliJArrayAlgorithmSimple& obj) : AliJArrayAlgorithm(obj.fCMD),
+JArrayAlgorithmSimple::JArrayAlgorithmSimple(const JArrayAlgorithmSimple& obj) : JArrayAlgorithm(obj.fCMD),
                                                                                           fDimFactor(obj.fDimFactor),
                                                                                           fArray(obj.fArray),
                                                                                           fPos(obj.fPos)
@@ -417,7 +417,7 @@ AliJArrayAlgorithmSimple::AliJArrayAlgorithmSimple(const AliJArrayAlgorithmSimpl
 }
 
 //_____________________________________________________
-AliJArrayAlgorithmSimple& AliJArrayAlgorithmSimple::operator=(const AliJArrayAlgorithmSimple& obj)
+JArrayAlgorithmSimple& JArrayAlgorithmSimple::operator=(const JArrayAlgorithmSimple& obj)
 {
   // assignment operator TODO: proper implementation
   if (this != &obj) {
@@ -426,7 +426,7 @@ AliJArrayAlgorithmSimple& AliJArrayAlgorithmSimple::operator=(const AliJArrayAlg
   return *this;
 }
 //_____________________________________________________
-int AliJArrayAlgorithmSimple::BuildArray()
+int JArrayAlgorithmSimple::BuildArray()
 {
   fDimFactor.resize(Dimension(), 1);
   for (int i = Dimension() - 2; i >= 0; i--) {
@@ -439,7 +439,7 @@ int AliJArrayAlgorithmSimple::BuildArray()
   return arraySize;
 }
 //_____________________________________________________
-int AliJArrayAlgorithmSimple::GlobalIndex()
+int JArrayAlgorithmSimple::GlobalIndex()
 {
   int iG = 0;
   for (int i = 0; i < Dimension(); i++) // Index is checked by fCMD
@@ -447,7 +447,7 @@ int AliJArrayAlgorithmSimple::GlobalIndex()
   // TODO check iG
   return iG;
 }
-void AliJArrayAlgorithmSimple::ReverseIndex(int iG)
+void JArrayAlgorithmSimple::ReverseIndex(int iG)
 {
   int n = iG;
   for (int i = 0; i < Dimension(); i++) {
@@ -456,31 +456,31 @@ void AliJArrayAlgorithmSimple::ReverseIndex(int iG)
     n -= n1 * fDimFactor[i];
   }
 }
-void* AliJArrayAlgorithmSimple::GetItem()
+void* JArrayAlgorithmSimple::GetItem()
 {
   return fArray[GlobalIndex()];
 }
-void AliJArrayAlgorithmSimple::SetItem(void* item)
+void JArrayAlgorithmSimple::SetItem(void* item)
 {
   fArray[GlobalIndex()] = item;
 }
 
 //////////////////////////////////////////////////////
-//  AliJTH1
+//  JTH1
 //////////////////////////////////////////////////////
 //_____________________________________________________
-AliJTH1::AliJTH1() : fDirectory(NULL),
+JTH1::JTH1() : fDirectory(NULL),
                      fSubDirectory(NULL),
                      fHMG(NULL),
                      fTemplate(NULL),
                      fBins(0)
 {
   // default constructor
-  fName = "AliJTH1";
+  fName = "JTH1";
 }
 
 //_____________________________________________________
-AliJTH1::AliJTH1(TString config, AliJHistManager* hmg) : fDirectory(NULL),
+JTH1::JTH1(TString config, JHistManager* hmg) : fDirectory(NULL),
                                                          fSubDirectory(NULL),
                                                          fHMG(NULL),
                                                          fTemplate(NULL),
@@ -502,7 +502,7 @@ AliJTH1::AliJTH1(TString config, AliJHistManager* hmg) : fDirectory(NULL),
   FixBin();
 }
 //_____________________________________________________
-AliJTH1::~AliJTH1()
+JTH1::~JTH1()
 {
   // destructor
   if (fNGenerated == 0 && fTemplate)
@@ -510,7 +510,7 @@ AliJTH1::~AliJTH1()
 }
 
 //_____________________________________________________
-AliJTH1::AliJTH1(const AliJTH1& obj) : AliJArrayBase(),
+JTH1::JTH1(const JTH1& obj) : JArrayBase(),
                                        fDirectory(obj.fDirectory),
                                        fSubDirectory(obj.fSubDirectory),
                                        fHMG(obj.fHMG),
@@ -521,7 +521,7 @@ AliJTH1::AliJTH1(const AliJTH1& obj) : AliJArrayBase(),
 }
 
 //_____________________________________________________
-AliJTH1& AliJTH1::operator=(const AliJTH1& obj)
+JTH1& JTH1::operator=(const JTH1& obj)
 {
   // assignment operator
   if (this != &obj) {
@@ -531,15 +531,15 @@ AliJTH1& AliJTH1::operator=(const AliJTH1& obj)
 }
 
 //_____________________________________________________
-int AliJTH1::AddDim(AliJBin* bin)
+int JTH1::AddDim(JBin* bin)
 {
-  int ndim = this->AliJArrayBase::AddDim(bin->Size());
+  int ndim = this->JArrayBase::AddDim(bin->Size());
   fBins.resize(ndim, NULL);
   fBins[ndim - 1] = bin;
   return ndim;
 }
 
-int AliJTH1::AddDim(TString v)
+int JTH1::AddDim(TString v)
 {
   if (v == "END") {
     FixBin();
@@ -553,7 +553,7 @@ int AliJTH1::AddDim(TString v)
         AddDim(s.Atoi());
         continue;
       }
-      AliJBin* b = NULL;
+      JBin* b = NULL;
       if (fHMG)
         b = fHMG->GetBin(s);
       if (b)
@@ -566,7 +566,7 @@ int AliJTH1::AddDim(TString v)
   return Dimension();
 }
 //_____________________________________________________
-Int_t AliJTH1::Write()
+Int_t JTH1::Write()
 {
   TDirectory* owd = (TDirectory*)gDirectory;
   InitIterator();
@@ -586,7 +586,7 @@ Int_t AliJTH1::Write()
   return 0;
 }
 //_____________________________________________________
-TString AliJTH1::GetString()
+TString JTH1::GetString()
 {
   TString s = Form("%s\t%s\t\"%s\"\t%s\t",
                    ClassName(), fName.Data(), fTitle.Data(), fOption.Data());
@@ -600,19 +600,19 @@ TString AliJTH1::GetString()
   return s;
 }
 //_____________________________________________________
-void AliJTH1::FixBin()
+void JTH1::FixBin()
 {
-  this->AliJArrayBase::FixBin();
+  this->JArrayBase::FixBin();
 
   if (!fHMG) {
-    AddToManager(AliJHistManager::CurrentManager());
+    AddToManager(JHistManager::CurrentManager());
   }
   if (!fDirectory)
     fDirectory = fHMG->GetDirectory();
 }
 
 //_____________________________________________________
-void AliJTH1::AddToManager(AliJHistManager* hmg)
+void JTH1::AddToManager(JHistManager* hmg)
 {
   if (fHMG)
     return; // TODO handle error
@@ -620,14 +620,14 @@ void AliJTH1::AddToManager(AliJHistManager* hmg)
   hmg->Add(this);
 }
 //_____________________________________________________
-void AliJTH1::Print()
+void JTH1::Print()
 {
   // std::cout<<"*"<<GetString()<<std::endl;
   printf("*%s", GetString().Data());
   // TODO more details.
 }
 //_____________________________________________________
-void AliJTH1::SetTemplate(TH1* h)
+void JTH1::SetTemplate(TH1* h)
 {
   if (fTemplate)
     return; /// TDOO give error
@@ -638,7 +638,7 @@ void AliJTH1::SetTemplate(TH1* h)
   fTitle = h->GetTitle();
 }
 //_____________________________________________________
-TString AliJTH1::BuildName()
+TString JTH1::BuildName()
 {
   TString name = fName;
   if (!HasOption("Single"))
@@ -648,7 +648,7 @@ TString AliJTH1::BuildName()
   return name;
 }
 //_____________________________________________________
-TString AliJTH1::BuildTitle()
+TString JTH1::BuildTitle()
 {
   TString title = fTitle;
   for (int i = 0; i < Dimension(); i++)
@@ -656,7 +656,7 @@ TString AliJTH1::BuildTitle()
   return title;
 }
 //_____________________________________________________
-void* AliJTH1::BuildItem()
+void* JTH1::BuildItem()
 {
   TDirectory* owd = (TDirectory*)gDirectory;
   gROOT->cd();
@@ -720,33 +720,33 @@ void* AliJTH1::BuildItem()
   return (void*)item;
 }
 //_____________________________________________________
-bool AliJTH1::IsLoadMode()
+bool JTH1::IsLoadMode()
 {
   return fHMG->IsLoadMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
-// AliJTH1Derived                                                       //
+// JTH1Derived                                                       //
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-AliJTH1Derived<T>::AliJTH1Derived() : AliJTH1(), fPlayer(this)
+JTH1Derived<T>::JTH1Derived() : JTH1(), fPlayer(this)
 {
 }
 template <typename T>
-AliJTH1Derived<T>::~AliJTH1Derived()
+JTH1Derived<T>::~JTH1Derived()
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
-// AliJHistManager                                                       //
+// JHistManager                                                       //
 //                                                                      //
 // Array Base Class                                                     //
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
-AliJHistManager::AliJHistManager(TString name, TString dirname) : AliJNamed(name, "", "", 0),
+JHistManager::JHistManager(TString name, TString dirname) : JNamed(name, "", "", 0),
                                                                   fIsLoadMode(false),
                                                                   fDirectory(gDirectory),
                                                                   fConfigStr(),
@@ -779,7 +779,7 @@ AliJHistManager::AliJHistManager(TString name, TString dirname) : AliJNamed(name
 }
 
 //_____________________________________________________
-AliJHistManager::AliJHistManager(const AliJHistManager& obj) : AliJNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
+JHistManager::JHistManager(const JHistManager& obj) : JNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
                                                                fIsLoadMode(obj.fIsLoadMode),
                                                                fDirectory(obj.fDirectory),
                                                                fConfigStr(obj.fConfigStr),
@@ -795,7 +795,7 @@ AliJHistManager::AliJHistManager(const AliJHistManager& obj) : AliJNamed(obj.fNa
 }
 
 //_____________________________________________________
-AliJHistManager& AliJHistManager::operator=(const AliJHistManager& obj)
+JHistManager& JHistManager::operator=(const JHistManager& obj)
 {
   // assignment operator
   if (this != &obj) {
@@ -804,39 +804,39 @@ AliJHistManager& AliJHistManager::operator=(const AliJHistManager& obj)
   return *this;
 }
 
-AliJHistManager* AliJHistManager::GlobalManager()
+JHistManager* JHistManager::GlobalManager()
 {
-  static AliJHistManager* singleton = new AliJHistManager("GlobalHistManager");
+  static JHistManager* singleton = new JHistManager("GlobalHistManager");
   return singleton;
 }
 
-AliJHistManager* AliJHistManager::CurrentManager(AliJHistManager* hmg)
+JHistManager* JHistManager::CurrentManager(JHistManager* hmg)
 {
-  static AliJHistManager* currentManager = NULL; //;AliJHistManager::GlobalManager();
+  static JHistManager* currentManager = NULL; //;JHistManager::GlobalManager();
   if (hmg)
     currentManager = hmg;
   return currentManager;
 }
 
-AliJBin* AliJHistManager::GetBuiltBin(TString s)
+JBin* JHistManager::GetBuiltBin(TString s)
 {
   for (int i = 0; i < int(fBin.size()); i++)
     if (fBin[i]->GetName() == s)
       return fBin[i];
   return NULL;
 }
-AliJBin* AliJHistManager::GetBin(TString s)
+JBin* JHistManager::GetBin(TString s)
 {
-  AliJBin* h = GetBuiltBin(s);
+  JBin* h = GetBuiltBin(s);
   if (h)
     return h;
   for (int i = 0; i < GetNBin(); i++)
     if (fBinNames[i] == s) {
-      return new AliJBin(fBinConfigs[i], this);
+      return new JBin(fBinConfigs[i], this);
     }
   return NULL;
 }
-AliJTH1* AliJHistManager::GetBuiltTH1(TString s)
+JTH1* JHistManager::GetBuiltTH1(TString s)
 {
   for (int i = 0; i < int(fHist.size()); i++)
     if (fHist[i]->GetName() == s)
@@ -844,27 +844,27 @@ AliJTH1* AliJHistManager::GetBuiltTH1(TString s)
   return NULL;
 }
 // Note: Returning NULL crashes the code, something should be done about this.
-// The error given by compiler is: non-const lvalue reference to type 'AliJTH1D' (aka 'AliJTH1Derived<TH1D>') cannot bind to a temporary of type 'long'
-// The reoson for crash is that NULL cannot be used in dynamic_cast<AliJTH1D&>
-AliJTH1* AliJHistManager::GetTH1(TString s)
+// The error given by compiler is: non-const lvalue reference to type 'JTH1D' (aka 'JTH1Derived<TH1D>') cannot bind to a temporary of type 'long'
+// The reoson for crash is that NULL cannot be used in dynamic_cast<JTH1D&>
+JTH1* JHistManager::GetTH1(TString s)
 {
-  AliJTH1* h = GetBuiltTH1(s);
+  JTH1* h = GetBuiltTH1(s);
   if (h)
     return h;
   for (int i = 0; i < GetNHist(); i++)
     if (fHistNames[i] == s) {
-      if (fHistConfigs[i].BeginsWith("AliJTH1D"))
-        return new AliJTH1D(fHistConfigs[i], this);
-      if (fHistConfigs[i].BeginsWith("AliJTH2D"))
-        return new AliJTH2D(fHistConfigs[i], this);
-      if (fHistConfigs[i].BeginsWith("AliJTH3D"))
-        return new AliJTH3D(fHistConfigs[i], this);
-      if (fHistConfigs[i].BeginsWith("AliJTProfile"))
-        return new AliJTProfile(fHistConfigs[i], this);
+      if (fHistConfigs[i].BeginsWith("JTH1D"))
+        return new JTH1D(fHistConfigs[i], this);
+      if (fHistConfigs[i].BeginsWith("JTH2D"))
+        return new JTH2D(fHistConfigs[i], this);
+      if (fHistConfigs[i].BeginsWith("JTH3D"))
+        return new JTH3D(fHistConfigs[i], this);
+      if (fHistConfigs[i].BeginsWith("JTProfile"))
+        return new JTProfile(fHistConfigs[i], this);
     }
   return NULL;
 }
-void AliJHistManager::Add(AliJBin* o)
+void JHistManager::Add(JBin* o)
 {
   if (!o)
     return;
@@ -872,7 +872,7 @@ void AliJHistManager::Add(AliJBin* o)
     return; // TODO error handle
   fBin.push_back(o);
 }
-void AliJHistManager::Add(AliJTH1* o)
+void JHistManager::Add(JTH1* o)
 {
   if (!o)
     return;
@@ -880,30 +880,30 @@ void AliJHistManager::Add(AliJTH1* o)
     return; // TODO error handle
   fHist.push_back(o);
 }
-void AliJHistManager::Print()
+void JHistManager::Print()
 {
   if (IsLoadMode()) {
     // cout<<fConfigStr<<endl;
     LOGF(info, "%s", fConfigStr.Data());
     return;
   }
-  printf("============ AliJHistManager : %s ===================\n", fName.Data());
-  printf("\n---- AliJBin ----\n");
+  printf("============ JHistManager : %s ===================\n", fName.Data());
+  printf("\n---- JBin ----\n");
   for (int i = 0; i < GetNBin(); i++) {
     fBin[i]->Print();
   }
-  printf("\n---- AliJTH1 ----\n");
+  printf("\n---- JTH1 ----\n");
   for (int i = 0; i < GetNHist(); i++) {
     fHist[i]->Print();
   }
 }
-void AliJHistManager::Write()
+void JHistManager::Write()
 {
   for (int i = 0; i < GetNHist(); i++)
     fHist[i]->Write();
 }
 
-void AliJHistManager::WriteConfig()
+void JHistManager::WriteConfig()
 {
   TDirectory* owd = fDirectory;
   // cout<<"DEBUG_T1: "<<fDirectory<<endl;
@@ -917,7 +917,7 @@ void AliJHistManager::WriteConfig()
   owd->cd();
 }
 
-int AliJHistManager::LoadConfig()
+int JHistManager::LoadConfig()
 {
   SetLoadMode(true);
   TObjString* strobj = (TObjString*)fDirectory->Get("HistManager/Config");
@@ -930,10 +930,10 @@ int AliJHistManager::LoadConfig()
   for (UInt_t i = 0; i < lines.size(); i++) {
     TString line = lines.at(i);
     std::vector<TString> t = Tokenize(line, " \t,");
-    if (line.BeginsWith("AliJBin")) {
+    if (line.BeginsWith("JBin")) {
       fBinNames.push_back(t[1]);
       fBinConfigs.push_back(line);
-    } else if (line.BeginsWith("AliJ")) {
+    } else if (line.BeginsWith("J")) {
       fHistNames.push_back(t[1]);
       fHistConfigs.push_back(line);
     }
@@ -941,7 +941,7 @@ int AliJHistManager::LoadConfig()
   return 1;
 }
 
-bool AliJHistManager::HistogramExists(TString name)
+bool JHistManager::HistogramExists(TString name)
 {
   for (UInt_t i = 0; i < fHistNames.size(); i++) {
     if (fHistNames[i] == name)
@@ -989,40 +989,40 @@ TString Join(vector<TString>& ss, TString del)
   return s;
 }
 
-template class AliJTH1Derived<TH1D>;
-template class AliJTH1Derived<TH2D>;
-template class AliJTH1Derived<TH3D>;
-template class AliJTH1Derived<TProfile>;
+template class JTH1Derived<TH1D>;
+template class JTH1Derived<TH2D>;
+template class JTH1Derived<TH3D>;
+template class JTH1Derived<TProfile>;
 
 bool OutOf(int i, int x, int y) { return (i < x || i > y); }
 
 #include <TFile.h>
 
-void ttestAliJArray()
+void ttestJArray()
 {
-  AliJHistManager* fHMG;
-  AliJBin fCentBin;
-  AliJBin fVtxBin;
-  AliJBin fPTtBin;
-  AliJBin fPTaBin;
-  AliJBin fXEBin;
-  AliJBin fKLongBin;
-  AliJBin fRGapBin;
-  AliJBin fEtaGapBin;
-  AliJBin fPhiGapBin;
-  AliJBin fMassBin;
-  AliJBin fTypBin;
-  AliJBin fTypBin3;
-  AliJBin fPairPtBin;
-  AliJTH1D fhTriggPtBin;
-  AliJTH1D fhTriggMult;
-  AliJTH1D fhIphiTrigg;
-  AliJTH1D fhIetaTrigg;
-  AliJTH2D test1;
-  AliJTProfile test2;
+  JHistManager* fHMG;
+  JBin fCentBin;
+  JBin fVtxBin;
+  JBin fPTtBin;
+  JBin fPTaBin;
+  JBin fXEBin;
+  JBin fKLongBin;
+  JBin fRGapBin;
+  JBin fEtaGapBin;
+  JBin fPhiGapBin;
+  JBin fMassBin;
+  JBin fTypBin;
+  JBin fTypBin3;
+  JBin fPairPtBin;
+  JTH1D fhTriggPtBin;
+  JTH1D fhTriggMult;
+  JTH1D fhIphiTrigg;
+  JTH1D fhIetaTrigg;
+  JTH2D test1;
+  JTProfile test2;
 
   TFile* f = new TFile("test.root", "RECREATE");
-  fHMG = AliJHistManager::GlobalManager();
+  fHMG = JHistManager::GlobalManager();
   fCentBin.Set("Cent", "C", "C %2.0f-%2.0f%%").SetBin("0 100");
   fVtxBin.Set("Vtx", "V", "Vtx %.0f-%.0f").SetBin("-10 10");
   fPTtBin.Set("PTt", "T", "p_{Tt} %.1f-%.1f").SetBin("3 5 8 10 15 20");

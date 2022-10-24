@@ -132,24 +132,24 @@ void JFFlucAnalysis::Init()
 //________________________________________________________________________
 void JFFlucAnalysis::UserCreateOutputObjects()
 {
-  fHMG = new AliJHistManager("JFFlucHistManager", "jfluc");
-  // set AliJBin here //
-  fBin_Subset.Set("Sub", "Sub", "Sub:%d", AliJBin::kSingle).SetBin(2);
-  fBin_h.Set("NH", "NH", "NH:%d", AliJBin::kSingle).SetBin(kNH);
-  fBin_k.Set("K", "K", "K:%d", AliJBin::kSingle).SetBin(nKL);
+  fHMG = new JHistManager("JFFlucHistManager", "jfluc");
+  // set JBin here //
+  fBin_Subset.Set("Sub", "Sub", "Sub:%d", JBin::kSingle).SetBin(2);
+  fBin_h.Set("NH", "NH", "NH:%d", JBin::kSingle).SetBin(kNH);
+  fBin_k.Set("K", "K", "K:%d", JBin::kSingle).SetBin(nKL);
 
-  fBin_hh.Set("NHH", "NHH", "NHH:%d", AliJBin::kSingle).SetBin(kcNH);
-  fBin_kk.Set("KK", "KK", "KK:%d", AliJBin::kSingle).SetBin(nKL);
+  fBin_hh.Set("NHH", "NHH", "NHH:%d", JBin::kSingle).SetBin(kcNH);
+  fBin_kk.Set("KK", "KK", "KK:%d", JBin::kSingle).SetBin(nKL);
 
   // TODO: index with binning the array of pointers
-  fHistCentBin.Set("CentBin", "CentBin", "Cent:%d", AliJBin::kSingle).SetBin(numBins);
+  fHistCentBin.Set("CentBin", "CentBin", "Cent:%d", JBin::kSingle).SetBin(numBins);
 
-  fVertexBin.Set("Vtx", "Vtx", "Vtx:%d", AliJBin::kSingle).SetBin(3);
-  fCorrBin.Set("C", "C", "C:%d", AliJBin::kSingle).SetBin(28);
+  fVertexBin.Set("Vtx", "Vtx", "Vtx:%d", JBin::kSingle).SetBin(3);
+  fCorrBin.Set("C", "C", "C:%d", JBin::kSingle).SetBin(28);
 
-  fBin_Nptbins.Set("PtBin", "PtBin", "Pt:%d", AliJBin::kSingle).SetBin(N_ptbins);
+  fBin_Nptbins.Set("PtBin", "PtBin", "Pt:%d", JBin::kSingle).SetBin(N_ptbins);
 
-  // set AliJTH1D here //
+  // set JTH1D here //
   fh_cent
     << TH1D("h_cent", "h_cent", 200, 0, 100)
     << "END";
@@ -293,7 +293,7 @@ void JFFlucAnalysis::UserCreateOutputObjects()
     << fBin_h
     << fHistCentBin
     << "END"; // fBin_h > not stand for harmonics, only for v2, v3, v4, v5
-  // AliJTH1D set done.
+  // JTH1D set done.
 
   fHMG->Print();
   // fHMG->WriteConfig();

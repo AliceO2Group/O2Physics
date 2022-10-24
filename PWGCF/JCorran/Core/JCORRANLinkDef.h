@@ -14,4 +14,4 @@
 #pragma link off all functions;
 
 #pragma link C++ class JFFlucAnalysis + ;
-#pragma link C++ class AliJHistManager + ;
+#pragma link C++ class JHistManager + ;

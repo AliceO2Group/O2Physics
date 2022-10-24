@@ -202,46 +202,46 @@ class JFFlucAnalysis
   TComplex QvectorQC[kNH][nKL];
   TComplex QvectorQCeta10[2][kNH][nKL]; // ksub
 
-  AliJHistManager* fHMG; //!
+  JHistManager* fHMG; //!
 
-  AliJBin fBin_Subset;  //!
-  AliJBin fBin_h;       //!
-  AliJBin fBin_k;       //!
-  AliJBin fBin_hh;      //!
-  AliJBin fBin_kk;      //!
-  AliJBin fHistCentBin; //!
-  AliJBin fVertexBin;   //! // x, y, z
-  AliJBin fCorrBin;     //!
+  JBin fBin_Subset;  //!
+  JBin fBin_h;       //!
+  JBin fBin_k;       //!
+  JBin fBin_hh;      //!
+  JBin fBin_kk;      //!
+  JBin fHistCentBin; //!
+  JBin fVertexBin;   //! // x, y, z
+  JBin fCorrBin;     //!
 
-  AliJTH1D fh_cent;            //! // for cent dist
-  AliJTH1D fh_ImpactParameter; //! // for impact parameter for mc
-  AliJTH1D fh_vertex;          //!
-  AliJTH1D fh_pt;              //! // for pt dist of tracks
-  AliJTH1D fh_eta;             //! // for eta dist of tracks
-  AliJTH1D fh_phi;             //! // for phi dist [ic][isub]
-  AliJTH2D fh_phieta;          //!
-  AliJTH3D fh_phietaz;         //!
+  JTH1D fh_cent;            //! // for cent dist
+  JTH1D fh_ImpactParameter; //! // for impact parameter for mc
+  JTH1D fh_vertex;          //!
+  JTH1D fh_pt;              //! // for pt dist of tracks
+  JTH1D fh_eta;             //! // for eta dist of tracks
+  JTH1D fh_phi;             //! // for phi dist [ic][isub]
+  JTH2D fh_phieta;          //!
+  JTH3D fh_phietaz;         //!
 
-  AliJTH1D fh_psi_n;       //!
-  AliJTH1D fh_cos_n_phi;   //!
-  AliJTH1D fh_sin_n_phi;   //!
-  AliJTH1D fh_cos_n_psi_n; //!
-  AliJTH1D fh_sin_n_psi_n; //!
+  JTH1D fh_psi_n;       //!
+  JTH1D fh_cos_n_phi;   //!
+  JTH1D fh_sin_n_phi;   //!
+  JTH1D fh_cos_n_psi_n; //!
+  JTH1D fh_sin_n_psi_n; //!
 
-  AliJTH1D fh_ntracks; //! // for number of tracks dist
-  AliJTH1D fh_vn;      //!  // single vn^k  array [ih][ik][iCent]
-  AliJTH1D fh_vna;     //! // single vn^k with autocorrelation removed (up to a limited order)
-  AliJTH1D fh_vn_vn;   //! // combination for <vn*vn> [ih][ik][ihh][ikk][iCent]
-  /*AliJTH1D fh_cn_4c;//!  // QC
-  AliJTH1D fh_cn_2c;//!  // QC
-  AliJTH1D fh_cn_cn_2c;//! // QC
-  AliJTH1D fh_cn_2c_eta10;//!  // QC
-  AliJTH1D fh_cn_cn_2c_eta10;//! // QC*/
+  JTH1D fh_ntracks; //! // for number of tracks dist
+  JTH1D fh_vn;      //!  // single vn^k  array [ih][ik][iCent]
+  JTH1D fh_vna;     //! // single vn^k with autocorrelation removed (up to a limited order)
+  JTH1D fh_vn_vn;   //! // combination for <vn*vn> [ih][ik][ihh][ikk][iCent]
+  /*JTH1D fh_cn_4c;//!  // QC
+  JTH1D fh_cn_2c;//!  // QC
+  JTH1D fh_cn_cn_2c;//! // QC
+  JTH1D fh_cn_2c_eta10;//!  // QC
+  JTH1D fh_cn_cn_2c_eta10;//! // QC*/
 
-  AliJTH1D fh_correlator;            //! // some more complex correlators
-  AliJTH2D fh_TrkQA_TPCvsGlob;       //! // QA histos
-  AliJTH2D fh_TrkQA_TPCvsCent;       //! // QA histos
-  AliJTH2D fh_TrkQA_FB32_vs_FB32TOF; //!
+  JTH1D fh_correlator;            //! // some more complex correlators
+  JTH2D fh_TrkQA_TPCvsGlob;       //! // QA histos
+  JTH2D fh_TrkQA_TPCvsCent;       //! // QA histos
+  JTH2D fh_TrkQA_FB32_vs_FB32TOF; //!
 
   // additional variables for ptbins(Standard Candles only)
   enum { kPt0,
@@ -254,15 +254,15 @@ class JFFlucAnalysis
          kPt7,
          N_ptbins };
   double NSubTracks_pt[2][N_ptbins];
-  AliJBin fBin_Nptbins;       //!
-  AliJTH1D fh_SC_ptdep_4corr; //! // for < vn^2 vm^2 >
-  AliJTH1D fh_SC_ptdep_2corr; //!  // for < vn^2 >
+  JBin fBin_Nptbins;       //!
+  JTH1D fh_SC_ptdep_4corr; //! // for < vn^2 vm^2 >
+  JTH1D fh_SC_ptdep_2corr; //!  // for < vn^2 >
   // additinal variables for SC with QC
-  AliJTH1D fh_SC_with_QC_4corr;       //! // for <vn^2 vm^2>
-  AliJTH1D fh_SC_with_QC_2corr;       //! // for <vn^2>
-  AliJTH1D fh_SC_with_QC_2corr_eta10; //!
-  AliJTH1D fh_evt_SP_QC_ratio_2p;     //! // check SP QC evt by evt ratio
-  AliJTH1D fh_evt_SP_QC_ratio_4p;     //! // check SP QC evt by evt ratio
+  JTH1D fh_SC_with_QC_4corr;       //! // for <vn^2 vm^2>
+  JTH1D fh_SC_with_QC_2corr;       //! // for <vn^2>
+  JTH1D fh_SC_with_QC_2corr_eta10; //!
+  JTH1D fh_evt_SP_QC_ratio_2p;     //! // check SP QC evt by evt ratio
+  JTH1D fh_evt_SP_QC_ratio_4p;     //! // check SP QC evt by evt ratio
 };
 
 #endif
