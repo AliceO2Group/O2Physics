@@ -65,19 +65,19 @@ o2physics_add_dpl_workflow(lf-strangeness-filter
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mult-filter
-        SOURCES PWGMM/multFilter.cxx
-        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-        COMPONENT_NAME Analysis)
+                           SOURCES PWGMM/multFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-qc
-        SOURCES PWGHF/HFFilterQC.cxx
-        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-        COMPONENT_NAME Analysis)
+                           SOURCES PWGHF/HFFilterQC.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
+                           COMPONENT_NAME Analysis)
 
 o2physics_add_library(UPCCutparHolder
-        SOURCES PWGUD/UPCCutparHolder.cxx
-        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+                      SOURCES PWGUD/UPCCutparHolder.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(UPCCutparHolder
-        HEADERS PWGUD/UPCCutparHolder.h
-        LINKDEF PWGUD/UPCCutparHolderLinkDef.h)
+                                 HEADERS PWGUD/UPCCutparHolder.h
+                                 LINKDEF PWGUD/UPCCutparHolderLinkDef.h)
