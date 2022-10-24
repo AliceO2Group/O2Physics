@@ -142,6 +142,26 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("PIDCalibElectron")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_ele"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalibPion")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_pion"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalibProton")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_proton"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalib_basic")) {
+    cut->AddCut(GetAnalysisCut("pidbasic"));
+    return cut;
+  }
+
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(GetAnalysisCut("highPtHadron"));
     return cut;
@@ -266,7 +286,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCompositeCut* cut_tpc_hadrej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", kTRUE);
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_electron"));
-    cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_pion_band_rejection"));
+    cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_pion_muon_band_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_pion_rejection_highp"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_kaon_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_proton_rejection"));
@@ -540,7 +560,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
     cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
-    cut->AddCut(VarManager::kITSncls, 3.5, 9.);
+    cut->AddCut(VarManager::kITSncls, 3.5, 7.5);
     return cut;
   }
 
@@ -728,6 +748,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("tpc_pion_muon_band_rejection")) {
+    TF1* f1minPi = new TF1("f1minPi", "[0]+exp([1]*x+[2])", 0, 10);
+    f1minPi->SetParameters(37, -18, 5.5);
+    TF1* f1maxPi = new TF1("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
+    f1maxPi->SetParameters(60, -15, 6);
+    cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.05, 0.3, false);
+    return cut;
+  }
+
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
     TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
     f1minPi->SetParameters(60, 4.);
@@ -754,7 +783,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("tpc_electron")) {
-    cut->AddCut(VarManager::kTPCsignal, 70, 110, false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCsignal, 60, 110, false, VarManager::kPin, 0.0, 1e+10, false);
     return cut;
   }
 
@@ -770,6 +799,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pidcalib_ele")) {
     cut->AddCut(VarManager::kIsLegFromGamma, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidcalib_pion")) {
+    cut->AddCut(VarManager::kIsLegFromK0S, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidcalib_proton")) {
+    cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidbasic")) {
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    cut->AddCut(VarManager::kTPCchi2, 0, 4);
     return cut;
   }
 

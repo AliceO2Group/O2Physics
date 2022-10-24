@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
 project(O2Physics
         VERSION 0.0.1
@@ -18,8 +18,6 @@ project(O2Physics
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set_property(GLOBAL PROPERTY REPORT_UNDEFINED_PROPERTIES)
-
-include(GNUInstallDirs)
 
 cmake_host_system_information(RESULT _totalmem QUERY TOTAL_PHYSICAL_MEMORY)
 math(EXPR _total_analysis_jobs "(${_totalmem}-4096)/4096")
@@ -35,12 +33,6 @@ if(NOT DEFINED CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 endif()
-
-# Dependencies
-find_package(O2 CONFIG REQUIRED)
-find_package(ONNXRuntime::ONNXRuntime CONFIG)
-
-feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
 include(O2PhysicsDefineOptions)
 o2physics_define_options()
@@ -64,8 +56,6 @@ include(O2PhysicsTargetRootDictionary)
 include(O2PhysicsSetROOTPCMDependencies)
 include(O2PhysicsDataFile)
 include(AddRootDictionary)
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Main targets of the project in various subdirectories. Order matters.
 add_subdirectory(Common)

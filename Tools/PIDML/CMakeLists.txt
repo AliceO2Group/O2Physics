@@ -18,13 +18,13 @@ o2physics_add_dpl_workflow(pid-ml-producer
 o2physics_add_dpl_workflow(simple-apply-pid-onnx-model
                            SOURCES simpleApplyPidOnnxModel.cxx
                            JOB_POOL analysis
-                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(simple-apply-pid-onnx-interface
                            SOURCES simpleApplyPidOnnxInterface.cxx
                            JOB_POOL analysis
-                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(qa-pid
