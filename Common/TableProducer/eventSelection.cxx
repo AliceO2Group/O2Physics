@@ -407,20 +407,36 @@ struct EventSelectionTask {
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-  void processRun3(aod::Collision const& col, BCsWithBcSels const& bcs)
+  void processRun3(aod::Collision const& col, aod::FullTracks const& tracks, BCsWithBcSels const& bcs)
   {
-    auto bc = col.bc_as<BCsWithBcSels>();
-    int64_t shift = 0;
-
-    // temporary workaround for apass1. Might be included in CCDB in the future
-    if (bc.runNumber() > 520143) {
-      shift = col.collisionTimeRes() < 12 ? -2 : -15;
-    } else if (bc.runNumber() >= 523141) {
-      shift = col.collisionTimeRes() < 12 ? -2 : 0;
+    // count tracks of different types
+    int nITStracks = 0;
+    int nTPCtracks = 0;
+    int nTOFtracks = 0;
+    int nTRDtracks = 0;
+    for (auto& track : tracks) {
+      if (!track.isPVContributor()) {
+        continue;
+      }
+      nITStracks += track.hasITS();
+      nTPCtracks += track.hasTPC();
+      nTOFtracks += track.hasTOF();
+      nTRDtracks += track.hasTRD();
     }
 
-    int64_t meanBC = bc.globalBC() + shift;
+    LOGP(debug, "nContrib={} nITStracks={} nTPCtracks={} nTOFtracks={} nTRDtracks={}", col.numContrib(), nITStracks, nTPCtracks, nTOFtracks, nTRDtracks);
+
+    auto bc = col.bc_as<BCsWithBcSels>();
+    int run = bc.runNumber();
+
+    int64_t meanBC = bc.globalBC();
     int64_t deltaBC = std::ceil(col.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
+
+    // pilot runs with isolated bunches: using custom delta bc to improve FT0-collision matching
+    if (run <= 520297) {
+      int min_bunch_spacing = (run >= 520259 && run <= 520297) || (run >= 519041 && run <= 519507) ? 100 : 1200;
+      deltaBC = deltaBC < min_bunch_spacing ? min_bunch_spacing / 2 : deltaBC;
+    }
 
     // use custom delta
     if (customDeltaBC > 0) {
@@ -430,17 +446,29 @@ struct EventSelectionTask {
     uint64_t minBC = meanBC - deltaBC;
     uint64_t maxBC = meanBC + deltaBC;
 
-    // temporary workaround for apass1. Might be included in CCDB in the future
-    if (bc.runNumber() >= 520143 && col.collisionTimeRes() < 12) { // collisions with TOF-matched tracks
-      minBC = meanBC - 13;
-      maxBC = meanBC;
-    } else if (bc.runNumber() >= 523141 && col.collisionTimeRes() < 12) { // collisions with TOF-matched tracks
-      minBC = meanBC - 2;
-      maxBC = meanBC + 4;
+    // temporary workaround for runs at high rate (>22m)
+    // significant eta-dependent biases up to 70 bcs for single ITS-TPC track times
+    // extend deltaBC for collisions built with ITS-TPC tracks only
+    if (run >= 523141 && nTRDtracks == 0 && nTOFtracks == 0 && nTPCtracks > 0) {
+      minBC -= 100;
+      maxBC += 100;
     }
-    if (bc.runNumber() == 505600) { // pilot run without TOF - using custom delta bc to improve matching
-      minBC = meanBC - 400;
-      maxBC = meanBC + 400;
+
+    // temporary workaround for runs without proper TOF calibration
+    if (run > 520297 && run < 523306 && nTOFtracks > 0) {
+      minBC = meanBC - deltaBC - 2;
+      maxBC = meanBC + deltaBC - 2;
+    }
+
+    // precise timing for collisions with TRD-matched tracks
+    if (nTRDtracks > 0) {
+      minBC = meanBC;
+      maxBC = meanBC;
+      // collisions with TRD tracks shifted by 15 bcs in LHC22cdef
+      if (run > 520297 && run <= 521326) {
+        minBC = meanBC - 15;
+        maxBC = meanBC - 15;
+      }
     }
 
     int forwardMoveCount = 0, backwardMoveCount = 0;
