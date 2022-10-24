@@ -248,7 +248,7 @@ TString JBin::GetString()
 void JBin::Print()
 {
   // std::cout<<"*"+GetString()<<std::endl;
-  printf("*%s", GetString().Data());
+  LOGF(info, "*%s", GetString().Data());
 }
 
 int JBin::GetBin(double x)
@@ -623,7 +623,7 @@ void JTH1::AddToManager(JHistManager* hmg)
 void JTH1::Print()
 {
   // std::cout<<"*"<<GetString()<<std::endl;
-  printf("*%s", GetString().Data());
+  LOGF(info, "*%s", GetString().Data());
   // TODO more details.
 }
 //_____________________________________________________
@@ -887,12 +887,12 @@ void JHistManager::Print()
     LOGF(info, "%s", fConfigStr.Data());
     return;
   }
-  printf("============ JHistManager : %s ===================\n", fName.Data());
-  printf("\n---- JBin ----\n");
+  LOGF(info, "============ JHistManager : %s ===================\n", fName.Data());
+  LOGF(info, "\n---- JBin ----\n");
   for (int i = 0; i < GetNBin(); i++) {
     fBin[i]->Print();
   }
-  printf("\n---- JTH1 ----\n");
+  LOGF(info, "\n---- JTH1 ----\n");
   for (int i = 0; i < GetNHist(); i++) {
     fHist[i]->Print();
   }
