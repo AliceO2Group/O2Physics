@@ -46,10 +46,10 @@ template <typename T>
 bool cleanFITCollision(T& col, std::vector<float> lims);
 
 template <typename T>
-bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
 
 template <typename T>
-bool cleanCalo(T& bc, aod::Calos& calos, std::vector<float>& lims);
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims);
 
 template <typename TC>
 bool hasGoodPID(DGCutparHolder diffCuts, TC track);
@@ -484,7 +484,7 @@ bool cleanFITCollision(T& col, std::vector<float> lims)
 }
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
 {
   const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex());
   return (ZdcBC.size() == 0);
@@ -492,7 +492,7 @@ bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T& bc, aod::Calos& calos, std::vector<float>& lims)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims)
 {
   const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex());
   return (CaloBC.size() == 0);

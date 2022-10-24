@@ -128,6 +128,9 @@ struct lambdakzeroBuilder {
   // Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", 1, "Use Abs DCAs"}; uncomment this once we want to use the weighted DCA
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
+  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", true, "Vertices use cov matrices"};
+
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
@@ -214,7 +217,8 @@ struct lambdakzeroBuilder {
     fitter.setMinRelChi2Change(0.9);
     fitter.setMaxDZIni(1e9);
     fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
+    fitter.setUseAbsDCA(d_UseAbsDCA);
+    fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
     registry.fill(HIST("hEventCounter"), 0.5);
 

@@ -48,14 +48,14 @@ struct tracksWGTInBCs {
   {
   }
 
-  void processBarrel(BCs& bcs, CCs& collisions, TCs& tracks, ATs& ambTracks)
+  void processBarrel(BCs const& bcs, CCs const& collisions, TCs const& tracks, ATs const& ambTracks)
   {
     // container to sort tracks with good timing according to their matching/closest BC
     std::map<uint64_t, std::vector<int32_t>> tracksInBCList{};
     uint64_t closestBC = 0;
 
     // loop over all tracks and fill tracksInBCList
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       // only consider tracks with good timing
       if (track.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
 
@@ -79,7 +79,7 @@ struct tracksWGTInBCs {
     // fill tracksWGTInBCs
     int indBCToStart = 0;
     int indBCToSave;
-    for (auto tracksInBC : tracksInBCList) {
+    for (auto const& tracksInBC : tracksInBCList) {
       indBCToSave = -1;
       if (tracksInBC.second.size() > 0) {
         // find corresponding BC
@@ -108,7 +108,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all forward tracks and fill fwdTracksWGTInBCList
-    for (auto& fwdTrack : fwdTracks) {
+    for (auto const& fwdTrack : fwdTracks) {
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
       if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
 
@@ -132,7 +132,7 @@ struct tracksWGTInBCs {
     // fill fwdTracksWGTInBCs
     int indBCToStart = 0;
     int indBCToSave;
-    for (auto fwdTracksWGTInBC : fwdTracksWGTInBCList) {
+    for (auto const& fwdTracksWGTInBC : fwdTracksWGTInBCList) {
       indBCToSave = -1;
       if (fwdTracksWGTInBC.second.size() > 0) {
         // find corresponding BC
@@ -161,7 +161,7 @@ struct DGBCCandProducer {
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDTracks> outputTracks;
-  Produces<aod::UDTracksCov> outputTracksCov;
+  // Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
@@ -182,7 +182,7 @@ struct DGBCCandProducer {
   using FTIBCs = aod::FwdTracksWGTInBCs;
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using TCs = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                         aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FTCs = aod::FwdTracks;
@@ -199,7 +199,7 @@ struct DGBCCandProducer {
   {
     outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
                  bc.globalBC(), track.trackTime(), track.trackTimeRes());
-    outputTracksCov(track.x(), track.y(), track.z(), track.sigmaY(), track.sigmaZ());
+    // outputTracksCov(track.x(), track.y(), track.z(), track.sigmaY(), track.sigmaZ());
     outputTracksDCA(track.dcaZ(), track.dcaXY());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -241,8 +241,9 @@ struct DGBCCandProducer {
     }
   }
 
-  void process(TIBC& tibc, BCs& bcs, CCs& collisions, TCs& tracks, aod::FwdTracks& fwdtracks, FTIBCs& ftibcs,
-               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  void process(TIBC const& tibc, BCs const& bcs, CCs const& collisions,
+               TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
+               aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
 
     // leave if tibc has no associated BC
@@ -282,7 +283,7 @@ struct DGBCCandProducer {
                              bc.bbFDA(), bc.bbFDC(), bc.bgFDA(), bc.bgFDC());
 
         // update DGTracks tables
-        for (auto& track : colTracks) {
+        for (auto const& track : colTracks) {
           if (track.isPVContributor()) {
             updateUDTrackTables(track, bc);
           }
@@ -321,21 +322,22 @@ struct DGBCCandProducer {
                              bc.bbFDA(), bc.bbFDC(), bc.bgFDA(), bc.bgFDC());
 
         // update DGTracks tables
-        for (auto& track : tracksArray) {
+        for (auto const& track : tracksArray) {
           updateUDTrackTables(track, bc);
         }
       }
     }
   }
 
-  void processQA(BCs& bcs, CCs& collisions, TCs& tracks, FTCs& fwdtracks, TIBCs& tibcs, FTIBCs& ftibcs,
-                 aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  void processQA(BCs const& bcs, CCs const& collisions,
+                 TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
+                 aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
 
     // loop over BCs
     int isDG1, isDG2;
     int ntr1, ntr2;
-    for (auto bc : bcs) {
+    for (auto const& bc : bcs) {
       // reset counters
       isDG1 = -1;
       isDG2 = -1;
@@ -371,7 +373,7 @@ struct DGBCCandProducer {
         ntr2 = tracksArray.size();
 
         // update ptvsdcaxy
-        for (auto track : tracksArray) {
+        for (auto const& track : tracksArray) {
           registry.get<TH2>(HIST("ptvsdcaxy"))->Fill(track.pt(), track.dcaXY());
         }
       }

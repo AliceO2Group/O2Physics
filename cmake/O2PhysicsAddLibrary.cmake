@@ -130,6 +130,11 @@ function(o2physics_add_library baseTargetName)
     target_include_directories(
       ${target}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
+
+    # add top level directory so e.g. the #include "Common/Core/xxx.h" will work
+    target_include_directories(
+      ${target}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
   endif()
 
   # set the private include directories if available

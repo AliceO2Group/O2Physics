@@ -123,12 +123,13 @@ struct DGCandAnalyzer {
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
+    registry.add("trackQC", "#trackQC", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+    registry.add("dcaXYDG", "#dcaXYDG", {HistType::kTH1F, {{400, -2., 2.}}});
+    registry.add("ptTrkdcaXYDG", "#ptTrkdcaXYDG", {HistType::kTH2F, {axispt, {100, -2., 2.}}});
+    registry.add("dcaZDG", "#dcaZDG", {HistType::kTH1F, {{1000, -5., 5.}}});
+    registry.add("ptTrkdcaZDG", "#ptTrkdcaZDG", {HistType::kTH2F, {axispt, {100, -5., 5.}}});
     registry.add("IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {axisIVM, axispt}});
     registry.add("IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("dcaXYDG", "#dcaXYDG", {HistType::kTH1F, {{100, -2., 2.}}});
-    registry.add("ptTrkdcaXYDG", "#ptTrkdcaXYDG", {HistType::kTH2F, {axispt, {100, -2., 2.}}});
-    registry.add("dcaZDG", "#dcaZDG", {HistType::kTH1F, {{100, -5., 5.}}});
-    registry.add("ptTrkdcaZDG", "#ptTrkdcaZDG", {HistType::kTH2F, {axispt, {100, -5., 5.}}});
   }
 
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
@@ -167,11 +168,16 @@ struct DGCandAnalyzer {
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = dgtracks.rawIteratorAt(ind);
-        registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
+        registry.get<TH1>(HIST("trackQC"))->Fill(0., track.hasITS() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasTPC() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTRD() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTOF() * 1.);
         registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
         registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
         registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
         registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
+
+        registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 
         // fill nSigma histograms
         registry.get<TH2>(HIST("nSigmaTPCPtEl"))->Fill(track.pt(), track.tpcNSigmaEl());

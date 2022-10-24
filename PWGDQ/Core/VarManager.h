@@ -233,6 +233,7 @@ class VarManager : public TObject
     kIsLegFromLambda,
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
+    kIsProtonFromLambdaAndAntiLambda,
     kNBarrelTrackVariables,
 
     // Muon track variables
@@ -668,6 +669,8 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsLegFromLambda] = bool(track.filteringFlags() & (uint64_t(1) << 4));
       values[kIsLegFromAntiLambda] = bool(track.filteringFlags() & (uint64_t(1) << 5));
       values[kIsLegFromOmega] = bool(track.filteringFlags() & (uint64_t(1) << 6));
+
+      values[kIsProtonFromLambdaAndAntiLambda] = bool((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
     }
   }
 
