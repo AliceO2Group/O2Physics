@@ -61,6 +61,8 @@ struct TreeWriterTpcV0 {
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisElectrons{"downsamplingTsalisElectrons", -1., "Downsampling factor to reduce the number of electrons"};
+  /// Configurable cut on Armenteros-Podolanski
+  Configurable<bool> cutAP{"cutAP", true, "Whether or not to apply a cut on the Armenteros-Podolanski variables"};
   /// Configurables kaon
   Configurable<float> invariantMassCutK0Short{"invariantMassCutK0Short", 0.5, "Mass cut for K0short"};
   Configurable<float> cutQTK0min{"cutQTK0min", 0.1075, "Minimum qt for K0short"};
@@ -104,8 +106,10 @@ struct TreeWriterTpcV0 {
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
     const float q_K = {cutAPK0pinner * std::sqrt(std::abs(1 - ((alpha * alpha) / (cutAPK0alinner * cutAPK0alinner))))};
     /// Armenteros-Podolanski cut
-    if ((qt < cutQTK0min) || (qt > cutQTK0max) || (qt < q_K)) {
-      return false;
+    if (cutAP){
+      if ((qt < cutQTK0min) || (qt > cutQTK0max) || (qt < q_K)) {
+        return false;
+      }
     }
     /// Cut on cosine pointing angle
     if (cosPA < cutPAV0) {
@@ -147,16 +151,18 @@ struct TreeWriterTpcV0 {
     float q_L_upper =  cutAPL_QR_o;
     float q_L_lower =  cutQTmin;
 
-    if(std::abs(alpha-cutAPL_AS) < cutAPL_AR_o){
-      q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
-    }
-    if(std::abs(alpha-cutAPL_AS) < cutAPL_AR_i){
-      q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
-    }
+    if (cutAP){
+      if(std::abs(alpha-cutAPL_AS) < cutAPL_AR_o){
+        q_L_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
+      }
+      if(std::abs(alpha-cutAPL_AS) < cutAPL_AR_i){
+        q_L_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha - cutAPL_AS) * (alpha - cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
+      }
 
-    /// Armenteros-Podolanski cut
-    if ((alpha < 0.) || (alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < q_L_lower) || (qt > q_L_upper) || (qt < cutQTmin)) {
-      return false;
+      /// Armenteros-Podolanski cut
+      if ((alpha < 0.) || (alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < q_L_lower) || (qt > q_L_upper) || (qt < cutQTmin)) {
+        return false;
+      }
     }
     /// Cut on cosine pointing angle
     if (cosPA < cutPAV0) {
@@ -196,16 +202,18 @@ struct TreeWriterTpcV0 {
     float q_AL_upper =  cutAPL_QR_o;
     float q_AL_lower =  cutQTmin;
 
-    if(std::abs(alpha+cutAPL_AS) < cutAPL_AR_o){
-      q_AL_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
-    }
-    if(std::abs(alpha+cutAPL_AS) < cutAPL_AR_i){
-      q_AL_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
-    }
+    if (cutAP){
+      if(std::abs(alpha+cutAPL_AS) < cutAPL_AR_o){
+        q_AL_upper = cutAPL_QR_o * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_o * cutAPL_AR_o))));
+      }
+      if(std::abs(alpha+cutAPL_AS) < cutAPL_AR_i){
+        q_AL_lower = cutAPL_QR_i * std::sqrt(std::abs(1 - (((alpha + cutAPL_AS) * (alpha + cutAPL_AS)) / (cutAPL_AR_i * cutAPL_AR_i))));
+      }
 
-    /// Armenteros-Podolanski cut
-    if ((alpha > 0.) || (alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < q_AL_lower) || (qt > q_AL_upper) || (qt < cutQTmin)) {
-      return false;
+      /// Armenteros-Podolanski cut
+      if ((alpha > 0.) || (alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < q_AL_lower) || (qt > q_AL_upper) || (qt < cutQTmin)) {
+        return false;
+      }
     }
     /// Cut on cosine pointing angle
     if (cosPA < cutPAV0) {
@@ -233,8 +241,10 @@ struct TreeWriterTpcV0 {
     }
 
     /// Armenteros-Podolanski cut
-    if ((((qt > gammaQtMax) || (std::abs(alpha) > cutAlphaG1)) || ((qt > cutQTG) || (std::abs(alpha) > cutAlphaG2min && std::abs(alpha) < cutAlphaG2max)))) {
-      return false;
+    if (cutAP){
+      if ((((qt > gammaQtMax) || (std::abs(alpha) > cutAlphaG1)) || ((qt > cutQTG) || (std::abs(alpha) > cutAlphaG2min && std::abs(alpha) < cutAlphaG2max)))) {
+        return false;
+      }
     }
     if ((std::pow(alpha / gammaAsymmetryMax, 2) + std::pow(qt / lQtMaxPtDep, 2)) < 1) {
       return false;
