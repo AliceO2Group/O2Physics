@@ -16,14 +16,7 @@
 #define JFFLUC_ANALYSIS_H
 
 #include "JHistManager.h"
-#include <Math/Vector4D.h>
-#include <Math/LorentzVector.h>
 #include <TComplex.h>
-#include <iterator>
-#include <memory>
-
-using namespace ROOT;
-using namespace ROOT::Math;
 
 class JFFlucAnalysis
 {
