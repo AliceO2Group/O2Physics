@@ -223,7 +223,9 @@ struct EventSelectionQaTask {
     histos.add("hNcontribAcc", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribMis", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribColTOF", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColTRD", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAccTOF", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribAccTRD", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribMisTOF", "", kTH1F, {axisNcontrib});
 
     // MC histograms
@@ -242,10 +244,6 @@ struct EventSelectionQaTask {
       histos.get<TH1>(HIST("hColCounterAcc"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i].data());
       histos.get<TH1>(HIST("hBcCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i].data());
     }
-
-    histos.add("hParams", "", kTH1D, {{2, 0, 2.}});
-    histos.get<TH1>(HIST("hParams"))->GetXaxis()->SetBinLabel(1, "run");
-    histos.get<TH1>(HIST("hParams"))->GetXaxis()->SetBinLabel(2, "minOrbit");
   }
 
   void processRun2(
@@ -444,7 +442,6 @@ struct EventSelectionQaTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
-      histos.get<TH1>(HIST("hParams"))->SetBinContent(1, runNumber);
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -463,7 +460,9 @@ struct EventSelectionQaTask {
         LOGP(info, "tsOrbitReset={} us", tsOrbitReset);
 
         // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        auto grpecs = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts);
+        std::map<std::string, std::string> metadata;
+        metadata["runNumber"] = Form("%d", runNumber);
+        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
         uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
         int64_t tsSOR = grpecs->getTimeStart() * 1000;  // ms -> us
         int64_t tsEOR = grpecs->getTimeEnd() * 1000;    // ms -> us
@@ -480,7 +479,6 @@ struct EventSelectionQaTask {
         // set nOrbits and minOrbit used for orbit-axis binning
         nOrbits = orbitEOR - orbitSOR;
         minOrbit = orbitSOR;
-        histos.get<TH1>(HIST("hParams"))->SetBinContent(2, minOrbit);
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -771,6 +769,10 @@ struct EventSelectionQaTask {
       if (nTRDtracks > 0) {
         histos.fill(HIST("hColBcDiffVsNcontribWithTRD"), nContributors, bcDiff);
         histos.fill(HIST("hColTimeResVsNcontribWithTRD"), nContributors, timeRes);
+        histos.fill(HIST("hNcontribColTRD"), nContributors);
+        if (col.sel8()) {
+          histos.fill(HIST("hNcontribAccTRD"), nContributors);
+        }
       }
 
       // fill track time histograms
