@@ -99,7 +99,7 @@ struct jflucAnalysisTask {
     //
     pcf = new JFFlucAnalysis("jflucAnalysis");
     pcf->SetNumBins(sizeof(jflucCentBins) / sizeof(jflucCentBins[0]));
-    pcf->AddFlags(JFFlucAnalysis::FLUC_EBE_WEIGHTING);
+    pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
 
     output->cd();
     pcf->UserCreateOutputObjects();

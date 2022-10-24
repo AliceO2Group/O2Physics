@@ -46,7 +46,7 @@ JFFlucAnalysis::JFFlucAnalysis() : fInputList(0),
                                    fh_vna(),
                                    fh_vn_vn()
 {
-  subeventMask = SUBEVENT_A | SUBEVENT_B;
+  subeventMask = kSubEvent_A | kSubEvent_B;
   flags = 0;
   fEta_min = 0;
   fEta_max = 0;
@@ -79,7 +79,7 @@ JFFlucAnalysis::JFFlucAnalysis(const char* name) : fInputList(0),
 {
   // cout << "analysis task created " << endl;
 
-  subeventMask = SUBEVENT_A | SUBEVENT_B;
+  subeventMask = kSubEvent_A | kSubEvent_B;
   flags = 0;
   fEta_min = 0;
   fEta_max = 0;
@@ -187,7 +187,7 @@ void JFFlucAnalysis::UserCreateOutputObjects()
     << TH1D("h_phi", "h_phi", 50, -TMath::Pi(), TMath::Pi())
     << fHistCentBin << fBin_Subset
     << "END";
-  if (!(flags & FLUC_PHI_CORRECTION)) {
+  if (!(flags & kFlucPhiCorrection)) {
     fh_phieta
       << TH2D("h_phieta", "h_phieta", 50, -TMath::Pi(), TMath::Pi(), 40, -2.0, 2.0)
       << fHistCentBin
@@ -384,7 +384,7 @@ void JFFlucAnalysis::UserExec(Option_t*)
     Double_t ebe_4p_weight = 1.0;
     Double_t ebe_4p_weightB = 1.0;
     Double_t ebe_6p_weight = 1.0;
-    if (flags & FLUC_EBE_WEIGHTING) {
+    if (flags & kFlucEbEWeighting) {
       ebe_2p_weight = ref_2p;
       ebe_3p_weight = ref_3p;
       ebe_4p_weight = ref_4p;
@@ -399,7 +399,7 @@ void JFFlucAnalysis::UserExec(Option_t*)
       ebe_2p_weight,
       ebe_4p_weight,
       ebe_6p_weight};
-    if (flags & FLUC_EBE_WEIGHTING) {
+    if (flags & kFlucEbEWeighting) {
       for (int ik = 3; ik < 2 * nKL; ik++) {
         double dk = (double)ik;
         ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
@@ -519,7 +519,7 @@ void JFFlucAnalysis::UserExec(Option_t*)
   Double_t event_weight_four = 1.0;
   Double_t event_weight_two = 1.0;
   Double_t event_weight_two_eta10 = 1.0;
-  if (flags & FLUC_EBE_WEIGHTING) {
+  if (flags & kFlucEbEWeighting) {
     event_weight_four = Four(0, 0, 0, 0).Re();
     event_weight_two = Two(0, 0).Re();
     event_weight_two_eta10 = (QvectorQCeta10[kSubA][0][1] * QvectorQCeta10[kSubB][0][1]).Re();
@@ -555,7 +555,7 @@ void JFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
     Double_t phi = track.Phi();
     Double_t pt = track.Pt();
 
-    if (!(flags & FLUC_PHI_CORRECTION)) {
+    if (!(flags & kFlucPhiCorrection)) {
       fh_phieta[fCBin]->Fill(phi, eta);
       fh_phietaz[fCBin]->Fill(phi, eta, fVertex[2]);
     }
