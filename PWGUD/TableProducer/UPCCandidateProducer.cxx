@@ -319,13 +319,9 @@ struct UpcCandProducer {
           int32_t colId = tr.collisionId();
           const auto& col = collisions.iteratorAt(colId);
           colNContrib = col.numContrib();
-          if (col.numContrib() > upcCuts.getMaxNContrib()) { // skip if multiplicity is too high
-            continue;
-          }
-        } else if (upcCuts.getAmbigSwitch() == 1) { // skip ambiguous tracks if needed
-          continue;
         }
-        filteredTrackIDs.push_back(tr.globalIndex());
+        if (colNContrib <= upcCuts.getMaxNContrib() || (colNContrib == -1 && upcCuts.getAmbigSwitch() != 1))
+          filteredTrackIDs.push_back(tr.globalIndex());
       }
       if constexpr (trackSwitch == 1) {
         if (fCollectBTracksQA)
