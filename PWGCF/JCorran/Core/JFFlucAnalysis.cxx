@@ -21,10 +21,7 @@
 
 #include "JFFlucAnalysis.h"
 
-// TODO: O2 port: check XXXXXX
-
-JFFlucAnalysis::JFFlucAnalysis() : fInputList(0),
-                                   fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
                                    fCent(0),
                                    fCBin(0),
                                    fHMG(0),
@@ -54,8 +51,7 @@ JFFlucAnalysis::JFFlucAnalysis() : fInputList(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* name) : fInputList(0),
-                                                   fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis(const char* name) : fVertex(0),
                                                    fCent(0),
                                                    fCBin(0),
                                                    fHMG(0),
@@ -91,7 +87,7 @@ UInt_t JFFlucAnalysis::NpttJacek = sizeof(JFFlucAnalysis::pttJacek) / sizeof(JFF
 
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : // AliAnalysisTaskSE(a.GetName()),
-                                                          fInputList(a.fInputList),
+
                                                           fVertex(a.fVertex),
                                                           fCent(a.fCent),
                                                           fCBin(a.fCBin),
@@ -277,12 +273,12 @@ void JFFlucAnalysis::UserCreateOutputObjects()
     << fBin_h
     << fHistCentBin
     << "END";
-  fh_SC_with_QC_2corr_eta10
+  fh_SC_with_QC_2corr_gap
     << TH1D("hQC_SC2p_eta10", "hQC_SC2p_eta10", 1024, -1.5, 1.5)
     << fBin_h
     << fHistCentBin
     << "END";
-  fh_evt_SP_QC_ratio_4p
+  /*fh_evt_SP_QC_ratio_4p
     << TH1D("hSPQCratio4p", "hSPQCratio4p", 1024, -100, 100)
     << fBin_h
     << fHistCentBin
@@ -292,7 +288,7 @@ void JFFlucAnalysis::UserCreateOutputObjects()
     << TH1D("hSPQCratio", "hSPQCratio", 1024, -100, 100)
     << fBin_h
     << fHistCentBin
-    << "END"; // fBin_h > not stand for harmonics, only for v2, v3, v4, v5
+    << "END"; // fBin_h > not stand for harmonics, only for v2, v3, v4, v5*/
   // JTH1D set done.
 
   fHMG->Print();
@@ -333,24 +329,31 @@ inline TComplex SixGap33(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalys
 {
   return pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 2.0 * pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5 + n6][3]) + 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 4.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5 + n6][3]);
 }
+
+TComplex JFFlucAnalysis::Q(int n, int p)
+{
+  // Return QvectorQC
+  // Q{-n, p} = Q{n, p}*
+  return n >= 0 ? QvectorQC[n][p] : C(QvectorQC[-n][p]);
+}
+
+TComplex JFFlucAnalysis::Two(int n1, int n2)
+{
+  // two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
+  return Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
+}
+
+TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
+{
+
+  return Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
+}
 #undef C
 
 //________________________________________________________________________
 void JFFlucAnalysis::UserExec(Option_t*)
 {
-  size_t trk_number = fInputList->size();
-  fh_ntracks[fCBin]->Fill(trk_number);
-  fh_cent->Fill(fCent);
-  fh_ImpactParameter->Fill(fImpactParameter);
-  Fill_QA_plot(fEta_min, fEta_max);
-
-  enum { kSubA,
-         kSubB,
-         kNSub };
-
-  CalculateQvectorsQC(fEta_min, fEta_max);
-
-  for (int ih = 2; ih < kNH; ih++) {
+  for (UInt_t ih = 2; ih < kNH; ih++) {
     fh_cos_n_phi[ih][fCBin]->Fill(QvectorQC[ih][1].Re() / QvectorQC[0][1].Re());
     fh_sin_n_phi[ih][fCBin]->Fill(QvectorQC[ih][1].Im() / QvectorQC[0][1].Re());
     //
@@ -368,9 +371,9 @@ void JFFlucAnalysis::UserExec(Option_t*)
   TComplex ncorr[kNH][nKL];
   TComplex ncorr2[kNH][nKL][kcNH][nKL];
 
-  const TComplex(*pQq)[kNH][nKL] = QvectorQCeta10;
+  const TComplex(*pQq)[kNH][nKL] = QvectorQCgap;
 
-  for (int i = 0; i < 2; ++i) {
+  for (UInt_t i = 0; i < 2; ++i) {
     if ((subeventMask & (1 << i)) == 0)
       continue;
     Double_t ref_2p = TwoGap(pQq, i, 0, 0).Re();
@@ -400,45 +403,45 @@ void JFFlucAnalysis::UserExec(Option_t*)
       ebe_4p_weight,
       ebe_6p_weight};
     if (flags & kFlucEbEWeighting) {
-      for (int ik = 3; ik < 2 * nKL; ik++) {
+      for (UInt_t ik = 3; ik < 2 * nKL; ik++) {
         double dk = (double)ik;
         ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
         ebe_2Np_weight[ik] = ebe_2Np_weight[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
       }
     } else
-      for (int ik = 3; ik < 2 * nKL; ik++) {
+      for (UInt_t ik = 3; ik < 2 * nKL; ik++) {
         double dk = (double)ik;
         ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
         ebe_2Np_weight[ik] = 1.0;
       }
 
-    for (int ih = 2; ih < kNH; ih++) {
+    for (UInt_t ih = 2; ih < kNH; ih++) {
       corr[ih][1] = TwoGap(pQq, i, ih, ih);
-      for (int ik = 2; ik < nKL; ik++)
+      for (UInt_t ik = 2; ik < nKL; ik++)
         corr[ih][ik] = corr[ih][ik - 1] * corr[ih][1]; // TComplex::Power(corr[ih][1],ik);
       ncorr[ih][1] = corr[ih][1];
       ncorr[ih][2] = FourGap22(pQq, i, ih, ih, ih, ih);
       ncorr[ih][3] = SixGap33(pQq, i, ih, ih, ih, ih, ih, ih);
-      for (int ik = 4; ik < nKL; ik++)
+      for (UInt_t ik = 4; ik < nKL; ik++)
         ncorr[ih][ik] = corr[ih][ik]; // for 8,...-particle correlations, ignore the autocorrelation / weight dependency for now
 
-      for (int ihh = 2; ihh < kcNH; ihh++) {
+      for (UInt_t ihh = 2; ihh < kcNH; ihh++) {
         ncorr2[ih][1][ihh][1] = FourGap22(pQq, i, ih, ihh, ih, ihh);
         ncorr2[ih][1][ihh][2] = SixGap33(pQq, i, ih, ihh, ihh, ih, ihh, ihh);
         ncorr2[ih][2][ihh][1] = SixGap33(pQq, i, ih, ih, ihh, ih, ih, ihh);
-        for (int ik = 2; ik < nKL; ik++)
-          for (int ikk = 2; ikk < nKL; ikk++)
+        for (UInt_t ik = 2; ik < nKL; ik++)
+          for (UInt_t ikk = 2; ikk < nKL; ikk++)
             ncorr2[ih][ik][ihh][ikk] = ncorr[ih][ik] * ncorr[ihh][ikk];
       }
     }
 
-    for (int ih = 2; ih < kNH; ih++) {
-      for (int ik = 1; ik < nKL; ik++) { // 2k(0) =1, 2k(1) =2, 2k(2)=4....
+    for (UInt_t ih = 2; ih < kNH; ih++) {
+      for (UInt_t ik = 1; ik < nKL; ik++) { // 2k(0) =1, 2k(1) =2, 2k(2)=4....
         vn2[ih][ik] = corr[ih][ik].Re() / ref_2Np[ik - 1];
         fh_vn[ih][ik][fCBin]->Fill(vn2[ih][ik], ebe_2Np_weight[ik - 1]);
         fh_vna[ih][ik][fCBin]->Fill(ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
-        for (int ihh = 2; ihh < kcNH; ihh++) {
-          for (int ikk = 1; ikk < nKL; ikk++) {
+        for (UInt_t ihh = 2; ihh < kcNH; ihh++) {
+          for (UInt_t ikk = 1; ikk < nKL; ikk++) {
             vn2_vn2[ih][ik][ihh][ikk] = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];
             fh_vn_vn[ih][ik][ihh][ikk][fCBin]->Fill(vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
           }
@@ -516,17 +519,21 @@ void JFFlucAnalysis::UserExec(Option_t*)
     fh_correlator[27][fCBin]->Fill(nV7V3starV4star.Re(), ebe_3p_weight);
   }
 
+  enum { kSubA,
+         kSubB,
+         kNSub };
+
   Double_t event_weight_four = 1.0;
   Double_t event_weight_two = 1.0;
-  Double_t event_weight_two_eta10 = 1.0;
+  Double_t event_weight_two_gap = 1.0;
   if (flags & kFlucEbEWeighting) {
     event_weight_four = Four(0, 0, 0, 0).Re();
     event_weight_two = Two(0, 0).Re();
-    event_weight_two_eta10 = (QvectorQCeta10[kSubA][0][1] * QvectorQCeta10[kSubB][0][1]).Re();
+    event_weight_two_gap = (QvectorQCgap[kSubA][0][1] * QvectorQCgap[kSubB][0][1]).Re();
   }
 
-  for (int ih = 2; ih < kNH; ih++) {
-    for (int ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
+  for (UInt_t ih = 2; ih < kNH; ih++) {
+    for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
       TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
 
       fh_SC_with_QC_4corr[ih][ihh][fCBin]->Fill(scfour.Re(), event_weight_four);
@@ -535,119 +542,12 @@ void JFFlucAnalysis::UserExec(Option_t*)
     TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
     fh_SC_with_QC_2corr[ih][fCBin]->Fill(sctwo.Re(), event_weight_two);
 
-    TComplex sctwo10 = (QvectorQCeta10[kSubA][ih][1] * TComplex::Conjugate(QvectorQCeta10[kSubB][ih][1])) / (QvectorQCeta10[kSubA][0][1] * QvectorQCeta10[kSubB][0][1]).Re();
-    fh_SC_with_QC_2corr_eta10[ih][fCBin]->Fill(sctwo10.Re(), event_weight_two_eta10);
-    // fill single vn with QC method with Eta Gap as method 1
-    // fSingleVn[ih][1] = TMath::Sqrt(sctwo10.Re());
+    TComplex sctwoGap = (QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(QvectorQCgap[kSubB][ih][1])) / (QvectorQCgap[kSubA][0][1] * QvectorQCgap[kSubB][0][1]).Re();
+    fh_SC_with_QC_2corr_gap[ih][fCBin]->Fill(sctwoGap.Re(), event_weight_two_gap);
   }
 }
 
 //________________________________________________________________________
 void JFFlucAnalysis::Terminate(Option_t*)
 {
-}
-//________________________________________________________________________
-//________________________________________________________________________
-void JFFlucAnalysis::Fill_QA_plot(Double_t eta1, Double_t eta2)
-{
-  for (auto& track : *fInputList) {
-    Double_t eta = track.Eta();
-    Double_t phi = track.Phi();
-    Double_t pt = track.Pt();
-
-    if (!(flags & kFlucPhiCorrection)) {
-      fh_phieta[fCBin]->Fill(phi, eta);
-      fh_phietaz[fCBin]->Fill(phi, eta, fVertex[2]);
-    }
-
-    if (TMath::Abs(eta) < eta1 || TMath::Abs(eta) > eta2)
-      continue;
-
-    Double_t phi_module_corr = 1.0; // itrack->GetWeight();//XXXXXX
-
-    Double_t effCorr = 1.0; // itrack->GetTrackEff();//fEfficiency->GetCorrection( pt, fEffFilterBit, fCent); //XXXXXX
-    Double_t effInv = 1.0 / effCorr;
-    fh_eta[fCBin]->Fill(eta, effInv);
-    fh_pt[fCBin]->Fill(pt, effInv);
-    fh_phi[fCBin][(int)(eta > 0.0)]->Fill(phi, effInv / phi_module_corr);
-  }
-  for (int iaxis = 0; iaxis < 3; iaxis++)
-    fh_vertex[iaxis]->Fill(fVertex[iaxis]);
-
-  fh_TrkQA_TPCvsCent->Fill(fCent, fTPCtrks);
-  fh_TrkQA_TPCvsGlob->Fill(fGlbtrks, fTPCtrks);
-  fh_TrkQA_FB32_vs_FB32TOF->Fill(fFB32trks, fFB32TOFtrks);
-}
-
-///________________________________________________________________________
-/* new Function for QC method
-   Please see Generic Framwork from Ante
-   use Standalone method  */
-//________________________________________________________________________
-void JFFlucAnalysis::CalculateQvectorsQC(double etamin, double etamax)
-{
-  // calcualte Q-vector for QC method ( no subgroup )
-  // init
-  for (int ih = 0; ih < kNH; ih++) {
-    for (int ik = 0; ik < nKL; ++ik) {
-      QvectorQC[ih][ik] = TComplex(0, 0);
-      for (int isub = 0; isub < 2; isub++) {
-        QvectorQCeta10[isub][ih][ik] = TComplex(0, 0);
-      }
-    }
-  } // for max harmonics
-  // Calculate Q-vector with particle loop
-  // Long64_t ntracks = fInputList->GetEntriesFast(); // all tracks from Task input
-  // for( Long64_t it=0; it<ntracks; it++){
-  for (auto& track : *fInputList) {
-    Double_t eta = track.eta();
-    Double_t phi = track.phi();
-    // track Eta cut Note! pt cuts already applied in task.
-    if (eta < -etamax || eta > etamax)
-      continue;
-    /////////////////////////////////////////////////
-
-    int isub = (int)(eta > 0.0);
-
-    Double_t effCorr = 1.0;         // itrack->GetTrackEff();//fEfficiency->GetCorrection( pt, fEffFilterBit, fCent); //XXXXXX
-    Double_t phi_module_corr = 1.0; // itrack->GetWeight(); //XXXXXX
-
-    for (int ih = 0; ih < kNH; ih++) {
-      Double_t tf = 1.0;
-      TComplex q[nKL];
-      for (int ik = 0; ik < nKL; ik++) {
-        q[ik] = TComplex(tf * TMath::Cos(ih * phi), tf * TMath::Sin(ih * phi));
-        QvectorQC[ih][ik] += q[ik];
-
-        // this is for normalized SC ( denominator needs an eta gap )
-        if (TMath::Abs(eta) > etamin)
-          QvectorQCeta10[isub][ih][ik] += q[ik];
-
-        tf *= 1.0 / (phi_module_corr * effCorr);
-      }
-    }
-  } // track loop done.
-}
-//________________________________________________________________________
-TComplex JFFlucAnalysis::Q(int n, int p)
-{
-  // Return QvectorQC
-  // Q{-n, p} = Q{n, p}*
-  if (n >= 0)
-    return QvectorQC[n][p];
-  return TComplex::Conjugate(QvectorQC[-n][p]);
-}
-//________________________________________________________________________
-TComplex JFFlucAnalysis::Two(int n1, int n2)
-{
-  // two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
-  TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
-  return two;
-}
-//________________________________________________________________________
-TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
-{
-  TComplex four =
-    Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
-  return four;
 }

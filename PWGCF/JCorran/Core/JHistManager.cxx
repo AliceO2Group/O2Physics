@@ -19,9 +19,9 @@ using namespace std;
 //////////////////////////////////////////////////////
 
 JNamed::JNamed(TString name, TString title, TString opt, int mode) : fName(name),
-                                                                           fTitle(title),
-                                                                           fOption(opt),
-                                                                           fMode(mode)
+                                                                     fTitle(title),
+                                                                     fOption(opt),
+                                                                     fMode(mode)
 {
   // constructor
 }
@@ -68,21 +68,21 @@ TString JNamed::UndefinedOption()
 
 //_____________________________________________________
 JBin::JBin() : JNamed("JBin", "%.2f-%2.f", "&Mode=Range", kRange),
-                     fBinD(0),
-                     fBinStr(0),
-                     fIsFixedBin(false),
-                     fIndexName("H"),
-                     fHMG(NULL)
+               fBinD(0),
+               fBinStr(0),
+               fIsFixedBin(false),
+               fIndexName("H"),
+               fHMG(NULL)
 {
   ;
 }
 //_____________________________________________________
 JBin::JBin(TString config, JHistManager* hmg) : JNamed("JBin", "%.2f-%2.f", "&Mode=Range", kRange),
-                                                         fBinD(0),
-                                                         fBinStr(0),
-                                                         fIsFixedBin(false),
-                                                         fIndexName("H"),
-                                                         fHMG(NULL)
+                                                fBinD(0),
+                                                fBinStr(0),
+                                                fIsFixedBin(false),
+                                                fIndexName("H"),
+                                                fHMG(NULL)
 {
   // cout<< config<<endl;
   LOGF(info, "JBin: %s", config.Data());
@@ -103,11 +103,11 @@ JBin::JBin(TString config, JHistManager* hmg) : JNamed("JBin", "%.2f-%2.f", "&Mo
 
 //_____________________________________________________
 JBin::JBin(const JBin& obj) : JNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
-                                       fBinD(obj.fBinD),
-                                       fBinStr(obj.fBinStr),
-                                       fIsFixedBin(obj.fIsFixedBin),
-                                       fIndexName(obj.fIndexName),
-                                       fHMG(obj.fHMG)
+                              fBinD(obj.fBinD),
+                              fBinStr(obj.fBinStr),
+                              fIsFixedBin(obj.fIsFixedBin),
+                              fIndexName(obj.fIndexName),
+                              fHMG(obj.fHMG)
 {
   // copy constructor TODO: proper handling of pointer data members
 }
@@ -265,14 +265,14 @@ int JBin::GetBin(double x)
 
 //_____________________________________________________
 JArrayBase::JArrayBase() : JNamed("JArayBase", "", "&Dir=default&Lazy", 0),
-                                 // JNamed("JArayBase","","&Dir=default&LessLazy",0),
-                                 fDim(0),
-                                 fIndex(0),
-                                 fArraySize(0),
-                                 fNGenerated(0),
-                                 fIsBinFixed(false),
-                                 fIsBinLocked(false),
-                                 fAlg(NULL)
+                           // JNamed("JArayBase","","&Dir=default&LessLazy",0),
+                           fDim(0),
+                           fIndex(0),
+                           fArraySize(0),
+                           fNGenerated(0),
+                           fIsBinFixed(false),
+                           fIsBinLocked(false),
+                           fAlg(NULL)
 {
   // constrctor
 }
@@ -286,13 +286,13 @@ JArrayBase::~JArrayBase()
 
 //_____________________________________________________
 JArrayBase::JArrayBase(const JArrayBase& obj) : JNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
-                                                         fDim(obj.fDim),
-                                                         fIndex(obj.fIndex),
-                                                         fArraySize(obj.fArraySize),
-                                                         fNGenerated(obj.fNGenerated),
-                                                         fIsBinFixed(obj.fIsBinFixed),
-                                                         fIsBinLocked(obj.fIsBinLocked),
-                                                         fAlg(obj.fAlg)
+                                                fDim(obj.fDim),
+                                                fIndex(obj.fIndex),
+                                                fArraySize(obj.fArraySize),
+                                                fNGenerated(obj.fNGenerated),
+                                                fIsBinFixed(obj.fIsBinFixed),
+                                                fIsBinLocked(obj.fIsBinLocked),
+                                                fAlg(obj.fAlg)
 {
   // copy constructor TODO: proper handling of pointer data members
 }
@@ -393,9 +393,9 @@ JArrayAlgorithm& JArrayAlgorithm::operator=(const JArrayAlgorithm& obj)
 
 //_____________________________________________________
 JArrayAlgorithmSimple::JArrayAlgorithmSimple(JArrayBase* cmd) : JArrayAlgorithm(cmd),
-                                                                         fDimFactor(0),
-                                                                         fArray(NULL),
-                                                                         fPos(0)
+                                                                fDimFactor(0),
+                                                                fArray(NULL),
+                                                                fPos(0)
 {
   // constructor
 }
@@ -409,9 +409,9 @@ JArrayAlgorithmSimple::~JArrayAlgorithmSimple()
 
 //_____________________________________________________
 JArrayAlgorithmSimple::JArrayAlgorithmSimple(const JArrayAlgorithmSimple& obj) : JArrayAlgorithm(obj.fCMD),
-                                                                                          fDimFactor(obj.fDimFactor),
-                                                                                          fArray(obj.fArray),
-                                                                                          fPos(obj.fPos)
+                                                                                 fDimFactor(obj.fDimFactor),
+                                                                                 fArray(obj.fArray),
+                                                                                 fPos(obj.fPos)
 {
   // copy constructor TODO: proper handling of pointer data members
 }
@@ -470,10 +470,10 @@ void JArrayAlgorithmSimple::SetItem(void* item)
 //////////////////////////////////////////////////////
 //_____________________________________________________
 JTH1::JTH1() : fDirectory(NULL),
-                     fSubDirectory(NULL),
-                     fHMG(NULL),
-                     fTemplate(NULL),
-                     fBins(0)
+               fSubDirectory(NULL),
+               fHMG(NULL),
+               fTemplate(NULL),
+               fBins(0)
 {
   // default constructor
   fName = "JTH1";
@@ -481,10 +481,10 @@ JTH1::JTH1() : fDirectory(NULL),
 
 //_____________________________________________________
 JTH1::JTH1(TString config, JHistManager* hmg) : fDirectory(NULL),
-                                                         fSubDirectory(NULL),
-                                                         fHMG(NULL),
-                                                         fTemplate(NULL),
-                                                         fBins(0)
+                                                fSubDirectory(NULL),
+                                                fHMG(NULL),
+                                                fTemplate(NULL),
+                                                fBins(0)
 {
   // constructor
   std::vector<TString> t = Tokenize(config, " \t,");
@@ -511,11 +511,11 @@ JTH1::~JTH1()
 
 //_____________________________________________________
 JTH1::JTH1(const JTH1& obj) : JArrayBase(),
-                                       fDirectory(obj.fDirectory),
-                                       fSubDirectory(obj.fSubDirectory),
-                                       fHMG(obj.fHMG),
-                                       fTemplate(obj.fTemplate),
-                                       fBins(obj.fBins)
+                              fDirectory(obj.fDirectory),
+                              fSubDirectory(obj.fSubDirectory),
+                              fHMG(obj.fHMG),
+                              fTemplate(obj.fTemplate),
+                              fBins(obj.fBins)
 {
   // copy constructor TODO: proper handling of pointer data members
 }
@@ -747,16 +747,16 @@ JTH1Derived<T>::~JTH1Derived()
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
 JHistManager::JHistManager(TString name, TString dirname) : JNamed(name, "", "", 0),
-                                                                  fIsLoadMode(false),
-                                                                  fDirectory(gDirectory),
-                                                                  fConfigStr(),
-                                                                  fBin(0),
-                                                                  fHist(0),
-                                                                  fManager(0),
-                                                                  fBinNames(0),
-                                                                  fBinConfigs(0),
-                                                                  fHistNames(0),
-                                                                  fHistConfigs(0)
+                                                            fIsLoadMode(false),
+                                                            fDirectory(gDirectory),
+                                                            fConfigStr(),
+                                                            fBin(0),
+                                                            fHist(0),
+                                                            fManager(0),
+                                                            fBinNames(0),
+                                                            fBinConfigs(0),
+                                                            fHistNames(0),
+                                                            fHistConfigs(0)
 {
   // constructor
   if (dirname.Length() == 0)
@@ -780,16 +780,16 @@ JHistManager::JHistManager(TString name, TString dirname) : JNamed(name, "", "",
 
 //_____________________________________________________
 JHistManager::JHistManager(const JHistManager& obj) : JNamed(obj.fName, obj.fTitle, obj.fOption, obj.fMode),
-                                                               fIsLoadMode(obj.fIsLoadMode),
-                                                               fDirectory(obj.fDirectory),
-                                                               fConfigStr(obj.fConfigStr),
-                                                               fBin(obj.fBin),
-                                                               fHist(obj.fHist),
-                                                               fManager(obj.fManager),
-                                                               fBinNames(obj.fBinNames),
-                                                               fBinConfigs(obj.fBinConfigs),
-                                                               fHistNames(obj.fHistNames),
-                                                               fHistConfigs(obj.fHistConfigs)
+                                                      fIsLoadMode(obj.fIsLoadMode),
+                                                      fDirectory(obj.fDirectory),
+                                                      fConfigStr(obj.fConfigStr),
+                                                      fBin(obj.fBin),
+                                                      fHist(obj.fHist),
+                                                      fManager(obj.fManager),
+                                                      fBinNames(obj.fBinNames),
+                                                      fBinConfigs(obj.fBinConfigs),
+                                                      fHistNames(obj.fHistNames),
+                                                      fHistConfigs(obj.fHistConfigs)
 {
   // copy constructor TODO: proper handling of pointer data members
 }

@@ -34,54 +34,6 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-class TrackIter : public JTrackIterInterface
-{
- public:
-  TrackIter(aod::ParticleTrack::iterator _m1) : m1(_m1){};
-  ~TrackIter(){};
-  aod::ParticleTrack::iterator m1;
-  PtEtaPhiEVector v;
-  PtEtaPhiEVector& deref()
-  {
-    v.SetPt((*m1).pt());
-    v.SetEta((*m1).eta());
-    v.SetPhi((*m1).phi());
-    return v;
-  }
-  void increment()
-  {
-    ++m1;
-  }
-  bool equals(const JTrackIterInterface* prhs)
-  {
-    return m1 == static_cast<const TrackIter*>(prhs)->m1;
-  }
-};
-
-class Tracks : public TracksBase
-{
- public:
-  Tracks(aod::ParticleTrack const* _ptracks) : ptracks(_ptracks){};
-  ~Tracks(){};
-  aod::ParticleTrack const* ptracks;
-  JTrackIter begin()
-  {
-    return JTrackIter(
-      std::unique_ptr<JTrackIterInterface>(new TrackIter(ptracks->begin())));
-  }
-  JTrackIter end()
-  {
-    /*return JTrackIter(
-      std::unique_ptr<JTrackIterInterface>(new TrackIterEnd(ptracks->end())));*/
-    return JTrackIter(
-      std::unique_ptr<JTrackIterInterface>(new TrackIter(ptracks->begin() + ptracks->size()))); // return iterator at end()
-  }
-  size_t size() const
-  {
-    return ptracks->size();
-  }
-};
-
 struct jflucAnalysisTask {
  public:
   ~jflucAnalysisTask()
@@ -112,10 +64,9 @@ struct jflucAnalysisTask {
 
     const double fVertex[3] = {collision.posX(), collision.posY(), collision.posZ()};
 
-    Tracks tracksInt(&tracks);
-
     pcf->Init();
-    pcf->SetInputList(&tracksInt);
+    pcf->FillQA<const aod::ParticleTrack>(tracks);
+    pcf->CalculateQvectorsQC<const aod::ParticleTrack>(tracks);
     pcf->SetEventCentralityAndBin(collision.cent(), collision.cbin());
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);
