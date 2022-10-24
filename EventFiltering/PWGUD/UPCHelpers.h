@@ -120,6 +120,8 @@ void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& tra
     float dca = track.dcaXY();
     float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
     barrelSelectors[kBarrelSelDCAXY] = dca < maxDCA;
+  } else {
+    barrelSelectors[kBarrelSelDCAXY] = true;
   }
 }
 

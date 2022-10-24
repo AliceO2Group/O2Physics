@@ -105,14 +105,36 @@ struct UpcCandProducer {
 
     if (fCollectBTracksQA) {
       const AxisSpec axisPt{500, 0., 5., ""};
-      histRegistry.add("TracksQA/Barrel/Pt/TPC", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_TOF", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_ITS", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_TRD", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_TRD_TOF", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_ITS_TOF", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_ITS_TRD", "", kTH1F, {axisPt});
-      histRegistry.add("TracksQA/Barrel/Pt/TPC_ITS_TRD_TOF", "", kTH1F, {axisPt});
+      const AxisSpec axisEta{400, -2., 2., ""};
+      const AxisSpec axisPhi{628, 0., 6.28, ""};
+      const AxisSpec axisColNContrib{1001, -1., 1000., ""};
+
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TOF", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
+
+      histRegistry.add("TracksQA/Barrel/Eta/TPC", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_TOF", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD_TOF", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TOF", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF", "", kTH1F, {axisEta});
+
+      histRegistry.add("TracksQA/Barrel/Phi/TPC", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_TOF", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD_TOF", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TOF", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF", "", kTH1F, {axisPhi});
     }
   }
 
@@ -275,8 +297,6 @@ struct UpcCandProducer {
                     std::unordered_map<int32_t, int32_t>& ambTrIDs,
                     std::vector<int32_t>& filteredTrackIDs)
   {
-    LOGP(info, "tracks to filter {}", tracks->size());
-    int count = 0;
     for (const auto& tr : *tracks) {
       // skip if track doesn't pass selection
       bool pass = false;
@@ -292,17 +312,13 @@ struct UpcCandProducer {
       if constexpr (trackSwitch == 1) {
         pass = applyBarCuts(tr);
       }
+      int32_t colNContrib = -1;
       if (pass) {
-        LOGP(info, "track passed {}", count);
-        count++;
-        if (fCollectBTracksQA) {
-          if constexpr (trackSwitch == 1)
-            updateBTrackQA(tr);
-        }
         auto ambIter = ambTrIDs.find(tr.globalIndex());
         if (ambIter == ambTrIDs.end()) {
           int32_t colId = tr.collisionId();
           const auto& col = collisions.iteratorAt(colId);
+          colNContrib = col.numContrib();
           if (col.numContrib() > upcCuts.getMaxNContrib()) { // skip if multiplicity is too high
             continue;
           }
@@ -311,11 +327,22 @@ struct UpcCandProducer {
         }
         filteredTrackIDs.push_back(tr.globalIndex());
       }
+      if constexpr (trackSwitch == 1) {
+        if (fCollectBTracksQA)
+          updateBTrackQA(tr, colNContrib);
+      }
     }
   }
 
-  void updateBTrackQA(const BarrelTracks::iterator& track)
+  void updateBTrackQA(const BarrelTracks::iterator& track, int32_t colNContrib)
   {
+    // check basic cuts
+    // only tracks in TOF acceptance
+    if (!barrelSelectors[upchelpers::kBarrelSelPt] ||
+        std::abs(track.eta()) > 0.8 ||
+        !barrelSelectors[upchelpers::kBarrelSelTPCNCls])
+      return;
+
     int8_t mask = 0;
     if (track.hasTPC())
       SETBIT(mask, 0);
@@ -327,23 +354,49 @@ struct UpcCandProducer {
       SETBIT(mask, 3);
 
     float pt = track.pt();
+    float eta = track.eta();
+    float phi = track.phi();
 
-    if (mask == 1)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC"), pt);
-    if (mask == 3)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_ITS"), pt);
-    if (mask == 5)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_TOF"), pt);
-    if (mask == 7)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_ITS_TOF"), pt);
-    if (mask == 9)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_TRD"), pt);
-    if (mask == 11)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_ITS_TRD"), pt);
-    if (mask == 13)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_TRD_TOF"), pt);
-    if (mask == 15)
-      histRegistry.fill(HIST("TracksQA/Barrel/Pt/TPC_ITS_TRD_TOF"), pt);
+    if (mask == 1) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC"), phi);
+    }
+    if (mask == 3) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS"), phi);
+    }
+    if (mask == 5) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TOF"), phi);
+    }
+    if (mask == 7) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TOF"), phi);
+    }
+    if (mask == 9) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD"), phi);
+    }
+    if (mask == 11) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD"), phi);
+    }
+    if (mask == 13) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD_TOF"), phi);
+    }
+    if (mask == 15) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF"), phi);
+    }
   }
 
   template <typename TTrack, typename TAmbTracks>
