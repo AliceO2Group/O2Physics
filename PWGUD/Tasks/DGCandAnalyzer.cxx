@@ -91,9 +91,6 @@ struct DGCandAnalyzer {
       return;
     }
 
-    // get analysis paraneters
-    auto anaPars = pidsel.getAnaPars();
-
     // fill histogram
     auto tr1 = dgtracks.rawIteratorAt(ivm.trkinds()[0]);
     auto signalTPC1 = tr1.tpcSignal();
