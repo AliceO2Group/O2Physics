@@ -264,7 +264,7 @@ struct DGSelector {
 template <typename I, typename T>
 T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
 {
-  // rnage of BCs to consider
+  // range of BCs to consider
   int64_t minBC = meanBC - deltaBC;
   uint64_t maxBC = meanBC + deltaBC;
   if (minBC < 0) {
@@ -323,7 +323,6 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   }
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-
 }
 
 // -----------------------------------------------------------------------------

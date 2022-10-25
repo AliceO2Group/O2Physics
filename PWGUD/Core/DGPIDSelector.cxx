@@ -380,7 +380,7 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
       return false;
     }
   }
-  
+
   // cut on dcaXY and dcaZ
   if (track.dcaXY() < -0.1 || track.dcaXY() > 0.1) {
     return false;
@@ -389,7 +389,7 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
   if (track.dcaZ() < -0.2 || track.dcaZ() > 0.2) {
     return false;
   }
-  
+
   // loop over all PIDCuts and apply the ones which apply to this track
   auto pidcuts = mAnaPars.PIDCuts().Cuts();
   for (auto pidcut : pidcuts) {
