@@ -238,7 +238,6 @@ class JFFlucAnalysis
          kPt6,
          kPt7,
          N_ptbins };
-  Double_t NSubTracks_pt[2][N_ptbins];
   JBin fBin_Nptbins;             //!
   JTH1D fh_SC_ptdep_4corr;       //! // for < vn^2 vm^2 >
   JTH1D fh_SC_ptdep_2corr;       //!  // for < vn^2 >
