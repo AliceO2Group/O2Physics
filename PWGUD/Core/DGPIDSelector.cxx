@@ -368,7 +368,7 @@ float DGPIDSelector::getTOFnSigma(UDTrackFull track, int pid)
 // -----------------------------------------------------------------------------
 bool DGPIDSelector::isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks)
 {
-  
+
   // compute net charge of track combination
   int netCharge = 0.;
   for (auto const& ind : comb) {
@@ -381,7 +381,7 @@ bool DGPIDSelector::isGoodCombination(std::vector<uint> comb, UDTracksFull const
   if (std::find(netCharges.begin(), netCharges.end(), netCharge) != netCharges.end()) {
     return true;
   }
-  return false;  
+  return false;
 }
 
 // -----------------------------------------------------------------------------
