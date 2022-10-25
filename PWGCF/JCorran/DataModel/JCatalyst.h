@@ -18,19 +18,19 @@ namespace o2::aod
 {
 namespace particleTrack
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float);
-DECLARE_SOA_COLUMN(WeightEff, weightEff, float);
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);  //! collision ID
+DECLARE_SOA_COLUMN(Pt, pt, float);               //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);             //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);             //! Phi
+DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Phi acceptance correction weight
+DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Efficiency correction factor
 } // namespace particleTrack
 
 namespace collisionData
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(CBin, cbin, Int_t);
+DECLARE_SOA_COLUMN(Cent, cent, float); //! Collision centrality
+DECLARE_SOA_COLUMN(CBin, cbin, Int_t); //! Centrality bin
 } // namespace collisionData
 
 DECLARE_SOA_TABLE(ParticleTrack, "AOD", "PARTICLETRACK",
