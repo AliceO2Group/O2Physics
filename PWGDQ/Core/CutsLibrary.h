@@ -768,14 +768,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     TF1* f1minKa = new TF1("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
     f1minKa->SetParameters(37, -4, 5.6);
     TF1* f1maxKa = new TF1("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
-    f1maxKa->SetParameters(60, -4.3, 6.1);
+    f1maxKa->SetParameters(60, -4.1, 6.);
     cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.0, 10.0, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_proton_rejection")) {
     TF1* f1minPr = new TF1("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
-    f1minPr->SetParameters(37, -2.6, 6.2);
+    f1minPr->SetParameters(37, -2.6, 6.1);
     TF1* f1maxPr = new TF1("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxPr->SetParameters(60, -2.4, 6.2);
     cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.0, 10, false);
