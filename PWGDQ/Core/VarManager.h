@@ -86,7 +86,9 @@ class VarManager : public TObject
     ReducedMuonExtra = BIT(14),
     ReducedMuonCov = BIT(15),
     ParticleMC = BIT(16),
-    Pair = BIT(17) // TODO: check whether we really need the Pair member here
+    Pair = BIT(17), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(18),
+    AmbiMuon = BIT(19)
   };
 
   enum PairCandidateType {
