@@ -81,8 +81,8 @@ constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | 
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
-constexpr static uint32_t gkAmbiMuonFillMap = VarManager::ObjTypes::AmbiMuon;
-constexpr static uint32_t gkAmbiTrackFillMap = VarManager::ObjTypes::AmbiTrack;
+constexpr static uint32_t gkMuonFillMapWithAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::AmbiMuon;
+constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 
 struct TableMaker {
 
@@ -226,7 +226,7 @@ struct TableMaker {
   }
 
   // Templated function instantianed for all of the process functions
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, uint32_t TAmbiTrackFillMap, uint32_t TAmbiMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
   void fullSkimming(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
     // get the trigger aliases
@@ -294,7 +294,8 @@ struct TableMaker {
 
       // loop over tracks
       for (auto& track : tracksBarrel) {
-        if constexpr (static_cast<bool>(TAmbiTrackFillMap)) {
+        //if constexpr (static_cast<bool>(TAmbiTrackFillMap)) {
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
           if (fIsAmbiguous) {
             isAmbiguous = 0;
             for (auto& ambiTrackMid : ambiTracksMid) {
@@ -414,7 +415,8 @@ struct TableMaker {
 
       // now let's save the muons with the correct indices and matches
       for (auto& muon : tracksMuon) {
-        if constexpr (static_cast<bool>(TAmbiMuonFillMap)) {
+        //if constexpr (static_cast<bool>(TAmbiMuonFillMap)) {
+        if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
           if (fIsAmbiguous) {
             isAmbiguous = 0;
             for (auto& ambiTrackFwd : ambiTracksFwd) {
@@ -562,27 +564,27 @@ struct TableMaker {
   void processFull(MyEvents::iterator const& collision, aod::BCs const& bcs,
                    soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap, 0u, 0u>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   void processFullWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
                           soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov, 0u, 0u>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   // Produce barrel + muon tables, with centrality --------------------------------------------------------------------------------------------
   void processFullWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
                            soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, gkMuonFillMap, 0u, 0u>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with V0Bits ------------------------------------------------------------------------------------------------
   void processBarrelOnlyWithV0Bits(MyEvents::iterator const& collision, aod::BCs const& bcs,
                                    soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u, 0u, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with event filtering ----------------------------------------------------------------------------------------
@@ -596,7 +598,7 @@ struct TableMaker {
     }
     ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
-      fullSkimming<gkEventFillMap, gkTrackFillMap, 0u, 0u, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+      fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
     }
   }
 
@@ -604,42 +606,42 @@ struct TableMaker {
   void processBarrelOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
-    fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u, 0u, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
   void processBarrelOnlyWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u, 0u, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only ----------------------------------------------------------------------------------------------------------------
   void processBarrelOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
                          soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMap, 0u, 0u, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce muon tables only, with centrality -------------------------------------------------------------------------------------------------
   void processMuonOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
                                soa::Filtered<MyMuons> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap, 0u, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only, with muon cov matrix --------------------------------------------------------------------------------------------
   void processMuonOnlyWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
                               soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov, 0u, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
   void processMuonOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMap, 0u, gkMuonFillMap, 0u, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only, with event filtering --------------------------------------------------------------------------------------------
@@ -653,7 +655,7 @@ struct TableMaker {
     }
     ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
-      fullSkimming<gkEventFillMap, 0u, gkMuonFillMap, 0u, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+      fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
     }
   }
 
@@ -661,14 +663,14 @@ struct TableMaker {
   void processAmbiguousMuonOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
                                 soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
-    fullSkimming<gkEventFillMap, 0u, gkMuonFillMap, 0u, gkAmbiMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, ambiTracksFwd);
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, ambiTracksFwd);
   }
 
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
   void processAmbiguousBarrelOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMap, 0u, gkAmbiTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, ambiTracksMid, nullptr);
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collision, bcs, tracksBarrel, nullptr, ambiTracksMid, nullptr);
   }
 
   // Process the BCs and store stats for luminosity retrieval -----------------------------------------------------------------------------------
