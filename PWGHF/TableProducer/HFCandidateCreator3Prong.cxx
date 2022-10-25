@@ -40,7 +40,7 @@ struct HFCandidateCreator3Prong {
   Produces<aod::HfCandProng3Base> rowCandidateBase;
 
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
-  //Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
+  // Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -92,7 +92,7 @@ struct HFCandidateCreator3Prong {
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
-    //df.setBz(magneticField);
+    // df.setBz(magneticField);
     df.setPropagateToPCA(b_propdca);
     df.setMaxR(d_maxr);
     df.setMaxDZIni(d_maxdzini);
@@ -114,14 +114,15 @@ struct HFCandidateCreator3Prong {
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
       auto bc = track0.collision().bc_as<aod::BCsWithTimestamps>();
-      if(mRunNumber != bc.runNumber()){
+      if (mRunNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << mRunNumber;
-        initCCDB(bc, mRunNumber, ccdb, isRun2?ccdbPathGrp:ccdbPathGrpMag, lut, isRun2);
+        initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
         magneticField = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>>>> Magnetic field: " << magneticField;
-        df.setBz(magneticField);
-        df.print();
+        // df.setBz(magneticField); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
+        // df.print();
       }
+      df.setBz(magneticField);
 
       // reconstruct the 3-prong secondary vertex
       if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
