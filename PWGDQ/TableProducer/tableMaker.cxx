@@ -294,7 +294,6 @@ struct TableMaker {
 
       // loop over tracks
       for (auto& track : tracksBarrel) {
-        //if constexpr (static_cast<bool>(TAmbiTrackFillMap)) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
           if (fIsAmbiguous) {
             isAmbiguous = 0;
@@ -415,7 +414,6 @@ struct TableMaker {
 
       // now let's save the muons with the correct indices and matches
       for (auto& muon : tracksMuon) {
-        //if constexpr (static_cast<bool>(TAmbiMuonFillMap)) {
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
           if (fIsAmbiguous) {
             isAmbiguous = 0;
