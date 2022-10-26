@@ -12,8 +12,8 @@
 /// \since November 2021
 // code for fitting the luminous region for each step
 
-TFile *fin = new TFile("mergedOutput.root", "read");
-TTree *tin;
+TFile* fin = new TFile("mergedOutput.root", "read");
+TTree* tin;
 
 ULong64_t fTimeStamp;
 double fVertexX;
@@ -30,11 +30,12 @@ double tmax;
 
 int Countig;
 
-void chi2(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t flag) {
+void chi2(Int_t& npar, Double_t* gin, Double_t& f, Double_t* par, Int_t flag)
+{
   TMatrixD sigma(2, 2);
   double results = 0.;
 
-  tin = (TTree *)fin->Get("EventInfo_merged");
+  tin = (TTree*)fin->Get("EventInfo_merged");
 
   tin->SetBranchAddress("fTimeStamp", &fTimeStamp);
 
@@ -89,33 +90,34 @@ void chi2(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t flag) {
   f = results;
 }
 
-void non_fac() {
+void non_fac()
+{
   const int nstep = 6;
   double TMIN[nstep] = {6.15e5, 6.9e5, 7.65e5, 8.65e5, 9.45e5, 10.4e5};
   double TMAX[nstep] = {6.25e5, 7.0e5, 7.75e5, 8.75e5, 9.55e5, 10.5e5};
 
   double FitRes_cntl[nstep][10];
   double FitRes_stat[nstep][10];
-  TMinuit *FunMinuit[nstep];
+  TMinuit* FunMinuit[nstep];
   int ierflg = 0;
   Double_t arglist[10];
 
-  TH1D *hResults[nstep];
+  TH1D* hResults[nstep];
 
-  TH1D *hPreDistPos[nstep][3];
-  TH1D *hPreDistSig[nstep][2];
+  TH1D* hPreDistPos[nstep][3];
+  TH1D* hPreDistSig[nstep][2];
   for (int i = 0; i < nstep; i++) {
     for (int j = 0; j < 2; j++) {
       hPreDistPos[i][j] =
-          new TH1D(Form("hPreDistPos_%d_%d", i, j), "", 1000, -0.5, 0.5);
+        new TH1D(Form("hPreDistPos_%d_%d", i, j), "", 1000, -0.5, 0.5);
       hPreDistSig[i][j] =
-          new TH1D(Form("hPreDistSig_%d_%d", i, j), "", 1000, -1e-4, 9.9e-3);
+        new TH1D(Form("hPreDistSig_%d_%d", i, j), "", 1000, -1e-4, 9.9e-3);
     }
     hPreDistPos[i][2] =
-        new TH1D(Form("hPreDistPos_%d_%d", i, 2), "", 1000, -100, 100);
+      new TH1D(Form("hPreDistPos_%d_%d", i, 2), "", 1000, -100, 100);
   }
 
-  tin = (TTree *)fin->Get("EventInfo_merged");
+  tin = (TTree*)fin->Get("EventInfo_merged");
 
   tin->SetBranchAddress("fTimeStamp", &fTimeStamp);
 
@@ -160,17 +162,17 @@ void non_fac() {
     FunMinuit[i]->mnexcm("SET ERR", arglist, 1, ierflg);
 
     FunMinuit[i]->mnparm(
-        0, "", hPreDistPos[i][0]->GetMean(),
-        fabs(hPreDistPos[i][0]->GetMean()) * 0.01,
-        hPreDistPos[i][0]->GetMean() - hPreDistPos[i][0]->GetRMS() * 10.0,
-        hPreDistPos[i][0]->GetMean() + hPreDistPos[i][0]->GetRMS() * 10.0,
-        ierflg);
+      0, "", hPreDistPos[i][0]->GetMean(),
+      fabs(hPreDistPos[i][0]->GetMean()) * 0.01,
+      hPreDistPos[i][0]->GetMean() - hPreDistPos[i][0]->GetRMS() * 10.0,
+      hPreDistPos[i][0]->GetMean() + hPreDistPos[i][0]->GetRMS() * 10.0,
+      ierflg);
     FunMinuit[i]->mnparm(
-        1, "", hPreDistPos[i][1]->GetMean(),
-        fabs(hPreDistPos[i][1]->GetMean()) * 0.01,
-        hPreDistPos[i][1]->GetMean() - hPreDistPos[i][1]->GetRMS() * 10.0,
-        hPreDistPos[i][1]->GetMean() + hPreDistPos[i][1]->GetRMS() * 10.0,
-        ierflg);
+      1, "", hPreDistPos[i][1]->GetMean(),
+      fabs(hPreDistPos[i][1]->GetMean()) * 0.01,
+      hPreDistPos[i][1]->GetMean() - hPreDistPos[i][1]->GetRMS() * 10.0,
+      hPreDistPos[i][1]->GetMean() + hPreDistPos[i][1]->GetRMS() * 10.0,
+      ierflg);
     FunMinuit[i]->mnparm(2, "", hPreDistPos[i][2]->GetMean(),
                          fabs(hPreDistPos[i][2]->GetMean()) * 0.01, -10, 10,
                          ierflg);
@@ -204,7 +206,7 @@ void non_fac() {
     FunMinuit[i]->DeleteArrays();
   }
 
-  TH1D *hParam[10];
+  TH1D* hParam[10];
   for (int i = 0; i < 10; i++) {
     hParam[i] = new TH1D(Form("hParam%d", i), "", nstep, 0, nstep);
     for (int j = 0; j < nstep; j++) {
@@ -212,7 +214,7 @@ void non_fac() {
       hParam[i]->SetBinError(j + 1, FitRes_stat[j][i]);
     }
   }
-  TFile *fout = new TFile("lumiRegionOut.root", "recreate");
+  TFile* fout = new TFile("lumiRegionOut.root", "recreate");
   for (int i = 0; i < nstep; i++) {
     hResults[i]->Write();
     for (int j = 0; j < 2; j++) {

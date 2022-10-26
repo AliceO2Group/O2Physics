@@ -13,14 +13,15 @@
 // merge all trees into one tree to construct event by event log-likelihood
 // function.
 
-void merger() {
-  TFile *fin = new TFile("../data/PbPb_NF/AnalysisResults_trees.root", "read");
-  TTree *tadd;
+void merger()
+{
+  TFile* fin = new TFile("../data/PbPb_NF/AnalysisResults_trees.root", "read");
+  TTree* tadd;
 
-  TFile *fout = new TFile("mergedOutput.root", "recreate");
-  TTree *tin = new TTree("EventInfo_merged", "");
+  TFile* fout = new TFile("mergedOutput.root", "recreate");
+  TTree* tin = new TTree("EventInfo_merged", "");
 
-  TList *list = fin->GetListOfKeys();
+  TList* list = fin->GetListOfKeys();
   TIter next(fin->GetListOfKeys());
 
   ULong64_t fTimeStamp;
@@ -45,8 +46,8 @@ void merger() {
   tin->Branch("fVertexChi2", &fVertexChi2, "fVertexChi2/D");
   tin->Branch("fNContrib", &fNContrib, "fNContrib/I");
 
-  while (TDirectoryFile *dir = (TDirectoryFile *)next()) {
-    tadd = (TTree *)fin->Get(Form("%s/O2eventinfo", dir->GetName()));
+  while (TDirectoryFile* dir = (TDirectoryFile*)next()) {
+    tadd = (TTree*)fin->Get(Form("%s/O2eventinfo", dir->GetName()));
 
     tadd->SetBranchAddress("fTimeStamp", &fTimeStamp);
 
