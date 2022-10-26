@@ -30,33 +30,33 @@
 /// @param lut is a pointer to the o2::base::MatLayerCylSet object
 /// @param isRun2 tells whether we are analysing Run2 converted data or not (different GRP object type)
 void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
-bool isRun2) {
+              o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+              bool isRun2)
+{
 
-    if (mRunNumber != bc.runNumber()) {
+  if (mRunNumber != bc.runNumber()) {
 
-      LOG(info) << "====== initCCDB function called (isRun2==" << isRun2 << ")";
-      if (isRun2) { // Run 2 GRP object
-        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-        if (grpo != nullptr) {
-          o2::base::Propagator::initFieldFromGRP(grpo);
-          o2::base::Propagator::Instance()->setMatLUT(lut);
-          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
-        } else {
-          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-        }
-      } else { // Run 3 GRP object
-        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
-        if (grpo != nullptr) {
-          o2::base::Propagator::initFieldFromGRP(grpo);
-          o2::base::Propagator::Instance()->setMatLUT(lut);
-          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
-        } else {
-          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-        }
+    LOG(info) << "====== initCCDB function called (isRun2==" << isRun2 << ")";
+    if (isRun2) { // Run 2 GRP object
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+      if (grpo != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+      } else {
+        LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
-      mRunNumber = bc.runNumber();
-      
+    } else { // Run 3 GRP object
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+      if (grpo != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+        LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+      } else {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
     }
-    return;
+    mRunNumber = bc.runNumber();
+  }
+  return;
 } /// end initCCDB
