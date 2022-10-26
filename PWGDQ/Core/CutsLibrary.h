@@ -753,32 +753,32 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     f1minPi->SetParameters(37, -18, 5.5);
     TF1* f1maxPi = new TF1("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxPi->SetParameters(60, -15, 6);
-    cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.05, 0.3, false);
+    cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
     TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
-    f1minPi->SetParameters(60, 4.);
+    f1minPi->SetParameters(65, 4.);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, 110., false, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_kaon_rejection")) {
-    TF1* f1minKa = new TF1("f1minKa", "[0]+[1]*x", 0, 10);
-    f1minKa->SetParameters(220, -300);
-    TF1* f1maxKa = new TF1("f1maxKa", "[0]+[1]*x", 0, 10);
-    f1maxKa->SetParameters(182.5, -150);
-    cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.4, 0.8, false);
+    TF1* f1minKa = new TF1("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
+    f1minKa->SetParameters(37, -4, 5.6);
+    TF1* f1maxKa = new TF1("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
+    f1maxKa->SetParameters(60, -4.1, 6.);
+    cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.0, 10.0, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_proton_rejection")) {
-    TF1* f1minPr = new TF1("f1minPr", "[0]+[1]*x", 0, 10);
-    f1minPr->SetParameters(170, -100);
-    TF1* f1maxPr = new TF1("f1maxPr", "[0]+[1]*x", 0, 10);
-    f1maxPr->SetParameters(175, -75);
-    cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.8, 1.4, false);
+    TF1* f1minPr = new TF1("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
+    f1minPr->SetParameters(37, -2.6, 6.1);
+    TF1* f1maxPr = new TF1("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
+    f1maxPr->SetParameters(60, -2.4, 6.2);
+    cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
