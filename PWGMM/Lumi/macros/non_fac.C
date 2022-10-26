@@ -66,10 +66,10 @@ void chi2(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t flag) {
     sigma(0, 1) = par[3] * par[4] * par[6];
     sigma(1, 0) = par[3] * par[4] * par[6];
 
-    sigma(0, 0) += par[9] * par[9] * fVertexXY; // vtx_cxx[i];
-    sigma(1, 1) += par[9] * par[9] * fVertexXX; // vtx_cyy[i];
-    sigma(0, 1) += par[9] * par[9] * fVertexYY; // vtx_cxy[i];
-    sigma(1, 0) += par[9] * par[9] * fVertexYY; // vtx_cxy[i];
+    sigma(0, 0) += par[9] * par[9] * fVertexXX; // vtx_cxx[i];
+    sigma(1, 1) += par[9] * par[9] * fVertexYY; // vtx_cyy[i];
+    sigma(0, 1) += par[9] * par[9] * fVertexXY; // vtx_cxy[i];
+    sigma(1, 0) += par[9] * par[9] * fVertexXY; // vtx_cxy[i];
 
     Double_t det(0);
     sigma.InvertFast(&det);
@@ -93,9 +93,6 @@ void non_fac() {
   const int nstep = 6;
   double TMIN[nstep] = {6.15e5, 6.9e5, 7.65e5, 8.65e5, 9.45e5, 10.4e5};
   double TMAX[nstep] = {6.25e5, 7.0e5, 7.75e5, 8.75e5, 9.55e5, 10.5e5};
-
-  // double TMIN[nstep] = {6.7e5, 6.7e5, 7.4e5, 8.4e5, 9.2e5, 10.2e5 };
-  // double TMAX[nstep] = {7.2e5, 7.2e5, 8.0e5, 9.0e5, 9.8e5, 10.7e5 };
 
   double FitRes_cntl[nstep][10];
   double FitRes_stat[nstep][10];
@@ -160,21 +157,6 @@ void non_fac() {
     FunMinuit[i] = new TMinuit(10);
     FunMinuit[i]->SetFCN(chi2);
     FunMinuit[i]->SetPrintLevel(1);
-    /*
-            arglist[0] = hPreDistPos[i][0]->GetMean();
-            arglist[2] = hPreDistPos[i][1]->GetMean();
-            arglist[4] = hPreDistPos[i][2]->GetMean();
-            arglist[6] = hPreDistSig[i][0]->GetMean();
-            arglist[8] = hPreDistSig[i][1]->GetMean();
-
-            arglist[1] = hPreDistPos[i][0]->GetMean()*0.01;
-            arglist[3] = hPreDistPos[i][1]->GetMean()*0.01;
-            arglist[5] = hPreDistPos[i][2]->GetMean()*0.01;
-            arglist[7] = hPreDistSig[i][0]->GetMean()*0.01;
-            arglist[9] = hPreDistSig[i][1]->GetMean()*0.01;
-
-    */
-
     FunMinuit[i]->mnexcm("SET ERR", arglist, 1, ierflg);
 
     FunMinuit[i]->mnparm(
@@ -205,23 +187,7 @@ void non_fac() {
     FunMinuit[i]->mnparm(7, "", 0.01, 1e-4, -1, 1, ierflg);
     FunMinuit[i]->mnparm(8, "", 0.01, 1e-4, -1, 1, ierflg);
     FunMinuit[i]->mnparm(9, "", 1.0, 1e-2, 0.5, 5, ierflg);
-    /*
-            FunMinuit[i]->mnparm(0, "", 0.1, 1e-10, 0.05, 0.15, ierflg);
-            FunMinuit[i]->mnparm(1, "", 0.35, 1e-10, 0.3, 0.4, ierflg);
-            FunMinuit[i]->mnparm(2, "", 0.1, 1e-10, -10, 10, ierflg);
 
-            FunMinuit[i]->mnparm(3, "", 0.001, 1e-10, 0, 1, ierflg );
-            FunMinuit[i]->mnparm(4, "", 0.001, 1e-10, 0, 1, ierflg );
-            FunMinuit[i]->mnparm(5, "", 1., 1e-10, 0, 200, ierflg );
-
-            FunMinuit[i]->mnparm(6, "", 0.1, 1e-10, -1, 1,ierflg);
-            FunMinuit[i]->mnparm(7, "", 0.01, 1e-10, -1, 1,ierflg);
-            FunMinuit[i]->mnparm(8, "", 0.01, 1e-10, -1, 1,ierflg);
-            FunMinuit[i]->mnparm(9, "", 1.0, 1e-10, 0.5, 5,ierflg);
-    */
-
-    // 	FunMinuit[i]->mnexcm("MINImize", arglist, 2, ierflg);
-    //	FunMinuit[i]->mnexcm("MINOs", arglist, 2, ierflg);
     FunMinuit[i]->mnexcm("MIGRAD", arglist, 2, ierflg);
     for (int p = 0; p < 10; p++) {
       FunMinuit[i]->GetParameter(p, FitRes_cntl[i][p], FitRes_stat[i][p]);
