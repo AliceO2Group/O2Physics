@@ -12,13 +12,13 @@
 #ifndef O2PHYSICS_UPCHELPERS_H
 #define O2PHYSICS_UPCHELPERS_H
 
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "CommonConstants/LHCConstants.h"
-#include "TLorentzVector.h"
-#include "EventFiltering/PWGUD/UPCCutparHolder.h"
-#include "PWGUD/DataModel/UDTables.h"
+#include "../../../sw/ubuntu2004_x86-64/O2/dev-local1/include/Framework/AnalysisDataModel.h"
+#include "../../Common/DataModel/EventSelection.h"
+#include "../../Common/CCDB/EventSelectionParams.h"
+#include "../../../sw/ubuntu2004_x86-64/O2/dev-local1/include/CommonConstants/LHCConstants.h"
+#include "../../../sw/ubuntu2004_x86-64/ROOT/v6-26-04-patches-alice1-8/include/TLorentzVector.h"
+#include "UPCCutparHolder.h"
+#include "../DataModel/UDTables.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;

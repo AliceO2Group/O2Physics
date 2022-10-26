@@ -15,8 +15,8 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
-#include "EventFiltering/PWGUD/UPCCutparHolder.h"
-#include "EventFiltering/PWGUD/UPCHelpers.h"
+#include "PWGUD/Core/UPCCutparHolder.h"
+#include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2::framework;
