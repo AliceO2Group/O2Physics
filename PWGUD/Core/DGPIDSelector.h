@@ -114,6 +114,7 @@ struct DGAnaparHolder {
   // getter
   void Print();
   int nCombine() const { return mNCombine; }
+  std::vector<int> netCharges() { return mNetCharges; }
   std::vector<float> PIDs() { return mDGPIDs; }
   DGPIDCuts PIDCuts();
   std::vector<int> uniquePermutations();
@@ -126,6 +127,9 @@ struct DGAnaparHolder {
 
   // number of tracks to combine
   int mNCombine;
+
+  // net charge of all tracks
+  std::vector<int> mNetCharges;
 
   // PID information
   std::vector<float> mDGPIDs;
@@ -173,6 +177,7 @@ struct DGPIDSelector {
 
   // getters
   void Print();
+  bool isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks);
   bool isGoodTrack(UDTrackFull track, int cnt);
   int computeIVMs(UDTracksFull const& tracks);
 

@@ -291,20 +291,21 @@ struct DGBCCandProducer {
       }
     } else {
       auto tracksArray = tibc.track_as<TCs>();
+      auto bcRange = compatibleBCs(bc, bc.globalBC(), diffCuts.minNBCs(), bcs);
 
       // does BC have fwdTracks?
       if (ftibcs.size() > 0) {
         auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
         if (ftibcSlice.size() > 0) {
           auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
-          isDG = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+          isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          isDG = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+          isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
       } else {
         auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-        isDG = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+        isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
       }
 
       // update UDTables
@@ -337,7 +338,7 @@ struct DGBCCandProducer {
     // loop over BCs
     int isDG1, isDG2;
     int ntr1, ntr2;
-    for (auto const& bc : bcs) {
+    for (auto bc : bcs) {
       // reset counters
       isDG1 = -1;
       isDG2 = -1;
@@ -361,14 +362,15 @@ struct DGBCCandProducer {
         auto tibc = tibcSlice.begin();
 
         // check collision to be DGCandidate -> isDG2
+        auto bcRange = compatibleBCs(bc, bc.globalBC(), diffCuts.minNBCs(), bcs);
         auto tracksArray = tibc.track_as<TCs>();
         auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
         if (ftibcSlice.size() > 0) {
           auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
-          isDG2 = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          isDG2 = dgSelector.IsSelected(diffCuts, bc, tracksArray, fwdTracksArray);
+          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
         ntr2 = tracksArray.size();
 
