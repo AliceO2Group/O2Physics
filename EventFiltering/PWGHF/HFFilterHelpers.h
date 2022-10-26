@@ -281,4 +281,6 @@ DECLARE_SOA_TABLE(HFOptimisationTreeFemto, "AOD", "HFOPTIMTREEF", //!
                   hfoptimisationTree::KStar,
                   hfoptimisationTree::NsigmaPrTPC,
                   hfoptimisationTree::NsigmaPrTOF);
+DECLARE_SOA_TABLE(HFOptimisationTreeCollisions, "AOD", "HFOPTIMTREECOLL", //!
+                  hfoptimisationTree::CollisionIndex)
 } // namespace o2::aod
