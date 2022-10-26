@@ -46,9 +46,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("pionPrimary")) {
-    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false});     // define 1-generation prong using the full constructor
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                // set source to be ALICE primary particles
-    signal = new MCSignal(name, "Primary electrons", {prong}, {-1}); // define the signal using the full constructor
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);            // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary pions", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
   if (!nameStr.compare("photon")) {
@@ -56,9 +56,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Photon", {prong}, {-1});       // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("muonPrimary")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});  // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);            // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary Muons", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
   if (!nameStr.compare("kaonFromPhi")) {
     MCProng prong(2, {321, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // define 2-generation prong using the full constructor
     signal = new MCSignal(name, "Kaons from phi-mesons", {prong}, {-1});                        // define the signal using the full constructor
+    return signal;
+  }
+  if (!nameStr.compare("kaonPrimary")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);            // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary Kaons", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
+  if (!nameStr.compare("protonPrimary")) {
+    MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);             // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary Proton", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
   if (!nameStr.compare("phiMeson")) {
