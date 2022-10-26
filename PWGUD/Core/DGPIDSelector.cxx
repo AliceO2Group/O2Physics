@@ -131,7 +131,11 @@ DGAnaparHolder::~DGAnaparHolder()
 void DGAnaparHolder::Print()
 {
   LOGF(info, "  DGAnaparHolder");
-  LOGF(info, "    nCombine: %i", mNCombine);
+  LOGF(info, "    nCombine:    %i", mNCombine);
+  LOGF(info, "    net charges");
+  for (auto ch : mNetCharges) {
+    LOGF(info, "      %i", ch);
+  }
   LOGF(info, "    PIDs");
   for (auto pid : mDGPIDs) {
     LOGF(info, "      %f", pid);
@@ -362,6 +366,25 @@ float DGPIDSelector::getTOFnSigma(UDTrackFull track, int pid)
 }
 
 // -----------------------------------------------------------------------------
+bool DGPIDSelector::isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks)
+{
+
+  // compute net charge of track combination
+  int netCharge = 0.;
+  for (auto const& ind : comb) {
+    netCharge += tracks.iteratorAt(ind).sign();
+  }
+  LOGF(debug, "Net charge %i", netCharge);
+
+  // is this in the list of accepted net charges?
+  auto netCharges = mAnaPars.netCharges();
+  if (std::find(netCharges.begin(), netCharges.end(), netCharge) != netCharges.end()) {
+    return true;
+  }
+  return false;
+}
+
+// -----------------------------------------------------------------------------
 bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
 {
   // get pid of particle cnt
@@ -373,12 +396,13 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
     return false;
   }
 
-  // check sign
-  if (pid != 0) {
-    auto ch = pid / abs(pid);
-    if (track.sign() != ch) {
-      return false;
-    }
+  // cut on dcaXY and dcaZ
+  if (track.dcaXY() < -0.1 || track.dcaXY() > 0.1) {
+    return false;
+  }
+
+  if (track.dcaZ() < -0.2 || track.dcaZ() > 0.2) {
+    return false;
   }
 
   // loop over all PIDCuts and apply the ones which apply to this track
@@ -462,6 +486,10 @@ int DGPIDSelector::computeIVMs(UDTracksFull const& tracks)
 
   // loop over unique combinations
   for (auto comb : combs) {
+    // is combination compatible with netCharge requirements?
+    if (!isGoodCombination(comb, tracks)) {
+      continue;
+    }
     // is tracks compatible with PID requirements?
     bool isGoodComb = true;
     auto cnt = -1;

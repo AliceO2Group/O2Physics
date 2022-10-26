@@ -91,9 +91,6 @@ struct DGCandAnalyzer {
       return;
     }
 
-    // get analysis paraneters
-    auto anaPars = pidsel.getAnaPars();
-
     // fill histogram
     auto tr1 = dgtracks.rawIteratorAt(ivm.trkinds()[0]);
     auto signalTPC1 = tr1.tpcSignal();
@@ -176,6 +173,8 @@ struct DGCandAnalyzer {
         registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
         registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
         registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
+
+        registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 
