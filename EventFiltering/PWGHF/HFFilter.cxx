@@ -227,7 +227,7 @@ struct HfFilter { // Main struct for HF triggers
       onnxFileXicToPiKPConf};
 
     // init ONNX runtime session
-    if (applyML && timestampCCDB != 0) {
+    if (applyML && (!loadModelsFromCCDB || timestampCCDB != 0)) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
           if (singleThreadInference) {
@@ -583,8 +583,7 @@ struct HfFilter { // Main struct for HF triggers
   {
     optimisationTreeCollisions(collision.globalIndex());
 
-    if (applyML && inputNamesML[kD0].size() == 0) {
-
+    if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && inputNamesML[kD0].size() == 0) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
           if (singleThreadInference) {
@@ -592,10 +591,7 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          bool retrieveSuccess = true;
-          if (loadModelsFromCCDB && timestampCCDB >= 0) {
-            retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value + charmParticleNames[iCharmPart], ".", metadata, collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp(), false, onnxFiles[iCharmPart]);
-          }
+          bool retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value + charmParticleNames[iCharmPart], ".", metadata, collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp(), false, onnxFiles[iCharmPart]);
           if (retrieveSuccess) {
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
             inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
@@ -625,8 +621,7 @@ struct HfFilter { // Main struct for HF triggers
 
     int n2Prongs{0}, n3Prongs{0};
 
-    for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
-
+    for (const auto& cand2Prong : cand2Prongs) {                                        // start loop over 2 prongs
       if (!TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_prong2::DecayType::D0ToPiK)) { // check if it's a D0
         continue;
       }
@@ -775,7 +770,6 @@ struct HfFilter { // Main struct for HF triggers
     }   // end loop over 2-prong candidates
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
-
       std::array<int8_t, kNCharmParticles - 1> is3Prong = {
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi),
