@@ -258,7 +258,7 @@ struct HfTagSelTracks {
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<bool> debug{"debug", true, "debug mode"};
-  //Configurable<double> bz{"bz", 5., "bz field"};
+  // Configurable<double> bz{"bz", 5., "bz field"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // quality cut
@@ -419,7 +419,7 @@ struct HfTagSelTracks {
     /// Prepare the vertex refitting
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2?ccdbPathGrp:ccdbPathGrpMag, lut, isRun2);
+    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
     /*if (mRunNumber != bc.runNumber()) {
 
       if (isRun2) { // Run 2 GRP object
@@ -849,7 +849,7 @@ struct HfTrackIndexSkimsCreator {
   // preselection parameters
   Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
-  //Configurable<double> bz{"bz", 5., "magnetic field kG"};
+  // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<double> maxRad{"maxRad", 200., "reject PCA's above this radius"};
@@ -1284,7 +1284,7 @@ struct HfTrackIndexSkimsCreator {
     /// Prepare the vertex refitting
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2?ccdbPathGrp:ccdbPathGrpMag, lut, isRun2);
+    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
     /*if (mRunNumber != bc.runNumber()) {
 
       if (isRun2) { // Run 2 GRP object
@@ -1496,7 +1496,7 @@ struct HfTrackIndexSkimsCreator {
 
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2?ccdbPathGrp:ccdbPathGrpMag, lut, isRun2);
+    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
@@ -2152,7 +2152,7 @@ struct HfTrackIndexSkimsCreatorCascades {
   // Configurable<int> triggerindex{"triggerindex", -1, "trigger index"};
 
   // vertexing parameters
-  //Configurable<double> bZ{"bZ", 5., "magnetic field"};
+  // Configurable<double> bZ{"bZ", 5., "magnetic field"};
   Configurable<bool> propDCA{"propDCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -2258,7 +2258,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2?ccdbPathGrp:ccdbPathGrpMag, lut, isRun2);
+    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
