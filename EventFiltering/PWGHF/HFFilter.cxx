@@ -73,6 +73,7 @@ struct HfFilter { // Main struct for HF triggers
   Produces<aod::HFOptimisationTreeBeauty> optimisationTreeBeauty;
   Produces<aod::HFOptimisationTreeCharm> optimisationTreeCharm;
   Produces<aod::HFOptimisationTreeFemto> optimisationTreeFemto;
+  Produces<aod::HFOptimisationTreeCollisions> optimisationTreeCollisions;
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
@@ -135,7 +136,7 @@ struct HfFilter { // Main struct for HF triggers
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
-  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<long> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
@@ -226,10 +227,7 @@ struct HfFilter { // Main struct for HF triggers
       onnxFileXicToPiKPConf};
 
     // init ONNX runtime session
-    if (applyML && ccdbTimestamp != 0) {
-
-      /// specific timestamp for models
-      LOG(info) << "specific timestamp for models: " << ccdbTimestamp.value;
+    if (applyML && timestampCCDB != 0) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
           if (singleThreadInference) {
@@ -237,12 +235,11 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = true;
-          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos && loadModelsFromCCDB) {
-            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
+          bool retrieveSuccess = true;
+          if (loadModelsFromCCDB && timestampCCDB > 0) {
+            retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value + charmParticleNames[iCharmPart], ".", metadata, timestampCCDB, false, onnxFiles[iCharmPart]);
           }
-          if (retrieve_success) {
+          if (retrieveSuccess) {
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
             inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
             inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
@@ -584,11 +581,9 @@ struct HfFilter { // Main struct for HF triggers
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksWithProtonPID const& tracks)
   {
+    optimisationTreeCollisions(collision.globalIndex());
 
-    if (applyML && ccdbTimestamp == 0 && onnxFiles[kD0].find("cvmfs") == std::string::npos && inputNamesML[kD0].size() == 0) {
-
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-      LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
+    if (applyML && inputNamesML[kD0].size() == 0) {
 
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
@@ -597,13 +592,11 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = true;
-          if (loadModelsFromCCDB) {
-            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
+          bool retrieveSuccess = true;
+          if (loadModelsFromCCDB && timestampCCDB >= 0) {
+            retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value + charmParticleNames[iCharmPart], ".", metadata, collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp(), false, onnxFiles[iCharmPart]);
           }
-          if (retrieve_success) {
-
+          if (retrieveSuccess) {
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
             inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
             inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
@@ -659,7 +652,7 @@ struct HfFilter { // Main struct for HF triggers
         } else if (dataTypeML[kD0] == 11) {
           inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesDoD0.data(), inputFeaturesDoD0.size(), inputShapesML[kD0][0]));
         } else {
-          LOG(fatal) << "Error running model inference: Unexpected input data type.";
+          LOG(fatal) << "Error running model inference for D0: Unexpected input data type.";
         }
 
         // double-check the dimensions of the input tensor
@@ -839,7 +832,7 @@ struct HfFilter { // Main struct for HF triggers
           } else if (dataTypeML[iCharmPart + 1] == 11) {
             inputTensor.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesD.data(), inputFeaturesD.size(), inputShapesML[iCharmPart + 1][0]));
           } else {
-            LOG(error) << "Error running model inference: Unexpected input data type.";
+            LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
           }
 
           // double-check the dimensions of the input tensor
