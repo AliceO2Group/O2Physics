@@ -50,6 +50,10 @@ struct HFCandidateCreator3Prong {
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH1F> hCovPVYY{TH1F("hCovPVYY", "3-prong candidates;YY element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVYY{TH1F("hCovSVYY", "3-prong candidates;YY element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH1F> hCovPVZZ{TH1F("hCovPVZZ", "3-prong candidates;ZZ element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "3-prong candidates;ZZ element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
   OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
 
@@ -91,6 +95,8 @@ struct HFCandidateCreator3Prong {
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
       hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+      hCovSVYY->Fill(covMatrixPCA[2]);
+      hCovSVZZ->Fill(covMatrixPCA[5]);
       trackParVar0 = df.getTrack(0);
       trackParVar1 = df.getTrack(1);
       trackParVar2 = df.getTrack(2);
@@ -124,6 +130,8 @@ struct HFCandidateCreator3Prong {
         covMatrixPV = primaryVertex.getCov();
       }
       hCovPVXX->Fill(covMatrixPV[0]);
+      hCovPVYY->Fill(covMatrixPV[2]);
+      hCovPVZZ->Fill(covMatrixPV[5]);
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
       o2::dataformats::DCA impactParameter2;
