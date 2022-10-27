@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file UtilsBfieldCCDB.h
+/// \file utilsBfieldCCDB.h
 /// \brief Utility to set the B field in analysis querying it from CCDB
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova, Italy
 
