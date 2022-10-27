@@ -54,6 +54,16 @@ struct TrackSelectionFlags {
   static constexpr flagtype kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks;
   static constexpr flagtype kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks;
   static constexpr flagtype kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks;
+
+  /// @brief Function to check flag content
+  /// @param flags bitmask contained in the track
+  /// @param mask bitmask to check against the one contained in the track
+  /// @return true if the check is successful
+  static bool checkFlag(const TrackSelectionFlags::flagtype flags,
+                        const TrackSelectionFlags::flagtype mask)
+  {
+    return (flags & mask) == mask;
+  }
 };
 
 #define requireTrackCutInFilter(mask) ((aod::track::trackCutFlag & aod::track::mask) == aod::track::mask)
@@ -66,12 +76,16 @@ struct TrackSelectionFlags {
 #define requireTrackWithinBeamPipe (nabs(aod::track::x) < o2::constants::geom::XBeamPipeOuterRef)
 
 // Columns to store track filter decisions
-DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
-DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged
+DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);                     //!
+DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype);       //! Flag with the single cut passed flagged
+DECLARE_SOA_COLUMN(TrackCutFlagFb1, trackCutFlagFb1, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged for the first selection criteria
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
-  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & mask) == mask; });
+  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); });
 
 // Single selection
+DECLARE_SOA_DYNAMIC_COLUMN(CheckFlag, checkFlag,
+                           [](TrackSelectionFlags::flagtype flags,
+                              TrackSelectionFlags::flagtype mask) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); });  //! Checks the single cut
 DECLARE_DYN_TRKSEL_COLUMN(PassedTrackType, passedTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
 DECLARE_DYN_TRKSEL_COLUMN(PassedPtRange, passedPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
 DECLARE_DYN_TRKSEL_COLUMN(PassedEtaRange, passedEtaRange, TrackSelectionFlags::kEtaRange);                                           //! Passed the track cut: kEtaRange
@@ -104,6 +118,7 @@ DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the trac
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
+                  track::CheckFlag<track::TrackCutFlag>,
                   track::PassedTrackType<track::TrackCutFlag>,
                   track::PassedPtRange<track::TrackCutFlag>,
                   track::PassedEtaRange<track::TrackCutFlag>,
