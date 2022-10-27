@@ -313,14 +313,14 @@ struct UpcCandProducer {
         pass = applyBarCuts(tr);
       }
       int32_t colNContrib = -1;
+      auto ambIter = ambTrIDs.find(tr.globalIndex());
+      if (ambIter == ambTrIDs.end()) {
+        int32_t colId = tr.collisionId();
+        const auto& col = collisions.iteratorAt(colId);
+        colNContrib = col.numContrib();
+      }
       if (pass) {
-        auto ambIter = ambTrIDs.find(tr.globalIndex());
-        if (ambIter == ambTrIDs.end()) {
-          int32_t colId = tr.collisionId();
-          const auto& col = collisions.iteratorAt(colId);
-          colNContrib = col.numContrib();
-        }
-        if (colNContrib <= upcCuts.getMaxNContrib() || (colNContrib == -1 && upcCuts.getAmbigSwitch() != 1))
+        if ((colNContrib >= 0 && colNContrib <= upcCuts.getMaxNContrib()) || (colNContrib == -1 && upcCuts.getAmbigSwitch() != 1))
           filteredTrackIDs.push_back(tr.globalIndex());
       }
       if constexpr (trackSwitch == 1) {
