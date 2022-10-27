@@ -176,6 +176,180 @@ struct tofSpectra {
 
   void init(o2::framework::InitContext&)
   {
+    // Standard process functions
+    if (doprocessRun3) {
+      LOG(info) << "Enabling process function processRun3";
+    }
+    if (doprocessRun2) {
+      LOG(info) << "Enabling process function processRun2";
+    }
+    // Full
+    if (doprocessFullEl) {
+      LOG(info) << "Enabling process function processFullEl";
+    }
+    if (doprocessFullMu) {
+      LOG(info) << "Enabling process function processFullMu";
+    }
+    if (doprocessFullPi) {
+      LOG(info) << "Enabling process function processFullPi";
+    }
+    if (doprocessFullKa) {
+      LOG(info) << "Enabling process function processFullKa";
+    }
+    if (doprocessFullPr) {
+      LOG(info) << "Enabling process function processFullPr";
+    }
+    if (doprocessFullDe) {
+      LOG(info) << "Enabling process function processFullDe";
+    }
+    if (doprocessFullTr) {
+      LOG(info) << "Enabling process function processFullTr";
+    }
+    if (doprocessFullHe) {
+      LOG(info) << "Enabling process function processFullHe";
+    }
+    if (doprocessFullAl) {
+      LOG(info) << "Enabling process function processFullAl";
+    }
+    // Tiny
+    if (doprocessTinyEl) {
+      LOG(info) << "Enabling process function processTinyEl";
+    }
+    if (doprocessTinyMu) {
+      LOG(info) << "Enabling process function processTinyMu";
+    }
+    if (doprocessTinyPi) {
+      LOG(info) << "Enabling process function processTinyPi";
+    }
+    if (doprocessTinyKa) {
+      LOG(info) << "Enabling process function processTinyKa";
+    }
+    if (doprocessTinyPr) {
+      LOG(info) << "Enabling process function processTinyPr";
+    }
+    if (doprocessTinyDe) {
+      LOG(info) << "Enabling process function processTinyDe";
+    }
+    if (doprocessTinyTr) {
+      LOG(info) << "Enabling process function processTinyTr";
+    }
+    if (doprocessTinyHe) {
+      LOG(info) << "Enabling process function processTinyHe";
+    }
+    if (doprocessTinyAl) {
+      LOG(info) << "Enabling process function processTinyAl";
+    }
+    // Full Run 2
+    if (doprocessFullRun2El) {
+      LOG(info) << "Enabling process function processFullRun2El";
+      if (doprocessFullEl) {
+        LOG(fatal) << "Cannot have doprocessFullEl as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Mu) {
+      LOG(info) << "Enabling process function processFullRun2Mu";
+      if (doprocessFullMu) {
+        LOG(fatal) << "Cannot have doprocessFullMu as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Pi) {
+      LOG(info) << "Enabling process function processFullRun2Pi";
+      if (doprocessFullPi) {
+        LOG(fatal) << "Cannot have doprocessFullPi as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Ka) {
+      LOG(info) << "Enabling process function processFullRun2Ka";
+      if (doprocessFullKa) {
+        LOG(fatal) << "Cannot have doprocessFullKa as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Pr) {
+      LOG(info) << "Enabling process function processFullRun2Pr";
+      if (doprocessFullPr) {
+        LOG(fatal) << "Cannot have doprocessFullPr as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2De) {
+      LOG(info) << "Enabling process function processFullRun2De";
+      if (doprocessFullDe) {
+        LOG(fatal) << "Cannot have doprocessFullDe as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Tr) {
+      LOG(info) << "Enabling process function processFullRun2Tr";
+      if (doprocessFullTr) {
+        LOG(fatal) << "Cannot have doprocessFullTr as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2He) {
+      LOG(info) << "Enabling process function processFullRun2He";
+      if (doprocessFullHe) {
+        LOG(fatal) << "Cannot have doprocessFullHe as well, please pick one";
+      }
+    }
+    if (doprocessFullRun2Al) {
+      LOG(info) << "Enabling process function processFullRun2Al";
+      if (doprocessFullAl) {
+        LOG(fatal) << "Cannot have doprocessFullAl as well, please pick one";
+      }
+    }
+    // Tiny Run2
+    if (doprocessTinyRun2El) {
+      LOG(info) << "Enabling process function processTinyRun2El";
+      if (doprocessTinyEl) {
+        LOG(fatal) << "Cannot have doprocessTinyEl as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Mu) {
+      LOG(info) << "Enabling process function processTinyRun2Mu";
+      if (doprocessTinyMu) {
+        LOG(fatal) << "Cannot have doprocessTinyMu as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Pi) {
+      LOG(info) << "Enabling process function processTinyRun2Pi";
+      if (doprocessTinyPi) {
+        LOG(fatal) << "Cannot have doprocessTinyPi as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Ka) {
+      LOG(info) << "Enabling process function processTinyRun2Ka";
+      if (doprocessTinyKa) {
+        LOG(fatal) << "Cannot have doprocessTinyKa as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Pr) {
+      LOG(info) << "Enabling process function processTinyRun2Pr";
+      if (doprocessTinyPr) {
+        LOG(fatal) << "Cannot have doprocessTinyPr as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2De) {
+      LOG(info) << "Enabling process function processTinyRun2De";
+      if (doprocessTinyDe) {
+        LOG(fatal) << "Cannot have doprocessTinyDe as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Tr) {
+      LOG(info) << "Enabling process function processTinyRun2Tr";
+      if (doprocessTinyTr) {
+        LOG(fatal) << "Cannot have doprocessTinyTr as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2He) {
+      LOG(info) << "Enabling process function processTinyRun2He";
+      if (doprocessTinyHe) {
+        LOG(fatal) << "Cannot have doprocessTinyHe as well, please pick one";
+      }
+    }
+    if (doprocessTinyRun2Al) {
+      LOG(info) << "Enabling process function processTinyRun2Al";
+      if (doprocessTinyAl) {
+        LOG(fatal) << "Cannot have doprocessTinyAl as well, please pick one";
+      }
+    }
+    // Checking consistency
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
@@ -387,7 +561,7 @@ struct tofSpectra {
     }
   }
 
-  template <bool fillFullInfo, PID::ID id, typename T, typename C>
+  template <bool fillFullInfo, bool useRun3Multiplicity, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& collision)
   {
     if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
@@ -396,35 +570,37 @@ struct tofSpectra {
     const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     // const auto id = track.sign() > 0 ? id : id + Np;
-    float multiplicity = 0;
+    float multiplicity = 0.f;
 
-    switch (multiplicityEstimator) {
-      case 1: // MultFV0M
-        // multiplicity = collision.multFV0M();
-        // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
-        multiplicity = collision.multZeqFV0A();
-        break;
-      case 2: // MultFT0M
-        // multiplicity = collision.multFT0M();
-        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-        break;
-      case 3: // MultFDDM
-        // multiplicity = collision.multFDDM();
-        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
-        break;
-      case 4: // MultTracklets
-        multiplicity = collision.multTracklets();
-        break;
-      case 5: // MultTPC
-        multiplicity = collision.multTPC();
-        break;
-      case 6: // MultNTracksPV
-        // multiplicity = collision.multNTracksPV();
-        multiplicity = collision.multZeqNTracksPV();
-        break;
-      case 7: // MultNTracksPVeta1
-        multiplicity = collision.multNTracksPVeta1();
-        break;
+    if constexpr (useRun3Multiplicity) {
+      switch (multiplicityEstimator) {
+        case 1: // MultFV0M
+          // multiplicity = collision.multFV0M();
+          // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
+          multiplicity = collision.multZeqFV0A();
+          break;
+        case 2: // MultFT0M
+          // multiplicity = collision.multFT0M();
+          multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
+          break;
+        case 3: // MultFDDM
+          // multiplicity = collision.multFDDM();
+          multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
+          break;
+        case 4: // MultTracklets
+          multiplicity = collision.multTracklets();
+          break;
+        case 5: // MultTPC
+          multiplicity = collision.multTPC();
+          break;
+        case 6: // MultNTracksPV
+          // multiplicity = collision.multNTracksPV();
+          multiplicity = collision.multZeqNTracksPV();
+          break;
+        case 7: // MultNTracksPVeta1
+          multiplicity = collision.multNTracksPVeta1();
+          break;
+      }
     }
 
     if (multiplicityEstimator == 0) {
@@ -637,65 +813,79 @@ struct tofSpectra {
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processRun2, "Standard process function for the Run2 data", false);
 
-// Full tables
-#define makeProcessFunction(inputPid, particleId)                                \
-  void processFull##inputPid(CollisionCandidate::iterator const& collision,      \
-                             soa::Join<TrackCandidates,                          \
-                                       aod::pidTOFFull##inputPid,                \
-                                       aod::pidTPCFull##inputPid> const& tracks) \
-  {                                                                              \
-    if (!isEventSelected<false, false>(collision)) {                             \
-      return;                                                                    \
-    }                                                                            \
-    for (const auto& track : tracks) {                                           \
-      if (!isTrackSelected<false>(track)) {                                      \
-        continue;                                                                \
-      }                                                                          \
-      fillParticleHistos<true, PID::particleId>(track, collision);               \
-    }                                                                            \
-  }                                                                              \
-  PROCESS_SWITCH(tofSpectra, processFull##inputPid, Form("Process for the %s hypothesis from full tables", #particleId), false);
+#define makeProcessFunction(processorName, inputPid, particleId, isFull, isRun3)            \
+  void process##processorName##inputPid(CollisionCandidate::iterator const& collision,      \
+                                        soa::Join<TrackCandidates,                          \
+                                                  aod::pidTOFFull##inputPid,                \
+                                                  aod::pidTPCFull##inputPid> const& tracks) \
+  {                                                                                         \
+    if (!isEventSelected<false, false>(collision)) {                                        \
+      return;                                                                               \
+    }                                                                                       \
+    for (const auto& track : tracks) {                                                      \
+      if (!isTrackSelected<false>(track)) {                                                 \
+        continue;                                                                           \
+      }                                                                                     \
+      fillParticleHistos<isFull, isRun3, PID::particleId>(track, collision);                \
+    }                                                                                       \
+  }                                                                                         \
+  PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
-  makeProcessFunction(El, Electron);
-  makeProcessFunction(Mu, Muon);
-  makeProcessFunction(Pi, Pion);
-  makeProcessFunction(Ka, Kaon);
-  makeProcessFunction(Pr, Proton);
-  makeProcessFunction(De, Deuteron);
-  makeProcessFunction(Tr, Triton);
-  makeProcessFunction(He, Helium3);
-  makeProcessFunction(Al, Alpha);
-#undef makeProcessFunction
+// Full tables
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, true)
+
+  makeProcessFunctionFull(El, Electron);
+  makeProcessFunctionFull(Mu, Muon);
+  makeProcessFunctionFull(Pi, Pion);
+  makeProcessFunctionFull(Ka, Kaon);
+  makeProcessFunctionFull(Pr, Proton);
+  makeProcessFunctionFull(De, Deuteron);
+  makeProcessFunctionFull(Tr, Triton);
+  makeProcessFunctionFull(He, Helium3);
+  makeProcessFunctionFull(Al, Alpha);
+#undef makeProcessFunctionFull
 
 // Tiny tables
-#define makeProcessFunction(inputPid, particleId)                            \
-  void processTiny##inputPid(CollisionCandidate::iterator const& collision,  \
-                             soa::Join<TrackCandidates,                      \
-                                       aod::pidTOF##inputPid,                \
-                                       aod::pidTPC##inputPid> const& tracks) \
-  {                                                                          \
-    if (!isEventSelected<false, false>(collision)) {                         \
-      return;                                                                \
-    }                                                                        \
-    for (const auto& track : tracks) {                                       \
-      if (!isTrackSelected<false>(track)) {                                  \
-        continue;                                                            \
-      }                                                                      \
-      fillParticleHistos<true, PID::particleId>(track, collision);           \
-    }                                                                        \
-  }                                                                          \
-  PROCESS_SWITCH(tofSpectra, processTiny##inputPid, Form("Process for the %s hypothesis from tiny tables", #particleId), false);
+#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, true)
 
-  makeProcessFunction(El, Electron);
-  makeProcessFunction(Mu, Muon);
-  makeProcessFunction(Pi, Pion);
-  makeProcessFunction(Ka, Kaon);
-  makeProcessFunction(Pr, Proton);
-  makeProcessFunction(De, Deuteron);
-  makeProcessFunction(Tr, Triton);
-  makeProcessFunction(He, Helium3);
-  makeProcessFunction(Al, Alpha);
-#undef makeProcessFunction
+  makeProcessFunctionTiny(El, Electron);
+  makeProcessFunctionTiny(Mu, Muon);
+  makeProcessFunctionTiny(Pi, Pion);
+  makeProcessFunctionTiny(Ka, Kaon);
+  makeProcessFunctionTiny(Pr, Proton);
+  makeProcessFunctionTiny(De, Deuteron);
+  makeProcessFunctionTiny(Tr, Triton);
+  makeProcessFunctionTiny(He, Helium3);
+  makeProcessFunctionTiny(Al, Alpha);
+#undef makeProcessFunctionTiny
+
+// Full tables (Run2)
+#define makeProcessFunctionFullRun2(inputPid, particleId) makeProcessFunction(FullRun2, inputPid, particleId, true, false)
+
+  makeProcessFunctionFullRun2(El, Electron);
+  makeProcessFunctionFullRun2(Mu, Muon);
+  makeProcessFunctionFullRun2(Pi, Pion);
+  makeProcessFunctionFullRun2(Ka, Kaon);
+  makeProcessFunctionFullRun2(Pr, Proton);
+  makeProcessFunctionFullRun2(De, Deuteron);
+  makeProcessFunctionFullRun2(Tr, Triton);
+  makeProcessFunctionFullRun2(He, Helium3);
+  makeProcessFunctionFullRun2(Al, Alpha);
+#undef makeProcessFunctionFullRun2
+
+// Tiny tables (Run2)
+#define makeProcessFunctionTinyRun2(inputPid, particleId) makeProcessFunction(TinyRun2, inputPid, particleId, false, false)
+
+  makeProcessFunctionTinyRun2(El, Electron);
+  makeProcessFunctionTinyRun2(Mu, Muon);
+  makeProcessFunctionTinyRun2(Pi, Pion);
+  makeProcessFunctionTinyRun2(Ka, Kaon);
+  makeProcessFunctionTinyRun2(Pr, Proton);
+  makeProcessFunctionTinyRun2(De, Deuteron);
+  makeProcessFunctionTinyRun2(Tr, Triton);
+  makeProcessFunctionTinyRun2(He, Helium3);
+  makeProcessFunctionTinyRun2(Al, Alpha);
+#undef makeProcessFunctionTinyRun2
 
   template <std::size_t i, typename T1, typename T2>
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)

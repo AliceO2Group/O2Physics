@@ -594,7 +594,7 @@ CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange()
 /// \param lowfn The function which will provide the low value for the cut excluded range
 /// \param upfn The function which will provide the upper value for the cut excluded range
 template <typename TValueToFilter>
-CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const char* name, const TF1& lowfn, const TF1& upfn)
+CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const char*, const TF1& lowfn, const TF1& upfn)
   : CutBrickExtToRange<TValueToFilter>(),
     mLowFunction{lowfn},
     mUpFunction{upfn}

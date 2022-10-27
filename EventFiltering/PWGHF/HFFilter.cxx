@@ -25,248 +25,27 @@
 #include "Framework/runDataProcessing.h"
 
 #include "EventFiltering/filterTables.h"
+#include "HFFilterHelpers.h"
 
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 #include <cmath>
 #include <string>
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
 
 // ML application
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
-//CCDB
+// CCDB
 #include <CCDB/BasicCCDBManager.h>
 #include "CCDB/CcdbApi.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::hffilters;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
-
-namespace
-{
-
-enum HfTriggers {
-  kHighPt2P = 0,
-  kHighPt3P,
-  kBeauty3P,
-  kBeauty4P,
-  kFemto2P,
-  kFemto3P,
-  kDoubleCharm2P,
-  kDoubleCharm3P,
-  kDoubleCharmMix,
-  kNtriggersHF
-};
-
-enum charmParticles {
-  kD0 = 0,
-  kDplus,
-  kDs,
-  kLc,
-  kXic,
-  kNCharmParticles
-};
-
-enum beautyParticles {
-  kBplus = 0,
-  kB0toDStar,
-  kB0,
-  kBs,
-  kLb,
-  kXib,
-  kNBeautyParticles
-};
-
-enum beautyTrackSelection {
-  kRejected = 0,
-  kSoftPion,
-  kRegular
-};
-
-static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm"};
-static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
-static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
-
-static const float massPi = RecoDecay::getMassPDG(211);
-static const float massK = RecoDecay::getMassPDG(321);
-static const float massProton = RecoDecay::getMassPDG(2212);
-static const float massPhi = RecoDecay::getMassPDG(333);
-static const float massD0 = RecoDecay::getMassPDG(421);
-static const float massDPlus = RecoDecay::getMassPDG(411);
-static const float massDs = RecoDecay::getMassPDG(431);
-static const float massLc = RecoDecay::getMassPDG(4122);
-static const float massXic = RecoDecay::getMassPDG(4232);
-static const float massDStar = RecoDecay::getMassPDG(413);
-static const float massBPlus = RecoDecay::getMassPDG(511);
-static const float massB0 = RecoDecay::getMassPDG(521);
-static const float massBs = RecoDecay::getMassPDG(531);
-static const float massLb = RecoDecay::getMassPDG(5122);
-static const float massXib = RecoDecay::getMassPDG(5232);
-
-} // namespace
-
-namespace o2::aod
-{
-namespace extra2Prong
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace extra2Prong
-namespace extra3Prong
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace extra3Prong
-DECLARE_SOA_TABLE(Colls2Prong, "AOD", "COLLSID2P", o2::aod::extra2Prong::CollisionId);
-DECLARE_SOA_TABLE(Colls3Prong, "AOD", "COLLSID3P", o2::aod::extra3Prong::CollisionId);
-
-namespace hftraining2p
-{
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);       //!
-DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float); //!
-DECLARE_SOA_COLUMN(PT2Prong, pT2Prong, float);         //!
-DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
-DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
-DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float); //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float); //!
-DECLARE_SOA_COLUMN(PT2, pT2, float);                   //!
-DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);     //!
-DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);       //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float); //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float); //!
-DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);    //!
-} // namespace hftraining2p
-DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
-                  hftraining2p::InvMassD0,
-                  hftraining2p::InvMassD0bar,
-                  hftraining2p::PT2Prong,
-                  hftraining2p::PT1,
-                  hftraining2p::DCAPrimXY1,
-                  hftraining2p::DCAPrimZ1,
-                  hftraining2p::NsigmaPiTPC1,
-                  hftraining2p::NsigmaKaTPC1,
-                  hftraining2p::NsigmaPiTOF1,
-                  hftraining2p::NsigmaKaTOF1,
-                  hftraining2p::PT2,
-                  hftraining2p::DCAPrimXY2,
-                  hftraining2p::DCAPrimZ2,
-                  hftraining2p::NsigmaPiTPC2,
-                  hftraining2p::NsigmaKaTPC2,
-                  hftraining2p::NsigmaPiTOF2,
-                  hftraining2p::NsigmaKaTOF2,
-                  hftraining2p::FlagOrigin);
-
-namespace hftraining3p
-{
-DECLARE_SOA_COLUMN(InvMassDplus, invMassDplus, float);           //!
-DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float);     //!
-DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float);     //!
-DECLARE_SOA_COLUMN(InvMassLcToPKPi, invMassLcToPKPi, float);     //!
-DECLARE_SOA_COLUMN(InvMassLcToPiKP, invMassLcToPiKP, float);     //!
-DECLARE_SOA_COLUMN(InvMassXicToPKPi, invMassXicToPKPi, float);   //!
-DECLARE_SOA_COLUMN(InvMassXicToPiKP, invMassXicToPiKP, float);   //!
-DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);                   //!
-DECLARE_SOA_COLUMN(PT1, pT1, float);                             //!
-DECLARE_SOA_COLUMN(DeltaMassKKFirst, deltaMassKKFirst, float);   //!
-DECLARE_SOA_COLUMN(DeltaMassKKSecond, deltaMassKKSecond, float); //!
-DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);               //!
-DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);                 //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float);           //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float);           //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float);           //!
-DECLARE_SOA_COLUMN(PT2, pT2, float);                             //!
-DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);               //!
-DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);                 //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float);           //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float);           //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float);           //!
-DECLARE_SOA_COLUMN(PT3, pT3, float);                             //!
-DECLARE_SOA_COLUMN(DCAPrimXY3, dcaPrimXY3, float);               //!
-DECLARE_SOA_COLUMN(DCAPrimZ3, dcaPrimZ3, float);                 //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC3, nsigmaPiTPC3, float);           //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC3, nsigmaKaTPC3, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPrTPC3, nsigmaPrTPC3, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF3, nsigmaPiTOF3, float);           //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF3, nsigmaKaTOF3, float);           //!
-DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float);           //!
-DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);              //!
-DECLARE_SOA_COLUMN(Channel, channel, int8_t);                    //!
-DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);                  //!
-} // namespace hftraining3p
-DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
-                  hftraining3p::InvMassDplus,
-                  hftraining3p::InvMassDsToKKPi,
-                  hftraining3p::InvMassDsToPiKK,
-                  hftraining3p::InvMassLcToPKPi,
-                  hftraining3p::InvMassLcToPiKP,
-                  hftraining3p::InvMassXicToPKPi,
-                  hftraining3p::InvMassXicToPiKP,
-                  hftraining3p::PT3Prong,
-                  hftraining3p::DeltaMassKKFirst,
-                  hftraining3p::DeltaMassKKSecond,
-                  hftraining3p::PT1,
-                  hftraining3p::DCAPrimXY1,
-                  hftraining3p::DCAPrimZ1,
-                  hftraining3p::NsigmaPiTPC1,
-                  hftraining3p::NsigmaKaTPC1,
-                  hftraining3p::NsigmaPrTPC1,
-                  hftraining3p::NsigmaPiTOF1,
-                  hftraining3p::NsigmaKaTOF1,
-                  hftraining3p::NsigmaPrTOF1,
-                  hftraining3p::PT2,
-                  hftraining3p::DCAPrimXY2,
-                  hftraining3p::DCAPrimZ2,
-                  hftraining3p::NsigmaPiTPC2,
-                  hftraining3p::NsigmaKaTPC2,
-                  hftraining3p::NsigmaPrTPC2,
-                  hftraining3p::NsigmaPiTOF2,
-                  hftraining3p::NsigmaKaTOF2,
-                  hftraining3p::NsigmaPrTOF2,
-                  hftraining3p::PT3,
-                  hftraining3p::DCAPrimXY3,
-                  hftraining3p::DCAPrimZ3,
-                  hftraining3p::NsigmaPiTPC3,
-                  hftraining3p::NsigmaKaTPC3,
-                  hftraining3p::NsigmaPrTPC3,
-                  hftraining3p::NsigmaPiTOF3,
-                  hftraining3p::NsigmaKaTOF3,
-                  hftraining3p::NsigmaPrTOF3,
-                  hftraining3p::FlagOrigin,
-                  hftraining3p::Channel,
-                  hftraining3p::HFSelBit);
-
-namespace hfoptimisationTree
-{
-DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int); //!
-DECLARE_SOA_COLUMN(ParticleID, particleID, int);         //!
-DECLARE_SOA_COLUMN(BkgBDT, bkgBDT, float);               //!
-DECLARE_SOA_COLUMN(PromptBDT, promptBDT, float);         //!
-DECLARE_SOA_COLUMN(NonpromptBDT, nonpromptBDT, float);   //!
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);                 //!
-} // namespace hfoptimisationTree
-DECLARE_SOA_TABLE(HFOptimisationTree, "AOD", "HFOPTIMTREE", //!
-                  hfoptimisationTree::CollisionIndex,
-                  hfoptimisationTree::ParticleID,
-                  hfoptimisationTree::BkgBDT,
-                  hfoptimisationTree::PromptBDT,
-                  hfoptimisationTree::NonpromptBDT,
-                  hfoptimisationTree::DCAXY);
-} // namespace o2::aod
 
 struct AddCollisionId {
 
@@ -291,7 +70,10 @@ struct HfFilter { // Main struct for HF triggers
   Produces<aod::HfFilters> tags;
   Produces<aod::HFTrigTrain2P> train2P;
   Produces<aod::HFTrigTrain3P> train3P;
-  Produces<aod::HFOptimisationTree> optimisationTree;
+  Produces<aod::HFOptimisationTreeBeauty> optimisationTreeBeauty;
+  Produces<aod::HFOptimisationTreeCharm> optimisationTreeCharm;
+  Produces<aod::HFOptimisationTreeFemto> optimisationTreeFemto;
+  Produces<aod::HFOptimisationTreeCollisions> optimisationTreeCollisions;
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
@@ -349,12 +131,12 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> onnxFileXicToPiKPConf{"onnxFileXicToPiKPConf", "", "ONNX file for ML model for Xic+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDFScoreXicToPiKP{"thresholdBDFScoreXicToPiKP", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of Xic+ candidates"};
 
-  //CCDB configuration
+  // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
-  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<long> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
@@ -445,10 +227,7 @@ struct HfFilter { // Main struct for HF triggers
       onnxFileXicToPiKPConf};
 
     // init ONNX runtime session
-    if (applyML && ccdbTimestamp != 0) {
-
-      /// specific timestamp for models
-      LOG(info) << "specific timestamp for models: " << ccdbTimestamp.value;
+    if (applyML && (!loadModelsFromCCDB || timestampCCDB != 0)) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
           if (singleThreadInference) {
@@ -456,12 +235,11 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = true;
-          if (onnxFiles[iCharmPart].find("cvmfs") == std::string::npos && loadModelsFromCCDB) {
-            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, ccdbTimestamp.value, false, onnxFiles[iCharmPart]);
+          bool retrieveSuccess = true;
+          if (loadModelsFromCCDB && timestampCCDB > 0) {
+            retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value + charmParticleNames[iCharmPart], ".", metadata, timestampCCDB, false, onnxFiles[iCharmPart]);
           }
-          if (retrieve_success) {
+          if (retrieveSuccess) {
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
             inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
             inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
@@ -790,28 +568,6 @@ struct HfFilter { // Main struct for HF triggers
     return retValue;
   }
 
-  /// Computation of the relative momentum between particle pairs
-  /// \param track is a track
-  /// \param ProtonMass is the mass of a proton
-  /// \param CharmCandMomentum is the three momentum of a charm candidate
-  /// \param CharmMass is the mass of the charm hadron
-  /// \return relative momentum of pair
-  template <typename T> // template <typename T, typename C>
-  float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
-  {
-    ROOT::Math::PxPyPzMVector part1(track.px(), track.py(), track.pz(), massProton);
-    ROOT::Math::PxPyPzMVector part2(CharmCandMomentum[0], CharmCandMomentum[1], CharmCandMomentum[2], CharmMass);
-
-    ROOT::Math::PxPyPzMVector trackSum = part1 + part2;
-    ROOT::Math::Boost boostv12{trackSum.BoostToCM()};
-    ROOT::Math::PxPyPzMVector part1CM = boostv12(part1);
-    ROOT::Math::PxPyPzMVector part2CM = boostv12(part2);
-    ROOT::Math::PxPyPzMVector trackRelK = part1CM - part2CM;
-
-    float kStar = 0.5 * trackRelK.P();
-    return kStar;
-  } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
-
   using HfTrackIndexProng2withColl = soa::Join<aod::Hf2Prongs, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::Hf3Prongs, aod::Colls3Prong>;
   using BigTracksMCPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::BigTracksMC>;
@@ -825,12 +581,9 @@ struct HfFilter { // Main struct for HF triggers
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksWithProtonPID const& tracks)
   {
+    optimisationTreeCollisions(collision.globalIndex());
 
-    if (applyML && ccdbTimestamp == 0 && onnxFiles[kD0].find("cvmfs") == std::string::npos && inputNamesML[kD0].size() == 0) {
-
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-      LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
-
+    if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && inputNamesML[kD0].size() == 0) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
           if (singleThreadInference) {
@@ -838,13 +591,8 @@ struct HfFilter { // Main struct for HF triggers
             sessionOptions[iCharmPart].SetInterOpNumThreads(1);
           }
           std::map<std::string, std::string> metadata;
-          std::string tmp = mlModelPathCCDB.value + charmParticleNames[iCharmPart];
-          bool retrieve_success = true;
-          if (loadModelsFromCCDB) {
-            retrieve_success = ccdbApi.retrieveBlob(tmp, ".", metadata, bc.timestamp(), false, onnxFiles[iCharmPart]);
-          }
-          if (retrieve_success) {
-
+          bool retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value + charmParticleNames[iCharmPart], ".", metadata, collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp(), false, onnxFiles[iCharmPart]);
+          if (retrieveSuccess) {
             sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
             inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
             inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
@@ -873,8 +621,7 @@ struct HfFilter { // Main struct for HF triggers
 
     int n2Prongs{0}, n3Prongs{0};
 
-    for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
-
+    for (const auto& cand2Prong : cand2Prongs) {                                        // start loop over 2 prongs
       if (!TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_prong2::DecayType::D0ToPiK)) { // check if it's a D0
         continue;
       }
@@ -900,7 +647,7 @@ struct HfFilter { // Main struct for HF triggers
         } else if (dataTypeML[kD0] == 11) {
           inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesDoD0.data(), inputFeaturesDoD0.size(), inputShapesML[kD0][0]));
         } else {
-          LOG(fatal) << "Error running model inference: Unexpected input data type.";
+          LOG(fatal) << "Error running model inference for D0: Unexpected input data type.";
         }
 
         // double-check the dimensions of the input tensor
@@ -926,7 +673,7 @@ struct HfFilter { // Main struct for HF triggers
           isCharmTagged = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
           isBeautyTagged = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
         } catch (const Ort::Exception& exception) {
-          //LOG(error) << "Error running model inference: " << exception.what();
+          // LOG(error) << "Error running model inference: " << exception.what();
         }
       }
 
@@ -936,6 +683,10 @@ struct HfFilter { // Main struct for HF triggers
 
       auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::pt(pVec2Prong);
+
+      if (applyOptimisation) {
+        optimisationTreeCharm(collision.globalIndex(), pdg::Code::kD0, pt2Prong, scores[0], scores[1], scores[2]);
+      }
 
       auto selD0 = isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong);
 
@@ -967,7 +718,7 @@ struct HfFilter { // Main struct for HF triggers
               keepEvent[kBeauty3P] = true;
               // fill optimisation tree for D0
               if (applyOptimisation) {
-                optimisationTree(collision.globalIndex(), pdg::Code::kD0, scores[0], scores[1], scores[2], track.dcaXY());
+                optimisationTreeBeauty(collision.globalIndex(), pdg::Code::kD0, pt2Prong, scores[0], scores[1], scores[2], track.dcaXY());
               }
               if (activateQA) {
                 hMassVsPtB[kBplus]->Fill(ptCand, massCand);
@@ -984,7 +735,7 @@ struct HfFilter { // Main struct for HF triggers
                     keepEvent[kBeauty3P] = true;
                     // fill optimisation tree for D0
                     if (applyOptimisation) {
-                      optimisationTree(collision.globalIndex(), 413, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
+                      optimisationTreeBeauty(collision.globalIndex(), 413, pt2Prong, scores[0], scores[1], scores[2], track.dcaXY()); // pdgCode of D*(2010)+: 413
                     }
                     if (activateQA) {
                       auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
@@ -1003,6 +754,9 @@ struct HfFilter { // Main struct for HF triggers
           bool isProton = isSelectedProton4Femto(track);
           if (isProton) {
             float relativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
+            if (applyOptimisation) {
+              optimisationTreeFemto(collision.globalIndex(), pdg::Code::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
+            }
             if (relativeMomentum < femtoMaxRelativeMomentum) {
               keepEvent[kFemto2P] = true;
               if (activateQA) {
@@ -1016,7 +770,6 @@ struct HfFilter { // Main struct for HF triggers
     }   // end loop over 2-prong candidates
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
-
       std::array<int8_t, kNCharmParticles - 1> is3Prong = {
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi),
@@ -1050,9 +803,8 @@ struct HfFilter { // Main struct for HF triggers
       std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
       std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
 
-      const int scoresSize = kNCharmParticles - 1;
-      float myscores[scoresSize][3];
-      for (int i = 0; i < scoresSize; i++) {
+      float myscores[kNCharmParticles - 1][3];
+      for (int i = 0; i < kNCharmParticles - 1; i++) {
         std::fill_n(myscores[i], 3, -1);
       } // initialize BDT scores array outside ML loop
       // apply ML models
@@ -1074,7 +826,7 @@ struct HfFilter { // Main struct for HF triggers
           } else if (dataTypeML[iCharmPart + 1] == 11) {
             inputTensor.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesD.data(), inputFeaturesD.size(), inputShapesML[iCharmPart + 1][0]));
           } else {
-            LOG(error) << "Error running model inference: Unexpected input data type.";
+            LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
           }
 
           // double-check the dimensions of the input tensor
@@ -1120,15 +872,27 @@ struct HfFilter { // Main struct for HF triggers
       std::array<int8_t, kNCharmParticles - 1> is3ProngInMass{0};
       if (is3Prong[0]) {
         is3ProngInMass[0] = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+        if (applyOptimisation) {
+          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kDPlus, pt3Prong, myscores[0][0], myscores[0][1], myscores[0][2]);
+        }
       }
       if (is3Prong[1]) {
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[1]);
+        if (applyOptimisation) {
+          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kDs, pt3Prong, myscores[1][0], myscores[1][1], myscores[1][2]);
+        }
       }
       if (is3Prong[2]) {
         is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[2]);
+        if (applyOptimisation) {
+          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kLambdaCPlus, pt3Prong, myscores[2][0], myscores[2][1], myscores[2][2]);
+        }
       }
       if (is3Prong[3]) {
         is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[3]);
+        if (applyOptimisation) {
+          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kXiCPlus, pt3Prong, myscores[3][0], myscores[3][1], myscores[3][2]);
+        }
       }
 
       if (pt3Prong >= pTThreshold3Prong) {
@@ -1150,10 +914,11 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
 
+        int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDs, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
+
         float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
-        int particleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4P) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
             if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
@@ -1161,7 +926,7 @@ struct HfFilter { // Main struct for HF triggers
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty4P] = true;
                 if (applyOptimisation) {
-                  optimisationTree(collision.globalIndex(), particleID[iHypo], myscores[iHypo][0], myscores[iHypo][1], myscores[iHypo][2], track.dcaXY());
+                  optimisationTreeBeauty(collision.globalIndex(), charmParticleID[iHypo], pt3Prong, myscores[iHypo][0], myscores[iHypo][1], myscores[iHypo][2], track.dcaXY());
                 }
                 if (activateQA) {
                   auto pVecBeauty4Prong = RecoDecay::pVec(pVec3Prong, pVecFourth);
@@ -1178,6 +943,9 @@ struct HfFilter { // Main struct for HF triggers
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
             if (isCharmTagged[iHypo]) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
+              if (applyOptimisation) {
+                optimisationTreeFemto(collision.globalIndex(), charmParticleID[iHypo], pt3Prong, myscores[iHypo][0], myscores[iHypo][1], myscores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
+              }
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto3P] = true;
                 if (activateQA) {

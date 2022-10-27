@@ -244,7 +244,6 @@ struct hypertriton3bodybuilder{
       }
       registry.fill(HIST("hVtx3BodyCounter"), 6.5);
 
-      //Fix: Daughters DCA Check
       vtx3bodydata( 
           t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), 
           pos[0], pos[1], pos[2], 

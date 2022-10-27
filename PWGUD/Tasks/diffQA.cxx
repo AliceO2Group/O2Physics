@@ -149,7 +149,7 @@ struct DiffQA {
       // This is used to efficiently check whether a given BC is contained in one of these ranges
       abcrs.reset();
       LOGF(debug, "<DiffQA> size of ambiguous tracks table %i", ambtracks.size());
-      for (auto ambtrack : ambtracks) {
+      for (auto const& ambtrack : ambtracks) {
         auto bcfirst = ambtrack.bc().rawIteratorAt(0);
         auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
         abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
@@ -166,7 +166,7 @@ struct DiffQA {
       // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
       afbcrs.reset();
       LOGF(debug, "<DiffQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
-      for (auto ambfwdtrack : ambfwdtracks) {
+      for (auto const& ambfwdtrack : ambfwdtracks) {
         auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
         auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
         afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
@@ -176,10 +176,10 @@ struct DiffQA {
   }
 
   void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtracks,
-               aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+               TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
+               aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
                aod::Zdcs& zdcs, aod::Calos& calos,
-               aod::V0s& v0s, aod::Cascades& cascades)
+               aod::V0s const& v0s, aod::Cascades const& cascades)
   {
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
     bool isDGcandidate = true;
@@ -202,7 +202,7 @@ struct DiffQA {
     for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
       auto bcSlice = compatibleBCs(collision, NDtcoll, bct0s, 0);
       isDGcandidate = true;
-      for (auto& bc : bcSlice) {
+      for (auto const& bc : bcSlice) {
         isDGcandidate &= cleanFIT(bc, diffCuts.FITAmpLimits());
       }
       registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
@@ -210,7 +210,7 @@ struct DiffQA {
 
     // number of vertex tracks with TOF hit
     float rgtrwTOF = 0.;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       // update eta vs pt histogram
       registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
       // update dEdx histograms
@@ -256,7 +256,7 @@ struct DiffQA {
 
     // no FIT signal in bcSlice / collision
     if (doCleanFITBC) {
-      for (auto& bc : bcSlice) {
+      for (auto const& bc : bcSlice) {
         if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
           isDGcandidate = false;
           break;
@@ -271,7 +271,7 @@ struct DiffQA {
 
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (!cleanZDC(bc, zdcs, lims)) {
         isDGcandidate = false;
         break;
@@ -280,7 +280,7 @@ struct DiffQA {
     registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
 
     // no Calo signal in bcSlice
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (!cleanCalo(bc, calos, lims)) {
         isDGcandidate = false;
         break;
@@ -303,7 +303,7 @@ struct DiffQA {
     // no global tracks which are no vtx tracks
     bool globalAndVtx = isDGcandidate;
     bool vtxAndGlobal = isDGcandidate;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         globalAndVtx = false;
       }
@@ -320,7 +320,7 @@ struct DiffQA {
 
     // check a given bc for possible ambiguous Tracks
     auto noAmbTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
         noAmbTracks = false;
         break;
@@ -330,7 +330,7 @@ struct DiffQA {
 
     // check a given bc for possible ambiguous FwdTracks
     auto noAmbFwdTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (afbcrs.isInRange(bc.globalIndex())) {
         noAmbFwdTracks = false;
         break;
@@ -364,7 +364,7 @@ struct DiffQA {
       }
 
       // check also pt and eta of tracks
-      for (auto& track : tracks) {
+      for (auto const& track : tracks) {
         // update histogram rejectedTracks
         if (!track.isPVContributor()) {
           registry.get<TH1>(HIST("rejectedTracks"))->Fill(0., 1.);
@@ -424,7 +424,7 @@ struct DiffQA {
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
 
       // fill dEdx of DG event tracks
-      for (auto& track : tracks) {
+      for (auto const& track : tracks) {
         if (track.isPVContributor()) {
           LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
           registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.p() * track.sign(), track.tpcSignal());

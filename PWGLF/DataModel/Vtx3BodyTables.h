@@ -58,34 +58,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(VtxCosPA, vtxcosPA, //! 3 body vtx CosPA
 DECLARE_SOA_DYNAMIC_COLUMN(DCAVtxToPV, dcavtxtopv, //! DCA of 3 body vtx to PV
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
 
-// Armenteros-Podolanski variables
-/*DECLARE_SOA_DYNAMIC_COLUMN(Alpha, alpha, //! Armenteros Alpha
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
-                             float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-                             float lQlNeg = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-                             float lQlPos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-                             return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // alphav0
-                           });
-
-DECLARE_SOA_DYNAMIC_COLUMN(QtArm, qtarm, //! Armenteros Qt
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
-                             float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-                             float dp = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
-                             return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qtarm
-                           });
-
-// Psi pair angle: angle between the plane defined by the electron and positron momenta and the xy plane
-DECLARE_SOA_DYNAMIC_COLUMN(PsiPair, psipair, //! psi pair angle
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
-                             auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
-                             float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
-                             float argcos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
-                             float thetaPos = std::atan2(RecoDecay::sqrtSumOfSquares(pxpos, pypos), pzpos);
-                             float thetaNeg = std::atan2(RecoDecay::sqrtSumOfSquares(pxneg, pyneg), pzneg);
-                             float argsin = (thetaNeg - thetaPos) / std::acos(clipToPM1(argcos));
-                             return std::asin(clipToPM1(argsin));
-                           });*/
-
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under Hypertriton hypothesis
                            [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(array{array{pxtrack0, pytrack0, pztrack0}, array{pxtrack1, pytrack1, pztrack1}, array{pxtrack2, pytrack2, pztrack2}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus), 1.87561}); });
@@ -141,9 +113,6 @@ DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDAT
                        vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
                        vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
                        vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                       //vtx3body::Alpha<vtx3body::PxPos, vtx3body::PyPos, vtx3body::PzPos, vtx3body::PxNeg, vtx3body::PyNeg, vtx3body::PzNeg>,
-                       //vtx3body::QtArm<vtx3body::PxPos, vtx3body::PyPos, vtx3body::PzPos, vtx3body::PxNeg, vtx3body::PyNeg, vtx3body::PzNeg>,
-                       //vtx3body::PsiPair<vtx3body::PxPos, vtx3body::PyPos, vtx3body::PzPos, vtx3body::PxNeg, vtx3body::PyNeg, vtx3body::PzNeg>,
 
                        // Invariant masses
                        vtx3body::MHypertriton<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
@@ -168,17 +137,17 @@ DECLARE_SOA_EXTENDED_TABLE_USER(Vtx3BodyDatas, StoredVtx3BodyDatas, "Vtx3BodyDAT
                                 vtx3body::Px, vtx3body::Py, vtx3body::Pz); // the table name has here to be the one with EXT which is not nice and under study
 
 
-/*using Vtx3BodyData = Vtx3BodyDatas::iterator;
+using Vtx3BodyData = Vtx3BodyDatas::iterator;
 namespace vtx3body
 {
-DECLARE_SOA_INDEX_COLUMN(Vtx3BodyData, vtx3BodyData); //! Index to V0Data entry
+DECLARE_SOA_INDEX_COLUMN(Vtx3BodyData, vtx3BodyData); //! Index to Vtx3BodyData entry
 }
 
-DECLARE_SOA_TABLE(Vtx3BodyDataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
+DECLARE_SOA_TABLE(Vtx3BodyDataLink, "AOD", "VtxDATALINK", //! Joinable table with V0s which links to Vtx3BodyData which is not produced for all entries
                   vtx3body::Vtx3BodyDataId);
 
 using Vtxs3BodyLinked = soa::Join<Decays3Body, Vtx3BodyDataLink>;
-using Vtx3BodyLinked = Vtxs3BodyLinked::iterator;*/
+using Vtx3BodyLinked = Vtxs3BodyLinked::iterator;
 
 }
 #endif
