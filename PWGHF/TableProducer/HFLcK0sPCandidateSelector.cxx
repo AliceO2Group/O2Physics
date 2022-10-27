@@ -203,7 +203,7 @@ struct HfLcTok0spCandidateSelector {
   template <typename T>
   bool selectionPIDTPC(const T& track, double nSigmaCut)
   {
-    double nSigma = 100.0; // arbitarily large value
+    double nSigma = 100.0; // arbitrarily large value
     nSigma = track.tpcNSigmaPr();
     LOG(debug) << "nSigma for bachelor = " << nSigma << ", cut at " << nSigmaCut;
     return std::abs(nSigma) < nSigmaCut;

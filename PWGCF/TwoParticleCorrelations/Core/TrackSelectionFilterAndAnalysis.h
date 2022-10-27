@@ -30,7 +30,7 @@ namespace PWGCF
 /* forward de declaration */
 class TrackSelectionFilterAndAnalysis;
 
-///\brief Convenince class for configurable access
+///\brief Convenience class for configurable access
 class TrackSelectionConfigurable
 {
   friend class TrackSelectionFilterAndAnalysis;

@@ -48,7 +48,7 @@ using namespace o2::framework::expressions;
 // We want output from
 // a) minimum bias events
 // b) from events selected by EPN
-// It would be good to run it for reveral jet radii  e.g. 0.2, 0.4, 0.6
+// It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
 
 struct ChJetTriggerQATask {
 
