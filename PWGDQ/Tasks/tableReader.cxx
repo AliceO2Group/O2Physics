@@ -12,10 +12,6 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 
-
-#include <chrono>
-using namespace std::chrono;
-
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -199,9 +195,12 @@ struct AnalysisTrackSelection {
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
   Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
+
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
+  std::vector<AnalysisCompositeCut> fDalitzTrackCuts;
 
   void init(o2::framework::InitContext&)
   {
@@ -212,6 +211,14 @@ struct AnalysisTrackSelection {
         fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
+    cutNamesStr = fConfigDalitzTrackCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fDalitzTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }    
+    
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
     if (fConfigQA) {
@@ -223,6 +230,9 @@ struct AnalysisTrackSelection {
       // set one histogram directory for each defined track cut
       TString histDirNames = "TrackBarrel_BeforeCuts;";
       for (auto& cut : fTrackCuts) {
+        histDirNames += Form("TrackBarrel_%s;", cut.GetName());
+      }
+      for (auto& cut : fDalitzTrackCuts) {
         histDirNames += Form("TrackBarrel_%s;", cut.GetName());
       }
 
@@ -254,6 +264,15 @@ struct AnalysisTrackSelection {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (uint32_t(1) << iCut);
           if (fConfigQA) { // TODO: make this compile time
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+          }
+        }
+      }
+      iCut = 16; // Dalitz Selection flags from bit 16
+      for (auto cut = fDalitzTrackCuts.begin(); cut != fDalitzTrackCuts.end(); cut++, iCut++) {
+        if ((*cut).IsSelected(VarManager::fgValues)) {
+          filterMap |= (uint32_t(1) << iCut);
+          if (fConfigQA) {
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
           }
         }
@@ -355,6 +374,198 @@ struct AnalysisMuonSelection {
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmed, "Run muon selection on DQ skimmed muons", false);
   PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", false);
 };
+
+struct AnalysisDalitzSelection {  
+  Produces<o2::aod::DalitzBitsReduced> dalitzbits;  
+  
+  //Configurables  
+  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandardNoINT7", "Event selection"};
+  Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
+  Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
+  Configurable<bool> fQA{"cfgQA", false, "QA histograms"};
+
+  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
+  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0; //Jpsi candidates AND dalitz candidates
+  
+  OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
+  OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
+
+  std::map<int, uint8_t> dalitzmap; 
+  
+  AnalysisCompositeCut* fEventCut;
+  std::vector<AnalysisCompositeCut> fTrackCuts;
+  std::vector<AnalysisCompositeCut> fPairCuts;
+  int nCuts = 0;
+
+  HistogramManager* fHistMan;
+
+  void init(o2::framework::InitContext& context)
+  {
+    // Event cuts
+    fEventCut = new AnalysisCompositeCut(true);
+    TString eventCutStr = fConfigEventCuts.value;
+    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data())); 
+    
+      // Barrel track cuts
+    TString cutNamesStr = fConfigDalitzTrackCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    
+    // Pair cuts
+    TString cutNamesPairStr = fConfigDalitzPairCuts.value;
+    if (!cutNamesPairStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesPairStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    
+    if(fTrackCuts.size() != fPairCuts.size() ) {
+      std::cout<<"WARNING: YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS"<<std::endl;
+    } 
+    nCuts = std::min(fTrackCuts.size(), fPairCuts.size()); 
+    
+    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill         
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    // Create the histogram class names to be added to the histogram manager
+    TString histClasses = "";
+
+    if (fQA) { 
+      for (int icut = 0; icut < nCuts; icut++) {
+        AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
+        AnalysisCompositeCut pairCut = fPairCuts.at(icut);
+        histClasses += Form("TrackBarrel_%s_%s;", trackCut.GetName(), pairCut.GetName());
+        histClasses += Form("PairDalitz_%s_%s;", trackCut.GetName(), pairCut.GetName());
+      }
+    }
+    
+    DefineHistograms(fHistMan, histClasses);
+    
+    fStatsList.setObject(new TList());
+    fStatsList->SetOwner(kTRUE);
+
+    // Dalitz selection statistics: one bin for each (track,pair) selection
+    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", nCuts, -0.5, nCuts - 0.5 );
+    for (int icut = 0; icut < nCuts; icut++) {
+      AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
+      AnalysisCompositeCut pairCut = fPairCuts.at(icut);
+      histTracks->GetXaxis()->SetBinLabel(icut+1, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
+    }
+    if (fQA) {
+      fStatsList->Add(histTracks);    
+    }
+    VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+    fOutputList.setObject(fHistMan->GetMainHistogramList());  
+  }
+
+
+  template <uint32_t TTrackFillMap, typename TTracks>
+  void runDalitzPairing(TTracks const& tracks1, TTracks const& tracks2)
+  {
+    const int TPairType = VarManager::kJpsiToEE;
+    for (auto& [track1,track2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
+      if (track1.sign()*track2.sign() > 0) continue;
+           
+      bool isTrack1Cand = (track1.isBarrelSelected() & 65535) > 0; // Is track1 a Jpsi daughter candidate (one of the first 16 bits is non null)
+      bool isTrack2Cand = (track2.isBarrelSelected() & 65535) > 0; 
+
+      if (!fQA && !isTrack1Cand && !isTrack2Cand) continue; // If fQA is not activated, we only fill jpsi daughter candidates in the table. Else, we also fill dalitz QA histograms
+      
+      uint8_t twoTracksFilterMap = (uint8_t) (track1.isBarrelSelected() >> 16) & (track2.isBarrelSelected() >> 16); // dalitz track information is stored in BIT 16-23
+      if (!twoTracksFilterMap) continue;
+
+      
+      // pairing
+      VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);  
+      uint8_t track1Untagged = uint8_t(0);
+      uint8_t track2Untagged = uint8_t(0);
+      
+      // Fill pair selection map and fill pair histogram
+      for (int icut = 0; icut < nCuts; icut++) {
+        if (!(twoTracksFilterMap & (uint8_t(1) << icut))) continue;
+        AnalysisCompositeCut pairCut = fPairCuts.at(icut);
+        if (pairCut.IsSelected(VarManager::fgValues)) {
+          if (fQA) {         
+            AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
+            fHistMan->FillHistClass(Form("PairDalitz_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);  
+          }     
+          
+          // Check if tracks were already tagged       
+          bool b1 = dalitzmap[track1.globalIndex()] & (uint8_t(1) << icut);
+          if (!b1) {
+            track1Untagged |= (uint8_t(1) << icut);
+            if (fQA) {
+              ((TH1I*) fStatsList->At(0))->Fill(icut);
+            }
+          }
+          bool b2 = dalitzmap[track2.globalIndex()] & (uint8_t(1) << icut);
+          if (!b2) {
+            track2Untagged |= (uint8_t(1) << icut);
+            if (fQA) {
+              ((TH1I*) fStatsList->At(0))->Fill(icut);
+            }
+          }         
+        }
+      }
+      
+      // Tag tracks which are not already tagged           
+      dalitzmap[track1.globalIndex()] |= track1Untagged;
+      dalitzmap[track2.globalIndex()] |= track2Untagged;
+      
+      // Fill track histograms if not already tagged
+      if (fQA) {
+        VarManager::FillTrack<TTrackFillMap>(track1);
+        for (int icut = 0; icut < nCuts; icut++) {
+          if (track1Untagged & (uint8_t(1) << icut)) {
+            AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
+            AnalysisCompositeCut pairCut = fPairCuts.at(icut);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
+          }
+        }
+        VarManager::FillTrack<TTrackFillMap>(track2);
+        for (int icut = 0; icut < nCuts; icut++) {
+          if (track2Untagged & (uint8_t(1) << icut)) {
+            AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
+            AnalysisCompositeCut pairCut = fPairCuts.at(icut);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
+          }
+        }  
+      }
+    } //end of tracksP,N loop
+  }
+
+  void processBarrelSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  { 
+    dalitzmap.clear();
+    
+    runDalitzPairing<gkTrackFillMapDalitzBits>(tracks, tracks); 
+        
+    //Fill dalitz bits for all tracks to have something joinable to MyBarrelTracksSelected
+    for (auto& track : tracks) {
+      if ((track.isBarrelSelected() & 65535) && dalitzmap[track.globalIndex()]) { // Fill the jpsi daughter candidates which are non-null
+        dalitzbits(event.globalIndex(), track.globalIndex(), dalitzmap[track.globalIndex()]);
+      }
+    }     
+  }
+ 
+  void processDummy(MyEvents&)
+  {
+  }
+
+  PROCESS_SWITCH(AnalysisDalitzSelection, processBarrelSkimmed, "Run Dalitz selection on reduced tracks", false);
+  PROCESS_SWITCH(AnalysisDalitzSelection, processDummy, "Do nothing", false);
+
+
+};
+
 
 struct AnalysisEventMixing {
   OutputObj<THashList> fOutputList{"output"};
@@ -621,7 +832,7 @@ struct AnalysisSameEventPairing {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
-  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
+  Filter filterBarrelTrackSelected = (aod::dqanalysisflags::isBarrelSelected & 65535) > 0; // Pure Jpsi candidates and not dalitz candidates (one of the 16 first bins is non-null)
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
 
   Preslice<MyBarrelTracksSelected> perCollision = aod::reducedtrack::reducedeventId;
@@ -749,10 +960,10 @@ struct AnalysisSameEventPairing {
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
-  template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2> 
-  void runSameEventPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TDalitzBits> 
+  void runSameEventPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TDalitzBits const& dalitzBits)
   {
-    unsigned int ncuts = nTrackCuts; //fTrackHistNames.size(); // number of cuts = NtrackCuts*(1+fRejectConv)*(1+NDalitzTrackCuts*NDalitzPairCuts)
+    unsigned int ncuts = nTrackCuts; //fTrackHistNames.size(); // number of cuts = NtrackCuts*(1+fRejectConv)*(1+NDalitzCuts)
     std::vector<std::vector<TString>> histNames = fTrackHistNames;
     if constexpr (TPairType == pairTypeMuMu) {
       ncuts = fMuonHistNames.size();
@@ -800,7 +1011,19 @@ struct AnalysisSameEventPairing {
       uint8_t twoTracksDalitzFilter = 0;
       if (fPrefilterDalitz) {
         twoTracksDalitzFilter = (uint8_t) ((t1.filteringFlags() >> 15) | (t2.filteringFlags() >> 15));
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::DalitzBits) twoTracksDalitzFilter = t1.dalitzBitsReduced() | t2.dalitzBitsReduced();
+        if constexpr (TTrackFillMap & VarManager::ObjTypes::DalitzBits) {
+          uint8_t track1DalitzBits = 0;
+          uint8_t track2DalitzBits = 0;
+          for (auto& dalitz : dalitzBits) { // Look for the dalitz bits in dalitzBits table
+            if (dalitz.reducedtrackId() == t1.globalIndex()) {
+              track1DalitzBits = dalitz.dalitzBits();
+            }
+            if (dalitz.reducedtrackId() == t2.globalIndex()) {
+              track2DalitzBits = dalitz.dalitzBits();
+            }
+          }
+          twoTracksDalitzFilter = track1DalitzBits | track2DalitzBits;         
+        }
         dileptonFilterMap |= (uint32_t(twoTracksDalitzFilter) << 16); //also store prefilter information in BITS 16-23
       }
 
@@ -879,63 +1102,63 @@ struct AnalysisSameEventPairing {
   }
 
 
-  void processJpsiToEESkimmedDalitzBits(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelectedDalitzBits> const& tracks)
+  void processJpsiToEESkimmedDalitzBits(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, DalitzBitsReduced const& dalitzBits)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMapDalitzBits>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMapDalitzBits>(event, tracks, tracks, dalitzBits);
   }
   void processJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap, false>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks, nullptr);
   }
   void processJpsiToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap, false>(event, muons, muons);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, muons, nullptr);
   }
   void processJpsiToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithCov> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov, false>(event, muons, muons);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(event, muons, muons, nullptr);
   }
   void processVnJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks, nullptr);
   }
   void processVnJpsiToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCovQvector, gkMuonFillMap>(event, muons, muons);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCovQvector, gkMuonFillMap>(event, muons, muons, nullptr);
   }
   void processElectronMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap, false>(event, tracks, muons);
+    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons, nullptr);
   }
   void processAllSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap, false>(event, tracks, tracks);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap, false>(event, muons, muons);
-    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap, false>(event, tracks, muons);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks, nullptr);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, muons, nullptr);
+    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons, nullptr);
   }
   // TODO: dummy function for the case when no process function is enabled
   void processDummy(MyEvents&)
@@ -1057,6 +1280,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
+    adaptAnalysisTask<AnalysisDalitzSelection>(cfgc),
     adaptAnalysisTask<AnalysisEventMixing>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
     adaptAnalysisTask<AnalysisDileptonHadron>(cfgc)};
@@ -1106,6 +1330,11 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       }
       if (classStr.Contains("EleMu")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_electronmuon");
+      }
+    }
+    if (classStr.Contains("Pair")) {  
+      if (classStr.Contains("Dalitz")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "dalitz");
       }
     }
 

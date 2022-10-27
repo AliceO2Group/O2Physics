@@ -480,12 +480,15 @@ using V0Bit = V0Bits::iterator;
 namespace DalBits
 {
 DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
-DECLARE_SOA_COLUMN(DALITZBitsReduced, dalitzBitsReduced, uint8_t); //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);
+DECLARE_SOA_INDEX_COLUMN(ReducedTrack, reducedtrack);
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);
 } // namespace DalitzBits
 
 // bit information for particle species.
-DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
-DECLARE_SOA_TABLE(DalitzBitsReduced, "AOD", "DALITZBITSRED", DalBits::DALITZBitsReduced);
+DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::CollisionId, DalBits::TrackId, DalBits::DALITZBits);
+DECLARE_SOA_TABLE(DalitzBitsReduced, "AOD", "DALITZBITSRED", DalBits::ReducedEventId, DalBits::ReducedTrackId, DalBits::DALITZBits);
 } // namespace o2::aod
 
 #endif // O2_Analysis_ReducedInfoTables_H_

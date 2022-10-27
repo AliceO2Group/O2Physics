@@ -293,7 +293,8 @@ class VarManager : public TObject
     kVertexingProcCode,
     kVertexingChi2PCA,
     kCosThetaHE,
-    kPairOpeningAngle,
+    kPsiPair,
+    kDeltaPhiPair,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
     kCosPointingAngle,
@@ -890,9 +891,17 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
 
+<<<<<<< HEAD
   TVector3 vec1(v1.Px(), v1.Py(), v1.Pz());
   TVector3 vec2(v2.Px(), v2.Py(), v2.Pz());
   values[kPairOpeningAngle] = vec1.Angle(vec2);
+=======
+  if constexpr ((fillMap & DalitzBits) > 0) {
+    values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
+    double chipair = TMath::ACos((v1.Px()*v2.Px()+v1.Py()*v2.Py()+v1.Pz()*v2.Pz())/v1.P()/v2.P());
+    values[kPsiPair] = TMath::ASin((v1.Theta() - v2.Theta())/chipair);
+  }
+>>>>>>> Adding AnalysisDalitzSelection in table reader
   
   // CosTheta Helicity calculation
   ROOT::Math::Boost boostv12{v12.BoostToCM()};

@@ -1020,8 +1020,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairDalitz1")) {
-    cut->AddCut(VarManager::kMass, 0.0, 0.1);
+  if (!nameStr.compare("pairDalitz1")) {    
+    cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
+    cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
+    TF1* fcutHigh = new TF1("f1", "[0] - [0]/[1]*x", -1.5, 1.5);
+    fcutHigh->SetParameters(0.6, 0.12);
+    TF1* fcutLow = new TF1("f2", "-[0] + [0]/[1]*x", -1.5, 1.5);
+    fcutLow->SetParameters(0.6, 0.12);
+    cut->AddCut(VarManager::kPsiPair, fcutLow, fcutHigh, true, VarManager::kDeltaPhiPair, 0, 0.12);
     return cut;
   }
   
@@ -1031,7 +1037,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
   
   if (!nameStr.compare("pairDalitz3")) {
-    cut->AddCut(VarManager::kMass, 0.0, 0.2);
+    cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
+    cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
     return cut;
   }
 
