@@ -18,9 +18,9 @@
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/Utils/UtilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,7 +64,7 @@ struct HFCandidateCreator3Prong {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int mRunNumber;
+  int runNumber;
 
   float toMicrometers = 10000.; // from cm to µm
 
@@ -82,7 +82,7 @@ struct HFCandidateCreator3Prong {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(ccdbPathGeo);
     }
-    mRunNumber = 0;
+    runNumber = 0;
   }
 
   void process(aod::Collisions const& collisions,
@@ -114,9 +114,9 @@ struct HFCandidateCreator3Prong {
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
       auto bc = track0.collision().bc_as<aod::BCsWithTimestamps>();
-      if (mRunNumber != bc.runNumber()) {
-        LOG(info) << ">>>>>>>>>>>> Current run number: " << mRunNumber;
-        initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      if (runNumber != bc.runNumber()) {
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
         magneticField = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>>>> Magnetic field: " << magneticField;
         // df.setBz(magneticField); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data

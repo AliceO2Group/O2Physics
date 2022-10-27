@@ -35,7 +35,7 @@
 #include "DetectorsBase/Propagator.h"          // for PV refit
 #include "DetectorsBase/GeometryManager.h"     // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "PWGHF/Utils/UtilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 #include <algorithm>
 
@@ -301,7 +301,7 @@ struct HfTagSelTracks {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int mRunNumber;
+  int runNumber;
 
   HistogramRegistry registry{
     "registry",
@@ -371,7 +371,7 @@ struct HfTagSelTracks {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(ccdbPathGeo);
       }
-      mRunNumber = 0;
+      runNumber = 0;
     }
   }
 
@@ -419,8 +419,8 @@ struct HfTagSelTracks {
     /// Prepare the vertex refitting
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-    /*if (mRunNumber != bc.runNumber()) {
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+    /*if (runNumber != bc.runNumber()) {
 
       if (isRun2) { // Run 2 GRP object
         o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
@@ -442,7 +442,7 @@ struct HfTagSelTracks {
         }
       }
 
-      mRunNumber = bc.runNumber();
+      runNumber = bc.runNumber();
     }*/
 
     // build the VertexBase to initialize the vertexer
@@ -891,7 +891,7 @@ struct HfTrackIndexSkimsCreator {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int mRunNumber;
+  int runNumber;
 
   HistogramRegistry registry{
     "registry",
@@ -996,7 +996,7 @@ struct HfTrackIndexSkimsCreator {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(ccdbPathGeo);
       }
-      mRunNumber = 0;
+      runNumber = 0;
     }
   }
 
@@ -1284,8 +1284,8 @@ struct HfTrackIndexSkimsCreator {
     /// Prepare the vertex refitting
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-    /*if (mRunNumber != bc.runNumber()) {
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+    /*if (runNumber != bc.runNumber()) {
 
       if (isRun2) { // Run 2 GRP object
         o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
@@ -1307,7 +1307,7 @@ struct HfTrackIndexSkimsCreator {
         }
       }
 
-      mRunNumber = bc.runNumber();
+      runNumber = bc.runNumber();
     }*/
 
     // build the VertexBase to initialize the vertexer
@@ -1496,7 +1496,7 @@ struct HfTrackIndexSkimsCreator {
 
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
@@ -2200,7 +2200,7 @@ struct HfTrackIndexSkimsCreatorCascades {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int mRunNumber;
+  int runNumber;
 
   // for debugging
 #ifdef MY_DEBUG
@@ -2236,7 +2236,7 @@ struct HfTrackIndexSkimsCreatorCascades {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(ccdbPathGeo);
     }
-    mRunNumber = 0;
+    runNumber = 0;
   }
 
   Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
@@ -2258,7 +2258,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
