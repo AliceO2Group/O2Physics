@@ -65,7 +65,7 @@ function(o2physics_add_header_only_library baseTargetName)
     target_link_libraries(${target} INTERFACE ${A_INTERFACE_LINK_LIBRARIES})
   endif()
   install(DIRECTORY ${A_INCLUDE_DIRECTORIES}/
-          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
 
   install(TARGETS ${target}
           EXPORT O2PhysicsTargets
