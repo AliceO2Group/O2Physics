@@ -78,7 +78,10 @@ struct ueCharged {
   OutputObj<TF1> f_Eff{"fpara"};
   void init(InitContext const&);
   template <bool IS_MC, typename C, typename T, typename P>
-  void processMeas(const C& collision, const T& tracks, const P& particles);
+  void processMeasMC(const C& collision, const T& tracks, const P& particles);
+
+  template <typename C, typename T>
+  void processMeas(const C& collision, const T& tracks);
 
   template <typename C, typename P>
   void processTrue(const C& collision, const P& particles);
@@ -91,12 +94,19 @@ struct ueCharged {
   using ParticleTableMC = aod::McParticles;
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
-  PROCESS_SWITCH(ueCharged, processMC, "process mc", false);
+  PROCESS_SWITCH(ueCharged, processMC, "process MC", false);
 
-  using CollisionTableData = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using TrackTableData = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& mcCollisions);
+  using CollisionTableMCData = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using TrackTableMCData = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  void processDataMC(CollisionTableMCData::iterator const& collision, TrackTableMCData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& mcCollisions);
+  PROCESS_SWITCH(ueCharged, processDataMC, "process data MC", false);
+
+  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
+  using TrackTableData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks);
   PROCESS_SWITCH(ueCharged, processData, "process data", false);
+
+  // add new method
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -154,30 +164,40 @@ void ueCharged::init(InitContext const&)
     ue.add("hPtDCAPrimary", "primary; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
     ue.add("hPtDCAWeak", "Weak decays; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
     ue.add("hPtDCAMat", "Material; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
-  }
 
+    ue.add("hmultTrue", "mult true", HistType::kTH1F, {{200, -0.5, 199.5, " "}});
+    ue.add("hmultTrueGen", "mult true all Gen", HistType::kTH1F, {{200, -0.5, 199.5, " "}});
+    ue.add("hvtxZmc", "vtxZ mctrue", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
+    ue.add("hPtLeadingTrue", "true pTleading after physics selection", HistType::kTH1D, {ptAxist});
+
+    for (int i = 0; i < 3; ++i) {
+      ue.add(hPtVsPtLeadingTrue[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
+      ue.add(pNumDenTrueAll[i].data(), "", HistType::kTProfile, {ptAxist});
+      ue.add(pSumPtTrueAll[i].data(), "", HistType::kTProfile, {ptAxist});
+      ue.add(pNumDenTrue[i].data(), "", HistType::kTProfile, {ptAxist});
+      ue.add(pSumPtTrue[i].data(), "", HistType::kTProfile, {ptAxist});
+      ue.add(pNumDenTruePS[i].data(), "", HistType::kTProfile, {ptAxist});
+      ue.add(pSumPtTruePS[i].data(), "", HistType::kTProfile, {ptAxist});
+    }
+    for (int i = 0; i < 3; ++i) {
+      ue.add(hPhiTrue[i].data(), "all charged true; #Delta#phi; Counts", HistType::kTH1D, {{64, -M_PI / 2.0, 3.0 * M_PI / 2.0, ""}});
+    }
+  }
   ue.add("hStat", "TotalEvents", HistType::kTH1F, {{1, 0.5, 1.5, " "}});
-  ue.add("hmultTrue", "mult true", HistType::kTH1F, {{200, -0.5, 199.5, " "}});
-  ue.add("hmultTrueGen", "mult true all Gen", HistType::kTH1F, {{200, -0.5, 199.5, " "}});
   ue.add("hmultRec", "mult rec", HistType::kTH1F, {{200, -0.5, 199.5, " "}});
   ue.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
   ue.add("vtxZEta", ";#eta;vtxZ", HistType::kTH2F, {{50, -2.5, 2.5, " "}, {60, -30, 30, " "}});
   ue.add("phiEta", ";#eta;#varphi", HistType::kTH2F, {{50, -2.5, 2.5}, {200, 0., 2 * M_PI, " "}});
   ue.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
-  ue.add("hvtxZmc", "vtxZ mctrue", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
 
   ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{3, 0, 3, " "}});
   ue.add("hPtLeadingRecPS", "rec pTleading after physics selection", HistType::kTH1D, {ptAxist});
-  ue.add("hPtLeadingTrue", "true pTleading after physics selection", HistType::kTH1D, {ptAxist});
   ue.add("hPtLeadingMeasured", "measured pTleading after physics selection", HistType::kTH1D, {ptAxist});
 
   for (int i = 0; i < 3; ++i) {
     ue.add(pNumDenMeasuredPS[i].data(), "Number Density; ; #LT #it{N}_{trk} #GT", HistType::kTProfile, {ptAxist});
     ue.add(pSumPtMeasuredPS[i].data(), "Total #it{p}_{T}; ; #LT#sum#it{p}_{T}#GT", HistType::kTProfile, {ptAxist});
     ue.add(hPhi[i].data(), "all charged; #Delta#phi; Counts", HistType::kTH1D, {{64, -M_PI / 2.0, 3.0 * M_PI / 2.0, ""}});
-  }
-  for (int i = 0; i < 3; ++i) {
-    ue.add(hPhiTrue[i].data(), "all charged true; #Delta#phi; Counts", HistType::kTH1D, {{64, -M_PI / 2.0, 3.0 * M_PI / 2.0, ""}});
   }
 
   // Data driven
@@ -193,15 +213,6 @@ void ueCharged::init(InitContext const&)
     ue.add(pNumDenData[i].data(), "", HistType::kTProfile, {ptAxist});
     ue.add(pSumPtData[i].data(), "", HistType::kTProfile, {ptAxist});
   }
-  for (int i = 0; i < 3; ++i) {
-    ue.add(hPtVsPtLeadingTrue[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
-    ue.add(pNumDenTrueAll[i].data(), "", HistType::kTProfile, {ptAxist});
-    ue.add(pSumPtTrueAll[i].data(), "", HistType::kTProfile, {ptAxist});
-    ue.add(pNumDenTrue[i].data(), "", HistType::kTProfile, {ptAxist});
-    ue.add(pSumPtTrue[i].data(), "", HistType::kTProfile, {ptAxist});
-    ue.add(pNumDenTruePS[i].data(), "", HistType::kTProfile, {ptAxist});
-    ue.add(pSumPtTruePS[i].data(), "", HistType::kTProfile, {ptAxist});
-  }
 
   ue.add("hPtLeadingData", " ", HistType::kTH1D, {{ptAxist}});
   ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
@@ -212,7 +223,7 @@ void ueCharged::processMC(CollisionTableMCTrue::iterator const& mcCollision, Col
   if (collisions.size() != 0) {
     for (auto& collision : collisions) {
       auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      processMeas<true>(collision, curTracks, particles);
+      processMeasMC<true>(collision, curTracks, particles);
       break; // for now look only at first collision...
     }
   }
@@ -220,10 +231,15 @@ void ueCharged::processMC(CollisionTableMCTrue::iterator const& mcCollision, Col
   // processTrue(collisions, particles);
 }
 
-void ueCharged::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& mcCollisions)
+void ueCharged::processDataMC(CollisionTableMCData::iterator const& collision, TrackTableMCData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& mcCollisions)
 {
-  processMeas<false>(collision, tracks, particles);
+  processMeasMC<false>(collision, tracks, particles);
 }
+void ueCharged::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
+{
+  processMeas(collision, tracks);
+}
+
 template <typename C, typename P>
 void ueCharged::processTrue(const C& collision, const P& particles)
 {
@@ -364,9 +380,209 @@ void ueCharged::processTrue(const C& collision, const P& particles)
   phiArrayTrue.clear();
   indexArrayTrue.clear();
 }
+template <typename C, typename T>
+void ueCharged::processMeas(const C& collision, const T& tracks)
+{
+
+  ue.fill(HIST("hCounter"), 0);
+
+  bool isAcceptedEvent = false;
+  if (isRun3 ? collision.sel8() : collision.sel7()) {
+    if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+      isAcceptedEvent = true;
+    }
+  }
+  // only PS
+  if (!isAcceptedEvent) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 1);
+
+  ue.fill(HIST("hStat"), collision.size());
+  auto vtxZ = collision.posZ();
+
+  isAcceptedEvent = false;
+  if (std::abs(collision.posZ()) < 10.f) {
+    if (isRun3 ? collision.sel8() : collision.sel7()) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+        isAcceptedEvent = true;
+      }
+    }
+  }
+
+  // + vtx
+  if (!isAcceptedEvent) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 2);
+
+  ue.fill(HIST("hvtxZ"), vtxZ);
+
+  // loop over selected tracks
+  double flPt = 0; // leading pT
+  double flPhi = 0;
+  int flIndex = 0;
+  int multRec = 0;
+  for (auto& track : tracks) {
+    if (!track.isGlobalTrack()) {
+      continue;
+    }
+
+    ue.fill(HIST("hdNdeta"), track.eta());
+    ue.fill(HIST("vtxZEta"), track.eta(), vtxZ);
+    ue.fill(HIST("phiEta"), track.eta(), track.phi());
+
+    if (flPt < track.pt()) {
+      multRec++;
+      flPt = track.pt();
+      flPhi = track.phi();
+      flIndex = track.globalIndex();
+    }
+  }
+  ue.fill(HIST("hmultRec"), multRec);
+  ue.fill(HIST("hPtLeadingMeasured"), flPt);
+  ue.fill(HIST("hPtLeadingRecPS"), flPt);
+  std::vector<double> ue_rec;
+  ue_rec.clear();
+  int nchm_top[3];
+  double sumptm_top[3];
+  for (int i = 0; i < 3; ++i) {
+    nchm_top[i] = 0;
+    sumptm_top[i] = 0;
+  }
+  std::vector<Float_t> ptArray;
+  std::vector<Float_t> phiArray;
+  std::vector<int> indexArray;
+
+  for (auto& track : tracks) {
+
+    if (myTrackSelection().IsSelected(track)) { // TODO: set cuts w/o DCA cut
+      ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
+    }
+
+    if (track.isGlobalTrack()) {
+      // applying the efficiency twice for the misrec of leading particle
+      if (f_Eff->Eval(track.pt()) > gRandom->Uniform(0, 1)) {
+        ptArray.push_back(track.pt());
+        phiArray.push_back(track.phi());
+        indexArray.push_back(track.globalIndex());
+      }
+
+      // remove the autocorrelation
+      if (flIndex == track.globalIndex()) {
+        continue;
+      }
+
+      double DPhi = DeltaPhi(track.phi(), flPhi);
+
+      // definition of the topological regions
+      if (TMath::Abs(DPhi) < M_PI / 3.0) { // near side
+        ue.fill(HIST(hPhi[0]), DPhi);
+        ue.fill(HIST(hPtVsPtLeadingData[0]), flPt, track.pt());
+        nchm_top[0]++;
+        sumptm_top[0] += track.pt();
+      } else if (TMath::Abs(DPhi - M_PI) < M_PI / 3.0) { // away side
+        ue.fill(HIST(hPhi[1]), DPhi);
+        ue.fill(HIST(hPtVsPtLeadingData[1]), flPt, track.pt());
+        nchm_top[1]++;
+        sumptm_top[1] += track.pt();
+      } else { // transverse side
+        ue.fill(HIST(hPhi[2]), DPhi);
+        ue.fill(HIST(hPtVsPtLeadingData[2]), flPt, track.pt());
+        nchm_top[2]++;
+        sumptm_top[2] += track.pt();
+      }
+    }
+  }
+  for (int i_reg = 0; i_reg < 3; ++i_reg) {
+    ue_rec.push_back(1.0 * nchm_top[i_reg]);
+  }
+  for (int i_reg = 0; i_reg < 3; ++i_reg) {
+    ue_rec.push_back(sumptm_top[i_reg]);
+  }
+
+  // add flags for Vtx, PS, ev sel
+  ue.fill(HIST(pNumDenMeasuredPS[0]), flPt, ue_rec[0]);
+  ue.fill(HIST(pNumDenData[0]), flPt, ue_rec[0]);
+  ue.fill(HIST(pSumPtMeasuredPS[0]), flPt, ue_rec[3]);
+  ue.fill(HIST(pSumPtData[0]), flPt, ue_rec[3]);
+
+  ue.fill(HIST(pNumDenMeasuredPS[1]), flPt, ue_rec[1]);
+  ue.fill(HIST(pNumDenData[1]), flPt, ue_rec[1]);
+  ue.fill(HIST(pSumPtMeasuredPS[1]), flPt, ue_rec[4]);
+  ue.fill(HIST(pSumPtData[1]), flPt, ue_rec[4]);
+
+  ue.fill(HIST(pNumDenMeasuredPS[2]), flPt, ue_rec[2]);
+  ue.fill(HIST(pNumDenData[2]), flPt, ue_rec[2]);
+  ue.fill(HIST(pSumPtMeasuredPS[2]), flPt, ue_rec[5]);
+  ue.fill(HIST(pSumPtData[2]), flPt, ue_rec[5]);
+
+  ue.fill(HIST("hPtLeadingData"), flPt);
+
+  // Compute data driven (DD) missidentification correction
+  Float_t flPtdd = 0; // leading pT
+  Float_t flPhidd = 0;
+  int flIndexdd = 0;
+  int ntrkdd = ptArray.size();
+
+  for (int i = 0; i < ntrkdd; ++i) {
+    if (flPtdd < ptArray[i]) {
+      flPtdd = ptArray[i];
+      flPhidd = phiArray[i];
+      flIndexdd = indexArray[i];
+    }
+  }
+  int nchm_topdd[3];
+  double sumptm_topdd[3];
+  for (int i = 0; i < 3; ++i) {
+    nchm_topdd[i] = 0;
+    sumptm_topdd[i] = 0;
+  }
+  for (int i = 0; i < ntrkdd; ++i) {
+    if (indexArray[i] == flIndexdd) {
+      continue;
+    }
+    double DPhi = DeltaPhi(phiArray[i], flPhidd);
+    if (TMath::Abs(DPhi) < M_PI / 3.0) { // near side
+      nchm_topdd[0]++;
+      sumptm_topdd[0] += ptArray[i];
+    } else if (TMath::Abs(DPhi - M_PI) < M_PI / 3.0) { // away side
+      nchm_topdd[1]++;
+      sumptm_topdd[1] += ptArray[i];
+    } else { // transverse side
+      nchm_topdd[2]++;
+      sumptm_topdd[2] += ptArray[i];
+    }
+  }
+
+  ue.fill(HIST(hNumDenMCDd[0]), flPtdd, nchm_topdd[0]);
+  ue.fill(HIST(hSumPtMCDd[0]), flPtdd, sumptm_topdd[0]);
+
+  ue.fill(HIST(hNumDenMCDd[1]), flPtdd, nchm_topdd[1]);
+  ue.fill(HIST(hSumPtMCDd[1]), flPtdd, sumptm_topdd[1]);
+
+  ue.fill(HIST(hNumDenMCDd[2]), flPtdd, nchm_topdd[2]);
+  ue.fill(HIST(hSumPtMCDd[2]), flPtdd, sumptm_topdd[2]);
+
+  if (flIndexdd == flIndex) {
+    ue.fill(HIST(hNumDenMCMatchDd[0]), flPtdd, nchm_topdd[0]);
+    ue.fill(HIST(hSumPtMCMatchDd[0]), flPtdd, sumptm_topdd[0]);
+
+    ue.fill(HIST(hNumDenMCMatchDd[1]), flPtdd, nchm_topdd[1]);
+    ue.fill(HIST(hSumPtMCMatchDd[1]), flPtdd, sumptm_topdd[1]);
+
+    ue.fill(HIST(hNumDenMCMatchDd[2]), flPtdd, nchm_topdd[2]);
+    ue.fill(HIST(hSumPtMCMatchDd[2]), flPtdd, sumptm_topdd[2]);
+  }
+  ptArray.clear();
+  phiArray.clear();
+  indexArray.clear();
+}
 
 template <bool IS_MC, typename C, typename T, typename P>
-void ueCharged::processMeas(const C& collision, const T& tracks, const P& particles)
+void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& particles)
 {
 
   ue.fill(HIST("hCounter"), 0);
