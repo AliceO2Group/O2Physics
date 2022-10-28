@@ -42,6 +42,10 @@ function(o2physics_add_header_only_library baseTargetName)
   # namespace O2Physics::)
   set_property(TARGET ${target} PROPERTY EXPORT_NAME ${baseTargetName})
 
+  if(A_TARGETVARNAME)
+    set(${A_TARGETVARNAME} ${target} PARENT_SCOPE)
+  endif()
+
   if(NOT A_INCLUDE_DIRECTORIES)
     get_filename_component(dir include ABSOLUTE)
     if(EXISTS ${dir})
@@ -60,6 +64,8 @@ function(o2physics_add_header_only_library baseTargetName)
   if(A_INTERFACE_LINK_LIBRARIES)
     target_link_libraries(${target} INTERFACE ${A_INTERFACE_LINK_LIBRARIES})
   endif()
+  install(DIRECTORY ${A_INCLUDE_DIRECTORIES}/
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
   install(TARGETS ${target}
           EXPORT O2PhysicsTargets
