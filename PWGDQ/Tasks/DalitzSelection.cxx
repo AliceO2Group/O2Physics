@@ -91,6 +91,7 @@ struct dalitzPairing {
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
+    }
 
     if(fTrackCuts.size() != fPairCuts.size() ) {
       std::cout<<"WARNING: YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS"<<std::endl;
@@ -260,7 +261,6 @@ struct dalitzPairing {
  
   void processDummy(MyEvents&)
   {
-
   }
        
   PROCESS_SWITCH(dalitzPairing, processFullTracks, "Run Dalitz selection on AO2D tables", false);
