@@ -20,7 +20,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
 
 using namespace o2;

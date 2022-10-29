@@ -9,8 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_HFCANDIDATESELECTIONTABLES_H_
-#define O2_ANALYSIS_HFCANDIDATESELECTIONTABLES_H_
+/// \file CandidateSelectionTables.h
+/// \brief Definitions of tables produced by candidate selectors
+
+#ifndef O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
+#define O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
 
 namespace o2::aod
 {
@@ -229,4 +232,4 @@ DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
 DECLARE_SOA_TABLE(HFSelXiccToPKPiPiCandidate, "AOD", "HFSELXICCCAND", //!
                   hf_selcandidate_xicc::IsSelXiccToPKPiPi);
 } // namespace o2::aod
-#endif // O2_ANALYSIS_HFCANDIDATESELECTIONTABLES_H_
+#endif // O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_

@@ -21,7 +21,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "ALICE3/DataModel/ECAL.h"
 
 using namespace o2;

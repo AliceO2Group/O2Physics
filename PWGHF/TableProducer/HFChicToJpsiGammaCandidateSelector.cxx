@@ -18,7 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "ALICE3/DataModel/ECAL.h"
 
 using namespace o2;

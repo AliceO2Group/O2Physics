@@ -23,7 +23,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 
 using namespace o2;

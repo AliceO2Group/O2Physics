@@ -26,7 +26,7 @@
 #include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
 #include <TH1F.h>

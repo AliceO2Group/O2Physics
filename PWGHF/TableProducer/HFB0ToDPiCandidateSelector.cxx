@@ -18,7 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -30,7 +30,7 @@ using namespace o2::analysis::hf_cuts_b0_todpi; // from HFSelectorCuts.h
 // using namespace o2::analysis::hf_cuts_dplus_topikpi;  // used if we apply D mass cut
 
 struct HfB0ToDPiCandidateSelector {
-  Produces<aod::HFSelB0ToDPiCandidate> hfSelB0ToDPiCandidate; // table defined in HFCandidateSelectionTables.h
+  Produces<aod::HFSelB0ToDPiCandidate> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
 
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
