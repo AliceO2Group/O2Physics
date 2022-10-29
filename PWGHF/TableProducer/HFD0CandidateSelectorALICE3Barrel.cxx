@@ -17,7 +17,7 @@
 //#include <iostream>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"

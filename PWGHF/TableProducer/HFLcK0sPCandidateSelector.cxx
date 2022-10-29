@@ -19,7 +19,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
 

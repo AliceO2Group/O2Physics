@@ -23,7 +23,7 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;

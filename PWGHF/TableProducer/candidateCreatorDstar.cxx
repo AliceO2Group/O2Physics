@@ -18,7 +18,7 @@
 // #include "DetectorsVertexing/DCAFitterN.h"
 // #include "Common/Core/trackUtilities.h"
 // #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Framework/runDataProcessing.h"
 

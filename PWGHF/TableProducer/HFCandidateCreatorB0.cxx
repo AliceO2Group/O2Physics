@@ -21,7 +21,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
@@ -30,12 +30,12 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::aod::hf_cand_b0; // from HFSecondaryVertex.h
+using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
 /// Reconstruction of B0 candidates
 struct HFCandidateCreatorB0 {
-  Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in HFSecondaryVertex.h
+  Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
@@ -297,8 +297,8 @@ struct HFCandidateCreatorB0Expressions {
 
 /// Performs MC matching.
 struct HFCandidateCreatorB0MC {
-  Produces<aod::HfCandB0MCRec> rowMCMatchRec; // table defined in HFSecondaryVertex.h
-  Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in HFSecondaryVertex.h
+  Produces<aod::HfCandB0MCRec> rowMCMatchRec; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in CandidateReconstructionTables.h
 
   void processMC(aod::HfCandB0 const& candidates,
                  aod::HfCandProng3 const&,

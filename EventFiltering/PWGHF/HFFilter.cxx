@@ -27,7 +27,7 @@
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
 
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 #include <cmath>

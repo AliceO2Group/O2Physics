@@ -9,14 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFSecondaryVertex.h
-/// \brief Definitions of tables of heavy-flavour decay candidates
+/// \file CandidateReconstructionTables.h
+/// \brief Definitions of tables produced by candidate reconstruction workflows
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_HFSECONDARYVERTEX_H_
-#define O2_ANALYSIS_HFSECONDARYVERTEX_H_
+#ifndef O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#define O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
 
 #include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
@@ -1442,4 +1442,4 @@ DECLARE_SOA_TABLE(HfCandB0MCGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::OriginMCGen);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_HFSECONDARYVERTEX_H_
+#endif // O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
