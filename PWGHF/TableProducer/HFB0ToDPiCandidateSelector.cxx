@@ -16,7 +16,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -26,7 +26,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_b0_todpi; // from HFSelectorCuts.h
+using namespace o2::analysis::hf_cuts_b0_todpi; // from SelectorCuts.h
 // using namespace o2::analysis::hf_cuts_dplus_topikpi;  // used if we apply D mass cut
 
 struct HfB0ToDPiCandidateSelector {
@@ -51,7 +51,7 @@ struct HfB0ToDPiCandidateSelector {
   Configurable<LabeledArray<double>> cuts{"B0_to_dpi_cuts", {hf_cuts_b0_todpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "B0 candidate selection per pT bin"};
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D^{#minus}"};
 
-  // Apply topological cuts as defined in HFSelectorCuts.h; return true if candidate passes all cuts
+  // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
   bool selectionTopol(const T1& hfCandB0, const T2& hfCandD, const T3& trackPi)
   {

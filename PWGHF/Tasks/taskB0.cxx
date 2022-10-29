@@ -20,7 +20,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -29,7 +29,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_b0;            // from CandidateReconstructionTables.h
-using namespace o2::analysis::hf_cuts_b0_todpi; // from HFSelectorCuts.h
+using namespace o2::analysis::hf_cuts_b0_todpi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 
 /// B0 analysis task

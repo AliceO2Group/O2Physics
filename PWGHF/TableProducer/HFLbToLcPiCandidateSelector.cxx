@@ -16,10 +16,10 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -54,7 +54,7 @@ struct HfLbToLcPiCandidateSelector {
   Configurable<LabeledArray<double>> cuts{"Lb_to_lcpi_cuts", {hf_cuts_lb_tolcpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
-  // Apply topological cuts as defined in HFSelectorCuts.h; return true if candidate passes all cuts
+  // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
   bool selectionTopol(const T1& hfCandLb, const T2& hfCandLc, const T3& trackPi)
   {

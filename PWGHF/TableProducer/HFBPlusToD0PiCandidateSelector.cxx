@@ -17,7 +17,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
@@ -57,7 +57,7 @@ struct HfBplusTod0piCandidateSelector {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
 
-  // Apply topological cuts as defined in HFSelectorCuts.h; return true if candidate passes all cuts
+  // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
   bool selectionTopol(const T1& hfCandBPlus, const T2& hfCandD0, const T3& trackPi)
   {

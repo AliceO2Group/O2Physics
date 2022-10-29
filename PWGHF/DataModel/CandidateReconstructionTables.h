@@ -21,7 +21,7 @@
 #include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
