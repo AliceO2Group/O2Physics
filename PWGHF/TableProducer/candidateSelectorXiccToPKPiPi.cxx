@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFXiccToPKPiPiCandidateSelector.cxx
+/// \file candidateSelectorXiccToPKPiPi.cxx
 /// \brief Ξcc± → p± K∓ π± π±selection task
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN

@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFLcCandidateSelector.cxx
+/// \file candidateSelectorLcAlice3.cxx
 /// \brief Λc± → p± K∓ π± selection task
 ///
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
-//#include <iostream>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -303,7 +303,6 @@ struct HFLcCandidateSelectorALICE3 {
           statusLcPiKPTOFplusRICHPID = 1;
         }
       }
-      //std::cout << "status = " << statusLcPKPiNoPID << "\t" << statusLcPiKPNoPID << "\n";
       hfSelLcCandidateALICE3(statusLcPKPiNoPID, statusLcPKPiPerfectPID, statusLcPKPiTOFPID, statusLcPKPiTOFplusRICHPID, statusLcPiKPNoPID, statusLcPiKPPerfectPID, statusLcPiKPTOFPID, statusLcPiKPTOFplusRICHPID);
     }
   }

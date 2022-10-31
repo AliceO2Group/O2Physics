@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFDplusToPiKPiCandidateSelector.cxx
+/// \file candidateSelectorDplusToPiKPi.cxx
 /// \brief D± → π± K∓ π± selection task
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino

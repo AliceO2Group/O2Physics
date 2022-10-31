@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFJpsiCandidateSelector.cxx
+/// \file candidateSelectorJpsi.cxx
 /// \brief J/ψ → e+ e−, μ+ μ− selection task
 ///
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU

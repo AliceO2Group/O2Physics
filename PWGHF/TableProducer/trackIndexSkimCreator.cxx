@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFTrackIndexSkimsCreator.cxx
+/// \file trackIndexSkimCreator.cxx
 /// \brief Pre-selection of 2-prong and 3-prong secondary vertices of heavy-flavour decay candidates
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN

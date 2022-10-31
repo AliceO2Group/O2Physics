@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFB0ToDPiCandidateSelector.cxx
+/// \file candidateSelectorB0ToDPi.cxx
 /// \brief B0 → D- π+ candidate selector
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg

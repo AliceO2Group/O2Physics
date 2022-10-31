@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFDsToKKPiCandidateSelector.cxx
+/// \file candidateSelectorDsToKKPi.cxx
 /// \brief Ds± → K± K∓ π± selection task
 ///
 /// \author Stefano Politano <stefano.politano@cern.ch>, Politecnico and INFN Torino

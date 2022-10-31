@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFXicToPKPiCandidateSelector.cxx
+/// \file candidateSelectorXicToPKPi.cxx
 /// \brief Ξc± → p± K∓ π± selection task
-/// \note Inspired from HFLcCandidateSelector.cxx
+/// \note Inspired from candidateSelectorLc.cxx
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN

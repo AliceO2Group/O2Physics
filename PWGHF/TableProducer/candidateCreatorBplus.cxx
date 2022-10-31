@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCandidateCreatorBPlus.cxx
+/// \file candidateCreatorBplus.cxx
 /// \brief Reconstruction of B± → D0bar(D0) π± candidates
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN

@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFXToJpsiPiPiCandidateSelector.cxx
+/// \file candidateSelectorXToJpsiPiPi.cxx
 /// \brief X(3872) selection task.
-/// \note Adapted from HFJpsiCandidateSelector.cxx
+/// \note Adapted from candidateSelectorJpsi.cxx
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCandidateCreatorLb.cxx
+/// \file candidateCreatorLb.cxx
 /// \brief Reconstruction of Lb candidates
 /// \note Adapted from HFCandidateCreatorXicc
 ///

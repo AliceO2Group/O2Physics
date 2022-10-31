@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFLcCandidateSelector.cxx
+/// \file candidateSelectorLc.cxx
 /// \brief Λc± → p± K∓ π± selection task
 ///
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO

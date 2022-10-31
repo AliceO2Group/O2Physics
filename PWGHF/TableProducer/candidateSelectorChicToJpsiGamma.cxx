@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFChicToJpsiGammaCandidateSelector.cxx
+/// \file candidateSelectorChicToJpsiGamma.cxx
 /// \brief chi_c selection task.
 /// \note Adapted from HFXToJpsiPiiCandidateSelector.cxx
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Università/INFN Cagliari

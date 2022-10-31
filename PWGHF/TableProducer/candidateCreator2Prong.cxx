@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCandidateCreator2Prong.cxx
+/// \file candidateCreator2Prong.cxx
 /// \brief Reconstruction of heavy-flavour 2-prong decay candidates
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN

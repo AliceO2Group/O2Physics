@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFLcK0spCandidateSelector.cxx
+/// \file candidateSelectorLcK0sP.cxx
 /// \brief Lc --> K0s+p selection task.
 ///
 /// \author Chiara Zampolli <Chiara.Zampolli@cern.ch>, CERN
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
 
-/// based on HFD0CandidateSelector.cxx
+/// based on candidateSelectorD0.cxx
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

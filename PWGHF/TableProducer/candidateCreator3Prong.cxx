@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCandidateCreator3Prong.cxx
+/// \file candidateCreator3Prong.cxx
 /// \brief Reconstruction of heavy-flavour 3-prong decay candidates
 /// \note Extended from HFCandidateCreator2Prong
 ///

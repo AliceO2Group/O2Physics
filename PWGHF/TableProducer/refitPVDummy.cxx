@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFPvRefitSkimConverted.cxx
+/// \file refitPVDummy.cxx
 /// \brief Dummy workflow to add PVrefit tables to Run 2 converted data with original values
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN Padova, Italy

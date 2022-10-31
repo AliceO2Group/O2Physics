@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCandidateCreatorCascade.cxx
+/// \file candidateCreatorCascade.cxx
 /// \brief Reconstruction of heavy-flavour cascade decay candidates
 ///
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
