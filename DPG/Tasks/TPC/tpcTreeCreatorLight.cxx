@@ -57,7 +57,7 @@ struct TreeWriterTPCTOF {
   Configurable<float> nSigmaTOF_TPCTOF_Pr{"nSigmaTOF_TPCTOF_Pr", 3., "number of sigma for TOF cut for TPC and TOF combined proton"};
 
   /// Kaon
-  Configurable<float> maxMomTPCOnlyKa{"maxMomTPCOnlyKa", 0.3, "Maximum momentum for TPC only cut kaon"};
+  Configurable<float> maxMomTPCOnlyKa{"maxMomTPCOnlyKa", 0.4, "Maximum momentum for TPC only cut kaon"};
   Configurable<float> nSigmaTPCOnlyKa{"nSigmaTPCOnlyKa", 4., "number of sigma for TPC only cut kaon"};
   Configurable<float> nSigmaTPC_TPCTOF_Ka{"nSigmaTPC_TPCTOF_Ka", 4., "number of sigma for TPC cut for TPC and TOF combined kaon"};
   Configurable<float> nSigmaTOF_TPCTOF_Ka{"nSigmaTOF_TPCTOF_Ka", 3., "number of sigma for TOF cut for TPC and TOF combined kaon"};
@@ -66,6 +66,12 @@ struct TreeWriterTPCTOF {
   Configurable<float> nSigmaTPCOnlyPi{"nSigmaTPCOnlyPi", 4., "number of sigma for TPC only cut pion"};
   Configurable<float> nSigmaTPC_TPCTOF_Pi{"nSigmaTPC_TPCTOF_Pi", 4., "number of sigma for TPC cut for TPC and TOF combined pion"};
   Configurable<float> nSigmaTOF_TPCTOF_Pi{"nSigmaTOF_TPCTOF_Pi", 4., "number of sigma for TOF cut for TPC and TOF combined pion"};
+
+  /// Electron
+  Configurable<float> minMomTPCOnlyEl{"minMomTPCOnlyEl", 0.3, "Minimum momentum for TPC only cut electron"};
+  Configurable<float> maxMomTPCOnlyEl{"maxMomTPCOnlyEl", 0.4, "Maximum momentum for TPC only cut electron"};
+  Configurable<float> mindEdxTPCOnlyEl{"mindEdxTPCOnlyEl", 70., "dE/dx min for TPC only cut electron"};
+  Configurable<float> maxdEdxTPCOnlyEl{"maxdEdxTPCOnlyEl", 100., "dE/dx max for TPC only cut electron"};
 
   /// Function to fill trees
   template <typename T, typename C>
@@ -80,7 +86,7 @@ struct TreeWriterTPCTOF {
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
                     1. / dEdxExp,
-                    track.tpcInnerParam(),
+                    p,
                     track.tgl(),
                     track.signed1Pt(),
                     track.eta(),
@@ -141,7 +147,7 @@ struct TreeWriterTPCTOF {
       if (applyTrkSel == 1 && !isTrackSelected(collision, trk)) {
         continue;
       }
-      if ((trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr) || (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr) || (trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa) || (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka) || (trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi) || (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi) ) {
+      if ((trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr) || (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr) || (trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa) || (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka) || (trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi) || (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi) || (trk.tpcInnerParam() > minMomTPCOnlyEl &&  trk.tpcInnerParam() < maxMomTPCOnlyEl && trk.tpcSignal() > mindEdxTPCOnlyEl && trk.tpcSignal() < maxdEdxTPCOnlyEl)) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), dwnSmplFactor);
       }
 
