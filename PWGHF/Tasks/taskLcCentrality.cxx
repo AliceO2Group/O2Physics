@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskLc.cxx
+/// \file taskLcCentrality.cxx
 /// \brief Λc± → p± K∓ π± analysis task
 /// \note Extended from taskD0
 ///

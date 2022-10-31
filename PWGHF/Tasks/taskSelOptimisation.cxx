@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFSelOptimisation.cxx
+/// \file taskSelOptimisation.cxx
 /// \brief task to study preselections
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN

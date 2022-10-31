@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskDPlus.cxx
+/// \file taskDplus.cxx
 /// \brief D± analysis task
 /// \note Extended from taskD0
 ///

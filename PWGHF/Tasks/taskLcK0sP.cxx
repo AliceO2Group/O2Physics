@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskLcK0sp.cxx
+/// \file taskLcK0sP.cxx
 /// \brief Lc -> K0S+p analysis task
 ///
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN

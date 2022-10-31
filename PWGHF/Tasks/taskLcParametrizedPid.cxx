@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskLC.cxx
-/// \brief LC analysis task
+/// \file taskLcParametrizedPid.cxx
+/// \brief Lc analysis task
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -36,25 +36,22 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Fills MC histograms.
-struct TaskLcALICE3MC {
+struct TaskLcparametrizedPIDMC {
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "3-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigBkgLcNoPID", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigLcNoPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgLcNoPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgLcTOFPID", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigLcTOFPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgLcTOFPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgLcTOFplusRICHPID", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigLcTOFplusRICHPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgLcTOFplusRICHPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgLc", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigLc", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgLc", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassSigBkgLcPerfectPID", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigLcPerfectPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgLcPerfectPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_ALICE3::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_ALICE3::isSelLcPiKPNoPID == 1);
-  void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidateALICE3, aod::HfCandProng3MCRec>> const& candidates,
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_parametrizedPID::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_parametrizedPID::isSelLcPiKPNoPID == 1);
+  void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidateparametrizedPID, aod::HfCandProng3MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     for (auto& candidate : candidates) {
@@ -87,37 +84,20 @@ struct TaskLcALICE3MC {
         }
       }
 
-      if (candidate.isSelLcPKPiTOFPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcTOFPID"), massLc, ptCandidate, rapidityCandidate);
+      if (candidate.isSelLcPKPi() == 1) {
+        registry.fill(HIST("hMassSigBkgLc"), massLc, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPKPiPerfectPID() == 1) {
-          registry.fill(HIST("hMassSigLcTOFPID"), massLc, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigLc"), massLc, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgLcTOFPID"), massLc, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgLc"), massLc, ptCandidate, rapidityCandidate);
         }
       }
-      if (candidate.isSelLcPiKPTOFPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcTOFPID"), massLcSwap, ptCandidate, rapidityCandidate);
+      if (candidate.isSelLcPiKP() == 1) {
+        registry.fill(HIST("hMassSigBkgLc"), massLcSwap, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPiKPPerfectPID() == 1) {
-          registry.fill(HIST("hMassSigLcTOFPID"), massLcSwap, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigLc"), massLcSwap, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgLcTOFPID"), massLcSwap, ptCandidate, rapidityCandidate);
-        }
-      }
-
-      if (candidate.isSelLcPKPiTOFplusRICHPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcTOFplusRICHPID"), massLc, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPKPiPerfectPID() == 1) {
-          registry.fill(HIST("hMassSigLcTOFplusRICHPID"), massLc, ptCandidate, rapidityCandidate);
-        } else {
-          registry.fill(HIST("hMassBkgLcTOFplusRICHPID"), massLc, ptCandidate, rapidityCandidate);
-        }
-      }
-      if (candidate.isSelLcPiKPTOFplusRICHPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcTOFplusRICHPID"), massLcSwap, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPiKPPerfectPID() == 1) {
-          registry.fill(HIST("hMassSigLcTOFplusRICHPID"), massLcSwap, ptCandidate, rapidityCandidate);
-        } else {
-          registry.fill(HIST("hMassBkgLcTOFplusRICHPID"), massLcSwap, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgLc"), massLcSwap, ptCandidate, rapidityCandidate);
         }
       }
 
@@ -155,6 +135,6 @@ struct TaskLcALICE3MC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<TaskLcALICE3MC>(cfgc, TaskName{"hf-task-lc-ALICE3-mc"}));
+  workflow.push_back(adaptAnalysisTask<TaskLcparametrizedPIDMC>(cfgc, TaskName{"hf-task-lc-parametrizedPID-mc"}));
   return workflow;
 }

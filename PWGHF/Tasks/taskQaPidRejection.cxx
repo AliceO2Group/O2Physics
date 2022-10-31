@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file taskQaPidRejection.cxx
+///
 /// \author Peter Hristov <Peter.Hristov@cern.ch>, CERN
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University

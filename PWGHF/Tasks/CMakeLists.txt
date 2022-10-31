@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(qa-rejection
-                    SOURCES qaPidRejection.cxx
+                    SOURCES taskQaPidRejection.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -20,32 +20,32 @@ o2physics_add_dpl_workflow(task-d0
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-parametrized-pid-mc
-                    SOURCES taskD0parametrizedPID.cxx
+                    SOURCES taskD0ParametrizedPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-alice3-barrel-mc
-                    SOURCES taskD0ALICE3Barrel.cxx
+                    SOURCES taskD0Alice3Barrel.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-lc-alice3-mc
-                    SOURCES taskLcALICE3.cxx
+                    SOURCES taskLcAlice3.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-alice3-forward-mc
-                    SOURCES taskD0ALICE3Forward.cxx
+                    SOURCES taskD0Alice3Forward.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-dplus
-                    SOURCES taskDPlus.cxx
+                    SOURCES taskDplus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-lc-parametrized-pid-mc
-                    SOURCES taskLcparametrizedPID.cxx
+                    SOURCES taskLcParametrizedPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -70,7 +70,7 @@ o2physics_add_dpl_workflow(task-b0
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-bplus
-                    SOURCES taskBPlus.cxx
+                    SOURCES taskBplus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -100,7 +100,7 @@ o2physics_add_dpl_workflow(task-chic
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-validation
-                    SOURCES HFMCValidation.cxx
+                    SOURCES taskMcValidation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -110,6 +110,6 @@ o2physics_add_dpl_workflow(task-lc-tok0sp
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sel-optimisation
-                    SOURCES HFSelOptimisation.cxx
+                    SOURCES taskSelOptimisation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
