@@ -310,6 +310,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
   workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFD0CandidateSelectorALICE3Barrel>(cfgc, TaskName{"hf-d0-candidate-selector-ALICE3-Barrel"}));
+  workflow.push_back(adaptAnalysisTask<HFD0CandidateSelectorALICE3Barrel>(cfgc, TaskName{"hf-candidate-selector-d0-ALICE3-Barrel"}));
   return workflow;
 }

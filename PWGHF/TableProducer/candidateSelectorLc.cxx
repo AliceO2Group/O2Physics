@@ -290,5 +290,5 @@ struct HFLcCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFLcCandidateSelector>(cfgc, TaskName{"hf-lc-candidate-selector"})};
+    adaptAnalysisTask<HFLcCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-lc"})};
 }

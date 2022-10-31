@@ -2139,7 +2139,7 @@ struct HfTrackIndexSkimsCreator {
 /// with a track, instead of 2 tracks
 
 /// to run: o2-analysis-weak-decay-indices --aod-file AO2D.root -b | o2-analysis-lambdakzerobuilder -b |
-///         o2-analysis-trackextension -b | o2-analysis-hf-track-index-skims-creator -b
+///         o2-analysis-trackextension -b | o2-analysis-hf-track-index-skim-creator -b
 
 struct HfTrackIndexSkimsCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;

@@ -347,6 +347,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
   workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFLcCandidateSelectorparametrizedPID>(cfgc, TaskName{"hf-lc-candidate-selector-parametrizedPID"}));
+  workflow.push_back(adaptAnalysisTask<HFLcCandidateSelectorparametrizedPID>(cfgc, TaskName{"hf-candidate-selector-lc-parametrizedPID"}));
   return workflow;
 }

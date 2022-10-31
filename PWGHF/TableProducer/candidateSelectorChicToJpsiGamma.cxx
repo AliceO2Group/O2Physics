@@ -231,5 +231,5 @@ struct HFChicToJpsiGammaCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFChicToJpsiGammaCandidateSelector>(cfgc, TaskName{"hf-chic-tojpsigamma-candidate-selector"})};
+    adaptAnalysisTask<HFChicToJpsiGammaCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-chic-to-jpsi-gamma"})};
 }

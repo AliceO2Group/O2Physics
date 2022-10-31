@@ -243,5 +243,5 @@ struct HFXToJpsiPiPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFXToJpsiPiPiCandidateSelector>(cfgc, TaskName{"hf-x-tojpsipipi-candidate-selector"})};
+    adaptAnalysisTask<HFXToJpsiPiPiCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-x-to-jpsi-pi-pi"})};
 }
