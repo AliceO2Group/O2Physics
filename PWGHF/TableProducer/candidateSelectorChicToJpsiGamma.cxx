@@ -11,7 +11,8 @@
 
 /// \file candidateSelectorChicToJpsiGamma.cxx
 /// \brief chi_c selection task.
-/// \note Adapted from HFXToJpsiPiiCandidateSelector.cxx
+/// \note Adapted from candidateSelectorXToJpsiPiPi.cxx
+///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Università/INFN Cagliari
 
 #include "Framework/runDataProcessing.h"

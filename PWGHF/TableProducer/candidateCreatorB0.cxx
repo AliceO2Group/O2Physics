@@ -11,7 +11,7 @@
 
 /// \file candidateCreatorB0.cxx
 /// \brief Reconstruction of B0 candidates
-/// \note Adapted from HFCandidateCreatorXicc
+/// \note Adapted from candidateCreatorXicc.cxx
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 

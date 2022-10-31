@@ -11,7 +11,7 @@
 
 /// \file candidateCreatorXicc.cxx
 /// \brief Reconstruction of Xiccplusplus candidates
-/// \note Extended from HFCandidateCreator2Prong, HFCandidateCreator3Prong, HFCandidateCreatorX
+/// \note Extended from candidateCreator2Prong.cxx, candidateCreator3Prong.cxx, candidateCreatorX.cxx
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch >, SALERNO

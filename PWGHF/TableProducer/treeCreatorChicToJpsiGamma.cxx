@@ -13,9 +13,9 @@
 /// \brief Writer of the 3 prong candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
+/// \note based on treeCreatorXToJpsiPiPi.cxx
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Università/INFN Cagliari
-/// \note based on O2Physics/Tasks/PWGHF/HFTreeCreatorXToJPsiPiPi.cxx
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
 #include "Framework/runDataProcessing.h"

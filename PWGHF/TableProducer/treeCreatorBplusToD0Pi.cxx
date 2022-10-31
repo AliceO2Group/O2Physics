@@ -13,7 +13,7 @@
 /// \brief Writer of the 2 prong candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
-/// \note Extended from HFTreeCreatorD0ToKPi
+/// \note Extended from treeCreatorD0ToKPi.cxx
 ///
 /// \author Antonio Palasciano <antonio.palasciano@ba.infn.it>, Università & INFN, Bari
 

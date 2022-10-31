@@ -14,7 +14,7 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
-//#include <iostream>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"

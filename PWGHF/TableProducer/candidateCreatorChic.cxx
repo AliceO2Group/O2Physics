@@ -11,7 +11,7 @@
 
 /// \file candidateCreatorChic.cxx
 /// \brief Reconstruction of chi_c candidates
-/// \note Adapted from HFCandidateCreatorX
+/// \note Adapted from candidateCreatorX.cxx
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 

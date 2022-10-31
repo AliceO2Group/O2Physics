@@ -11,7 +11,7 @@
 
 /// \file candidateCreatorX.cxx
 /// \brief Reconstruction of X(3872) candidates
-/// \note Adapted from HFCandidateCreator3Prong
+/// \note Adapted from candidateCreator3Prong.cxx
 ///
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN

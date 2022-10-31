@@ -14,7 +14,7 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
-//#include <iostream>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -232,7 +232,6 @@ struct HFD0CandidateSelectorALICE3Forward {
 
       if (trackPos.has_frich()) {
         nsigmaRICHPosPion = trackPos.frich().frichNsigmaPi();
-        //std::cout << "barrel= " << trackPos.eta() << "\n";
       }
       if (trackNeg.has_frich()) {
         nsigmaRICHNegKaon = trackNeg.frich().frichNsigmaKa();

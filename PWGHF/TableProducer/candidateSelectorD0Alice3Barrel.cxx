@@ -14,7 +14,7 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
-//#include <iostream>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -237,7 +237,6 @@ struct HFD0CandidateSelectorALICE3Barrel {
         pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
       }
 
-      //std::cout << "barrel= " << pdgPositive <<"\t"<< pdgNegative << "\n";
       float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
       float nsigmaTOFPosPion = -5000.0;
@@ -258,7 +257,6 @@ struct HFD0CandidateSelectorALICE3Barrel {
       if (trackPos.has_rich()) {
         nsigmaRICHPosPion = trackPos.rich().richNsigmaPi();
         nsigmaRICHPosKaon = trackPos.rich().richNsigmaKa();
-        //std::cout << "barrel= " << trackPos.eta() << "\n";
       }
       if (trackNeg.has_rich()) {
         nsigmaRICHNegKaon = trackNeg.rich().richNsigmaKa();

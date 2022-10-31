@@ -11,7 +11,7 @@
 
 /// \file candidateCreator3Prong.cxx
 /// \brief Reconstruction of heavy-flavour 3-prong decay candidates
-/// \note Extended from HFCandidateCreator2Prong
+/// \note Extended from candidateCreator2Prong.cxx
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 

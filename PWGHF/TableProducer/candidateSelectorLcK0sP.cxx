@@ -11,11 +11,10 @@
 
 /// \file candidateSelectorLcK0sP.cxx
 /// \brief Lc --> K0s+p selection task.
+/// \note based on candidateSelectorD0.cxx
 ///
 /// \author Chiara Zampolli <Chiara.Zampolli@cern.ch>, CERN
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
-
-/// based on candidateSelectorD0.cxx
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

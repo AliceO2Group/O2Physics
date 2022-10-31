@@ -11,7 +11,7 @@
 
 /// \file candidateCreatorLb.cxx
 /// \brief Reconstruction of Lb candidates
-/// \note Adapted from HFCandidateCreatorXicc
+/// \note Adapted from candidateCreatorXicc.cxx
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 

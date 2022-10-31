@@ -13,7 +13,7 @@
 /// \brief Writer of the 2 prong candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
-/// \note Extended from HFTreeCreatorD0ToKPi, HFTreeCreatorLcToPKPi, HFTreeCreatorXToJpsiPiPi
+/// \note Extended from treeCreatorD0ToKPi.cxx, treeCreatorLcToPKPi.cxx, treeCreatorXToJpsiPiPi.cxx
 ///
 /// \author Panos Christakoglou <Panos.Christakoglou@cern.ch>, Nikhef
 /// \author Maurice Jongerhuis <m.v.jongerhuis@students.uu.nl>, University Utrecht

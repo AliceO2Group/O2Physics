@@ -12,6 +12,7 @@
 /// \file candidateSelectorXToJpsiPiPi.cxx
 /// \brief X(3872) selection task.
 /// \note Adapted from candidateSelectorJpsi.cxx
+///
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
@@ -20,6 +21,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
