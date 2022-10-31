@@ -51,9 +51,12 @@ struct dalitzPairing {
   Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
   Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fQA{"cfgQA", true, "QA histograms"};
-  Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPtDalitz", 0.1f, "Low pt cut for Dalitz tracks in the barrel"};
+  Configurable<float> fConfigBarrelTrackPINLow{"cfgBarrelLowPIN", 0.1f, "Low pt cut for Dalitz tracks in the barrel"};
+  Configurable<float> fConfigEtaCut{"cfgEtaCut", 0.9f, "Eta cut for Dalitz tracks in the barrel"};
+  Configurable<float> fConfigTPCNSigLow{"cfgTPCNSigElLow", -3.f, "Low TPCNSigEl cut for Dalitz tracks in the barrel"};
+  Configurable<float> fConfigTPCNSigHigh{"cfgTPCNSigElHigh", 3.f, "High TPCNsigEl cut for Dalitz tracks in the barrel"};
   
-  Filter filterBarrelTrack = o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && nabs(o2::aod::pidtpc::tpcNSigmaEl) <= 3.0f && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
+  Filter filterBarrelTrack = o2::aod::track::tpcInnerParam >= fConfigBarrelTrackPINLow && nabs(o2::aod::track::eta) <= fConfigEtaCut && o2::aod::pidtpc::tpcNSigmaEl <= fConfigTPCNSigHigh && o2::aod::pidtpc::tpcNSigmaEl >= fConfigTPCNSigLow;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
@@ -146,7 +149,9 @@ struct dalitzPairing {
       AnalysisCompositeCut pairCut = fPairCuts.at(icut);
       histTracks->GetXaxis()->SetBinLabel(icut+1, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
     }
-    fStatsList->Add(histTracks);    
+    if (fQA) {
+      fStatsList->Add(histTracks);    
+    }
 
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());  
@@ -199,12 +204,16 @@ struct dalitzPairing {
           bool b1 = dalitzmap[track1.globalIndex()] & (uint8_t(1) << icut);
           if(!b1) {
             track1Untagged |= (uint8_t(1) << icut);
-            ((TH1I*) fStatsList->At(0))->Fill(icut);
+            if (fQA) {
+              ((TH1I*) fStatsList->At(0))->Fill(icut);
+            }
           }
           bool b2 = dalitzmap[track2.globalIndex()] & (uint8_t(1) << icut);
           if(!b2) {
             track2Untagged |= (uint8_t(1) << icut);
-            ((TH1I*) fStatsList->At(0))->Fill(icut);
+            if (fQA) {
+              ((TH1I*) fStatsList->At(0))->Fill(icut);
+            }
           }          
         }
       }
