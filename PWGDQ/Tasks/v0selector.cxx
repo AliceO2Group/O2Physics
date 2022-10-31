@@ -65,7 +65,6 @@ struct v0selector {
     kOmega = 4
   };
 
-  int globalCounter;
   Produces<o2::aod::V0Bits> v0bits;
 
   float alphav0(const array<float, 3>& ppos, const array<float, 3>& pneg)
@@ -475,11 +474,6 @@ struct v0selector {
         // printf("This is Anti-Lambda candidate.\n");
       }
       
-      /*std::cout<<"pidmap+-: "<<(int) pidmap[V0.posTrackId()]<<"   "<<(int) pidmap[V0.negTrackId()]<<std::endl;
-      std::cout<<"TPC signals: "<<V0.posTrack_as<FullTracksExt>().tpcSignal()<<"  "<<V0.negTrack_as<FullTracksExt>().tpcSignal()<<std::endl;
-      std::cout<<"TPC nsigma el : "<<V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()<<"  "<<V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()<<std::endl;
-      std::cout<<"pion: "<<V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()<<"  "<<V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()<<std::endl;*/
-
       // printf("posTrackId = %d\n",V0.posTrackId());
       // printf("negTrackId = %d\n",V0.negTrackId());
 
