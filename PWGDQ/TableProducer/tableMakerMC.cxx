@@ -40,8 +40,6 @@
 #include "TList.h"
 #include <iostream>
 
-
-
 using std::cout;
 using std::endl;
 
@@ -62,13 +60,6 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                         aod::McTrackLabels>;
-using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                        aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                        aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
-                                        aod::McTrackLabels, aod::DalitzBits>;
-                                        
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 
@@ -222,11 +213,6 @@ struct TableMakerMC {
       if (fConfigQA) {
         for (auto& cut : fTrackCuts) {
           histClasses += Form("TrackBarrel_%s;", cut.GetName());
-        }
-      }
-      if (fQADalitz) {
-        for (int i = 0; i < nDalitzCuts; i++) {
-          histClasses += Form("TrackBarrelDalitz_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName());
         }
       }
     }
@@ -451,7 +437,6 @@ struct TableMakerMC {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
               }
               ((TH1I*)fStatsList->At(1))->Fill(float(i));
-              //std::cout<<cut.GetName()<<"  "<<mctrack.pdgCode()<<"   "<<track.pt()<<"  "<<track.tpcNSigmaEl()<<std::endl;
             }
             i++;
           }
@@ -469,10 +454,6 @@ struct TableMakerMC {
             }
           } 
 
-          //if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
-          //  if(!track.dalitzBits()) continue;
-          //}
-
           // store filtering information
           if (track.isGlobalTrack()) {
             trackFilteringTag |= (uint64_t(1) << 0); // BIT0: global track
@@ -486,9 +467,6 @@ struct TableMakerMC {
               if (track.pidbit() & (uint8_t(1) << iv0)) {
                 ((TH1I*)fStatsList->At(1))->Fill(fTrackCuts.size() + float(iv0));
               }
-            }
-            if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-              trackFilteringTag |= (uint64_t(track.dalitzBits()) << 15); //BIT15-...: Dalitz
             }
           }
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
@@ -508,9 +486,7 @@ struct TableMakerMC {
                 fHistMan->FillHistClass(Form("TrackBarrel_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
-		    // if (trackFilteringTag & (uint8_t(1) << j+15)) { // selected by dalitz (cuts must correspond)
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
-		    // }
                   }
                   j++;
                 }
@@ -721,8 +697,6 @@ struct TableMakerMC {
       if (mctrack.has_mothers()) {
         for (auto& m : mctrack.mothersIds()) {
           if (m < mcTracks.size()) { // protect against bad mother indices
-          
-               // if(abs(mctrack.pdgCode())==11) std::cout<<" mc pdg code: "<<mctrack.pdgCode()<<" mother pdg code: "<<mcTracks.iteratorAt(m).pdgCode()<<std::endl;
             if (fNewLabels.find(m) != fNewLabels.end()) {
               mothers.push_back(fNewLabels.find(m)->second);
             }

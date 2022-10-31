@@ -584,7 +584,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(VarManager::kPt, 4.0, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
@@ -739,11 +738,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("finiteTPC")) {
-    cut->AddCut(VarManager::kTPCnSigmaEl, -999999.0, 999999.0);
-    return cut;
-  }
-
   if (!nameStr.compare("electronPIDnsigma")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 3000.0);
@@ -786,7 +780,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaPi, 2.5, 3000.0);
     return cut;
   }
-
 
   if (!nameStr.compare("electronPIDnsigmaMedium")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
