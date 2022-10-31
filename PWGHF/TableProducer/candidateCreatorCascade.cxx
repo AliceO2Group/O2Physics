@@ -22,7 +22,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
-#include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
+#include "PWGHF/Utils/utilsDebugLcK0sP.h"
 
 using namespace o2;
 using namespace o2::framework;
