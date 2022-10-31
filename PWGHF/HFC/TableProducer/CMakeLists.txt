@@ -10,21 +10,21 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(correlator-d0d0bar
-                    SOURCES HFCorrelatorD0D0bar.cxx
+                    SOURCES correlatorD0D0bar.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-d0d0bar-barrel-full-pid
-                    SOURCES HFCorrelatorD0D0barBarrelFullPID.cxx
+                    SOURCES correlatorD0D0barBarrelFullPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-dplusdminus
-                    SOURCES HFCorrelatorDplusDminus.cxx
+                    SOURCES correlatorDplusDminus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-dplus-hadrons
-                    SOURCES HFCorrelatorDplusHadrons.cxx
+                    SOURCES correlatorDplusHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)

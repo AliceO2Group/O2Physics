@@ -8,6 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file taskFlow.cxx
+/// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
+/// \author Maja Kabus <maja.kabus@cern.ch>, CERN
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
