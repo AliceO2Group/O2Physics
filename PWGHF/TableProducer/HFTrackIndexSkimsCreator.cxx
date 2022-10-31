@@ -15,6 +15,7 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
+/// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -27,12 +28,14 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
-#include "DetectorsVertexing/PVertexer.h"     // for PV refit
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-#include "CCDB/BasicCCDBManager.h"            // for PV refit
-#include "DataFormatsParameters/GRPObject.h"  // for PV refit
-#include "DetectorsBase/Propagator.h"         // for PV refit
-#include "DetectorsBase/GeometryManager.h"    // for PV refit
+#include "DetectorsVertexing/PVertexer.h"      // for PV refit
+#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
+#include "CCDB/BasicCCDBManager.h"             // for PV refit
+#include "DataFormatsParameters/GRPObject.h"   // for PV refit
+#include "DetectorsBase/Propagator.h"          // for PV refit
+#include "DetectorsBase/GeometryManager.h"     // for PV refit
+#include "DataFormatsParameters/GRPMagField.h" // for PV refit
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 #include <algorithm>
 
@@ -107,12 +110,14 @@ struct HfTagSelCollisions {
   Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
-  int triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+  int triggerClass;
 
   HistogramRegistry registry{"registry", {{"hNContributors", "Number of vertex contributors;entries", {HistType::kTH1F, {{20001, -0.5, 20000.5}}}}}};
 
   void init(InitContext const&)
   {
+    triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+
     const int nBinsEvents = 2 + EventRejection::NEventRejection;
     std::string labels[nBinsEvents];
     labels[0] = "processed";
@@ -128,6 +133,10 @@ struct HfTagSelCollisions {
     for (int iBin = 0; iBin < nBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
+    // primary vertex histograms
+    registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
+    registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
+    registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -20., 20.}}});
   }
 
   /// Primary-vertex selection
@@ -203,6 +212,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
@@ -227,6 +239,9 @@ struct HfTagSelCollisions {
     // selected events
     if (fillHistograms && statusCollision == 0) {
       registry.fill(HIST("hEvents"), 2);
+      registry.fill(HIST("hPrimVtxX"), collision.posX());
+      registry.fill(HIST("hPrimVtxY"), collision.posY());
+      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
     }
 
     // fill table row
@@ -243,8 +258,9 @@ struct HfTagSelTracks {
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<bool> debug{"debug", true, "debug mode"};
-  Configurable<double> bz{"bz", 5., "bz field"};
+  // Configurable<double> bz{"bz", 5., "bz field"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
@@ -268,6 +284,11 @@ struct HfTagSelTracks {
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -279,12 +300,8 @@ struct HfTagSelTracks {
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbPathLut = "GLO/Param/MatLUT";
-  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
-  const char* ccdbPathGrp = "GLO/GRP/GRP";
-  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
-  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int mRunNumber;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
 
   HistogramRegistry registry{
     "registry",
@@ -354,7 +371,7 @@ struct HfTagSelTracks {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(ccdbPathGeo);
       }
-      mRunNumber = 0;
+      runNumber = 0;
     }
   }
 
@@ -400,20 +417,33 @@ struct HfTagSelTracks {
     std::vector<bool> vecPvRefitContributorUsed(vecPvContributorGlobId.size(), true);
 
     /// Prepare the vertex refitting
-    // Get the magnetic field for the Propagator
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+    /*if (runNumber != bc.runNumber()) {
+
+      if (isRun2) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+        } else {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
       }
-      mRunNumber = bc.runNumber();
-    }
+
+      runNumber = bc.runNumber();
+    }*/
 
     // build the VertexBase to initialize the vertexer
     o2::dataformats::VertexBase primVtx;
@@ -815,10 +845,11 @@ struct HfTrackIndexSkimsCreator {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<int> do3prong{"do3prong", 0, "do 3 prong"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // preselection parameters
   Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
-  Configurable<double> bz{"bz", 5., "magnetic field kG"};
+  // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<double> maxRad{"maxRad", 200., "reject PCA's above this radius"};
@@ -850,16 +881,17 @@ struct HfTrackIndexSkimsCreator {
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbPathLut = "GLO/Param/MatLUT";
-  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
-  const char* ccdbPathGrp = "GLO/GRP/GRP";
-  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
-  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int mRunNumber;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
 
   HistogramRegistry registry{
     "registry",
@@ -964,7 +996,7 @@ struct HfTrackIndexSkimsCreator {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(ccdbPathGeo);
       }
-      mRunNumber = 0;
+      runNumber = 0;
     }
   }
 
@@ -1250,20 +1282,33 @@ struct HfTrackIndexSkimsCreator {
     std::vector<bool> vecPvRefitContributorUsed(vecPvContributorGlobId.size(), true);
 
     /// Prepare the vertex refitting
-    // Get the magnetic field for the Propagator
-    // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+    /*if (runNumber != bc.runNumber()) {
+
+      if (isRun2) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object (type o2::parameters::GRPMagField)";
+        } else {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
       }
-      mRunNumber = bc.runNumber();
-    }
+
+      runNumber = bc.runNumber();
+    }*/
 
     // build the VertexBase to initialize the vertexer
     o2::dataformats::VertexBase primVtx;
@@ -1449,9 +1494,13 @@ struct HfTrackIndexSkimsCreator {
     int whichHypo2Prong[n2ProngDecays];
     int whichHypo3Prong[n3ProngDecays];
 
+    // set the magnetic field from CCDB
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(bz);
+    df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
     df2.setPropagateToPCA(propToDCA);
     df2.setMaxR(maxRad);
     df2.setMaxDZIni(maxDZIni);
@@ -1461,7 +1510,7 @@ struct HfTrackIndexSkimsCreator {
 
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df3;
-    df3.setBz(bz);
+    df3.setBz(o2::base::Propagator::Instance()->getNominalBz());
     df3.setPropagateToPCA(propToDCA);
     df3.setMaxR(maxRad);
     df3.setMaxDZIni(maxDZIni);
@@ -2103,7 +2152,7 @@ struct HfTrackIndexSkimsCreatorCascades {
   // Configurable<int> triggerindex{"triggerindex", -1, "trigger index"};
 
   // vertexing parameters
-  Configurable<double> bZ{"bZ", 5., "magnetic field"};
+  // Configurable<double> bZ{"bZ", 5., "magnetic field"};
   Configurable<bool> propDCA{"propDCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -2141,6 +2190,18 @@ struct HfTrackIndexSkimsCreatorCascades {
   Configurable<double> cutCascInvMassLc{"cutCascInvMassLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
   // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
 
+  // magnetic field setting from CCDB
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+
   // for debugging
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -2166,6 +2227,18 @@ struct HfTrackIndexSkimsCreatorCascades {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.}; // WHY HERE?
 
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  }
+
   Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
@@ -2183,9 +2256,13 @@ struct HfTrackIndexSkimsCreatorCascades {
                ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
 
+    // set the magnetic field from CCDB
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(bZ);
+    fitter.setBz(o2::base::Propagator::Instance()->getNominalBz());
     fitter.setPropagateToPCA(propDCA);
     fitter.setMaxR(maxR);
     fitter.setMinParamChange(minParamChange);
@@ -2300,9 +2377,9 @@ struct HfTrackIndexSkimsCreatorCascades {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "KEPT! K0S from Lc with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg);
 
         auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos);
-        trackParCovV0DaughPos.propagateTo(v0.posX(), bZ); // propagate the track to the X closest to the V0 vertex
+        trackParCovV0DaughPos.propagateTo(v0.posX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
         auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg);
-        trackParCovV0DaughNeg.propagateTo(v0.negX(), bZ); // propagate the track to the X closest to the V0 vertex
+        trackParCovV0DaughNeg.propagateTo(v0.negX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
         std::array<float, 3> pVecV0 = {0., 0., 0.};
         std::array<float, 3> pVecBach = {0., 0., 0.};
 

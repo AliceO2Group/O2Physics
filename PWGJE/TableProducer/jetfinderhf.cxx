@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   ConfigParamSpec hfjetMode = {
     "hfjetMode",
     VariantType::String,
-    "data",
+    "",
     {"HF jet finder mode."},
   };
   workflowOptions.push_back(hfjetMode);
@@ -301,17 +301,17 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   auto hfjetMode = cfgc.options().get<std::string>("hfjetMode");
 
-  if (hfjetMode.find("data") != std::string::npos)
+  if (hfjetMode.find("data") != std::string::npos || hfjetMode.empty())
     tasks.emplace_back(adaptAnalysisTask<JetFinderHF>(cfgc,
                                                       SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},
                                                       TaskName{"jet-finder-hf-data"}));
 
-  if (hfjetMode.find("mcp") != std::string::npos)
+  if (hfjetMode.find("mcp") != std::string::npos || hfjetMode.empty())
     tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetFinderHF>(cfgc,
                                                                      SetDefaultProcesses{{{"processData", false}, {"processMCP", true}, {"processMCD", false}}},
                                                                      TaskName{"jet-finder-hf-mcp"}));
 
-  if (hfjetMode.find("mcd") != std::string::npos)
+  if (hfjetMode.find("mcd") != std::string::npos || hfjetMode.empty())
     tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetFinderHF>(cfgc,
                                                                      SetDefaultProcesses{{{"processData", false}, {"processMCP", false}, {"processMCD", true}}},
                                                                      TaskName{"jet-finder-hf-mcd"}));

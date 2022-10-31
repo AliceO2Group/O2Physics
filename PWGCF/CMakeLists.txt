@@ -18,4 +18,6 @@ add_subdirectory(MultiparticleCorrelations)
 add_subdirectory(Tasks)
 add_subdirectory(TableProducer)
 add_subdirectory(Tutorial)
+add_subdirectory(TwoParticleCorrelations)
+add_subdirectory(JCorran)
 

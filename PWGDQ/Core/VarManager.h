@@ -86,7 +86,9 @@ class VarManager : public TObject
     ReducedMuonExtra = BIT(14),
     ReducedMuonCov = BIT(15),
     ParticleMC = BIT(16),
-    Pair = BIT(17) // TODO: check whether we really need the Pair member here
+    Pair = BIT(17), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(18),
+    AmbiMuon = BIT(19)
   };
 
   enum PairCandidateType {
@@ -233,6 +235,7 @@ class VarManager : public TObject
     kIsLegFromLambda,
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
+    kIsProtonFromLambdaAndAntiLambda,
     kNBarrelTrackVariables,
 
     // Muon track variables
@@ -605,8 +608,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ3Y0C] = event.q3y0c();
     values[kR2SP] = (event.q2x0b() * event.q2x0c() + event.q2y0b() * event.q2y0c());
     values[kR3SP] = (event.q3x0b() * event.q3x0c() + event.q3y0b() * event.q3y0c());
-    values[kR2EP] = TMath::Cos(2 * (getEventPlane(2, event.q2x0b(), event.q2y0b()) - getEventPlane(2, event.q2x0c(), event.q2y0c())));
-    values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
+    if (event.q2y0b() * event.q2y0c() != 0.0) {
+      values[kR2EP] = TMath::Cos(2 * (getEventPlane(2, event.q2x0b(), event.q2y0b()) - getEventPlane(2, event.q2x0c(), event.q2y0c())));
+    }
+    if (event.q3y0b() * event.q3y0c() != 0.0) {
+      values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
+    }
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -664,6 +671,8 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsLegFromLambda] = bool(track.filteringFlags() & (uint64_t(1) << 4));
       values[kIsLegFromAntiLambda] = bool(track.filteringFlags() & (uint64_t(1) << 5));
       values[kIsLegFromOmega] = bool(track.filteringFlags() & (uint64_t(1) << 6));
+
+      values[kIsProtonFromLambdaAndAntiLambda] = bool((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
     }
   }
 
@@ -1299,8 +1308,12 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   auto Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
   values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
   values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
-  values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
-  values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
+  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
+    values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  }
+  if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
+    values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
+  }
 }
 
 template <int pairType, typename T1, typename T2>

@@ -96,16 +96,40 @@ DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float); //! sum of am
 DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);                     //! FV0A average time
 DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t);     //! FV0 trigger mask
 // FIT selection flags
-DECLARE_SOA_COLUMN(BBFT0A, bbFT0A, bool); //! Beam-beam time in FT0A
-DECLARE_SOA_COLUMN(BBFT0C, bbFT0C, bool); //! Beam-beam time in FT0C
-DECLARE_SOA_COLUMN(BGFT0A, bgFT0A, bool); //! Beam-gas time in FT0A
-DECLARE_SOA_COLUMN(BGFT0C, bgFT0C, bool); //! Beam-gas time in FT0C
-DECLARE_SOA_COLUMN(BBFV0A, bbFV0A, bool); //! Beam-beam time in V0A
-DECLARE_SOA_COLUMN(BGFV0A, bgFV0A, bool); //! Beam-gas time in V0A
-DECLARE_SOA_COLUMN(BBFDDA, bbFDDA, bool); //! Beam-beam time in FDA
-DECLARE_SOA_COLUMN(BBFDDC, bbFDDC, bool); //! Beam-beam time in FDC
-DECLARE_SOA_COLUMN(BGFDDA, bgFDDA, bool); //! Beam-gas time in FDA
-DECLARE_SOA_COLUMN(BGFDDC, bgFDDC, bool); //! Beam-gas time in FDC
+// bits in range [0, 15] -> past BCs
+// bit 16 -> present BC
+// bits in range [17, 31] -> future BCs
+DECLARE_SOA_COLUMN(BBFT0APF, bbFT0Apf, int32_t); //! Beam-beam time in FT0A
+DECLARE_SOA_COLUMN(BBFT0CPF, bbFT0Cpf, int32_t); //! Beam-beam time in FT0C
+DECLARE_SOA_COLUMN(BGFT0APF, bgFT0Apf, int32_t); //! Beam-gas time in FT0A
+DECLARE_SOA_COLUMN(BGFT0CPF, bgFT0Cpf, int32_t); //! Beam-gas time in FT0C
+DECLARE_SOA_COLUMN(BBFV0APF, bbFV0Apf, int32_t); //! Beam-beam time in V0A
+DECLARE_SOA_COLUMN(BGFV0APF, bgFV0Apf, int32_t); //! Beam-gas time in V0A
+DECLARE_SOA_COLUMN(BBFDDAPF, bbFDDApf, int32_t); //! Beam-beam time in FDA
+DECLARE_SOA_COLUMN(BBFDDCPF, bbFDDCpf, int32_t); //! Beam-beam time in FDC
+DECLARE_SOA_COLUMN(BGFDDAPF, bgFDDApf, int32_t); //! Beam-gas time in FDA
+DECLARE_SOA_COLUMN(BGFDDCPF, bgFDDCpf, int32_t); //! Beam-gas time in FDC
+
+DECLARE_SOA_DYNAMIC_COLUMN(BBFT0A, bbFT0A,
+                           [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BBFT0C, bbFT0C,
+                           [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BGFT0A, bgFT0A,
+                           [](int32_t bgFT0Apf) -> bool { return TESTBIT(bgFT0Apf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BGFT0C, bgFT0C,
+                           [](int32_t bgFT0Cpf) -> bool { return TESTBIT(bgFT0Cpf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BBFDDA, bbFDDA,
+                           [](int32_t bbFDDApf) -> bool { return TESTBIT(bbFDDApf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BBFDDC, bbFDDC,
+                           [](int32_t bbFDDCpf) -> bool { return TESTBIT(bbFDDCpf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BGFDDA, bgFDDA,
+                           [](int32_t bgFDDApf) -> bool { return TESTBIT(bgFDDApf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BGFDDC, bgFDDC,
+                           [](int32_t bgFDDCpf) -> bool { return TESTBIT(bgFDDCpf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BBFV0A, bbFV0A,
+                           [](int32_t bbFV0Apf) -> bool { return TESTBIT(bbFV0Apf, 16); });
+DECLARE_SOA_DYNAMIC_COLUMN(BGFV0A, bgFV0A,
+                           [](int32_t bgFV0Apf) -> bool { return TESTBIT(bgFV0Apf, 16); });
 
 } // namespace udcollision
 
@@ -134,9 +158,12 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::TotalFV0AmplitudeA,
                   udcollision::TimeFV0A,
                   udcollision::TriggerMaskFV0A,
-                  udcollision::BBFT0A, udcollision::BBFT0C, udcollision::BGFT0A, udcollision::BGFT0C,
-                  udcollision::BBFV0A, udcollision::BGFV0A,
-                  udcollision::BBFDDA, udcollision::BBFDDC, udcollision::BGFDDA, udcollision::BGFDDC);
+                  udcollision::BBFT0APF, udcollision::BBFT0CPF, udcollision::BGFT0APF, udcollision::BGFT0CPF,
+                  udcollision::BBFV0APF, udcollision::BGFV0APF,
+                  udcollision::BBFDDAPF, udcollision::BBFDDCPF, udcollision::BGFDDAPF, udcollision::BGFDDCPF,
+                  udcollision::BBFT0A<udcollision::BBFT0APF>, udcollision::BBFT0C<udcollision::BBFT0CPF>, udcollision::BGFT0A<udcollision::BGFT0APF>, udcollision::BGFT0C<udcollision::BGFT0CPF>,
+                  udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
+                  udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
 using UDCollision = UDCollisions::iterator;
 using UDCollisionsSel = UDCollisionsSels::iterator;
@@ -161,6 +188,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
 // Barrel track kinematics
 DECLARE_SOA_TABLE(UDTracks, "AOD", "UDTRACK",
                   o2::soa::Index<>,
+                  udtrack::UDCollisionId,
                   udtrack::Px,
                   udtrack::Py,
                   udtrack::Pz,
@@ -177,9 +205,6 @@ DECLARE_SOA_TABLE(UDTracksCov, "AOD", "UDTRACKCOV",
 DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
-
-DECLARE_SOA_TABLE(UDTrackCollisionIDs, "AOD", "UDTRCOLID",
-                  udtrack::UDCollisionId);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::ITSClusterMap,
@@ -213,7 +238,6 @@ using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
 using UDTrackDCA = UDTracksDCA::iterator;
-using UDTrackCollisionID = UDTrackCollisionIDs::iterator;
 
 namespace udmctracklabel
 {
@@ -252,6 +276,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
 // Muon track kinematics
 DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   o2::soa::Index<>,
+                  udfwdtrack::UDCollisionId,
                   udfwdtrack::Px,
                   udfwdtrack::Py,
                   udfwdtrack::Pz,
@@ -259,9 +284,6 @@ DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   udfwdtrack::GlobalBC,
                   udfwdtrack::TrackTime,
                   udfwdtrack::TrackTimeRes);
-
-DECLARE_SOA_TABLE(UDFwdTrackCollisionIDs, "AOD", "UDFWDTRCOLID",
-                  udfwdtrack::UDCollisionId);
 
 // Muon track quality details
 DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
@@ -276,7 +298,6 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
 
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
-using UDFwdTrackCollisionID = UDFwdTrackCollisionIDs::iterator;
 
 namespace udmcfwdtracklabel
 {

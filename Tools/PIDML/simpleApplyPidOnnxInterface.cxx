@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file simpleApplyPidInterface
-/// \brief A simple example for using PID obtained from the PID ML ONNX Interface. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
+/// \brief A simple example for using PID obtained from the PID ML ONNX Interface. See README.md for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 

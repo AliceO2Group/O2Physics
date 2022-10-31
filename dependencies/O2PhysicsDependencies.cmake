@@ -13,8 +13,17 @@ include_guard()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
 
-# Find required packages
+include(FeatureSummary)
+
+find_package(O2 CONFIG)
+set_package_properties(O2 PROPERTIES TYPE REQUIRED)
+
 find_package(KFParticle)
 set_package_properties(KFParticle PROPERTIES TYPE REQUIRED)
+
+find_package(fjcontrib)
+set_package_properties(fjcontrib PROPERTIES TYPE REQUIRED)
+
+find_package(ONNXRuntime::ONNXRuntime)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

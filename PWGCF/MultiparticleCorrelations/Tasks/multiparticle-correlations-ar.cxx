@@ -13,10 +13,11 @@
 /// \brief multiparticle-correlations-ar - Task belonging to Anton Riedel for computing multiparticle correlations
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include <Framework/Configurable.h>
+#include <TMath.h>
 #include "fairlogger/Logger.h"
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 #include <string_view>
 #include <string>
 #include <vector>
@@ -53,15 +54,12 @@ enum RecoSimEnum {
 };
 static constexpr std::string_view RecoSim[kLAST_RS] = {"reco/", "sim/"};
 
-// for configuring control histograms
-enum HistConfig {
-  kBIN,   // number of bins
-  kLEDGE, // lower edge of the histogram
-  kUEDGE, // upper edge of the histogram
-  kLCUT,  // lower cut
-  kUCUT,  // upper cut
-  kOCUT,  // option whether to apply cut at all
-  kLAST_HistConfig
+// for applying cuts
+enum CutEnum {
+  kCUTLOW,    // low cut
+  kCUTHIGH,   // high cut
+  kCUTOPTION, // option whether to apply a cut at all
+  kLAST_CUT
 };
 
 // for differential computation of correlators with event variables
@@ -71,19 +69,27 @@ enum CorEventDep {
   kCENDEP,
   kLAST_CorEventDep
 };
-const std::string CorEventDepNames[kLAST_CorEventDep] = {"[kINTEGRATED]",
-                                                         "[kMULDEP]",
-                                                         "[kCENDEP]"};
+const std::string CorEventDepNames[kLAST_CorEventDep] = {
+  "[kINTEGRATED]",
+  "[kMULDEP]",
+  "[kCENDEP]"};
+std::vector<std::vector<double>> CorEventDepDefaultBins = {
+  {1., 0., 1.},      // kINTEGRATED
+  {300., 0., 3000.}, // kMULDEP
+  {120., 0., 120.}}; // kCENDEP
+
 // for differential computation of correlators with track variables
 enum CorTrackDep {
   kPTDEP,
   kETADEP,
   kLAST_CorTrackDep
 };
-const std::string CorTrackDepNames[kLAST_CorTrackDep] = {"[kPTDEP]",
-                                                         "[kETADEP]"};
-// common info string for correlator dependencies
-const std::string CorDepInfo = {"Bin edges for differential analysis of multiparticle correlators"};
+const std::string CorTrackDepNames[kLAST_CorTrackDep] = {
+  "[kPTDEP]",
+  "[kETADEP]"};
+std::vector<std::vector<double>> CorTrackDepDefaultBins = {
+  {VARIABLE_WIDTH, 0.2, 0.34, 0.5, 0.7, 1., 2., 5.}, // kPT
+  {VARIABLE_WIDTH, -0.8, -0.4, 0., 0.4, 0.8}};       // kETA
 
 // event variables
 enum EventVariable {
@@ -98,15 +104,37 @@ enum EventVariable {
   kMULTPC,
   kLAST_EventVariable
 };
-static constexpr std::string_view EventVariableNames[kLAST_EventVariable] = {"VertexX",
-                                                                             "VertexY",
-                                                                             "VertexZ",
-                                                                             "VertexAbs",
-                                                                             "Centrality",
-                                                                             "MultiplicityQvector",
-                                                                             "MultiplicityWeights",
-                                                                             "MultiplicityNumContrib",
-                                                                             "MultiplicityTPC"};
+static constexpr std::string_view EventVariableNames[kLAST_EventVariable] = {
+  "EventVariable_VertexX",
+  "EventVariable_VertexY",
+  "EventVariable_VertexZ",
+  "EventVariable_VertexAbs",
+  "EventVariable_Centrality",
+  "EventVariable_MultiplicityQvector",
+  "EventVariable_MultiplicityWeights",
+  "EventVariable_MultiplicityNumContrib",
+  "EventVariable_MultiplicityTPC"};
+std::vector<std::vector<double>> EventVariableDefaultBins = {
+  {1000, -5., 5.},     // kVX
+  {1000., -5., 5.},    // kVY
+  {1000., -15., 15.},  // kVZ
+  {1000, 0., 15.},     // kVABS
+  {120., 0., 120.},    // kCEN
+  {3000., 0., 3000.},  // kMULQ
+  {3000., 0., 3000.},  // kMULW
+  {3000., 0., 3000.},  // kMULNC
+  {3000., 0., 3000.}}; // kMULTPC
+const std::vector<std::array<float, kLAST_CUT>> EventVariableDefaultCuts = {
+  {-2., 2., 1.},    // kVX
+  {-2., 2., 1.},    // kVY
+  {-10., 10., 1.},  // kVZ
+  {1.e-5, 15., 1.}, // kVABS
+  {0., 80., 1.},    // kCEN
+  {2., 3000., 1.},  // kMULQ
+  {2., 3000., 1.},  // kMULW
+  {2., 3000., 1.},  // kMULNC
+  {2., 3000., 1.}}; // kMULTPC
+
 // track variables
 enum TrackVariable {
   kPT,
@@ -121,19 +149,45 @@ enum TrackVariable {
   kITSCLUSTERS,
   kLAST_TrackVariable
 };
-static constexpr std::string_view TrackVariableNames[kLAST_TrackVariable] = {"Pt",
-                                                                             "Phi",
-                                                                             "Eta",
-                                                                             "Charge",
-                                                                             "DCAZ",
-                                                                             "DCAXY",
-                                                                             "TPCClusters",
-                                                                             "TPCCrossedRows",
-                                                                             "TPCChi2",
-                                                                             "ITSClusters"};
+static constexpr std::string_view TrackVariableNames[kLAST_TrackVariable] = {
+  "TrackVariable_Pt",
+  "TrackVariable_Phi",
+  "TrackVariable_Eta",
+  "TrackVariable_Charge",
+  "TrackVariable_DCAZ",
+  "TrackVariable_DCAXY",
+  "TrackVariable_TPCClusters",
+  "TrackVariable_TPCCrossedRows",
+  "TrackVariable_TPCChi2",
+  "TrackVariable_ITSClusters"};
+std::vector<std::vector<double>> TrackVariableDefaultBins = {
+  {1000, 0., 10.},           // kPT
+  {720., 0, TMath::TwoPi()}, // kPHI
+  {1000., -1., 1.},          // kETA
+  {5., -2.5, 2.5},           // kCHARGE
+  {1000., -5., 5.},          // kDCAZ
+  {1000., -5., 5.},          // kDCAXY
+  {160., 0., 160.},          // kTPCCLUSTERS
+  {160., 0., 160.},          // kTPCCROSSEDROWS
+  {1000., 0., 5.},           // kTPCCHI2
+  {6., 0., 6.}};             // kITSCLUSTERS
+std::vector<std::array<float, kLAST_CUT>> TrackVariableDefaultCuts = {
+  {0.2, 5., 1.},           // kPT
+  {0., TMath::TwoPi(), 0}, // kPHI
+  {-0.8, 0.8, 1.},         // kETA
+  {-1.5, 1.5, 1},          // kCHARGE
+  {-2.4, 2.4, 1.},         // kDCAZ
+  {-3.2, 3.2, 1.},         // kDCAXY
+  {80., 161., 1.},         // kTPCCLUSTERS
+  {80., 161., 1.},         // kTPCCROSSEDROWS
+  {0.4, 5., 1.},           // kTPCCHI2
+  {0., 6., 1.}};           // kITSCLUSTERS
 
 // common info string for all configurables
-const std::string ConfigurablesInfo = std::string(": Hist bins, Hist lower edge, Hist upper edge, lower cut, upper cut, cut ON(1)/OFF(-1)");
+const std::string BinningSuffix = std::string("-Binning");
+const std::string CutSuffix = std::string("-Cut");
+const std::string CorrelatorHistPrefix = std::string("CorDepBinning_");
+const std::vector<std::string> CutInfo = {std::string("Low"), std::string("High"), std::string("Option")};
 
 const int MaxHarmonic = 10;
 const int MaxPower = 10;
@@ -145,14 +199,15 @@ inline float abs(float vx, float vy, float vz)
 }
 
 // generice function for checking if the value of a variable passes a cut
-inline bool SurviveCut(std::vector<float> ConfigValue, float Value)
+inline bool SurviveCut(LabeledArray<float> ConfigValue, float Value)
 {
+  uint32_t row = 0;
   bool flag = true;
   // check if the cut is configured to be use in the first place
-  if (ConfigValue.at(kOCUT) > 0.) {
+  if (ConfigValue.get(row, kCUTOPTION) > 0.) {
     // check if the value of the variable is not lower than the lower bound and
     // not not larger than the upper bound
-    if (!(Value > ConfigValue.at(kLCUT) && Value < ConfigValue.at(kUCUT))) {
+    if (!(Value > ConfigValue.get(row, kCUTLOW) && Value < ConfigValue.get(row, kCUTHIGH))) {
       flag = false;
     }
   }
@@ -178,108 +233,215 @@ namespace AR = MultiParticleCorrelationsARTaskGlobalVariables;
 
 struct MultiParticleCorrelationsARTask {
 
-  // event configurables and cuts
-  Configurable<std::vector<float>> cfgVX = {std::string(AR::EventVariableNames[AR::kVX]),
-                                            {400., -2., 2., -1., 1., 1.},
-                                            std::string("Vertex X") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgVY = {std::string(AR::EventVariableNames[AR::kVY]),
-                                            {400., -2., 2., -1., 1., 1.},
-                                            std::string("Vertex Y") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgVZ = {std::string(AR::EventVariableNames[AR::kVZ]),
-                                            {2400., -12., 12., -10., 10., 1.},
-                                            std::string("Vertex Z") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgVABS = {std::string(AR::EventVariableNames[AR::kVABS]),
-                                              {150., 0., 15, 1.e-6, 15., 1.},
-                                              std::string("Vertex distance from origin") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgCEN = {std::string(AR::EventVariableNames[AR::kCEN]),
-                                             {120., 0., 120., 0., 80., 1.},
-                                             std::string("Centrality") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgMULQ = {std::string(AR::EventVariableNames[AR::kMULQ]),
-                                              {3000., 0., 3000., 10., 3000., 1.},
-                                              std::string("Multiplicity (QVector)") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgMULW = {std::string(AR::EventVariableNames[AR::kMULW]),
-                                              {3000., 0., 3000., 10., 3000., 1.},
-                                              std::string("Multiplicity (Weights)") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgMULNC = {std::string(AR::EventVariableNames[AR::kMULNC]),
-                                               {3000., 0., 3000., 10., 3000., 1.},
-                                               std::string("Multiplicity (NumContrib)") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgMULTPC = {std::string(AR::EventVariableNames[AR::kMULTPC]),
-                                                {3000., 0., 3000., 12., 3000., 1.},
-                                                std::string("Multiplicity (TPC)") + AR::ConfigurablesInfo};
-  // write all event configurables into a vector
-  std::vector<Configurable<std::vector<float>>> cfgEvent = {cfgVX,
-                                                            cfgVY,
-                                                            cfgVZ,
-                                                            cfgVABS,
-                                                            cfgCEN,
-                                                            cfgMULQ,
-                                                            cfgMULW,
-                                                            cfgMULNC,
-                                                            cfgMULTPC};
+  Configurable<bool> cfgVerbosity = {"verbose", false, "Set to false to silence all info and warning messages"};
 
-  // track configurables and cuts
-  Configurable<std::vector<float>> cfgPT = {std::string(AR::TrackVariableNames[AR::kPT]),
-                                            {600., 0., 6., 0.2, 5., 1.},
-                                            std::string("pt") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgPHI = {std::string(AR::TrackVariableNames[AR::kPHI]),
-                                             {360., 0., 2. * M_PI, 0., 2. * M_PI, 1.},
-                                             std::string("phi") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgETA = {std::string(AR::TrackVariableNames[AR::kETA]),
-                                             {1000., -1., 1., -0.8, 0.8, 1.},
-                                             std::string("eta") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgCHARGE = {std::string(AR::TrackVariableNames[AR::kCHARGE]),
-                                                {5., -2.5, 2.5, -1.5, 1.5, 1.},
-                                                std::string("charge") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgDCAZ = {std::string(AR::TrackVariableNames[AR::kDCAZ]),
-                                              {100., -4., 4., -3.2, 3.2, 1.},
-                                              std::string("DCA in Z") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgDCAXY = {std::string(AR::TrackVariableNames[AR::kDCAXY]),
-                                               {100., -3., 3., -2.4, 2.4, 1.},
-                                               std::string("DCA in XY") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgTPCCLUSTERS = {std::string(AR::TrackVariableNames[AR::kTPCCLUSTERS]),
-                                                     {160., 0., 160., 80., 161., 1.},
-                                                     std::string("TPC clusters") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgTPCCROSSEDROWS = {std::string(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]),
-                                                        {160., 0., 160., 80., 161., 1.},
-                                                        std::string("TPC crossed rows") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgTPCCHI2 = {std::string(AR::TrackVariableNames[AR::kTPCCHI2]),
-                                                 {500., 0., 5., 0.4, 4., 1.},
-                                                 std::string("TPC chi2") + AR::ConfigurablesInfo};
-  Configurable<std::vector<float>> cfgITSCLUSTERS = {std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]),
-                                                     {6., 0., 6., 0, 7., 1.},
-                                                     std::string("ITS clusters") + AR::ConfigurablesInfo};
-  // write all track configurables into a vector
-  std::vector<Configurable<std::vector<float>>> cfgTrack = {cfgPT,
-                                                            cfgPHI,
-                                                            cfgETA,
-                                                            cfgCHARGE,
-                                                            cfgDCAZ,
-                                                            cfgDCAXY,
-                                                            cfgTPCCLUSTERS,
-                                                            cfgTPCCROSSEDROWS,
-                                                            cfgTPCCHI2,
-                                                            cfgITSCLUSTERS};
+  // event control histogram binning and cuts
+  ConfigurableAxis cfgEventAxisVX{
+    std::string(AR::EventVariableNames[AR::kVX]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kVX)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutVX{
+    std::string(AR::EventVariableNames[AR::kVX]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kVX).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisVY{
+    std::string(AR::EventVariableNames[AR::kVY]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kVY)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutVY{
+    std::string(AR::EventVariableNames[AR::kVY]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kVY).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisVZ{
+    std::string(AR::EventVariableNames[AR::kVZ]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kVZ)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutVZ{
+    std::string(AR::EventVariableNames[AR::kVZ]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kVZ).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisVABS{
+    std::string(AR::EventVariableNames[AR::kVABS]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kVABS)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutVABS{
+    std::string(AR::EventVariableNames[AR::kVABS]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kVABS).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisCEN{
+    std::string(AR::EventVariableNames[AR::kCEN]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kCEN)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutCEN{
+    std::string(AR::EventVariableNames[AR::kCEN]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kCEN).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisMULQ{
+    std::string(AR::EventVariableNames[AR::kMULQ]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kMULQ)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutMULQ{
+    std::string(AR::EventVariableNames[AR::kMULQ]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kMULQ).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisMULW{
+    std::string(AR::EventVariableNames[AR::kMULW]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kMULW)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutMULW{
+    std::string(AR::EventVariableNames[AR::kMULW]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kMULW).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisMULNC{
+    std::string(AR::EventVariableNames[AR::kMULNC]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kMULNC)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutMULNC{
+    std::string(AR::EventVariableNames[AR::kMULNC]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kMULNC).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgEventAxisMULTPC{
+    std::string(AR::EventVariableNames[AR::kMULTPC]) + AR::BinningSuffix,
+    std::move(AR::EventVariableDefaultBins.at(AR::kMULTPC)),
+    ""};
+  Configurable<LabeledArray<float>> cfgEventCutMULTPC{
+    std::string(AR::EventVariableNames[AR::kMULTPC]) + AR::CutSuffix,
+    {AR::EventVariableDefaultCuts.at(AR::kMULTPC).data(), 3, AR::CutInfo},
+    ""};
+  std::vector<ConfigurableAxis> cfgEventBinning = {
+    cfgEventAxisVX,
+    cfgEventAxisVY,
+    cfgEventAxisVZ,
+    cfgEventAxisVABS,
+    cfgEventAxisCEN,
+    cfgEventAxisMULQ,
+    cfgEventAxisMULW,
+    cfgEventAxisMULNC,
+    cfgEventAxisMULTPC};
+
+  // track control histogram binning and cuts
+  ConfigurableAxis cfgTrackAxisPT{
+    std::string(AR::TrackVariableNames[AR::kPT]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kPT)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutPT{
+    std::string(AR::TrackVariableNames[AR::kPT]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kPT).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisPHI{
+    std::string(AR::TrackVariableNames[AR::kPHI]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kPHI)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutPHI{
+    std::string(AR::TrackVariableNames[AR::kPHI]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kPHI).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisETA{
+    std::string(AR::TrackVariableNames[AR::kETA]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kETA)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutETA{
+    std::string(AR::TrackVariableNames[AR::kETA]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kETA).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisCHARGE{
+    std::string(AR::TrackVariableNames[AR::kCHARGE]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kCHARGE)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutCHARGE{
+    std::string(AR::TrackVariableNames[AR::kCHARGE]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kCHARGE).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisDCAZ{
+    std::string(AR::TrackVariableNames[AR::kDCAZ]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kDCAZ)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutDCAZ{
+    std::string(AR::TrackVariableNames[AR::kDCAZ]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kDCAZ).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisDCAXY{
+    std::string(AR::TrackVariableNames[AR::kDCAXY]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kDCAXY)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutDCAXY{
+    std::string(AR::TrackVariableNames[AR::kDCAXY]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kDCAXY).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisTPCCLUSTERS{
+    std::string(AR::TrackVariableNames[AR::kTPCCLUSTERS]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kTPCCLUSTERS)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutTPCCLUSTERS{
+    std::string(AR::TrackVariableNames[AR::kTPCCLUSTERS]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kTPCCLUSTERS).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisTPCCROSSEDROWS{
+    std::string(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kTPCCROSSEDROWS)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutTPCCROSSEDROWS{
+    std::string(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kTPCCROSSEDROWS).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisTPCCHI2{
+    std::string(AR::TrackVariableNames[AR::kTPCCHI2]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kTPCCHI2)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutTPCCHI2{
+    std::string(AR::TrackVariableNames[AR::kTPCCHI2]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kTPCCHI2).data(), 3, AR::CutInfo},
+    ""};
+  ConfigurableAxis cfgTrackAxisITSCLUSTERS{
+    std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]) + AR::BinningSuffix,
+    std::move(AR::TrackVariableDefaultBins.at(AR::kITSCLUSTERS)),
+    ""};
+  Configurable<LabeledArray<float>> cfgTrackCutITSCLUSTERS{
+    std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]) + AR::CutSuffix,
+    {AR::TrackVariableDefaultCuts.at(AR::kITSCLUSTERS).data(), 3, AR::CutInfo},
+    ""};
+  std::vector<ConfigurableAxis> cfgTrackBinning = {
+    cfgTrackAxisPT,
+    cfgTrackAxisPHI,
+    cfgTrackAxisETA,
+    cfgTrackAxisCHARGE,
+    cfgTrackAxisDCAZ,
+    cfgTrackAxisDCAXY,
+    cfgTrackAxisTPCCLUSTERS,
+    cfgTrackAxisTPCCROSSEDROWS,
+    cfgTrackAxisTPCCHI2,
+    cfgTrackAxisITSCLUSTERS};
 
   // configurables for differential analysis of correlators using event variables
-  Configurable<std::vector<float>> cfgINTEGRATED = {std::string(AR::CorEventDepNames[AR::kINTEGRATED]),
-                                                    {1., 0., 1.},
-                                                    AR::CorDepInfo};
-  Configurable<std::vector<float>> cfgMULDEP = {std::string(AR::CorEventDepNames[AR::kMULDEP]),
-                                                {3000., 0., 3000.},
-                                                AR::CorDepInfo};
-  Configurable<std::vector<float>> cfgCENDEP = {std::string(AR::CorEventDepNames[AR::kCENDEP]),
-                                                {120., 0., 120.},
-                                                AR::CorDepInfo};
-  std::vector<Configurable<std::vector<float>>> cfgCorEventDep = {cfgINTEGRATED, cfgMULDEP, cfgCENDEP};
+  ConfigurableAxis cfgCorrelatorAxisINTEGRATED{
+    AR::CorrelatorHistPrefix + std::string(AR::CorEventDepNames[AR::kINTEGRATED]) + AR::BinningSuffix,
+    std::move(AR::CorEventDepDefaultBins.at(AR::kINTEGRATED)),
+    ""};
+  ConfigurableAxis cfgCorrelatorAxisMULDEP{
+    AR::CorrelatorHistPrefix + std::string(AR::CorEventDepNames[AR::kMULDEP]) + AR::BinningSuffix,
+    std::move(AR::CorEventDepDefaultBins.at(AR::kMULDEP)),
+    ""};
+  ConfigurableAxis cfgCorrelatorAxisCENDEP{
+    AR::CorrelatorHistPrefix + std::string(AR::CorEventDepNames[AR::kCENDEP]) + AR::BinningSuffix,
+    std::move(AR::CorEventDepDefaultBins.at(AR::kCENDEP)),
+    ""};
+  std::vector<ConfigurableAxis> cfgCorEventDep = {
+    cfgCorrelatorAxisINTEGRATED,
+    cfgCorrelatorAxisMULDEP,
+    cfgCorrelatorAxisCENDEP};
 
   // configurables for differential analysis of correlators using track variables
-  Configurable<std::vector<float>> cfgPTDEP = {std::string(AR::CorTrackDepNames[AR::kPTDEP]),
-                                               {0.2, 0.34, 0.5, 0.7, 1., 2., 5.},
-                                               AR::CorDepInfo};
-  Configurable<std::vector<float>> cfgETADEP = {std::string(AR::CorTrackDepNames[AR::kETADEP]),
-                                                {-0.8, -0.4, 0., 0.4, 0.8},
-                                                AR::CorDepInfo};
-  std::vector<Configurable<std::vector<float>>> cfgCorTrackDep = {cfgPTDEP, cfgETADEP};
+  ConfigurableAxis cfgCorrelatorAxisPTDEP{
+    AR::CorrelatorHistPrefix + std::string(AR::CorTrackDepNames[AR::kPTDEP]) + AR::BinningSuffix,
+    std::move(AR::CorTrackDepDefaultBins.at(AR::kPTDEP)),
+    ""};
+  ConfigurableAxis cfgCorrelatorAxisETADEP{
+    AR::CorrelatorHistPrefix + std::string(AR::CorTrackDepNames[AR::kETADEP]) + AR::BinningSuffix,
+    std::move(AR::CorTrackDepDefaultBins.at(AR::kETADEP)),
+    ""};
+  std::vector<ConfigurableAxis> cfgCorTrackDep = {
+    cfgCorrelatorAxisPTDEP,
+    cfgCorrelatorAxisETADEP};
 
   // configurable for specifying which symmetric cumulants should be computed
   // the symmetric cumulant is only specified so the appropriate correlators are computed and saved in the output
@@ -287,11 +449,12 @@ struct MultiParticleCorrelationsARTask {
   Configurable<std::vector<int>> cfgSC = {"SymmetricCumulants", {23, 24, 34}, "Symmetric Cumulants to be computed"};
 
   // declare histogram registry
-  HistogramRegistry fRegistry{"MultiParticleCorrelationsARTask",
-                              {},
-                              OutputObjHandlingPolicy::AnalysisObject,
-                              false,
-                              false};
+  HistogramRegistry fRegistry{
+    "MultiParticleCorrelationsARTask",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    false,
+    false};
 
   // declare objects for computing qvectors
   // global object holding the qvectors
@@ -323,63 +486,64 @@ struct MultiParticleCorrelationsARTask {
   void init(InitContext&)
   {
 
-    // add control histograms for event/track observables to registry
+    // add control histograms to registry
     for (int rs = 0; rs < AR::kLAST_RS; rs++) {
       for (int ba = 0; ba < AR::kLAST_BA; ba++) {
 
         // iterate over event configurables
-        for (auto cfg : cfgEvent) {
+        for (int e = 0; e < AR::kLAST_EventVariable; e++) {
           fRegistry.add((std::string(AR::RecoSim[rs]) +
                          std::string("EventControl/") +
                          std::string(AR::BeforeAfter[ba]) +
-                         cfg.name)
+                         std::string(AR::EventVariableNames[e]))
                           .c_str(),
                         "",
                         HistType::kTH1D,
-                        {{static_cast<int>(cfg.value.at(AR::kBIN)),
-                          cfg.value.at(AR::kLEDGE),
-                          cfg.value.at(AR::kUEDGE)}});
+                        {cfgEventBinning.at(e)});
         }
         // iterate over track configurables
-        for (auto cfg : cfgTrack) {
+        for (int t = 0; t < AR::kLAST_TrackVariable; t++) {
           fRegistry.add((std::string(AR::RecoSim[rs]) +
                          std::string("TrackControl/") +
                          std::string(AR::BeforeAfter[ba]) +
-                         cfg.name)
+                         std::string(AR::TrackVariableNames[t]))
                           .c_str(),
                         "",
                         HistType::kTH1D,
-                        {{static_cast<int>(cfg.value.at(AR::kBIN)),
-                          cfg.value.at(AR::kLEDGE),
-                          cfg.value.at(AR::kUEDGE)}});
+                        {cfgTrackBinning.at(t)});
         }
       }
     }
+
     // create histograms for binning the correlators with respect to event variables
     for (int eventDep = 0; eventDep < AR::kLAST_CorEventDep; eventDep++) {
       fEventDepHists[eventDep] = new TH1F(AR::CorEventDepNames[eventDep].c_str(),
                                           AR::CorEventDepNames[eventDep].c_str(),
-                                          cfgCorEventDep.at(eventDep).value.at(AR::kBIN),
-                                          cfgCorEventDep.at(eventDep).value.at(AR::kLEDGE),
-                                          cfgCorEventDep.at(eventDep).value.at(AR::kUEDGE));
+                                          cfgCorEventDep.at(eventDep).value.at(0),
+                                          cfgCorEventDep.at(eventDep).value.at(1),
+                                          cfgCorEventDep.at(eventDep).value.at(2));
     }
-
-    std::vector<std::vector<double>> tmp = {};
+    std::vector<std::vector<double>> tmp1 = {};
+    std::vector<float> tmp2 = {};
     // create histograms for binning the correlators with respect to event variables
     for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
+      // remove the first entry, which is just a 0 indication the variable bin width
+      tmp2.insert(tmp2.begin(), ++cfgCorTrackDep.at(trackDep).value.begin(), cfgCorTrackDep.at(trackDep).value.end());
       fTrackDepHists[trackDep] = new TH1F(AR::CorTrackDepNames[trackDep].c_str(),
                                           AR::CorTrackDepNames[trackDep].c_str(),
-                                          cfgCorTrackDep.at(trackDep).value.size() - 1,
-                                          cfgCorTrackDep.at(trackDep).value.data());
+                                          tmp2.size() - 1,
+                                          tmp2.data());
 
       // push back empty vector, each on corresponding to a different bin of a track variable
       fAzimuthalAnglesTrackDep[trackDep].clear();
-      tmp = {};
-      for (std::size_t j = 0; j < cfgCorTrackDep.at(trackDep).value.size() - 1; j++) {
-        tmp.push_back(std::vector<double>{});
+      tmp1.clear();
+      for (std::size_t j = 0; j < tmp2.size() - 1; j++) {
+        tmp1.push_back(std::vector<double>{});
       }
-      fAzimuthalAnglesTrackDep[trackDep] = tmp;
-      fWeightsTrackDep[trackDep] = tmp;
+      fAzimuthalAnglesTrackDep[trackDep] = tmp1;
+      fWeightsTrackDep[trackDep] = tmp1;
+
+      tmp2.clear();
     }
 
     // create master list holding the results of all the correlators
@@ -393,7 +557,8 @@ struct MultiParticleCorrelationsARTask {
     BookCorrelators();
   }
 
-  std::vector<std::vector<int>> MapSCToCor(int SC)
+  std::vector<std::vector<int>>
+    MapSCToCor(int SC)
   {
     // map symmetric cumulant to the correlators needed for its computation
     // the sc is given as an integer, i.e. 23 -> SC(2,3) -> { {-3,-2,2,3}, {-3,3}, {-2,2} }
@@ -478,18 +643,22 @@ struct MultiParticleCorrelationsARTask {
       for (int eventDep = 0; eventDep < AR::kLAST_CorEventDep; eventDep++) {
         profileEventDep[eventDep] = new TProfile((corListName + AR::CorEventDepNames[eventDep]).c_str(),
                                                  (corListName + AR::CorEventDepNames[eventDep]).c_str(),
-                                                 cfgCorEventDep.at(eventDep).value.at(AR::kBIN),
-                                                 cfgCorEventDep.at(eventDep).value.at(AR::kLEDGE),
-                                                 cfgCorEventDep.at(eventDep).value.at(AR::kUEDGE));
+                                                 cfgCorEventDep.at(eventDep).value.at(0),
+                                                 cfgCorEventDep.at(eventDep).value.at(1),
+                                                 cfgCorEventDep.at(eventDep).value.at(2));
         corList->Add(profileEventDep[eventDep]);
       }
 
       // create profiles for track variables
+      std::vector<float> tmp;
       for (int trackDep = 0; trackDep < AR::kLAST_CorTrackDep; trackDep++) {
+        // remove the first entry, which is just a 0 indication the variable bin width
+        tmp.insert(tmp.begin(), ++cfgCorTrackDep.at(trackDep).value.begin(), cfgCorTrackDep.at(trackDep).value.end());
         profileTrackDep[trackDep] = new TProfile((corListName + AR::CorTrackDepNames[trackDep]).c_str(),
                                                  (corListName + AR::CorTrackDepNames[trackDep]).c_str(),
-                                                 cfgCorTrackDep.at(trackDep).value.size() - 1,
-                                                 cfgCorTrackDep.at(trackDep).value.data());
+                                                 tmp.size() - 1,
+                                                 tmp.data());
+        tmp.clear();
         corList->Add(profileTrackDep[trackDep]);
       }
       // add the list to the master list
@@ -567,13 +736,13 @@ struct MultiParticleCorrelationsARTask {
   {
 
     // Check if event survives event cuts, where we can get the values for the variables immediately
-    if (!(AR::SurviveCut(cfgVX.value, collision.posX()) &&
-          AR::SurviveCut(cfgVY.value, collision.posY()) &&
-          AR::SurviveCut(cfgVZ.value, collision.posZ()) &&
-          AR::SurviveCut(cfgVABS.value, AR::abs(collision.posX(), collision.posY(), collision.posZ())) &&
-          AR::SurviveCut(cfgCEN.value, collision.centRun2V0M()) &&
-          AR::SurviveCut(cfgMULNC.value, collision.numContrib()) &&
-          AR::SurviveCut(cfgMULTPC.value, collision.multTPC()))) {
+    if (!(AR::SurviveCut(cfgEventCutVX.value, collision.posX()) &&
+          AR::SurviveCut(cfgEventCutVY.value, collision.posY()) &&
+          AR::SurviveCut(cfgEventCutVZ.value, collision.posZ()) &&
+          AR::SurviveCut(cfgEventCutVABS.value, AR::abs(collision.posX(), collision.posY(), collision.posZ())) &&
+          AR::SurviveCut(cfgEventCutCEN.value, collision.centRun2V0M()) &&
+          AR::SurviveCut(cfgEventCutMULNC.value, collision.numContrib()) &&
+          AR::SurviveCut(cfgEventCutMULTPC.value, collision.multTPC()))) {
       return false;
     }
 
@@ -589,7 +758,7 @@ struct MultiParticleCorrelationsARTask {
     }
 
     // at last, check if event also passes multiplicity cuts
-    return AR::SurviveCut(cfgMULQ.value, MultiplicityQ) && AR::SurviveCut(cfgMULW.value, MultiplicityW);
+    return AR::SurviveCut(cfgEventCutMULQ.value, MultiplicityQ) && AR::SurviveCut(cfgEventCutMULW.value, MultiplicityW);
   }
 
   // function for checking if track survices trach cuts
@@ -598,16 +767,16 @@ struct MultiParticleCorrelationsARTask {
   {
     // if all SurviveCut return true, the function will return true
     // if at least one fails, it will return false
-    return AR::SurviveCut(cfgPT.value, track.pt()) &&
-           AR::SurviveCut(cfgPHI.value, track.phi()) &&
-           AR::SurviveCut(cfgETA.value, track.eta()) &&
-           AR::SurviveCut(cfgCHARGE.value, track.sign()) &&
-           AR::SurviveCut(cfgDCAZ.value, track.dcaZ()) &&
-           AR::SurviveCut(cfgDCAXY.value, track.dcaXY()) &&
-           AR::SurviveCut(cfgTPCCLUSTERS.value, track.tpcNClsFound()) &&
-           AR::SurviveCut(cfgTPCCROSSEDROWS.value, track.tpcNClsCrossedRows()) &&
-           AR::SurviveCut(cfgTPCCHI2.value, track.tpcChi2NCl()) &&
-           AR::SurviveCut(cfgITSCLUSTERS.value, track.itsNCls());
+    return AR::SurviveCut(cfgTrackCutPT.value, track.pt()) &&
+           AR::SurviveCut(cfgTrackCutPHI.value, track.phi()) &&
+           AR::SurviveCut(cfgTrackCutETA.value, track.eta()) &&
+           AR::SurviveCut(cfgTrackCutCHARGE.value, track.sign()) &&
+           AR::SurviveCut(cfgTrackCutDCAZ.value, track.dcaZ()) &&
+           AR::SurviveCut(cfgTrackCutDCAXY.value, track.dcaXY()) &&
+           AR::SurviveCut(cfgTrackCutTPCCLUSTERS.value, track.tpcNClsFound()) &&
+           AR::SurviveCut(cfgTrackCutTPCCROSSEDROWS.value, track.tpcNClsCrossedRows()) &&
+           AR::SurviveCut(cfgTrackCutTPCCHI2.value, track.tpcChi2NCl()) &&
+           AR::SurviveCut(cfgTrackCutITSCLUSTERS.value, track.itsNCls());
   }
 
   template <typename TrackObject>
@@ -674,6 +843,16 @@ struct MultiParticleCorrelationsARTask {
     int Index;
     for (int eventDep = 0; eventDep < AR::kLAST_CorEventDep; eventDep++) {
       for (auto correlator : fCorrelators) {
+        if (fAzimuthalAnglesAll.size() <= correlator.size()) {
+          if (cfgVerbosity.value) {
+            LOG(warning) << "BEGIN WARNING";
+            LOG(warning) << "Not enough tracks in the event to compute the correlator v_{";
+            std::for_each(correlator.begin(), correlator.end(), [](const auto& e) { LOG(warning) << e << ","; });
+            LOG(warning) << "}!";
+            LOG(warning) << "END WARNING";
+          }
+          continue;
+        }
         // get index of the correlator in fCorrelator list
         Index = fMapCorToIndex[correlator];
         // compute the correlator
@@ -699,13 +878,15 @@ struct MultiParticleCorrelationsARTask {
         for (auto correlator : fCorrelators) {
           // check if there are enough tracks for computing the correlator
           if (fAzimuthalAnglesTrackDep[trackDep].at(bin).size() <= correlator.size()) {
-            LOG(warning) << "BEGIN WARNING";
-            LOG(warning) << "Not enough tracks to compute the correlator v_{";
-            std::for_each(correlator.begin(), correlator.end(), [](const auto& e) { LOG(warning) << e << ","; });
-            LOG(warning) << "}!";
-            LOG(warning) << "Track variable: " << AR::CorTrackDepNames[trackDep];
-            LOG(warning) << "Bin: " << fTrackDepHists[trackDep]->GetBinLowEdge(bin + 1) << " - " << fTrackDepHists[trackDep]->GetBinLowEdge(bin + 2);
-            LOG(warning) << "END WARNING";
+            if (cfgVerbosity.value) {
+              LOG(warning) << "BEGIN WARNING";
+              LOG(warning) << "Not enough tracks in track bin to compute the correlator v_{";
+              std::for_each(correlator.begin(), correlator.end(), [](const auto& e) { LOG(warning) << e << ","; });
+              LOG(warning) << "}!";
+              LOG(warning) << "Track variable: " << AR::CorTrackDepNames[trackDep];
+              LOG(warning) << "Bin: " << fTrackDepHists[trackDep]->GetBinLowEdge(bin + 1) << " - " << fTrackDepHists[trackDep]->GetBinLowEdge(bin + 2);
+              LOG(warning) << "END WARNING";
+            }
             continue;
           }
           Index = fMapCorToIndex[correlator];
@@ -760,7 +941,7 @@ struct MultiParticleCorrelationsARTask {
   {
     // return Qvector from fQvectors array
     if (n > AR::MaxHarmonic || p > AR::MaxPower) {
-      LOG(fatal) << "Harmonic " << n << ">" << AR::MaxHarmonic << " or the power " << p << ">" << AR::MaxPower;
+      LOG(fatal) << "Harmonic " << n << ">" << AR::MaxHarmonic << "(MaxHarmonic) or the power " << p << ">" << AR::MaxPower << "(MaxPower)";
     }
     if (n >= 0) {
       return fQvectors[n][p];
@@ -1127,13 +1308,17 @@ struct MultiParticleCorrelationsARTask {
       }
     }
 
-    LOG(info) << "Process event: " << collision.index();
+    if (cfgVerbosity.value) {
+      LOG(info) << "Process event: " << collision.index();
+    }
 
     FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, fRegistry);
     FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(fRegistry, collision.size(), collision.size());
 
     if (!SurviveEventCuts(collision, tracks)) {
-      LOG(info) << "Event was CUT";
+      if (cfgVerbosity.value) {
+        LOG(info) << "Event was CUT";
+      }
       return;
     }
 
@@ -1143,6 +1328,7 @@ struct MultiParticleCorrelationsARTask {
     for (auto const& track : tracks) {
       // fill track control histograms before track cut
       FillTrackControlHist<AR::kRECO, AR::kBEFORE, TracksInstance::iterator>(track, fRegistry);
+
       if (!SurviveTrackCuts(track)) {
         continue;
       }
