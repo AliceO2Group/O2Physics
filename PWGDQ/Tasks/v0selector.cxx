@@ -473,7 +473,7 @@ struct v0selector {
         pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
         // printf("This is Anti-Lambda candidate.\n");
       }
-      
+
       // printf("posTrackId = %d\n",V0.posTrackId());
       // printf("negTrackId = %d\n",V0.negTrackId());
 
@@ -672,7 +672,6 @@ struct v0selector {
       // printf("setting pidmap[%lld] = %d\n",track.globalIndex(),pidmap[track.globalIndex()]);
       v0bits(pidmap[track.globalIndex()]);
     } // end of track loop
-
 
   } // end of process
 };

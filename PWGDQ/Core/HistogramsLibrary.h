@@ -282,18 +282,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "QuadDCAabsXY", "", false, 100, -0.0, 1.0, VarManager::kQuadDCAabsXY);
 
   } else if (groupStr.Contains("pair_barrel")) {
-    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
+    hm->AddHistogram(histClass, "Mass", "", false, 125, 0.0, 5.0, VarManager::kMass);
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 125, 0.0, 5.0, VarManager::kMass, 100, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 125, -2.0, 2.0, VarManager::kEta, 100, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 100, 0.0, 20.0, VarManager::kMass);
     hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
     if (subGroupStr.Contains("dalitz")) {
+      hm->AddHistogram(histClass, "MassLow", "", false, 500, 0.0, 0.5, VarManager::kMass);
       hm->AddHistogram(histClass, "PsiPair", "", false, 200, -1.5, 1.5, VarManager::kPsiPair);
       hm->AddHistogram(histClass, "PsiPair_DeltaPhi", "", false, 100, -0.5, 0.5, VarManager::kDeltaPhiPair, 100, -1.5, 1.5, VarManager::kPsiPair);
     }
     if (subGroupStr.Contains("vertexing-barrel")) {
-      hm->AddHistogram(histClass, "Lxy", "", false, 200, 0.0, 20.0, VarManager::kVertexingLxy);
-      hm->AddHistogram(histClass, "Lxyz", "", false, 200, 0.0, 20.0, VarManager::kVertexingLxyz);
+      hm->AddHistogram(histClass, "Lxy", "", false, 100, 0.0, 20.0, VarManager::kVertexingLxy);
+      hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 20.0, VarManager::kVertexingLxyz);
       hm->AddHistogram(histClass, "Tauxy", "", false, 100, 0, 0.01, VarManager::kVertexingTauxy);
       hm->AddHistogram(histClass, "LxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyErr);
       hm->AddHistogram(histClass, "LxyzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzErr);

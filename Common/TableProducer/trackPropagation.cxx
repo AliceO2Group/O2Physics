@@ -118,7 +118,6 @@ struct TrackPropagation {
 
   void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const& bcs)
   {
-  
     if (bcs.size() == 0) {
       return;
     }

@@ -202,7 +202,7 @@ o2physics_add_dpl_workflow(reweighting
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
                   COMPONENT_NAME AnalysisTutorial)
 
-#o2physics_add_dpl_workflow(hep-mc
-#                  SOURCES src/hepMC.cxx
-#                  PUBLIC_LINK_LIBRARIES O2::Framework
-#                  COMPONENT_NAME AnalysisTutorial)
+o2physics_add_dpl_workflow(hep-mc
+                  SOURCES src/hepMC.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework
+                  COMPONENT_NAME AnalysisTutorial)

@@ -50,13 +50,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("KineCutFiniteTPC")) {
-    cut->AddCut(GetAnalysisCut("PIDStandardKine"));
-    cut->AddCut(GetAnalysisCut("finiteTPC"));
-    //cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
-    return cut;
-  }  
-
   if (!nameStr.compare("DalitzCut1")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDany"));
@@ -65,13 +58,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("DalitzCut2")) {
-    cut->AddCut(GetAnalysisCut("PIDStandardKine"));
-    cut->AddCut(GetAnalysisCut("SPDany"));
-    cut->AddCut(GetAnalysisCut("electronPIDProtonRej"));
-    return cut;
-  }
-
-  if (!nameStr.compare("DalitzCut3")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDany"));
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
@@ -86,13 +72,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("DalitzCut2SPDfirst")) {
-    cut->AddCut(GetAnalysisCut("PIDStandardKine"));
-    cut->AddCut(GetAnalysisCut("SPDfirst"));
-    cut->AddCut(GetAnalysisCut("electronPIDProtonRej"));
-    return cut;
-  }
-
-  if (!nameStr.compare("DalitzCut3SPDfirst")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
@@ -816,12 +795,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("electronPIDProtonRej")) {
-    cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
-    cut->AddCut(VarManager::kTPCnSigmaPr, -2.0, 2.0, true);
-    return cut;
-  }
-
   if (!nameStr.compare("electronPIDPrKaPiRej")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, -3.0, 3.0, true);
@@ -1030,15 +1003,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kPsiPair, fcutLow, fcutHigh, true, VarManager::kDeltaPhiPair, 0, 0.12);
     return cut;
   }
-  
+
   if (!nameStr.compare("pairDalitz2")) {
-    cut->AddCut(VarManager::kMass, 0.0, 0.15);
-    return cut;
-  }
-  
-  if (!nameStr.compare("pairDalitz3")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
     cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
+    return cut;
+  }  
+
+  if (!nameStr.compare("pairDalitz3")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.15);
     return cut;
   }
 
