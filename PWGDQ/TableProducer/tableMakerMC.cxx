@@ -452,7 +452,7 @@ struct TableMakerMC {
                 break;
               }
             }
-          } 
+          }
 
           // store filtering information
           if (track.isGlobalTrack()) {

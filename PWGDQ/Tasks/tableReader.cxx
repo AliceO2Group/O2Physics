@@ -11,7 +11,6 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -81,8 +80,6 @@ using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
 using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
 using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
-
-
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -831,8 +828,6 @@ struct AnalysisSameEventPairing {
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
   Filter filterBarrelTrackSelected = (aod::dqanalysisflags::isBarrelSelected & 65535) > 0; // Pure Jpsi candidates and not dalitz candidates (one of the 16 first bins is non-null)
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
-
-  Preslice<MyBarrelTracksSelected> perCollision = aod::reducedtrack::reducedeventId;
 
   HistogramManager* fHistMan;
 

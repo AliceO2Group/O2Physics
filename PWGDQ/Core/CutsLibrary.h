@@ -63,7 +63,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
     return cut;
   }
-  
+
   if (!nameStr.compare("DalitzCut1SPDfirst")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
@@ -482,7 +482,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairMassLow3")) {
-    cut->AddCut(GetAnalysisCut("pairMassLow3"));    
+    cut->AddCut(GetAnalysisCut("pairMassLow3"));
     return cut;
   }
 
@@ -490,12 +490,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("pairDalitz1"));
     return cut;
   }
-  
+
   if (!nameStr.compare("pairDalitz2")) {
     cut->AddCut(GetAnalysisCut("pairDalitz2"));
     return cut;
   }
-  
+
   if (!nameStr.compare("pairDalitz3")) {
     cut->AddCut(GetAnalysisCut("pairDalitz3"));
     return cut;
@@ -986,7 +986,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairDalitz1")) {    
+  if (!nameStr.compare("pairDalitz1")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
     cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
     TF1* fcutHigh = new TF1("f1", "[0] - [0]/[1]*x", -1.5, 1.5);
@@ -1001,7 +1001,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
     cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("pairDalitz3")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.15);

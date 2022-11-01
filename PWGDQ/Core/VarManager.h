@@ -895,7 +895,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     double chipair = TMath::ACos((v1.Px()*v2.Px()+v1.Py()*v2.Py()+v1.Pz()*v2.Pz())/v1.P()/v2.P());
     values[kPsiPair] = TMath::ASin((v1.Theta() - v2.Theta())/chipair);
   }
-  
+
   // CosTheta Helicity calculation
   ROOT::Math::Boost boostv12{v12.BoostToCM()};
   ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};

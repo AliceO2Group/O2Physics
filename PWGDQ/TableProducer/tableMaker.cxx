@@ -120,7 +120,7 @@ struct TableMaker {
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
-  
+
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
@@ -336,7 +336,7 @@ struct TableMaker {
         if (!trackTempFilterMap) {
           continue;
         }
-        
+
         uint8_t dalitzMap = uint8_t(0);
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
           for (auto& dalitz : dalitzBits) { // Look for the dalitz bits in dalitzBits table
@@ -362,12 +362,12 @@ struct TableMaker {
             }
           }
         }
-        
+
         trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
 	  trackFilteringTag |= uint64_t(dalitzMap) << 15; //BIT15-...: Dalitz
 	}
-        
+
         // create the track tables
         trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
         trackBarrel(track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
@@ -572,7 +572,7 @@ struct TableMaker {
     for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
       histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
-    fStatsList->Add(histMuons);    
+    fStatsList->Add(histMuons);
   }
 
   // Produce barrel + muon tables -------------------------------------------------------------------------------------------------------------
