@@ -17,6 +17,8 @@
 //    Comments, questions, complaints, suggestions?
 //    Please write to: daiki.sekihata@cern.ch
 //
+#include <array>
+#include <map>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -28,6 +30,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
@@ -35,13 +38,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
-
-#include <Math/Vector4D.h>
-#include <array>
-#include <map>
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -213,17 +210,17 @@ struct v0selector {
       {"hV0Pt", "pT", {HistType::kTH1F, {{100, 0.0f, 10}}}},
       {"hV0EtaPhi", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
-      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
-      {"hV0CosPA_Casc", "hV0CosPA_Casc", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
+      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{50, 0.95f, 1.0f}}}},
+      {"hV0CosPA_Casc", "hV0CosPA_Casc", {HistType::kTH1F, {{50, 0.95f, 1.0f}}}},
       {"hDCAxyPosToPV", "hDCAxyPosToPV", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hDCAxyNegToPV", "hDCAxyNegToPV", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"hDCAV0Dau_Casc", "hDCAV0Dau_Casc", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"hV0APplot", "hV0APplot", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}}},
-      {"hV0PhiV", "hV0PhiV", {HistType::kTH1F, {{100, 0, TMath::Pi()}}}},
-      {"hV0Psi", "hV0Psi", {HistType::kTH1F, {{100, 0, TMath::PiOver2()}}}},
+      {"hV0PhiV", "hV0PhiV", {HistType::kTH2F, {{100, 0, TMath::Pi()}, {100, 0, 0.1}}}},
+      {"hV0Psi", "hV0Psi", {HistType::kTH2F, {{100, 0, TMath::PiOver2()}, {100, 0, 0.1}}}},
       {"hCascCandidate", "hCascCandidate", {HistType::kTH1F, {{10, 0.0, 10.0}}}},
-      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
+      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{50, 0.95f, 1.0f}}}},
       {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"hMassLambda_Casc", "hMassLambda", {HistType::kTH1F, {{100, 1.05, 1.15f}}}},
       {"hMassAntiLambda_Casc", "hAntiMassLambda", {HistType::kTH1F, {{100, 1.05, 1.15f}}}},
@@ -437,8 +434,6 @@ struct v0selector {
       float psipair = psipairv0(pvec0, pvec1, d_bz);
 
       registry.fill(HIST("hV0APplot"), alpha, qtarm);
-      registry.fill(HIST("hV0PhiV"), phiv);
-      registry.fill(HIST("hV0Psi"), psipair);
 
       float mGamma = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
       float mK0S = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
@@ -456,19 +451,21 @@ struct v0selector {
         continue;
       }
 
-      if (v0id == kGamma && mGamma < 0.04 && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 10 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 10) { // photon conversion
+      if (v0id == kGamma && mGamma < 0.04 && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5) { // photon conversion
         pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
         pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
+        registry.fill(HIST("hV0PhiV"), phiv, mGamma);
+        registry.fill(HIST("hV0Psi"), psipair, mGamma);
         // printf("This is photon candidate.\n");
-      } else if (v0id == kK0S && (0.49 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10) { // K0S-> pi pi
+      } else if (v0id == kK0S && (0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) { // K0S-> pi pi
         pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
         pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
         // printf("This is K0S candidate.\n");
-      } else if (v0id == kLambda && (1.112 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 10 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10) { // L->p + pi-
+      } else if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) { // L->p + pi-
         pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
         pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
         // printf("This is Lambda candidate.\n");
-      } else if (v0id == kAntiLambda && (1.112 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 10) { // Lbar -> pbar + pi+
+      } else if (v0id == kAntiLambda && (1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) { // Lbar -> pbar + pi+
         pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
         pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
         // printf("This is Anti-Lambda candidate.\n");
@@ -591,7 +588,7 @@ struct v0selector {
       covV0[5] = covVtxV0(2, 2);
 
       std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
-      const std::array<float, 3> vertex = {(float)v0vtx[0], (float)v0vtx[1], (float)v0vtx[2]};
+      const std::array<float, 3> vertex = {static_cast<float>(v0vtx[0]), static_cast<float>(v0vtx[1]), static_cast<float>(v0vtx[2])};
       const std::array<float, 3> pvecv0 = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
       auto V0CosinePA = RecoDecay::cpa(pVtx, array{pos[0], pos[1], pos[2]}, pvecv0);
       registry.fill(HIST("hV0CosPA_Casc"), V0CosinePA);
@@ -631,16 +628,15 @@ struct v0selector {
       registry.fill(HIST("hMassAntiLambda_Casc"), mAntiLambda);
 
       // for Lambda->p + pi-
-      if (cpos > 0 && cneg < 0 && (1.112 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 10 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10) {
+      if (cpos > 0 && cneg < 0 && (1.112 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
 
         if (casc.bachelor_as<FullTracksExt>().sign() < 0) {
-
-          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 10) {
+          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
             registry.fill(HIST("hMassXiMinus"), mXi);
           }
 
           if (TMath::Abs(mXi - 1.321) > 0.006) {
-            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 10) {
+            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 5) {
               registry.fill(HIST("hMassOmegaMinus"), mOmega);
               if (TMath::Abs(mOmega - 1.672) < 0.006) {
                 pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
@@ -651,13 +647,13 @@ struct v0selector {
       }
 
       // for AntiLambda->pbar + pi+
-      if (cpos > 0 && cneg < 0 && (1.112 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 10) {
+      if (cpos > 0 && cneg < 0 && (1.112 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
         if (casc.bachelor_as<FullTracksExt>().sign() > 0) {
-          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 10) {
+          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
             registry.fill(HIST("hMassXiPlus"), mXi);
           }
           if (TMath::Abs(mXi - 1.321) > 0.006) {
-            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 10) {
+            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 5) {
               registry.fill(HIST("hMassOmegaPlus"), mOmega);
               if (TMath::Abs(mOmega - 1.672) < 0.006) {
                 pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
@@ -720,10 +716,10 @@ struct trackPIDQA {
   {
 
     registry.fill(HIST("hEventCounter"), 1.0); // all
-    // if (!collision.alias()[kINT7]) {
-    //  return;
-    //}
-    // registry.fill(HIST("hEventCounter"), 2.0); //INT7
+    if (!collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), 2.0); // FT0VX i.e. FT0and
     if (collision.numContrib() < 0.5) {
       return;
     }
@@ -739,6 +735,34 @@ struct trackPIDQA {
         continue;
       }
 
+      if (track.tpcNClsCrossedRows() < 100) {
+        continue;
+      }
+
+      if (track.tpcChi2NCl() > 4.0) {
+        continue;
+      }
+
+      if (fabs(track.dcaXY()) > 1.0) {
+        continue;
+      }
+
+      if (fabs(track.dcaZ()) > 3.0) {
+        continue;
+      }
+
+      // if (!(track.itsClusterMap() & uint8_t(1)) && !(track.itsClusterMap() & uint8_t(2)) && !(track.itsClusterMap() & uint8_t(4))) { // ITS2 IBor
+      //   continue;
+      // }
+
+      // if (track.itsNCls() < 2.9) {
+      //   continue;
+      // }
+
+      // if (track.itsChi2NCl() > 36.0) {
+      //   continue;
+      // }
+
       registry.fill(HIST("hTrackPt_all"), track.pt());
       registry.fill(HIST("hTrackEtaPhi_all"), track.phi(), track.eta());
       registry.fill(HIST("h2TPCdEdx_Pin_all"), track.tpcInnerParam(), track.tpcSignal());
@@ -750,19 +774,19 @@ struct trackPIDQA {
         registry.fill(HIST("h2TOFbeta_Pin"), track.tpcInnerParam(), track.beta());
       }
 
-      if (bool(track.pidbit() & (1 << v0selector::kGamma))) {
+      if (static_cast<bool>(track.pidbit() & (1 << v0selector::kGamma))) {
         registry.fill(HIST("h2TPCdEdx_Pin_El"), track.tpcInnerParam(), track.tpcSignal());
         registry.fill(HIST("h2TOFbeta_Pin_El"), track.tpcInnerParam(), track.beta());
         registry.fill(HIST("h2TPCnSigma_Pin_El"), track.tpcInnerParam(), track.tpcNSigmaEl());
         registry.fill(HIST("h2TOFnSigma_Pin_El"), track.tpcInnerParam(), track.tofNSigmaEl());
       }
-      if (bool(track.pidbit() & (1 << v0selector::kK0S))) {
+      if (static_cast<bool>(track.pidbit() & (1 << v0selector::kK0S))) {
         registry.fill(HIST("h2TPCdEdx_Pin_Pi"), track.tpcInnerParam(), track.tpcSignal());
         registry.fill(HIST("h2TOFbeta_Pin_Pi"), track.tpcInnerParam(), track.beta());
         registry.fill(HIST("h2TPCnSigma_Pin_Pi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         registry.fill(HIST("h2TOFnSigma_Pin_Pi"), track.tpcInnerParam(), track.tofNSigmaPi());
       }
-      if (bool(track.pidbit() & (1 << v0selector::kLambda))) {
+      if (static_cast<bool>(track.pidbit() & (1 << v0selector::kLambda))) {
         if (track.sign() > 0) {
           registry.fill(HIST("h2TPCdEdx_Pin_Pr"), track.tpcInnerParam(), track.tpcSignal());
           registry.fill(HIST("h2TOFbeta_Pin_Pr"), track.tpcInnerParam(), track.beta());
@@ -775,7 +799,7 @@ struct trackPIDQA {
           registry.fill(HIST("h2TOFnSigma_Pin_Pi"), track.tpcInnerParam(), track.tofNSigmaPi());
         }
       }
-      if (bool(track.pidbit() & (1 << v0selector::kAntiLambda))) {
+      if (static_cast<bool>(track.pidbit() & (1 << v0selector::kAntiLambda))) {
         if (track.sign() > 0) {
           registry.fill(HIST("h2TPCdEdx_Pin_Pi"), track.tpcInnerParam(), track.tpcSignal());
           registry.fill(HIST("h2TOFbeta_Pin_Pi"), track.tpcInnerParam(), track.beta());
@@ -788,7 +812,7 @@ struct trackPIDQA {
           registry.fill(HIST("h2TOFnSigma_Pin_Pr"), track.tpcInnerParam(), track.tofNSigmaPr());
         }
       }
-      if (bool(track.pidbit() & (1 << v0selector::kOmega))) {
+      if (static_cast<bool>(track.pidbit() & (1 << v0selector::kOmega))) {
         registry.fill(HIST("h2TPCdEdx_Pin_Ka"), track.tpcInnerParam(), track.tpcSignal());
         registry.fill(HIST("h2TOFbeta_Pin_Ka"), track.tpcInnerParam(), track.beta());
         registry.fill(HIST("h2TPCnSigma_Pin_Ka"), track.tpcInnerParam(), track.tpcNSigmaKa());
