@@ -115,7 +115,7 @@ struct TrackExtension {
     /* done for Run2 needs to be implemented                        */
     /* but incorporating here only the GRP object makes appear      */
     /* the double peak in the DCAxy distribution again              */
-    /* so probaly the whole initalization sequence is needed        */
+    /* so probably the whole initialization sequence is needed        */
     /* when a new run (Run3) is processed                           */
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 

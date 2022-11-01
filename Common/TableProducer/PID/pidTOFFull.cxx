@@ -57,7 +57,7 @@ struct tofPidFull {
   // Detector response parameters
   o2::pid::tof::TOFResoParams mRespParams;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
+  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFResoParams", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};

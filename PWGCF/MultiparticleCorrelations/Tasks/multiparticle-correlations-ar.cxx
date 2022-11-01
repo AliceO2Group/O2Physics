@@ -479,7 +479,7 @@ struct MultiParticleCorrelationsARTask {
   std::vector<std::vector<int>> fCorrelators;
 
   // list holding nested lists for each correlator
-  // each list contains the correlatos as a function of event and track variables
+  // each list contains the correlators as a function of event and track variables
   OutputObj<TList> fOutput{"fOutput", OutputObjHandlingPolicy::AnalysisObject};
   TList* fCorrelatorList;
 

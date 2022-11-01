@@ -137,7 +137,7 @@ struct EffPtMFT {
             if (!track.has_mcParticle()) {
               continue;
             }
-            auto particle = track.mcParticle(); // this mcParticle doesn't necessarly come from the right mcCollision
+            auto particle = track.mcParticle(); // this mcParticle doesn't necessarily come from the right mcCollision
             registry.fill(HIST("TracksToPartPtEta"), particle.pt(), particle.eta());
             if ((particle.mcCollisionId() != collision.mcCollision().globalIndex()) || (!particle.isPhysicalPrimary())) {
               if (particle.mcCollisionId() != collision.mcCollision().globalIndex()) {

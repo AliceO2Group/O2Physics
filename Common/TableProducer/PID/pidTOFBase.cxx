@@ -94,14 +94,14 @@ struct tofEventTime {
   // Tables to produce
   Produces<o2::aod::TOFEvTime> tableEvTime;
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
-  static constexpr bool removeTOFEvTimeBias = true; // Flag to substract the Ev. Time bias for low multiplicity events with TOF
+  static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
   static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
 
   bool enableTable = false;
   // Detector response and input parameters
   DetectorResponse response;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
+  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};

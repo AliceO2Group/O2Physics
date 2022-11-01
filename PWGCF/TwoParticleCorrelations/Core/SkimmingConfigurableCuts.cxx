@@ -124,7 +124,7 @@ CutBrickLimit<TValueToFilter>::CutBrickLimit(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{lim{val}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -197,7 +197,7 @@ CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{fnlim{function}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickFnLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -258,7 +258,7 @@ CutBrickThreshold<TValueToFilter>::CutBrickThreshold(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{th{val}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickThreshold<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -331,7 +331,7 @@ CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{fnth{function}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -396,7 +396,7 @@ CutBrickRange<TValueToFilter>::CutBrickRange(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{rg{low,high}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -474,7 +474,7 @@ CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{fnrg{lowfn,highfn}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickFnRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -540,7 +540,7 @@ CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const TString& cutstr)
 /// The cut string should have the structure
 ///    name{xrg{low,high}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -617,7 +617,7 @@ CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const TString& cutstr
 /// The cut string should have the structure
 ///    name{fnxrg{low,high}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {
@@ -692,7 +692,7 @@ CutBrickSelectorMultipleRanges<TValueToFilter>::CutBrickSelectorMultipleRanges(c
 /// The cut string should have the structure
 ///    name{mrg{edge,edge, ...,edge}}
 /// If the cut string is correctly parsed the cut is correctly built
-/// if not a fatal exception is rised
+/// if not a fatal exception is raised
 template <typename TValueToFilter>
 void CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
 {

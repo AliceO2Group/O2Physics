@@ -327,7 +327,7 @@ Bool_t multGlauberNBDFitter::InitializeNpNc()
 //________________________________________________________________
 Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k)
 {
-  //Adaptation of the negative binominal distribution
+  //Adaptation of the negative binomial distribution
   //for non-integer arguments: analytical continuation
   //
   //This function would actually also be fine with integers;

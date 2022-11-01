@@ -287,7 +287,7 @@ struct Pi0QCTask {
     }
   }
 
-  /// \brief Process meson candidates, caluclate invariant mass and pT and fill histograms
+  /// \brief Process meson candidates, calculate invariant mass and pT and fill histograms
   template <typename Clusters>
   void ProcessMesons(collisionEvSelIt const& theCollision, Clusters const& clusters, o2::aod::BCs const& bcs)
   {

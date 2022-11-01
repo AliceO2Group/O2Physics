@@ -795,7 +795,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTRDsignal] = track.trdSignal();
     values[kTOFbeta] = track.beta();
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
-      // NOTE: this is needed temporarilly for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
+      // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
       //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
       //     For this we smear the dE/dx and n-sigmas using a gaus distribution with a width of 3.3%
       //         which is approx the needed amount to get dE/dx to a resolution of 6%
