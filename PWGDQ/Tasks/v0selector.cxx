@@ -161,7 +161,7 @@ struct v0selector {
     const float cutQTL = 0.03;
     const float cutAlphaL[2] = {0.35, 0.7};
     const float cutAlphaAL[2] = {-0.7, -0.35};
-    const float cutAPL[3] = {0.107, -0.69, 0.5}; // parameters fir curved QT cut
+    const float cutAPL[3] = {0.107, -0.69, 0.5}; // parameters for curved QT cut
 
     // Check for Gamma candidates
     if (qt < cutQTG) {
@@ -188,7 +188,7 @@ struct v0selector {
       return kLambda;
     }
 
-    // Check for A-Lambda candidates
+    // Check for AntiLambda candidates
     q = cutAPL[0] * TMath::Sqrt(TMath::Abs(1 - ((alpha - cutAPL[1]) * (alpha - cutAPL[1])) / (cutAPL[2] * cutAPL[2])));
     if ((alpha > cutAlphaAL[0]) && (alpha < cutAlphaAL[1]) && (qt > cutQTL) && (qt < q)) {
       return kAntiLambda;
@@ -203,17 +203,17 @@ struct v0selector {
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
       {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-      {"hMassGamma", "hMassGamma", {HistType::kTH1F, {{100, 0.0f, 0.1f}}}},
-      {"hMassK0S", "hMassK0S", {HistType::kTH1F, {{100, 0.45, 0.55}}}},
-      {"hMassLambda", "hMassLambda", {HistType::kTH1F, {{100, 1.05, 1.15f}}}},
-      {"hMassAntiLambda", "hAntiMassLambda", {HistType::kTH1F, {{100, 1.05, 1.15f}}}},
+      {"hMassGamma", "hMassGamma", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}}}},
+      {"hMassK0S", "hMassK0S", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.45, 0.55}}}},
+      {"hMassLambda", "hMassLambda", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}}}},
+      {"hMassAntiLambda", "hAntiMassLambda", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}}}},
       {"hV0Pt", "pT", {HistType::kTH1F, {{100, 0.0f, 10}}}},
       {"hV0EtaPhi", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
       {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{50, 0.95f, 1.0f}}}},
       {"hV0CosPA_Casc", "hV0CosPA_Casc", {HistType::kTH1F, {{50, 0.95f, 1.0f}}}},
-      {"hDCAxyPosToPV", "hDCAxyPosToPV", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
-      {"hDCAxyNegToPV", "hDCAxyNegToPV", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
+      {"hDCAxyPosToPV", "hDCAxyPosToPV", {HistType::kTH1F, {{1000, -5.0f, 5.0f}}}},
+      {"hDCAxyNegToPV", "hDCAxyNegToPV", {HistType::kTH1F, {{1000, -5.0f, 5.0f}}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"hDCAV0Dau_Casc", "hDCAV0Dau_Casc", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"hV0APplot", "hV0APplot", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}}},
@@ -440,35 +440,38 @@ struct v0selector {
       float mLambda = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
       float mAntiLambda = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
 
-      registry.fill(HIST("hMassGamma"), mGamma);
-      registry.fill(HIST("hMassK0S"), mK0S);
-      registry.fill(HIST("hMassLambda"), mLambda);
-      registry.fill(HIST("hMassAntiLambda"), mAntiLambda);
-
       int v0id = checkV0(pvec0, pvec1);
       if (v0id < 0) {
         // printf("This is not [Gamma/K0S/Lambda/AntiLambda] candidate.\n");
         continue;
       }
 
-      if (v0id == kGamma && mGamma < 0.04 && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5) { // photon conversion
-        pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
-        pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
-        registry.fill(HIST("hV0PhiV"), phiv, mGamma);
-        registry.fill(HIST("hV0Psi"), psipair, mGamma);
-        // printf("This is photon candidate.\n");
-      } else if (v0id == kK0S && (0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) { // K0S-> pi pi
-        pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
-        pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
-        // printf("This is K0S candidate.\n");
-      } else if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) { // L->p + pi-
-        pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
-        pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
-        // printf("This is Lambda candidate.\n");
-      } else if (v0id == kAntiLambda && (1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) { // Lbar -> pbar + pi+
-        pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
-        pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
-        // printf("This is Anti-Lambda candidate.\n");
+      if (v0id == kGamma) { // photon conversion
+        registry.fill(HIST("hMassGamma"), V0radius, mGamma);
+        if (mGamma < 0.04 && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5) {
+          pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
+          pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
+          registry.fill(HIST("hV0PhiV"), phiv, mGamma);
+          registry.fill(HIST("hV0Psi"), psipair, mGamma);
+        }
+      } else if (v0id == kK0S) { // K0S-> pi pi
+        registry.fill(HIST("hMassK0S"), V0radius, mK0S);
+        if ((0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+          pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
+          pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
+        }
+      } else if (v0id == kLambda) { // L->p + pi-
+        registry.fill(HIST("hMassLambda"), V0radius, mLambda);
+        if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+          pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
+          pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
+        }
+      } else if (v0id == kAntiLambda) { // Lbar -> pbar + pi+
+        registry.fill(HIST("hMassAntiLambda"), V0radius, mAntiLambda);
+        if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
+          pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
+          pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
+        }
       }
 
       // printf("posTrackId = %d\n",V0.posTrackId());
@@ -628,7 +631,7 @@ struct v0selector {
       registry.fill(HIST("hMassAntiLambda_Casc"), mAntiLambda);
 
       // for Lambda->p + pi-
-      if (cpos > 0 && cneg < 0 && (1.112 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+      if (cpos > 0 && cneg < 0 && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
 
         if (casc.bachelor_as<FullTracksExt>().sign() < 0) {
           if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
@@ -647,7 +650,7 @@ struct v0selector {
       }
 
       // for AntiLambda->pbar + pi+
-      if (cpos > 0 && cneg < 0 && (1.112 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
+      if (cpos > 0 && cneg < 0 && (1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
         if (casc.bachelor_as<FullTracksExt>().sign() > 0) {
           if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
             registry.fill(HIST("hMassXiPlus"), mXi);
