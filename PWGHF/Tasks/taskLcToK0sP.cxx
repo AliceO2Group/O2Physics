@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskLcK0sP.cxx
+/// \file taskLcToK0sP.cxx
 /// \brief Lc -> K0S+p analysis task
 ///
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
@@ -28,8 +28,8 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::framework::expressions;
 
-/// LcK0sp analysis task
-struct HfTaskLcK0sP {
+/// LcToK0sp analysis task
+struct HfTaskLcToK0sP {
   HistogramRegistry registry{
     "registry",
     {// data
@@ -133,12 +133,12 @@ struct HfTaskLcK0sP {
     }
   }
 
-  PROCESS_SWITCH(HfTaskLcK0sP, processMC, "Process MC data", false);
+  PROCESS_SWITCH(HfTaskLcToK0sP, processMC, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskLcK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
+    adaptAnalysisTask<HfTaskLcToK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
   };
 }

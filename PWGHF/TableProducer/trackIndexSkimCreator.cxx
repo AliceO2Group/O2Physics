@@ -27,7 +27,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
-#include "PWGHF/Utils/utilsDebugLcK0sP.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 #include "DetectorsVertexing/PVertexer.h"      // for PV refit
 #include "ReconstructionDataFormats/Vertex.h"  // for PV refit
 #include "CCDB/BasicCCDBManager.h"             // for PV refit

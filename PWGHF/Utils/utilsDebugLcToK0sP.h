@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file utilsDebugLcK0sP.h
+/// \file utilsDebugLcToK0sP.h
 /// \brief Some utilities to do debugging for the LcK0Sp task
 ///
 /// For example, for: /alice/sim/2020/LHC20l3a/286350/PWGZZ/Run3_Conversion/156_20210308-1000/0001/AO2D.root

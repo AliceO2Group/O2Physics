@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorLcK0sP.cxx
+/// \file candidateSelectorLcToK0sP.cxx
 /// \brief Lc --> K0s+p selection task.
 /// \note based on candidateSelectorD0.cxx
 ///
@@ -20,7 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsDebugLcK0sP.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,7 +39,7 @@ using MyBigTracks = soa::Join<aod::BigTracksPID, aod::McTrackLabels>;
 using MyBigTracks = aod::BigTracksPID;
 #endif
 
-struct HfCandidateSelectorLcK0sP {
+struct HfCandidateSelectorLcToK0sP {
 
   Produces<aod::HFSelLcK0sPCandidate> hfSelLcK0sPCandidate;
 
@@ -360,6 +360,6 @@ struct HfCandidateSelectorLcK0sP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfcg)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcK0sP>(cfcg));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcToK0sP>(cfcg));
   return workflow;
 }
