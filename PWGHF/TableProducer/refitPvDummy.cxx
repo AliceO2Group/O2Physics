@@ -24,7 +24,7 @@ using namespace o2::framework;
 
 #include "Framework/runDataProcessing.h"
 
-struct HFPvRefitSkimConverted {
+struct HfRefitPvDummy {
 
   // Tables to be added
   Produces<aod::HfPvRefitProng2> rowProng2PVrefit;
@@ -67,6 +67,6 @@ struct HFPvRefitSkimConverted {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<HFPvRefitSkimConverted>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<HfRefitPvDummy>(cfgc)};
   return workflow;
 }

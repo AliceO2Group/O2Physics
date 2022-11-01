@@ -30,7 +30,7 @@ using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_x_tojpsipipi;
 
 /// Struct for applying Jpsi selection cuts
-struct HFXToJpsiPiPiCandidateSelector {
+struct HfCandidateSelectorXToJpsiPiPi {
 
   Produces<aod::HFSelXToJpsiPiPiCandidate> hfSelXToJpsiPiPiCandidate;
 
@@ -243,5 +243,5 @@ struct HFXToJpsiPiPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFXToJpsiPiPiCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-x-to-jpsi-pi-pi"})};
+    adaptAnalysisTask<HfCandidateSelectorXToJpsiPiPi>(cfgc, TaskName{"hf-candidate-selector-x-to-jpsi-pi-pi"})};
 }

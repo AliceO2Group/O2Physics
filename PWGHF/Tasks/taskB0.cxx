@@ -104,7 +104,7 @@ struct HfTaskB0 {
 };    // struct
 
 /// B0 MC analysis and fill histograms
-struct HfTaskB0MC {
+struct HfTaskB0Mc {
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "B0 candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
@@ -258,13 +258,13 @@ struct HfTaskB0MC {
       }
     } // gen
   }   // process
-  PROCESS_SWITCH(HfTaskB0MC, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskB0Mc, processMC, "Process MC", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
   workflow.push_back(adaptAnalysisTask<HfTaskB0>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTaskB0MC>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTaskB0Mc>(cfgc));
   return workflow;
 }

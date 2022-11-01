@@ -30,7 +30,7 @@ using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
 
 /// Struct for applying Jpsi selection cuts
-struct HFChicToJpsiGammaCandidateSelector {
+struct HfCandidateSelectorChicToJpsiGamma {
 
   Produces<aod::HFSelChicToJpsiGammaCandidate> hfSelChicToJpsiGammaCandidate;
 
@@ -231,5 +231,5 @@ struct HFChicToJpsiGammaCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFChicToJpsiGammaCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-chic-to-jpsi-gamma"})};
+    adaptAnalysisTask<HfCandidateSelectorChicToJpsiGamma>(cfgc, TaskName{"hf-candidate-selector-chic-to-jpsi-gamma"})};
 }

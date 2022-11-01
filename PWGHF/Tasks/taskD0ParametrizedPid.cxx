@@ -38,7 +38,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Fills MC histograms.
-struct TaskD0parametrizedPIDMC {
+struct HfTaskD0ParametrizedPid {
   HistogramRegistry registry{
     "registry",
     {{"hGenPtVsY", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
@@ -159,6 +159,6 @@ struct TaskD0parametrizedPIDMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<TaskD0parametrizedPIDMC>(cfgc, TaskName{"hf-task-d0-parametrizedPID-mc"}));
+  workflow.push_back(adaptAnalysisTask<HfTaskD0ParametrizedPid>(cfgc, TaskName{"hf-task-d0-parametrizedPID-mc"}));
   return workflow;
 }

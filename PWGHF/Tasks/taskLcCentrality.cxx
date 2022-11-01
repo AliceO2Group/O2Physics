@@ -37,7 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Λc± → p± K∓ π± analysis task
-struct TaskLcCentrality {
+struct HfTaskLcCentrality {
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
@@ -112,7 +112,7 @@ struct TaskLcCentrality {
 };
 
 /// Fills MC histograms.
-struct TaskLcCentralityMC {
+struct HfTaskLcCentralityMc {
   HistogramRegistry registry{
     "registry",
     {{"hCPARecSig", "3-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
@@ -195,10 +195,10 @@ struct TaskLcCentralityMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TaskLcCentrality>(cfgc, TaskName{"hf-task-lc-centrality"})};
+    adaptAnalysisTask<HfTaskLcCentrality>(cfgc, TaskName{"hf-task-lc-centrality"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskLcCentralityMC>(cfgc, TaskName{"hf-task-lc-centrality-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfTaskLcCentralityMc>(cfgc, TaskName{"hf-task-lc-centrality-mc"}));
   }
   return workflow;
 }

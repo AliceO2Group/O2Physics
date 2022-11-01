@@ -29,7 +29,7 @@ using namespace o2::aod::hf_cand_prong3;
 #include "Framework/runDataProcessing.h"
 
 /// D± analysis task
-struct TaskDPlus {
+struct HfTaskDplus {
   HistogramRegistry registry{
     "registry",
     {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -211,10 +211,10 @@ struct TaskDPlus {
       }
     }
   }
-  PROCESS_SWITCH(TaskDPlus, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskDplus, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskDPlus>(cfgc, TaskName{"hf-task-dplus"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskDplus>(cfgc, TaskName{"hf-task-dplus"})};
 }

@@ -40,7 +40,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// chi_c1(1P) analysis task
-struct TaskChic {
+struct HfTaskChic {
   HistogramRegistry registry{
     "registry",
     {{"hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
@@ -101,7 +101,7 @@ struct TaskChic {
   }   // process
 };    // struct
 
-struct TaskChicMC {
+struct HfTaskChicMc {
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "2-prong candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
@@ -228,10 +228,10 @@ struct TaskChicMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TaskChic>(cfgc, TaskName{"hf-task-chic"})};
+    adaptAnalysisTask<HfTaskChic>(cfgc, TaskName{"hf-task-chic"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskChicMC>(cfgc, TaskName{"hf-task-chic-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfTaskChicMc>(cfgc, TaskName{"hf-task-chic-mc"}));
   }
   return workflow;
 }

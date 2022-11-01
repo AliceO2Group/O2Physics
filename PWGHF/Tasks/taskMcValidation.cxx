@@ -57,7 +57,7 @@ DECLARE_SOA_TABLE(CollWithHFSignal, "AOD", "COLLWHFSIGNAL", //!
                   HasHFsignal);
 } // namespace o2::aod
 
-struct AddAmbiguousTrackInfo {
+struct HfTaskMcValidationAddAmbiguousTrackInfo {
 
   Produces<o2::aod::TracksWithAmbiguousCollisionInfo> trackWithAmbiguousInfo;
   using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
@@ -117,7 +117,7 @@ struct AddAmbiguousTrackInfo {
 ///             J/psi   → e∓ e±
 /// - Momentum Conservation for these particles
 
-struct ValidationGenLevel {
+struct HfTaskMcValidationGen {
 
   Produces<o2::aod::CollWithHFSignal> collWithHFSignal;
 
@@ -348,7 +348,7 @@ struct ValidationGenLevel {
 /// J/psi   → e∓ e±
 ///   - Gen-Rec Level Momentum Difference per component;
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
-struct ValidationRecLevel {
+struct HfTaskMcValidationRec {
 
   Configurable<bool> checkAmbiguousTracksWithHFEventsOnly{"checkAmbiguousTracksWithHFEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
 
@@ -720,8 +720,8 @@ struct ValidationRecLevel {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<AddAmbiguousTrackInfo>(cfgc),
-    adaptAnalysisTask<ValidationGenLevel>(cfgc, TaskName{"hf-task-mc-validation-gen"}),
-    adaptAnalysisTask<ValidationRecLevel>(cfgc, TaskName{"hf-task-mc-validation-rec"})};
+    adaptAnalysisTask<HfTaskMcValidationAddAmbiguousTrackInfo>(cfgc),
+    adaptAnalysisTask<HfTaskMcValidationGen>(cfgc, TaskName{"hf-task-mc-validation-gen"}),
+    adaptAnalysisTask<HfTaskMcValidationRec>(cfgc, TaskName{"hf-task-mc-validation-rec"})};
   return workflow;
 }

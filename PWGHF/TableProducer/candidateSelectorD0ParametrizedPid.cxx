@@ -41,13 +41,13 @@ DECLARE_SOA_INDEX_COLUMN(RICH, rich);
 DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
 } // namespace o2::aod
 
-struct richIndexBuilder { // Builder of the RICH-track index linkage
+struct HfCandidateSelectorD0ParametrizedPidRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
   void init(o2::framework::InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
-struct HFD0CandidateSelectorparametrizedPID {
+struct HfCandidateSelectorD0ParametrizedPid {
   Produces<aod::HFSelD0CandidateparametrizedPID> hfSelD0CandidateparametrizedPID;
   Configurable<double> d_etaperfectPID{"d_etaperfectPID", 1.75, "Eta cut for perfect PID"};
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
@@ -349,7 +349,7 @@ struct HFD0CandidateSelectorparametrizedPID {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFD0CandidateSelectorparametrizedPID>(cfgc, TaskName{"hf-candidate-selector-d0-parametrizedPID"}));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0ParametrizedPidRichIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0ParametrizedPid>(cfgc, TaskName{"hf-candidate-selector-d0-parametrizedPID"}));
   return workflow;
 }

@@ -29,7 +29,7 @@ using namespace o2::analysis::hf_cuts_d0_topik;
 #include "Framework/runDataProcessing.h"
 
 /// D0 analysis task
-struct TaskD0 {
+struct HfTaskD0 {
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -352,10 +352,10 @@ struct TaskD0 {
     }
   }
 
-  PROCESS_SWITCH(TaskD0, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskD0, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskD0>(cfgc, TaskName{"hf-task-d0"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskD0>(cfgc, TaskName{"hf-task-d0"})};
 }

@@ -41,13 +41,13 @@ DECLARE_SOA_INDEX_COLUMN(FRICH, frich);
 DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::TrackId, indices::FRICHId);
 } // namespace o2::aod
 
-struct richIndexBuilder { // Builder of the RICH-track index linkage
+struct HfCandidateSelectorD0Alice3ForwardRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::FRICHTracksIndex> indF;
   void init(o2::framework::InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
-struct HFD0CandidateSelectorALICE3Forward {
+struct HfCandidateSelectorD0Alice3Forward {
   Produces<aod::HFSelD0CandidateALICE3Forward> hfSelD0CandidateALICE3Forward;
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
@@ -253,7 +253,7 @@ struct HFD0CandidateSelectorALICE3Forward {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFD0CandidateSelectorALICE3Forward>(cfgc, TaskName{"hf-candidate-selector-d0-ALICE3-Forward"}));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3ForwardRichIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3Forward>(cfgc, TaskName{"hf-candidate-selector-d0-ALICE3-Forward"}));
   return workflow;
 }

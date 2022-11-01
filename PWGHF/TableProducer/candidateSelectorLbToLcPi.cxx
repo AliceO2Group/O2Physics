@@ -29,7 +29,7 @@ using namespace o2::analysis;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_lb_tolcpi;
 
-struct HfLbToLcPiCandidateSelector {
+struct HfCandidateSelectorLbToLcPi {
   Produces<aod::HFSelLbToLcPiCandidate> hfSelLbToLcPiCandidate;
 
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
@@ -161,6 +161,6 @@ struct HfLbToLcPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfLbToLcPiCandidateSelector>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLbToLcPi>(cfgc));
   return workflow;
 }

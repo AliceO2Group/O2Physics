@@ -41,13 +41,13 @@ DECLARE_SOA_INDEX_COLUMN(RICH, rich);
 DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
 } // namespace o2::aod
 
-struct richIndexBuilder { // Builder of the RICH-track index linkage
+struct HfCandidateSelectorD0Alice3BarrelRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
   void init(o2::framework::InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
-struct HFD0CandidateSelectorALICE3Barrel {
+struct HfCandidateSelectorD0Alice3Barrel {
   Produces<aod::HFSelD0CandidateALICE3Barrel> hfSelD0CandidateALICE3Barrel;
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
@@ -309,7 +309,7 @@ struct HFD0CandidateSelectorALICE3Barrel {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFD0CandidateSelectorALICE3Barrel>(cfgc, TaskName{"hf-candidate-selector-d0-ALICE3-Barrel"}));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3BarrelRichIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3Barrel>(cfgc, TaskName{"hf-candidate-selector-d0-ALICE3-Barrel"}));
   return workflow;
 }

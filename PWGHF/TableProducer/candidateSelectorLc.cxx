@@ -28,7 +28,7 @@ using namespace o2::aod::hf_cand_prong3;
 using namespace o2::analysis::hf_cuts_lc_topkpi;
 
 /// Struct for applying Lc selection cuts
-struct HFLcCandidateSelector {
+struct HfCandidateSelectorLc {
   Produces<aod::HFSelLcCandidate> hfSelLcCandidate;
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
@@ -290,5 +290,5 @@ struct HFLcCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFLcCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-lc"})};
+    adaptAnalysisTask<HfCandidateSelectorLc>(cfgc, TaskName{"hf-candidate-selector-lc"})};
 }

@@ -42,13 +42,13 @@ DECLARE_SOA_INDEX_COLUMN(RICH, rich);
 DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
 } // namespace o2::aod
 
-struct richIndexBuilder { // Builder of the RICH-track index linkage
+struct HfCandidateSelectorLcParametrizedPidRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
   void init(o2::framework::InitContext&) {}
 };
 
 /// Struct for applying Lc selection cuts
-struct HFLcCandidateSelectorparametrizedPID {
+struct HfCandidateSelectorLcParametrizedPid {
   Produces<aod::HFSelLcCandidateparametrizedPID> hfSelLcCandidateparametrizedPID;
   Configurable<double> d_etaperfectPID{"d_etaperfectPID", 1.75, "Eta cut for perfect PID"};
   Configurable<double> d_normaliseddecaylengthxyCand{"d_normaliseddecaylengthxyCand", 3., "Normalised decay length"};
@@ -346,7 +346,7 @@ struct HFLcCandidateSelectorparametrizedPID {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFLcCandidateSelectorparametrizedPID>(cfgc, TaskName{"hf-candidate-selector-lc-parametrizedPID"}));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcParametrizedPidRichIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcParametrizedPid>(cfgc, TaskName{"hf-candidate-selector-lc-parametrizedPID"}));
   return workflow;
 }

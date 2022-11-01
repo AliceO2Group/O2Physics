@@ -34,7 +34,7 @@ using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
 /// Reconstruction of B0 candidates
-struct HFCandidateCreatorB0 {
+struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
@@ -290,13 +290,13 @@ struct HFCandidateCreatorB0 {
 };        // struct
 
 /// Extends the base table with expression columns.
-struct HFCandidateCreatorB0Expressions {
+struct HfCandidateCreatorB0Expressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
-struct HFCandidateCreatorB0MC {
+struct HfCandidateCreatorB0Mc {
   Produces<aod::HfCandB0MCRec> rowMCMatchRec; // table defined in CandidateReconstructionTables.h
   Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in CandidateReconstructionTables.h
 
@@ -359,14 +359,14 @@ struct HFCandidateCreatorB0MC {
       rowMCMatchGen(flag, origin);
     }
   }
-  PROCESS_SWITCH(HFCandidateCreatorB0MC, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorB0Mc, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HFCandidateCreatorB0>(cfgc),
-    adaptAnalysisTask<HFCandidateCreatorB0Expressions>(cfgc)};
-  workflow.push_back(adaptAnalysisTask<HFCandidateCreatorB0MC>(cfgc));
+    adaptAnalysisTask<HfCandidateCreatorB0>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorB0Expressions>(cfgc)};
+  workflow.push_back(adaptAnalysisTask<HfCandidateCreatorB0Mc>(cfgc));
   return workflow;
 }

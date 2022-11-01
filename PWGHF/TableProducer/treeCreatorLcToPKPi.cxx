@@ -175,7 +175,7 @@ DECLARE_SOA_TABLE(HfCandProng3FullParticles, "AOD", "HFCANDP3FullP",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct CandidateTreeWriter {
+struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandProng3Full> rowCandidateFull;
   Produces<o2::aod::HfCandProng3FullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandProng3FullParticles> rowCandidateFullParticles;
@@ -313,7 +313,7 @@ struct CandidateTreeWriter {
       }
     }
   }
-  PROCESS_SWITCH(CandidateTreeWriter, processMC, "Process MC tree writer", true);
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMC, "Process MC tree writer", true);
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate> const& candidates,
@@ -426,12 +426,12 @@ struct CandidateTreeWriter {
       fillTable(1, candidate.isSelLcpiKp(), InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
     }
   }
-  PROCESS_SWITCH(CandidateTreeWriter, processData, "Process data tree writer", false);
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processData, "Process data tree writer", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<CandidateTreeWriter>(cfgc, TaskName{"hf-tree-creator-lc-to-p-k-pi"}));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorLcToPKPi>(cfgc, TaskName{"hf-tree-creator-lc-to-p-k-pi"}));
   return workflow;
 }

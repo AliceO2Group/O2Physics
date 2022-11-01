@@ -30,7 +30,7 @@ using namespace o2::aod::hf_cand_prong2;
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
-struct HFCandidateCreator2Prong {
+struct HfCandidateCreator2Prong {
   Produces<aod::HfCandProng2Base> rowCandidateBase;
 
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
@@ -209,7 +209,7 @@ struct HFCandidateCreator2Prong {
 };
 
 /// Extends the base table with expression columns.
-struct HFCandidateCreator2ProngExpressions {
+struct HfCandidateCreator2ProngExpressions {
   Produces<aod::HfCandProng2MCRec> rowMCMatchRec;
   Produces<aod::HfCandProng2MCGen> rowMCMatchGen;
 
@@ -306,12 +306,12 @@ struct HFCandidateCreator2ProngExpressions {
     }
   }
 
-  PROCESS_SWITCH(HFCandidateCreator2ProngExpressions, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFCandidateCreator2Prong>(cfgc, TaskName{"hf-cand-creator-2prong"}),
-    adaptAnalysisTask<HFCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-cand-creator-2prong-expressions"})};
+    adaptAnalysisTask<HfCandidateCreator2Prong>(cfgc, TaskName{"hf-cand-creator-2prong"}),
+    adaptAnalysisTask<HfCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-cand-creator-2prong-expressions"})};
 }

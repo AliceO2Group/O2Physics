@@ -40,7 +40,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// X(3872) analysis task
-struct TaskX {
+struct HfTaskX {
   HistogramRegistry registry{
     "registry",
     {{"hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
@@ -101,7 +101,7 @@ struct TaskX {
   }   // process
 };    // struct
 
-struct TaskXMC {
+struct HfTaskXMc {
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "3-prong candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
@@ -233,10 +233,10 @@ struct TaskXMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TaskX>(cfgc, TaskName{"hf-task-x"})};
+    adaptAnalysisTask<HfTaskX>(cfgc, TaskName{"hf-task-x"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskXMC>(cfgc, TaskName{"hf-task-x-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfTaskXMc>(cfgc, TaskName{"hf-task-x-mc"}));
   }
   return workflow;
 }

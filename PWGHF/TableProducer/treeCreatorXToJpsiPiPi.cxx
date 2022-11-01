@@ -137,7 +137,7 @@ DECLARE_SOA_TABLE(HfCandXFullParticles, "AOD", "HFCANDXFullP",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorXTojpsipipi {
+struct HfTreeCreatorXToJpsiPiPi {
   Produces<o2::aod::HfCandXFull> rowCandidateFull;
   Produces<o2::aod::HfCandXFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXFullParticles> rowCandidateFullParticles;
@@ -252,6 +252,6 @@ struct HfTreeCreatorXTojpsipipi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HfTreeCreatorXTojpsipipi>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorXToJpsiPiPi>(cfgc));
   return workflow;
 }

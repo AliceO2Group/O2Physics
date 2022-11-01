@@ -27,7 +27,7 @@ using namespace o2::aod::hf_cand_xicc;
 using namespace o2::analysis::hf_cuts_xicc_topkpipi;
 
 /// Struct for applying Xicc selection cuts
-struct HfXiccToPKPiPiCandidateSelector {
+struct HfCandidateSelectorXiccToPKPiPi {
   Produces<aod::HFSelXiccToPKPiPiCandidate> hfSelXiccToPKPiPiCandidate;
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
@@ -178,5 +178,5 @@ struct HfXiccToPKPiPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfXiccToPKPiPiCandidateSelector>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorXiccToPKPiPi>(cfgc)};
 }

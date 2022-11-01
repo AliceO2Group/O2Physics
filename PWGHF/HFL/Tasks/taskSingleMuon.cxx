@@ -56,7 +56,7 @@ constexpr static uint32_t gTrackMCFillMap(VarManager::ObjTypes::ParticleMC);
 /// Defines the histograms for classes required in analysis.
 void defineHistograms(HistogramManager*, TString);
 
-struct HfmEventSelection {
+struct HfTaskSingleMuonEventSelection {
   Configurable<bool> applySoftwareTrigger{"appllySoftwareTrigger", false, "whether to apply the software trigger"};
   Configurable<int> softwareTrigger{"softwareTrigger", VarManager::kIsMuonSingleLowPt7, "software trigger flag"};
   Configurable<bool> applyCutZVtx{"applyCutZVtx", false, "whether to apply the VtxZ cut"};
@@ -119,11 +119,11 @@ struct HfmEventSelection {
     runEventSel<gEventFillMap>(event, bcs);
   }
 
-  PROCESS_SWITCH(HfmEventSelection, processEvent, "run event selection with real data", true);
-  PROCESS_SWITCH(HfmEventSelection, processEventMC, "run event selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEvent, "run event selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMC, "run event selection with MC data", false);
 };
 
-struct MuonSelection {
+struct HfTaskSingleMuonSelection {
   Configurable<std::string> muonCuts{"muonCuts", "muonQualityCuts", "muon selection"};
 
   float* values;
@@ -286,15 +286,15 @@ struct MuonSelection {
     runMuonSelMC<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
   }
 
-  PROCESS_SWITCH(MuonSelection, processMuon, "run muon selection with real data", true);
-  PROCESS_SWITCH(MuonSelection, processMuonMC, "run muon selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMC, "run muon selection with MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfmEventSelection>(cfgc),
-    adaptAnalysisTask<MuonSelection>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuonEventSelection>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuonSelection>(cfgc),
   };
 }
 

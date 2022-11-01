@@ -41,7 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of Λb candidates
-struct HFCandidateCreatorLb {
+struct HfCandidateCreatorLb {
   Produces<aod::HfCandLbBase> rowCandidateBase;
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
@@ -211,13 +211,13 @@ struct HFCandidateCreatorLb {
 };      // struct
 
 /// Extends the base table with expression columns.
-struct HFCandidateCreatorLbExpressions {
+struct HfCandidateCreatorLbExpressions {
   Spawns<aod::HfCandLbExt> rowCandidateLb;
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
-struct HFCandidateCreatorLbMC {
+struct HfCandidateCreatorLbMc {
   Produces<aod::HfCandLbMCRec> rowMCMatchRec;
   Produces<aod::HfCandLbMCGen> rowMCMatchGen;
 
@@ -285,11 +285,11 @@ struct HFCandidateCreatorLbMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HFCandidateCreatorLb>(cfgc, TaskName{"hf-cand-creator-lb"}),
-    adaptAnalysisTask<HFCandidateCreatorLbExpressions>(cfgc, TaskName{"hf-cand-creator-lb-expressions"})};
+    adaptAnalysisTask<HfCandidateCreatorLb>(cfgc, TaskName{"hf-cand-creator-lb"}),
+    adaptAnalysisTask<HfCandidateCreatorLbExpressions>(cfgc, TaskName{"hf-cand-creator-lb-expressions"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorLbMC>(cfgc, TaskName{"hf-cand-creator-lb-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorLbMc>(cfgc, TaskName{"hf-cand-creator-lb-mc"}));
   }
   return workflow;
 }

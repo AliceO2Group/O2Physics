@@ -39,7 +39,7 @@ using MyBigTracks = soa::Join<aod::BigTracksPID, aod::McTrackLabels>;
 using MyBigTracks = aod::BigTracksPID;
 #endif
 
-struct HfLcTok0spCandidateSelector {
+struct HfCandidateSelectorLcK0sP {
 
   Produces<aod::HFSelLcK0sPCandidate> hfSelLcK0sPCandidate;
 
@@ -360,6 +360,6 @@ struct HfLcTok0spCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfcg)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfLcTok0spCandidateSelector>(cfcg));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcK0sP>(cfcg));
   return workflow;
 }

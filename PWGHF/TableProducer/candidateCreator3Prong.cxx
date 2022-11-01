@@ -36,7 +36,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
-struct HFCandidateCreator3Prong {
+struct HfCandidateCreator3Prong {
   Produces<aod::HfCandProng3Base> rowCandidateBase;
 
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
@@ -222,7 +222,7 @@ struct HFCandidateCreator3Prong {
 };
 
 /// Extends the base table with expression columns.
-struct HFCandidateCreator3ProngExpressions {
+struct HfCandidateCreator3ProngExpressions {
   Produces<aod::HfCandProng3MCRec> rowMCMatchRec;
   Produces<aod::HfCandProng3MCGen> rowMCMatchGen;
 
@@ -382,12 +382,12 @@ struct HFCandidateCreator3ProngExpressions {
     }
   }
 
-  PROCESS_SWITCH(HFCandidateCreator3ProngExpressions, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreator3ProngExpressions, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFCandidateCreator3Prong>(cfgc, TaskName{"hf-cand-creator-3prong"}),
-    adaptAnalysisTask<HFCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-cand-creator-3prong-expressions"})};
+    adaptAnalysisTask<HfCandidateCreator3Prong>(cfgc, TaskName{"hf-cand-creator-3prong"}),
+    adaptAnalysisTask<HfCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-cand-creator-3prong-expressions"})};
 }

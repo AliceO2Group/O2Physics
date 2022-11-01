@@ -42,7 +42,7 @@ using MyBigTracks = aod::BigTracks;
 #endif
 
 /// Reconstruction of heavy-flavour cascade decay candidates
-struct HFCandidateCreatorCascade {
+struct HfCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
   Configurable<double> bZ{"bZ", 5., "magnetic field"};
@@ -206,7 +206,7 @@ struct HFCandidateCreatorCascade {
 };
 
 /// Performs MC matching.
-struct HFCandidateCreatorCascadeMC {
+struct HfCandidateCreatorCascadeMc {
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
   Produces<aod::HfCandCascadeMCGen> rowMCMatchGen;
 
@@ -291,12 +291,12 @@ struct HFCandidateCreatorCascadeMC {
     }
   }
 
-  PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processMC, "Process MC data", false);
+  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMC, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFCandidateCreatorCascade>(cfgc, TaskName{"hf-cand-creator-cascade"}),
-    adaptAnalysisTask<HFCandidateCreatorCascadeMC>(cfgc, TaskName{"hf-cand-creator-cascade-mc"})};
+    adaptAnalysisTask<HfCandidateCreatorCascade>(cfgc, TaskName{"hf-cand-creator-cascade"}),
+    adaptAnalysisTask<HfCandidateCreatorCascadeMc>(cfgc, TaskName{"hf-cand-creator-cascade-mc"})};
 }

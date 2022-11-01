@@ -29,7 +29,7 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_b0_todpi; // from SelectorCuts.h
 // using namespace o2::analysis::hf_cuts_dplus_topikpi;  // used if we apply D mass cut
 
-struct HfB0ToDPiCandidateSelector {
+struct HfCandidateSelectorB0ToDPi {
   Produces<aod::HFSelB0ToDPiCandidate> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
 
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
@@ -158,6 +158,6 @@ struct HfB0ToDPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfB0ToDPiCandidateSelector>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorB0ToDPi>(cfgc));
   return workflow;
 }

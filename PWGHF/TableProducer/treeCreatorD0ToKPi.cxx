@@ -146,7 +146,7 @@ DECLARE_SOA_TABLE(HfCandProng2FullParticles, "AOD", "HFCANDP2FullP",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct CandidateTreeWriter {
+struct HfTreeCreatorD0ToKPi {
   Produces<o2::aod::HfCandProng2Full> rowCandidateFull;
   Produces<o2::aod::HfCandProng2FullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandProng2FullParticles> rowCandidateFullParticles;
@@ -267,6 +267,6 @@ struct CandidateTreeWriter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<CandidateTreeWriter>(cfgc, TaskName{"hf-tree-creator-d0-to-k-pi"}));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorD0ToKPi>(cfgc, TaskName{"hf-tree-creator-d0-to-k-pi"}));
   return workflow;
 }

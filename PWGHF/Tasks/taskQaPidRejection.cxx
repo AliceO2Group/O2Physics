@@ -47,7 +47,7 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
                              hf_track_index_alice3_pid::MIDId);
 } // namespace o2::aod
 
-struct Alice3PidIndexBuilder {
+struct HfTaskQaPidRejectionAlice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
   void init(o2::framework::InitContext&) {}
 };
@@ -72,7 +72,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Task to QA the efficiency of a particular particle defined by particlePDG
 template <o2::track::pid_constants::ID particle>
-struct QaTrackingRejection {
+struct HfTaskQaPidRejection {
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
@@ -246,7 +246,7 @@ struct QaTrackingRejection {
   }
 };
 
-struct QaRejectionGeneral {
+struct HfTaskQaPidRejectionGeneral {
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   // Cuts
   Configurable<float> etaMaxSel{"etaMaxSel", 1.44, "Max #eta single track"};
@@ -503,22 +503,22 @@ struct QaRejectionGeneral {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w;
-  w.push_back(adaptAnalysisTask<Alice3PidIndexBuilder>(cfgc));
+  w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionAlice3PidIndexBuilder>(cfgc));
   if (cfgc.options().get<int>("rej-el")) {
-    w.push_back(adaptAnalysisTask<QaTrackingRejection<o2::track::PID::Electron>>(cfgc, TaskName{"qa-tracking-rejection-electron"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Electron>>(cfgc, TaskName{"qa-tracking-rejection-electron"}));
   }
   if (cfgc.options().get<int>("rej-ka")) {
-    w.push_back(adaptAnalysisTask<QaTrackingRejection<o2::track::PID::Kaon>>(cfgc, TaskName{"qa-tracking-rejection-kaon"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Kaon>>(cfgc, TaskName{"qa-tracking-rejection-kaon"}));
   }
   if (cfgc.options().get<int>("rej-pr")) {
-    w.push_back(adaptAnalysisTask<QaTrackingRejection<o2::track::PID::Proton>>(cfgc, TaskName{"qa-tracking-rejection-proton"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Proton>>(cfgc, TaskName{"qa-tracking-rejection-proton"}));
   }
   if (cfgc.options().get<int>("rej-mu")) {
-    w.push_back(adaptAnalysisTask<QaTrackingRejection<o2::track::PID::Muon>>(cfgc, TaskName{"qa-tracking-rejection-mu"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Muon>>(cfgc, TaskName{"qa-tracking-rejection-mu"}));
   }
   if (cfgc.options().get<int>("rej-pi")) {
-    w.push_back(adaptAnalysisTask<QaTrackingRejection<o2::track::PID::Pion>>(cfgc, TaskName{"qa-tracking-rejection-pion"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Pion>>(cfgc, TaskName{"qa-tracking-rejection-pion"}));
   }
-  w.push_back(adaptAnalysisTask<QaRejectionGeneral>(cfgc));
+  w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionGeneral>(cfgc));
   return w;
 }

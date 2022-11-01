@@ -27,7 +27,7 @@ using namespace o2::aod::hf_cand_prong3;
 using namespace o2::analysis::hf_cuts_dplus_topikpi;
 
 /// Struct for applying Dplus to piKpi selection cuts
-struct HFDplusToPiKPiCandidateSelector {
+struct HfCandidateSelectorDplusToPiKPi {
   Produces<aod::HFSelDplusToPiKPiCandidate> hfSelDplusToPiKPiCandidate;
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 1., "Lower bound of candidate pT"};
@@ -170,5 +170,5 @@ struct HFDplusToPiKPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFDplusToPiKPiCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-dplus-to-pi-k-pi"})};
+    adaptAnalysisTask<HfCandidateSelectorDplusToPiKPi>(cfgc, TaskName{"hf-candidate-selector-dplus-to-pi-k-pi"})};
 }

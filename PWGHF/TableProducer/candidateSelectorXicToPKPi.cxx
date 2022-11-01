@@ -28,7 +28,7 @@ using namespace o2::aod::hf_cand_prong3;
 using namespace o2::analysis::hf_cuts_xic_topkpi;
 
 /// Struct for applying Xic selection cuts
-struct HFXicToPKPiCandidateSelector {
+struct HfCandidateSelectorXicToPKPi {
   Produces<aod::HFSelXicToPKPiCandidate> hfSelXicToPKPiCandidate;
 
   Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length XY"};
@@ -251,5 +251,5 @@ struct HFXicToPKPiCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFXicToPKPiCandidateSelector>(cfgc, TaskName{"hf-candidate-selector-xic-to-p-k-pi"})};
+    adaptAnalysisTask<HfCandidateSelectorXicToPKPi>(cfgc, TaskName{"hf-candidate-selector-xic-to-p-k-pi"})};
 }

@@ -181,7 +181,7 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
                              hf_track_index_alice3_pid::FRICHId);
 } // namespace o2::aod
 
-struct Alice3PidIndexBuilder {
+struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
   void init(o2::framework::InitContext&) {}
 };
@@ -329,7 +329,7 @@ struct HfTreeCreatorLbToLcPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<Alice3PidIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPiAlice3PidIndexBuilder>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPi>(cfgc));
   return workflow;
 }

@@ -41,7 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of X candidates
-struct HFCandidateCreatorX {
+struct HfCandidateCreatorX {
   Produces<aod::HfCandXBase> rowCandidateBase;
 
   Configurable<double> magneticField{"magneticField", 5., "magnetic field"};
@@ -244,13 +244,13 @@ struct HFCandidateCreatorX {
 };        // struct
 
 /// Extends the base table with expression columns.
-struct HFCandidateCreatorXExpressions {
+struct HfCandidateCreatorXExpressions {
   Spawns<aod::HfCandXExt> rowCandidateX;
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
-struct HFCandidateCreatorXMC {
+struct HfCandidateCreatorXMc {
   Produces<aod::HfCandXMCRec> rowMCMatchRec;
   Produces<aod::HfCandXMCGen> rowMCMatchGen;
 
@@ -349,11 +349,11 @@ struct HFCandidateCreatorXMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HFCandidateCreatorX>(cfgc, TaskName{"hf-cand-creator-x"}),
-    adaptAnalysisTask<HFCandidateCreatorXExpressions>(cfgc, TaskName{"hf-cand-creator-x-expressions"})};
+    adaptAnalysisTask<HfCandidateCreatorX>(cfgc, TaskName{"hf-cand-creator-x"}),
+    adaptAnalysisTask<HfCandidateCreatorXExpressions>(cfgc, TaskName{"hf-cand-creator-x-expressions"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorXMC>(cfgc, TaskName{"hf-cand-creator-x-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorXMc>(cfgc, TaskName{"hf-cand-creator-x-mc"}));
   }
   return workflow;
 }

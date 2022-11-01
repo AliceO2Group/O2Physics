@@ -33,7 +33,7 @@ using namespace o2::analysis::hf_cuts_lc_topkpi;
 #include "Framework/runDataProcessing.h"
 
 /// Λc± → p± K∓ π± analysis task
-struct TaskLc {
+struct HfTaskLc {
   HistogramRegistry registry{
     "registry",
     {/// mass candidate
@@ -486,10 +486,10 @@ struct TaskLc {
     }
   }
 
-  PROCESS_SWITCH(TaskLc, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskLc, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskLc>(cfgc, TaskName{"hf-task-lc"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskLc>(cfgc, TaskName{"hf-task-lc"})};
 }

@@ -26,7 +26,7 @@ using namespace o2::aod::hf_cand_prong3;
 using namespace o2::analysis::hf_cuts_ds_tokkpi;
 
 /// Struct for applying Ds to KKpi selection cuts
-struct HfDsToKKPiCandidateSelector {
+struct HfCandidateSelectorDsToKKPi {
   Produces<aod::HFSelDsToKKPiCandidate> hfSelDsToKKPiCandidate;
 
   Configurable<double> pTCandMin{"pTCandMin", 1., "Lower bound of candidate pT"};
@@ -174,5 +174,5 @@ struct HfDsToKKPiCandidateSelector {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDsToKKPiCandidateSelector>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
 }

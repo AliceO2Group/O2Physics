@@ -27,7 +27,7 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_d0_topik;
 
 /// Struct for applying D0 selection cuts
-struct HFD0CandidateSelector {
+struct HfCandidateSelectorD0 {
   Produces<aod::HFSelD0Candidate> hfSelD0Candidate;
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
@@ -278,5 +278,5 @@ struct HFD0CandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HFD0CandidateSelector>(cfgc, TaskName{"hf-candidate-selector-d0"})};
+    adaptAnalysisTask<HfCandidateSelectorD0>(cfgc, TaskName{"hf-candidate-selector-d0"})};
 }

@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of chic candidates
-struct HFCandidateCreatorChic {
+struct HfCandidateCreatorChic {
   Produces<aod::HfCandChicBase> rowCandidateBase;
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
@@ -191,13 +191,13 @@ struct HFCandidateCreatorChic {
 };      // struct
 
 /// Extends the base table with expression columns.
-struct HFCandidateCreatorChicExpressions {
+struct HfCandidateCreatorChicExpressions {
   Spawns<aod::HfCandChicExt> rowCandidateChic;
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
-struct HFCandidateCreatorChicMC {
+struct HfCandidateCreatorChicMc {
   Produces<aod::HfCandChicMCRec> rowMCMatchRec;
   Produces<aod::HfCandChicMCGen> rowMCMatchGen;
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -286,11 +286,11 @@ struct HFCandidateCreatorChicMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HFCandidateCreatorChic>(cfgc, TaskName{"hf-cand-creator-chic"}),
-    adaptAnalysisTask<HFCandidateCreatorChicExpressions>(cfgc, TaskName{"hf-cand-creator-chic-expressions"})};
+    adaptAnalysisTask<HfCandidateCreatorChic>(cfgc, TaskName{"hf-cand-creator-chic"}),
+    adaptAnalysisTask<HfCandidateCreatorChicExpressions>(cfgc, TaskName{"hf-cand-creator-chic-expressions"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorChicMC>(cfgc, TaskName{"hf-cand-creator-chic-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorChicMc>(cfgc, TaskName{"hf-cand-creator-chic-mc"}));
   }
   return workflow;
 }

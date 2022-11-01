@@ -96,7 +96,7 @@ using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksDCA>;
 #endif
 
 /// Event selection
-struct HfTagSelCollisions {
+struct HfTrackIndexSkimCreatorTagSelCollisions {
   Produces<aod::HFSelCollision> rowSelectedCollision;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
@@ -221,7 +221,7 @@ struct HfTagSelCollisions {
     rowSelectedCollision(statusCollision);
   };
 
-  PROCESS_SWITCH(HfTagSelCollisions, processTrigSel, "Use trigger selection", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", true);
 
   /// Event selection without trigger selection
   void processNoTrigSel(aod::Collision const& collision)
@@ -248,11 +248,11 @@ struct HfTagSelCollisions {
     rowSelectedCollision(statusCollision);
   };
 
-  PROCESS_SWITCH(HfTagSelCollisions, processNoTrigSel, "Do not use trigger selection", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", false);
 };
 
 /// Track selection
-struct HfTagSelTracks {
+struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HFSelTrack> rowSelectedTrack;
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
 
@@ -832,7 +832,7 @@ struct HfTagSelTracks {
 //____________________________________________________________________________________________________________________________________________
 
 /// Pre-selection of 2-prong and 3-prong secondary vertices
-struct HfTrackIndexSkimsCreator {
+struct HfTrackIndexSkimCreator {
   Produces<aod::Hf2Prongs> rowTrackIndexProng2;
   Produces<aod::HfCutStatusProng2> rowProng2CutStatus;
   Produces<aod::HfPvRefitProng2> rowProng2PVrefit;
@@ -2141,7 +2141,7 @@ struct HfTrackIndexSkimsCreator {
 /// to run: o2-analysis-weak-decay-indices --aod-file AO2D.root -b | o2-analysis-lambdakzerobuilder -b |
 ///         o2-analysis-trackextension -b | o2-analysis-hf-track-index-skim-creator -b
 
-struct HfTrackIndexSkimsCreatorCascades {
+struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
   // whether to do or not validation plots
@@ -2439,17 +2439,17 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   const bool doTrigSel = cfgc.options().get<bool>("doTrigSel");
   if (doTrigSel) {
-    workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc));
+    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc));
   } else {
-    workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
+    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
   }
 
-  workflow.push_back(adaptAnalysisTask<HfTagSelTracks>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
 
   const bool doCascades = cfgc.options().get<bool>("doCascades");
   if (doCascades) {
-    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreatorCascades>(cfgc));
+    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
   }
 
   return workflow;

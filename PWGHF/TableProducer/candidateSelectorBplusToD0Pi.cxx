@@ -30,7 +30,7 @@ using namespace o2::analysis;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_bplus_tod0pi;
 
-struct HfBplusTod0piCandidateSelector {
+struct HfCandidateSelectorBplusToD0Pi {
 
   Produces<aod::HFSelBPlusToD0PiCandidate> hfSelBPlusToD0PiCandidate;
 
@@ -182,6 +182,6 @@ struct HfBplusTod0piCandidateSelector {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfBplusTod0piCandidateSelector>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorBplusToD0Pi>(cfgc));
   return workflow;
 }

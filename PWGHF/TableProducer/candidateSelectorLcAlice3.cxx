@@ -42,13 +42,13 @@ DECLARE_SOA_INDEX_COLUMN(RICH, rich);
 DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
 } // namespace o2::aod
 
-struct richIndexBuilder { // Builder of the RICH-track index linkage
+struct HfCandidateSelectorLcAlice3RichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
   void init(o2::framework::InitContext&) {}
 };
 
 /// Struct for applying Lc selection cuts
-struct HFLcCandidateSelectorALICE3 {
+struct HfCandidateSelectorLcAlice3 {
   Produces<aod::HFSelLcCandidateALICE3> hfSelLcCandidateALICE3;
 
   Configurable<double> d_normaliseddecaylengthxyCand{"d_normaliseddecaylengthxyCand", 3., "Normalised decay length"};
@@ -311,7 +311,7 @@ struct HFLcCandidateSelectorALICE3 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<richIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HFLcCandidateSelectorALICE3>(cfgc, TaskName{"hf-candidate-selector-lc-ALICE3"}));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcAlice3RichIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorLcAlice3>(cfgc, TaskName{"hf-candidate-selector-lc-ALICE3"}));
   return workflow;
 }

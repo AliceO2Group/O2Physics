@@ -36,7 +36,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// jpsitoee analysis task
-struct TaskJpsi {
+struct HfTaskJpsi {
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}},
@@ -133,7 +133,7 @@ struct TaskJpsi {
 };
 
 /// Fills MC histograms.
-struct TaskJpsiMC {
+struct HfTaskJpsiMc {
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "2-prong candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}},
@@ -291,10 +291,10 @@ struct TaskJpsiMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TaskJpsi>(cfgc, TaskName{"hf-task-jpsi"})};
+    adaptAnalysisTask<HfTaskJpsi>(cfgc, TaskName{"hf-task-jpsi"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskJpsiMC>(cfgc, TaskName{"hf-task-jpsi-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfTaskJpsiMc>(cfgc, TaskName{"hf-task-jpsi-mc"}));
   }
   return workflow;
 }

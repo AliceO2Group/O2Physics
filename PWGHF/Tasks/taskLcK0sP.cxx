@@ -29,7 +29,7 @@ using namespace o2::aod::hf_cand_casc;
 using namespace o2::framework::expressions;
 
 /// LcK0sp analysis task
-struct TaskLcK0sP {
+struct HfTaskLcK0sP {
   HistogramRegistry registry{
     "registry",
     {// data
@@ -133,12 +133,12 @@ struct TaskLcK0sP {
     }
   }
 
-  PROCESS_SWITCH(TaskLcK0sP, processMC, "Process MC data", false);
+  PROCESS_SWITCH(HfTaskLcK0sP, processMC, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TaskLcK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
+    adaptAnalysisTask<HfTaskLcK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
   };
 }
