@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 //                Task to select electrons from dalitz decay
-//        It can produce track and pair histograms for selected tracks 
+//        It can produce track and pair histograms for selected tracks
 //      It creates a bitmap with selections to be stored during skimming
 //
 #include "Framework/runDataProcessing.h"
@@ -33,7 +33,6 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -45,10 +44,10 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyReducedEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
-                                aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullMu,
-                                aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullMu,
-                                aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;            
+                                 aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullMu,
+                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                 aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullMu,
+                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using BarrelReducedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::Collision;
@@ -56,11 +55,10 @@ constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarMana
 constexpr static uint32_t gkReducedEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkReducedTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 
+struct dalitzPairing {
+  Produces<o2::aod::DalitzBits> dalitzbits;
 
-struct dalitzPairing {  
-  Produces<o2::aod::DalitzBits> dalitzbits;  
-  
-  //Configurables  
+  // Configurables
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandardNoINT7", "Event selection"};
   Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track selection cuts, separated by a comma"};
   Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair selection cuts"};
@@ -70,15 +68,15 @@ struct dalitzPairing {
   Configurable<float> fConfigEtaCut{"cfgEtaCut", 0.9f, "Eta cut for Dalitz tracks in the barrel"};
   Configurable<float> fConfigTPCNSigLow{"cfgTPCNSigElLow", -3.f, "Low TPCNSigEl cut for Dalitz tracks in the barrel"};
   Configurable<float> fConfigTPCNSigHigh{"cfgTPCNSigElHigh", 3.f, "High TPCNsigEl cut for Dalitz tracks in the barrel"};
-  
+
   Filter filterBarrelTrack = o2::aod::track::tpcInnerParam >= fConfigBarrelTrackPINLow && nabs(o2::aod::track::eta) <= fConfigEtaCut && o2::aod::pidtpc::tpcNSigmaEl <= fConfigTPCNSigHigh && o2::aod::pidtpc::tpcNSigmaEl >= fConfigTPCNSigLow;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
 
   std::map<int, uint8_t> trackmap;
-  std::map<int, uint8_t> dalitzmap; 
-  
+  std::map<int, uint8_t> dalitzmap;
+
   AnalysisCompositeCut* fEventCut;
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<AnalysisCompositeCut> fPairCuts;
@@ -91,9 +89,9 @@ struct dalitzPairing {
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data())); 
-    
-      // Barrel track cuts
+    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+
+    // Barrel track cuts
     TString cutNamesStr = fConfigDalitzTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -101,7 +99,7 @@ struct dalitzPairing {
         fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
-    
+
     // Pair cuts
     TString cutNamesPairStr = fConfigDalitzPairCuts.value;
     if (!cutNamesPairStr.IsNull()) {
@@ -111,12 +109,12 @@ struct dalitzPairing {
       }
     }
 
-    if(fTrackCuts.size() != fPairCuts.size() ) {
-      std::cout<<"WARNING: YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS"<<std::endl;
-    } 
-    nCuts = std::min(fTrackCuts.size(), fPairCuts.size()); 
-    
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill         
+    if (fTrackCuts.size() != fPairCuts.size()) {
+      std::cout << "WARNING: YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS" << std::endl;
+    }
+    nCuts = std::min(fTrackCuts.size(), fPairCuts.size());
+
+    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -124,8 +122,8 @@ struct dalitzPairing {
 
     // Create the histogram class names to be added to the histogram manager
     TString histClasses = "";
- 
-    if (fQA) { 
+
+    if (fQA) {
       for (int icut = 0; icut < nCuts; icut++) {
         AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
         AnalysisCompositeCut pairCut = fPairCuts.at(icut);
@@ -133,9 +131,9 @@ struct dalitzPairing {
         histClasses += Form("Pair_%s_%s;", trackCut.GetName(), pairCut.GetName());
       }
     }
-    
+
     // Define histograms
-    
+
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
     for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
       TString classStr = objArray->At(iclass)->GetName();
@@ -148,9 +146,9 @@ struct dalitzPairing {
       if (classStr.Contains("Track")) {
         dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
       }
-      
+
       if (classStr.Contains("Pair")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "pair_barrel","dalitz");
+        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "pair_barrel", "dalitz");
       }
     }
 
@@ -158,18 +156,18 @@ struct dalitzPairing {
     fStatsList->SetOwner(kTRUE);
 
     // Dalitz selection statistics: one bin for each (track,pair) selection
-    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", nCuts, -0.5, nCuts - 0.5 );
+    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", nCuts, -0.5, nCuts - 0.5);
     for (int icut = 0; icut < nCuts; icut++) {
       AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
       AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-      histTracks->GetXaxis()->SetBinLabel(icut+1, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
+      histTracks->GetXaxis()->SetBinLabel(icut + 1, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
     }
     if (fQA) {
-      fStatsList->Add(histTracks);    
+      fStatsList->Add(histTracks);
     }
 
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
-    fOutputList.setObject(fHistMan->GetMainHistogramList());  
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
   template <uint32_t TTrackFillMap, typename TTracks>
@@ -194,49 +192,52 @@ struct dalitzPairing {
   void runDalitzPairing(TTracks const& tracksP, TTracks const& tracksN)
   {
     const int TPairType = VarManager::kJpsiToEE;
-    for (auto& [track1,track2] : o2::soa::combinations(CombinationsStrictlyUpperIndexPolicy(tracksP, tracksN))) {
-      if (track1.sign()*track2.sign() > 0) continue;
-      
+    for (auto& [track1, track2] : o2::soa::combinations(CombinationsStrictlyUpperIndexPolicy(tracksP, tracksN))) {
+      if (track1.sign() * track2.sign() > 0)
+        continue;
+
       uint8_t twoTracksFilterMap = trackmap[track1.globalIndex()] & trackmap[track2.globalIndex()];
-      if (!twoTracksFilterMap) continue;
-      
+      if (!twoTracksFilterMap)
+        continue;
+
       // pairing
-      VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);  
+      VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
       uint8_t track1Untagged = uint8_t(0);
       uint8_t track2Untagged = uint8_t(0);
-      
+
       // Fill pair selection map and fill pair histogram
       for (int icut = 0; icut < nCuts; icut++) {
-        if (!(twoTracksFilterMap & (uint8_t(1) << icut))) continue;
+        if (!(twoTracksFilterMap & (uint8_t(1) << icut)))
+          continue;
         AnalysisCompositeCut pairCut = fPairCuts.at(icut);
         if (pairCut.IsSelected(VarManager::fgValues)) {
-          if (fQA) {         
+          if (fQA) {
             AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
-            fHistMan->FillHistClass(Form("Pair_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);  
-          }     
-          
-          // Check if tracks were already tagged       
+            fHistMan->FillHistClass(Form("Pair_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
+          }
+
+          // Check if tracks were already tagged
           bool b1 = dalitzmap[track1.globalIndex()] & (uint8_t(1) << icut);
-          if(!b1) {
+          if (!b1) {
             track1Untagged |= (uint8_t(1) << icut);
             if (fQA) {
-              ((TH1I*) fStatsList->At(0))->Fill(icut);
+              ((TH1I*)fStatsList->At(0))->Fill(icut);
             }
           }
           bool b2 = dalitzmap[track2.globalIndex()] & (uint8_t(1) << icut);
-          if(!b2) {
+          if (!b2) {
             track2Untagged |= (uint8_t(1) << icut);
             if (fQA) {
-              ((TH1I*) fStatsList->At(0))->Fill(icut);
+              ((TH1I*)fStatsList->At(0))->Fill(icut);
             }
-          }          
+          }
         }
       }
-      
-      // Tag tracks which are not already tagged           
+
+      // Tag tracks which are not already tagged
       dalitzmap[track1.globalIndex()] |= track1Untagged;
       dalitzmap[track2.globalIndex()] |= track2Untagged;
-      
+
       // Fill track histograms if not already tagged
       if (fQA) {
         VarManager::FillTrack<TTrackFillMap>(track1);
@@ -254,39 +255,37 @@ struct dalitzPairing {
             AnalysisCompositeCut pairCut = fPairCuts.at(icut);
             fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
           }
-        }  
-      }  
-    } //end of tracksP,N loop
+        }
+      }
+    } // end of tracksP,N loop
   }
-
-
 
   void processFullTracks(MyEvents::iterator const& collision, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     trackmap.clear();
     dalitzmap.clear();
-     
+
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     VarManager::FillEvent<gkEventFillMap>(collision);
     bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
-      
+
     if (isEventSelected) {
       runTrackSelection<gkTrackFillMap>(tracks);
       runDalitzPairing<gkTrackFillMap>(tracks, tracks);
-      
-      //Fill dalitz bits
+
+      // Fill dalitz bits
       for (auto& track : tracks) {
         if (dalitzmap[track.globalIndex()]) {
           dalitzbits(track.collisionId(), track.globalIndex(), dalitzmap[track.globalIndex()]);
         }
-      } 
-    }// end event selected        
+      }
+    } // end event selected
   }
- 
+
   void processDummy(MyEvents&)
   {
   }
-       
+
   PROCESS_SWITCH(dalitzPairing, processFullTracks, "Run Dalitz selection on AO2D tables", false);
   PROCESS_SWITCH(dalitzPairing, processDummy, "Do nothing", false);
 };
@@ -294,7 +293,5 @@ struct dalitzPairing {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<dalitzPairing>(cfgc)
-  };
+    adaptAnalysisTask<dalitzPairing>(cfgc)};
 }
-

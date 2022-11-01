@@ -484,7 +484,7 @@ DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_INDEX_COLUMN(ReducedTrack, reducedtrack);
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);
-} // namespace DalitzBits
+} // namespace DalBits
 
 // bit information for particle species.
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::CollisionId, DalBits::TrackId, DalBits::DALITZBits);

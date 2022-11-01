@@ -104,7 +104,7 @@ struct TableMakerMC {
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "barrel track cut"};
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};  
+  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<std::string> fConfigDalitzTrackCuts{"cfgDalitzTrackCuts", "", "Dalitz track cuts "};
   Configurable<std::string> fConfigDalitzPairCuts{"cfgDalitzPairCuts", "", "Dalitz pair cuts "};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
@@ -121,11 +121,10 @@ struct TableMakerMC {
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes and more)"};
   Configurable<bool> fQADalitz{"cfgQADalitz", false, "If true, QA Dalitz histograms"};
 
-
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
-  std::vector<AnalysisCompositeCut> fDalitzTrackCuts;  //! Dalitz track cuts
+  std::vector<AnalysisCompositeCut> fDalitzTrackCuts; //! Dalitz track cuts
   std::vector<AnalysisCompositeCut> fDalitzPairCuts;  //! Dalitz pair cuts
   int nDalitzCuts;
 
@@ -151,7 +150,7 @@ struct TableMakerMC {
         fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
-    
+
     // Dalitz track cuts
     cutNamesStr = fConfigDalitzTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -160,7 +159,7 @@ struct TableMakerMC {
         fDalitzTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
-    
+
     // Dalitz pair cuts
     cutNamesStr = fConfigDalitzPairCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -169,7 +168,7 @@ struct TableMakerMC {
         fDalitzPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
-    
+
     nDalitzCuts = std::min(fDalitzTrackCuts.size(), fDalitzPairCuts.size());
 
     // Muon cuts
@@ -251,7 +250,8 @@ struct TableMakerMC {
               for (int i = 0; i < nDalitzCuts; i++) {
                 histClasses += Form("TrackBarrelDalitz_%s_%s_%s;", fDalitzTrackCuts.at(i).GetName(), fDalitzPairCuts.at(i).GetName(), objArray->At(isig)->GetName());
               }
-            }          }
+            }
+          }
           if (enableMuonHistos) {
             histClasses += Form("Muons_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fMuonCuts) {
@@ -443,7 +443,7 @@ struct TableMakerMC {
           if (!trackTempFilterMap) {
             continue;
           }
-          
+
           uint8_t dalitzMap = uint8_t(0);
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
             for (auto& dalitz : dalitzBits) { // Look for the dalitz bits in dalitzBits table
@@ -493,10 +493,10 @@ struct TableMakerMC {
                 if (fQADalitz) {
                   for (int icut = 0; icut < nDalitzCuts; icut++) {
                     if (dalitzMap & (uint8_t(1) << icut)) {
-                      fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s_%s", fDalitzTrackCuts.at(icut).GetName(), fDalitzPairCuts.at(icut).GetName(), sig.GetName()), VarManager::fgValues); 
-                      ((TH2I*) fStatsList->At(4))->Fill(icut, i);
+                      fHistMan->FillHistClass(Form("TrackBarrelDalitz_%s_%s_%s", fDalitzTrackCuts.at(icut).GetName(), fDalitzPairCuts.at(icut).GetName(), sig.GetName()), VarManager::fgValues);
+                      ((TH2I*)fStatsList->At(4))->Fill(icut, i);
                     }
-                  }                
+                  }
                 }
               }
             }
@@ -829,14 +829,14 @@ struct TableMakerMC {
     }
     histMCsignals->GetXaxis()->SetBinLabel(fMCSignals.size() + 1, "Others (matched to reco tracks)");
     fStatsList->Add(histMCsignals);
-    
+
     if (fQADalitz) {
       // Dalitz electron - MC signal correspondence statistics
-      TH2I* histMCDalitz = new TH2I("TrackStatsMCDalitz", "Dalitz selection statistics for MCsignals", nDalitzCuts, -0.5, nDalitzCuts - 0.5, fMCSignals.size(), -0.5, fMCSignals.size() - 0.5 );
-      ib = 1;      
+      TH2I* histMCDalitz = new TH2I("TrackStatsMCDalitz", "Dalitz selection statistics for MCsignals", nDalitzCuts, -0.5, nDalitzCuts - 0.5, fMCSignals.size(), -0.5, fMCSignals.size() - 0.5);
+      ib = 1;
       for (int icut = 0; icut < nDalitzCuts; icut++, ib++) {
         histMCDalitz->GetXaxis()->SetBinLabel(ib, Form("%s_%s", fDalitzTrackCuts.at(icut).GetName(), fDalitzPairCuts.at(icut).GetName()));
-      }          
+      }
       ib = 1;
       for (auto mcsig = fMCSignals.begin(); mcsig != fMCSignals.end(); mcsig++, ib++) {
         histMCDalitz->GetYaxis()->SetBinLabel(ib, (*mcsig).GetName());
@@ -881,14 +881,14 @@ struct TableMakerMC {
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, nullptr);
   }
-    // Produce barrel only tables, with cov matrix and dalitz bits-----------------------------------------------------------------------
+  // Produce barrel only tables, with cov matrix and dalitz bits-----------------------------------------------------------------------
   void processBarrelOnlyWithDalitzBits(MyEvents const& collisions, aod::BCs const& bcs,
-                                soa::Filtered<MyBarrelTracks> const& tracksBarrel,
-                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, DalitzBits const& dalitzBits)
+                                       soa::Filtered<MyBarrelTracks> const& tracksBarrel,
+                                       aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, DalitzBits const& dalitzBits)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, dalitzBits);
   }
-   
+
   // Produce muon only tables ------------------------------------------------------------------------------------
   /*void processMuonOnly(MyEvents const& collisions, aod::BCs const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon,
@@ -927,7 +927,7 @@ struct TableMakerMC {
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCent, "Produce barrel skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCov, "Produce barrel skims, with track covariance matrix", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithDalitzBits, "Produce barrel skims, and dalitz bits", false);
-  //PROCESS_SWITCH(TableMakerMC, processMuonOnly, "Produce muon skims", false);
+  // PROCESS_SWITCH(TableMakerMC, processMuonOnly, "Produce muon skims", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCov, "Produce muon skims, with muon covariance matrix", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCent, "Produce muon skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);

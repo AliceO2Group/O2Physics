@@ -365,8 +365,8 @@ struct TableMaker {
 
         trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-	  trackFilteringTag |= uint64_t(dalitzMap) << 15; //BIT15-...: Dalitz
-	}
+          trackFilteringTag |= uint64_t(dalitzMap) << 15; // BIT15-...: Dalitz
+        }
 
         // create the track tables
         trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
@@ -601,10 +601,10 @@ struct TableMaker {
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr, nullptr);
   }
-  
+
   // Produce barrel only tables, with DalitzBits ------------------------------------------------------------------------------------------------
   void processBarrelOnlyWithDalitzBits(MyEvents::iterator const& collision, aod::BCs const& bcs,
-                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel, DalitzBits const& dalitzBits)
+                                       soa::Filtered<MyBarrelTracks> const& tracksBarrel, DalitzBits const& dalitzBits)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr, dalitzBits);
   }
