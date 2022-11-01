@@ -73,8 +73,8 @@ struct bayesPid {
   o2::pid::tpc::Response responseTPC;
   o2::pid::tpc::Response* responseTPCptr = nullptr;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if emtpy the parametrization is not taken from file"};
+  Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if empty the parametrization is not taken from file"};
+  Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> TOFsigmaname{"param-tof-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<bool> enableTOF{"enableTOF", false, "Enabling TOF"};
   Configurable<bool> enableTPC{"enableTPC", false, "Enabling TPC"};
@@ -314,8 +314,8 @@ struct bayesPid {
     float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
     // In the O2 this cannot be done because the cluster information is missing in the AOD
     // if (!fNoTOFmism) {                                                                  // this flag allows to disable mismatch for iterative procedure to get prior probabilities
-    //   mismPropagationFactor[3] = 1 + exp(1 - 1.12 * pt);                                // it has to be alligned with the one in AliPIDCombined
-    //   mismPropagationFactor[4] = 1 + 1. / (4.71114 - 5.72372 * pt + 2.94715 * pt * pt); // it has to be alligned with the one in AliPIDCombined
+    //   mismPropagationFactor[3] = 1 + exp(1 - 1.12 * pt);                                // it has to be aligned with the one in AliPIDCombined
+    //   mismPropagationFactor[4] = 1 + 1. / (4.71114 - 5.72372 * pt + 2.94715 * pt * pt); // it has to be aligned with the one in AliPIDCombined
 
     //   int nTOFcluster = 0;
     //   if (track->GetTOFHeader() && track->GetTOFHeader()->GetTriggerMask() && track->GetTOFHeader()->GetNumberOfTOFclusters() > -1) { // N TOF clusters available

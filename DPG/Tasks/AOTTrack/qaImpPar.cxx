@@ -215,7 +215,7 @@ struct QaImpactPar {
       histograms.add("Reco/Y_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionYAxis, collisionYOrigAxis});
       histograms.add("Reco/Z_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionZAxis, collisionZOrigAxis});
       histograms.add("Reco/nContrib_PVrefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {collisionNumberContributorAxis});
-      histograms.add("Reco/nContrib_PVrefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {collisionNumberContributorAxis});
+      histograms.add("Reco/nContrib_PVrefitChi2minus1", "N. contributors original PV for PV refit #chi^{2}==-1", kTH1D, {collisionNumberContributorAxis});
     }
 
     // Needed for PV refitting

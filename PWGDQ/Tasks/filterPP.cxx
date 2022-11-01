@@ -608,7 +608,7 @@ struct DQFilterPPTask {
     //       start with all configured barrel selections and then continue with those from muons
     //       The configured order has to be in sync with that implemented in the cefp task and can be done
     //       by preparing a dedicated json configuration file
-    std::vector<bool> decisions(kNTriggersDQ, false); // event decisions to be transmited to CEFP
+    std::vector<bool> decisions(kNTriggersDQ, false); // event decisions to be transmitted to CEFP
     uint64_t filter = 0;
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNreqObjs[i]) {

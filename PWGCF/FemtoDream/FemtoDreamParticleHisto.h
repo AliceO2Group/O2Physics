@@ -35,7 +35,7 @@ class FemtoDreamParticleHisto
   /// Destructor
   virtual ~FemtoDreamParticleHisto() = default;
 
-  /// Initalization of the QA histograms
+  /// Initialization of the QA histograms
   /// \param registry HistogramRegistry
   void init(HistogramRegistry* registry)
   {
