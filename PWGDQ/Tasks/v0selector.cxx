@@ -495,6 +495,27 @@ struct v0selector {
       if (casc.bachelor_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
         continue;
       }
+
+      if (v0.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+        continue;
+      }
+      if (v0.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+        continue;
+      }
+      if (casc.bachelor_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+        continue;
+      }
+
+      if (fabs(v0.posTrack_as<FullTracksExt>().dcaXY()) < 0.05) {
+        continue;
+      }
+      if (fabs(v0.negTrack_as<FullTracksExt>().dcaXY()) < 0.05) {
+        continue;
+      }
+      if (fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) < 0.05) {
+        continue;
+      }
+
       if (v0.collisionId() != casc.collisionId()) {
         continue;
       }
@@ -540,6 +561,10 @@ struct v0selector {
       int cpos = casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().sign();
       int cneg = casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().sign();
 
+      if (cpos * cneg > 0) { // reject same sign pair
+        continue;
+      }
+
       auto pTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
       auto nTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
       auto bTrack = getTrackParCov(casc.bachelor_as<FullTracksExt>());
@@ -562,9 +587,9 @@ struct v0selector {
 
       auto V0dca = fitterV0.getChi2AtPCACandidate(); // distance between 2 legs.
       registry.fill(HIST("hDCAV0Dau_Casc"), V0dca);
-      // if (V0dca > 1.0) {
-      //   continue;
-      // }
+      if (V0dca > 1.5) {
+        continue;
+      }
 
       registry.fill(HIST("hCascCandidate"), 1.5);
       std::array<float, 21> cov0 = {0};
@@ -577,6 +602,11 @@ struct v0selector {
       fitterV0.getTrack(1).getPxPyPzGlo(pvecneg);
       fitterV0.getTrack(0).getCovXYZPxPyPzGlo(cov0);
       fitterV0.getTrack(1).getCovXYZPxPyPzGlo(cov1);
+
+      int v0id = checkV0(pvecpos, pvecneg);
+      if (v0id != kLambda && v0id != kAntiLambda) {
+        continue;
+      }
 
       for (int i = 0; i < 6; i++) {
         int j = momInd[i];
@@ -595,9 +625,9 @@ struct v0selector {
       const std::array<float, 3> pvecv0 = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
       auto V0CosinePA = RecoDecay::cpa(pVtx, array{pos[0], pos[1], pos[2]}, pvecv0);
       registry.fill(HIST("hV0CosPA_Casc"), V0CosinePA);
-      // if (V0CosinePA < 0.97) {
-      //   continue;
-      // }
+      if (V0CosinePA < 0.97) {
+        continue;
+      }
 
       auto tV0 = o2::track::TrackParCov(vertex, pvecv0, covV0, 0);
       tV0.setQ2Pt(0); // No bending, please
@@ -612,37 +642,37 @@ struct v0selector {
 
       auto Cascdca = fitterCasc.getChi2AtPCACandidate(); // distance between V0 and bachelor
       registry.fill(HIST("hDCACascDau"), Cascdca);
-      // if (Cascdca > 1.0) {
-      //   continue;
-      // }
+      if (Cascdca > 1.5) {
+        continue;
+      }
 
       const auto& cascvtx = fitterCasc.getPCACandidate();
       auto CascCosinePA = RecoDecay::cpa(pVtx, array{cascvtx[0], cascvtx[1], cascvtx[2]}, pvecbach);
       registry.fill(HIST("hCascCosPA"), CascCosinePA);
-      // if(CascCosinePA < 0.998){
-      //   continue;
-      // }
+      if (CascCosinePA < 0.98) {
+        continue;
+      }
 
       float mLambda = RecoDecay::m(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
       float mAntiLambda = RecoDecay::m(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
       float mXi = RecoDecay::m(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kPiPlus)});
       float mOmega = RecoDecay::m(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kKPlus)});
-      registry.fill(HIST("hMassLambda_Casc"), mLambda);
-      registry.fill(HIST("hMassAntiLambda_Casc"), mAntiLambda);
 
       // for Lambda->p + pi-
-      if (cpos > 0 && cneg < 0 && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+      if (v0id == kLambda) {
+        registry.fill(HIST("hMassLambda_Casc"), mLambda);
+        if ((1.110 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+          if (casc.bachelor_as<FullTracksExt>().sign() < 0) {
+            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+              registry.fill(HIST("hMassXiMinus"), mXi);
+            }
 
-        if (casc.bachelor_as<FullTracksExt>().sign() < 0) {
-          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
-            registry.fill(HIST("hMassXiMinus"), mXi);
-          }
-
-          if (TMath::Abs(mXi - 1.321) > 0.006) {
-            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 5) {
-              registry.fill(HIST("hMassOmegaMinus"), mOmega);
-              if (TMath::Abs(mOmega - 1.672) < 0.006) {
-                pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+            if (TMath::Abs(mXi - 1.321) > 0.006) {
+              if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 5) {
+                registry.fill(HIST("hMassOmegaMinus"), mOmega);
+                if (TMath::Abs(mOmega - 1.672) < 0.006) {
+                  pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+                }
               }
             }
           }
@@ -650,16 +680,19 @@ struct v0selector {
       }
 
       // for AntiLambda->pbar + pi+
-      if (cpos > 0 && cneg < 0 && (1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
-        if (casc.bachelor_as<FullTracksExt>().sign() > 0) {
-          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
-            registry.fill(HIST("hMassXiPlus"), mXi);
-          }
-          if (TMath::Abs(mXi - 1.321) > 0.006) {
-            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 5) {
-              registry.fill(HIST("hMassOmegaPlus"), mOmega);
-              if (TMath::Abs(mOmega - 1.672) < 0.006) {
-                pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+      if (v0id == kAntiLambda) {
+        registry.fill(HIST("hMassAntiLambda_Casc"), mAntiLambda);
+        if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
+          if (casc.bachelor_as<FullTracksExt>().sign() > 0) {
+            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+              registry.fill(HIST("hMassXiPlus"), mXi);
+            }
+            if (TMath::Abs(mXi - 1.321) > 0.006) {
+              if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 5) {
+                registry.fill(HIST("hMassOmegaPlus"), mOmega);
+                if (TMath::Abs(mOmega - 1.672) < 0.006) {
+                  pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+                }
               }
             }
           }
