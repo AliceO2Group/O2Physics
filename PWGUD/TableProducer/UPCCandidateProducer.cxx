@@ -83,7 +83,7 @@ struct UpcCandProducer {
 
     upcCuts = (UPCCutparHolder)inputCuts;
 
-    const AxisSpec axisSelFwd{upchelpers::kNFwdSels, 0., double(upchelpers::kNFwdSels), ""};
+    const AxisSpec axisSelFwd{upchelpers::kNFwdSels, 0., static_cast<double>(upchelpers::kNFwdSels), ""};
     histRegistry.add("MuonsSelCounter", "", kTH1F, {axisSelFwd});
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelAll + 1, "All");
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelPt + 1, "Pt");
@@ -92,7 +92,7 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelpDCA + 1, "pDCA");
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelChi2 + 1, "Chi2");
 
-    const AxisSpec axisSelBar{upchelpers::kNBarrelSels, 0., double(upchelpers::kNBarrelSels), ""};
+    const AxisSpec axisSelBar{upchelpers::kNBarrelSels, 0., static_cast<double>(upchelpers::kNBarrelSels), ""};
     histRegistry.add("BarrelsSelCounter", "", kTH1F, {axisSelBar});
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelAll + 1, "All");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelHasTOF + 1, "HasTOF");
@@ -863,7 +863,7 @@ struct UpcCandProducer {
           RgtrwTOF++;
         }
       }
-      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float)nBarTracks : 0.;
+      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / static_cast<float>(nBarTracks) : 0.;
       if (RgtrwTOF == 0 && fNBarProngs != 0) { // require at least 1 TOF track in central and semiforward cases
         continue;
       }
@@ -917,7 +917,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
+    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -955,7 +955,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
+    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -979,7 +979,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
+    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -1025,7 +1025,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
+    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
