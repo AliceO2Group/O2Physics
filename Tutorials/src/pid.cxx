@@ -35,7 +35,7 @@ struct pid {
   {
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
