@@ -557,9 +557,17 @@ struct UpcCandProducer {
     const uint64_t presBitNum = 16;
     bool hasNoFT0 = true;
     for (uint64_t ibit = presBitNum - fFilterRangeFT0; ibit <= presBitNum + fFilterRangeFT0; ibit++) {
-      bool isBB = TESTBIT(info.BBFT0Apf, ibit) || TESTBIT(info.BBFT0Cpf, ibit);
-      bool isBG = TESTBIT(info.BGFT0Apf, ibit) || TESTBIT(info.BGFT0Cpf, ibit);
-      if (isBB || isBG) {
+      bool check = false;
+      if (isCentral) {
+        bool isBB = TESTBIT(info.BBFT0Apf, ibit) || TESTBIT(info.BBFT0Cpf, ibit);
+        bool isBG = TESTBIT(info.BGFT0Apf, ibit) || TESTBIT(info.BGFT0Cpf, ibit);
+        check = !isBB && !isBG;
+      } else {
+        bool checkA = TESTBIT(info.BGFT0Apf, ibit);
+        bool checkC = TESTBIT(info.BBFT0Cpf, ibit);
+        check = checkA && checkC;
+      }
+      if (!check) {
         hasNoFT0 = false;
         break;
       }
