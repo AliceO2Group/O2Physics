@@ -8,7 +8,7 @@
 # Find files that produce the table.
 table="$1"
 echo "Table $table is produced in:"
-files=$(grep -r -i --include="*.cxx" "<aod::$table>" | grep -E 'Produces|Spawns|Builds' | cut -d: -f1 | sort -u)
+files=$(grep -r -i --include="*.cxx" -E "<$table>|<aod::$table>|<o2::aod::$table>" | grep -E 'Produces<|Spawns<|Builds<' | cut -d: -f1 | sort -u)
 for f in $files; do
   # Extract the workflow name from the CMakeLists.txt in the same directory.
   wf=$(grep -B 1 "$(basename "$f")" "$(dirname "$f")/CMakeLists.txt" | head -n 1 | cut -d\( -f2)
