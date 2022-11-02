@@ -555,28 +555,13 @@ struct UpcCandProducer {
   bool checkFT0(upchelpers::FITInfo& info, bool isCentral)
   {
     const uint64_t presBitNum = 16;
-    const float ft0DummyTime = 32.767f;
-    const float ft0DefaultTime = -999;
-    const float fT0CBBlower = -1.0; // ns
-    const float fT0CBBupper = 1.0;  // ns
     bool hasNoFT0 = true;
-    if (isCentral) {
-      for (int32_t i = presBitNum - fFilterRangeFT0; i <= presBitNum + fFilterRangeFT0; i++) {
-        bool isBB = TESTBIT(info.BBFT0Apf, presBitNum) || TESTBIT(info.BBFT0Cpf, presBitNum);
-        bool isBG = TESTBIT(info.BGFT0Apf, presBitNum) || TESTBIT(info.BGFT0Cpf, presBitNum);
-        if (isBB || isBG) {
-          hasNoFT0 = false;
-          break;
-        }
-      }
-    } else {
-      for (int32_t i = presBitNum - fFilterRangeFT0; i <= presBitNum + fFilterRangeFT0; i++) {
-        bool checkA = std::abs(info.timeFT0A - ft0DummyTime) < 1e-3 || std::abs(info.timeFT0A - ft0DefaultTime) < 1e-3; // dummy or default time
-        bool checkC = info.timeFT0C > fT0CBBlower && info.timeFT0C < fT0CBBupper;
-        if (checkA || checkC) {
-          hasNoFT0 = false;
-          break;
-        }
+    for (uint64_t ibit = presBitNum - fFilterRangeFT0; ibit <= presBitNum + fFilterRangeFT0; ibit++) {
+      bool isBB = TESTBIT(info.BBFT0Apf, ibit) || TESTBIT(info.BBFT0Cpf, ibit);
+      bool isBG = TESTBIT(info.BGFT0Apf, ibit) || TESTBIT(info.BGFT0Cpf, ibit);
+      if (isBB || isBG) {
+        hasNoFT0 = false;
+        break;
       }
     }
     return hasNoFT0;
