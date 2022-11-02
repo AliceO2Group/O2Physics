@@ -7,7 +7,7 @@
 [ ! "$1" ] && { echo "Provide a table name."; exit 1; }
 # Find files that produce the table.
 table="$1"
-echo "Table $table is produced in:"
+echo "Table $table is produced by:"
 files=$(grep -r -i --include="*.cxx" -E "<$table>|<aod::$table>|<o2::aod::$table>" | grep -E 'Produces<|Spawns<|Builds<' | cut -d: -f1 | sort -u)
 for f in $files; do
   # Extract the workflow name from the CMakeLists.txt in the same directory.
