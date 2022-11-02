@@ -70,10 +70,12 @@ struct tofSignal {
 };
 
 /// Selection criteria for tracks used for TOF event time
+float trackSampleMinMomentum = 0.5f;
+float trackSampleMaxMomentum = 2.f;
 template <typename trackType>
 bool filterForTOFEventTime(const trackType& tr)
 {
-  return (tr.hasTOF() && tr.p() > 0.5f && tr.p() < 2.f && tr.trackType() == o2::aod::track::TrackTypeEnum::Track);
+  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && tr.trackType() == o2::aod::track::TrackTypeEnum::Track);
 } // accept all
 
 /// Specialization of TOF event time maker
@@ -101,6 +103,8 @@ struct tofEventTime {
   // Detector response and input parameters
   DetectorResponse response;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
+  Configurable<float> maxMomentum{"maxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -109,6 +113,9 @@ struct tofEventTime {
 
   void init(o2::framework::InitContext& initContext)
   {
+    trackSampleMinMomentum = minMomentum;
+    trackSampleMaxMomentum = maxMomentum;
+    LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;
     // Check that both processes are not enabled
     int nEnabled = 0;
     if (doprocessRun2 == true) {
