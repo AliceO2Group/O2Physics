@@ -9,8 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2PHYSICS_UDTABLES_H
-#define O2PHYSICS_UDTABLES_H
+#ifndef PWGUD_DATAMODEL_UDTABLES_H_
+#define PWGUD_DATAMODEL_UDTABLES_H_
+
+#include <cmath>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -18,7 +20,6 @@
 #include "MathUtils/Utils.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -170,16 +171,18 @@ using UDCollisionsSel = UDCollisionsSels::iterator;
 
 namespace udtrack
 {
-DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
-DECLARE_SOA_COLUMN(Px, px, float);                     //!
-DECLARE_SOA_COLUMN(Py, py, float);                     //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
-DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //!
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);         //!
+DECLARE_SOA_COLUMN(Px, px, float);                          //!
+DECLARE_SOA_COLUMN(Py, py, float);                          //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                          //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                        //!
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);           //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);           //!
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);      //! time resolution
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);      //!
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);         //!
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                          //!
                            [](float px, float py) -> float {
                              return std::sqrt(px * px + py * py);
                            });
@@ -234,10 +237,15 @@ DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
                   track::DcaZ,
                   track::DcaXY)
 
+DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
+                  udtrack::IsAmbiguous,
+                  udtrack::IsPVContributor);
+
 using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
 using UDTrackDCA = UDTracksDCA::iterator;
+using UDTrackFlags = UDTracksFlags::iterator;
 
 namespace udmctracklabel
 {
@@ -313,4 +321,4 @@ using UDMcFwdTrackLabel = UDMcFwdTrackLabels::iterator;
 
 } // namespace o2::aod
 
-#endif // O2PHYSICS_UDTABLES_H
+#endif // PWGUD_DATAMODEL_UDTABLES_H_

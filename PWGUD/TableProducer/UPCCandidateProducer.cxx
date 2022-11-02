@@ -40,6 +40,7 @@ struct UpcCandProducer {
   Produces<o2::aod::UDTracksDCA> udTracksDCA;
   Produces<o2::aod::UDTracksPID> udTracksPID;
   Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
+  Produces<o2::aod::UDTracksFlags> udTracksFlags;
 
   Produces<o2::aod::UDCollisions> eventCandidates;
   Produces<o2::aod::UDCollisionsSels> eventCandidatesSels;
@@ -58,7 +59,8 @@ struct UpcCandProducer {
   // candidate producer flags
   Configurable<int> fCheckTPCPID{"checkTPCPID", 0, "Check TPC PID. Useful for central selection -- see `tpcPIDSwitch` option"};
   Configurable<int> fTPCPIDSwitch{"tpcPIDSwitch", 0, "PID switch: 0 -- two muons/pions, 1 -- two electrons, 2 -- electron + muon/pion"};
-  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals at the same BC"};
+  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
+  Configurable<int> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
   Configurable<int> fNFwdProngs{"nFwdProngs", 2, "Matched forward tracks per candidate"};
   Configurable<int> fNBarProngs{"nBarProngs", 0, "Matched barrel tracks per candidate"};
 
@@ -81,7 +83,7 @@ struct UpcCandProducer {
 
     upcCuts = (UPCCutparHolder)inputCuts;
 
-    const AxisSpec axisSelFwd{upchelpers::kNFwdSels, 0., double(upchelpers::kNFwdSels), ""};
+    const AxisSpec axisSelFwd{upchelpers::kNFwdSels, 0., static_cast<double>(upchelpers::kNFwdSels), ""};
     histRegistry.add("MuonsSelCounter", "", kTH1F, {axisSelFwd});
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelAll + 1, "All");
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelPt + 1, "Pt");
@@ -90,7 +92,7 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelpDCA + 1, "pDCA");
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelChi2 + 1, "Chi2");
 
-    const AxisSpec axisSelBar{upchelpers::kNBarrelSels, 0., double(upchelpers::kNBarrelSels), ""};
+    const AxisSpec axisSelBar{upchelpers::kNBarrelSels, 0., static_cast<double>(upchelpers::kNBarrelSels), ""};
     histRegistry.add("BarrelsSelCounter", "", kTH1F, {axisSelBar});
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelAll + 1, "All");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelHasTOF + 1, "HasTOF");
@@ -449,11 +451,16 @@ struct UpcCandProducer {
                         std::vector<int32_t> const& trackIDs,
                         int32_t candID,
                         uint64_t bc,
-                        TMcTrackLabels* mcTrackLabels)
+                        TMcTrackLabels* mcTrackLabels,
+                        std::unordered_map<int32_t, int32_t>& ambBarrelTrIds)
   {
     for (int32_t trackID : trackIDs) {
       const auto& track = tracks->iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
+      bool isAmbiguous = false;
+      if (upcCuts.getAmbigSwitch() != 1) {
+        isAmbiguous = ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end();
+      }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
       udTracksExtra(track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
@@ -461,6 +468,7 @@ struct UpcCandProducer {
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       udTracksDCA(track.dcaZ(), track.dcaXY());
+      udTracksFlags(isAmbiguous, track.isPVContributor());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trackID);
@@ -547,19 +555,22 @@ struct UpcCandProducer {
   bool checkFT0(upchelpers::FITInfo& info, bool isCentral)
   {
     const uint64_t presBitNum = 16;
-    const float ft0DummyTime = 32.767f;
-    const float ft0DefaultTime = -999;
-    const float fT0CBBlower = -1.0; // ns
-    const float fT0CBBupper = 1.0;  // ns
-    bool hasNoFT0 = false;
-    if (isCentral) {
-      bool isBB = TESTBIT(info.BBFT0Apf, presBitNum) || TESTBIT(info.BBFT0Cpf, presBitNum);
-      bool isBG = TESTBIT(info.BGFT0Apf, presBitNum) || TESTBIT(info.BGFT0Cpf, presBitNum);
-      hasNoFT0 = !isBB && !isBG;
-    } else {
-      bool checkA = std::abs(info.timeFT0A - ft0DummyTime) < 1e-3 || std::abs(info.timeFT0A - ft0DefaultTime) < 1e-3; // dummy or default time
-      bool checkC = info.timeFT0C > fT0CBBlower && info.timeFT0C < fT0CBBupper;
-      hasNoFT0 = checkA && checkC;
+    bool hasNoFT0 = true;
+    for (uint64_t ibit = presBitNum - fFilterRangeFT0; ibit <= presBitNum + fFilterRangeFT0; ibit++) {
+      bool check = false;
+      if (isCentral) {
+        bool isBB = TESTBIT(info.BBFT0Apf, ibit) || TESTBIT(info.BBFT0Cpf, ibit);
+        bool isBG = TESTBIT(info.BGFT0Apf, ibit) || TESTBIT(info.BGFT0Cpf, ibit);
+        check = !isBB && !isBG;
+      } else {
+        bool checkA = TESTBIT(info.BGFT0Apf, ibit);
+        bool checkC = TESTBIT(info.BBFT0Cpf, ibit);
+        check = checkA && checkC;
+      }
+      if (!check) {
+        hasNoFT0 = false;
+        break;
+      }
     }
     return hasNoFT0;
   }
@@ -787,7 +798,7 @@ struct UpcCandProducer {
 
     // central barrel tracks
     if (barrelTracks != nullptr) {
-      if (upcCuts.getAmbigSwitch() != 1) {
+      if (upcCuts.getAmbigSwitch() != 1 || fCollectBTracksQA) {
         for (const auto& ambTr : *ambBarrelTracks) {
           auto trId = ambTr.trackId();
           ambBarrelTrIds[trId] = ambTr.globalIndex();
@@ -852,7 +863,7 @@ struct UpcCandProducer {
           RgtrwTOF++;
         }
       }
-      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float)nBarTracks : 0.;
+      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / static_cast<float>(nBarTracks) : 0.;
       if (RgtrwTOF == 0 && fNBarProngs != 0) { // require at least 1 TOF track in central and semiforward cases
         continue;
       }
@@ -874,7 +885,7 @@ struct UpcCandProducer {
       }
       // store used tracks
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
-      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels);
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
       eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
@@ -906,7 +917,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
+    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -944,7 +955,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
+    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -968,7 +979,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
+    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -1014,7 +1025,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
+    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
