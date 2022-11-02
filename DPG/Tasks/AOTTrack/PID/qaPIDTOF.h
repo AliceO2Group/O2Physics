@@ -20,6 +20,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -814,7 +815,6 @@ struct tofPidBetaQa {
   }
 };
 
-
 /// Task that checks the TOF collision time
 struct tofPidCollisionTimeQa {
   Configurable<int> nBinsEvTime{"nBinsEvTime", 1000, "Number of bins for the event time"};
@@ -922,7 +922,7 @@ struct tofPidCollisionTimeQa {
     histos.add("withqualitycuts/mass", "mass", kTH1F, {massAxis});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TrackSelection>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
   void process(Trks const& tracks, aod::Collisions const&)
@@ -948,9 +948,9 @@ struct tofPidCollisionTimeQa {
       }
       histos.fill(HIST("eventTime"), t.tofEvTime());
       histos.fill(HIST("eventTimeReso"), t.tofEvTimeErr());
-      histos.fill(HIST("eventTimeMult"), t.tofEvTimeMult());
-      histos.fill(HIST("eventTimeVsMult"), t.tofEvTimeMult(), t.tofEvTime());
-      histos.fill(HIST("eventTimeResoVsMult"), t.tofEvTimeMult(), t.tofEvTimeErr());
+      histos.fill(HIST("eventTimeMult"), t.evTimeTOFMult());
+      histos.fill(HIST("eventTimeVsMult"), t.evTimeTOFMult(), t.tofEvTime());
+      histos.fill(HIST("eventTimeResoVsMult"), t.evTimeTOFMult(), t.tofEvTimeErr());
 
       histos.fill(HIST("collisionTime"), t.collision().collisionTime());
       histos.fill(HIST("collisionTimeRes"), t.collision().collisionTimeRes());
@@ -1029,7 +1029,7 @@ struct tofPidCollisionTimeQa {
           histos.fill(HIST("goodreso/mass"), mass);
           histos.fill(HIST("goodreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
         }
-        if (!filterForTOFEventTime(trk)) {
+        if (!trk.usedForTOFEvTime()) {
           continue;
         }
         histos.fill(HIST("goodforevtime/p"), trk.p());

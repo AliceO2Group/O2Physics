@@ -22,5 +22,5 @@
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<tofPidBetaQa>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<tofPidCollisionTimeQa>(cfgc)};
 }
