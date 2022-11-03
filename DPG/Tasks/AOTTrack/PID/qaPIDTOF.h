@@ -839,10 +839,10 @@ struct tofPidCollisionTimeQa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext& initContext)
   {
-    const AxisSpec evTimeAxis{nBinsEvTime, minEvTime, maxEvTime, "TOF event time (ps)"};
+    const AxisSpec evTimeAxis{nBinsEvTime, minEvTime, maxEvTime, "Event time (ps)"};
     const AxisSpec evTimeDeltaAxis{nBinsEvTime, -maxEvTime, maxEvTime, "Delta event time (ps)"};
     const AxisSpec multAxis{nBinsEvTime, 0, rangeMultiplicity, "Track multiplicity for TOF event time"};
-    const AxisSpec evTimeResoAxis{nBinsEvTimeReso, 0, rangeEvTimeReso, "TOF event time resolution (ps)"};
+    const AxisSpec evTimeResoAxis{nBinsEvTimeReso, 0, rangeEvTimeReso, "Event time resolution (ps)"};
     const AxisSpec tofSignalAxis{nBinsTofSignal, minTofSignal, maxTofSignal, "TOF signal (ps)"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} GeV/#it{c}"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} GeV/#it{c}"};
@@ -874,26 +874,33 @@ struct tofPidCollisionTimeQa {
     h2->GetXaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0A} (ps)");
     h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0C} (ps)");
     h2 = histos.add<TH2>("deltaEvTimeTOFT0AvsTOF", "deltaEvTimeTOFT0AvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
-    h2->GetXaxis()->SetTitle("Ev. time_{TOF}");
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
     h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0A} (ps)");
     h2 = histos.add<TH2>("deltaEvTimeTOFT0CvsTOF", "deltaEvTimeTOFT0CvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
-    h2->GetXaxis()->SetTitle("Ev. time_{TOF}");
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
     h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0C} (ps)");
     h2 = histos.add<TH2>("deltaEvTimeTOFT0ACvsTOF", "deltaEvTimeTOFT0ACvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
-    h2->GetXaxis()->SetTitle("Ev. time_{TOF}");
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
     h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0AC} (ps)");
+
     histos.add("eventTime", "eventTime", kTH1F, {evTimeAxis});
     histos.add("eventTimeReso", "eventTimeReso", kTH1F, {evTimeResoAxis});
-    histos.add("eventTimeMult", "eventTimeMult", kTH1F, {multAxis});
     histos.add("eventTimeVsMult", "eventTimeVsMult", kTH2F, {multAxis, evTimeAxis});
     histos.add("eventTimeResoVsMult", "eventTimeResoVsMult", kTH2F, {multAxis, evTimeResoAxis});
-    histos.add<TH1>("collisionTime", "collisionTime", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time (ps)");
-    histos.add<TH1>("collisionTimeRes", "collisionTimeRes", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time resolution (ps)");
+
+    histos.add("eventTimeTOFMult", "eventTimeTOFMult", kTH1F, {multAxis});
+    histos.add<TH1>("eventTimeTOF", "eventTimeTOF", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    histos.add<TH1>("eventTimeTOFReso", "eventTimeTOFReso", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
+    histos.add<TH1>("eventTimeTOFVsMult", "eventTimeTOFVsMult", kTH2F, {multAxis, evTimeAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    histos.add<TH1>("eventTimeTOFResoVsMult", "eventTimeTOFResoVsMult", kTH2F, {multAxis, evTimeResoAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
 
     histos.add<TH1>("eventTimeT0A", "eventTimeT0A", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0A event time (ps)");
     histos.add<TH1>("eventTimeT0C", "eventTimeT0C", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0C event time (ps)");
     histos.add<TH1>("eventTimeT0AC", "eventTimeT0AC", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0AC event time (ps)");
     histos.add<TH1>("eventTimeT0ACReso", "eventTimeT0ACReso", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("T0AC event time resolution (ps)");
+
+    histos.add<TH1>("collisionTime", "collisionTime", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time (ps)");
+    histos.add<TH1>("collisionTimeRes", "collisionTimeRes", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time resolution (ps)");
 
     histos.add("tracks/p", "p", kTH1F, {pAxis});
     histos.add("tracks/pt", "pt", kTH1F, {ptAxis});
@@ -977,28 +984,34 @@ struct tofPidCollisionTimeQa {
       }
       histos.fill(HIST("eventTime"), t.tofEvTime());
       histos.fill(HIST("eventTimeReso"), t.tofEvTimeErr());
-      histos.fill(HIST("eventTimeMult"), t.evTimeTOFMult());
       histos.fill(HIST("eventTimeVsMult"), t.evTimeTOFMult(), t.tofEvTime());
       histos.fill(HIST("eventTimeResoVsMult"), t.evTimeTOFMult(), t.tofEvTimeErr());
+
+      histos.fill(HIST("eventTimeTOF"), t.evTimeTOF());
+      histos.fill(HIST("eventTimeTOFReso"), t.evTimeTOFErr());
+      histos.fill(HIST("eventTimeTOFMult"), t.evTimeTOFMult());
+      histos.fill(HIST("eventTimeTOFVsMult"), t.evTimeTOFMult(), t.evTimeTOF());
+      histos.fill(HIST("eventTimeTOFResoVsMult"), t.evTimeTOFMult(), t.evTimeTOFErr());
+
       if (collision.has_foundFT0()) { // T0 measurement is available
         if (collision.t0ACorrectedValid()) {
           histos.fill(HIST("eventTimeT0A"), collision.t0ACorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0A"), t.tofEvTime() - collision.t0ACorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0AvsTOF"), t.tofEvTime(), t.tofEvTime() - collision.t0ACorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0A"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0AvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
         }
         if (collision.t0CCorrectedValid()) {
           histos.fill(HIST("eventTimeT0C"), collision.t0CCorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0C"), t.tofEvTime() - collision.t0CCorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0CvsTOF"), t.tofEvTime(), t.tofEvTime() - collision.t0CCorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0C"), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0CvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
         }
         if (collision.t0ACValid()) {
           histos.fill(HIST("eventTimeT0AC"), collision.t0AC() * 1000.f);
           histos.fill(HIST("eventTimeT0ACReso"), collision.t0resolution() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0AC"), t.tofEvTime() - collision.t0AC() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0ACvsTOF"), t.tofEvTime(), t.tofEvTime() - collision.t0AC() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0AC"), t.evTimeTOF() - collision.t0AC() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0ACvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0AC() * 1000.f);
         }
         if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid()) {
-          histos.fill(HIST("deltaEvTimeTOFT0AvsT0C"), t.tofEvTime() - collision.t0ACorrected() * 1000.f, t.tofEvTime() - collision.t0CCorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0AvsT0C"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f, t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
         }
       }
 
