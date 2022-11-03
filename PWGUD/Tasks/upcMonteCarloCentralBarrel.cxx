@@ -23,44 +23,40 @@
 //#include "CommonConstants/PhysicsConstants.h"
 
 // O2Physics headers
-//#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "PWGUD/Core/UPCMonteCarloCentralBarrelHelper.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
+#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename T>
-int getElectronCharge(T generatedElectron)
-// Check if particle is electron or positron and return charge accordingly. Return zero if particle is not electron/positron
-{
-	if (generatedElectron.pdgCode() == 11) return -1;
-	else if (generatedElectron.pdgCode() == -11) return 1;
-	else return 0;
-}
-
 struct UpcMCCentralBarrel {
 
-	// helper function
-	float invariantMass(float E, float px, float py, float pz){
-		float im = E*E - px*px - py*py - pz*py;
-		return TMath::Sqrt(im);
-	}
 	// Global varialbes
 	bool isFirstReconstructedCollisions, isFirstGeneratedCollisions;
 	int countCollisions;
 	int32_t indexCollision;
+	Service<TDatabasePDG> pdg;
 
-		HistogramRegistry registry{
+	HistogramRegistry registry{
 		"registry",
 		{
-			{"hEffectOfSelections", "Effect of cuts;Selection (-);Number of events (-)", { HistType::kTH1D, { {10,-0.5,9.5} } } },
+			{"hEffectOfSelections", "Effect of cuts;Selection (-);Number of events (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
+			{"hEffectOfTrackSelections", "Effect of track cuts;Selection (-);Number of tracks (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
+			{"hEventSelectionTask", ";Selection (-);Number of events (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
+			{"hEventSelectionTaskParameters", ";Selection (-);Number of events (-)", { HistType::kTH1D, { {kNsel,-0.5,kNsel-0.5} } } },
 			{"hNcontributionsToReconstructedCollision", ";Number of contributions in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"hNgeneratedParticles", ";Number of particles in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"hNreconstructedTracks", ";Number of tracks in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
+			{"hNreconstructedTracksWide", ";Number of tracks in a collision (-);Number of events (-)", { HistType::kTH1D, { {1000,-0.5,999.5} } } },
 			{"hNcontributionsToVertex", ";Number of contributors to vertex (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"hNreconstructedTracksWithGeneratedParticle", ";Number of tracks in a collision with asociated generated particle (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"hNreconstructedTracksWithoutGeneratedParticle", ";Number of tracks in a collision without asociated generated particle (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
@@ -79,42 +75,59 @@ struct UpcMCCentralBarrel {
 			{"hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,2.8,3.4} } } },
 			{"hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
 			{"hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,2.} } } },
+			{"hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,10.} } } },
 			{"hMotherPt", ";Mother #it{p_{#rm T}} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,2.} } } },
 			{"hMotherPhi", ";Mother #phi (rad);Number of events (-)", { HistType::kTH1D, { {50,-TMath::Pi(),TMath::Pi()} } } },
 			{"hMotherRapidity", ";Mother #y (-);Number of events (-)", { HistType::kTH1D, { {500,-2.,2.} } } },
 			{"hVtxZ", ";Vertex z-position (cm);Number of events (-)", { HistType::kTH1D, { {1000,-30.,30.} } } },
 			{"hVtxZrecToGen", ";Vertex z-position: (reconstructed collision) - (generated collisions) (cm);Number of events (-)", { HistType::kTH1D, { {1000,-.5,.5} } } },
 			{"hVtxTransversal", ";Vertex x-position (cm);Vertex y-position (cm)", { HistType::kTH2D, { {1000,-0.1,0.1}, {1000,-0.1,0.1} } } },
+			{"hTPCsignalVsMom", "All tracks;#it{p} (GeV/#it{c});TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2F, { { 200,0.,2. }, { 950,10.,200. } } } },
+			{"hTPCelectronIdentified", ";Track from generated electron #it{p} (GeV/#it{c});Track from generated electron TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2F, { { 200,0.,2. }, { 950,10.,200. } } } },
+			{"hTPCsignalVtxContributors", ";Vtx contributor 1 - TPC d#it{E}/d#it{x} (arb. units);Vtx contributor 2 - TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2F, { { 950,10.,200. }, { 950,10.,200. } } } },
+			{"hTPCsignalGeneratedElectrons", ";Track from generated electron 1 - TPC d#it{E}/d#it{x} (arb. units);Track from generated electron 2 - TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2F, { { 950,10.,200. }, { 950,10.,200. } } } },
+			{"hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,10.} } } },
+			{"hTrackPt", ";Track #it{p_{#rm T}} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,5.} } } },
+			{"hTrackPhi", ";Track #phi (rad);Number of events (-)", { HistType::kTH1D, { {50,-2*TMath::Pi(),2*TMath::Pi()} } } },
+			{"hTrackEta", ";Track #eta (-);Number of events (-)", { HistType::kTH1D, { {500,-7.,7.} } } },
+			{"hTrackEnergy", ";Track Energy (GeV);Number of events (-)", { HistType::kTH1D, { {500,0.,100.} } } },
+			{"hTrackRapidity", ";Track rapidity (-);Number of events (-)", { HistType::kTH1D, { {500,-7.,7.} } } },
+			{"hPDGcodes", ";PDG codes (-);Number of events (-)", { HistType::kTH1D, { {6001,-3000.,3000.} } } }
 		}
 	};
 
 	// declare configurables
 	Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
+	Configurable<bool> printMetaInfo{"printMetaInfo", false, {"Print general info to terminal about collision, tracks, particles...; default it false."}};
 	Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
-	Configurable<bool> verboseCurrent{"verboseCurrent", false, {"Print current info to terminal; default it false."}};
+	Configurable<int> applyTrackCuts{"applyTrackCuts", 0, {"Apply n selections on track; default it no cut."}};
+	Configurable<int> applySingleTrackCut{"applySingleTrackCut", 0, {"Apply selection n on track, applyTrackCuts must be at maximum for full usage; default it no cut."}};
 
 	// declare filters
-	Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
+//	Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
 
 	// declare shortcuts
-	using ReconstructedTCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels>;
-	using ReconstructedCollision = soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator;
+	using ReconstructedTCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+														aod::pidTPCFullEl,
+														aod::McTrackLabels>;
+	using ReconstructedCollision = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
 	//	using ReconstructedCollision = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator;
 
 
 	// init
 	void init(InitContext&){
-		if (verboseInfo) LOGF(info,"####################################### INIT METHOD #######################################");
+		if (verboseInfo) printLargeMessage("INIT METHOD");
 		countCollisions = 0;
 		indexCollision = -1;
 		isFirstReconstructedCollisions = true;
 		isFirstGeneratedCollisions = true;
+
 	} // end init
 
 	// run (always called before process :( )
 	void run(ProcessingContext& context){
 
-		if (verboseInfo) LOGF(info,"####################################### RUN METHOD #######################################");
+		if (verboseInfo) printLargeMessage("RUN METHOD");
 		if (verboseDebug) LOGF(info,"countCollisions = %d",countCollisions);
 
 	} // end run
@@ -122,43 +135,42 @@ struct UpcMCCentralBarrel {
 	// declare preslices = table cross-connections
 	Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 	Preslice<aod::McCollisions> perBC = aod::mccollision::bcId;
-	Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
 	// process
 	void processSimulatorLevel(ReconstructedCollision const& reconstructedCollision,
 														 aod::McCollisions const& generatedCollisions,
 														 ReconstructedTCs const& reconstructedBarrelTracks,
-	                           aod::McParticles const& generatedParticles){
+	                           aod::McParticles const& generatedParticles,
+														 aod::BCs const& bcs,
+	                           aod::FT0s const& ft0s,
+	                           aod::FDDs const& fdds,
+	                           aod::FV0As const& fv0as){
 
 		if(isFirstReconstructedCollisions){
 			isFirstReconstructedCollisions = false;
-			if (verboseInfo) LOGF(info,"####################################### START LOOPING OVER RECONSTRUCTED COLLISIONS #######################################");
+			if (verboseInfo) printLargeMessage("START LOOPING OVER RECONSTRUCTED COLLISIONS");
 		}
-
+		if (verboseInfo) printLargeMessage("NEW COLLISION");
+		if (printMetaInfo) printCollisionData(reconstructedCollision, generatedCollisions, perBC);
+		countCollisions++;
 		registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(0);
+
+		fillEventSelectionHistogram(registry,reconstructedCollision);
+		fillTrackSelectionHistogram(registry,reconstructedBarrelTracks,reconstructedCollision);
+
 		registry.get<TH1>(HIST("hNcontributionsToReconstructedCollision"))->Fill(reconstructedCollision.numContrib());
 
 		auto thisReconstructedCollisionGeneratedParticles = generatedParticles.sliceBy(perMcCollision, reconstructedCollision.mcCollision().globalIndex());
-		auto thisBunchCrossingGeneratedCollisions = generatedCollisions.sliceBy(perBC,reconstructedCollision.bcId());
-//		auto thisReconstructedCollisionReconstructedTracks = reconstructedBarrelTracks.sliceBy(perCollision, reconstructedCollision.globalIndex());
-
-		if (verboseInfo) LOGF(info,"####################################### NEW COLLISION #######################################");
-		countCollisions++;
-		if (verboseCurrent) LOGF(info,"Global idx of reconstructedCollision %d; global idx of associated reconstructedCollision.mcCollision() %d",
-														 reconstructedCollision.globalIndex(),reconstructedCollision.mcCollision().globalIndex());
-		if (verboseCurrent) LOGF(info,"%d generated collisions in bunch crossing %d related to this reconstructed collisions",
-														 thisBunchCrossingGeneratedCollisions.size(),reconstructedCollision.bcId());
 
 		int nGeneratedParticlesInThisReconstructedCollision = thisReconstructedCollisionGeneratedParticles.size();
 		int nReconstructedTracksInThisReconstructedCollision = reconstructedBarrelTracks.size();
-//		int nReconstructedTracksInThisReconstructedCollisionAlternative = thisReconstructedCollisionReconstructedTracks.size();
 		if (verboseDebug) LOGF(info,"collision number = %d has %d contributors",countCollisions,reconstructedCollision.numContrib());
 		if (verboseDebug) LOGF(info,"This slice: number of reconstructed tracks = %d, number of generated particles in this slice %d",
 													reconstructedBarrelTracks.size(),nGeneratedParticlesInThisReconstructedCollision);
-//		if (verboseCurrent) LOGF(info,"%d reconstructed tracks according to preslice",nReconstructedTracksInThisReconstructedCollisionAlternative);
-//
+
 		registry.get<TH1>(HIST("hNgeneratedParticles"))->Fill(nGeneratedParticlesInThisReconstructedCollision);
 		registry.get<TH1>(HIST("hNreconstructedTracks"))->Fill(nReconstructedTracksInThisReconstructedCollision);
+		registry.get<TH1>(HIST("hNreconstructedTracksWide"))->Fill(nReconstructedTracksInThisReconstructedCollision);
 		registry.get<TH2>(HIST("hNrecoVSgene"))->Fill(nReconstructedTracksInThisReconstructedCollision,nGeneratedParticlesInThisReconstructedCollision);
 		registry.get<TH2>(HIST("hNrecoVSgeneMany"))->Fill(nReconstructedTracksInThisReconstructedCollision,nGeneratedParticlesInThisReconstructedCollision);
 		registry.get<TH1>(HIST("hVtxZ"))->Fill(reconstructedCollision.posZ());
@@ -171,33 +183,28 @@ struct UpcMCCentralBarrel {
 		int countPrimaryGeneratedParticlesWithReconstructedTrack = 0;
 		int countPrimaryGeneratedElectronsWithReconstructedTrack = 0;
 		int countContributorsToVertex = 0;
+		int countGlobalContributorsToVertex = 0;
 		for (auto& reconstructedBarrelTrack : reconstructedBarrelTracks){
-//			if (!reconstructedBarrelTrack.has_mcParticle())  {
-//				LOGF(warning, "No MC particle for track, skip...");
-//				continue;
-//			}
+			if (!selectTrack(reconstructedBarrelTrack,applyTrackCuts)) continue;
 			if (reconstructedBarrelTrack.isPVContributor()) countContributorsToVertex++;
+			if (selectTrack(reconstructedBarrelTrack,2)) countGlobalContributorsToVertex++;
 			if (reconstructedBarrelTrack.has_mcParticle()) {
+				if (reconstructedBarrelTrack.hasTPC()) registry.get<TH2>(HIST("hTPCsignalVsMom"))->Fill(reconstructedBarrelTrack.p(),reconstructedBarrelTrack.tpcSignal());
 				countReconstructedTracksWithGeneratedParticle++;
 				auto generatedParticle = reconstructedBarrelTrack.mcParticle();
-				if (verboseCurrent) LOGF(info,"Global idx of track in reconstructedBarrelTrack %d, is Vtx contributor %d, global idx of particle in reconstructedBarrelTrack.mcParticle() %d, is Primary %d",
-																 reconstructedBarrelTrack.globalIndex(),reconstructedBarrelTrack.isPVContributor(),generatedParticle.globalIndex(),generatedParticle.isPhysicalPrimary());
 				if (generatedParticle.isPhysicalPrimary()) {
 					countPrimaryGeneratedParticlesWithReconstructedTrack++;
-					if (TMath::Abs(generatedParticle.pdgCode()) == 11) countPrimaryGeneratedElectronsWithReconstructedTrack++;
+					if (TMath::Abs(generatedParticle.pdgCode()) == 11) {
+						countPrimaryGeneratedElectronsWithReconstructedTrack++;
+						if (reconstructedBarrelTrack.hasTPC()) registry.get<TH2>(HIST("hTPCelectronIdentified"))->Fill(reconstructedBarrelTrack.p(),reconstructedBarrelTrack.tpcSignal());
+					}
 				}
 			}
 			else countReconstructedTracksWithoutGeneratedParticle++;
 			if (reconstructedBarrelTrack.isPVContributor()) countReconstructedPrimaryTracks++;
 		}
 
-//		for (auto& reconstructedBarrelTrack : thisReconstructedCollisionReconstructedTracks){
-//			if (reconstructedBarrelTrack.has_mcParticle()) {
-//				auto generatedParticle = reconstructedBarrelTrack.mcParticle();
-//				if (verboseCurrent) LOGF(info,"Global idx of track in thisReconstructedCollisionReconstructedTracks %d",reconstructedBarrelTrack.globalIndex());
-//				if (verboseCurrent) LOGF(info,"Global idx of particle in thisReconstructedCollisionReconstructedTracks.mcParticle() %d, is Primary %d",generatedParticle.globalIndex(),generatedParticle.isPhysicalPrimary());
-//			}
-//		}
+		if (printMetaInfo) printCollisionTracksData(reconstructedBarrelTracks,applyTrackCuts);
 
 		registry.get<TH1>(HIST("hNcontributionsToVertex"))->Fill(countContributorsToVertex);
 		registry.get<TH1>(HIST("hNreconstructedTracksWithGeneratedParticle"))->Fill(countReconstructedTracksWithGeneratedParticle);
@@ -206,30 +213,108 @@ struct UpcMCCentralBarrel {
 		registry.get<TH1>(HIST("hNgeneratedPrimaryParticlesOfReconstructedTracks"))->Fill(countPrimaryGeneratedParticlesWithReconstructedTrack);
 		registry.get<TH1>(HIST("hNgeneratedPrimaryElectronsOfReconstructedTracks"))->Fill(countPrimaryGeneratedElectronsWithReconstructedTrack);
 
+		//
+		// Playing around
+		//
+		printLargeMessage("Primary + Global + FIT");
+		for (auto& reconstructedBarrelTrack : reconstructedBarrelTracks){
+			if (!trackSelection(reconstructedBarrelTrack,2)) continue;
+			if (!trackSelection(reconstructedBarrelTrack,5)) continue;
+			if (isEvSelFITempty(reconstructedCollision)) continue;
+			printTrackData(reconstructedBarrelTrack);
+			registry.get<TH1>(HIST("hTrackP"))->Fill(reconstructedBarrelTrack.p());
+			registry.get<TH1>(HIST("hTrackPt"))->Fill(reconstructedBarrelTrack.pt());
+			registry.get<TH1>(HIST("hTrackPhi"))->Fill(reconstructedBarrelTrack.phi());
+			registry.get<TH1>(HIST("hTrackEta"))->Fill(reconstructedBarrelTrack.eta());
+			if (reconstructedBarrelTrack.has_mcParticle()) {
+				auto mcparticle = reconstructedBarrelTrack.mcParticle();
+				registry.get<TH1>(HIST("hPDGcodes"))->Fill(mcparticle.pdgCode());
+				auto pdgInfo = pdg->GetParticle(mcparticle.pdgCode());
+				if (pdgInfo != nullptr) {
+					float mass = pdgInfo->Mass();
+					registry.get<TH1>(HIST("hTrackEnergy"))->Fill(reconstructedBarrelTrack.energy(mass));
+					registry.get<TH1>(HIST("hTrackRapidity"))->Fill(reconstructedBarrelTrack.rapidity(mass));
+				}
+			}
+
+		}
+
+		//
+		// fetching FT0, FDD, FV0 information
+		//
+		std::map<uint64_t, int32_t> BCsWithFT0;
+		// collect BCs with FT0 signals
+		for (const auto& ft0 : ft0s) {
+			uint64_t bc = ft0.bc().globalBC();
+			BCsWithFT0[bc] = ft0.globalIndex();
+		}
+		std::map<uint64_t, int32_t> BCsWithFDD;
+		// collect BCs with FDD signals
+		for (const auto& fdd : fdds) {
+			uint64_t bc = fdd.bc().globalBC();
+			BCsWithFDD[bc] = fdd.globalIndex();
+		}
+		std::map<uint64_t, int32_t> BCsWithFV0A;
+		// collect BCs with FV0A signals
+		for (const auto& fv0a : fv0as) {
+			uint64_t bc = fv0a.bc().globalBC();
+			BCsWithFV0A[bc] = fv0a.globalIndex();
+		}
+		bool FITisEmpty = isFITempty(reconstructedCollision.bcId(), BCsWithFT0, BCsWithFDD, BCsWithFV0A, ft0s, fdds, fv0as);
+		if (FITisEmpty) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(1);
+		FITisEmpty = isEvSelFITempty(reconstructedCollision);
+		if (FITisEmpty) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(2);
+		if (countContributorsToVertex == 2) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(3);
+		if (countGlobalContributorsToVertex == 2) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(4);
+
+
+		//
+		// TPC signal info starts here
+		//
 		TLorentzVector sumOfVertexTracks, trackFromVertex;
+		float dedxVC1 = -999.;
+		float dedxVC2 = -999.;
+		float dedxEl1 = -999.;
+		float dedxEl2 = -999.;
+		int countTrks = 0;
 		if (countContributorsToVertex == 2) {
 			for (auto& reconstructedBarrelTrack : reconstructedBarrelTracks){
 				if (!reconstructedBarrelTrack.isPVContributor()) continue;
+				countTrks++;
 				trackFromVertex.SetPxPyPzE(reconstructedBarrelTrack.px(),reconstructedBarrelTrack.py(),reconstructedBarrelTrack.pz(),
 																	 reconstructedBarrelTrack.energy(constants::physics::MassElectron));
 				sumOfVertexTracks+=trackFromVertex;
+				if (reconstructedBarrelTrack.hasTPC()){
+					if (countTrks == 1) dedxVC1 = reconstructedBarrelTrack.tpcSignal();
+					else if (countTrks == 2) dedxVC2 = reconstructedBarrelTrack.tpcSignal();
+					else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
+					if (reconstructedBarrelTrack.has_mcParticle()) {
+						auto generatedParticle = reconstructedBarrelTrack.mcParticle();
+						if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11) {
+							if (countTrks == 1) dedxEl1 = reconstructedBarrelTrack.tpcSignal();
+							else if (countTrks == 2) dedxEl2 = reconstructedBarrelTrack.tpcSignal();
+							else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
+						}
+					}
+				}
 			}
+			registry.get<TH2>(HIST("hTPCsignalVtxContributors"))->Fill(dedxVC1,dedxVC2);
+			registry.get<TH2>(HIST("hTPCsignalGeneratedElectrons"))->Fill(dedxEl1,dedxEl2);
+			registry.get<TH1>(HIST("hInvariantMass"))->Fill(sumOfVertexTracks.M());
+			registry.get<TH1>(HIST("hInvariantMassWide"))->Fill(sumOfVertexTracks.M());
+			registry.get<TH1>(HIST("hMotherP"))->Fill(sumOfVertexTracks.P());
+			registry.get<TH1>(HIST("hMotherPwide"))->Fill(sumOfVertexTracks.P());
+			registry.get<TH1>(HIST("hMotherPt"))->Fill(sumOfVertexTracks.Pt());
+			registry.get<TH1>(HIST("hMotherPhi"))->Fill(sumOfVertexTracks.Phi());
+			registry.get<TH1>(HIST("hMotherRapidity"))->Fill(sumOfVertexTracks.Rapidity());
 		}
 
-		registry.get<TH1>(HIST("hInvariantMass"))->Fill(sumOfVertexTracks.M());
-		registry.get<TH1>(HIST("hInvariantMassWide"))->Fill(sumOfVertexTracks.M());
-		registry.get<TH1>(HIST("hMotherP"))->Fill(sumOfVertexTracks.P());
-		registry.get<TH1>(HIST("hMotherPt"))->Fill(sumOfVertexTracks.Pt());
-		registry.get<TH1>(HIST("hMotherPhi"))->Fill(sumOfVertexTracks.Phi());
-		registry.get<TH1>(HIST("hMotherRapidity"))->Fill(sumOfVertexTracks.Rapidity());
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//   MC TRUTH STARTS HERE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		for (auto& generatedParticle : thisReconstructedCollisionGeneratedParticles){
-			if (verboseCurrent) LOGF(info,"Global idx of particle in thisReconstructedCollisionGeneratedParticles %d, is Primary %d",generatedParticle.globalIndex(),generatedParticle.isPhysicalPrimary());
-		}
+		if (printMetaInfo) printCollisionGeneratedParticles(generatedParticles,perMcCollision,reconstructedCollision);
 
 		TLorentzVector candidateJpsi, electron;
 		int countGeneratedElectrons = 0;
@@ -240,11 +325,9 @@ struct UpcMCCentralBarrel {
 			if (verboseDebug) LOGF(info,"Particle isPhysicalPrimary = %d",generatedParticle.isPhysicalPrimary());
 			if (generatedParticle.isPhysicalPrimary()) countGeneratedPrimaryParticles++;
 			if (TMath::Abs(generatedParticle.pdgCode()) == 11) {
-				registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(1);
 				countGeneratedElectrons++;
 			}
 			if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11){
-				registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(2);
 				countGeneratedPrimaryElectrons++;
 				electron.SetPxPyPzE(generatedParticle.px(),generatedParticle.py(),generatedParticle.pz(),generatedParticle.e());
 			}
@@ -263,12 +346,6 @@ struct UpcMCCentralBarrel {
 		registry.get<TH1>(HIST("hNgeneratedElectronsWithRecoColl"))->Fill(countGeneratedElectrons);
 		registry.get<TH1>(HIST("hNgeneratedPrimaryElectronsWithRecoColl"))->Fill(countGeneratedPrimaryElectrons);
 		registry.get<TH1>(HIST("hNgeneratedPrimaryParticlesWithRecoColl"))->Fill(countGeneratedPrimaryParticles);
-
-//		registry.get<TH1>(HIST("hInvariantMass"))->Fill(candidateJpsi.M());
-//		registry.get<TH1>(HIST("hMotherP"))->Fill(candidateJpsi.P());
-//		registry.get<TH1>(HIST("hMotherPt"))->Fill(candidateJpsi.Pt());
-//		registry.get<TH1>(HIST("hMotherPhi"))->Fill(candidateJpsi.Phi());
-//		registry.get<TH1>(HIST("hMotherRapidity"))->Fill(candidateJpsi.Rapidity());
 
 	} // end processSimulatorLevel
 
@@ -326,6 +403,7 @@ struct UpcMCCentralBarrel {
 		registry.get<TH1>(HIST("hNgeneratedPrimaryElectronsWithRecoColl"))->Fill(countPrimaryElectronsWithRecoColl);
 		registry.get<TH1>(HIST("hInvariantMass"))->Fill(candidateJpsi.M());
 		registry.get<TH1>(HIST("hMotherP"))->Fill(candidateJpsi.P());
+		registry.get<TH1>(HIST("hMotherPwide"))->Fill(candidateJpsi.P());
 		registry.get<TH1>(HIST("hMotherPt"))->Fill(candidateJpsi.Pt());
 		registry.get<TH1>(HIST("hMotherPhi"))->Fill(candidateJpsi.Phi());
 		registry.get<TH1>(HIST("hMotherRapidity"))->Fill(candidateJpsi.Rapidity());
@@ -334,10 +412,8 @@ struct UpcMCCentralBarrel {
 
 	} // end processGeneratorLevel
 
-	void processTest1(aod::McCollision const& generatedCollision,
-	                           aod::McParticles const& generatedParticles){
+	void processTest1(aod::McCollision const& generatedCollision, aod::McParticles const& generatedParticles){
 		if (verboseDebug) LOGF(info,"n particles %d",generatedParticles.size());
-
 	}// end processGeneratorLevelTest
 
 	void processTest2(aod::McCollision const& generatedCollision){
