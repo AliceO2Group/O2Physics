@@ -987,30 +987,38 @@ struct tofPidCollisionTimeQa {
       histos.fill(HIST("eventTimeVsMult"), t.evTimeTOFMult(), t.tofEvTime());
       histos.fill(HIST("eventTimeResoVsMult"), t.evTimeTOFMult(), t.tofEvTimeErr());
 
-      histos.fill(HIST("eventTimeTOF"), t.evTimeTOF());
-      histos.fill(HIST("eventTimeTOFReso"), t.evTimeTOFErr());
-      histos.fill(HIST("eventTimeTOFMult"), t.evTimeTOFMult());
-      histos.fill(HIST("eventTimeTOFVsMult"), t.evTimeTOFMult(), t.evTimeTOF());
-      histos.fill(HIST("eventTimeTOFResoVsMult"), t.evTimeTOFMult(), t.evTimeTOFErr());
+      if (t.isEvTimeTOF()) {
+        histos.fill(HIST("eventTimeTOF"), t.evTimeTOF());
+        histos.fill(HIST("eventTimeTOFReso"), t.evTimeTOFErr());
+        histos.fill(HIST("eventTimeTOFMult"), t.evTimeTOFMult());
+        histos.fill(HIST("eventTimeTOFVsMult"), t.evTimeTOFMult(), t.evTimeTOF());
+        histos.fill(HIST("eventTimeTOFResoVsMult"), t.evTimeTOFMult(), t.evTimeTOFErr());
+      }
 
       if (collision.has_foundFT0()) { // T0 measurement is available
         if (collision.t0ACorrectedValid()) {
           histos.fill(HIST("eventTimeT0A"), collision.t0ACorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0A"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0AvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
+          if (t.isEvTimeTOF()) {
+            histos.fill(HIST("deltaEvTimeTOFT0A"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
+            histos.fill(HIST("deltaEvTimeTOFT0AvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
+          }
         }
         if (collision.t0CCorrectedValid()) {
           histos.fill(HIST("eventTimeT0C"), collision.t0CCorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0C"), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0CvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
+          if (t.isEvTimeTOF()) {
+            histos.fill(HIST("deltaEvTimeTOFT0C"), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
+            histos.fill(HIST("deltaEvTimeTOFT0CvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
+          }
         }
         if (collision.t0ACValid()) {
           histos.fill(HIST("eventTimeT0AC"), collision.t0AC() * 1000.f);
           histos.fill(HIST("eventTimeT0ACReso"), collision.t0resolution() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0AC"), t.evTimeTOF() - collision.t0AC() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0ACvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0AC() * 1000.f);
+          if (t.isEvTimeTOF()) {
+            histos.fill(HIST("deltaEvTimeTOFT0AC"), t.evTimeTOF() - collision.t0AC() * 1000.f);
+            histos.fill(HIST("deltaEvTimeTOFT0ACvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0AC() * 1000.f);
+          }
         }
-        if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid()) {
+        if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid() && t.isEvTimeTOF()) {
           histos.fill(HIST("deltaEvTimeTOFT0AvsT0C"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f, t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
         }
       }
