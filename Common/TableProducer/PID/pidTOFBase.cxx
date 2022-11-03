@@ -112,7 +112,7 @@ struct tofEventTime {
   Configurable<std::string> sigmaname{"param-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -336,8 +336,8 @@ struct tofEventTime {
         if (collision.has_foundFT0()) { // T0 measurement is available
           // const auto& ft0 = collision.foundFT0();
           if (collision.t0ACValid()) {
-            t0AC[0] = collision.t0AC();
-            t0AC[1] = collision.t0resolution();
+            t0AC[0] = collision.t0AC() * 1000.f;
+            t0AC[1] = collision.t0resolution() * 1000.f;
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
           }
 
@@ -393,7 +393,7 @@ struct tofEventTime {
         // const auto& ft0 = collision.foundFT0();
         if (collision.t0ACValid()) {
           tableFlags(o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC);
-          tableEvTime(collision.t0AC(), collision.t0resolution());
+          tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
           continue;
         }
       }
