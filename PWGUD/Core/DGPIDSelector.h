@@ -13,6 +13,8 @@
 #define O2_ANALYSIS_DGPID_SELECTOR_
 
 #include <gandiva/projector.h>
+#include <string>
+#include <vector>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "PWGUD/DataModel/UDTables.h"

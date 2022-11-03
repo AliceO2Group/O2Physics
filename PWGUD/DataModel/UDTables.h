@@ -9,16 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2PHYSICS_UDTABLES_H
-#define O2PHYSICS_UDTABLES_H
+#ifndef PWGUD_DATAMODEL_UDTABLES_H_
+#define PWGUD_DATAMODEL_UDTABLES_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -313,4 +313,4 @@ using UDMcFwdTrackLabel = UDMcFwdTrackLabels::iterator;
 
 } // namespace o2::aod
 
-#endif // O2PHYSICS_UDTABLES_H
+#endif // PWGUD_DATAMODEL_UDTABLES_H_

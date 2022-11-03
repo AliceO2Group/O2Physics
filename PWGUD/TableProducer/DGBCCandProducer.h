@@ -16,6 +16,8 @@
 #ifndef O2_ANALYSIS_DGBCANDIDATE_H_
 #define O2_ANALYSIS_DGBCANDIDATE_H_
 
+#include <map>
+#include <vector>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "MathUtils/Utils.h"

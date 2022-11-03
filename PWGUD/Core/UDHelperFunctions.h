@@ -13,8 +13,8 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#ifndef O2_ANALYSISUDHEPLER_H_
-#define O2_ANALYSISUDHEPLER_H_
+#ifndef PWGUD_CORE_UDHELPERFUNCTIONS_H__
+#define PWGUD_CORE_UDHELPERFUNCTIONS_H_
 
 #include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
@@ -71,4 +71,4 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
 }
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSISUDHEPLER_H_
+#endif // PWGUD_CORE_UDHELPERFUNCTIONS_H_
