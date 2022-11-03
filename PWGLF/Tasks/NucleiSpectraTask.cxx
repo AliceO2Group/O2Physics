@@ -189,7 +189,7 @@ struct NucleiSpectraTask {
           nSigma[0][iS] = float((track.tpcSignal() - expBethe) / expSigma);
         }
         for (int iPID{0}; iPID < 2; ++iPID) {
-          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] > nuclei::pidCuts[0][iS][1]) {
+          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]) {
             if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
               continue;
             }
