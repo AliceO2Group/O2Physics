@@ -98,8 +98,8 @@ struct DGCandAnalyzer {
     registry.get<TH2>(HIST("TPCsignal2"))->Fill(tr2.pt(), signalTPC2);
     registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
 
-    auto signalTOF1 = tr1.tofSignal()/1.E3;
-    auto signalTOF2 = tr2.tofSignal()/1.E3;
+    auto signalTOF1 = tr1.tofSignal() / 1.E3;
+    auto signalTOF2 = tr2.tofSignal() / 1.E3;
 
     registry.get<TH2>(HIST("TOFsignal1"))->Fill(tr1.pt(), signalTOF1);
     registry.get<TH2>(HIST("TOFsignal2"))->Fill(tr2.pt(), signalTOF2);
@@ -161,9 +161,9 @@ struct DGCandAnalyzer {
     if ((rtrwTOF >= 0) && (rtrwTOF < diffCuts.minRgtrwTOF())) {
       return;
     }
-    //if ((dgcand.rgtrwTOF() >= 0) && (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF())) {
-    //  return;
-    //}
+    // if ((dgcand.rgtrwTOF() >= 0) && (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF())) {
+    //   return;
+    // }
 
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(dgtracks);

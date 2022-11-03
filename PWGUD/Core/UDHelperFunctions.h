@@ -39,14 +39,14 @@ int8_t netCharge(TCs tracks)
 
 // .............................................................................
 // return fraction of PV tracks with a TOF hit
-template <bool onlyPV, typename std::enable_if <onlyPV>::type* = nullptr, typename TCs> 
+template <bool onlyPV, typename std::enable_if<onlyPV>::type* = nullptr, typename TCs>
 float rPVtrwTOF(TCs tracks, int nPVTracks)
 {
   float rpvrwTOF = 0.;
   for (auto& track : tracks) {
     if (track.isPVContributor() && track.hasTOF()) {
       rpvrwTOF += 1.;
-    }      
+    }
   }
   if (nPVTracks > 0) {
     rpvrwTOF /= nPVTracks;
@@ -54,21 +54,21 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
   return rpvrwTOF;
 }
 
-template <bool onlyPV, typename std::enable_if <!onlyPV>::type* = nullptr, typename TCs> 
+// return fraction of tracks with a TOF hit
+template <bool onlyPV, typename std::enable_if<!onlyPV>::type* = nullptr, typename TCs>
 float rPVtrwTOF(TCs tracks, int nPVTracks)
 {
   float rpvrwTOF = 0.;
   for (auto& track : tracks) {
     if (track.hasTOF()) {
       rpvrwTOF += 1.;
-    }      
+    }
   }
   if (nPVTracks > 0) {
     rpvrwTOF /= nPVTracks;
   }
   return rpvrwTOF;
 }
-
 
 // -----------------------------------------------------------------------------
 #endif // O2_ANALYSISUDHEPLER_H_
