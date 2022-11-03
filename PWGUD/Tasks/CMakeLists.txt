@@ -44,12 +44,7 @@ o2physics_add_dpl_workflow(upccand-analyzer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upc-central-barrel-analyzer
-                            SOURCES upcCentralBarrelAnalyzer.cxx
-                            PUBLIC_LINK_LIBRARIES O2::Framework
-                            COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(upc-mc-central-barrel
-                            SOURCES upcMonteCarloCentralBarrel.cxx
-                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                            COMPONENT_NAME Analysis)
+                           SOURCES upcMonteCarloCentralBarrel.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
