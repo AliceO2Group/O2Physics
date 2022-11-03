@@ -873,6 +873,15 @@ struct tofPidCollisionTimeQa {
     auto h2 = histos.add<TH2>("deltaEvTimeTOFT0AvsT0C", "deltaEvTimeTOFT0AvsT0C", kTH2F, {evTimeDeltaAxis, evTimeDeltaAxis});
     h2->GetXaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0A} (ps)");
     h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0C} (ps)");
+    h2 = histos.add<TH2>("deltaEvTimeTOFT0AvsTOF", "deltaEvTimeTOFT0AvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF}");
+    h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0A} (ps)");
+    h2 = histos.add<TH2>("deltaEvTimeTOFT0CvsTOF", "deltaEvTimeTOFT0CvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF}");
+    h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0C} (ps)");
+    h2 = histos.add<TH2>("deltaEvTimeTOFT0ACvsTOF", "deltaEvTimeTOFT0ACvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF}");
+    h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0AC} (ps)");
     histos.add("eventTime", "eventTime", kTH1F, {evTimeAxis});
     histos.add("eventTimeReso", "eventTimeReso", kTH1F, {evTimeResoAxis});
     histos.add("eventTimeMult", "eventTimeMult", kTH1F, {multAxis});
@@ -972,15 +981,18 @@ struct tofPidCollisionTimeQa {
         if (collision.t0ACorrectedValid()) {
           histos.fill(HIST("eventTimeT0A"), collision.t0ACorrected() * 1000.f);
           histos.fill(HIST("deltaEvTimeTOFT0A"), t.tofEvTime() - collision.t0ACorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0AvsTOF"), t.tofEvTime(), t.tofEvTime() - collision.t0ACorrected() * 1000.f);
         }
         if (collision.t0CCorrectedValid()) {
           histos.fill(HIST("eventTimeT0C"), collision.t0CCorrected() * 1000.f);
           histos.fill(HIST("deltaEvTimeTOFT0C"), t.tofEvTime() - collision.t0CCorrected() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0CvsTOF"), t.tofEvTime(), t.tofEvTime() - collision.t0CCorrected() * 1000.f);
         }
         if (collision.t0ACValid()) {
           histos.fill(HIST("eventTimeT0AC"), collision.t0AC() * 1000.f);
           histos.fill(HIST("eventTimeT0ACReso"), collision.t0resolution() * 1000.f);
           histos.fill(HIST("deltaEvTimeTOFT0AC"), t.tofEvTime() - collision.t0AC() * 1000.f);
+          histos.fill(HIST("deltaEvTimeTOFT0ACvsTOF"), t.tofEvTime(), t.tofEvTime() - collision.t0AC() * 1000.f);
         }
         if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid()) {
           histos.fill(HIST("deltaEvTimeTOFT0AvsT0C"), t.tofEvTime() - collision.t0ACorrected() * 1000.f, t.tofEvTime() - collision.t0CCorrected() * 1000.f);
