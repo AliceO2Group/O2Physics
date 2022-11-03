@@ -360,7 +360,7 @@ struct AnalysisMuonSelection {
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
       for (auto& sig : fMCSignals) {
-        TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName());
+        TString nameStr2 = Form("Muon_%s_%s", cut.GetName(), sig.GetName());
         printf("Adding my histogram class %s\n", nameStr2.Data());
         mcnames.push_back(nameStr2);
         histClasses += Form("%s;", nameStr2.Data());
