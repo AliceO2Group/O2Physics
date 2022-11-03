@@ -20,7 +20,7 @@
 #include <string>
 
 // O2 includes
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
