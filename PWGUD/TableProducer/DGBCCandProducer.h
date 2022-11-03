@@ -13,9 +13,11 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  30.09.2022
 
-#ifndef O2_ANALYSIS_DGBCANDIDATE_H_
-#define O2_ANALYSIS_DGBCANDIDATE_H_
+#ifndef PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_
+#define PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_
 
+#include <map>
+#include <vector>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "MathUtils/Utils.h"
@@ -64,4 +66,4 @@ using FwdTracksWGTInBC = FwdTracksWGTInBCs::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_DGBCANDIDATE_H_
+#endif // PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_

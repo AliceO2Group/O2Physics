@@ -13,7 +13,6 @@
 #define PWGUD_DATAMODEL_UDTABLES_H_
 
 #include <cmath>
-
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataTypes.h"
