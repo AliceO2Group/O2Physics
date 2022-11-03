@@ -31,26 +31,26 @@ using namespace o2::analysis::hf_cuts_lc_topkpi;
 struct HFLcCandidateSelector {
   Produces<aod::HFSelLcCandidate> hfSelLcCandidate;
 
-  Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> d_pTCandMax{"d_pTCandMax", 36., "Upper bound of candidate pT"};
-  Configurable<bool> d_FilterPID{"d_FilterPID", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
+  Configurable<double> d_pTCandMin{"d_pTCandMinLc", 0., "Lower bound of candidate pT"};
+  Configurable<double> d_pTCandMax{"d_pTCandMaxLc", 36., "Upper bound of candidate pT"};
+  Configurable<bool> d_FilterPID{"d_FilterPIDLc", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
   // TPC
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.1, "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 1., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
-  Configurable<double> d_nSigmaTPCCombined{"d_nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpTLc", 0.1, "Lower bound of track pT for TPC PID"};
+  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpTLc", 1., "Upper bound of track pT for TPC PID"};
+  Configurable<double> d_nSigmaTPC{"d_nSigmaTPCLc", 3., "Nsigma cut on TPC only"};
+  Configurable<double> d_nSigmaTPCCombined{"d_nSigmaTPCCombinedLc", 5., "Nsigma cut on TPC combined with TOF"};
   //Configurable<double> d_TPCNClsFindablePIDCut{"d_TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
   // TOF
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.5, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 2.5, "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
-  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpTLc", 0.5, "Lower bound of track pT for TOF PID"};
+  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpTLc", 2.5, "Upper bound of track pT for TOF PID"};
+  Configurable<double> d_nSigmaTOF{"d_nSigmaTOFLc", 3., "Nsigma cut on TOF only"};
+  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombinedLc", 5., "Nsigma cut on TOF combined with TPC"};
   // Bayesian
-  Configurable<bool> d_BayesPID{"d_BayesPID", true, "Bool to use or not the PID based on Bayesian probability cut at filtering level"};
-  Configurable<double> d_pidBayesMinpT{"d_pidBayesMinpT", 0., "Lower bound of track pT for Bayesian PID"};
-  Configurable<double> d_pidBayesMaxpT{"d_pidBayesMaxpT", 100, "Upper bound of track pT for Bayesian PID"};
+  Configurable<bool> d_BayesPID{"d_BayesPIDLc", true, "Bool to use or not the PID based on Bayesian probability cut at filtering level"};
+  Configurable<double> d_pidBayesMinpT{"d_pidBayesMinpTLc", 0., "Lower bound of track pT for Bayesian PID"};
+  Configurable<double> d_pidBayesMaxpT{"d_pidBayesMaxpTLc", 100, "Upper bound of track pT for Bayesian PID"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> pTBins{"pTBinsLc", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
 
   /*
