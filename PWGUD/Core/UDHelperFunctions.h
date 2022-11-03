@@ -13,7 +13,7 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#ifndef PWGUD_CORE_UDHELPERFUNCTIONS_H__
+#ifndef PWGUD_CORE_UDHELPERFUNCTIONS_H_
 #define PWGUD_CORE_UDHELPERFUNCTIONS_H_
 
 #include "Framework/Logger.h"
