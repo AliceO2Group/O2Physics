@@ -906,7 +906,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates(&fwdTracks, reinterpret_cast<BarrelTracks*>(nullptr),
+    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -944,7 +944,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates(reinterpret_cast<ForwardTracks*>(nullptr), &barrelTracks,
+    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -968,7 +968,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(&fwdTracks, reinterpret_cast<BarrelTracks*>(nullptr),
+    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -1014,7 +1014,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(reinterpret_cast<ForwardTracks*>(nullptr), &barrelTracks,
+    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
