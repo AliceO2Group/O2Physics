@@ -15,8 +15,8 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
-#ifndef O2_ANALYSIS_PIDTOFBASE_H_
-#define O2_ANALYSIS_PIDTOFBASE_H_
+#ifndef COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
+#define COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 
 #include "PID/ParamBase.h"
 #include "PID/DetectorResponse.h"
@@ -54,4 +54,4 @@ DECLARE_SOA_TABLE(EvTimeTOFOnly, "AOD", "EvTimeTOFOnly", //! Table for the TOF e
                   pidtofevtime::EvTimeTOFMult);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_PIDTOFBASE_H_
+#endif // COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_

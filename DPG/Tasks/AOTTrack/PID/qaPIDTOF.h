@@ -15,6 +15,9 @@
 /// \brief  Header file for QA tasks of the TOF PID quantities
 ///
 
+#ifndef DPG_TASKS_AOTTRACK_PID_QAPIDTOF_H_
+#define DPG_TASKS_AOTTRACK_PID_QAPIDTOF_H_
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -1077,3 +1080,5 @@ struct tofPidCollisionTimeQa {
     }
   }
 };
+
+#endif // DPG_TASKS_AOTTRACK_PID_QAPIDTOF_H_
