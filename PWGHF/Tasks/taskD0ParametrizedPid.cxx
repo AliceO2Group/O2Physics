@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskD0ParametrizedPid.cxx
-/// \brief D0 analysis task 
+/// \brief D0 analysis task
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -159,6 +159,6 @@ struct HfTaskD0ParametrizedPid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfTaskD0ParametrizedPid>(cfgc, TaskName{"hf-task-d0-parametrizedPID-mc"}));
+  workflow.push_back(adaptAnalysisTask<HfTaskD0ParametrizedPid>(cfgc));
   return workflow;
 }

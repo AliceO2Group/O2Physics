@@ -285,11 +285,11 @@ struct HfCandidateCreatorLbMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HfCandidateCreatorLb>(cfgc, TaskName{"hf-cand-creator-lb"}),
-    adaptAnalysisTask<HfCandidateCreatorLbExpressions>(cfgc, TaskName{"hf-cand-creator-lb-expressions"})};
+    adaptAnalysisTask<HfCandidateCreatorLb>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorLbExpressions>(cfgc)};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorLbMc>(cfgc, TaskName{"hf-cand-creator-lb-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorLbMc>(cfgc));
   }
   return workflow;
 }

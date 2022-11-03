@@ -721,7 +721,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<HfTaskMcValidationAddAmbiguousTrackInfo>(cfgc),
-    adaptAnalysisTask<HfTaskMcValidationGen>(cfgc, TaskName{"hf-task-mc-validation-gen"}),
-    adaptAnalysisTask<HfTaskMcValidationRec>(cfgc, TaskName{"hf-task-mc-validation-rec"})};
+    adaptAnalysisTask<HfTaskMcValidationGen>(cfgc),
+    adaptAnalysisTask<HfTaskMcValidationRec>(cfgc)};
   return workflow;
 }

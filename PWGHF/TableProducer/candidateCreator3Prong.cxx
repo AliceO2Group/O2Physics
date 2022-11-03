@@ -388,6 +388,6 @@ struct HfCandidateCreator3ProngExpressions {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreator3Prong>(cfgc, TaskName{"hf-cand-creator-3prong"}),
-    adaptAnalysisTask<HfCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-cand-creator-3prong-expressions"})};
+    adaptAnalysisTask<HfCandidateCreator3Prong>(cfgc, TaskName{"hf-candidate-creator-3prong"}),
+    adaptAnalysisTask<HfCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-candidate-creator-3prong-expressions"})};
 }

@@ -349,11 +349,11 @@ struct HfCandidateCreatorXMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HfCandidateCreatorX>(cfgc, TaskName{"hf-cand-creator-x"}),
-    adaptAnalysisTask<HfCandidateCreatorXExpressions>(cfgc, TaskName{"hf-cand-creator-x-expressions"})};
+    adaptAnalysisTask<HfCandidateCreatorX>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorXExpressions>(cfgc)};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorXMc>(cfgc, TaskName{"hf-cand-creator-x-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorXMc>(cfgc));
   }
   return workflow;
 }

@@ -297,6 +297,6 @@ struct HfCandidateCreatorCascadeMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreatorCascade>(cfgc, TaskName{"hf-cand-creator-cascade"}),
-    adaptAnalysisTask<HfCandidateCreatorCascadeMc>(cfgc, TaskName{"hf-cand-creator-cascade-mc"})};
+    adaptAnalysisTask<HfCandidateCreatorCascade>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorCascadeMc>(cfgc)};
 }

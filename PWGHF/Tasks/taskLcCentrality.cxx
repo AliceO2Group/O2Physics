@@ -195,10 +195,10 @@ struct HfTaskLcCentralityMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HfTaskLcCentrality>(cfgc, TaskName{"hf-task-lc-centrality"})};
+    adaptAnalysisTask<HfTaskLcCentrality>(cfgc)};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfTaskLcCentralityMc>(cfgc, TaskName{"hf-task-lc-centrality-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfTaskLcCentralityMc>(cfgc));
   }
   return workflow;
 }

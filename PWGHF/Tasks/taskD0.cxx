@@ -357,5 +357,5 @@ struct HfTaskD0 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskD0>(cfgc, TaskName{"hf-task-d0"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskD0>(cfgc)};
 }

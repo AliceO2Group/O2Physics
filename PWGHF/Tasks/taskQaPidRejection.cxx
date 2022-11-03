@@ -505,19 +505,19 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec w;
   w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionAlice3PidIndexBuilder>(cfgc));
   if (cfgc.options().get<int>("rej-el")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Electron>>(cfgc, TaskName{"qa-tracking-rejection-electron"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Electron>>(cfgc, TaskName{"hf-task-qa-pid-rejection-electron"}));
   }
   if (cfgc.options().get<int>("rej-ka")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Kaon>>(cfgc, TaskName{"qa-tracking-rejection-kaon"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Kaon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-kaon"}));
   }
   if (cfgc.options().get<int>("rej-pr")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Proton>>(cfgc, TaskName{"qa-tracking-rejection-proton"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Proton>>(cfgc, TaskName{"hf-task-qa-pid-rejection-proton"}));
   }
   if (cfgc.options().get<int>("rej-mu")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Muon>>(cfgc, TaskName{"qa-tracking-rejection-mu"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Muon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-mu"}));
   }
   if (cfgc.options().get<int>("rej-pi")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Pion>>(cfgc, TaskName{"qa-tracking-rejection-pion"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Pion>>(cfgc, TaskName{"hf-task-qa-pid-rejection-pion"}));
   }
   w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionGeneral>(cfgc));
   return w;

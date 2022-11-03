@@ -139,6 +139,6 @@ struct HfTaskLcToK0sP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskLcToK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
+    adaptAnalysisTask<HfTaskLcToK0sP>(cfgc),
   };
 }

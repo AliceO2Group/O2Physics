@@ -465,5 +465,5 @@ struct HfTaskCorrelationDDbar {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationDDbar>(cfgc, TaskName{"hf-task-correlation-d-dbar"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationDDbar>(cfgc)};
 }

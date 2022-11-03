@@ -286,11 +286,11 @@ struct HfCandidateCreatorChicMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HfCandidateCreatorChic>(cfgc, TaskName{"hf-cand-creator-chic"}),
-    adaptAnalysisTask<HfCandidateCreatorChicExpressions>(cfgc, TaskName{"hf-cand-creator-chic-expressions"})};
+    adaptAnalysisTask<HfCandidateCreatorChic>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorChicExpressions>(cfgc)};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorChicMc>(cfgc, TaskName{"hf-cand-creator-chic-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorChicMc>(cfgc));
   }
   return workflow;
 }

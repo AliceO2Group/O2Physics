@@ -432,6 +432,6 @@ struct HfTreeCreatorLcToPKPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HfTreeCreatorLcToPKPi>(cfgc, TaskName{"hf-tree-creator-lc-to-p-k-pi"}));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorLcToPKPi>(cfgc));
   return workflow;
 }

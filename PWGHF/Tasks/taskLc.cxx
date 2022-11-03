@@ -491,5 +491,5 @@ struct HfTaskLc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskLc>(cfgc, TaskName{"hf-task-lc"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskLc>(cfgc)};
 }

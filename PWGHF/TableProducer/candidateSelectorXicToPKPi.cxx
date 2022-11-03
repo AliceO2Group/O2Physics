@@ -251,5 +251,5 @@ struct HfCandidateSelectorXicToPKPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorXicToPKPi>(cfgc, TaskName{"hf-candidate-selector-xic-to-p-k-pi"})};
+    adaptAnalysisTask<HfCandidateSelectorXicToPKPi>(cfgc)};
 }

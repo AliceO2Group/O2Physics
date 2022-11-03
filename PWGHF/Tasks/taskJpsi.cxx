@@ -291,10 +291,10 @@ struct HfTaskJpsiMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<HfTaskJpsi>(cfgc, TaskName{"hf-task-jpsi"})};
+    adaptAnalysisTask<HfTaskJpsi>(cfgc)};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfTaskJpsiMc>(cfgc, TaskName{"hf-task-jpsi-mc"}));
+    workflow.push_back(adaptAnalysisTask<HfTaskJpsiMc>(cfgc));
   }
   return workflow;
 }

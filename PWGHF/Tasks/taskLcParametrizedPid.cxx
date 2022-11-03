@@ -135,6 +135,6 @@ struct HfTaskLcParametrizedPid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfTaskLcParametrizedPid>(cfgc, TaskName{"hf-task-lc-parametrizedPID-mc"}));
+  workflow.push_back(adaptAnalysisTask<HfTaskLcParametrizedPid>(cfgc));
   return workflow;
 }

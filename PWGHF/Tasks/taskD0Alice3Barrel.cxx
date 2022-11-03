@@ -160,6 +160,6 @@ struct HfTaskD0Alice3Barrel {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfTaskD0Alice3Barrel>(cfgc, TaskName{"hf-task-d0-ALICE3-Barrel-mc"}));
+  workflow.push_back(adaptAnalysisTask<HfTaskD0Alice3Barrel>(cfgc));
   return workflow;
 }
