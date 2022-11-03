@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaPIDTOFBeta.cxx
+/// \file   qaPIDTOFEvTime.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Implementation for QA tasks of the TOF PID quantities
+/// \brief  Implementation for QA tasks of the TOF PID quantities for the event times
 ///
 
 #include "Framework/AnalysisTask.h"
