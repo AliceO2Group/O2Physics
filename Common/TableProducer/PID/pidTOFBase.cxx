@@ -15,6 +15,10 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
+#include <utility>
+#include <vector>
+#include <string>
+
 // O2 includes
 #include <CCDB/BasicCCDBManager.h>
 #include "TOFBase/EventTimeMaker.h"
