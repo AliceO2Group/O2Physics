@@ -17,6 +17,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/Core/UDHelperFunctions.h"
+#include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "DGBCCandProducer.h"
 
@@ -182,6 +183,7 @@ struct DGBCCandProducer {
   using FTIBCs = aod::FwdTracksWGTInBCs;
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                         aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -192,6 +194,93 @@ struct DGBCCandProducer {
   Preslice<aod::FwdTracks> FWperCollision = aod::fwdtrack::collisionId;
   Preslice<TIBCs> TIBCperBC = aod::dgbcandidate::bcId;
   Preslice<FTIBCs> FTIBCperBC = aod::dgbcandidate::bcId;
+
+  // extract FIT information
+  upchelpers::FITInfo getFITinfo(BC const& bc, BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  {
+    // FITinfo
+    upchelpers::FITInfo info{};
+
+    // FT0
+    if (bc.has_foundFT0()) {
+      auto ft0 = bc.foundFT0();
+      info.timeFT0A = ft0.timeA();
+      info.timeFT0C = ft0.timeC();
+      const auto& ampsA = ft0.amplitudeA();
+      const auto& ampsC = ft0.amplitudeC();
+      info.ampFT0A = 0.;
+      for (auto amp : ampsA) {
+        info.ampFT0A += amp;
+      }
+      info.ampFT0C = 0.;
+      for (auto amp : ampsC) {
+        info.ampFT0C += amp;
+      }
+      info.triggerMaskFT0 = ft0.triggerMask();
+    }
+
+    // FV0A
+    if (bc.has_foundFV0()) {
+      auto fv0a = bc.foundFV0();
+      info.timeFV0A = fv0a.time();
+      const auto& amps = fv0a.amplitude();
+      info.ampFV0A = 0.;
+      for (auto amp : amps) {
+        info.ampFV0A += amp;
+      }
+      info.triggerMaskFV0A = fv0a.triggerMask();
+    }
+
+    // FDD
+    if (bc.has_foundFDD()) {
+      auto fdd = bc.foundFDD();
+      info.timeFDDA = fdd.timeA();
+      info.timeFDDC = fdd.timeC();
+      const auto& ampsA = fdd.chargeA();
+      const auto& ampsC = fdd.chargeC();
+      info.ampFDDA = 0.;
+      for (auto amp : ampsA) {
+        info.ampFDDA += amp;
+      }
+      info.ampFDDC = 0.;
+      for (auto amp : ampsC) {
+        info.ampFDDC += amp;
+      }
+      info.triggerMaskFDD = fdd.triggerMask();
+    }
+
+    // fill BG and BB flags in adjacent BCs [-15, 15]
+    LOGF(debug, "BC range to check: %i - %i", bc.globalBC() - 15, bc.globalBC() + 15);
+    Partition<BCs> selBCs = aod::bc::globalBC >= bc.globalBC() - 15 && aod::bc::globalBC <= bc.globalBC() + 15;
+    selBCs.bindTable(bcs);
+    LOGF(debug, "Number of BCs found: %i", selBCs.size());
+    for (auto const& bc2u : selBCs) {
+      // 0 <= bit <= 31
+      auto bit = bc2u.globalBC() - bc.globalBC() + 15;
+      if (!bc2u.selection()[evsel::kNoBGT0A])
+        SETBIT(info.BGFT0Apf, bit);
+      if (!bc2u.selection()[evsel::kNoBGT0C])
+        SETBIT(info.BGFT0Cpf, bit);
+      if (bc2u.selection()[evsel::kIsBBT0A])
+        SETBIT(info.BBFT0Apf, bit);
+      if (bc2u.selection()[evsel::kIsBBT0C])
+        SETBIT(info.BBFT0Cpf, bit);
+      if (!bc2u.selection()[evsel::kNoBGV0A])
+        SETBIT(info.BGFV0Apf, bit);
+      if (bc2u.selection()[evsel::kIsBBV0A])
+        SETBIT(info.BBFV0Apf, bit);
+      if (!bc2u.selection()[evsel::kNoBGFDA])
+        SETBIT(info.BGFDDApf, bit);
+      if (!bc2u.selection()[evsel::kNoBGFDC])
+        SETBIT(info.BGFDDCpf, bit);
+      if (bc2u.selection()[evsel::kIsBBFDA])
+        SETBIT(info.BBFDDApf, bit);
+      if (bc2u.selection()[evsel::kIsBBFDC])
+        SETBIT(info.BBFDDCpf, bit);
+    }
+
+    return info;
+  }
 
   // function to update UDTracks, UDTracksCov, UDTracksDCA, UDTracksPID, UDTracksExtra, and UDTrackCollisionIDs
   template <typename TTrack, typename TBC>
@@ -254,6 +343,9 @@ struct DGBCCandProducer {
     // get bc
     auto bc = tibc.bc_as<BCs>();
 
+    // fill FITInfo
+    upchelpers::FITInfo fitInfo = getFITinfo(bc, bcs, ft0s, fv0as, fdds);
+
     // check if DG event
     float rtrwTOF = -1.;
     int8_t nCharge;
@@ -270,17 +362,21 @@ struct DGBCCandProducer {
 
       // update UDTables
       if (isDG == 0) {
-        rtrwTOF = rPVtrwTOF(colTracks, col.numContrib());
+        rtrwTOF = rPVtrwTOF<true>(colTracks, col.numContrib());
         nCharge = netCharge(colTracks);
 
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          col.posX(), col.posY(), col.posZ(),
                          col.numContrib(), nCharge,
                          rtrwTOF);
-        outputCollisionsSels(0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                             false, false, false, false,
-                             bc.bbV0A(), bc.bgV0A(),
-                             bc.bbFDA(), bc.bbFDC(), bc.bgFDA(), bc.bgFDC());
+        outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
+                             fitInfo.triggerMaskFT0,
+                             fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
+                             fitInfo.triggerMaskFDD,
+                             fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
+                             fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
+                             fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
+                             fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
 
         // update DGTracks tables
         for (auto const& track : colTracks) {
@@ -310,17 +406,21 @@ struct DGBCCandProducer {
 
       // update UDTables
       if (isDG == 0) {
-        rtrwTOF = rPVtrwTOF(tracksArray, tracksArray.size());
+        rtrwTOF = rPVtrwTOF<false>(tracksArray, tracksArray.size());
         nCharge = netCharge(tracksArray);
 
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          -1., 1., -1.,
                          tracksArray.size(), nCharge,
                          rtrwTOF);
-        outputCollisionsSels(0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                             false, false, false, false,
-                             bc.bbV0A(), bc.bgV0A(),
-                             bc.bbFDA(), bc.bbFDC(), bc.bgFDA(), bc.bgFDC());
+        outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
+                             fitInfo.triggerMaskFT0,
+                             fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
+                             fitInfo.triggerMaskFDD,
+                             fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
+                             fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
+                             fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
+                             fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
 
         // update DGTracks tables
         for (auto const& track : tracksArray) {
