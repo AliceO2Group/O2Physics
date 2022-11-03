@@ -20,6 +20,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 using namespace o2;
@@ -836,6 +837,7 @@ struct tofPidCollisionTimeQa {
   void init(o2::framework::InitContext& initContext)
   {
     const AxisSpec evTimeAxis{nBinsEvTime, minEvTime, maxEvTime, "TOF event time (ps)"};
+    const AxisSpec evTimeDeltaAxis{nBinsEvTime, -maxEvTime, maxEvTime, "Delta event time (ps)"};
     const AxisSpec multAxis{nBinsEvTime, 0, rangeMultiplicity, "Track multiplicity for TOF event time"};
     const AxisSpec evTimeResoAxis{nBinsEvTimeReso, 0, rangeEvTimeReso, "TOF event time resolution (ps)"};
     const AxisSpec tofSignalAxis{nBinsTofSignal, minTofSignal, maxTofSignal, "TOF signal (ps)"};
@@ -862,6 +864,9 @@ struct tofPidCollisionTimeQa {
     h->GetXaxis()->SetBinLabel(3, "hasITS");
     h->GetXaxis()->SetBinLabel(4, "hasTPC");
     h->GetXaxis()->SetBinLabel(5, "hasTOF");
+    histos.add("deltaTOFT0A", "deltaTOFT0A", kTH1F, {evTimeDeltaAxis});
+    histos.add("deltaTOFT0C", "deltaTOFT0C", kTH1F, {evTimeDeltaAxis});
+    histos.add("deltaTOFT0AC", "deltaTOFT0AC", kTH1F, {evTimeDeltaAxis});
     histos.add("eventTime", "eventTime", kTH1F, {evTimeAxis});
     histos.add("eventTimeReso", "eventTimeReso", kTH1F, {evTimeResoAxis});
     histos.add("eventTimeMult", "eventTimeMult", kTH1F, {multAxis});
@@ -923,9 +928,10 @@ struct tofPidCollisionTimeQa {
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TrackSelection>;
+  using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
-  void process(Trks const& tracks, aod::Collisions const&)
+  void process(Trks const& tracks, EvTimeCollisions const&)
   {
     static int ncolls = 0;
     int lastCollisionId = -1; // Last collision ID analysed
@@ -935,10 +941,10 @@ struct tofPidCollisionTimeQa {
       } else if (t.collisionId() == lastCollisionId) { // Event was already processed
         continue;
       }
-      /// Create new table for the tracks in a collision
+      // Create new table for the tracks in a collision
       lastCollisionId = t.collisionId(); /// Cache last collision ID
+      auto collision = t.collision_as<EvTimeCollisions>();
 
-      // const auto& collision = t.collision();
       histos.fill(HIST("eventSelection"), 0.5f);
       histos.fill(HIST("eventSelection"), 1.5f);
       if (t.tofEvTimeErr() > 199.f) {
@@ -951,9 +957,24 @@ struct tofPidCollisionTimeQa {
       histos.fill(HIST("eventTimeMult"), t.evTimeTOFMult());
       histos.fill(HIST("eventTimeVsMult"), t.evTimeTOFMult(), t.tofEvTime());
       histos.fill(HIST("eventTimeResoVsMult"), t.evTimeTOFMult(), t.tofEvTimeErr());
+      collision.has_foundFT0();
+      collision.t0ACorrectedValid();
+      collision.t0CCorrectedValid();
+      collision.t0ACValid();
+      if (collision.has_foundFT0()) { // T0 measurement is available
+        if (collision.t0ACorrectedValid()) {
+          histos.fill(HIST("deltaTOFT0A"), t.tofEvTime() - collision.t0ACorrected());
+        }
+        if (collision.t0CCorrectedValid()) {
+          histos.fill(HIST("deltaTOFT0C"), t.tofEvTime() - collision.t0CCorrected());
+        }
+        if (collision.t0ACValid()) {
+          histos.fill(HIST("deltaTOFT0AC"), t.tofEvTime() - collision.t0AC());
+        }
+      }
 
-      histos.fill(HIST("collisionTime"), t.collision().collisionTime());
-      histos.fill(HIST("collisionTimeRes"), t.collision().collisionTimeRes());
+      histos.fill(HIST("collisionTime"), collision.collisionTime());
+      histos.fill(HIST("collisionTimeRes"), collision.collisionTimeRes());
       ncolls++;
 
       const auto tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
