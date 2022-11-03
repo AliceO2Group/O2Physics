@@ -133,7 +133,7 @@ struct EmcalCorrectionTask {
     hCellE.setObject(new TH1F("hCellE", "hCellE", 200, 0.0, 100));
     hCellTowerID.setObject(new TH1I("hCellTowerID", "hCellTowerID", 20000, 0, 20000));
     hCellEtaPhi.setObject(new TH2F("hCellEtaPhi", "hCellEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
-    // NOTE: Reversed column and row because it's more natural for presentatin.
+    // NOTE: Reversed column and row because it's more natural for presentation.
     hCellRowCol.setObject(new TH2I("hCellRowCol", "hCellRowCol;Column;Row", 97, 0, 97, 600, 0, 600));
     hClusterE.setObject(new TH1F("hClusterE", "hClusterE", 200, 0.0, 100));
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
@@ -178,7 +178,7 @@ struct EmcalCorrectionTask {
       auto res = mClusterizers.at(0)->getGeometry()->EtaPhiFromIndex(cell.getTower());
       hCellEtaPhi->Fill(std::get<0>(res), TVector2::Phi_0_2pi(std::get<1>(res)));
       res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cell.getTower());
-      // NOTE: Reversed column and row because it's more natural for presentatin.
+      // NOTE: Reversed column and row because it's more natural for presentation.
       hCellRowCol->Fill(std::get<1>(res), std::get<0>(res));
     }
 

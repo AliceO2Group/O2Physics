@@ -37,7 +37,7 @@ class FemtoWorldDetaDphiStar
  public:
   /// Destructor
   virtual ~FemtoWorldDetaDphiStar() = default;
-  /// Initalization of the histograms and setting required values
+  /// Initialization of the histograms and setting required values
   void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii)
   {
     deltaPhiMax = ldeltaPhiMax;

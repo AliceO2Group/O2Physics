@@ -15,6 +15,8 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
+#include "PWGUD/Core/UPCCutparHolder.h"
+#include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2::framework;
@@ -38,116 +40,33 @@ struct UpcCandProducer {
   Produces<o2::aod::UDTracksDCA> udTracksDCA;
   Produces<o2::aod::UDTracksPID> udTracksPID;
   Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
+  Produces<o2::aod::UDTracksFlags> udTracksFlags;
 
   Produces<o2::aod::UDCollisions> eventCandidates;
   Produces<o2::aod::UDCollisionsSels> eventCandidatesSels;
 
-  struct FITInfo {
-    float ampFT0A = -1;
-    float ampFT0C = -1;
-    float timeFT0A = -999.;
-    float timeFT0C = -999.;
-    uint8_t triggerMaskFT0 = 0;
-    float ampFDDA = -1;
-    float ampFDDC = -1;
-    float timeFDDA = -999.;
-    float timeFDDC = -999.;
-    uint8_t triggerMaskFDD = 0;
-    float ampFV0A = -1;
-    float timeFV0A = -999.;
-    uint8_t triggerMaskFV0A = 0;
-    int32_t BBFT0Apf = 0;
-    int32_t BGFT0Apf = 0;
-    int32_t BBFT0Cpf = 0;
-    int32_t BGFT0Cpf = 0;
-    int32_t BBFV0Apf = 0;
-    int32_t BGFV0Apf = 0;
-    int32_t BBFDDApf = 0;
-    int32_t BGFDDApf = 0;
-    int32_t BBFDDCpf = 0;
-    int32_t BGFDDCpf = 0;
-  };
+  std::vector<bool> fwdSelectors;
+  std::vector<bool> barrelSelectors;
 
   // skimmer flags
   // choose a source of signal MC events
   Configurable<int> fSignalGenID{"signalGenID", 1, "Signal generator ID"};
 
-  // cuts for forward tracks
-  Configurable<int> fUseFwdCuts{"useFwdCuts", 1, "Use cuts for forward tracks"};
-  Configurable<int> fTrackType{"trackType", 3, "Filter by Fwd. track type: -1 -> no filter, 0 -> MFT-MCH-MID, 2 -> MFT-MCH, 3 -> MCH-MID. See ForwardTrackTypeEnum"};
-  // basic
-  Configurable<float> fFwdPtLow{"fwdPtLow", 0.5, "Minimal Pt for forward tracks"};
-  Configurable<float> fFwdPtHigh{"fwdPtHigh", 4., "Maximal Pt for forward tracks"};
-  Configurable<float> fFwdEtaLow{"fwdEtaLow", -4.0, "Maximal Eta for forward tracks"};
-  Configurable<float> fFwdEtaHigh{"fwdEtaHigh", -2.5, "Maximal Eta for forward tracks"};
-  // quality
-  Configurable<float> fMuonRAtAbsorberEndLow{"muonRAtAbsorberEndLow", 17.6, "Minimal muon R at absorber end"};
-  Configurable<float> fMuonRAtAbsorberEndHigh{"muonRAtAbsorberEndHigh", 89.5, "Maximal muon R at absorber end"};
-  Configurable<float> fMuonPDcaHighFirst{"fMuonPDcaHighFirst", 594.0, "Primary PDCA cut: Maximal value for R < 26.5"};
-  Configurable<float> fMuonPDcaHighSecond{"fMuonPDcaHighSecond", 324.0, "Additional PDCA cut: Maximal value for R >= 26.5"};
-  Configurable<float> fFwdChi2Low{"fwdChi2Low", 0.0, "Minimal Chi2 for forward tracks"};
-  Configurable<float> fFwdChi2High{"fwdChi2High", 10000.0, "Maximal Chi2 for forward tracks"};
-
-  // cuts for central-barrel tracks
-  Configurable<int> fUseBarCuts{"useBarCuts", 1, "Use cuts for barrel tracks"};
-  // basic
-  Configurable<float> fBarPtLow{"barPtLow", 0., "Minimal Pt for barrel tracks"};
-  Configurable<float> fBarPtHigh{"barPtHigh", 1000., "Maximal Pt for barrel tracks"};
-  Configurable<float> fBarEtaLow{"barEtaLow", -0.9, "Maximal Eta for barrel tracks"};
-  Configurable<float> fBarEtaHigh{"barEtaHigh", 0.9, "Maximal Eta for barrel tracks"};
-  // quality: ITS
-  Configurable<int> fITSNClusLow{"ITSNClusLow", 4, "Minimal number of ITS clusters"};
-  Configurable<int> fITSNClusHigh{"ITSNClusHigh", 9, "Maximal number of ITS clusters"};
-  Configurable<float> fITSChi2Low{"ITSChi2Low", 0., "Minimal Chi2 in ITS per cluster"};
-  Configurable<float> fITSChi2High{"ITSChi2High", 5., "Maximal Chi2 in ITS per cluster"};
-  // quality: TPC
-  Configurable<int> fTPCNClusCRLow{"TPCNClusCRLow", 70, "Minimal number of TPC clusters (crossed rows)"};
-  Configurable<int> fTPCNClusCRHigh{"TPCNClusCRHigh", 161, "Maximal number of TPC clusters (crossed rows)"};
-  Configurable<float> fTPCChi2Low{"TPCChi2Low", 0., "Minimal Chi2 in TPC per cluster"};
-  Configurable<float> fTPCChi2High{"TPCChi2High", 4., "Maximal Chi2 in TPC per cluster"};
-  // quality: DCA
-  Configurable<int> fCheckMaxDcaXY{"checkMaxDCACut", 1, "Apply cut on maximal DCA_xy"};
-  Configurable<float> fDcaZLow{"dcaZLow", -3., "Minimal DCA_z for barrel tracks"};
-  Configurable<float> fDcaZHigh{"dcaZHigh", 3., "Maximal DCA_z for barrel tracks"};
-  // quality: TOF
-  Configurable<int> fRequireTOF{"requireTOF", 0, "Require all tracks to have TOF matches"};
-  // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
-  Configurable<int> fMaxNContrib{"maxNContrib", 2, "Central barrel: consider tracks from collisions with N contributors <= maxNContrib"};
-  Configurable<int> fAmbigSwitch{"ambigSwitch", 0, "Central barrel: 0 -- loop over all tracks, 1 -- loop only over tracks with vertices"};
+  // load cuts
+  UPCCutparHolder upcCuts = UPCCutparHolder();
+  MutableConfigurable<UPCCutparHolder> inputCuts{"UPCCuts", {}, "UPC event cuts"};
 
   // candidate producer flags
   Configurable<int> fCheckTPCPID{"checkTPCPID", 0, "Check TPC PID. Useful for central selection -- see `tpcPIDSwitch` option"};
   Configurable<int> fTPCPIDSwitch{"tpcPIDSwitch", 0, "PID switch: 0 -- two muons/pions, 1 -- two electrons, 2 -- electron + muon/pion"};
-  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals at the same BC"};
+  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
+  Configurable<int> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
   Configurable<int> fNFwdProngs{"nFwdProngs", 2, "Matched forward tracks per candidate"};
   Configurable<int> fNBarProngs{"nBarProngs", 0, "Matched barrel tracks per candidate"};
 
-  // QA histograms to check for tracks after cuts
+  // QA histograms
+  Configurable<int> fCollectBTracksQA{"collectBTracksQA", 0, "Collect kinematic distributions for all filtered central barrel tracks"};
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  enum FwdSels {
-    kFwdSelAll = 0,
-    kFwdSelPt,
-    kFwdSelEta,
-    kFwdSelRabs,
-    kFwdSelpDCA,
-    kFwdSelChi2,
-    kNFwdSels
-  };
-
-  enum BarrelSels {
-    kBarrelSelAll = 0,
-    kBarrelSelHasTOF,
-    kBarrelSelPt,
-    kBarrelSelEta,
-    kBarrelSelITSNCls,
-    kBarrelSelITSChi2,
-    kBarrelSelTPCNCls,
-    kBarrelSelTPCChi2,
-    kBarrelSelDCAXY,
-    kBarrelSelDCAZ,
-    kNBarrelSels
-  };
 
   using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 
@@ -159,131 +78,137 @@ struct UpcCandProducer {
 
   void init(InitContext&)
   {
-    const AxisSpec axisSelFwd{kNFwdSels, 0., double(kNFwdSels), ""};
-    histRegistry.add("MuonsSelCounter", "", kTH1F, {axisSelFwd});
-    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelAll + 1, "All");
-    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelPt + 1, "Pt");
-    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelEta + 1, "Eta");
-    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelRabs + 1, "Rabs");
-    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelpDCA + 1, "pDCA");
-    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(kFwdSelChi2 + 1, "Chi2");
+    fwdSelectors.resize(upchelpers::kNFwdSels - 1, false);
+    barrelSelectors.resize(upchelpers::kNBarrelSels - 1, false);
 
-    const AxisSpec axisSelBar{kNBarrelSels, 0., double(kNBarrelSels), ""};
+    upcCuts = (UPCCutparHolder)inputCuts;
+
+    const AxisSpec axisSelFwd{upchelpers::kNFwdSels, 0., static_cast<double>(upchelpers::kNFwdSels), ""};
+    histRegistry.add("MuonsSelCounter", "", kTH1F, {axisSelFwd});
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelAll + 1, "All");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelPt + 1, "Pt");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelEta + 1, "Eta");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelRabs + 1, "Rabs");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelpDCA + 1, "pDCA");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelChi2 + 1, "Chi2");
+
+    const AxisSpec axisSelBar{upchelpers::kNBarrelSels, 0., static_cast<double>(upchelpers::kNBarrelSels), ""};
     histRegistry.add("BarrelsSelCounter", "", kTH1F, {axisSelBar});
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelAll + 1, "All");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelHasTOF + 1, "HasTOF");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelPt + 1, "Pt");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelEta + 1, "Eta");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelITSNCls + 1, "ITSNCls");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelITSChi2 + 1, "ITSChi2");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelTPCNCls + 1, "TPCNCls");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelTPCChi2 + 1, "TPCChi2");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelDCAXY + 1, "DCAXY");
-    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(kBarrelSelDCAZ + 1, "DCAZ");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelAll + 1, "All");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelHasTOF + 1, "HasTOF");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelPt + 1, "Pt");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelEta + 1, "Eta");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelITSNCls + 1, "ITSNCls");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelITSChi2 + 1, "ITSChi2");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelTPCNCls + 1, "TPCNCls");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelTPCChi2 + 1, "TPCChi2");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAXY + 1, "DCAXY");
+    histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAZ + 1, "DCAZ");
+
+    if (fCollectBTracksQA) {
+      const AxisSpec axisPt{500, 0., 5., ""};
+      const AxisSpec axisEta{400, -2., 2., ""};
+      const AxisSpec axisPhi{628, 0., 6.28, ""};
+      const AxisSpec axisColNContrib{1001, -1., 1000., ""};
+
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TOF", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD", "", kTH2F, {axisPt, axisColNContrib});
+      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
+
+      histRegistry.add("TracksQA/Barrel/Eta/TPC", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_TOF", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD_TOF", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TOF", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD", "", kTH1F, {axisEta});
+      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF", "", kTH1F, {axisEta});
+
+      histRegistry.add("TracksQA/Barrel/Phi/TPC", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_TOF", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD_TOF", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TOF", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD", "", kTH1F, {axisPhi});
+      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF", "", kTH1F, {axisPhi});
+    }
   }
 
   bool applyFwdCuts(const ForwardTracks::iterator& track)
   {
-    histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelAll, 1);
+    histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelAll, 1);
+
     // using any cuts at all?
-    if (!fUseFwdCuts) {
+    if (!upcCuts.getUseFwdCuts()) {
       return true;
     }
-    // check Pt cuts
-    float pt = track.pt();
-    bool checkPt = pt > fFwdPtLow && pt < fFwdPtHigh;
-    if (checkPt) {
-      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelPt, 1);
-    }
-    // check pseudorapidity cuts
-    float eta = track.eta();
-    bool checkEta = eta > fFwdEtaLow && eta < fFwdEtaHigh;
-    if (checkEta) {
-      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelEta, 1);
-    }
-    // check muon R
-    float r = track.rAtAbsorberEnd();
-    bool checkR = r > fMuonRAtAbsorberEndLow && r < fMuonRAtAbsorberEndHigh;
-    if (checkR) {
-      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelRabs, 1);
-    }
-    // check pDCA
-    float pDCA = track.pDca();
-    bool checkPDCA = r < 26.5 ? pDCA < fMuonPDcaHighFirst : pDCA < fMuonPDcaHighSecond;
-    if (checkPDCA) {
-      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelpDCA, 1);
-    }
-    // check Chi2
-    float chi2 = track.chi2();
-    bool checkChi2 = chi2 > fFwdChi2Low && chi2 < fFwdChi2High;
-    if (checkChi2) {
-      histRegistry.fill(HIST("MuonsSelCounter"), kFwdSelChi2, 1);
-    }
-    bool pass = checkPt && checkEta && checkR && checkPDCA && checkChi2;
+
+    upchelpers::applyFwdCuts(upcCuts, track, fwdSelectors);
+
+    if (fwdSelectors[upchelpers::kFwdSelPt])
+      histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelPt, 1);
+    if (fwdSelectors[upchelpers::kFwdSelEta])
+      histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelEta, 1);
+    if (fwdSelectors[upchelpers::kFwdSelRabs])
+      histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelRabs, 1);
+    if (fwdSelectors[upchelpers::kFwdSelpDCA])
+      histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelpDCA, 1);
+    if (fwdSelectors[upchelpers::kFwdSelChi2])
+      histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelChi2, 1);
+
+    bool pass = fwdSelectors[upchelpers::kFwdSelPt] &&
+                fwdSelectors[upchelpers::kFwdSelEta] &&
+                fwdSelectors[upchelpers::kFwdSelRabs] &&
+                fwdSelectors[upchelpers::kFwdSelpDCA] &&
+                fwdSelectors[upchelpers::kFwdSelChi2];
     return pass;
   }
 
   bool applyBarCuts(const BarrelTracks::iterator& track)
   {
-    histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelAll, 1);
+    histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelAll, 1);
+
     // using any cuts at all?
-    if (!fUseBarCuts) {
+    if (!upcCuts.getUseBarCuts()) {
       return true;
     }
-    // require TOF match
-    bool hasTOF = true;
-    if (fRequireTOF) {
-      hasTOF = track.hasTOF();
-      if (hasTOF) {
-        histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelHasTOF, 1);
-      }
-    }
-    // check Pt cuts
-    float pt = track.pt();
-    bool checkPt = pt > fBarPtLow && pt < fBarPtHigh;
-    if (checkPt) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelPt, 1);
-    }
-    // check pseudorapidity cuts
-    float eta = track.eta();
-    bool checkEta = eta > fBarEtaLow && eta < fBarEtaHigh;
-    if (checkEta) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelEta, 1);
-    }
-    // check ITS cuts
-    bool checkITSNClus = track.itsNCls() >= static_cast<uint8_t>(fITSNClusLow) && track.itsNCls() <= static_cast<uint8_t>(fITSNClusHigh);
-    if (checkITSNClus) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelITSNCls, 1);
-    }
-    bool checkChi2ITS = track.itsChi2NCl() > fITSChi2Low && track.itsChi2NCl() < fITSChi2High;
-    if (checkChi2ITS) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelITSChi2, 1);
-    }
-    // check TPC cuts
-    int checkTPCNClus = track.tpcNClsCrossedRows() > static_cast<int16_t>(fTPCNClusCRLow) && track.tpcNClsCrossedRows() < static_cast<int16_t>(fTPCNClusCRHigh);
-    if (checkTPCNClus) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelTPCNCls, 1);
-    }
-    bool checkChi2TPC = track.tpcChi2NCl() > fTPCChi2Low && track.tpcChi2NCl() < fTPCChi2High;
-    if (checkChi2TPC) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelTPCChi2, 1);
-    }
-    // check DCA
-    bool checkMaxDcaXY = true;
-    if (fCheckMaxDcaXY) {
-      float dca = track.dcaXY();
-      float maxDCA = 0.0105f + 0.0350f / pow(pt, 1.1f);
-      checkMaxDcaXY = dca < maxDCA;
-      if (checkMaxDcaXY) {
-        histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelDCAXY, 1);
-      }
-    }
-    bool checkDCAZ = track.dcaZ() > fDcaZLow && track.dcaZ() < fDcaZHigh;
-    if (checkDCAZ) {
-      histRegistry.fill(HIST("BarrelsSelCounter"), kBarrelSelDCAZ, 1);
-    }
-    bool pass = hasTOF && checkPt && checkEta && checkITSNClus && checkChi2ITS &&
-                checkTPCNClus && checkChi2TPC && checkMaxDcaXY && checkDCAZ;
+
+    upchelpers::applyBarrelCuts(upcCuts, track, barrelSelectors);
+
+    if (barrelSelectors[upchelpers::kBarrelSelHasTOF])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelHasTOF, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelPt])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelPt, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelEta])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelEta, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelITSNCls])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelITSNCls, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelITSChi2])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelITSChi2, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelTPCNCls])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelTPCNCls, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelTPCChi2])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelTPCChi2, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelDCAXY])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelDCAXY, 1);
+    if (barrelSelectors[upchelpers::kBarrelSelDCAZ])
+      histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelDCAZ, 1);
+
+    bool pass = barrelSelectors[upchelpers::kBarrelSelHasTOF] &&
+                barrelSelectors[upchelpers::kBarrelSelPt] &&
+                barrelSelectors[upchelpers::kBarrelSelEta] &&
+                barrelSelectors[upchelpers::kBarrelSelITSNCls] &&
+                barrelSelectors[upchelpers::kBarrelSelITSChi2] &&
+                barrelSelectors[upchelpers::kBarrelSelTPCNCls] &&
+                barrelSelectors[upchelpers::kBarrelSelTPCChi2] &&
+                barrelSelectors[upchelpers::kBarrelSelDCAXY] &&
+                barrelSelectors[upchelpers::kBarrelSelDCAZ];
     return pass;
   }
 
@@ -378,9 +303,9 @@ struct UpcCandProducer {
       // skip if track doesn't pass selection
       bool pass = false;
       if constexpr (trackSwitch == 0) {
-        if (fTrackType != -1) {
+        if (upcCuts.getTrackType() != -1) {
           auto trType = tr.trackType();
-          if (trType != fTrackType) {
+          if (trType != upcCuts.getTrackType()) {
             continue;
           }
         }
@@ -389,19 +314,86 @@ struct UpcCandProducer {
       if constexpr (trackSwitch == 1) {
         pass = applyBarCuts(tr);
       }
-      if (pass) {
-        auto ambIter = ambTrIDs.find(tr.globalIndex());
-        if (ambIter == ambTrIDs.end()) {
-          int32_t colId = tr.collisionId();
-          const auto& col = collisions.iteratorAt(colId);
-          if (col.numContrib() > fMaxNContrib) { // skip if multiplicity is too high
-            continue;
-          }
-        } else if (fAmbigSwitch == 1) { // skip ambiguous tracks if needed
-          continue;
-        }
-        filteredTrackIDs.push_back(tr.globalIndex());
+      int32_t colNContrib = -1;
+      auto ambIter = ambTrIDs.find(tr.globalIndex());
+      if (ambIter == ambTrIDs.end()) {
+        int32_t colId = tr.collisionId();
+        const auto& col = collisions.iteratorAt(colId);
+        colNContrib = col.numContrib();
       }
+      if (pass) {
+        if ((colNContrib >= 0 && colNContrib <= upcCuts.getMaxNContrib()) || (colNContrib == -1 && upcCuts.getAmbigSwitch() != 1))
+          filteredTrackIDs.push_back(tr.globalIndex());
+      }
+      if constexpr (trackSwitch == 1) {
+        if (fCollectBTracksQA)
+          updateBTrackQA(tr, colNContrib);
+      }
+    }
+  }
+
+  void updateBTrackQA(const BarrelTracks::iterator& track, int32_t colNContrib)
+  {
+    // check basic cuts
+    // only tracks in TOF acceptance
+    if (!barrelSelectors[upchelpers::kBarrelSelPt] ||
+        std::abs(track.eta()) > 0.8 ||
+        !barrelSelectors[upchelpers::kBarrelSelTPCNCls])
+      return;
+
+    int8_t mask = 0;
+    if (track.hasTPC())
+      SETBIT(mask, 0);
+    if (track.hasITS())
+      SETBIT(mask, 1);
+    if (track.hasTOF())
+      SETBIT(mask, 2);
+    if (track.hasTRD())
+      SETBIT(mask, 3);
+
+    float pt = track.pt();
+    float eta = track.eta();
+    float phi = track.phi();
+
+    if (mask == 1) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC"), phi);
+    }
+    if (mask == 3) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS"), phi);
+    }
+    if (mask == 5) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TOF"), phi);
+    }
+    if (mask == 7) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TOF"), phi);
+    }
+    if (mask == 9) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD"), phi);
+    }
+    if (mask == 11) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD"), phi);
+    }
+    if (mask == 13) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD_TOF"), phi);
+    }
+    if (mask == 15) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF"), phi);
     }
   }
 
@@ -417,7 +409,7 @@ struct UpcCandProducer {
     if (ambIter == ambTrIDs.end()) {
       const auto& col = track.collision();
       trackBC = col.template bc_as<BCsWithBcSels>().globalBC();
-    } else if (fAmbigSwitch != 1) {
+    } else if (upcCuts.getAmbigSwitch() != 1) {
       const auto& ambTr = ambTracks->iteratorAt(ambIter->second);
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
@@ -459,11 +451,16 @@ struct UpcCandProducer {
                         std::vector<int32_t> const& trackIDs,
                         int32_t candID,
                         uint64_t bc,
-                        TMcTrackLabels* mcTrackLabels)
+                        TMcTrackLabels* mcTrackLabels,
+                        std::unordered_map<int32_t, int32_t>& ambBarrelTrIds)
   {
     for (int32_t trackID : trackIDs) {
       const auto& track = tracks->iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
+      bool isAmbiguous = false;
+      if (upcCuts.getAmbigSwitch() != 1) {
+        isAmbiguous = ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end();
+      }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
       udTracksExtra(track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
@@ -471,6 +468,7 @@ struct UpcCandProducer {
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       udTracksDCA(track.dcaZ(), track.dcaXY());
+      udTracksFlags(isAmbiguous, track.isPVContributor());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trackID);
@@ -554,22 +552,25 @@ struct UpcCandProducer {
     return pass;
   }
 
-  bool checkFT0(FITInfo& info, bool isCentral)
+  bool checkFT0(upchelpers::FITInfo& info, bool isCentral)
   {
     const uint64_t presBitNum = 16;
-    const float ft0DummyTime = 32.767f;
-    const float ft0DefaultTime = -999;
-    const float fT0CBBlower = -1.0; // ns
-    const float fT0CBBupper = 1.0;  // ns
-    bool hasNoFT0 = false;
-    if (isCentral) {
-      bool isBB = TESTBIT(info.BBFT0Apf, presBitNum) || TESTBIT(info.BBFT0Cpf, presBitNum);
-      bool isBG = TESTBIT(info.BGFT0Apf, presBitNum) || TESTBIT(info.BGFT0Cpf, presBitNum);
-      hasNoFT0 = !isBB && !isBG;
-    } else {
-      bool checkA = std::abs(info.timeFT0A - ft0DummyTime) < 1e-3 || std::abs(info.timeFT0A - ft0DefaultTime) < 1e-3; // dummy or default time
-      bool checkC = info.timeFT0C > fT0CBBlower && info.timeFT0C < fT0CBBupper;
-      hasNoFT0 = checkA && checkC;
+    bool hasNoFT0 = true;
+    for (uint64_t ibit = presBitNum - fFilterRangeFT0; ibit <= presBitNum + fFilterRangeFT0; ibit++) {
+      bool check = false;
+      if (isCentral) {
+        bool isBB = TESTBIT(info.BBFT0Apf, ibit) || TESTBIT(info.BBFT0Cpf, ibit);
+        bool isBG = TESTBIT(info.BGFT0Apf, ibit) || TESTBIT(info.BGFT0Cpf, ibit);
+        check = !isBB && !isBG;
+      } else {
+        bool checkA = TESTBIT(info.BGFT0Apf, ibit);
+        bool checkC = TESTBIT(info.BBFT0Cpf, ibit);
+        check = checkA && checkC;
+      }
+      if (!check) {
+        hasNoFT0 = false;
+        break;
+      }
     }
     return hasNoFT0;
   }
@@ -580,18 +581,18 @@ struct UpcCandProducer {
                       o2::aod::FDDs const& fdds,
                       o2::aod::FV0As const& fv0as,
                       std::map<uint64_t, std::pair<std::vector<int32_t>, std::vector<int32_t>>>& bcsMatchedTrIds,
-                      std::unordered_map<uint64_t, FITInfo>& bcsWithFIT)
+                      std::unordered_map<uint64_t, upchelpers::FITInfo>& bcsWithFIT)
   {
     const uint64_t presBitNum = 16; // bit for present BC
 
     std::unordered_set<uint64_t> addedBCs;
-    std::vector<std::pair<uint64_t, FITInfo>> vbcsWithFIT;
+    std::vector<std::pair<uint64_t, upchelpers::FITInfo>> vbcsWithFIT;
 
     // gather FIT information for each BC
     // even if there is no FIT info at all -> store dummy "info{}"
     for (const auto& bc : bcs) {
       int32_t ft0Id = bc.foundFT0Id();
-      FITInfo info{};
+      upchelpers::FITInfo info{};
       if (ft0Id != -1) {
         const auto& ft0 = ft0s.iteratorAt(ft0Id);
         info.timeFT0A = ft0.timeA();
@@ -665,7 +666,7 @@ struct UpcCandProducer {
       uint64_t bc = item.first;
       if (addedBCs.find(bc) == addedBCs.end()) {
         addedBCs.insert(bc);
-        FITInfo info{};
+        upchelpers::FITInfo info{};
         vbcsWithFIT.push_back({bc, info});
       }
     }
@@ -773,7 +774,7 @@ struct UpcCandProducer {
 
     // forward matching
     if (fwdTracks != nullptr) {
-      if (fAmbigSwitch != 1) {
+      if (upcCuts.getAmbigSwitch() != 1) {
         for (const auto& ambTr : *ambFwdTracks) {
           auto trId = ambTr.fwdtrackId();
           ambFwdTrIds[trId] = ambTr.globalIndex();
@@ -797,7 +798,7 @@ struct UpcCandProducer {
 
     // central barrel tracks
     if (barrelTracks != nullptr) {
-      if (fAmbigSwitch != 1) {
+      if (upcCuts.getAmbigSwitch() != 1 || fCollectBTracksQA) {
         for (const auto& ambTr : *ambBarrelTracks) {
           auto trId = ambTr.trackId();
           ambBarrelTrIds[trId] = ambTr.globalIndex();
@@ -819,7 +820,7 @@ struct UpcCandProducer {
       }
     }
 
-    std::unordered_map<uint64_t, FITInfo> bcsWithFIT;
+    std::unordered_map<uint64_t, upchelpers::FITInfo> bcsWithFIT;
     processFITInfo(bcs, ft0s, fdds, fv0as, bcsMatchedTrIds, bcsWithFIT);
 
     // todo: calculate position of UD collision?
@@ -862,7 +863,7 @@ struct UpcCandProducer {
           RgtrwTOF++;
         }
       }
-      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float)nBarTracks : 0.;
+      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / static_cast<float>(nBarTracks) : 0.;
       if (RgtrwTOF == 0 && fNBarProngs != 0) { // require at least 1 TOF track in central and semiforward cases
         continue;
       }
@@ -872,7 +873,7 @@ struct UpcCandProducer {
       }
       // fetching FT0, FDD, FV0 information
       // if there is no relevant signal, dummy info will be used
-      FITInfo fitInfo{};
+      upchelpers::FITInfo fitInfo{};
       auto it = bcsWithFIT.find(bc);
       if (it != bcsWithFIT.end()) {
         fitInfo = it->second;
@@ -884,7 +885,7 @@ struct UpcCandProducer {
       }
       // store used tracks
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
-      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels);
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
       eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
@@ -916,7 +917,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
+    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -954,7 +955,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     fDoSemiFwd = false;
-    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
+    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -978,7 +979,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(&fwdTracks, (BarrelTracks*)nullptr,
+    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
                      &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
                      bcs, collisions,
                      ft0s, fdds, fv0as,
@@ -1024,7 +1025,7 @@ struct UpcCandProducer {
     fDoMC = true;
     fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates((ForwardTracks*)nullptr, &barrelTracks,
+    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
                      (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
                      bcs, collisions,
                      ft0s, fdds, fv0as,

@@ -1,6 +1,6 @@
 ---
 # MegaLinter GitHub Action configuration file
-# More info at https://megalinter.github.io
+# More info at https://oxsecurity.github.io/megalinter
 name: MegaLinter
 
 'on': [pull_request_target]
@@ -32,21 +32,15 @@ jobs:
       - name: MegaLinter
         id: ml
         # You can override MegaLinter flavor used to have faster performances
-        # More info at https://megalinter.github.io/flavors/
-        uses: oxsecurity/megalinter@v5
+        # More info at https://oxsecurity.github.io/megalinter/flavors/
+        uses: oxsecurity/megalinter@v6
         env:
           # All available variables are described in documentation:
-          # https://megalinter.github.io/configuration/
+          # https://oxsecurity.github.io/megalinter/configuration/
           # Validates all source when push on master, else just the diff with
           # master. Override with true if you always want to lint all sources.
-          # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Uncomment to disable copy-paste and spell checks
-          # DISABLE: COPYPASTE,SPELL
-          # The bandit check is overly broad and complains about subprocess
-          # usage in Scripts/update_ccdb.py.
-          DISABLE_ERRORS_LINTERS: PYTHON_BANDIT
 
       # Create or delete the cleanup branch
       - name: Update cleanup branch
@@ -83,7 +77,7 @@ jobs:
             yourself and update the pull request, or merge this PR in yours.
 
             You can find how to run MegaLinter locally at
-            <https://megalinter.github.io/latest/mega-linter-runner/>.
+            <https://oxsecurity.github.io/megalinter/latest/mega-linter-runner/>.
         # We do not create PRs if the branch is not there.
         continue-on-error: true
 

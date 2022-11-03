@@ -42,7 +42,7 @@ enum kDetector {
 /// internal function that returns the kPIDselection element corresponding to a specifica n-sigma value
 /// \param nSigma number of sigmas for PID
 /// \param vNsigma vector with the number of sigmas of interest
-/// \return kPIDselection corresponing to n-sigma
+/// \return kPIDselection corresponding to n-sigma
 kPIDselection getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 {
   for (int i = 0; i < (int)vNsigma.size(); i++) {

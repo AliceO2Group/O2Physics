@@ -13,8 +13,8 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#ifndef O2_ANALYSISUDHEPLER_H_
-#define O2_ANALYSISUDHEPLER_H_
+#ifndef PWGUD_CORE_UDHELPERFUNCTIONS_H_
+#define PWGUD_CORE_UDHELPERFUNCTIONS_H_
 
 #include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
@@ -39,7 +39,7 @@ int8_t netCharge(TCs tracks)
 
 // .............................................................................
 // return fraction of PV tracks with a TOF hit
-template <typename TCs>
+template <bool onlyPV, typename std::enable_if<onlyPV>::type* = nullptr, typename TCs>
 float rPVtrwTOF(TCs tracks, int nPVTracks)
 {
   float rpvrwTOF = 0.;
@@ -54,5 +54,21 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
   return rpvrwTOF;
 }
 
+// return fraction of tracks with a TOF hit
+template <bool onlyPV, typename std::enable_if<!onlyPV>::type* = nullptr, typename TCs>
+float rPVtrwTOF(TCs tracks, int nPVTracks)
+{
+  float rpvrwTOF = 0.;
+  for (auto& track : tracks) {
+    if (track.hasTOF()) {
+      rpvrwTOF += 1.;
+    }
+  }
+  if (nPVTracks > 0) {
+    rpvrwTOF /= nPVTracks;
+  }
+  return rpvrwTOF;
+}
+
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSISUDHEPLER_H_
+#endif // PWGUD_CORE_UDHELPERFUNCTIONS_H_

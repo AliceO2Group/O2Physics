@@ -474,8 +474,8 @@ class RecoDecay
 
   /// Calculates the difference between measured and expected track impact parameter
   /// normalized to its uncertainty
-  /// \param decLenXY decay lenght in {x, y} plane
-  /// \param errDecLenXY error on decay lenght in {x, y} plane
+  /// \param decLenXY decay length in {x, y} plane
+  /// \param errDecLenXY error on decay length in {x, y} plane
   /// \param momMother {x, y, z} or {x, y} candidate momentum array
   /// \param impParProng prong impact parameter
   /// \param errImpParProng error on prong impact parameter
@@ -497,7 +497,7 @@ class RecoDecay
   /// Calculates maximum normalized difference between measured and expected impact parameter of candidate prongs
   /// \param posPV {x, y, z} or {x, y} position of primary vertex
   /// \param posSV {x, y, z} or {x, y} position of secondary vertex
-  /// \param errDecLenXY error on decay lenght in {x, y} plane
+  /// \param errDecLenXY error on decay length in {x, y} plane
   /// \param momMother {x, y, z} or {x, y} candidate momentum array
   /// \param arrImpPar array of prong impact parameters
   /// \param arrErrImpPar array of errors on prong impact parameter (same order as arrImpPar)

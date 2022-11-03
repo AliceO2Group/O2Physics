@@ -1,6 +1,6 @@
 ---
 # Configuration file for Mega-Linter
-# See all available variables at https://megalinter.github.io/configuration/ and in linters documentation
+# See all available variables at https://oxsecurity.github.io/megalinter/configuration/ and in linters documentation
 
 APPLY_FIXES: all # all, none, or list of linter keys
 DEFAULT_BRANCH: master # Usually master or main
@@ -11,14 +11,18 @@ DISABLE:
   - COPYPASTE # abusive copy-pastes
   - SPELL # spelling mistakes
 DISABLE_LINTERS:
-  - CPP_CPPLINT
   - BASH_EXEC
   - BASH_SHFMT
   - JSON_PRETTIER
   - YAML_V8R
   - YAML_PRETTIER
+  - REPOSITORY_DEVSKIM
+DISABLE_ERRORS_LINTERS: # If errors are found by these linters, they will be considered as non blocking.
+  - PYTHON_BANDIT # The bandit check is overly broad and complains about subprocess usage in Scripts/update_ccdb.py.
 SHOW_ELAPSED_TIME: true
 FILEIO_REPORTER: false
 GITHUB_COMMENT_REPORTER: false
 UPDATED_SOURCES_REPORTER: false
 PRINT_ALPACA: false # Don't print ASCII alpaca in the log
+PRINT_ALL_FILES: true # Print all processed files
+FLAVOR_SUGGESTIONS: false # Don't show suggestions about different MegaLinter flavors

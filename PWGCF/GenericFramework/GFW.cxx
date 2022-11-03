@@ -322,7 +322,7 @@ TComplex GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool
   TComplex retval(1, 0);
   for (int i = 0; i < (int)corconf.Regs.size(); i++) { // looping over all regions
     if (corconf.Regs.at(i).size() == 0)
-      return TComplex(0, 0); // again, if no regions in the current subevent, then quit immediatelly
+      return TComplex(0, 0); // again, if no regions in the current subevent, then quit immediately
     // picking up the indecies of regions...
     int poi = corconf.Regs.at(i).at(0);
     int ref = (corconf.Regs.at(i).size() > 1) ? corconf.Regs.at(i).at(1) : corconf.Regs.at(i).at(0);

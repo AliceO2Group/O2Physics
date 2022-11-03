@@ -280,7 +280,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("lmeePID_TPChadrejTOFrecRun3")) {
-    cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
 
@@ -314,6 +314,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_kaon_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_proton_rejection"));
     cut->AddCut(cut_tpc_hadrej);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_eNSigma")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
     return cut;
   }
 
@@ -359,7 +377,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("lmee_GlobalTrackRun3_TPC_ePID_lowPt")) {
-    cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
     cut->AddCut(GetAnalysisCut("tpc_electron"));
@@ -378,7 +396,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("muonLowPt2")) {
-    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    cut->AddCut(GetAnalysisCut("muonLowPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonLowPt3")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt3"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -391,6 +415,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("muonHighPt")) {
     cut->AddCut(GetAnalysisCut("muonHighPt"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt2")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt3")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt3"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -666,6 +702,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronPID_TPCnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    return cut;
+  }
+
   if (!nameStr.compare("electronPIDnsigmaOpen")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 3000.0);
@@ -721,7 +765,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("electronPIDworseRes")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0 * 0.8, 3000.0); // emulates a 20% degradation in PID resolution
-    cut->AddCut(VarManager::kTPCnSigmaPi, 3.0 * 0.8, 3000.0); //    proton and pion rejections are effectively relaxed by 20%
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.0 * 0.8, 3000.0); // proton and pion rejections are effectively relaxed by 20%
     return cut;
   }
 
@@ -752,33 +796,33 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     TF1* f1minPi = new TF1("f1minPi", "[0]+exp([1]*x+[2])", 0, 10);
     f1minPi->SetParameters(37, -18, 5.5);
     TF1* f1maxPi = new TF1("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
-    f1maxPi->SetParameters(60, -15, 6);
-    cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.05, 0.3, false);
+    f1maxPi->SetParameters(67, -17, 5.9);
+    cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
     TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
-    f1minPi->SetParameters(60, 4.);
+    f1minPi->SetParameters(65, 4.);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, 110., false, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_kaon_rejection")) {
-    TF1* f1minKa = new TF1("f1minKa", "[0]+[1]*x", 0, 10);
-    f1minKa->SetParameters(220, -300);
-    TF1* f1maxKa = new TF1("f1maxKa", "[0]+[1]*x", 0, 10);
-    f1maxKa->SetParameters(182.5, -150);
-    cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.4, 0.8, false);
+    TF1* f1minKa = new TF1("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
+    f1minKa->SetParameters(37, -4, 5.6);
+    TF1* f1maxKa = new TF1("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
+    f1maxKa->SetParameters(60, -4.1, 6.);
+    cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.0, 10.0, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_proton_rejection")) {
-    TF1* f1minPr = new TF1("f1minPr", "[0]+[1]*x", 0, 10);
-    f1minPr->SetParameters(170, -100);
-    TF1* f1maxPr = new TF1("f1maxPr", "[0]+[1]*x", 0, 10);
-    f1maxPr->SetParameters(175, -75);
-    cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.8, 1.4, false);
+    TF1* f1minPr = new TF1("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
+    f1minPr->SetParameters(37, -2.6, 6.1);
+    TF1* f1maxPr = new TF1("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
+    f1maxPr->SetParameters(60, -2.4, 6.2);
+    cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
@@ -799,6 +843,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pidcalib_ele")) {
     cut->AddCut(VarManager::kIsLegFromGamma, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("electronPID_TOFnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.4, 1e+10, false);
     return cut;
   }
 
@@ -845,8 +896,23 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonLowPt3")) {
+    cut->AddCut(VarManager::kPt, 2.0, 1000.0);
+    return cut;
+  }
+
   if (!nameStr.compare("muonHighPt")) {
+    cut->AddCut(VarManager::kPt, 3.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt2")) {
     cut->AddCut(VarManager::kPt, 4.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt3")) {
+    cut->AddCut(VarManager::kPt, 6.0, 1000.0);
     return cut;
   }
 
