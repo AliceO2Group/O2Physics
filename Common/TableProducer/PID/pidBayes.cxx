@@ -116,7 +116,7 @@ struct bayesPid {
     LOG(debug) << "Detector " << detectorName[detIndex] << " enabled with " << enabledSpecies.size() << " species";
 
     for (const auto enabledPid : enabledSpecies) { // Checking that the species is enabled
-      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << (int)enabledPid << " vs " << (int)pid;
+      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << static_cast<int>(enabledPid) << " vs " << static_cast<int>(pid);
       if (enabledPid == pid) {
         LOG(debug) << "Particle " << PID::getName(enabledPid) << " enabled";
         Probability[detIndex][pid] = 1.f / enabledSpecies.size(); // set flat distribution (no decision yet)
@@ -187,7 +187,7 @@ struct bayesPid {
                                  const Configurable<int>& flag) {
       if (flag.value == 1) {
         enabledSpecies.push_back(id);
-        LOG(info) << "Enabling particle: " << (int)id << " " << PID::getName(enabledSpecies.back());
+        LOG(info) << "Enabling particle: " << static_cast<int>(id) << " " << PID::getName(enabledSpecies.back());
       }
     };
 
@@ -533,20 +533,20 @@ struct bayesPidQa {
     if (logAxis == 0) {
       return;
     }
-    const int nbins = h->GetNbinsX();
-    double binp[nbins + 1];
-    double max = h->GetXaxis()->GetBinUpEdge(nbins);
+    const int kNBins = h->GetNbinsX();
+    double binp[kNBins + 1];
+    double max = h->GetXaxis()->GetBinUpEdge(kNBins);
     double min = h->GetXaxis()->GetBinLowEdge(1);
     if (min <= 0) {
       min = 0.00001;
     }
     double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-    for (int i = 0; i < nbins; i++) {
+    double ldelta = (TMath::Log10(max) - lmin) / ((double)kNBins);
+    for (int i = 0; i < kNBins; i++) {
       binp[i] = exp(TMath::Log(10) * (lmin + i * ldelta));
     }
-    binp[nbins] = max + 1;
-    h->GetXaxis()->Set(nbins, binp);
+    binp[kNBins] = max + 1;
+    h->GetXaxis()->Set(kNBins, binp);
   }
 
   template <uint8_t i>
