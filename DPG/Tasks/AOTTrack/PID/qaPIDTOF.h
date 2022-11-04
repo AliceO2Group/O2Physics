@@ -821,31 +821,28 @@ struct tofPidBetaQa {
 
 /// Task that checks the TOF collision time
 struct tofPidCollisionTimeQa {
-  Configurable<int> nBinsEvTime{"nBinsEvTime", 1000, "Number of bins for the event time"};
-  Configurable<float> minEvTime{"minEvTime", -1000.f, "Minimum in range in event time"};
-  Configurable<float> maxEvTime{"maxEvTime", 1000.f, "Maximum in range in event time"};
-  Configurable<int> nBinsTofSignal{"nBinsTofSignal", 5000, "Number of bins for the tof signal time"};
-  Configurable<float> minTofSignal{"minTofSignal", 0.f, "Minimum in range in tof signal time"};
-  Configurable<float> maxTofSignal{"maxTofSignal", 100e3, "Maximum in range in tof signal time"};
-  Configurable<int> nBinsEvTimeReso{"nBinsEvTimeReso", 1000, "Number of bins in event time resolution"};
-  Configurable<float> rangeEvTimeReso{"rangeEvTimeReso", 1000.f, "Range in event time resolution"};
+  ConfigurableAxis evTimeBins{"evTimeBins", {1000, -1000.f, 1000.f}, "Binning for the event time"};
+  ConfigurableAxis evTimeDeltaBins{"evTimeDeltaBins", {1000, -1000.f, 1000.f}, "Binning for the delta between event times"};
+  ConfigurableAxis evTimeResoBins{"evTimeResoBins", {1000, 0.f, 1000.f}, "Binning for the event time resolution"};
+  ConfigurableAxis tofSignalBins{"tofSignalBins", {5000, 0.f, 100000.f}, "Binning for the TOF signal"};
+  ConfigurableAxis pBins{"pBins", {200, 0.1f, 5.f}, "Binning for the momentum"};
+
   Configurable<int> nBinsMultiplicity{"nBinsMultiplicity", 1000, "Number of bins for the multiplicity"};
   Configurable<float> rangeMultiplicity{"rangeMultiplicity", 1000.f, "Range for the multiplicity"};
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
-  Configurable<int> nBinsP{"nBinsP", 200, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
+  Configurable<float> minPReso{"minPReso", 1.4f, "Minimum momentum in range for the resolution plot"};
+  Configurable<float> maxPReso{"maxPReso", 1.5f, "Maximum momentum in range for the resolution plot"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext& initContext)
   {
-    const AxisSpec evTimeAxis{nBinsEvTime, minEvTime, maxEvTime, "Event time (ps)"};
-    const AxisSpec evTimeDeltaAxis{nBinsEvTime, -maxEvTime, maxEvTime, "Delta event time (ps)"};
-    const AxisSpec multAxis{nBinsEvTime, 0, rangeMultiplicity, "Track multiplicity for TOF event time"};
-    const AxisSpec evTimeResoAxis{nBinsEvTimeReso, 0, rangeEvTimeReso, "Event time resolution (ps)"};
-    const AxisSpec tofSignalAxis{nBinsTofSignal, minTofSignal, maxTofSignal, "TOF signal (ps)"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} GeV/#it{c}"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} GeV/#it{c}"};
+    const AxisSpec evTimeAxis{evTimeBins, "Event time (ps)"};
+    const AxisSpec evTimeDeltaAxis{evTimeDeltaBins, "Delta event time (ps)"};
+    const AxisSpec multAxis{nBinsMultiplicity, 0, rangeMultiplicity, "Track multiplicity for TOF event time"};
+    const AxisSpec evTimeResoAxis{evTimeResoBins, "Event time resolution (ps)"};
+    const AxisSpec tofSignalAxis{tofSignalBins, "TOF signal (ps)"};
+    AxisSpec pAxis{pBins, "#it{p} GeV/#it{c}"};
+    AxisSpec ptAxis{pBins, "#it{p}_{T} GeV/#it{c}"};
     if (logAxis) {
       pAxis.makeLogarithmic();
       ptAxis.makeLogarithmic();
@@ -906,8 +903,8 @@ struct tofPidCollisionTimeQa {
     histos.add("tracks/pt", "pt", kTH1F, {ptAxis});
     histos.add("tracks/length", "length", kTH1F, {lengthAxis});
 
-    histos.add("deltaVsMult/pi", "pi 1.4 < #it{p} < 1.5", kTH2F, {multAxis, deltaAxis});
-    histos.add("deltaVsReso/pi", "pi 1.4 < #it{p} < 1.5", kTH2F, {evTimeResoAxis, deltaAxis});
+    histos.add("deltaVsMult/pi", Form("pi %.2f < #it{p} < %.2f", minPReso, maxPReso), kTH2F, {multAxis, deltaAxis});
+    histos.add("deltaVsReso/pi", Form("pi %.2f < #it{p} < %.2f", minPReso, maxPReso), kTH2F, {evTimeResoAxis, deltaAxis});
 
     histos.add("withtof/p", "p", kTH1F, {pAxis});
     histos.add("withtof/pt", "pt", kTH1F, {ptAxis});
@@ -1070,7 +1067,7 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("withtof/tofSignal"), trk.tofSignal());
         histos.fill(HIST("withtof/beta"), trk.p(), beta);
         histos.fill(HIST("withtof/delta"), trk.p(), deltaPi);
-        if (trk.p() < 1.5f && trk.p() > 1.4f) {
+        if (trk.p() > minPReso && trk.p() < maxPReso) {
           histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
           histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
         }
