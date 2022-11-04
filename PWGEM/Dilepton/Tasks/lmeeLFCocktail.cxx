@@ -12,10 +12,10 @@
 //
 // Analysis task for lmee light flavour cocktail
 
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <vector>
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "TFile.h"
@@ -23,8 +23,6 @@
 #include "TRandom.h"
 #include "TDatabasePDG.h"
 #include "TGenPhaseSpace.h"
-
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -96,7 +94,6 @@ struct lmeelfcocktail {
   Int_t nInputParticles = 17;
   std::vector<TString> fParticleListNames = {"Pi0", "Eta", "EtaP", "EtaP_dalitz_photon", "EtaP_dalitz_omega", "Rho", "Omega", "Omega_2body", "Omega_dalitz", "Phi", "Phi_2body", "Phi_dalitz_eta", "Phi_dalitz_pi0", "Jpsi", "Jpsi_2body", "Jpsi_radiative", "Virtual_Photon"};
   // std::vector<Int_t> fParticleList = {111, 221, 331, 223331, 2233331, 113, 223, 2223, 3223, 333, 2333, 2213333, 1113333, 443,2443,223443,000};
-  double MinOpAngCos;
   TH1F* fhwEffpT;
   TH1F* fhwMultpT;
   TH1F* fhwMultmT;
@@ -175,7 +172,6 @@ struct lmeelfcocktail {
     DCATemplateEdges = fConfigDCATemplateEdges;
     nbDCAtemplate = DCATemplateEdges.size();
     DCATemplateEdges.push_back(10000000.);
-    MinOpAngCos = TMath::Cos(fConfigMinOpAng);
 
     SetHistograms();
     GetEffHisto(TString(fConfigEffFileName), TString(fConfigEffHistName));
@@ -255,7 +251,7 @@ struct lmeelfcocktail {
       Int_t hindex[3];
       for (Int_t jj = 0; jj < 3; jj++) {
         hindex[jj] = -1;
-      };
+      }
       switch (mother.pdgCode()) {
         case 111:
           hindex[0] = 0;
@@ -335,7 +331,7 @@ struct lmeelfcocktail {
         fpass = false; // leg pT cut
       if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
         fpass = false; // leg pT cut
-      if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > MinOpAngCos)
+      if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
         fpass = false; // opening angle cut
       if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
         fpass = false;
@@ -344,10 +340,10 @@ struct lmeelfcocktail {
       for (int jj = 0; jj < nbDCAtemplate; jj++) { // loop over DCA templates
         if (dau1.Pt() >= DCATemplateEdges[jj] && dau1.Pt() < DCATemplateEdges[jj + 1]) {
           fd1DCA = fh_DCAtemplates[jj]->GetRandom();
-        };
+        }
         if (dau2.Pt() >= DCATemplateEdges[jj] && dau2.Pt() < DCATemplateEdges[jj + 1]) {
           fd2DCA = fh_DCAtemplates[jj]->GetRandom();
-        };
+        }
       }
       fpairDCA = sqrt((pow(fd1DCA, 2) + pow(fd2DCA, 2)) / 2);
 
@@ -506,7 +502,7 @@ struct lmeelfcocktail {
           fpass = false; // leg pT cut
         if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
           fpass = false; // leg pT cut
-        if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > MinOpAngCos)
+        if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
           fpass = false; // opening angle cut
         if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
           fpass = false;
@@ -685,33 +681,33 @@ struct lmeelfcocktail {
 
     } else if (Run == 2) {
       // smear pt
-      Int_t ptbin = ((TH2D*)(fArrResoPt->At(0)))->GetXaxis()->FindBin(pt);
+      Int_t ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(pt);
       if (ptbin < 1)
         ptbin = 1;
       if (ptbin > fArrResoPt->GetLast())
         ptbin = fArrResoPt->GetLast();
-      Double_t smearing = ((TH1D*)(fArrResoPt->At(ptbin)))->GetRandom() * pt;
+      Double_t smearing = reinterpret_cast<TH1D*>(fArrResoPt->At(ptbin))->GetRandom() * pt;
       Double_t sPt = pt - smearing;
 
       // smear eta
-      ptbin = ((TH2D*)(fArrResoEta->At(0)))->GetXaxis()->FindBin(pt);
+      ptbin = reinterpret_cast<TH2D*>(fArrResoEta->At(0))->GetXaxis()->FindBin(pt);
       if (ptbin < 1)
         ptbin = 1;
       if (ptbin > fArrResoEta->GetLast())
         ptbin = fArrResoEta->GetLast();
-      smearing = ((TH1D*)(fArrResoEta->At(ptbin)))->GetRandom();
+      smearing = reinterpret_cast<TH1D*>(fArrResoEta->At(ptbin))->GetRandom();
       Double_t sEta = eta - smearing;
 
       // smear phi
-      ptbin = ((TH2D*)(fArrResoPhi_Pos->At(0)))->GetXaxis()->FindBin(pt);
+      ptbin = reinterpret_cast<TH2D*>(fArrResoPhi_Pos->At(0))->GetXaxis()->FindBin(pt);
       if (ptbin < 1)
         ptbin = 1;
       if (ptbin > fArrResoPhi_Pos->GetLast())
         ptbin = fArrResoPhi_Pos->GetLast();
       if (ch > 0) {
-        smearing = ((TH1D*)(fArrResoPhi_Pos->At(ptbin)))->GetRandom();
+        smearing = reinterpret_cast<TH1D*>(fArrResoPhi_Pos->At(ptbin))->GetRandom();
       } else if (ch < 0) {
-        smearing = ((TH1D*)(fArrResoPhi_Neg->At(ptbin)))->GetRandom();
+        smearing = reinterpret_cast<TH1D*>(fArrResoPhi_Neg->At(ptbin))->GetRandom();
       }
       Double_t sPhi = phi - smearing;
 
@@ -744,7 +740,7 @@ struct lmeelfcocktail {
       return;
     }
     if (fFile->GetListOfKeys()->Contains(histname.Data())) {
-      fhwEffpT = (TH1F*)fFile->Get(histname.Data()); // histo: eff weight in function of pT.
+      fhwEffpT = reinterpret_cast<TH1F*>(fFile->Get(histname.Data())); // histo: eff weight in function of pT.
       fhwEffpT->SetDirectory(0);
     } else {
       printf(Form("Error: Could not open histogram %s from file %s\n", histname.Data(), fFileNameLocal.Data()));
@@ -771,28 +767,28 @@ struct lmeelfcocktail {
     }
     TObjArray* ArrResoPt = 0x0;
     if (fFile->GetListOfKeys()->Contains(ptHistName.Data())) {
-      ArrResoPt = (TObjArray*)fFile->Get(ptHistName.Data());
+      ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(ptHistName.Data()));
     } else {
       printf(Form("Error: Could not open %s from file %s\n", ptHistName.Data(), fFileNameLocal.Data()));
     }
 
     TObjArray* ArrResoEta = 0x0;
     if (fFile->GetListOfKeys()->Contains(etaHistName.Data())) {
-      ArrResoEta = (TObjArray*)fFile->Get(etaHistName.Data());
+      ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(etaHistName.Data()));
     } else {
       printf(Form("Error: Could not open %s from file %s\n", etaHistName.Data(), fFileNameLocal.Data()));
     }
 
     TObjArray* ArrResoPhi_Pos = 0x0;
     if (fFile->GetListOfKeys()->Contains(phiPosHistName.Data())) {
-      ArrResoPhi_Pos = (TObjArray*)fFile->Get(phiPosHistName.Data());
+      ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(phiPosHistName.Data()));
     } else {
       printf(Form("Error: Could not open %s from file %s\n", phiPosHistName.Data(), fFileNameLocal.Data()));
     }
 
     TObjArray* ArrResoPhi_Neg = 0x0;
     if (fFile->GetListOfKeys()->Contains(phiNegHistName.Data())) {
-      ArrResoPhi_Neg = (TObjArray*)fFile->Get(phiNegHistName.Data());
+      ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(phiNegHistName.Data()));
     } else {
       printf(Form("Error: Could not open %s from file %s\n", phiNegHistName.Data(), fFileNameLocal.Data()));
     }
@@ -822,7 +818,7 @@ struct lmeelfcocktail {
     }
     TObjArray* ArrResoP = 0x0;
     if (fFile->GetListOfKeys()->Contains(pHistName.Data())) {
-      ArrResoP = (TObjArray*)fFile->Get(pHistName.Data());
+      ArrResoP = reinterpret_cast<TObjArray*>(fFile->Get(pHistName.Data()));
     } else {
       printf(Form("Could not open %s from file %s\n", pHistName.Data(), fFileNameLocal.Data()));
       printf("No resolution array set! Using internal parametrization\n");
@@ -850,7 +846,7 @@ struct lmeelfcocktail {
     fh_DCAtemplates = new TH1F*[nbDCAtemplate];
     for (int jj = 0; jj < nbDCAtemplate; jj++) {
       if (fFile->GetListOfKeys()->Contains(Form("%s%d", histname.Data(), jj + 1))) {
-        fh_DCAtemplates[jj] = (TH1F*)fFile->Get(Form("%s%d", histname.Data(), jj + 1));
+        fh_DCAtemplates[jj] = reinterpret_cast<TH1F*>(fFile->Get(Form("%s%d", histname.Data(), jj + 1)));
       } else {
         printf(Form("Error: Could not open %s%d from file %s\n", histname.Data(), jj + 1, fFileNameLocal.Data()));
       }
@@ -875,25 +871,25 @@ struct lmeelfcocktail {
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamept.Data())) {
-      fhwMultpT = (TH1F*)fFile->Get(histnamept.Data()); // histo: multiplicity weight in function of pT.
+      fhwMultpT = reinterpret_cast<TH1F*>(fFile->Get(histnamept.Data())); // histo: multiplicity weight in function of pT.
     } else {
       printf(Form("Error: Could not open %s from file %s\n", histnamept.Data(), fFileNameLocal.Data()));
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamemt.Data())) {
-      fhwMultmT = (TH1F*)fFile->Get(histnamemt.Data()); // histo: multiplicity weight in function of mT.
+      fhwMultmT = reinterpret_cast<TH1F*>(fFile->Get(histnamemt.Data())); // histo: multiplicity weight in function of mT.
     } else {
       printf(Form("Error: Could not open %s from file %s\n", histnamemt.Data(), fFileNameLocal.Data()));
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamept2.Data())) {
-      fhwMultpT2 = (TH1F*)fFile->Get(histnamept2.Data()); // histo: multiplicity weight in function of pT.
+      fhwMultpT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamept2.Data())); // histo: multiplicity weight in function of pT.
     } else {
       printf(Form("Error: Could not open %s from file %s\n", histnamept2.Data(), fFileNameLocal.Data()));
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamemt2.Data())) {
-      fhwMultmT2 = (TH1F*)fFile->Get(histnamemt2); // histo: multiplicity weight in function of mT.
+      fhwMultmT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamemt2)); // histo: multiplicity weight in function of mT.
     } else {
       printf(Form("Error: Could not open %s from file %s\n", histnamemt2.Data(), fFileNameLocal.Data()));
     }
@@ -918,7 +914,7 @@ struct lmeelfcocktail {
     if (fFile->GetListOfKeys()->Contains(dirname.Data())) {
       TDirectory* dir = fFile->GetDirectory(dirname.Data());
       if (dir->GetListOfKeys()->Contains(funcname.Data())) {
-        ffVPHpT = (TF1*)dir->Get(funcname.Data());
+        ffVPHpT = reinterpret_cast<TF1*>(dir->Get(funcname.Data()));
         good = true;
       }
     }
