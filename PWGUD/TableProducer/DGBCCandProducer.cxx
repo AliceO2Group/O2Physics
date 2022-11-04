@@ -69,7 +69,7 @@ struct tracksWGTInBCs {
                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
-          closestBC = track.collision_as<CCs>().bc_as<BCs>().globalBC();
+          closestBC = track.collision_as<CCs>().foundBC_as<BCs>().globalBC();
         }
 
         // update tracksInBCList
@@ -111,6 +111,7 @@ struct tracksWGTInBCs {
     // loop over all forward tracks and fill fwdTracksWGTInBCList
     for (auto const& fwdTrack : fwdTracks) {
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
+      LOGF(info, "Time resolution of fwdTrack %f", fwdTrack.trackTimeRes());
       if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
 
         // get first compatible BC
@@ -255,7 +256,7 @@ struct DGBCCandProducer {
     auto maxbcInd = bc.globalIndex() < bcs.size() - 1 - 15 ? bc.globalBC() + 15 : bcs.size() - 1;
     auto minbc = bc.globalBC() - 15;
     auto maxbc = bc.globalBC() + 15;
-    for (auto ind = minbcInd; ind <= maxbcInd; ind++) {
+    for (int ind = minbcInd; ind <= maxbcInd; ind++) {
 
       // is this a relevant BC
       auto bc2u = bcs.iteratorAt(ind);
