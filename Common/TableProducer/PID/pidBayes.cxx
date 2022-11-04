@@ -414,7 +414,7 @@ struct bayesPid {
     }
     if (sum <= 0) {
       LOG(warning) << "Invalid probability densities or prior probabilities";
-      for (unsigned int64_t i = 0; i < Probability[kBayesian].size(); i++) {
+      for (uint64_t i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
       return;
