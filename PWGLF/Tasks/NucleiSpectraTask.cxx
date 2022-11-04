@@ -20,7 +20,8 @@
 // o2-analysis-pid-tpc-full, o2-analysis-multiplicity-table, o2-analysis-event-selection
 
 #include <cmath>
-#include <Math/Vector4D.h>
+
+#include "Math/Vector4D.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
