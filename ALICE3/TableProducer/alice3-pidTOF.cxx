@@ -49,8 +49,8 @@ struct ALICE3tofSignal { /// Task that produces the TOF signal from the trackTim
   {
     // Checking the tables are requested in the workflow and enabling them
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
         const std::string table = "TOFSignal";
         if (input.matcher.binding == table) {
           enableTable = true;

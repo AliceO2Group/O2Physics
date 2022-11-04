@@ -150,8 +150,8 @@ struct bayesPid {
 
     // Checking the tables are requested in the workflow and enabling them
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
         auto enableFlag = [&input](const PID::ID& id, Configurable<int>& flag) {
           const std::string particles[PID::NIDs] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
           const std::string particle = particles[id];

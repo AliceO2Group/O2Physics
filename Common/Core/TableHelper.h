@@ -28,8 +28,8 @@
 bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string& table)
 {
   auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
-  for (auto device : workflows.devices) {
-    for (auto input : device.inputs) {
+  for (auto const& device : workflows.devices) {
+    for (auto const& input : device.inputs) {
       if (input.matcher.binding == table) {
         return true;
       }
