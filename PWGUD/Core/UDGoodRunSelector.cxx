@@ -12,6 +12,7 @@
 #include "Framework/Logger.h"
 #include "UDGoodRunSelector.h"
 
+#include <algorithm>
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 

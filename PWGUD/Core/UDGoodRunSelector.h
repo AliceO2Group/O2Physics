@@ -21,7 +21,7 @@ struct UDGoodRunSelector {
 
  public:
   // constructor
-  UDGoodRunSelector(){};
+  UDGoodRunSelector(){}
   explicit UDGoodRunSelector(std::string const& goodRunsFile);
   ~UDGoodRunSelector();
 
