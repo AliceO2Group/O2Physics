@@ -13,10 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#include "FemtoDreamCollisionSelection.h"
-#include "FemtoDreamTrackSelection.h"
-#include "FemtoDreamV0Selection.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <cstdint>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -26,14 +24,17 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "ReconstructionDataFormats/Track.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "FemtoDreamCollisionSelection.h"
+#include "FemtoDreamTrackSelection.h"
+#include "FemtoDreamV0Selection.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -243,7 +244,7 @@ struct femtoDreamProducerTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
