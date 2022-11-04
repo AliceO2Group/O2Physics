@@ -10,11 +10,10 @@
 // or submit itself to any jurisdiction.
 
 #include "Framework/Logger.h"
-#include "UDGoodRunSelector.h"
-
 #include <algorithm>
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
+#include "UDGoodRunSelector.h"
 
 class TFile;
 
