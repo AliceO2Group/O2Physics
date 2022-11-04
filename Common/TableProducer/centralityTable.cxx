@@ -18,9 +18,9 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <TH1F.h>
-#include <TFormula.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "TH1F.h"
+#include "TFormula.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -161,7 +161,7 @@ struct CentralityTable {
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = (TH1*)callst->FindObject(ccdbhname);
+          TH1* h = static_cast<TH1*>(callst)->FindObject(ccdbhname);
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
@@ -174,7 +174,7 @@ struct CentralityTable {
           Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
           Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
           Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
-          if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) and (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) and (Run2V0MInfo.mhMultSelCalib != nullptr)) {
+          if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
             if (genName->length() != 0) {
               if (Run2V0MInfo.mMCScale != nullptr) {
                 for (int ixpar = 0; ixpar < 6; ++ixpar) {
@@ -193,7 +193,7 @@ struct CentralityTable {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2SPDTksInfo.mhVtxAmpCorr = getccdb("hVtx_fnTracklets_Normalized");
           Run2SPDTksInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDTracklets");
-          if ((Run2SPDTksInfo.mhVtxAmpCorr != nullptr) and (Run2SPDTksInfo.mhMultSelCalib != nullptr)) {
+          if ((Run2SPDTksInfo.mhVtxAmpCorr != nullptr) && (Run2SPDTksInfo.mhMultSelCalib != nullptr)) {
             Run2SPDTksInfo.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from SPD tracklets for run %d corrupted", bc.runNumber());
@@ -204,7 +204,7 @@ struct CentralityTable {
           Run2SPDClsInfo.mhVtxAmpCorrCL0 = getccdb("hVtx_fnSPDClusters0_Normalized");
           Run2SPDClsInfo.mhVtxAmpCorrCL1 = getccdb("hVtx_fnSPDClusters1_Normalized");
           Run2SPDClsInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDClusters");
-          if ((Run2SPDClsInfo.mhVtxAmpCorrCL0 != nullptr) and (Run2SPDClsInfo.mhVtxAmpCorrCL1 != nullptr) and (Run2SPDClsInfo.mhMultSelCalib != nullptr)) {
+          if ((Run2SPDClsInfo.mhVtxAmpCorrCL0 != nullptr) && (Run2SPDClsInfo.mhVtxAmpCorrCL1 != nullptr) && (Run2SPDClsInfo.mhMultSelCalib != nullptr)) {
             Run2SPDClsInfo.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from SPD clusters for run %d corrupted", bc.runNumber());
@@ -214,7 +214,7 @@ struct CentralityTable {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
           Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
-          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) and (Run2CL0Info.mhMultSelCalib != nullptr)) {
+          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
             Run2CL0Info.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
@@ -224,13 +224,13 @@ struct CentralityTable {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2CL1Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters1_Normalized");
           Run2CL1Info.mhMultSelCalib = getccdb("hMultSelCalib_CL1");
-          if ((Run2CL1Info.mhVtxAmpCorr != nullptr) and (Run2CL1Info.mhMultSelCalib != nullptr)) {
+          if ((Run2CL1Info.mhVtxAmpCorr != nullptr) && (Run2CL1Info.mhMultSelCalib != nullptr)) {
             Run2CL1Info.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from CL1 multiplicity for run %d corrupted", bc.runNumber());
           }
         }
-        if (Run2V0MInfo.mCalibrationStored or Run2SPDTksInfo.mCalibrationStored or Run2SPDClsInfo.mCalibrationStored or Run2CL0Info.mCalibrationStored or Run2CL1Info.mCalibrationStored) {
+        if (Run2V0MInfo.mCalibrationStored || Run2SPDTksInfo.mCalibrationStored || Run2SPDClsInfo.mCalibrationStored || Run2CL0Info.mCalibrationStored || Run2CL1Info.mCalibrationStored) {
           mRunNumber = bc.runNumber();
         }
       } else {
@@ -316,7 +316,7 @@ struct CentralityTable {
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
         auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = (TH1*)callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
+          estimator.mhMultSelCalib = static_cast<TH1*>(callst)->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
           estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
