@@ -16,8 +16,8 @@
 ///         the analysis data model and the PID response
 ///
 
-#ifndef O2_FRAMEWORK_PIDRESPONSE_H_
-#define O2_FRAMEWORK_PIDRESPONSE_H_
+#ifndef COMMON_DATAMODEL_PIDRESPONSE_H_
+#define COMMON_DATAMODEL_PIDRESPONSE_H_
 
 #include <experimental/type_traits>
 
@@ -649,4 +649,4 @@ DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::Ba
 
 } // namespace o2::aod
 
-#endif // O2_FRAMEWORK_PIDRESPONSE_H_
+#endif // COMMON_DATAMODEL_PIDRESPONSE_H_
