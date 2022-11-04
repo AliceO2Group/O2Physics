@@ -82,7 +82,7 @@ struct TrackSelectionTask {
     }
     globalTracks.SetPtRange(ptMin, ptMax);
     globalTracks.SetEtaRange(etaMin, etaMax);
-    if (compatibilityIU) {
+    if (compatibilityIU.value) {
       globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU);
     }
 

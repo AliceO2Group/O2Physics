@@ -33,7 +33,7 @@ struct QaTrackCuts {
   void init(InitContext&)
   {
     const AxisSpec axisSelections{30, 0.5, 30.5f, "Selection"};
-    histos.add("events", "events", kTH1F, {axisSelections});
+    // histos.add("events", "events", kTH1F, {axisSelections});
     auto h = histos.add<TH1>("tracks", "Tracks selection", kTH1F, {axisSelections});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "isGlobalTrackSDD");
