@@ -19,6 +19,10 @@
 // o2-analysis-trackselection, o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
 // o2-analysis-pid-tpc-full, o2-analysis-multiplicity-table, o2-analysis-event-selection
 
+#include <cmath>
+
+#include "Math/Vector4D.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -33,10 +37,6 @@
 #include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/Track.h"
-
-#include <cmath>
-
-#include <Math/Vector4D.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -70,8 +70,8 @@ constexpr int species{4};
 // constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
 constexpr float charges[4]{1.f, 1.f, 2.f, 2.f};
 constexpr float masses[4]{MassDeuteron, MassTriton, MassHelium3, MassAlpha};
-static const std::string matter[2]{"M", "A"};
-static const std::string pidName[2]{"TPC", "TOF"};
+static const std::vector<std::string> matter{"M", "A"};
+static const std::vector<std::string> pidName{"TPC", "TOF"};
 static const std::vector<std::string> names{"deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
@@ -184,12 +184,12 @@ struct NucleiSpectraTask {
         }
 
         if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(double(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
-          nSigma[0][iS] = float((track.tpcSignal() - expBethe) / expSigma);
+          nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
         for (int iPID{0}; iPID < 2; ++iPID) {
-          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] > nuclei::pidCuts[0][iS][1]) {
+          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]) {
             if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
               continue;
             }
