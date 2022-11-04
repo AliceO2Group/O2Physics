@@ -83,16 +83,13 @@ struct TrackSelectionTask {
     globalTracks.SetPtRange(ptMin, ptMax);
     globalTracks.SetEtaRange(etaMin, etaMax);
     if (compatibilityIU) {
-      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU);
     }
 
     // Extra requirement on the ITS -> Run 2: asking for 1 hit SDD and no hit in SPD
     globalTracksSDD = getGlobalTrackSelectionSDD();
     globalTracksSDD.SetPtRange(ptMin, ptMax);
     globalTracksSDD.SetEtaRange(etaMin, etaMax);
-    if (isRun3) {
-      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Requiring that this is a Run 3 track
-    }
   }
 
   void process(soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
