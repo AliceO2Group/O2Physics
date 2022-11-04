@@ -256,7 +256,7 @@ struct DGBCCandProducer {
     auto maxbcInd = bc.globalIndex() < bcs.size() - 1 - 15 ? bc.globalBC() + 15 : bcs.size() - 1;
     auto minbc = bc.globalBC() - 15;
     auto maxbc = bc.globalBC() + 15;
-    for (int ind = minbcInd; ind <= maxbcInd; ind++) {
+    for (uint ind = minbcInd; ind <= maxbcInd; ind++) {
 
       // is this a relevant BC
       auto bc2u = bcs.iteratorAt(ind);
