@@ -9,6 +9,14 @@
 #granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_library(UDGoodRunSelector
+                      SOURCES UDGoodRunSelector.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EG RapidJSON::RapidJSON)
+
+o2physics_target_root_dictionary(UDGoodRunSelector
+                                 HEADERS UDGoodRunSelector.h
+                                 LINKDEF UDGoodRunSelectorLinkDef.h)
+
 o2physics_add_library(DGPIDSelector
                       SOURCES DGPIDSelector.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EG)
