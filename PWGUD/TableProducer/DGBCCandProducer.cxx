@@ -167,7 +167,7 @@ struct DGBCCandProducer {
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
   Produces<aod::UDTracksFlags> outputTracksFlag;
-  
+
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
@@ -256,7 +256,7 @@ struct DGBCCandProducer {
     auto minbc = bc.globalBC() - 15;
     auto maxbc = bc.globalBC() + 15;
     for (auto ind = minbcInd; ind <= maxbcInd; ind++) {
-    
+
       // is this a relevant BC
       auto bc2u = bcs.iteratorAt(ind);
       if (bc2u.globalBC() > maxbc) {
@@ -265,7 +265,7 @@ struct DGBCCandProducer {
       if (bc2u.globalBC() < minbc) {
         continue;
       }
-      
+
       // 0 <= bit <= 31
       auto bit = bc2u.globalBC() - minbc;
       if (!bc2u.selection()[evsel::kNoBGT0A])
