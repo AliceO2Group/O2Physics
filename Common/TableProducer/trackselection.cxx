@@ -82,8 +82,11 @@ struct TrackSelectionTask {
     }
     globalTracks.SetPtRange(ptMin, ptMax);
     globalTracks.SetEtaRange(etaMin, etaMax);
-    if (compatibilityIU.value) {
-      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU);
+    if (isRun3) {
+      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Requiring that this is a Run 3 track
+      if (compatibilityIU.value) {                                     // If in compatibility mode tracks are asked to be IU tracks
+        globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU);
+      }
     }
 
     // Extra requirement on the ITS -> Run 2: asking for 1 hit SDD and no hit in SPD
