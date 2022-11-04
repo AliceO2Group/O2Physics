@@ -541,7 +541,7 @@ struct bayesPidQa {
       min = 0.00001;
     }
     double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)kNBins);
+    double ldelta = (TMath::Log10(max) - lmin) / (static_cast<double>(kNBins));
     for (int i = 0; i < kNBins; i++) {
       binp[i] = exp(TMath::Log(10) * (lmin + i * ldelta));
     }
