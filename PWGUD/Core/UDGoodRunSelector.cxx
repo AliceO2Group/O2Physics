@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "UDGoodRunSelector.h"
 #include "Framework/Logger.h"
-#include <algorithm>
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-#include "UDGoodRunSelector.h"
+#include <algorithm>
 
 class TFile;
 
