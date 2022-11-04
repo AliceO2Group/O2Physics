@@ -192,6 +192,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPin] = "GeV/c";
   fgVariableNames[kITSncls] = "ITS #cls";
   fgVariableUnits[kITSncls] = "";
+  fgVariableUnits[kITSClusterMap] = "ITSClusterMap";
   fgVariableNames[kITSchi2] = "ITS chi2";
   fgVariableUnits[kITSchi2] = "";
   fgVariableNames[kITSlayerHit] = "ITS layer";

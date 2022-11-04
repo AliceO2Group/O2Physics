@@ -190,6 +190,7 @@ class VarManager : public TObject
     kITSlayerHit,
     kIsTPCrefit,
     kTPCncls,
+    kITSClusterMap,
     kTPCnclsCR,
     kTPCchi2,
     kTPCsignal,
@@ -705,6 +706,9 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     if (fgUsedVars[kIsSPDany]) {
       values[kIsSPDany] = (track.itsClusterMap() & uint8_t(1)) || (track.itsClusterMap() & uint8_t(2));
+    }
+    if (fgUsedVars[kITSClusterMap]) {
+      values[kITSClusterMap] = track.itsClusterMap();
     }
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
