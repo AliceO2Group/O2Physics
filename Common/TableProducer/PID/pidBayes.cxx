@@ -240,7 +240,7 @@ struct bayesPid {
         responseTPC.SetParameters(responseTPCptr);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC);
-      };
+      }
     } else {
       const std::string pathTPC = ccdbPathTPC.value;
       const auto time = timestamp.value;
@@ -414,7 +414,7 @@ struct bayesPid {
     }
     if (sum <= 0) {
       LOG(warning) << "Invalid probability densities or prior probabilities";
-      for (long unsigned int i = 0; i < Probability[kBayesian].size(); i++) {
+      for (unsigned int64_t i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
       return;
