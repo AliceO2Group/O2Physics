@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "TFile.h"
@@ -297,7 +298,7 @@ struct lmeelfcocktail {
       hindex[2] = nInputParticles;
 
       if (hindex[0] < 0) {
-        printf("Error LMeeCocktail hindex[0]<0 \n");
+        LOGP(info, "Error LMeeCocktail hindex[0]<0");
         continue;
       }
 
@@ -382,7 +383,7 @@ struct lmeelfcocktail {
         fwMultmT = fhwMultmT->GetBinContent(iwbin);   // mT weight
         fwMultmT2 = fhwMultmT2->GetBinContent(iwbin); // mT weight
       } else {
-        printf("ERROR = Generated particle with mT < Pion mass cannot be weighted \n");
+        LOGP(error, "Generated particle with mT < Pion mass cannot be weighted");
         fwMultmT = 0.;
         fwMultmT2 = 0.;
       }
@@ -452,8 +453,9 @@ struct lmeelfcocktail {
         TGenPhaseSpace VPHgen;
         Bool_t SetDecay;
         SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
-        if (SetDecay == 0)
-          printf(" ERROR: decay not permitted by kinematics \n");
+        if (SetDecay == 0) {
+          LOGP(error, "decay not permitted by kinematics");
+        }
         Double_t VPHweight = VPHgen.Generate();
         // get electrons from the decay
         TLorentzVector *decay1, *decay2;
@@ -648,7 +650,7 @@ struct lmeelfcocktail {
     if (Run == 0) {
       resvec = vec;
     } else if (Run == 1) {
-      TH1D* hisSlice(0x0);
+      TH1D* hisSlice(nullptr);
       if (fArr) {
         TH2D* hDeltaPtvsPt = static_cast<TH2D*>(fArr->At(0));
         // Get the momentum slice histogram for sampling of the smearing
@@ -726,24 +728,24 @@ struct lmeelfcocktail {
   void GetEffHisto(TString filename, TString histname)
   {
     // get efficiency histo
-    printf("Set Efficiency histo\n");
+    LOGP(detail, "Set Efficiency histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Efficiency
     if (fFileName.Contains("alien")) { // TODO
-      printf("Error: copying from alien not yet implemented\n");
+      LOGP(error, "Copying from alien not yet implemented");
     }
     // Get Efficiency weight file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
-      printf(Form("Error: Could not open Efficiency file %s\n", fFileNameLocal.Data()));
+      LOGP(error, "Could not open Efficiency file {}", fFileNameLocal.Data());
       return;
     }
     if (fFile->GetListOfKeys()->Contains(histname.Data())) {
       fhwEffpT = reinterpret_cast<TH1F*>(fFile->Get(histname.Data())); // histo: eff weight in function of pT.
-      fhwEffpT->SetDirectory(0);
+      fhwEffpT->SetDirectory(nullptr);
     } else {
-      printf(Form("Error: Could not open histogram %s from file %s\n", histname.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open histogram {} from file {}", histname.Data(), fFileNameLocal.Data());
     }
 
     fFile->Close();
@@ -752,45 +754,45 @@ struct lmeelfcocktail {
   void GetResHisto(TString filename, TString ptHistName, TString etaHistName, TString phiPosHistName, TString phiNegHistName)
   {
     // get resolutoin histo
-    printf("Set Resolution histo\n");
+    LOGP(detail, "Set Resolution histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Resolution map
     if (fFileName.Contains("alien")) { // TODO
-      printf("Error: copying from alien not yet implemented\n");
+      LOGP(error, "Copying from alien not yet implemented");
     }
     // Get file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
-      printf(Form("Error: Could not open Resolution file %s\n", fFileNameLocal.Data()));
+      LOGP(error, "Could not open Resolution file {}", fFileNameLocal.Data());
       return;
     }
-    TObjArray* ArrResoPt = 0x0;
+    TObjArray* ArrResoPt = nullptr;
     if (fFile->GetListOfKeys()->Contains(ptHistName.Data())) {
       ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(ptHistName.Data()));
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", ptHistName.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", ptHistName.Data(), fFileNameLocal.Data());
     }
 
-    TObjArray* ArrResoEta = 0x0;
+    TObjArray* ArrResoEta = nullptr;
     if (fFile->GetListOfKeys()->Contains(etaHistName.Data())) {
       ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(etaHistName.Data()));
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", etaHistName.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", etaHistName.Data(), fFileNameLocal.Data());
     }
 
-    TObjArray* ArrResoPhi_Pos = 0x0;
+    TObjArray* ArrResoPhi_Pos = nullptr;
     if (fFile->GetListOfKeys()->Contains(phiPosHistName.Data())) {
       ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(phiPosHistName.Data()));
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", phiPosHistName.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", phiPosHistName.Data(), fFileNameLocal.Data());
     }
 
-    TObjArray* ArrResoPhi_Neg = 0x0;
+    TObjArray* ArrResoPhi_Neg = nullptr;
     if (fFile->GetListOfKeys()->Contains(phiNegHistName.Data())) {
       ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(phiNegHistName.Data()));
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", phiNegHistName.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", phiNegHistName.Data(), fFileNameLocal.Data());
     }
     fArrResoPt = ArrResoPt;
     fArrResoEta = ArrResoEta;
@@ -802,26 +804,26 @@ struct lmeelfcocktail {
   void GetResHisto(TString filename, TString pHistName)
   {
     // get resolutoin histo
-    printf("Set Resolution histo\n");
+    LOGP(detail, "Set Resolution histo\n");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Resolution map
     if (fFileName.Contains("alien")) { // TODO
-      printf("Error: copying from alien not yet implemented\n");
+      LOGP(error, "copying from alien not yet implemented");
     }
     // Get file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
-      printf(Form("Could not open Resolution file %s\n", fFileNameLocal.Data()));
-      printf("No resolution array set! Using internal parametrization\n");
+      LOGP(error, "Could not open Resolution file {}", fFileNameLocal.Data());
+      LOGP(error, "No resolution array set! Using internal parametrization");
       return;
     }
     TObjArray* ArrResoP = 0x0;
     if (fFile->GetListOfKeys()->Contains(pHistName.Data())) {
       ArrResoP = reinterpret_cast<TObjArray*>(fFile->Get(pHistName.Data()));
     } else {
-      printf(Form("Could not open %s from file %s\n", pHistName.Data(), fFileNameLocal.Data()));
-      printf("No resolution array set! Using internal parametrization\n");
+      LOGP(error, "Could not open {} from file {}", pHistName.Data(), fFileNameLocal.Data());
+      LOGP(error, "No resolution array set! Using internal parametrization");
     }
 
     fArr = ArrResoP;
@@ -831,16 +833,16 @@ struct lmeelfcocktail {
   void GetDCATemplates(TString filename, TString histname)
   {
     // get dca tamplates
-    printf("Set DCA templates\n");
+    LOGP(detail, "Set DCA templates");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     if (fFileName.Contains("alien")) { // TODO
-      printf("Error: copying from alien not yet implemented\n");
+      LOGP(error, "copying from alien not yet implemented");
     }
     // Get  file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
-      printf(Form("Error: Could not open DCATemplate file %s\n", fFileNameLocal.Data()));
+      LOGP(error, "Could not open DCATemplate file {}", fFileNameLocal.Data());
       return;
     }
     fh_DCAtemplates = new TH1F*[nbDCAtemplate];
@@ -848,7 +850,7 @@ struct lmeelfcocktail {
       if (fFile->GetListOfKeys()->Contains(Form("%s%d", histname.Data(), jj + 1))) {
         fh_DCAtemplates[jj] = reinterpret_cast<TH1F*>(fFile->Get(Form("%s%d", histname.Data(), jj + 1)));
       } else {
-        printf(Form("Error: Could not open %s%d from file %s\n", histname.Data(), jj + 1, fFileNameLocal.Data()));
+        LOGP(error, "Could not open {}{} from file {}", histname.Data(), jj + 1, fFileNameLocal.Data());
       }
     }
     fFile->Close();
@@ -857,57 +859,57 @@ struct lmeelfcocktail {
   void GetMultHisto(TString filename, TString histnamept, TString histnamept2, TString histnamemt, TString histnamemt2)
   {
     // get multiplicity weights
-    printf("Set Multiplicity weight files\n");
+    LOGP(detail, "Set Multiplicity weight files");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     if (fFileName.Contains("alien")) { // TODO
-      printf("Error: copying from alien not yet implemented\n");
+      LOGP(error, "copying from alien not yet implemented");
     }
     // Get  file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
-      printf(Form("Error: Could not open Multiplicity weight file %s\n", fFileNameLocal.Data()));
+      LOGP(error, "Could not open Multiplicity weight file {}", fFileNameLocal.Data());
       return;
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamept.Data())) {
       fhwMultpT = reinterpret_cast<TH1F*>(fFile->Get(histnamept.Data())); // histo: multiplicity weight in function of pT.
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", histnamept.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", histnamept.Data(), fFileNameLocal.Data());
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamemt.Data())) {
       fhwMultmT = reinterpret_cast<TH1F*>(fFile->Get(histnamemt.Data())); // histo: multiplicity weight in function of mT.
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", histnamemt.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", histnamemt.Data(), fFileNameLocal.Data());
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamept2.Data())) {
       fhwMultpT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamept2.Data())); // histo: multiplicity weight in function of pT.
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", histnamept2.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", histnamept2.Data(), fFileNameLocal.Data());
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamemt2.Data())) {
       fhwMultmT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamemt2)); // histo: multiplicity weight in function of mT.
     } else {
-      printf(Form("Error: Could not open %s from file %s\n", histnamemt2.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open {} from file {}", histnamemt2.Data(), fFileNameLocal.Data());
     }
     fFile->Close();
   }
 
   void GetPhotonPtParametrization(TString filename, TString dirname, TString funcname)
   {
-    printf("Set photon parametrization\n");
+    LOGP(detail, "Set photon parametrization");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     if (fFileName.Contains("alien")) { // TODO
-      printf("Error: copying from alien not yet implemented\n");
+      LOGP(error, "copying from alien not yet implemented");
     }
     // Get file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
-      printf(Form("Error: Could not open photon parametrization from file %s\n", fFileNameLocal.Data()));
+      LOGP(error, "Could not open photon parametrization from file {}", fFileNameLocal.Data());
       return;
     }
     bool good = false;
@@ -919,7 +921,7 @@ struct lmeelfcocktail {
       }
     }
     if (!good) {
-      printf(Form("Error: Could not open photon parametrization %s/%s from file %s\n", dirname.Data(), funcname.Data(), fFileNameLocal.Data()));
+      LOGP(error, "Could not open photon parametrization {}/{} from file {}", dirname.Data(), funcname.Data(), fFileNameLocal.Data());
     }
     fFile->Close();
   }
