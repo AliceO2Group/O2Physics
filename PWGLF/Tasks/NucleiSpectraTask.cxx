@@ -121,7 +121,7 @@ struct NucleiSpectraTask {
   void init(o2::framework::InitContext&)
   {
 
-    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", cfgCentralityEstimator)};
+    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
 
     const AxisSpec ptAxes[4]{
