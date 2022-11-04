@@ -52,7 +52,7 @@ struct DGCandAnalyzer {
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
   Configurable<int> candCaseSel{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
-  Configurable<std::string>  goodRunsFile{"goodRunsFile", {}, "json with list of good runs"};
+  Configurable<std::string> goodRunsFile{"goodRunsFile", {}, "json with list of good runs"};
 
   // get a DGCutparHolder and DGAnaparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
@@ -66,7 +66,7 @@ struct DGCandAnalyzer {
 
   // PID and goodRun selector
   DGPIDSelector pidsel = DGPIDSelector();
-  UDGoodRunSelector  grsel = UDGoodRunSelector();
+  UDGoodRunSelector grsel = UDGoodRunSelector();
 
   // define histograms
   HistogramRegistry registry{
@@ -117,7 +117,7 @@ struct DGCandAnalyzer {
     anaPars = (DGAnaparHolder)DGPars;
     pidsel.init(anaPars);
     grsel.init(goodRunsFile);
-    
+
     if (verbose) {
       pidsel.Print();
       grsel.Print();
@@ -147,7 +147,7 @@ struct DGCandAnalyzer {
     if (!grsel.isGoodRun(dgcand.runNumber())) {
       return;
     }
-    
+
     // skip unwanted cases
     auto candCase = (dgcand.posX() == -1. && dgcand.posY() == 1. && dgcand.posZ() == -1.) ? -1 : 1;
     if (candCaseSel < 0 && candCase >= 0) {
