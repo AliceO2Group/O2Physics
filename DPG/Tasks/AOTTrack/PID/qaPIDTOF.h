@@ -891,8 +891,8 @@ struct tofPidCollisionTimeQa {
     histos.add("eventTimeTOFMult", "eventTimeTOFMult", kTH1F, {multAxis});
     histos.add<TH1>("eventTimeTOF", "eventTimeTOF", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
     histos.add<TH1>("eventTimeTOFReso", "eventTimeTOFReso", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
-    histos.add<TH1>("eventTimeTOFVsMult", "eventTimeTOFVsMult", kTH2F, {multAxis, evTimeAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
-    histos.add<TH1>("eventTimeTOFResoVsMult", "eventTimeTOFResoVsMult", kTH2F, {multAxis, evTimeResoAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
+    histos.add<TH2>("eventTimeTOFVsMult", "eventTimeTOFVsMult", kTH2F, {multAxis, evTimeAxis})->GetYaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    histos.add<TH2>("eventTimeTOFResoVsMult", "eventTimeTOFResoVsMult", kTH2F, {multAxis, evTimeResoAxis})->GetYaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
 
     histos.add<TH1>("eventTimeT0A", "eventTimeT0A", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0A event time (ps)");
     histos.add<TH1>("eventTimeT0C", "eventTimeT0C", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0C event time (ps)");
@@ -906,8 +906,8 @@ struct tofPidCollisionTimeQa {
     histos.add("tracks/pt", "pt", kTH1F, {ptAxis});
     histos.add("tracks/length", "length", kTH1F, {lengthAxis});
 
-    histos.add("deltaVsMult/pi", "pi", kTH2F, {multAxis, deltaAxis});
-    histos.add("deltaVsReso/pi", "pi", kTH2F, {evTimeResoAxis, deltaAxis});
+    histos.add("deltaVsMult/pi", "pi 1.4 < #it{p} < 1.5", kTH2F, {multAxis, deltaAxis});
+    histos.add("deltaVsReso/pi", "pi 1.4 < #it{p} < 1.5", kTH2F, {evTimeResoAxis, deltaAxis});
 
     histos.add("withtof/p", "p", kTH1F, {pAxis});
     histos.add("withtof/pt", "pt", kTH1F, {ptAxis});
@@ -957,7 +957,7 @@ struct tofPidCollisionTimeQa {
     histos.add("withqualitycuts/mass", "mass", kTH1F, {massAxis});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::EvTimeTOFOnly, aod::TrackSelection>;
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
