@@ -161,7 +161,7 @@ struct CentralityTable {
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = static_cast<TH1*>(callst)->FindObject(ccdbhname);
+          TH1* h = static_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
@@ -316,7 +316,7 @@ struct CentralityTable {
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
         auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = static_cast<TH1*>(callst)->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
+          estimator.mhMultSelCalib = static_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
           estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {

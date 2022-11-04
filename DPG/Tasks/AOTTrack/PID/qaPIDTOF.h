@@ -903,8 +903,8 @@ struct tofPidCollisionTimeQa {
     histos.add("tracks/pt", "pt", kTH1F, {ptAxis});
     histos.add("tracks/length", "length", kTH1F, {lengthAxis});
 
-    histos.add("deltaVsMult/pi", Form("pi %.2f < #it{p} < %.2f", minPReso, maxPReso), kTH2F, {multAxis, deltaAxis});
-    histos.add("deltaVsReso/pi", Form("pi %.2f < #it{p} < %.2f", minPReso, maxPReso), kTH2F, {evTimeResoAxis, deltaAxis});
+    histos.add("deltaVsMult/pi", Form("pi %.2f < #it{p} < %.2f", minPReso.value, maxPReso.value), kTH2F, {multAxis, deltaAxis});
+    histos.add("deltaVsReso/pi", Form("pi %.2f < #it{p} < %.2f", minPReso.value, maxPReso.value), kTH2F, {evTimeResoAxis, deltaAxis});
 
     histos.add("withtof/p", "p", kTH1F, {pAxis});
     histos.add("withtof/pt", "pt", kTH1F, {ptAxis});
