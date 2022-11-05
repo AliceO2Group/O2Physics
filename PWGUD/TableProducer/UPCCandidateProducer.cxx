@@ -949,7 +949,7 @@ struct UpcCandProducer {
           continue;
         if (nMIDtracks == fNFwdProngs && nTOFtracks == fNBarProngs) { // check for ITS-TPC tracks
           std::vector<int64_t> tracks;
-          tracks.reserve(fNFwdProngs * 2); // precautions
+          tracks.reserve(fNBarProngs * 2); // precautions
           int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
           if (res < 0) // too many tracks nearby -> rejecting
             continue;
