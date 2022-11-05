@@ -221,6 +221,9 @@ class VarManager : public TObject
     kTPCnSigmaPiRandomizedDelta,
     kTPCnSigmaKa,
     kTPCnSigmaPr,
+    kTPCnSigmaEl_Corr,
+    kTPCnSigmaPi_Corr,
+    kTPCnSigmaPr_Corr,
     kTPCnSigmaPrRandomized,
     kTPCnSigmaPrRandomizedDelta,
     kTOFnSigmaEl,
@@ -433,7 +436,8 @@ class VarManager : public TObject
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
-
+  static float GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period);
+  static TString GetRunPeriod(float runNumber);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
 
@@ -812,6 +816,11 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
+    }
+    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
+      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
     }
   }
 
