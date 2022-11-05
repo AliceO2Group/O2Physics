@@ -22,11 +22,133 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+struct UpcCandProducerQa {
+  HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext&)
+  {
+    const AxisSpec axisPt{500, 0., 5., ""};
+    const AxisSpec axisEta{400, -2., 2., ""};
+    const AxisSpec axisPhi{628, 0., 6.28, ""};
+    const AxisSpec axisColNContrib{1001, -1., 1000., ""};
+
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TOF", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD", "", kTH2F, {axisPt, axisColNContrib});
+    histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
+
+    histRegistry.add("TracksQA/Barrel/Eta/TPC", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_TOF", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD_TOF", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TOF", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD", "", kTH1F, {axisEta});
+    histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF", "", kTH1F, {axisEta});
+
+    histRegistry.add("TracksQA/Barrel/Phi/TPC", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_TOF", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD_TOF", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TOF", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD", "", kTH1F, {axisPhi});
+    histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF", "", kTH1F, {axisPhi});
+  }
+
+  using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra>;
+
+  void updateBarrelTrackQA(const BarrelTracks::iterator& track, int32_t colNContrib)
+  {
+    // check basic cuts
+    // only tracks in TOF acceptance
+    if (track.pt() < 0.3 || std::abs(track.eta()) > 0.8 || track.tpcNClsCrossedRows() < 70)
+      return;
+
+    int8_t mask = 0;
+    if (track.hasTPC())
+      SETBIT(mask, 0);
+    if (track.hasITS())
+      SETBIT(mask, 1);
+    if (track.hasTOF())
+      SETBIT(mask, 2);
+    if (track.hasTRD())
+      SETBIT(mask, 3);
+
+    float pt = track.pt();
+    float eta = track.eta();
+    float phi = track.phi();
+
+    if (mask == 1) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC"), phi);
+    }
+    if (mask == 3) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS"), phi);
+    }
+    if (mask == 5) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TOF"), phi);
+    }
+    if (mask == 7) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TOF"), phi);
+    }
+    if (mask == 9) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD"), phi);
+    }
+    if (mask == 11) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD"), phi);
+    }
+    if (mask == 13) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD_TOF"), phi);
+    }
+    if (mask == 15) {
+      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF"), pt, colNContrib);
+      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF"), eta);
+      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF"), phi);
+    }
+  }
+
+  void process(o2::aod::Collisions const& collisions, BarrelTracks const& tracks, o2::aod::AmbiguousTracks const& ambTracks)
+  {
+    std::unordered_set<int64_t> ambTrIds;
+    for (const auto& ambTrk : ambTracks) {
+      auto trkId = ambTrk.trackId();
+      ambTrIds.insert(trkId);
+    }
+
+    for (const auto& track : tracks) {
+      int32_t colId = -1;
+      if (ambTrIds.find(track.globalIndex()) == ambTrIds.end())
+        track.collisionId();
+      updateBarrelTrackQA(track, colId >= 0 ? colId : -1);
+    }
+
+    ambTrIds.clear();
+  }
+};
+
 struct UpcCandProducer {
   bool fDoMC{false};
-  bool fDoSemiFwd{false};
 
   std::map<int32_t, int32_t> fNewPartIDs;
+  uint64_t fMaxBC{0}; // max BC for ITS-TPC search
 
   Produces<o2::aod::UDMcCollisions> udMCCollisions;
   Produces<o2::aod::UDMcParticles> udMCParticles;
@@ -57,15 +179,14 @@ struct UpcCandProducer {
   MutableConfigurable<UPCCutparHolder> inputCuts{"UPCCuts", {}, "UPC event cuts"};
 
   // candidate producer flags
-  Configurable<int> fCheckTPCPID{"checkTPCPID", 0, "Check TPC PID. Useful for central selection -- see `tpcPIDSwitch` option"};
-  Configurable<int> fTPCPIDSwitch{"tpcPIDSwitch", 0, "PID switch: 0 -- two muons/pions, 1 -- two electrons, 2 -- electron + muon/pion"};
-  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
-  Configurable<int> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
-  Configurable<int> fNFwdProngs{"nFwdProngs", 2, "Matched forward tracks per candidate"};
-  Configurable<int> fNBarProngs{"nBarProngs", 0, "Matched barrel tracks per candidate"};
+  Configurable<int8_t> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
+  Configurable<int32_t> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
+  Configurable<int8_t> fSearchITSTPC{"searchITSTPC", 0, "Search for ITS-TPC tracks near candidates"};
+  Configurable<int32_t> fSearchRangeITSTPC{"searchRangeITSTPC", 50, "BC range for ITS-TPC tracks search wrt TOF tracks"};
+  Configurable<uint32_t> fNFwdProngs{"nFwdProngs", 0, "Matched forward tracks per candidate"};
+  Configurable<uint32_t> fNBarProngs{"nBarProngs", 2, "Matched barrel tracks per candidate"};
 
   // QA histograms
-  Configurable<int> fCollectBTracksQA{"collectBTracksQA", 0, "Collect kinematic distributions for all filtered central barrel tracks"};
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
@@ -75,6 +196,8 @@ struct UpcCandProducer {
   using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
                                      o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                      o2::aod::TOFSignal, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+
+  typedef std::pair<uint64_t, std::vector<int64_t>> BCTracksPair;
 
   void init(InitContext&)
   {
@@ -104,40 +227,6 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelTPCChi2 + 1, "TPCChi2");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAXY + 1, "DCAXY");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAZ + 1, "DCAZ");
-
-    if (fCollectBTracksQA) {
-      const AxisSpec axisPt{500, 0., 5., ""};
-      const AxisSpec axisEta{400, -2., 2., ""};
-      const AxisSpec axisPhi{628, 0., 6.28, ""};
-      const AxisSpec axisColNContrib{1001, -1., 1000., ""};
-
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TOF", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD", "", kTH2F, {axisPt, axisColNContrib});
-      histRegistry.add("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF", "", kTH2F, {axisPt, axisColNContrib});
-
-      histRegistry.add("TracksQA/Barrel/Eta/TPC", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_TOF", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_TRD_TOF", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TOF", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD", "", kTH1F, {axisEta});
-      histRegistry.add("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF", "", kTH1F, {axisEta});
-
-      histRegistry.add("TracksQA/Barrel/Phi/TPC", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_TOF", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_TRD_TOF", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TOF", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD", "", kTH1F, {axisPhi});
-      histRegistry.add("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF", "", kTH1F, {axisPhi});
-    }
   }
 
   bool applyFwdCuts(const ForwardTracks::iterator& track)
@@ -200,8 +289,7 @@ struct UpcCandProducer {
     if (barrelSelectors[upchelpers::kBarrelSelDCAZ])
       histRegistry.fill(HIST("BarrelsSelCounter"), upchelpers::kBarrelSelDCAZ, 1);
 
-    bool pass = barrelSelectors[upchelpers::kBarrelSelHasTOF] &&
-                barrelSelectors[upchelpers::kBarrelSelPt] &&
+    bool pass = barrelSelectors[upchelpers::kBarrelSelPt] &&
                 barrelSelectors[upchelpers::kBarrelSelEta] &&
                 barrelSelectors[upchelpers::kBarrelSelITSNCls] &&
                 barrelSelectors[upchelpers::kBarrelSelITSChi2] &&
@@ -292,115 +380,10 @@ struct UpcCandProducer {
     newEventIDs.clear();
   }
 
-  // trackSwitch: 0 -> forward, 1 -> barrel
-  template <int32_t trackSwitch, typename TTracks>
-  void filterTracks(TTracks* tracks,
-                    o2::aod::Collisions const& collisions,
-                    std::unordered_map<int32_t, int32_t>& ambTrIDs,
-                    std::vector<int32_t>& filteredTrackIDs)
-  {
-    for (const auto& tr : *tracks) {
-      // skip if track doesn't pass selection
-      bool pass = false;
-      if constexpr (trackSwitch == 0) {
-        if (upcCuts.getTrackType() != -1) {
-          auto trType = tr.trackType();
-          if (trType != upcCuts.getTrackType()) {
-            continue;
-          }
-        }
-        pass = applyFwdCuts(tr);
-      }
-      if constexpr (trackSwitch == 1) {
-        pass = applyBarCuts(tr);
-      }
-      int32_t colNContrib = -1;
-      auto ambIter = ambTrIDs.find(tr.globalIndex());
-      if (ambIter == ambTrIDs.end()) {
-        int32_t colId = tr.collisionId();
-        const auto& col = collisions.iteratorAt(colId);
-        colNContrib = col.numContrib();
-      }
-      if (pass) {
-        if ((colNContrib >= 0 && colNContrib <= upcCuts.getMaxNContrib()) || (colNContrib == -1 && upcCuts.getAmbigSwitch() != 1))
-          filteredTrackIDs.push_back(tr.globalIndex());
-      }
-      if constexpr (trackSwitch == 1) {
-        if (fCollectBTracksQA)
-          updateBTrackQA(tr, colNContrib);
-      }
-    }
-  }
-
-  void updateBTrackQA(const BarrelTracks::iterator& track, int32_t colNContrib)
-  {
-    // check basic cuts
-    // only tracks in TOF acceptance
-    if (!barrelSelectors[upchelpers::kBarrelSelPt] ||
-        std::abs(track.eta()) > 0.8 ||
-        !barrelSelectors[upchelpers::kBarrelSelTPCNCls])
-      return;
-
-    int8_t mask = 0;
-    if (track.hasTPC())
-      SETBIT(mask, 0);
-    if (track.hasITS())
-      SETBIT(mask, 1);
-    if (track.hasTOF())
-      SETBIT(mask, 2);
-    if (track.hasTRD())
-      SETBIT(mask, 3);
-
-    float pt = track.pt();
-    float eta = track.eta();
-    float phi = track.phi();
-
-    if (mask == 1) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC"), phi);
-    }
-    if (mask == 3) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS"), phi);
-    }
-    if (mask == 5) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TOF"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TOF"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TOF"), phi);
-    }
-    if (mask == 7) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TOF"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TOF"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TOF"), phi);
-    }
-    if (mask == 9) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD"), phi);
-    }
-    if (mask == 11) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD"), phi);
-    }
-    if (mask == 13) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_TRD_TOF"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_TRD_TOF"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_TRD_TOF"), phi);
-    }
-    if (mask == 15) {
-      histRegistry.fill(HIST("TracksQA/Barrel/PtVsColNContrib/TPC_ITS_TRD_TOF"), pt, colNContrib);
-      histRegistry.fill(HIST("TracksQA/Barrel/Eta/TPC_ITS_TRD_TOF"), eta);
-      histRegistry.fill(HIST("TracksQA/Barrel/Phi/TPC_ITS_TRD_TOF"), phi);
-    }
-  }
-
   template <typename TTrack, typename TAmbTracks>
-  uint64_t getTrackBC(TTrack track,
-                      TAmbTracks* ambTracks,
-                      std::unordered_map<int32_t, int32_t>& ambTrIDs,
+  uint64_t getTrackBC(TTrack& track,
+                      TAmbTracks const& ambTracks,
+                      std::unordered_map<int64_t, int64_t>& ambTrIDs,
                       o2::aod::Collisions const& collisions,
                       BCsWithBcSels const& bcs)
   {
@@ -409,8 +392,8 @@ struct UpcCandProducer {
     if (ambIter == ambTrIDs.end()) {
       const auto& col = track.collision();
       trackBC = col.template bc_as<BCsWithBcSels>().globalBC();
-    } else if (upcCuts.getAmbigSwitch() != 1) {
-      const auto& ambTr = ambTracks->iteratorAt(ambIter->second);
+    } else {
+      const auto& ambTr = ambTracks.iteratorAt(ambIter->second);
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
       trackBC = first.globalBC();
@@ -420,15 +403,14 @@ struct UpcCandProducer {
     return bc;
   }
 
-  template <typename TFwdTracks, typename TMcFwdTrackLabels>
-  void fillFwdTracks(TFwdTracks* tracks,
-                     std::vector<int32_t> const& trackIDs,
+  void fillFwdTracks(ForwardTracks const& tracks,
+                     std::vector<int64_t> const& trackIDs,
                      int32_t candID,
                      uint64_t bc,
-                     TMcFwdTrackLabels* mcTrackLabels)
+                     const o2::aod::McFwdTrackLabels* mcTrackLabels)
   {
-    for (int32_t trackID : trackIDs) {
-      const auto& track = tracks->iteratorAt(trackID);
+    for (auto trackID : trackIDs) {
+      const auto& track = tracks.iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
       udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), track.chi2MatchMCHMID(),
@@ -446,21 +428,18 @@ struct UpcCandProducer {
     }
   }
 
-  template <typename TBarrelTracks, typename TMcTrackLabels>
-  void fillBarrelTracks(TBarrelTracks* tracks,
-                        std::vector<int32_t> const& trackIDs,
+  void fillBarrelTracks(BarrelTracks tracks,
+                        std::vector<int64_t> const& trackIDs,
                         int32_t candID,
                         uint64_t bc,
-                        TMcTrackLabels* mcTrackLabels,
-                        std::unordered_map<int32_t, int32_t>& ambBarrelTrIds)
+                        const o2::aod::McTrackLabels* mcTrackLabels,
+                        std::unordered_map<int64_t, int64_t>& ambBarrelTrIds)
   {
-    for (int32_t trackID : trackIDs) {
-      const auto& track = tracks->iteratorAt(trackID);
+    for (auto trackID : trackIDs) {
+      const auto& track = tracks.iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
       bool isAmbiguous = false;
-      if (upcCuts.getAmbigSwitch() != 1) {
-        isAmbiguous = ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end();
-      }
+      isAmbiguous = ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end();
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
       udTracksExtra(track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
@@ -481,75 +460,6 @@ struct UpcCandProducer {
         udTrackLabels(newPartID, mcMask);
       }
     }
-  }
-
-  // filter tracks in the central barrel using TPC PID
-  // return `true` if a candidate passes "number of tracks" requirement from `nBarProngs`, `false` otherwise
-  // if candidate passes, `filteredTrackIDs` contain track IDs of passed tracks
-  template <typename TBarrelTracks>
-  bool checkTPCPID(TBarrelTracks* tracks, std::vector<int32_t> const& trackIDs, std::vector<int32_t>& filteredTrackIDs)
-  {
-    int32_t nIDs = trackIDs.size();
-    std::vector<bool> pidFlagsEl(nIDs, false);
-    std::vector<bool> pidFlagsPi(nIDs, false);
-    int32_t nEl = 0;
-    int32_t nPi = 0;
-
-    for (int32_t itr = 0; itr < nIDs; itr++) {
-      const auto& tr = tracks->iteratorAt(trackIDs[itr]);
-      float tpcNSigmaEl = tr.tpcNSigmaEl();
-      float tpcNSigmaPi = tr.tpcNSigmaPi();
-
-      bool isEl = std::abs(tpcNSigmaEl) < 3.0f && std::abs(tpcNSigmaEl) < std::abs(tpcNSigmaPi);
-      bool isPi = std::abs(tpcNSigmaPi) < 3.0f && std::abs(tpcNSigmaEl) > std::abs(tpcNSigmaPi);
-
-      pidFlagsEl[itr] = isEl;
-      if (isEl) {
-        nEl++;
-      }
-
-      pidFlagsPi[itr] = isPi;
-      if (isPi) {
-        nPi++;
-      }
-    }
-
-    bool pass = false;
-
-    // two muons/pions
-    if (fTPCPIDSwitch == 0 && nPi == 2 && nEl == 0) {
-      for (int32_t itr = 0; itr < nIDs; itr++) {
-        if (pidFlagsPi[itr]) {
-          filteredTrackIDs.push_back(trackIDs[itr]);
-        }
-      }
-      pass = true;
-    }
-
-    // two electrons
-    if (fTPCPIDSwitch == 1 && nEl == 2) {
-      for (int32_t itr = 0; itr < nIDs; itr++) {
-        if (pidFlagsEl[itr]) {
-          filteredTrackIDs.push_back(trackIDs[itr]);
-        }
-      }
-      pass = true;
-    }
-
-    // electron + muon/pion
-    if (fTPCPIDSwitch == 2 && nEl == 1 && nPi == 1) {
-      for (int32_t itr = 0; itr < nIDs; itr++) {
-        if (pidFlagsEl[itr]) {
-          filteredTrackIDs.push_back(trackIDs[itr]);
-        }
-        if (pidFlagsPi[itr]) {
-          filteredTrackIDs.push_back(trackIDs[itr]);
-        }
-      }
-      pass = true;
-    }
-
-    return pass;
   }
 
   bool checkFT0(upchelpers::FITInfo& info, bool isCentral)
@@ -580,7 +490,7 @@ struct UpcCandProducer {
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
                       o2::aod::FV0As const& fv0as,
-                      std::map<uint64_t, std::pair<std::vector<int32_t>, std::vector<int32_t>>>& bcsMatchedTrIds,
+                      std::vector<BCTracksPair>& bcsMatchedTrIds,
                       std::unordered_map<uint64_t, upchelpers::FITInfo>& bcsWithFIT)
   {
     const uint64_t presBitNum = 16; // bit for present BC
@@ -673,7 +583,8 @@ struct UpcCandProducer {
 
     addedBCs.clear();
 
-    std::sort(vbcsWithFIT.begin(), vbcsWithFIT.end(), [](const auto& left, const auto& right) { return left.first < right.first; });
+    std::sort(vbcsWithFIT.begin(), vbcsWithFIT.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
 
     int32_t nBCsWithFIT = vbcsWithFIT.size();
     for (int32_t ibc = 0; ibc < nBCsWithFIT; ++ibc) {
@@ -744,84 +655,170 @@ struct UpcCandProducer {
     vbcsWithFIT.clear();
   }
 
-  template <typename TFwdTracks, typename TAmbiguousFwdTracks,
-            typename TBarrelTracks, typename TAmbiguousTracks,
-            typename TBCs,
-            typename TMcFwdTrackLabels, typename TMcTrackLabels>
-  void createCandidates(TFwdTracks* fwdTracks,
-                        TBarrelTracks* barrelTracks,
-                        TAmbiguousFwdTracks* ambFwdTracks,
-                        TAmbiguousTracks* ambBarrelTracks,
-                        TBCs const& bcs,
-                        o2::aod::Collisions const& collisions,
-                        o2::aod::FT0s const& ft0s,
-                        o2::aod::FDDs const& fdds,
-                        o2::aod::FV0As const& fv0as,
-                        TMcFwdTrackLabels* mcFwdTrackLabels,
-                        TMcTrackLabels* mcBarrelTrackLabels)
+  template <int32_t tracksSwitch, typename TAmbTrack>
+  int64_t getAmbTrackId(TAmbTrack& ambTrack)
+  {
+    int64_t trkId = -1;
+    if constexpr (tracksSwitch == 0) { // central barrel
+      trkId = ambTrack.trackId();
+    }
+    if constexpr (tracksSwitch == 1) { // forward tracks
+      trkId = ambTrack.fwdtrackId();
+    }
+    return trkId;
+  }
+
+  template <int32_t tracksSwitch, typename TAmbTracks>
+  void collectAmbTracks(std::unordered_map<int64_t, int64_t>& ambTrIds,
+                        TAmbTracks const& ambTracks)
+  {
+    for (const auto& ambTrk : ambTracks) {
+      auto trkId = getAmbTrackId<tracksSwitch>(ambTrk);
+      ambTrIds[trkId] = ambTrk.globalIndex();
+    }
+  }
+
+  void addTrack(std::vector<BCTracksPair>& v, uint64_t bc, int64_t trkId)
+  {
+    auto it = std::find_if(v.begin(), v.end(),
+                           [bc](const BCTracksPair& element) { return element.first == bc; });
+    if (it != v.end())
+      it->second.push_back(trkId);
+    else
+      v.emplace_back(std::make_pair(bc, std::vector<int64_t>({trkId})));
+  }
+
+  void collectBarrelTracks(std::vector<BCTracksPair>& bcsMatchedTrIdsTOF,
+                           std::vector<BCTracksPair>& bcsMatchedTrIdsITSTPC,
+                           BCsWithBcSels const& bcs,
+                           o2::aod::Collisions const& collisions,
+                           BarrelTracks const& barrelTracks,
+                           o2::aod::AmbiguousTracks const& ambBarrelTracks,
+                           std::unordered_map<int64_t, int64_t>& ambBarrelTrIds)
+  {
+    for (const auto& trk : barrelTracks) {
+      if (!applyBarCuts(trk))
+        continue;
+      int64_t trkId = trk.globalIndex();
+      uint64_t bc = getTrackBC(trk, ambBarrelTracks, ambBarrelTrIds, collisions, bcs);
+      if (!upcCuts.getRequireITSTPC() && trk.hasTOF())
+        addTrack(bcsMatchedTrIdsTOF, bc, trkId);
+      if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC())
+        addTrack(bcsMatchedTrIdsTOF, bc, trkId);
+      if (!trk.hasTOF() && trk.hasITS() && trk.hasTPC())
+        addTrack(bcsMatchedTrIdsITSTPC, bc, trkId);
+    }
+  }
+
+  void collectForwardTracks(std::vector<BCTracksPair>& bcsMatchedTrIdsMID,
+                            BCsWithBcSels const& bcs,
+                            o2::aod::Collisions const& collisions,
+                            ForwardTracks const& fwdTracks,
+                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                            std::unordered_map<int64_t, int64_t>& ambFwdTrIds)
+  {
+    for (const auto& trk : fwdTracks) {
+      if (!applyFwdCuts(trk))
+        continue;
+      int64_t trkId = trk.globalIndex();
+      uint64_t bc = getTrackBC(trk, ambFwdTracks, ambFwdTrIds, collisions, bcs);
+      auto trkType = trk.trackType();
+      if (trkType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
+        addTrack(bcsMatchedTrIdsMID, bc, trkId);
+    }
+  }
+
+  int32_t searchTracks(uint64_t midbc, uint64_t range, uint32_t tracksToFind,
+                       std::vector<int64_t>& tracks,
+                       std::vector<BCTracksPair>& v)
+  {
+    uint32_t count = 0;
+    uint64_t left = midbc >= range ? midbc - range : 0;
+    uint64_t right = fMaxBC >= midbc + range ? midbc + range : fMaxBC;
+    BCTracksPair dummyPair(left, {});
+    auto curit = std::lower_bound(v.begin(), v.end(), dummyPair,
+                                  [](const BCTracksPair& left, const BCTracksPair& right) { return left.first < right.first; });
+    if (curit == v.end()) // no ITS-TPC tracks nearby at all -> near last BCs
+      return -1;
+    uint64_t curbc = curit->first;
+    while (curbc <= right) { // moving forward to midbc+range
+      uint32_t size = curit->second.size();
+      if (size > 1) // too many tracks per BC -> possibly another event
+        return -2;
+      count += size;
+      if (count > tracksToFind) // too many tracks nearby
+        return -3;
+      tracks.push_back(curit->second[0]);
+      ++curit;
+      if (curit == v.end())
+        break;
+      curbc = curit->first;
+    }
+    if (count != tracksToFind)
+      return -4;
+    return 0; // found exactly tracksToFind tracks in [midbc - range, midbc + range]
+  }
+
+  void createCandidatesCentral(BarrelTracks const& barrelTracks,
+                               o2::aod::AmbiguousTracks const& ambBarrelTracks,
+                               BCsWithBcSels const& bcs,
+                               o2::aod::Collisions const& collisions,
+                               o2::aod::FT0s const& ft0s,
+                               o2::aod::FDDs const& fdds,
+                               o2::aod::FV0As const& fv0as,
+                               const o2::aod::McTrackLabels* mcBarrelTrackLabels)
   {
     // pairs of global BCs and vectors of matched track IDs:
-    // global BC <-> <vector of fwd. trackIDs, vector of barrel trackIDs>
-    std::map<uint64_t, std::pair<std::vector<int32_t>, std::vector<int32_t>>> bcsMatchedTrIds;
-
-    // track IDs after cuts
-    std::vector<int32_t> filteredFwdTracks;
-    std::vector<int32_t> filteredBarrelTracks;
+    std::vector<BCTracksPair> bcsMatchedTrIdsTOF;
+    std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
 
     // trackID -> index in amb. track table
-    std::unordered_map<int32_t, int32_t> ambFwdTrIds;
-    std::unordered_map<int32_t, int32_t> ambBarrelTrIds;
+    std::unordered_map<int64_t, int64_t> ambBarrelTrIds;
+    collectAmbTracks<0>(ambBarrelTrIds, ambBarrelTracks);
 
-    // forward matching
-    if (fwdTracks != nullptr) {
-      if (upcCuts.getAmbigSwitch() != 1) {
-        for (const auto& ambTr : *ambFwdTracks) {
-          auto trId = ambTr.fwdtrackId();
-          ambFwdTrIds[trId] = ambTr.globalIndex();
-        }
-      }
-      filterTracks<0>(fwdTracks, collisions, ambFwdTrIds, filteredFwdTracks);
-      for (int32_t fwdTrID : filteredFwdTracks) {
-        const auto& fwdTr = fwdTracks->iteratorAt(fwdTrID);
-        uint64_t bc = getTrackBC(fwdTr, ambFwdTracks, ambFwdTrIds, collisions, bcs);
-        // search for BC:
-        //  if found -> store track ID to vector of matched tracks
-        //  else make a new vector of matched tracks and store track ID
-        auto it = bcsMatchedTrIds.find(bc);
-        if (it != bcsMatchedTrIds.end()) {
-          it->second.first.emplace_back(fwdTr.globalIndex());
-        } else {
-          bcsMatchedTrIds[bc] = std::make_pair(std::vector<int32_t>(1, fwdTrID), std::vector<int32_t>());
-        }
-      }
-    }
+    collectBarrelTracks(bcsMatchedTrIdsTOF, bcsMatchedTrIdsITSTPC,
+                        bcs, collisions,
+                        barrelTracks, ambBarrelTracks, ambBarrelTrIds);
 
-    // central barrel tracks
-    if (barrelTracks != nullptr) {
-      if (upcCuts.getAmbigSwitch() != 1 || fCollectBTracksQA) {
-        for (const auto& ambTr : *ambBarrelTracks) {
-          auto trId = ambTr.trackId();
-          ambBarrelTrIds[trId] = ambTr.globalIndex();
-        }
-      }
-      filterTracks<1>(barrelTracks, collisions, ambBarrelTrIds, filteredBarrelTracks);
-      for (int32_t barTrID : filteredBarrelTracks) {
-        const auto& barTr = barrelTracks->iteratorAt(barTrID);
-        uint64_t bc = getTrackBC(barTr, ambBarrelTracks, ambBarrelTrIds, collisions, bcs);
-        // search for BC:
-        //  if found -> store track ID to vector of matched tracks
-        //  else make a new vector of matched tracks and store track ID
-        auto it = bcsMatchedTrIds.find(bc);
-        if (it != bcsMatchedTrIds.end()) {
-          it->second.second.emplace_back(barTr.globalIndex());
-        } else if (!fDoSemiFwd) { // tag central-barrel tracks to forward tracks in semiforward case
-          bcsMatchedTrIds[bc] = std::make_pair(std::vector<int32_t>(), std::vector<int32_t>(1, barTrID));
-        }
-      }
-    }
+    uint32_t nBCsWithITSTPC = bcsMatchedTrIdsITSTPC.size();
+
+    std::sort(bcsMatchedTrIdsTOF.begin(), bcsMatchedTrIdsTOF.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+    std::sort(bcsMatchedTrIdsITSTPC.begin(), bcsMatchedTrIdsITSTPC.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
 
     std::unordered_map<uint64_t, upchelpers::FITInfo> bcsWithFIT;
-    processFITInfo(bcs, ft0s, fdds, fv0as, bcsMatchedTrIds, bcsWithFIT);
+    processFITInfo(bcs, ft0s, fdds, fv0as, bcsMatchedTrIdsTOF, bcsWithFIT);
+
+    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
+
+    if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
+      for (auto& pair : bcsMatchedTrIdsTOF) {
+        uint64_t bc = pair.first;
+        auto& trackIds = pair.second;
+        uint32_t nTOFtracks = trackIds.size();
+        if (nTOFtracks > fNBarProngs) // too many TOF tracks?!
+          continue;
+        if (nTOFtracks == fNBarProngs) { // check for ITS-TPC tracks
+          std::vector<int64_t> tracks;
+          tracks.reserve(fNBarProngs * 2); // precautions
+          int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
+          if (res < 0) // too many tracks nearby -> rejecting
+            continue;
+        }
+        if (nTOFtracks < fNBarProngs && !upcCuts.getRequireTOF()) { // add ITS-TPC track if needed
+          uint32_t tracksToFind = fNBarProngs - nTOFtracks;
+          std::vector<int64_t> tracks;
+          tracks.reserve(fNBarProngs * 2); // precautions
+          int32_t res = searchTracks(bc, fSearchRangeITSTPC, tracksToFind, tracks, bcsMatchedTrIdsITSTPC);
+          if (res < 0) // too many or not enough tracks nearby -> rejecting
+            continue;
+          trackIds.insert(trackIds.end(), tracks.begin(), tracks.end());
+        }
+      }
+    }
+
+    bcsMatchedTrIdsITSTPC.clear();
 
     // todo: calculate position of UD collision?
     float dummyX = 0.;
@@ -832,57 +829,187 @@ struct UpcCandProducer {
 
     // storing n-prong matches
     int32_t candID = 0;
-    for (const auto& item : bcsMatchedTrIds) {
-      uint64_t bc = item.first;
-      std::vector<int32_t> fwdTrackIDs = item.second.first;
-      std::vector<int32_t> barrelTrackIDs = item.second.second;
-      int32_t nFwdTracks = fwdTrackIDs.size();
-      int32_t nBarTracks = barrelTrackIDs.size();
-      // check number of tracks in a candidate
-      bool checkForward = nFwdTracks == fNFwdProngs;
-      bool checkCentral = nBarTracks == fNBarProngs;
-      // check TPC PID if needed
-      std::vector<int32_t> filteredTrackIDs;
-      if (fCheckTPCPID) {
-        checkCentral = checkTPCPID(barrelTracks, barrelTrackIDs, filteredTrackIDs);
-        if (checkCentral) {
-          barrelTrackIDs.swap(filteredTrackIDs);
-          nBarTracks = barrelTrackIDs.size();
-        }
-      }
-      if (!checkForward || !checkCentral) {
+    for (const auto& item : bcsMatchedTrIdsTOF) {
+      auto& barrelTrackIDs = item.second;
+      uint16_t numContrib = barrelTrackIDs.size();
+      // sanity check
+      if (numContrib != fNBarProngs)
         continue;
+      // fetching FT0, FDD, FV0 information
+      // if there is no relevant signal, dummy info will be used
+      uint64_t bc = item.first;
+      upchelpers::FITInfo fitInfo{};
+      auto it = bcsWithFIT.find(bc);
+      if (it != bcsWithFIT.end()) {
+        fitInfo = it->second;
+        if (fFilterFT0) {
+          if (!checkFT0(fitInfo, true))
+            continue;
+        }
       }
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
-      uint16_t numContrib = nFwdTracks + nBarTracks;
       for (auto id : barrelTrackIDs) {
-        const auto& tr = barrelTracks->iteratorAt(id);
+        const auto& tr = barrelTracks.iteratorAt(id);
         netCharge += tr.sign();
         if (tr.hasTOF()) {
           RgtrwTOF++;
         }
       }
-      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / static_cast<float>(nBarTracks) : 0.;
-      if (RgtrwTOF == 0 && fNBarProngs != 0) { // require at least 1 TOF track in central and semiforward cases
+      RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
+      // store used tracks
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
+      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
+                          fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
+                          fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
+                          fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
+                          fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
+                          fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      candID++;
+    }
+
+    ambBarrelTrIds.clear();
+    bcsMatchedTrIdsTOF.clear();
+  }
+
+  void createCandidatesSemiFwd(BarrelTracks const& barrelTracks,
+                               o2::aod::AmbiguousTracks const& ambBarrelTracks,
+                               ForwardTracks const& fwdTracks,
+                               o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                               BCsWithBcSels const& bcs,
+                               o2::aod::Collisions const& collisions,
+                               o2::aod::FT0s const& ft0s,
+                               o2::aod::FDDs const& fdds,
+                               o2::aod::FV0As const& fv0as,
+                               const o2::aod::McTrackLabels* mcBarrelTrackLabels,
+                               const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
+  {
+    // pairs of global BCs and vectors of matched track IDs:
+    std::vector<BCTracksPair> bcsMatchedTrIdsTOF;
+    std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
+    std::vector<BCTracksPair> bcsMatchedTrIdsMID;
+
+    // trackID -> index in amb. track table
+    std::unordered_map<int64_t, int64_t> ambBarrelTrIds;
+    collectAmbTracks<0>(ambBarrelTrIds, ambBarrelTracks);
+
+    std::unordered_map<int64_t, int64_t> ambFwdTrIds;
+    collectAmbTracks<1>(ambFwdTrIds, ambFwdTracks);
+
+    collectForwardTracks(bcsMatchedTrIdsMID,
+                         bcs, collisions,
+                         fwdTracks, ambFwdTracks, ambFwdTrIds);
+
+    collectBarrelTracks(bcsMatchedTrIdsTOF, bcsMatchedTrIdsITSTPC,
+                        bcs, collisions,
+                        barrelTracks, ambBarrelTracks, ambBarrelTrIds);
+
+    uint32_t nBCsWithITSTPC = bcsMatchedTrIdsITSTPC.size();
+    uint32_t nBCsWithMID = bcsMatchedTrIdsMID.size();
+
+    // tag TOF tracks to MID tracks
+    std::unordered_set<uint64_t> bcsWithMID;
+    for (const auto& pair : bcsMatchedTrIdsMID) {
+      bcsWithMID.insert(pair.first);
+    }
+
+    std::vector<BCTracksPair> bcsMatchedTrIdsTOFTagged;
+    bcsMatchedTrIdsTOFTagged.reserve(nBCsWithMID);
+    for (const auto& pair : bcsMatchedTrIdsTOF) {
+      if (bcsWithMID.find(pair.first) != bcsWithMID.end())
+        bcsMatchedTrIdsTOFTagged.emplace_back(pair);
+    }
+
+    bcsWithMID.clear();
+    bcsMatchedTrIdsTOF.clear();
+
+    std::sort(bcsMatchedTrIdsTOFTagged.begin(), bcsMatchedTrIdsTOFTagged.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+    std::sort(bcsMatchedTrIdsITSTPC.begin(), bcsMatchedTrIdsITSTPC.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+    std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+
+    std::unordered_map<uint64_t, upchelpers::FITInfo> bcsWithFIT;
+    processFITInfo(bcs, ft0s, fdds, fv0as, bcsMatchedTrIdsMID, bcsWithFIT);
+
+    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
+
+    if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
+      for (uint32_t ibc = 0; ibc < nBCsWithMID; ++ibc) {
+        auto& pairMID = bcsMatchedTrIdsMID[ibc];
+        auto& pairTOF = bcsMatchedTrIdsTOFTagged[ibc];
+        uint64_t bc = pairMID.first;
+        auto& trackIdsMID = pairMID.second;
+        auto& trackIdsTOF = pairTOF.second;
+        uint32_t nMIDtracks = trackIdsMID.size();
+        uint32_t nTOFtracks = trackIdsTOF.size();
+        if (nMIDtracks > fNFwdProngs || nTOFtracks > fNBarProngs) // too many MID and/or TOF tracks?!
+          continue;
+        if (nMIDtracks == fNFwdProngs && nTOFtracks == fNBarProngs) { // check for ITS-TPC tracks
+          std::vector<int64_t> tracks;
+          tracks.reserve(fNBarProngs * 2); // precautions
+          int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
+          if (res < 0) // too many tracks nearby -> rejecting
+            continue;
+        }
+        if (nMIDtracks == fNFwdProngs && nTOFtracks < fNBarProngs && !upcCuts.getRequireTOF()) { // add ITS-TPC track if needed
+          uint32_t tracksToFind = fNBarProngs - nTOFtracks;
+          std::vector<int64_t> tracks;
+          tracks.reserve(fNBarProngs * 2); // precautions
+          int32_t res = searchTracks(bc, fSearchRangeITSTPC, tracksToFind, tracks, bcsMatchedTrIdsITSTPC);
+          if (res < 0) // too many or not enough tracks nearby -> rejecting
+            continue;
+          trackIdsTOF.insert(trackIdsTOF.end(), tracks.begin(), tracks.end());
+        }
+      }
+    }
+
+    bcsMatchedTrIdsITSTPC.clear();
+
+    // todo: calculate position of UD collision?
+    float dummyX = 0.;
+    float dummyY = 0.;
+    float dummyZ = 0.;
+
+    int32_t runNumber = bcs.iteratorAt(0).runNumber();
+
+    // storing n-prong matches
+    int32_t candID = 0;
+    for (uint32_t ibc = 0; ibc < nBCsWithMID; ++ibc) {
+      auto& pairMID = bcsMatchedTrIdsMID[ibc];
+      auto& pairTOF = bcsMatchedTrIdsTOFTagged[ibc];
+      auto& fwdTrackIDs = pairMID.second;
+      auto& barrelTrackIDs = pairTOF.second;
+      uint32_t nMIDtracks = fwdTrackIDs.size();
+      uint32_t nBarrelTracks = barrelTrackIDs.size(); // TOF + ITS-TPC tracks
+      uint16_t numContrib = nBarrelTracks + nMIDtracks;
+      // sanity check
+      if (numContrib != (fNBarProngs + fNFwdProngs))
         continue;
-      }
-      for (auto id : fwdTrackIDs) {
-        const auto& tr = fwdTracks->iteratorAt(id);
-        netCharge += tr.sign();
-      }
       // fetching FT0, FDD, FV0 information
       // if there is no relevant signal, dummy info will be used
+      uint64_t bc = pairMID.first;
       upchelpers::FITInfo fitInfo{};
       auto it = bcsWithFIT.find(bc);
       if (it != bcsWithFIT.end()) {
         fitInfo = it->second;
-        if (fFilterFT0) { // check FT0 signal in the same BC
-          bool hasNoFT0 = checkFT0(fitInfo, barrelTracks != nullptr && fwdTracks == nullptr);
-          if (!hasNoFT0)
+        if (fFilterFT0) {
+          if (!checkFT0(fitInfo, false))
             continue;
         }
       }
+      int8_t netCharge = 0;
+      float RgtrwTOF = 0.;
+      for (auto id : barrelTrackIDs) {
+        const auto& tr = barrelTracks.iteratorAt(id);
+        netCharge += tr.sign();
+        if (tr.hasTOF()) {
+          RgtrwTOF++;
+        }
+      }
+      RgtrwTOF = RgtrwTOF / (float)numContrib;
       // store used tracks
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
@@ -897,34 +1024,17 @@ struct UpcCandProducer {
     }
 
     ambFwdTrIds.clear();
+    bcsMatchedTrIdsMID.clear();
     ambBarrelTrIds.clear();
-    filteredFwdTracks.clear();
-    filteredBarrelTracks.clear();
-    bcsMatchedTrIds.clear();
+    bcsMatchedTrIdsTOFTagged.clear();
   }
 
   // data processors
   // _________________________________________________
 
-  // create candidates for forward region
-  void processFwd(ForwardTracks const& fwdTracks,
-                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                  BCsWithBcSels const& bcs,
-                  o2::aod::Collisions const& collisions,
-                  o2::aod::FT0s const& ft0s,
-                  o2::aod::FDDs const& fdds,
-                  o2::aod::FV0As const& fv0as)
-  {
-    fDoMC = false;
-    fDoSemiFwd = false;
-    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
-                     &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
-                     bcs, collisions,
-                     ft0s, fdds, fv0as,
-                     (o2::aod::McFwdTrackLabels*)nullptr, (o2::aod::McTrackLabels*)nullptr);
-  }
-
-  // create candidates for semiforward region
+  // create candidates for forward/semiforward region
+  // forward:     n fwd tracks + 0 barrel tracks
+  // semiforward: n fwd tracks + m barrel tracks
   void processSemiFwd(ForwardTracks const& fwdTracks,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                       BarrelTracks const& barrelTracks,
@@ -936,12 +1046,11 @@ struct UpcCandProducer {
                       o2::aod::FV0As const& fv0as)
   {
     fDoMC = false;
-    fDoSemiFwd = true;
-    createCandidates(&fwdTracks, &barrelTracks,
-                     &ambFwdTracks, &ambTracks,
-                     bcs, collisions,
-                     ft0s, fdds, fv0as,
-                     (o2::aod::McFwdTrackLabels*)nullptr, (o2::aod::McTrackLabels*)nullptr);
+    createCandidatesSemiFwd(barrelTracks, ambTracks,
+                            fwdTracks, ambFwdTracks,
+                            bcs, collisions,
+                            ft0s, fdds, fv0as,
+                            (o2::aod::McTrackLabels*)nullptr, (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
   // create candidates for central region
@@ -954,40 +1063,18 @@ struct UpcCandProducer {
                       o2::aod::FV0As const& fv0as)
   {
     fDoMC = false;
-    fDoSemiFwd = false;
-    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
-                     (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
-                     bcs, collisions,
-                     ft0s, fdds, fv0as,
-                     (o2::aod::McFwdTrackLabels*)nullptr, (o2::aod::McTrackLabels*)nullptr);
+    createCandidatesCentral(barrelTracks, ambBarrelTracks,
+                            bcs, collisions,
+                            ft0s, fdds, fv0as,
+                            (o2::aod::McTrackLabels*)nullptr);
   }
 
   // MC processors
   // _________________________________________________
 
-  // create candidates for forward region
-  void processFwdMC(ForwardTracks const& fwdTracks,
-                    o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                    BCsWithBcSels const& bcs,
-                    o2::aod::Collisions const& collisions,
-                    o2::aod::FT0s const& ft0s,
-                    o2::aod::FDDs const& fdds,
-                    o2::aod::FV0As const& fv0as,
-                    o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
-                    o2::aod::McFwdTrackLabels const& mcFwdTrackLabels)
-  {
-    fDoMC = true;
-    fDoSemiFwd = false;
-    skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(&fwdTracks, static_cast<BarrelTracks*>(nullptr),
-                     &ambFwdTracks, (o2::aod::AmbiguousTracks*)nullptr,
-                     bcs, collisions,
-                     ft0s, fdds, fv0as,
-                     &mcFwdTrackLabels, (o2::aod::McTrackLabels*)nullptr);
-    fNewPartIDs.clear();
-  }
-
-  // create candidates for semiforward region
+  // create candidates for forward/semiforward region
+  // forward:     n fwd tracks + 0 barrel tracks
+  // semiforward: n fwd tracks + m barrel tracks
   void processSemiFwdMC(ForwardTracks const& fwdTracks,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         BarrelTracks const& barrelTracks,
@@ -1001,13 +1088,12 @@ struct UpcCandProducer {
                         o2::aod::McFwdTrackLabels const& mcFwdTrackLabels, o2::aod::McTrackLabels const& mcBarrelTrackLabels)
   {
     fDoMC = true;
-    fDoSemiFwd = true;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(&fwdTracks, &barrelTracks,
-                     &ambFwdTracks, &ambTracks,
-                     bcs, collisions,
-                     ft0s, fdds, fv0as,
-                     &mcFwdTrackLabels, &mcBarrelTrackLabels);
+    createCandidatesSemiFwd(barrelTracks, ambTracks,
+                            fwdTracks, ambFwdTracks,
+                            bcs, collisions,
+                            ft0s, fdds, fv0as,
+                            &mcBarrelTrackLabels, &mcFwdTrackLabels);
     fNewPartIDs.clear();
   }
 
@@ -1023,26 +1109,23 @@ struct UpcCandProducer {
                         o2::aod::McTrackLabels const& mcBarrelTrackLabels)
   {
     fDoMC = true;
-    fDoSemiFwd = false;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidates(static_cast<ForwardTracks*>(nullptr), &barrelTracks,
-                     (o2::aod::AmbiguousFwdTracks*)nullptr, &ambBarrelTracks,
-                     bcs, collisions,
-                     ft0s, fdds, fv0as,
-                     (o2::aod::McFwdTrackLabels*)nullptr, &mcBarrelTrackLabels);
+    createCandidatesCentral(barrelTracks, ambBarrelTracks,
+                            bcs, collisions,
+                            ft0s, fdds, fv0as,
+                            &mcBarrelTrackLabels);
     fNewPartIDs.clear();
   }
 
-  PROCESS_SWITCH(UpcCandProducer, processFwd, "Produce candidates for forward rapidities", false);
-  PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward region", false);
+  PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);
   PROCESS_SWITCH(UpcCandProducer, processCentral, "Produce candidates in central region", false);
-  PROCESS_SWITCH(UpcCandProducer, processFwdMC, "Produce candidates for forward rapidities with MC information", false);
-  PROCESS_SWITCH(UpcCandProducer, processSemiFwdMC, "Produce candidates in semiforward region with MC information", false);
+  PROCESS_SWITCH(UpcCandProducer, processSemiFwdMC, "Produce candidates in semiforward/forward region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processCentralMC, "Produce candidates in central region with MC information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<UpcCandProducerQa>(cfgc),
     adaptAnalysisTask<UpcCandProducer>(cfgc)};
 }
