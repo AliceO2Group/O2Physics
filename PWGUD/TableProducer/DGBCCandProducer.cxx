@@ -69,7 +69,7 @@ struct tracksWGTInBCs {
                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
-          closestBC = track.collision_as<CCs>().bc_as<BCs>().globalBC();
+          closestBC = track.collision_as<CCs>().foundBC_as<BCs>().globalBC();
         }
 
         // update tracksInBCList
@@ -111,6 +111,7 @@ struct tracksWGTInBCs {
     // loop over all forward tracks and fill fwdTracksWGTInBCList
     for (auto const& fwdTrack : fwdTracks) {
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
+      LOGF(info, "Time resolution of fwdTrack %f", fwdTrack.trackTimeRes());
       if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
 
         // get first compatible BC
@@ -166,10 +167,11 @@ struct DGBCCandProducer {
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
+  Produces<aod::UDTracksFlags> outputTracksFlag;
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
-  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // DG selector
   DGSelector dgSelector;
@@ -250,13 +252,23 @@ struct DGBCCandProducer {
     }
 
     // fill BG and BB flags in adjacent BCs [-15, 15]
-    LOGF(debug, "BC range to check: %i - %i", bc.globalBC() - 15, bc.globalBC() + 15);
-    Partition<BCs> selBCs = aod::bc::globalBC >= bc.globalBC() - 15 && aod::bc::globalBC <= bc.globalBC() + 15;
-    selBCs.bindTable(bcs);
-    LOGF(debug, "Number of BCs found: %i", selBCs.size());
-    for (auto const& bc2u : selBCs) {
+    auto minbcInd = bc.globalIndex() > 15 ? bc.globalIndex() - 15 : 0;
+    auto maxbcInd = bc.globalIndex() < bcs.size() - 1 - 15 ? bc.globalBC() + 15 : bcs.size() - 1;
+    auto minbc = bc.globalBC() - 15;
+    auto maxbc = bc.globalBC() + 15;
+    for (uint ind = minbcInd; ind <= maxbcInd; ind++) {
+
+      // is this a relevant BC
+      auto bc2u = bcs.iteratorAt(ind);
+      if (bc2u.globalBC() > maxbc) {
+        break;
+      }
+      if (bc2u.globalBC() < minbc) {
+        continue;
+      }
+
       // 0 <= bit <= 31
-      auto bit = bc2u.globalBC() - bc.globalBC() + 15;
+      auto bit = bc2u.globalBC() - minbc;
       if (!bc2u.selection()[evsel::kNoBGT0A])
         SETBIT(info.BGFT0Apf, bit);
       if (!bc2u.selection()[evsel::kNoBGT0C])
@@ -282,7 +294,8 @@ struct DGBCCandProducer {
     return info;
   }
 
-  // function to update UDTracks, UDTracksCov, UDTracksDCA, UDTracksPID, UDTracksExtra, and UDTrackCollisionIDs
+  // function to update UDTracks, UDTracksCov, UDTracksDCA, UDTracksPID, UDTracksExtra, UDTracksFlag,
+  // and UDTrackCollisionIDs
   template <typename TTrack, typename TBC>
   void updateUDTrackTables(TTrack const& track, TBC const& bc)
   {
@@ -316,6 +329,8 @@ struct DGBCCandProducer {
                       track.length(),
                       track.tofExpMom(),
                       track.detectorMap());
+    outputTracksFlag(track.has_collision(),
+                     track.isPVContributor());
   }
 
   void init(InitContext& context)

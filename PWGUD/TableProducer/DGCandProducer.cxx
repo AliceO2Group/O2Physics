@@ -64,7 +64,7 @@ struct DGCandProducer {
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
-  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // DG selector
   DGSelector dgSelector;
