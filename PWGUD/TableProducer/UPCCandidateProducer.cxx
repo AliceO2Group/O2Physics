@@ -22,7 +22,7 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct UpcCandProducerQA {
+struct UpcCandProducerQa {
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -125,12 +125,22 @@ struct UpcCandProducerQA {
     }
   }
 
-  void process(o2::aod::Collisions const& collisions, BarrelTracks const& tracks)
+  void process(o2::aod::Collisions const& collisions, BarrelTracks const& tracks, o2::aod::AmbiguousTracks const& ambTracks)
   {
+    std::unordered_set<int64_t> ambTrIds;
+    for (const auto& ambTrk : ambTracks) {
+      auto trkId = ambTrk.trackId();
+      ambTrIds.insert(trkId);
+    }
+
     for (const auto& track : tracks) {
-      int32_t colId = track.collisionId();
+      int32_t colId = -1;
+      if (ambTrIds.find(track.globalIndex()) == ambTrIds.end())
+        track.collisionId();
       updateBarrelTrackQA(track, colId >= 0 ? colId : -1);
     }
+
+    ambTrIds.clear();
   }
 };
 
@@ -1116,6 +1126,6 @@ struct UpcCandProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcCandProducerQA>(cfgc),
+    adaptAnalysisTask<UpcCandProducerQa>(cfgc),
     adaptAnalysisTask<UpcCandProducer>(cfgc)};
 }
