@@ -136,7 +136,7 @@ struct UpcCandProducerQa {
     for (const auto& track : tracks) {
       int32_t colId = -1;
       if (ambTrIds.find(track.globalIndex()) == ambTrIds.end())
-        track.collisionId();
+        colId = track.collisionId();
       updateBarrelTrackQA(track, colId >= 0 ? colId : -1);
     }
 
@@ -1009,7 +1009,7 @@ struct UpcCandProducer {
           RgtrwTOF++;
         }
       }
-      RgtrwTOF = RgtrwTOF / (float)numContrib;
+      RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
