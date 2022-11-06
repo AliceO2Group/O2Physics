@@ -21,7 +21,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/Array2D.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -85,7 +85,8 @@ struct bayesPid {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
   Configurable<std::string> ccdbPathTPC{"ccdbPathTPC", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+
   // Configuration flags to include and exclude particle hypotheses
   // Configurable<LabeledArray<int>> pid{"pid",
   //                                     {{-1, -1, -1, -1, -1, -1, -1, -1, -1}, 9, {"el", "mu", "pi", "ka", "pr", "de", "tr", "he", "al"}},
@@ -115,7 +116,7 @@ struct bayesPid {
     LOG(debug) << "Detector " << detectorName[detIndex] << " enabled with " << enabledSpecies.size() << " species";
 
     for (const auto enabledPid : enabledSpecies) { // Checking that the species is enabled
-      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << (int)enabledPid << " vs " << (int)pid;
+      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << static_cast<int>(enabledPid) << " vs " << static_cast<int>(pid);
       if (enabledPid == pid) {
         LOG(debug) << "Particle " << PID::getName(enabledPid) << " enabled";
         Probability[detIndex][pid] = 1.f / enabledSpecies.size(); // set flat distribution (no decision yet)
@@ -186,7 +187,7 @@ struct bayesPid {
                                  const Configurable<int>& flag) {
       if (flag.value == 1) {
         enabledSpecies.push_back(id);
-        LOG(info) << "Enabling particle: " << (int)id << " " << PID::getName(enabledSpecies.back());
+        LOG(info) << "Enabling particle: " << static_cast<int>(id) << " " << PID::getName(enabledSpecies.back());
       }
     };
 
@@ -239,7 +240,7 @@ struct bayesPid {
         responseTPC.SetParameters(responseTPCptr);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC);
-      };
+      }
     } else {
       const std::string pathTPC = ccdbPathTPC.value;
       const auto time = timestamp.value;
@@ -413,7 +414,7 @@ struct bayesPid {
     }
     if (sum <= 0) {
       LOG(warning) << "Invalid probability densities or prior probabilities";
-      for (long unsigned int i = 0; i < Probability[kBayesian].size(); i++) {
+      for (uint64_t i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
       return;
@@ -532,20 +533,20 @@ struct bayesPidQa {
     if (logAxis == 0) {
       return;
     }
-    const int nbins = h->GetNbinsX();
-    double binp[nbins + 1];
-    double max = h->GetXaxis()->GetBinUpEdge(nbins);
+    const int kNBins = h->GetNbinsX();
+    double binp[kNBins + 1];
+    double max = h->GetXaxis()->GetBinUpEdge(kNBins);
     double min = h->GetXaxis()->GetBinLowEdge(1);
     if (min <= 0) {
       min = 0.00001;
     }
     double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-    for (int i = 0; i < nbins; i++) {
+    double ldelta = (TMath::Log10(max) - lmin) / (static_cast<double>(kNBins));
+    for (int i = 0; i < kNBins; i++) {
       binp[i] = exp(TMath::Log(10) * (lmin + i * ldelta));
     }
-    binp[nbins] = max + 1;
-    h->GetXaxis()->Set(nbins, binp);
+    binp[kNBins] = max + 1;
+    h->GetXaxis()->Set(kNBins, binp);
   }
 
   template <uint8_t i>

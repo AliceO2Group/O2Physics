@@ -821,31 +821,28 @@ struct tofPidBetaQa {
 
 /// Task that checks the TOF collision time
 struct tofPidCollisionTimeQa {
-  Configurable<int> nBinsEvTime{"nBinsEvTime", 1000, "Number of bins for the event time"};
-  Configurable<float> minEvTime{"minEvTime", -1000.f, "Minimum in range in event time"};
-  Configurable<float> maxEvTime{"maxEvTime", 1000.f, "Maximum in range in event time"};
-  Configurable<int> nBinsTofSignal{"nBinsTofSignal", 5000, "Number of bins for the tof signal time"};
-  Configurable<float> minTofSignal{"minTofSignal", 0.f, "Minimum in range in tof signal time"};
-  Configurable<float> maxTofSignal{"maxTofSignal", 100e3, "Maximum in range in tof signal time"};
-  Configurable<int> nBinsEvTimeReso{"nBinsEvTimeReso", 1000, "Number of bins in event time resolution"};
-  Configurable<float> rangeEvTimeReso{"rangeEvTimeReso", 1000.f, "Range in event time resolution"};
+  ConfigurableAxis evTimeBins{"evTimeBins", {1000, -1000.f, 1000.f}, "Binning for the event time"};
+  ConfigurableAxis evTimeDeltaBins{"evTimeDeltaBins", {1000, -1000.f, 1000.f}, "Binning for the delta between event times"};
+  ConfigurableAxis evTimeResoBins{"evTimeResoBins", {1000, 0.f, 1000.f}, "Binning for the event time resolution"};
+  ConfigurableAxis tofSignalBins{"tofSignalBins", {5000, 0.f, 100000.f}, "Binning for the TOF signal"};
+  ConfigurableAxis pBins{"pBins", {200, 0.1f, 5.f}, "Binning for the momentum"};
+
   Configurable<int> nBinsMultiplicity{"nBinsMultiplicity", 1000, "Number of bins for the multiplicity"};
   Configurable<float> rangeMultiplicity{"rangeMultiplicity", 1000.f, "Range for the multiplicity"};
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
-  Configurable<int> nBinsP{"nBinsP", 200, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
+  Configurable<float> minPReso{"minPReso", 1.4f, "Minimum momentum in range for the resolution plot"};
+  Configurable<float> maxPReso{"maxPReso", 1.5f, "Maximum momentum in range for the resolution plot"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext& initContext)
   {
-    const AxisSpec evTimeAxis{nBinsEvTime, minEvTime, maxEvTime, "TOF event time (ps)"};
-    const AxisSpec evTimeDeltaAxis{nBinsEvTime, -maxEvTime, maxEvTime, "Delta event time (ps)"};
-    const AxisSpec multAxis{nBinsEvTime, 0, rangeMultiplicity, "Track multiplicity for TOF event time"};
-    const AxisSpec evTimeResoAxis{nBinsEvTimeReso, 0, rangeEvTimeReso, "TOF event time resolution (ps)"};
-    const AxisSpec tofSignalAxis{nBinsTofSignal, minTofSignal, maxTofSignal, "TOF signal (ps)"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} GeV/#it{c}"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} GeV/#it{c}"};
+    const AxisSpec evTimeAxis{evTimeBins, "Event time (ps)"};
+    const AxisSpec evTimeDeltaAxis{evTimeDeltaBins, "Delta event time (ps)"};
+    const AxisSpec multAxis{nBinsMultiplicity, 0, rangeMultiplicity, "Track multiplicity for TOF event time"};
+    const AxisSpec evTimeResoAxis{evTimeResoBins, "Event time resolution (ps)"};
+    const AxisSpec tofSignalAxis{tofSignalBins, "TOF signal (ps)"};
+    AxisSpec pAxis{pBins, "#it{p} GeV/#it{c}"};
+    AxisSpec ptAxis{pBins, "#it{p}_{T} GeV/#it{c}"};
     if (logAxis) {
       pAxis.makeLogarithmic();
       ptAxis.makeLogarithmic();
@@ -873,22 +870,41 @@ struct tofPidCollisionTimeQa {
     auto h2 = histos.add<TH2>("deltaEvTimeTOFT0AvsT0C", "deltaEvTimeTOFT0AvsT0C", kTH2F, {evTimeDeltaAxis, evTimeDeltaAxis});
     h2->GetXaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0A} (ps)");
     h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0C} (ps)");
+    h2 = histos.add<TH2>("deltaEvTimeTOFT0AvsTOF", "deltaEvTimeTOFT0AvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0A} (ps)");
+    h2 = histos.add<TH2>("deltaEvTimeTOFT0CvsTOF", "deltaEvTimeTOFT0CvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0C} (ps)");
+    h2 = histos.add<TH2>("deltaEvTimeTOFT0ACvsTOF", "deltaEvTimeTOFT0ACvsTOF", kTH2F, {evTimeAxis, evTimeDeltaAxis});
+    h2->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    h2->GetYaxis()->SetTitle("Ev. time_{TOF} - Ev. time_{T0AC} (ps)");
+
     histos.add("eventTime", "eventTime", kTH1F, {evTimeAxis});
     histos.add("eventTimeReso", "eventTimeReso", kTH1F, {evTimeResoAxis});
-    histos.add("eventTimeMult", "eventTimeMult", kTH1F, {multAxis});
     histos.add("eventTimeVsMult", "eventTimeVsMult", kTH2F, {multAxis, evTimeAxis});
     histos.add("eventTimeResoVsMult", "eventTimeResoVsMult", kTH2F, {multAxis, evTimeResoAxis});
-    histos.add<TH1>("collisionTime", "collisionTime", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time (ps)");
-    histos.add<TH1>("collisionTimeRes", "collisionTimeRes", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time resolution (ps)");
+
+    histos.add("eventTimeTOFMult", "eventTimeTOFMult", kTH1F, {multAxis});
+    histos.add<TH1>("eventTimeTOF", "eventTimeTOF", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    histos.add<TH1>("eventTimeTOFReso", "eventTimeTOFReso", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
+    histos.add<TH2>("eventTimeTOFVsMult", "eventTimeTOFVsMult", kTH2F, {multAxis, evTimeAxis})->GetYaxis()->SetTitle("Ev. time_{TOF} (ps)");
+    histos.add<TH2>("eventTimeTOFResoVsMult", "eventTimeTOFResoVsMult", kTH2F, {multAxis, evTimeResoAxis})->GetYaxis()->SetTitle("Ev. time_{TOF} resolution (ps)");
 
     histos.add<TH1>("eventTimeT0A", "eventTimeT0A", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0A event time (ps)");
     histos.add<TH1>("eventTimeT0C", "eventTimeT0C", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0C event time (ps)");
     histos.add<TH1>("eventTimeT0AC", "eventTimeT0AC", kTH1F, {evTimeAxis})->GetXaxis()->SetTitle("T0AC event time (ps)");
     histos.add<TH1>("eventTimeT0ACReso", "eventTimeT0ACReso", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("T0AC event time resolution (ps)");
 
+    histos.add<TH1>("collisionTime", "collisionTime", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time (ps)");
+    histos.add<TH1>("collisionTimeRes", "collisionTimeRes", kTH1F, {evTimeResoAxis})->GetXaxis()->SetTitle("Collision time resolution (ps)");
+
     histos.add("tracks/p", "p", kTH1F, {pAxis});
     histos.add("tracks/pt", "pt", kTH1F, {ptAxis});
     histos.add("tracks/length", "length", kTH1F, {lengthAxis});
+
+    histos.add("deltaVsMult/pi", Form("pi %.2f < #it{p} < %.2f", minPReso.value, maxPReso.value), kTH2F, {multAxis, deltaAxis});
+    histos.add("deltaVsReso/pi", Form("pi %.2f < #it{p} < %.2f", minPReso.value, maxPReso.value), kTH2F, {evTimeResoAxis, deltaAxis});
 
     histos.add("withtof/p", "p", kTH1F, {pAxis});
     histos.add("withtof/pt", "pt", kTH1F, {ptAxis});
@@ -938,7 +954,7 @@ struct tofPidCollisionTimeQa {
     histos.add("withqualitycuts/mass", "mass", kTH1F, {massAxis});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::EvTimeTOFOnly, aod::TrackSelection>;
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
@@ -965,25 +981,42 @@ struct tofPidCollisionTimeQa {
       }
       histos.fill(HIST("eventTime"), t.tofEvTime());
       histos.fill(HIST("eventTimeReso"), t.tofEvTimeErr());
-      histos.fill(HIST("eventTimeMult"), t.evTimeTOFMult());
       histos.fill(HIST("eventTimeVsMult"), t.evTimeTOFMult(), t.tofEvTime());
       histos.fill(HIST("eventTimeResoVsMult"), t.evTimeTOFMult(), t.tofEvTimeErr());
+
+      if (t.isEvTimeTOF()) {
+        histos.fill(HIST("eventTimeTOF"), t.evTimeTOF());
+        histos.fill(HIST("eventTimeTOFReso"), t.evTimeTOFErr());
+        histos.fill(HIST("eventTimeTOFMult"), t.evTimeTOFMult());
+        histos.fill(HIST("eventTimeTOFVsMult"), t.evTimeTOFMult(), t.evTimeTOF());
+        histos.fill(HIST("eventTimeTOFResoVsMult"), t.evTimeTOFMult(), t.evTimeTOFErr());
+      }
+
       if (collision.has_foundFT0()) { // T0 measurement is available
         if (collision.t0ACorrectedValid()) {
           histos.fill(HIST("eventTimeT0A"), collision.t0ACorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0A"), t.tofEvTime() - collision.t0ACorrected() * 1000.f);
+          if (t.isEvTimeTOF()) {
+            histos.fill(HIST("deltaEvTimeTOFT0A"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
+            histos.fill(HIST("deltaEvTimeTOFT0AvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0ACorrected() * 1000.f);
+          }
         }
         if (collision.t0CCorrectedValid()) {
           histos.fill(HIST("eventTimeT0C"), collision.t0CCorrected() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0C"), t.tofEvTime() - collision.t0CCorrected() * 1000.f);
+          if (t.isEvTimeTOF()) {
+            histos.fill(HIST("deltaEvTimeTOFT0C"), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
+            histos.fill(HIST("deltaEvTimeTOFT0CvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
+          }
         }
         if (collision.t0ACValid()) {
           histos.fill(HIST("eventTimeT0AC"), collision.t0AC() * 1000.f);
           histos.fill(HIST("eventTimeT0ACReso"), collision.t0resolution() * 1000.f);
-          histos.fill(HIST("deltaEvTimeTOFT0AC"), t.tofEvTime() - collision.t0AC() * 1000.f);
+          if (t.isEvTimeTOF()) {
+            histos.fill(HIST("deltaEvTimeTOFT0AC"), t.evTimeTOF() - collision.t0AC() * 1000.f);
+            histos.fill(HIST("deltaEvTimeTOFT0ACvsTOF"), t.evTimeTOF(), t.evTimeTOF() - collision.t0AC() * 1000.f);
+          }
         }
-        if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid()) {
-          histos.fill(HIST("deltaEvTimeTOFT0AvsT0C"), t.tofEvTime() - collision.t0ACorrected() * 1000.f, t.tofEvTime() - collision.t0CCorrected() * 1000.f);
+        if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid() && t.isEvTimeTOF()) {
+          histos.fill(HIST("deltaEvTimeTOFT0AvsT0C"), t.evTimeTOF() - collision.t0ACorrected() * 1000.f, t.evTimeTOF() - collision.t0CCorrected() * 1000.f);
         }
       }
 
@@ -1027,12 +1060,18 @@ struct tofPidCollisionTimeQa {
 
         const float beta = o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, trk.tofEvTime());
         const float mass = o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk.p(), beta);
+        const float deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk);
         histos.fill(HIST("withtof/p"), trk.p());
         histos.fill(HIST("withtof/pt"), trk.pt());
         histos.fill(HIST("withtof/length"), trk.length());
         histos.fill(HIST("withtof/tofSignal"), trk.tofSignal());
         histos.fill(HIST("withtof/beta"), trk.p(), beta);
-        histos.fill(HIST("withtof/delta"), trk.p(), trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk));
+        histos.fill(HIST("withtof/delta"), trk.p(), deltaPi);
+        if (trk.p() > minPReso && trk.p() < maxPReso) {
+          histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
+          histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
+        }
+
         histos.fill(HIST("withtof/expP"), trk.p(), trk.tofExpMom());
         histos.fill(HIST("withtof/mass"), mass);
         histos.fill(HIST("withtof/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
@@ -1049,7 +1088,7 @@ struct tofPidCollisionTimeQa {
           histos.fill(HIST("badreso/length"), trk.length());
           histos.fill(HIST("badreso/tofSignal"), trk.tofSignal());
           histos.fill(HIST("badreso/beta"), trk.p(), beta);
-          histos.fill(HIST("badreso/delta"), trk.p(), trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk));
+          histos.fill(HIST("badreso/delta"), trk.p(), deltaPi);
           histos.fill(HIST("badreso/expP"), trk.p(), trk.tofExpMom());
           histos.fill(HIST("badreso/mass"), mass);
           histos.fill(HIST("badreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
@@ -1059,7 +1098,7 @@ struct tofPidCollisionTimeQa {
           histos.fill(HIST("goodreso/length"), trk.length());
           histos.fill(HIST("goodreso/tofSignal"), trk.tofSignal());
           histos.fill(HIST("goodreso/beta"), trk.p(), beta);
-          histos.fill(HIST("goodreso/delta"), trk.p(), trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk));
+          histos.fill(HIST("goodreso/delta"), trk.p(), deltaPi);
           histos.fill(HIST("goodreso/expP"), trk.p(), trk.tofExpMom());
           histos.fill(HIST("goodreso/mass"), mass);
           histos.fill(HIST("goodreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
@@ -1072,7 +1111,7 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("goodforevtime/length"), trk.length());
         histos.fill(HIST("goodforevtime/tofSignal"), trk.tofSignal());
         histos.fill(HIST("goodforevtime/beta"), trk.p(), beta);
-        histos.fill(HIST("goodforevtime/delta"), trk.p(), trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk));
+        histos.fill(HIST("goodforevtime/delta"), trk.p(), deltaPi);
         histos.fill(HIST("goodforevtime/expP"), trk.p(), trk.tofExpMom());
         histos.fill(HIST("goodforevtime/mass"), mass);
         histos.fill(HIST("goodforevtime/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());

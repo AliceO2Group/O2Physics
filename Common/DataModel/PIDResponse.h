@@ -16,8 +16,8 @@
 ///         the analysis data model and the PID response
 ///
 
-#ifndef O2_FRAMEWORK_PIDRESPONSE_H_
-#define O2_FRAMEWORK_PIDRESPONSE_H_
+#ifndef COMMON_DATAMODEL_PIDRESPONSE_H_
+#define COMMON_DATAMODEL_PIDRESPONSE_H_
 
 #include <experimental/type_traits>
 
@@ -374,9 +374,10 @@ namespace pidflags
 namespace enums
 {
 enum PIDFlags : uint8_t {
-  EvTimeUndef = 0x0, // Event collision not set, corresponding to the LHC Fill event time
-  EvTimeTOF = 0x1,   // Event collision time from TOF
-  EvTimeT0AC = 0x2   // Event collision time from the FT0AC
+  EvTimeUndef = 0x0,  // Event collision not set, corresponding to the LHC Fill event time
+  EvTimeTOF = 0x1,    // Event collision time from TOF
+  EvTimeT0AC = 0x2,   // Event collision time from the FT0AC
+  EvTimeTOFT0AC = 0x3 // Event collision time from the TOF and FT0AC
 };
 }
 
@@ -387,6 +388,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOF, isEvTimeTOF, //! True if the Event Time 
                            [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOF) == enums::PIDFlags::EvTimeTOF; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, //! True if the Event Time was computed with the T0AC
                            [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeT0AC) == enums::PIDFlags::EvTimeT0AC; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOFT0AC, isEvTimeTOFT0AC, //! True if the Event Time was computed with the TOF and T0AC
+                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOFT0AC) == enums::PIDFlags::EvTimeTOFT0AC; });
 
 } // namespace pidflags
 
@@ -532,7 +535,8 @@ DECLARE_SOA_TABLE(pidEvTimeFlags, "AOD", "pidEvTimeFlags", //! Table of the PID 
                   pidflags::TOFFlags,
                   pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
                   pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
-                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>);
+                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOFT0AC<pidflags::TOFFlags>);
 
 // Per particle tables
 DECLARE_SOA_TABLE(pidTOFFullEl, "AOD", "pidTOFFullEl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for electron
@@ -777,4 +781,4 @@ DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::Ba
 
 } // namespace o2::aod
 
-#endif // O2_FRAMEWORK_PIDRESPONSE_H_
+#endif // COMMON_DATAMODEL_PIDRESPONSE_H_

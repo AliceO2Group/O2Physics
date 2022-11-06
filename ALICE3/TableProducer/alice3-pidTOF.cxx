@@ -20,7 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "ALICE3/Core/TOFResoALICE3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -89,7 +89,7 @@ struct ALICE3pidTOFTask {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFResoALICE3", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
   void init(o2::framework::InitContext&)
   {
