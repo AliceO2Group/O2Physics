@@ -195,7 +195,27 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
     return cut;
   }
-
+  // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug1"));
+    return cut;
+  }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug2")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
+    return cut;
+  }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug3")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug3"));
+    return cut;
+  }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug4")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug4"));
+    return cut;
+  }
   //---------------------------------------------------------------------------------------
   // NOTE: Below there are several TPC pid cuts used for studies of the dE/dx degradation
   //    and its impact on the high lumi pp quarkonia triggers
@@ -551,6 +571,37 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsi_trackCut_debug")) {
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 50., 159);
+    cut->AddCut(VarManager::kITSncls, 1.5, 7.5);
+    return cut;
+  }
+  if (!nameStr.compare("jpsi_TPCPID_debug1")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999);
+    return cut;
+  }
+  if (!nameStr.compare("jpsi_TPCPID_debug2")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 3.0, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 3.0, 999);
+    return cut;
+  }
+  if (!nameStr.compare("jpsi_TPCPID_debug3")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 3.5, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 3.5, 999);
+    return cut;
+  }
+  if (!nameStr.compare("jpsi_TPCPID_debug4")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 999);
+    return cut;
+  }
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(VarManager::kPt, 4.0, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
@@ -561,13 +612,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 70.0, 161.);
     return cut;
   }
-
   if (!nameStr.compare("lmeeStandardKine")) {
     cut->AddCut(VarManager::kPt, 0.2, 10.0);
     cut->AddCut(VarManager::kEta, -0.8, 0.8);
     return cut;
   }
-
   if (!nameStr.compare("lmeeLowBKine")) {
     cut->AddCut(VarManager::kPt, 0.075, 10.0);
     cut->AddCut(VarManager::kEta, -0.8, 0.8);
