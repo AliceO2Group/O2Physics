@@ -157,7 +157,7 @@ TString VarManager::GetRunPeriod(float runNumber)
     return runperiod;
   } else {
     TString runperiod = "none";
-    //LOGF(info, "can't find run period for run %.0d", runNumber);
+    // LOGF(info, "can't find run period for run %.0d", runNumber);
     return runperiod;
   }
 };

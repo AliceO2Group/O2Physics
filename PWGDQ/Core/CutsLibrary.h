@@ -195,7 +195,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
     return cut;
   }
-  //NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
+  // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug1"));
