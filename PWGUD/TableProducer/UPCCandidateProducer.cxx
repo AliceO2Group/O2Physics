@@ -179,10 +179,10 @@ struct UpcCandProducer {
   MutableConfigurable<UPCCutparHolder> inputCuts{"UPCCuts", {}, "UPC event cuts"};
 
   // candidate producer flags
-  Configurable<int8_t> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
-  Configurable<int32_t> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
-  Configurable<int8_t> fSearchITSTPC{"searchITSTPC", 0, "Search for ITS-TPC tracks near candidates"};
-  Configurable<int32_t> fSearchRangeITSTPC{"searchRangeITSTPC", 50, "BC range for ITS-TPC tracks search wrt TOF tracks"};
+  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
+  Configurable<int> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
+  Configurable<int> fSearchITSTPC{"searchITSTPC", 0, "Search for ITS-TPC tracks near candidates"};
+  Configurable<int> fSearchRangeITSTPC{"searchRangeITSTPC", 50, "BC range for ITS-TPC tracks search wrt TOF tracks"};
   Configurable<uint32_t> fNFwdProngs{"nFwdProngs", 0, "Matched forward tracks per candidate"};
   Configurable<uint32_t> fNBarProngs{"nBarProngs", 2, "Matched barrel tracks per candidate"};
 
@@ -705,7 +705,7 @@ struct UpcCandProducer {
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
       if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC())
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
-      if (!trk.hasTOF() && trk.hasITS() && trk.hasTPC())
+      if (fSearchITSTPC == 1 && !trk.hasTOF() && trk.hasITS() && trk.hasTPC())
         addTrack(bcsMatchedTrIdsITSTPC, bc, trkId);
     }
   }
