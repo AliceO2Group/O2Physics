@@ -177,7 +177,7 @@ struct multFilter {
     // get sigma
     float sRho_tmp = 0;
     for (int iCell = 0; iCell < entries; ++iCell) {
-      sRho_tmp += (1.0 * signals[iCell] - mRho)*(1.0 * signals[iCell] - mRho);
+      sRho_tmp += (1.0 * signals[iCell] - mRho) * (1.0 * signals[iCell] - mRho);
     }
     sRho_tmp /= (1.0 * entries * entries);
     float sRho = sqrt(sRho_tmp);
