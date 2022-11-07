@@ -19,9 +19,9 @@
 #include "../filterTables.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
+#include <TMath.h>
 #include <cmath>
 #include <string>
-#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
