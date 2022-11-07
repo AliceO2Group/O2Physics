@@ -13,10 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#include "FemtoDreamCollisionSelection.h"
-#include "FemtoDreamTrackSelection.h"
-#include "FemtoDreamV0Selection.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <cstdint>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -26,14 +24,17 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "ReconstructionDataFormats/Track.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "FemtoDreamCollisionSelection.h"
+#include "FemtoDreamTrackSelection.h"
+#include "FemtoDreamV0Selection.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -243,7 +244,7 @@ struct femtoDreamProducerTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
@@ -351,28 +352,23 @@ struct femtoDreamProducerTask {
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
 
-    /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fulfilled:
+    const auto vtxZ = col.posZ();
+    const auto mult = col.multFV0M();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+
+    // check whether the basic event selection criteria are fulfilled
+    // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(vtxZ, mult, spher, mMagField);
       }
       return;
     }
 
-    const auto vtxZ = col.posZ();
-    const auto mult = col.multFV0M();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
-
-    // now the table is filled
-    if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multFT0M(), spher, mMagField);
-    } else {
-      outputCollision(vtxZ, mult, spher, mMagField);
-    }
+    outputCollision(vtxZ, mult, spher, mMagField);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
