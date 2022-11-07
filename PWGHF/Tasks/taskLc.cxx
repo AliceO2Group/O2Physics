@@ -13,9 +13,9 @@
 /// \brief Λc± → p± K∓ π± analysis task
 /// \note Extended from taskD0
 ///
-/// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
+/// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -258,48 +258,49 @@ struct TaskLc {
       if (cutYCandMax >= 0. && std::abs(YLc(candidate)) > cutYCandMax) {
         continue;
       }
+      auto pt = candidate.pt();
       if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), InvMassLcpKpi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), InvMassLcpKpi(candidate), candidate.pt(), nTracks);
-        registry.fill(HIST("Data/hMassVsPt"), InvMassLcpKpi(candidate), candidate.pt());
+        registry.fill(HIST("Data/hMassVsPtVsMult"), InvMassLcpKpi(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPt"), InvMassLcpKpi(candidate), pt);
       }
       if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), InvMassLcpiKp(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), InvMassLcpiKp(candidate), candidate.pt(), nTracks);
-        registry.fill(HIST("Data/hMassVsPt"), InvMassLcpiKp(candidate), candidate.pt());
+        registry.fill(HIST("Data/hMassVsPtVsMult"), InvMassLcpiKp(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPt"), InvMassLcpiKp(candidate), pt);
       }
-      registry.fill(HIST("Data/hPt"), candidate.pt());
+      registry.fill(HIST("Data/hPt"), pt);
       registry.fill(HIST("Data/hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("Data/hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("Data/hPtProng2"), candidate.ptProng2());
       registry.fill(HIST("Data/hd0Prong0"), candidate.impactParameter0());
       registry.fill(HIST("Data/hd0Prong1"), candidate.impactParameter1());
       registry.fill(HIST("Data/hd0Prong2"), candidate.impactParameter2());
-      registry.fill(HIST("Data/hd0VsPtProng0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/hd0VsPtProng1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/hd0VsPtProng2"), candidate.impactParameter2(), candidate.pt());
+      registry.fill(HIST("Data/hd0VsPtProng0"), candidate.impactParameter0(), pt);
+      registry.fill(HIST("Data/hd0VsPtProng1"), candidate.impactParameter1(), pt);
+      registry.fill(HIST("Data/hd0VsPtProng2"), candidate.impactParameter2(), pt);
       registry.fill(HIST("Data/hDecLength"), candidate.decayLength());
-      registry.fill(HIST("Data/hDecLengthVsPt"), candidate.decayLength(), candidate.pt());
+      registry.fill(HIST("Data/hDecLengthVsPt"), candidate.decayLength(), pt);
       registry.fill(HIST("Data/hDecLengthxy"), candidate.decayLengthXY());
-      registry.fill(HIST("Data/hDecLengthxyVsPt"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/hDecLengthxyVsPt"), candidate.decayLengthXY(), pt);
       registry.fill(HIST("Data/hCt"), CtLc(candidate));
-      registry.fill(HIST("Data/hCtVsPt"), CtLc(candidate), candidate.pt());
+      registry.fill(HIST("Data/hCtVsPt"), CtLc(candidate), pt);
       registry.fill(HIST("Data/hCPA"), candidate.cpa());
-      registry.fill(HIST("Data/hCPAVsPt"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("Data/hCPAVsPt"), candidate.cpa(), pt);
       registry.fill(HIST("Data/hCPAxy"), candidate.cpaXY());
-      registry.fill(HIST("Data/hCPAxyVsPt"), candidate.cpaXY(), candidate.pt());
+      registry.fill(HIST("Data/hCPAxyVsPt"), candidate.cpaXY(), pt);
       registry.fill(HIST("Data/hDca2"), candidate.chi2PCA());
-      registry.fill(HIST("Data/hDca2VsPt"), candidate.chi2PCA(), candidate.pt());
+      registry.fill(HIST("Data/hDca2VsPt"), candidate.chi2PCA(), pt);
       registry.fill(HIST("Data/hEta"), candidate.eta());
-      registry.fill(HIST("Data/hEtaVsPt"), candidate.eta(), candidate.pt());
+      registry.fill(HIST("Data/hEtaVsPt"), candidate.eta(), pt);
       registry.fill(HIST("Data/hPhi"), candidate.phi());
-      registry.fill(HIST("Data/hPhiVsPt"), candidate.phi(), candidate.pt());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcpKpi(), candidate.pt());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcpiKp(), candidate.pt());
-      registry.fill(HIST("Data/hImpParErrProng0"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/hImpParErrProng1"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), candidate.pt());
-      registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+      registry.fill(HIST("Data/hPhiVsPt"), candidate.phi(), pt);
+      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcpKpi(), pt);
+      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcpiKp(), pt);
+      registry.fill(HIST("Data/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
+      registry.fill(HIST("Data/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
+      registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
+      registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
     }
   }
 
@@ -322,17 +323,17 @@ struct TaskLc {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kLambdaCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
-
+        auto pt = candidate.pt();
         /// MC reconstructed signal
         if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), InvMassLcpKpi(candidate));
-          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), InvMassLcpKpi(candidate), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), InvMassLcpKpi(candidate), pt);
         }
         if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), InvMassLcpiKp(candidate));
-          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), InvMassLcpiKp(candidate), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), InvMassLcpiKp(candidate), pt);
         }
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), pt);
         registry.fill(HIST("MC/reconstructed/signal/hPtRecProng0Sig"), candidate.ptProng0());
         registry.fill(HIST("MC/reconstructed/signal/hPtRecProng1Sig"), candidate.ptProng1());
         registry.fill(HIST("MC/reconstructed/signal/hPtRecProng2Sig"), candidate.ptProng2());
@@ -340,109 +341,109 @@ struct TaskLc {
         registry.fill(HIST("MC/reconstructed/signal/hd0RecProng0Sig"), candidate.impactParameter0());
         registry.fill(HIST("MC/reconstructed/signal/hd0RecProng1Sig"), candidate.impactParameter1());
         registry.fill(HIST("MC/reconstructed/signal/hd0RecProng2Sig"), candidate.impactParameter2());
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng0Sig"), candidate.impactParameter0(), candidate.pt());
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng1Sig"), candidate.impactParameter1(), candidate.pt());
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng2Sig"), candidate.impactParameter2(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng0Sig"), candidate.impactParameter0(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng1Sig"), candidate.impactParameter1(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng2Sig"), candidate.impactParameter2(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthRecSig"), candidate.decayLength());
-        registry.fill(HIST("MC/reconstructed/signal/hDecLengthVsPtRecSig"), candidate.decayLength(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hDecLengthVsPtRecSig"), candidate.decayLength(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyRecSig"), candidate.decayLengthXY());
-        registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyVsPtRecSig"), candidate.decayLengthXY(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyVsPtRecSig"), candidate.decayLengthXY(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), CtLc(candidate));
-        registry.fill(HIST("MC/reconstructed/signal/hCtVsPtRecSig"), CtLc(candidate), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hCtVsPtRecSig"), CtLc(candidate), pt);
         registry.fill(HIST("MC/reconstructed/signal/hCPARecSig"), candidate.cpa());
-        registry.fill(HIST("MC/reconstructed/signal/hCPAVsPtRecSig"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hCPAVsPtRecSig"), candidate.cpa(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hCPAxyRecSig"), candidate.cpaXY());
-        registry.fill(HIST("MC/reconstructed/signal/hCPAxyVsPtRecSig"), candidate.cpaXY(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hCPAxyVsPtRecSig"), candidate.cpaXY(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hDca2RecSig"), candidate.chi2PCA());
-        registry.fill(HIST("MC/reconstructed/signal/hDca2VsPtRecSig"), candidate.chi2PCA(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hDca2VsPtRecSig"), candidate.chi2PCA(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta());
-        registry.fill(HIST("MC/reconstructed/signal/hEtaVsPtRecSig"), candidate.eta(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hEtaVsPtRecSig"), candidate.eta(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hPhiRecSig"), candidate.phi());
-        registry.fill(HIST("MC/reconstructed/signal/hPhiVsPtRecSig"), candidate.phi(), candidate.pt());
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng0Sig"), candidate.errorImpactParameter0(), candidate.pt());
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng1Sig"), candidate.errorImpactParameter1(), candidate.pt());
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng2Sig"), candidate.errorImpactParameter2(), candidate.pt());
-        registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), candidate.pt());
+        registry.fill(HIST("MC/reconstructed/signal/hPhiVsPtRecSig"), candidate.phi(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng0Sig"), candidate.errorImpactParameter0(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng1Sig"), candidate.errorImpactParameter1(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng2Sig"), candidate.errorImpactParameter2(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), pt);
 
         /// reconstructed signal prompt
         if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), InvMassLcpKpi(candidate));
-            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), InvMassLcpKpi(candidate), candidate.pt());
+            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), InvMassLcpKpi(candidate), pt);
           }
           if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), InvMassLcpiKp(candidate));
-            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), InvMassLcpiKp(candidate), candidate.pt());
+            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), InvMassLcpiKp(candidate), pt);
           }
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecSigPrompt"), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hPtRecSigPrompt"), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng0SigPrompt"), candidate.ptProng0());
           registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng1SigPrompt"), candidate.ptProng1());
           registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng2SigPrompt"), candidate.ptProng2());
           registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng0SigPrompt"), candidate.impactParameter0());
           registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng1SigPrompt"), candidate.impactParameter1());
           registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng2SigPrompt"), candidate.impactParameter2());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng0SigPrompt"), candidate.impactParameter0(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng1SigPrompt"), candidate.impactParameter1(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng2SigPrompt"), candidate.impactParameter2(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng0SigPrompt"), candidate.impactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng1SigPrompt"), candidate.impactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng2SigPrompt"), candidate.impactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthRecSigPrompt"), candidate.decayLength());
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthVsPtRecSigPrompt"), candidate.decayLength(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthVsPtRecSigPrompt"), candidate.decayLength(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyRecSigPrompt"), candidate.decayLengthXY());
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyVsPtRecSigPrompt"), candidate.decayLengthXY(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyVsPtRecSigPrompt"), candidate.decayLengthXY(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hCtRecSigPrompt"), CtLc(candidate));
-          registry.fill(HIST("MC/reconstructed/prompt/hCtVsPtRecSigPrompt"), CtLc(candidate), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hCtVsPtRecSigPrompt"), CtLc(candidate), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hCPARecSigPrompt"), candidate.cpa());
-          registry.fill(HIST("MC/reconstructed/prompt/hCPAVsPtRecSigPrompt"), candidate.cpa(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hCPAVsPtRecSigPrompt"), candidate.cpa(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hCPAxyRecSigPrompt"), candidate.cpaXY());
-          registry.fill(HIST("MC/reconstructed/prompt/hCPAxyVsPtRecSigPrompt"), candidate.cpaXY(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hCPAxyVsPtRecSigPrompt"), candidate.cpaXY(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDca2RecSigPrompt"), candidate.chi2PCA());
-          registry.fill(HIST("MC/reconstructed/prompt/hDca2VsPtRecSigPrompt"), candidate.chi2PCA(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hDca2VsPtRecSigPrompt"), candidate.chi2PCA(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hEtaRecSigPrompt"), candidate.eta());
-          registry.fill(HIST("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt"), candidate.eta(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt"), candidate.eta(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hPhiRecSigPrompt"), candidate.phi());
-          registry.fill(HIST("MC/reconstructed/prompt/hPhiVsPtRecSigPrompt"), candidate.phi(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng0SigPrompt"), candidate.errorImpactParameter0(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng1SigPrompt"), candidate.errorImpactParameter1(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2SigPrompt"), candidate.errorImpactParameter2(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrSigPrompt"), candidate.errorDecayLength(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/prompt/hPhiVsPtRecSigPrompt"), candidate.phi(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng0SigPrompt"), candidate.errorImpactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng1SigPrompt"), candidate.errorImpactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2SigPrompt"), candidate.errorImpactParameter2(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrSigPrompt"), candidate.errorDecayLength(), pt);
         } else {
           if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), InvMassLcpKpi(candidate));
-            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), InvMassLcpKpi(candidate), candidate.pt());
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), InvMassLcpKpi(candidate), pt);
           }
           if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), InvMassLcpiKp(candidate));
-            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), InvMassLcpiKp(candidate), candidate.pt());
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), InvMassLcpiKp(candidate), pt);
           }
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecSigNonPrompt"), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecSigNonPrompt"), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng0SigNonPrompt"), candidate.ptProng0());
           registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng1SigNonPrompt"), candidate.ptProng1());
           registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt"), candidate.ptProng2());
           registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng0SigNonPrompt"), candidate.impactParameter0());
           registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng1SigNonPrompt"), candidate.impactParameter1());
           registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng2SigNonPrompt"), candidate.impactParameter2());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng0SigNonPrompt"), candidate.impactParameter0(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng1SigNonPrompt"), candidate.impactParameter1(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng2SigNonPrompt"), candidate.impactParameter2(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng0SigNonPrompt"), candidate.impactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng1SigNonPrompt"), candidate.impactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng2SigNonPrompt"), candidate.impactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthRecSigNonPrompt"), candidate.decayLength());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthVsPtRecSigNonPrompt"), candidate.decayLength(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthVsPtRecSigNonPrompt"), candidate.decayLength(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyRecSigNonPrompt"), candidate.decayLengthXY());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyVsPtRecSigNonPrompt"), candidate.decayLengthXY(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyVsPtRecSigNonPrompt"), candidate.decayLengthXY(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hCtRecSigNonPrompt"), CtLc(candidate));
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCtVsPtRecSigNonPrompt"), CtLc(candidate), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hCtVsPtRecSigNonPrompt"), CtLc(candidate), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hCPARecSigNonPrompt"), candidate.cpa());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAVsPtRecSigNonPrompt"), candidate.cpa(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAVsPtRecSigNonPrompt"), candidate.cpa(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hCPAxyRecSigNonPrompt"), candidate.cpaXY());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAxyVsPtRecSigNonPrompt"), candidate.cpaXY(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAxyVsPtRecSigNonPrompt"), candidate.cpaXY(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDca2RecSigNonPrompt"), candidate.chi2PCA());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDca2VsPtRecSigNonPrompt"), candidate.chi2PCA(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hDca2VsPtRecSigNonPrompt"), candidate.chi2PCA(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hEtaRecSigNonPrompt"), candidate.eta());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt"), candidate.eta(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt"), candidate.eta(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hPhiRecSigNonPrompt"), candidate.phi());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPhiVsPtRecSigNonPrompt"), candidate.phi(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng0SigNonPrompt"), candidate.errorImpactParameter0(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng1SigNonPrompt"), candidate.errorImpactParameter1(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), candidate.pt());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), candidate.pt());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hPhiVsPtRecSigNonPrompt"), candidate.phi(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng0SigNonPrompt"), candidate.errorImpactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng1SigNonPrompt"), candidate.errorImpactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
       }
     }
