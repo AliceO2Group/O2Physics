@@ -48,6 +48,7 @@ class UPCCutparHolder
                   float dcaZLow = -3.,
                   float dcaZHigh = 3.,
                   bool requireTOF = false,
+                  bool requireITSTPC = false,
                   int maxNContrib = 2,
                   int ambigSwitch = 0)
     : fUseFwdCuts{useFwdCuts},
@@ -79,6 +80,7 @@ class UPCCutparHolder
       fDcaZLow{dcaZLow},
       fDcaZHigh{dcaZHigh},
       fRequireTOF{requireTOF},
+      fRequireITSTPC{requireITSTPC},
       fMaxNContrib{maxNContrib},
       fAmbigSwitch{ambigSwitch} {}
 
@@ -113,6 +115,7 @@ class UPCCutparHolder
   void setDcaZLow(float dcaZLow);
   void setDcaZHigh(float dcaZHigh);
   void setRequireTOF(bool requireTOF);
+  void setRequireITSTPC(bool requireITSTPC);
   void setMaxNContrib(int maxNContrib);
   void setAmbigSwitch(int ambigSwitch);
 
@@ -146,6 +149,7 @@ class UPCCutparHolder
   float getDcaZLow() const;
   float getDcaZHigh() const;
   bool getRequireTOF() const;
+  bool getRequireITSTPC() const;
   int getMaxNContrib() const;
   int getAmbigSwitch() const;
 
@@ -188,8 +192,9 @@ class UPCCutparHolder
   bool fCheckMaxDcaXY{true}; // Apply cut on maximal DCA_xy
   float fDcaZLow{-3.};       // Minimal DCA_z for barrel tracks
   float fDcaZHigh{3.};       // Maximal DCA_z for barrel tracks
-  // quality: TOF
-  bool fRequireTOF{false}; // Require all tracks to have TOF matches
+  // quality: matching
+  bool fRequireTOF{false};    // Require all tracks in event candidates to have TOF matches
+  bool fRequireITSTPC{false}; // Require all tracks in event candidates to have ITS-TPC matches
 
   // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
   int fMaxNContrib{2}; // Central barrel: consider tracks from collisions with N contributors <= maxNContrib

@@ -40,6 +40,7 @@
 #include "EventFiltering/PWGUD/DGCutparHolder.h"
 #include "PWGUD/Core/UDHelperFunctions.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/UDGoodRunSelector.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 
 using namespace o2;
@@ -48,20 +49,24 @@ using namespace o2::framework::expressions;
 
 struct DGCandAnalyzer {
 
+  // configurables
+  Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
+  Configurable<int> candCaseSel{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
+  Configurable<std::string> goodRunsFile{"goodRunsFile", {}, "json with list of good runs"};
+
   // get a DGCutparHolder and DGAnaparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
-  MutableConfigurable<bool> verbose{"Verbose", {}, "Additional print outs"};
-  MutableConfigurable<int> candCaseSel{"CandCase", {}, "<0: only BCCands, >0: only ColCands, 0: both cases"};
-  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   DGAnaparHolder anaPars = DGAnaparHolder();
-  MutableConfigurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
+  Configurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
 
   ConfigurableAxis IVMAxis{"IVMAxis", {350, 0.0, 3.5}, ""};
   ConfigurableAxis ptAxis{"ptAxis", {250, 0.0, 2.5}, ""};
   ConfigurableAxis nsTOFAxis{"nsTOFAxis", {100, -100.0, 100.0}, ""};
 
-  // PID selector
+  // PID and goodRun selector
   DGPIDSelector pidsel = DGPIDSelector();
+  UDGoodRunSelector grsel = UDGoodRunSelector();
 
   // define histograms
   HistogramRegistry registry{
@@ -111,8 +116,11 @@ struct DGCandAnalyzer {
     diffCuts = (DGCutparHolder)DGCuts;
     anaPars = (DGAnaparHolder)DGPars;
     pidsel.init(anaPars);
+    grsel.init(goodRunsFile);
+
     if (verbose) {
       pidsel.Print();
+      grsel.Print();
     }
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
@@ -135,6 +143,10 @@ struct DGCandAnalyzer {
 
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
   {
+    // accept only selected run numbers
+    if (!grsel.isGoodRun(dgcand.runNumber())) {
+      return;
+    }
 
     // skip unwanted cases
     auto candCase = (dgcand.posX() == -1. && dgcand.posY() == 1. && dgcand.posZ() == -1.) ? -1 : 1;
@@ -157,13 +169,9 @@ struct DGCandAnalyzer {
 
     // skip events with out-of-range rgtrwTOF
     auto rtrwTOF = rPVtrwTOF<false>(dgtracks, dgtracks.size());
-    LOGF(info, "rtwTOF %f %f %f", dgcand.rgtrwTOF(), rtrwTOF, diffCuts.minRgtrwTOF());
     if ((rtrwTOF >= 0) && (rtrwTOF < diffCuts.minRgtrwTOF())) {
       return;
     }
-    // if ((dgcand.rgtrwTOF() >= 0) && (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF())) {
-    //   return;
-    // }
 
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(dgtracks);

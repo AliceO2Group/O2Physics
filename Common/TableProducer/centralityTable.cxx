@@ -111,8 +111,8 @@ struct CentralityTable {
 
     /* Checking the tables which are requested in the workflow and enabling them */
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
         auto enable = [&input](const std::string detector, Configurable<int>& flag) {
           const std::string table = "Cent" + detector + "s";
           if (input.matcher.binding == table) {

@@ -68,10 +68,10 @@ struct DGFilterRun3 {
   // DGCutparHolders
   DGCutparHolder diffCuts = DGCutparHolder();
   static constexpr std::string_view cutNames[4] = {"DiffCuts2pi", "DiffCuts4pi", "DiffCuts2K", "DiffCuts4K"};
-  MutableConfigurable<DGCutparHolder> diffCuts2pi{cutNames[0].data(), {}, "Diffractive 2pi events cuts"};
-  MutableConfigurable<DGCutparHolder> diffCuts4pi{cutNames[1].data(), {}, "Diffractive 4pi events cuts"};
-  MutableConfigurable<DGCutparHolder> diffCuts2K{cutNames[2].data(), {}, "Diffractive 2K events cuts"};
-  MutableConfigurable<DGCutparHolder> diffCuts4K{cutNames[3].data(), {}, "Diffractive 4K events cuts"};
+  Configurable<DGCutparHolder> diffCuts2pi{cutNames[0].data(), {}, "Diffractive 2pi events cuts"};
+  Configurable<DGCutparHolder> diffCuts4pi{cutNames[1].data(), {}, "Diffractive 4pi events cuts"};
+  Configurable<DGCutparHolder> diffCuts2K{cutNames[2].data(), {}, "Diffractive 2K events cuts"};
+  Configurable<DGCutparHolder> diffCuts4K{cutNames[3].data(), {}, "Diffractive 4K events cuts"};
 
   // DG selector
   DGSelector dgSelector;
