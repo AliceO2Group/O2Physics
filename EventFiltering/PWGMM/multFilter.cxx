@@ -8,18 +8,19 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-#include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+
+#include "EventFiltering/filterTables.h"
+
+#include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
-#include "../filterTables.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include <TMath.h>
+
 #include <cmath>
 #include <string>
 
@@ -176,10 +177,10 @@ struct multFilter {
     // get sigma
     float sRho_tmp = 0;
     for (int iCell = 0; iCell < entries; ++iCell) {
-      sRho_tmp += TMath::Power(1.0 * signals[iCell] - mRho, 2);
+      sRho_tmp += (1.0 * signals[iCell] - mRho)*(1.0 * signals[iCell] - mRho);
     }
     sRho_tmp /= (1.0 * entries * entries);
-    float sRho = TMath::Sqrt(sRho_tmp);
+    float sRho = sqrt(sRho_tmp);
     if (mRho > 0) {
       flat = sRho / mRho;
     }
