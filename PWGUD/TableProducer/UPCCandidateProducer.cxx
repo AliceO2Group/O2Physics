@@ -705,7 +705,7 @@ struct UpcCandProducer {
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
       if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC())
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
-      if (!trk.hasTOF() && trk.hasITS() && trk.hasTPC())
+      if (fSearchITSTPC == 1 && !trk.hasTOF() && trk.hasITS() && trk.hasTPC())
         addTrack(bcsMatchedTrIdsITSTPC, bc, trkId);
     }
   }
