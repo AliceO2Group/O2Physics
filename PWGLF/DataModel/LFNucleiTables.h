@@ -27,7 +27,7 @@ namespace o2::aod
 {
 namespace fullEvent
 {                                 // Events
-DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occured
+DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(V0M, v0m, int);

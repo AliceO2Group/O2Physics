@@ -865,7 +865,7 @@ struct AnalysisDileptonHadron {
 
   // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
   //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
-  //      The current condition should be replaced when bitwise operators will become available in Filter expresions
+  //      The current condition should be replaced when bitwise operators will become available in Filter expressions
   int fNHadronCutBit;
 
   void init(o2::framework::InitContext& context)
@@ -967,13 +967,13 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid");
         if (classStr.Contains("PIDCalibElectron")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "electron");
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
         }
         if (classStr.Contains("PIDCalibPion")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "pion");
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
         }
         if (classStr.Contains("PIDCalibProton")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "proton");
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
         }
       }
       if (classStr.Contains("Muon")) {

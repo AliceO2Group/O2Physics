@@ -84,7 +84,7 @@ Bool_t multMCCalibrator::Calibrate()
   //Step 1: verify if input file contains desired histograms
   TProfile* hProfData[multCalibrator::kNCentEstim];
   TProfile* hProfSim[multCalibrator::kNCentEstim];
-  cout << " * aquiring input profiles..." << endl;
+  cout << " * acquiring input profiles..." << endl;
   for (Int_t iv = 0; iv < multCalibrator::kNCentEstim; iv++) {
     hProfData[iv] = (TProfile*)fileData->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data()));
     if (!hProfData[iv]) {

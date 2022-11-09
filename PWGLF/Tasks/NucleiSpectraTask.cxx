@@ -8,7 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
+//
+// Nuclei spectra analysis task
+// ========================
+//
+// Executable + dependencies:
+//
+// Data (run3):
+// o2-analysis-lf-nuclei-spectra, o2-analysis-track-propagation, o2-analysis-timestamp
+// o2-analysis-trackselection, o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
+// o2-analysis-pid-tpc-full, o2-analysis-multiplicity-table, o2-analysis-event-selection
+
+#include <cmath>
+
+#include "Math/Vector4D.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -24,10 +37,6 @@
 #include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/Track.h"
-
-#include <cmath>
-
-#include <Math/Vector4D.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -61,8 +70,8 @@ constexpr int species{4};
 // constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
 constexpr float charges[4]{1.f, 1.f, 2.f, 2.f};
 constexpr float masses[4]{MassDeuteron, MassTriton, MassHelium3, MassAlpha};
-static const std::string matter[2]{"M", "A"};
-static const std::string pidName[2]{"TPC", "TOF"};
+static const std::vector<std::string> matter{"M", "A"};
+static const std::vector<std::string> pidName{"TPC", "TOF"};
 static const std::vector<std::string> names{"deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
@@ -107,13 +116,12 @@ struct NucleiSpectraTask {
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
-
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
   {
 
-    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", cfgCentralityEstimator)};
+    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
 
     const AxisSpec ptAxes[4]{
@@ -133,7 +141,7 @@ struct NucleiSpectraTask {
       for (int iS{0}; iS < nuclei::species; ++iS) {
         for (int iPID{0}; iPID < 2; ++iPID) {
           nuclei::hNsigma[iPID][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[iPID]});
-          nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA_{xy} {} {} {}", nuclei::pidName[iPID], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaAxes[iS]});
+          nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaAxes[iS]});
         }
       }
     }
@@ -149,6 +157,9 @@ struct NucleiSpectraTask {
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
     // collision process loop
+    if (!collision.sel8()) {
+      return;
+    }
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
     for (auto& track : tracks) { // start loop over tracks
@@ -173,12 +184,12 @@ struct NucleiSpectraTask {
         }
 
         if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(double(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
-          nSigma[0][iS] = float((track.tpcSignal() - expBethe) / expSigma);
+          nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
         for (int iPID{0}; iPID < 2; ++iPID) {
-          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] > nuclei::pidCuts[0][iS][1]) {
+          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]) {
             if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
               continue;
             }

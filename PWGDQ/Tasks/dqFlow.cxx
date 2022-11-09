@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-///       Task to compute Q vectors and other quanitites related from the generic framework
+///       Task to compute Q vectors and other quantities related from the generic framework
 ///       Generic framework O2 version is a port of the AliPhysics version
 ///       To be used in the DQ analyses aiming for flow measurements
 ///       Run the standalone task with:

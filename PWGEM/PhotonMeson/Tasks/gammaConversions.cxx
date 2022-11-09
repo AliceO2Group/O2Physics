@@ -155,7 +155,7 @@ struct GammaConversions {
     };
     // PDG code of all particles to analyize the purity. Only for MC and only for Rec
     std::vector<MyHistogramSpec> lMcPDGCode{
-      {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{6000, -3000.0f, 3000.0f}}}}, // first only cover usefull range. Otherwise histogram will get rediculously large
+      {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{6000, -3000.0f, 3000.0f}}}}, // first only cover useful range. Otherwise histogram will get rediculously large
       {"hDecays", "hDecays;;p_{T} [GeV/c]", {HistType::kTH2I, {{13, -0.0f, 12.5f}, gAxis_pT}}},
     };
 
@@ -737,7 +737,7 @@ struct GammaConversions {
     fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracneg());
   }
 
-  // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a seperate fill function is needed
+  // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a separate fill function is needed
   template <typename TV0>
   void fillV0Histograms_recalculated(mapStringHistPtr& theContainer, TV0 const& theV0)
   {

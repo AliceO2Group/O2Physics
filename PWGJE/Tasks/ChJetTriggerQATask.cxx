@@ -12,6 +12,10 @@
 // jet Trigger QA Task
 //
 // Author: Filip Krizek
+#include <cmath>
+#include <string>
+#include <TMath.h>
+#include <TVector2.h>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,10 +35,6 @@
 
 #include "Framework/HistogramRegistry.h"
 
-#include <TMath.h>
-#include <cmath>
-#include <string>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -47,26 +47,68 @@ using namespace o2::framework::expressions;
 // We want output from
 // a) minimum bias events
 // b) from events selected by EPN
-// It would be good to run it for reveral jet radii  e.g. 0.2, 0.4, 0.6
+// It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
+
+namespace o2::aod
+{
+namespace mytracktable
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);              //!
+DECLARE_SOA_COLUMN(Eta, eta, float);            //!
+DECLARE_SOA_COLUMN(Phi, phi, float);            //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+} // namespace mytracktable
+
+DECLARE_SOA_TABLE(MyTrackTable, "AOD", "MYTRACKTABLE", //!
+                  mytracktable::Pt,
+                  mytracktable::Eta,
+                  mytracktable::Phi,
+                  mytracktable::CollisionId)
+
+} // namespace o2::aod
+
+namespace o2::aod
+{
+namespace myjettable
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);              //!
+DECLARE_SOA_COLUMN(Eta, eta, float);            //!
+DECLARE_SOA_COLUMN(Phi, phi, float);            //!
+DECLARE_SOA_COLUMN(Area, area, float);          //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+} // namespace myjettable
+
+DECLARE_SOA_TABLE(MyJetTable, "AOD", "MYJETTABLE", //!
+                  myjettable::Pt,
+                  myjettable::Eta,
+                  myjettable::Phi,
+                  myjettable::Area,
+                  myjettable::CollisionId)
+
+} // namespace o2::aod
 
 struct ChJetTriggerQATask {
 
+  Produces<aod::MyTrackTable> tableWithTracksFromPathologicalEvents;
+  Produces<aod::MyJetTable> tableWithJetsFromPathologicalEvents;
+
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
                                    "Accepted z-vertex range"};
-  Configurable<double> cfgTPCVolume{"cfgTPCVolume", 0.9,
-                                    "Full eta range"}; // eta range of TPC
-  Configurable<double> cfgJetR{"cfgJetR", 0.4,
-                               "jet resolution parameter"}; // jet cone radius
-  Configurable<double> cfgJetPtMin{
-    "cfgJetPtMin", 0.05,
+  Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9,
+                                   "Full eta range"}; // eta range of TPC
+  Configurable<float> cfgJetR{"cfgJetR", 0.4,
+                              "jet resolution parameter"}; // jet cone radius
+  Configurable<float> cfgJetPtMin{
+    "cfgJetPtMin", 0.1,
     "minimum jet pT constituent cut"}; // minimum jet constituent pT
   Configurable<int> bTriggerDecision{
     "bTriggerDecision", 0,
     "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
                                                // by EPN
-  double fiducialVolume;                       // 0.9 - jetR
+  float fiducialVolume;                        // 0.9 - jetR
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
+  std::vector<fastjet::PseudoJet> leadingJetConstituents;
   JetFinder jetReclusterer;
 
   HistogramRegistry spectra{
@@ -112,21 +154,19 @@ struct ChJetTriggerQATask {
       {"ptphiLeadingJet",
        "pT vs phi leading jet",
        {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"fLeadJetEtaVsLeadingTrackEtaPathological",
-       "leading jet eta versus track eta for cases pT jet is less than pT "
-       "track in TPC volume",
+      {"fLeadJetEtaVsLeadingTrackEtaPathologicalAll",
+       "leading jet eta versus track eta for cases pT jet is less than track pT in TPC volume",
        {HistType::kTH2F, {{40, -1., 1.}, {40, -1., 1.}}}}, //
-      {"fLeadJetPhiVsLeadingTrackPhiPathological",
-       "leading jet phi versus track phi for cases pT jet is less than pT "
-       "track in TPC volume",
+      {"fLeadJetPhiVsLeadingTrackPhiPathologicalAll",
+       "leading jet phi versus track phi for cases pT jet is less than track pT in TPC volume",
        {HistType::kTH2F,
         {{60, 0, TMath::TwoPi()}, {60, 0, TMath::TwoPi()}}}}, //
-      {"trackTPCCrossedRowsAll",
-       "trackTPCCrossedRowsAll",
-       {HistType::kTH1F, {{200, 0., +200.}}}}, //
-      {"trackTPCCrossedRowsGood",
-       "trackTPCCrossedRowsGood",
-       {HistType::kTH1F, {{200, 0., +200.}}}} //
+      {"jetAreaFullVol",
+       "area of all jets in full TPC volume",
+       {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}}}, //
+      {"jetAreaFidVol",
+       "area of all jets in fiducial volume",
+       {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}}} //
     }};
 
   // TrackSelection globalTracks;
@@ -139,6 +179,8 @@ struct ChJetTriggerQATask {
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::antikt_algorithm;
     jetReclusterer.jetR = cfgJetR;
+    jetReclusterer.jetEtaMin = -cfgTPCVolume;
+    jetReclusterer.jetEtaMax = cfgTPCVolume;
 
     fiducialVolume = cfgTPCVolume - cfgJetR;
   }
@@ -148,69 +190,62 @@ struct ChJetTriggerQATask {
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVertexCut);
 
+  Filter trackEtaFilter = nabs(aod::track::eta) < cfgTPCVolume;
+  Filter trackPtFilter = aod::track::pt > cfgJetPtMin;
+
   void
     process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels,
                                     aod::JetFilters>>::iterator const& collision,
-            TrackCandidates const& tracks)
+            soa::Filtered<TrackCandidates> const& tracks)
   {
 
     if (collision.hasJetChHighPt() >= bTriggerDecision) {
       jetConstituents.clear();
       jetReclustered.clear();
+      leadingJetConstituents.clear();
 
-      double leadingJetPt = -1.0;
-      double leadingJetEta = -2.0;
-      double leadingJetPhi = -1.0;
-      double leadingTrackPt = -1.0;
-      double leadingTrackEta = -2.0;
-      double leadingTrackPhi = -1.0;
+      float leadingJetPt = -1.0;
+      float leadingJetEta = -2.0;
+      float leadingJetPhi = -1.0;
+      float leadingTrackPt = -1.0;
+      float leadingTrackEta = -2.0;
+      float leadingTrackPhi = -1.0;
 
       spectra.fill(HIST("vertexZ"),
                    collision.posZ()); // Inclusive Track Cross TPC Rows
 
-      for (auto& trk : tracks) {
-        if (fabs(trk.eta()) < cfgTPCVolume) {
-          spectra.fill(
-            HIST("trackTPCCrossedRowsAll"),
-            trk.tpcNClsCrossedRows()); // Inclusive Track Cross TPC Rows
+      for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
 
-          if (!trk.isQualityTrack()) {
-
-            spectra.fill(
-              HIST("ptphiTrackInclRejected"), trk.pt(),
-              trk.phi()); // Inclusive Track pT vs phi spectrum in TPC volume
-            spectra.fill(
-              HIST("ptetaTrackInclRejected"), trk.pt(),
-              trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
-
-            continue; // skip bad quality tracks
-          }
+        if (!trk.isQualityTrack()) {
 
           spectra.fill(
-            HIST("ptphiTrackInclGood"), trk.pt(),
+            HIST("ptphiTrackInclRejected"), trk.pt(),
             trk.phi()); // Inclusive Track pT vs phi spectrum in TPC volume
           spectra.fill(
-            HIST("ptetaTrackInclGood"), trk.pt(),
+            HIST("ptetaTrackInclRejected"), trk.pt(),
             trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
 
-          spectra.fill(
-            HIST("trackTPCCrossedRowsGood"),
-            trk.tpcNClsCrossedRows()); // Inclusive Track Cross TPC Rows
+          continue; // skip bad quality tracks
+        }
 
-          if (trk.pt() > cfgJetPtMin) { // jet constituents
-            fillConstituents(
-              trk,
-              jetConstituents); // ./PWGJE/Core/JetFinder.h
-                                // recombination scheme is assumed
-                                // to be Escheme with pion mass
-          }
+        spectra.fill(
+          HIST("ptphiTrackInclGood"), trk.pt(),
+          trk.phi()); // Inclusive Track pT vs phi spectrum in TPC volume
+        spectra.fill(
+          HIST("ptetaTrackInclGood"), trk.pt(),
+          trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
 
-          if (trk.pt() >
-              leadingTrackPt) { // Find leading track pT in full TPC volume
-            leadingTrackPt = trk.pt();
-            leadingTrackEta = trk.eta();
-            leadingTrackPhi = trk.phi();
-          }
+        fillConstituents(
+          trk,
+          jetConstituents); // ./PWGJE/Core/JetFinder.h
+                            // recombination scheme is assumed
+                            // to be Escheme with pion mass
+
+        if (trk.pt() >
+            leadingTrackPt) { // Find leading track pT in full TPC volume
+          leadingTrackPt = trk.pt();
+          leadingTrackEta = trk.eta();
+          leadingTrackPhi = trk.phi();
         }
       }
 
@@ -224,15 +259,17 @@ struct ChJetTriggerQATask {
       // Reconstruct jet from tracks
       fastjet::ClusterSequenceArea clusterSeq(
         jetReclusterer.findJets(jetConstituents, jetReclustered));
-      jetReclustered = sorted_by_pt(jetReclustered);
 
       // Find leading jet pT in full TPC volume
       for (auto& jet : jetReclustered) {
         if (fabs(jet.eta()) < cfgTPCVolume) {
-          if (jet.pt() > leadingJetPt) {
-            leadingJetPt = jet.pt();
+
+          if (jet.perp() > leadingJetPt) {
+            leadingJetPt = jet.perp();
             leadingJetEta = jet.eta();
             leadingJetPhi = jet.phi();
+            leadingJetConstituents.clear();
+            leadingJetConstituents = jet.constituents();
           }
         }
       }
@@ -240,28 +277,51 @@ struct ChJetTriggerQATask {
       if (leadingJetPt > -1.) {
         spectra.fill(HIST("ptphiLeadingJet"), leadingJetPt, leadingJetPhi);
         spectra.fill(HIST("ptetaLeadingJet"), leadingJetPt, leadingJetEta);
+
+        spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt,
+                     leadingJetPt); // leading jet pT versus leading track pT
       }
 
-      spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt,
-                   leadingJetPt); // leading jet pT versus leading track pT
+      if (leadingJetPt > -1. && leadingTrackPt > -1.) {
+        //deta = fabs(leadingTrackEta - leadingJetEta);
+        //dphi = fabs(TVector2::Phi_mpi_pi(leadingTrackPhi - leadingJetPhi));
 
-      if ((leadingTrackPt - leadingJetPt) > 1e-5 && leadingJetPt > -1. &&
-          leadingTrackPt > -1.) { // pathological case
-        spectra.fill(HIST("fLeadJetEtaVsLeadingTrackEtaPathological"),
-                     leadingTrackEta, leadingJetEta);
-        spectra.fill(HIST("fLeadJetPhiVsLeadingTrackPhiPathological"),
-                     leadingTrackPhi, leadingJetPhi);
+        if ((leadingTrackPt - leadingJetPt) > 1e-4) { // pathological case
+          spectra.fill(HIST("fLeadJetEtaVsLeadingTrackEtaPathologicalAll"),
+                       leadingTrackEta, leadingJetEta);
+          spectra.fill(HIST("fLeadJetPhiVsLeadingTrackPhiPathologicalAll"),
+                       leadingTrackPhi, leadingJetPhi);
+
+          if ((leadingTrackPt - leadingJetPt) > 3.) { //fill just those events where leading track has significantly larger pT
+            int CollisionId = -1;
+            for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
+              if (trk.isQualityTrack()) {
+                CollisionId = trk.collisionId();
+                tableWithTracksFromPathologicalEvents(trk.pt(), trk.eta(), trk.phi(), trk.collisionId());
+              }
+            }
+
+            for (auto& jet : jetReclustered) {
+              if (fabs(jet.eta()) < cfgTPCVolume) {
+                tableWithJetsFromPathologicalEvents(jet.perp(), jet.eta(), jet.phi(), jet.area(), CollisionId);
+              }
+            }
+          }
+        }
       }
+
       //--------------------------------------------------------------
 
       // Inclusive Jet pT spectrum in Fiducial volume
       for (auto& jet : jetReclustered) {
         if (fabs(jet.eta()) < fiducialVolume) {
-          spectra.fill(HIST("ptJetChPtInclFidVol"), jet.pt());
-          spectra.fill(HIST("ptphiJetChPtInclFidVol"), jet.pt(), jet.phi());
-          spectra.fill(HIST("ptetaJetChPtInclFidVol"), jet.pt(), jet.eta());
+          spectra.fill(HIST("ptJetChPtInclFidVol"), jet.perp());
+          spectra.fill(HIST("ptphiJetChPtInclFidVol"), jet.perp(), jet.phi());
+          spectra.fill(HIST("ptetaJetChPtInclFidVol"), jet.perp(), jet.eta());
+          spectra.fill(HIST("jetAreaFidVol"), jet.perp(), jet.area());
         }
-        spectra.fill(HIST("ptetaJetChPtInclFullVol"), jet.pt(), jet.eta());
+        spectra.fill(HIST("ptetaJetChPtInclFullVol"), jet.perp(), jet.eta());
+        spectra.fill(HIST("jetAreaFullVol"), jet.perp(), jet.area());
       }
     }
   }

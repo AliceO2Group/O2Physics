@@ -54,6 +54,8 @@ bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims);
 template <typename TC>
 bool hasGoodPID(DGCutparHolder diffCuts, TC track);
 
+template <typename I, typename T>
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7);
 
@@ -78,7 +80,7 @@ struct DGSelector {
     // Double Gap (DG) condition
     auto lims = diffCuts.FITAmpLimits();
 
-    for (auto& bc : bcRange) {
+    for (auto const& bc : bcRange) {
       LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
            bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : -1.,
            bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : -1.,
@@ -180,12 +182,14 @@ struct DGSelector {
   };
 
   template <typename BCs, typename TCs, typename FWs>
-  int IsSelected(DGCutparHolder diffCuts, BCs& bc, TCs& tracks, FWs& fwdtracks)
+  int IsSelected(DGCutparHolder diffCuts, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
-    // check that there are no FIT signals in bc
+    // check that there are no FIT signals in bcRange
     // Double Gap (DG) condition
-    if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
-      return 1;
+    for (auto const& bc : bcRange) {
+      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+        return 1;
+      }
     }
 
     // no activity in muon arm
@@ -255,12 +259,46 @@ struct DGSelector {
 // -----------------------------------------------------------------------------
 // The associations between collsisions and BCs can be ambiguous.
 // By default a collision is associated with the BC closest in time.
-// The collision time t_coll is determined by the tracks which are used to
-// reconstruct the vertex. t_coll has an uncertainty dt_coll.
-// Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
-// around t_coll could potentially be the true BC. ndt is typically 4. The
-// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS.
+// Any BC falling within a BC window of meanBC +- deltaBC could potentially be the
+// true BC.
+template <typename I, typename T>
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
+{
+  // range of BCs to consider
+  int64_t minBC = meanBC - deltaBC;
+  uint64_t maxBC = meanBC + deltaBC;
+  if (minBC < 0) {
+    minBC = 0;
+  }
 
+  // find slice of BCs table with BC in [minBC, maxBC]
+  int64_t maxBCId = bcIter.globalIndex();
+  int moveCount = 0; // optimize to avoid to re-create the iterator
+  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
+    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    maxBCId = bcIter.globalIndex();
+    ++bcIter;
+    ++moveCount;
+  }
+
+  bcIter.moveByIndex(-moveCount); // Move back to original position
+  int64_t minBCId = bcIter.globalIndex();
+  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
+    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    minBCId = bcIter.globalIndex();
+    --bcIter;
+  }
+
+  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
+
+  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  bcs.copyIndexBindings(slice);
+  return slice;
+}
+
+// -----------------------------------------------------------------------------
+// The range of compatible BCs is calculated from the collision time and the time
+// resolution dt. Typically the range is +- 4*dt.
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
 {
@@ -284,35 +322,7 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
     deltaBC = nMinBCs;
   }
 
-  int64_t minBC = meanBC - deltaBC;
-  uint64_t maxBC = meanBC + deltaBC;
-  if (minBC < 0) {
-    minBC = 0;
-  }
-
-  // find slice of BCs table with BC in [minBC, maxBC]
-  int64_t maxBCId = bcIter.globalIndex();
-  int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    maxBCId = bcIter.globalIndex();
-    ++bcIter;
-    ++moveCount;
-  }
-
-  bcIter.moveByIndex(-moveCount); // Move back to original position
-  int64_t minBCId = collision.bcId();
-  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    minBCId = bcIter.globalIndex();
-    --bcIter;
-  }
-
-  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
-
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  return slice;
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
 
 // -----------------------------------------------------------------------------

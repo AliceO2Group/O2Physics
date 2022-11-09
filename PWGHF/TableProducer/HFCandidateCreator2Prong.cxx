@@ -18,6 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 
@@ -33,7 +34,7 @@ struct HFCandidateCreator2Prong {
   Produces<aod::HfCandProng2Base> rowCandidateBase;
 
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
-  Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
+  // Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -47,20 +48,46 @@ struct HFCandidateCreator2Prong {
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
   OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
 
+  /// magnetic field setting from CCDB
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+
   float toMicrometers = 10000.; // from cm to µm
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
   double massPiK{0.};
   double massKPi{0.};
+  double magneticField = 0.;
+
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  }
 
   void process(aod::Collisions const& collisions,
                soa::Join<aod::Hf2Prongs, aod::HfPvRefitProng2> const& rowsTrackIndexProng2,
-               aod::BigTracks const& tracks)
+               aod::BigTracks const& tracks,
+               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
-    df.setBz(magneticField);
+    // df.setBz(magneticField);
     df.setPropagateToPCA(b_propdca);
     df.setMaxR(d_maxr);
     df.setMaxDZIni(d_maxdzini);
@@ -75,6 +102,20 @@ struct HFCandidateCreator2Prong {
       auto trackParVarPos1 = getTrackParCov(track0);
       auto trackParVarNeg1 = getTrackParCov(track1);
       auto collision = track0.collision();
+
+      /// Set the magnetic field from ccdb.
+      /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
+      /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
+      auto bc = track0.collision().bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        magneticField = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << magneticField;
+        // df.setBz(magneticField); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
+        // df.print();
+      }
+      df.setBz(magneticField);
 
       // reconstruct the 2-prong secondary vertex
       if (df.process(trackParVarPos1, trackParVarNeg1) == 0) {

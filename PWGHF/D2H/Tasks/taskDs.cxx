@@ -193,13 +193,13 @@ struct HfTaskDs {
           continue;
         }
         registry.fill(HIST("hPtGen"), ptGen);
-        registry.fill(HIST("hPtvsYGen"), ptGen, yGen);
+        registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
         if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
-          registry.fill(HIST("hPtvsYGenPrompt"), ptGen, yGen);
+          registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
         } else {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
-          registry.fill(HIST("hPtvsYGenNonPrompt"), ptGen, yGen);
+          registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
       }

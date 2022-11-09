@@ -20,7 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "ALICE3/Core/TOFResoALICE3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -49,8 +49,8 @@ struct ALICE3tofSignal { /// Task that produces the TOF signal from the trackTim
   {
     // Checking the tables are requested in the workflow and enabling them
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
         const std::string table = "TOFSignal";
         if (input.matcher.binding == table) {
           enableTable = true;
@@ -86,10 +86,10 @@ struct ALICE3pidTOFTask {
   Produces<o2::aod::pidTOFFullAl> tablePIDAl;
   Parameters resoParameters{1};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
+  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFResoALICE3", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
   void init(o2::framework::InitContext&)
   {

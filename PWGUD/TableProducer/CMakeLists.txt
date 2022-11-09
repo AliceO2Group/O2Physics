@@ -21,5 +21,5 @@ o2physics_add_dpl_workflow(dgbccand-producer
 
 o2physics_add_dpl_workflow(upccand-producer
                            SOURCES UPCCandidateProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder
                            COMPONENT_NAME Analysis)

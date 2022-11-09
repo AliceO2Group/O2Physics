@@ -86,7 +86,9 @@ class VarManager : public TObject
     ReducedMuonExtra = BIT(14),
     ReducedMuonCov = BIT(15),
     ParticleMC = BIT(16),
-    Pair = BIT(17) // TODO: check whether we really need the Pair member here
+    Pair = BIT(17), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(18),
+    AmbiMuon = BIT(19)
   };
 
   enum PairCandidateType {
@@ -188,6 +190,7 @@ class VarManager : public TObject
     kITSlayerHit,
     kIsTPCrefit,
     kTPCncls,
+    kITSClusterMap,
     kTPCnclsCR,
     kTPCchi2,
     kTPCsignal,
@@ -218,6 +221,9 @@ class VarManager : public TObject
     kTPCnSigmaPiRandomizedDelta,
     kTPCnSigmaKa,
     kTPCnSigmaPr,
+    kTPCnSigmaEl_Corr,
+    kTPCnSigmaPi_Corr,
+    kTPCnSigmaPr_Corr,
     kTPCnSigmaPrRandomized,
     kTPCnSigmaPrRandomizedDelta,
     kTOFnSigmaEl,
@@ -430,7 +436,8 @@ class VarManager : public TObject
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
-
+  static float GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period);
+  static TString GetRunPeriod(float runNumber);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
 
@@ -704,6 +711,9 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kIsSPDany]) {
       values[kIsSPDany] = (track.itsClusterMap() & uint8_t(1)) || (track.itsClusterMap() & uint8_t(2));
     }
+    if (fgUsedVars[kITSClusterMap]) {
+      values[kITSClusterMap] = track.itsClusterMap();
+    }
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
     values[kTPCchi2] = track.tpcChi2NCl();
@@ -793,7 +803,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTRDsignal] = track.trdSignal();
     values[kTOFbeta] = track.beta();
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
-      // NOTE: this is needed temporarilly for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
+      // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
       //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
       //     For this we smear the dE/dx and n-sigmas using a gaus distribution with a width of 3.3%
       //         which is approx the needed amount to get dE/dx to a resolution of 6%
@@ -806,6 +816,11 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
+    }
+    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
+      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
     }
   }
 
