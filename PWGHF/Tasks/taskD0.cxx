@@ -42,6 +42,8 @@ struct TaskD0 {
      {"hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"hPtGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"hPtGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hYGenPrompt", "MC particles (matched, prompt);#it{y}^{gen.};entries", {HistType::kTH1F, {{300, -1.5, 1.5}}}},
+     {"hYGenNonPrompt", "MC particles (matched, non-prompt);#it{y}^{gen.};entries", {HistType::kTH1F, {{300, -1.5, 1.5}}}},
      {"hPtGenSig", "2-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"hCPARecSig", "2-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
      {"hCPARecBg", "2-prong candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
@@ -111,19 +113,22 @@ struct TaskD0 {
   {
     auto vbins = (std::vector<double>)bins;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hNormalisedDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 40.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hNormalisedDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{800, 0., 40.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0ErrProng0", "2-prong candidates;prong 0 DCAxy to prim. vertex error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0ErrProng1", "2-prong candidates;prong 1 DCAxy to prim. vertex error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassFinerBinning", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthFinerBinning", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{400, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxyFinerBinning", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{400, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -155,24 +160,25 @@ struct TaskD0 {
         registry.fill(HIST("hMass"), InvMassD0bar(candidate), candidate.pt());
         registry.fill(HIST("hMassFinerBinning"), InvMassD0bar(candidate), candidate.pt());
       }
-
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hDecLengthxy"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+      registry.fill(HIST("hNormalisedDecLength"), candidate.decayLengthNormalised(), candidate.pt());
+      registry.fill(HIST("hNormalisedDecLengthxy"), candidate.decayLengthXYNormalised(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+      registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), candidate.pt());
+      registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
       registry.fill(HIST("hCTS"), CosThetaStarD0(candidate), candidate.pt());
       registry.fill(HIST("hCt"), CtD0(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
       registry.fill(HIST("hDecLengthFinerBinning"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hDecLengthxyFinerBinning"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), candidate.pt());
@@ -334,9 +340,11 @@ struct TaskD0 {
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
         if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
+          registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
         } else {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
+          registry.fill(HIST("hYGenNonPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
