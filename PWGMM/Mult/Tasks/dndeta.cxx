@@ -12,19 +12,13 @@
 #include <cmath>
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
-#include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
 #include "Index.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TDatabasePDG.h"
 
 #include "bestCollisionTable.h"
@@ -41,6 +35,7 @@ AxisSpec EtaAxis = {22, -2.2, 2.2};
 AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
+AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -78,6 +73,8 @@ struct MultiplicityCounter {
       {"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},        //
       {"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},            //
       {"Tracks/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}}, //
+      {"Tracks/Control/ReassignedEtaCorr", "; #eta^{orig}; #eta^{re}", {HistType::kTH2F, {EtaAxis, EtaAxis}}},                //
+      {"Tracks/Control/ReassignedPtCorr", "; p^{orig}_{T}; p^{re}_{T}", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}},       //
       {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                             //
       {"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}},                                           //
       {"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}}                                //
@@ -221,6 +218,8 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), track.etas(), z);
           registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), track.phis(), track.etas());
           registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<ExCols>().posZ(), z);
+          registry.fill(HIST("Tracks/Control/ReassignedEtaCorr"), otrack.eta(), track.etas());
+          registry.fill(HIST("Tracks/Control/ReassignedPtCorr"), otrack.pt(), track.pts());
         }
         registry.fill(HIST("Tracks/Control/PtEta"), track.pts(), track.etas());
         registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pts(), track.bestDCAXY());
