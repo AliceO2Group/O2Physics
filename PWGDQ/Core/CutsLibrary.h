@@ -574,8 +574,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("jpsi_trackCut_debug")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
-    cut->AddCut(VarManager::kTPCncls, 50., 159);
-    cut->AddCut(VarManager::kITSncls, 1.5, 7.5);
+    cut->AddCut(VarManager::kTPCncls, 90., 159);
+    cut->AddCut(VarManager::kITSncls, 2.5, 7.5);
     return cut;
   }
   if (!nameStr.compare("jpsi_TPCPID_debug1")) {
