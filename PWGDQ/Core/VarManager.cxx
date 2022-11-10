@@ -439,6 +439,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairEta] = "";
   fgVariableNames[kPairPhi] = "#varphi";
   fgVariableUnits[kPairPhi] = "rad.";
+  fgVariableNames[kPairPhiv] = "#varphi_{V}";
+  fgVariableUnits[kPairPhiv] = "rad.";
   fgVariableNames[kDeltaEta] = "#Delta#eta";
   fgVariableUnits[kDeltaEta] = "";
   fgVariableNames[kDeltaPhi] = "#Delta#phi";
