@@ -273,7 +273,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for 2-prong candidates"};
   Configurable<double> etaMax2Prong{"etaMax2Prong", 4., "max. pseudorapidity for 2 prong candidate"};
   // 3-prong cuts
-  Configurable<double> pTMinTrack3Prong{"pTMinTrack3Prong", -1., "min. track pT for 3 prong candidate"};
+  Configurable<double> ptMinTrack3Prong{"ptMinTrack3Prong", -1., "min. track pT for 3 prong candidate"};
   Configurable<LabeledArray<double>> cutsTrack3Prong{"cutsTrack3Prong", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong candidates"};
   Configurable<double> etaMax3Prong{"etaMax3Prong", 4., "max. pseudorapidity for 3 prong candidate"};
   // bachelor cuts (when using cascades)
@@ -666,7 +666,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
           }
         }
       }
-      if (trackPt < pTMinTrack3Prong) {
+      if (trackPt < ptMinTrack3Prong) {
         CLRBIT(statusProng, CandidateType::Cand3Prong);
         if (debug) {
           // cutStatus[CandidateType::Cand3Prong][0] = false;
