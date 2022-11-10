@@ -63,12 +63,12 @@ int findBin(T1 const& binsPt, T2 value)
 
 namespace hf_cuts_single_track
 {
-static constexpr int npTBinsTrack = 6;
+static constexpr int nBinsPtTrack = 6;
 static constexpr int nCutVarsTrack = 2;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any candidate type (2-prong, 3-prong)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBinsTrack[npTBinsTrack + 1] = {
+constexpr double pTBinsTrack[nBinsPtTrack + 1] = {
   0,
   0.5,
   1.0,
@@ -76,10 +76,10 @@ constexpr double pTBinsTrack[npTBinsTrack + 1] = {
   2.0,
   3.0,
   1000.0};
-auto pTBinsTrack_v = std::vector<double>{pTBinsTrack, pTBinsTrack + npTBinsTrack + 1};
+auto pTBinsTrack_v = std::vector<double>{pTBinsTrack, pTBinsTrack + nBinsPtTrack + 1};
 
 // default values for the cuts
-constexpr double cutsTrack[npTBinsTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
+constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
                                                            {0.0025, 10.},  /* 0.5 < pt < 1 */
                                                            {0.0025, 10.},  /* 1   < pt < 1.5 */
                                                            {0.0025, 10.},  /* 1.5 < pt < 2 */
