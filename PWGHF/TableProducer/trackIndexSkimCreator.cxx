@@ -2157,7 +2157,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> UseAbsDCA{"UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use Abs DCAs"};
 
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
@@ -2268,7 +2268,7 @@ struct HfTrackIndexSkimCreatorCascades {
     fitter.setMinRelChi2Change(minRelChi2Change);
     // fitter.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
     // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
-    fitter.setUseAbsDCA(UseAbsDCA);
+    fitter.setUseAbsDCA(useAbsDCA);
 
     // fist we loop over the bachelor candidate
 
