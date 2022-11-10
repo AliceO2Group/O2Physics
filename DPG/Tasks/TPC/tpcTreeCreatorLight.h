@@ -21,10 +21,10 @@ using namespace o2::track;
 using namespace o2::dataformats;
 
 enum ParticleSpecies {
-    kPionTrack     = BIT(0),
-    kKaonTrack     = BIT(1),
-    kProtonTrack   = BIT(2),
-    kElectronTrack = BIT(3)
+  kPionTrack = BIT(0),
+  kKaonTrack = BIT(1),
+  kProtonTrack = BIT(2),
+  kElectronTrack = BIT(3)
 };
 
 namespace o2::aod

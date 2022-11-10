@@ -117,7 +117,7 @@ struct TreeWriterTPCTOF {
     }
     return true;
   };
-  
+
   /// Track selection
   template <typename CollisionType, typename TrackType>
   bool isTrackSelected(const CollisionType& collision, const TrackType& track)
@@ -133,7 +133,7 @@ struct TreeWriterTPCTOF {
     }
     return true;
   };
-  
+
   template <typename TrackType>
   bool KeepTrack(const TrackType& trk)
   {
@@ -141,36 +141,32 @@ struct TreeWriterTPCTOF {
     bool PionTrack = false;
     bool KaonTrack = false;
     bool ElectronTrack = false;
-    if ((trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr) || (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr))
-    {
+    TrackPID = 0;
+    if ((trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr) || (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr)) {
       ProtonTrack = true;
       TrackPID |= kProtonTrack;
     } else {
       TrackPID &= ~kProtonTrack;
     }
-    if ((trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa) || (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka))
-    {
+    if ((trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa) || (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka)) {
       KaonTrack = true;
       TrackPID |= kKaonTrack;
     } else {
       TrackPID &= ~kKaonTrack;
     }
-    if ((trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi) || (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi))
-    {
+    if ((trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi) || (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi)) {
       PionTrack = true;
       TrackPID |= kPionTrack;
     } else {
       TrackPID &= ~kPionTrack;
     }
-    if ((trk.tpcInnerParam() > minMomTPCOnlyEl &&  trk.tpcInnerParam() < maxMomTPCOnlyEl && trk.tpcSignal() > mindEdxTPCOnlyEl && trk.tpcSignal() < maxdEdxTPCOnlyEl))
-    {
+    if ((trk.tpcInnerParam() > minMomTPCOnlyEl && trk.tpcInnerParam() < maxMomTPCOnlyEl && trk.tpcSignal() > mindEdxTPCOnlyEl && trk.tpcSignal() < maxdEdxTPCOnlyEl)) {
       ElectronTrack = true;
       TrackPID |= kElectronTrack;
     } else {
       TrackPID &= ~kElectronTrack;
     }
-    if (ProtonTrack || KaonTrack || PionTrack || ElectronTrack)
-    {
+    if (ProtonTrack || KaonTrack || PionTrack || ElectronTrack) {
       return true;
     } else {
       return false;
