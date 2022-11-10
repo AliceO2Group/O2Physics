@@ -44,7 +44,7 @@ struct HfTaskXicc {
      {"hPtProng1", "#Xi^{++}_{cc}-candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}}};
 
   Configurable<int> d_selectionFlagXicc{"d_selectionFlagXicc", 1, "Selection Flag for Xicc"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_xicc_topkpipi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -74,7 +74,7 @@ struct HfTaskXicc {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YXicc(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YXicc(candidate)) > yCandMax) {
         continue;
       }
       registry.fill(HIST("hMass"), InvMassXiccToXicPi(candidate), candidate.pt()); //FIXME need to consider the two mass hp
@@ -115,7 +115,7 @@ struct HfTaskXiccMc {
      {"hPtvsEtavsYGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T} (GeV/#it{c});#it{#eta};#it{y}", {HistType::kTH3F, {{360, 0., 36.}, {250, -5., 5.}, {20, -5., 5.}}}}}};
 
   Configurable<int> d_selectionFlagXicc{"d_selectionFlagXicc", 1, "Selection Flag for Xicc"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_xicc_topkpipi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -180,7 +180,7 @@ struct HfTaskXiccMc {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YXicc(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YXicc(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XiccToXicPi) {
@@ -259,7 +259,7 @@ struct HfTaskXiccMc {
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XiccToXicPi) {
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());

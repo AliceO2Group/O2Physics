@@ -104,7 +104,7 @@ struct HfCorrelatorDplusDminus {
      {"hCountCCbarPerEventBeforeEtaCut", "c,cbar particles - MC gen;Number per event pre #eta cut;entries", {HistType::kTH1F, {{20, 0., 20.}}}}}};
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus,Dminus"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
   Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
@@ -152,7 +152,7 @@ struct HfCorrelatorDplusDminus {
     auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
 
     for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
-      if (cutYCandMax >= 0. && std::abs(YDPlus(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
@@ -205,7 +205,7 @@ struct HfCorrelatorDplusDminus {
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
-        if (cutYCandMax >= 0. && std::abs(YDPlus(candidate2)) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(YDPlus(candidate2)) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
@@ -269,7 +269,7 @@ struct HfCorrelatorDplusDminus {
       if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YDPlus(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
@@ -324,7 +324,7 @@ struct HfCorrelatorDplusDminus {
           continue;
         }
         flagDminusSignal = std::abs(candidate2.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
-        if (cutYCandMax >= 0. && std::abs(YDPlus(candidate2)) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(YDPlus(candidate2)) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
@@ -376,7 +376,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (cutYCandMax >= 0. && std::abs(yD) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
@@ -398,7 +398,7 @@ struct HfCorrelatorDplusDminus {
         if (particle2.pdgCode() != -pdg::Code::kDPlus) { // check that inner particle is a Dminus
           continue;
         }
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
@@ -473,7 +473,7 @@ struct HfCorrelatorDplusDminus {
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
       double yC = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (cutYCandMax >= 0. && std::abs(yC) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
@@ -496,7 +496,7 @@ struct HfCorrelatorDplusDminus {
         if (particle2.pdgCode() != PDG_t::kCharmBar) {
           continue;
         }
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {

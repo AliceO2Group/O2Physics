@@ -102,7 +102,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
   Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
@@ -152,7 +152,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
     auto selectedD0candidatesGrouped = selectedD0candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
 
     for (auto& candidate1 : selectedD0candidatesGrouped) {
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YD0(candidate1)) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
@@ -198,7 +198,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
           continue;
         }
         // kinematic selection on D0bar candidates
-        if (cutYCandMax >= 0. && std::abs(YD0(candidate2)) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(YD0(candidate2)) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
@@ -272,7 +272,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YD0(candidate1)) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
@@ -330,7 +330,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         }
         flagD0barSignal = candidate2.flagMCMatchRec() == -(1 << DecayType::D0ToPiK);  // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)
         flagD0barReflection = candidate2.flagMCMatchRec() == 1 << DecayType::D0ToPiK; // flagD0barReflection 'true' if candidate2, selected as D0bar (antiparticle), is matched to D0 (particle)
-        if (cutYCandMax >= 0. && std::abs(YD0(candidate2)) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(YD0(candidate2)) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
@@ -392,7 +392,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         continue;
       }
       double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (cutYCandMax >= 0. && std::abs(yD) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
@@ -414,7 +414,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (particle2.pdgCode() != pdg::Code::kD0bar) { // check that inner particle is D0bar
           continue;
         }
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
@@ -489,7 +489,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
       double yC = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (cutYCandMax >= 0. && std::abs(yC) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
@@ -512,7 +512,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (particle2.pdgCode() != PDG_t::kCharmBar) { // check that inner particle is a cbar
           continue;
         }
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {

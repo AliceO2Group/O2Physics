@@ -49,7 +49,7 @@ struct HfTaskLb {
      {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
 
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> cutYCandMax{"cutYCandMax", 1.44, "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -80,7 +80,7 @@ struct HfTaskLb {
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YLb(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YLb(candidate)) > yCandMax) {
         continue;
       }
 
@@ -120,7 +120,7 @@ struct HfTaskLbMc {
      {"hPtGen", "MC particles (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}}}};
 
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> cutYCandMax{"cutYCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -182,7 +182,7 @@ struct HfTaskLbMc {
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YLb(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YLb(candidate)) > yCandMax) {
         continue;
       }
       auto candLc = candidate.index0_as<aod::HfCandProng3>();
@@ -237,7 +237,7 @@ struct HfTaskLbMc {
       if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
-        if (cutYCandMax >= 0. && std::abs(yParticle) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
           continue;
         }
 
@@ -257,7 +257,7 @@ struct HfTaskLbMc {
         registry.fill(HIST("hEtaProng0Gen"), etaProngs[0], particle.pt());
         registry.fill(HIST("hEtaProng1Gen"), etaProngs[1], particle.pt());
 
-        //  if (cutYCandMax >= 0. && (std::abs(yProngs[0]) > cutYCandMax || std::abs(yProngs[1]) > cutYCandMax))
+        //  if (yCandMax >= 0. && (std::abs(yProngs[0]) > yCandMax || std::abs(yProngs[1]) > yCandMax))
         //    continue;
 
         registry.fill(HIST("hPtGen"), particle.pt());

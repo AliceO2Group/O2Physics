@@ -65,7 +65,7 @@ struct HfCandidateCreatorLb {
   double massLcPi = 0.;
 
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= d_selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= d_selectionFlagLc);
 
   void process(aod::Collision const& collision,

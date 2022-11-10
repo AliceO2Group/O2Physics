@@ -73,7 +73,7 @@ struct HfTaskFlow {
   //  configurables for HF candidates
   Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_d0_topik::pTBins_v}, "pT bin limits"};
 
   //  configurables for containers
@@ -304,7 +304,7 @@ struct HfTaskFlow {
     if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
       return false;
     }
-    if (cutYCandMax >= 0. && std::abs(YD0(candidate)) > cutYCandMax) {
+    if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
       return false;
     }
     return true;

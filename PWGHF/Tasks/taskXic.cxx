@@ -43,7 +43,7 @@ struct HfTaskXic {
     }};
 
   Configurable<int> d_selectionFlagXic{"d_selectionFlagXic", 1, "Selection Flag for Xic"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_xic_topkpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -99,7 +99,7 @@ struct HfTaskXic {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YXic(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YXic(candidate)) > yCandMax) {
         continue;
       }
 
@@ -141,7 +141,7 @@ struct HfTaskXic {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YXic(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YXic(candidate)) > yCandMax) {
         continue;
       }
 
@@ -206,7 +206,7 @@ struct HfTaskXic {
     // MC gen.
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XicToPKPi) {
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());

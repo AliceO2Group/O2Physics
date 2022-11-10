@@ -67,7 +67,7 @@ struct HfCandidateCreatorX {
   double massJpsiPiPi;
 
   Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiPDG{"diffMassJpsiPDG", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
   Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= d_selectionFlagJpsi);
 
@@ -102,7 +102,7 @@ struct HfCandidateCreatorX {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {

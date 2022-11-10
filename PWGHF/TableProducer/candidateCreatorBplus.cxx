@@ -63,7 +63,7 @@ struct HfCandidateCreatorBplus {
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> cutEtaTrkMax{"cutEtaTrkMax", -1, "max. bach track. pseudorapidity"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
@@ -98,7 +98,7 @@ struct HfCandidateCreatorBplus {
       if (!(candidate.hfflag() & 1 << hf_cand_prong2::DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
         continue;
       }
 

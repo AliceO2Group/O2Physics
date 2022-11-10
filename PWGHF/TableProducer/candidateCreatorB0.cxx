@@ -58,7 +58,7 @@ struct HfCandidateCreatorB0 {
   double massDPi = 0.;
 
   Configurable<int> d_selectionFlagD{"d_selectionFlagD", 1, "Selection Flag for D"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagD); // FIXME
 
   void process(aod::Collision const& collision,

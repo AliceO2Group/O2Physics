@@ -102,7 +102,7 @@ struct HfTaskD0 {
 
   Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<int> d_selectionHFFlag{"d_selectionHFFlag", 1, "Selection Flag for HF flagged candidates"};
   Configurable<int> d_selectionTopol{"d_selectionTopol", 1, "Selection Flag for topologically selected candidates"};
   Configurable<int> d_selectionCand{"d_selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
@@ -148,7 +148,7 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
         continue;
       }
 
@@ -201,7 +201,7 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::D0ToPiK) {
@@ -331,7 +331,7 @@ struct HfTaskD0 {
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();

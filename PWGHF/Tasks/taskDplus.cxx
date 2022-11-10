@@ -43,7 +43,7 @@ struct HfTaskDplus {
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
   Configurable<int> d_selectionFlagDPlus{"d_selectionFlagDPlus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -97,7 +97,7 @@ struct HfTaskDplus {
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YDPlus(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
         continue;
       }
       registry.fill(HIST("hMass"), InvMassDPlus(candidate), candidate.pt());
@@ -138,7 +138,7 @@ struct HfTaskDplus {
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YDPlus(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi) {
@@ -195,7 +195,7 @@ struct HfTaskDplus {
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::DPlusToPiKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (cutYCandMax >= 0. && std::abs(yGen) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), ptGen);

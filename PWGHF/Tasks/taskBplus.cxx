@@ -56,7 +56,7 @@ struct HfTaskBplus {
      {"hPtGen", mcParticleMatched + "candidate #it{p}_{T} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}}}};
 
   Configurable<int> selectionFlagBPlus{"selectionFlagBPlus", 1, "Selection Flag for B+"};
-  Configurable<double> cutYCandMax{"cutYCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -130,7 +130,7 @@ struct HfTaskBplus {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YBPlus(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YBPlus(candidate)) > yCandMax) {
         continue;
       }
 
@@ -171,7 +171,7 @@ struct HfTaskBplus {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YBPlus(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YBPlus(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bplus::DecayType::BPlusToD0Pi) {
@@ -217,7 +217,7 @@ struct HfTaskBplus {
       if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bplus::DecayType::BPlusToD0Pi) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
-        if (cutYCandMax >= 0. && std::abs(yParticle) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
           continue;
         }
 
@@ -237,7 +237,7 @@ struct HfTaskBplus {
         registry.fill(HIST("hEtaProng0Gen"), etaProngs[0], particle.pt());
         registry.fill(HIST("hEtaProng1Gen"), etaProngs[1], particle.pt());
 
-        //  if (cutYCandMax >= 0. && (std::abs(yProngs[0]) > cutYCandMax || std::abs(yProngs[1]) > cutYCandMax))
+        //  if (yCandMax >= 0. && (std::abs(yProngs[0]) > yCandMax || std::abs(yProngs[1]) > yCandMax))
         //    continue;
 
         registry.fill(HIST("hPtGen"), particle.pt());

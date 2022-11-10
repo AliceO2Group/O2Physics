@@ -48,7 +48,7 @@ struct HfTaskChic {
      {"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
-  Configurable<double> cutYCandMax{"cutYCandMax", 1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
@@ -77,7 +77,7 @@ struct HfTaskChic {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YChic(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YChic(candidate)) > yCandMax) {
         continue;
       }
 
@@ -110,7 +110,7 @@ struct HfTaskChicMc {
      {"hPtGenSig", "2-prong candidates (rec. matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
-  Configurable<double> cutYCandMax{"cutYCandMax", 1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
@@ -160,7 +160,7 @@ struct HfTaskChicMc {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YChic(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YChic(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
@@ -202,7 +202,7 @@ struct HfTaskChicMc {
     for (auto& particle : particlesMC) {
       if (particle.flagMCMatchGen() == 1 << decayMode) {
         auto mchic = RecoDecay::getMassPDG(pdg::Code::kChic1); // chi_c1(1p)
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
         }

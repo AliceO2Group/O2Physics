@@ -45,7 +45,7 @@ struct HfTaskJpsi {
 
   Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 0, "Selection Flag for Jpsi"};
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
   Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
   Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
@@ -105,7 +105,7 @@ struct HfTaskJpsi {
           }
         }
       }
-      if (cutYCandMax >= 0. && std::abs(YJpsi(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YJpsi(candidate)) > yCandMax) {
         continue;
       }
 
@@ -148,7 +148,7 @@ struct HfTaskJpsiMc {
 
   Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
   Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
   Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
@@ -226,7 +226,7 @@ struct HfTaskJpsiMc {
         }
       }
 
-      if (cutYCandMax >= 0. && std::abs(YJpsi(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YJpsi(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
@@ -275,7 +275,7 @@ struct HfTaskJpsiMc {
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (particle.flagMCMatchGen() == 1 << decayMode) {
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());

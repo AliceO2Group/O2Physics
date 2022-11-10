@@ -89,7 +89,7 @@ struct HfCorrelatorDplusHadrons {
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}}}};
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> cutTrackEtaMax{"cutTrackEtaMax", -1., "max. eta of tracks"};
   Configurable<double> cutDCAxyMax{"cutDCAxyMax", -1., "max. DCAxy of tracks"};
   Configurable<double> cutDCAzMax{"cutDCAzMax", -1., "max. DCAz of tracks"};
@@ -138,7 +138,7 @@ struct HfCorrelatorDplusHadrons {
     registry.fill(HIST("hMultiplicity"), nTracks);
 
     for (auto& candidate1 : selectedDPlusCandidates) {
-      if (cutYCandMax >= 0. && std::abs(YDPlus(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
@@ -224,7 +224,7 @@ struct HfCorrelatorDplusHadrons {
       if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YDPlus(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
@@ -297,7 +297,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (cutYCandMax >= 0. && std::abs(yD) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
       if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {

@@ -49,7 +49,7 @@ struct HfTaskX {
      {"hPtCand", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
   Configurable<int> d_selectionFlagX{"d_selectionFlagX", 1, "Selection Flag for X"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
 
@@ -77,7 +77,7 @@ struct HfTaskX {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YX(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YX(candidate)) > yCandMax) {
         continue;
       }
 
@@ -110,7 +110,7 @@ struct HfTaskXMc {
      {"hPtGenSig", "3-prong candidates (rec. matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
   Configurable<int> d_selectionFlagX{"d_selectionFlagX", 1, "Selection Flag for X"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
 
@@ -163,7 +163,7 @@ struct HfTaskXMc {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YX(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(YX(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
@@ -208,7 +208,7 @@ struct HfTaskXMc {
     for (auto& particle : particlesMC) {
       if (particle.flagMCMatchGen() == 1 << decayMode) {
         // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
         }
