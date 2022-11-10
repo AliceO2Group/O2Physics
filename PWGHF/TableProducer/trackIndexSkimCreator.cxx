@@ -847,7 +847,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // preselection parameters
-  Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
+  Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
@@ -1030,7 +1030,7 @@ struct HfTrackIndexSkimCreator {
       array{hfTrack0.pxProng(), hfTrack0.pyProng(), hfTrack0.pzProng()},
       array{hfTrack1.pxProng(), hfTrack1.pyProng(), hfTrack1.pzProng()}};
 
-    auto pT = RecoDecay::pt(arrMom[0], arrMom[1]) + pTTolerance; // add tolerance because of no reco decay vertex
+    auto pT = RecoDecay::pt(arrMom[0], arrMom[1]) + ptTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
 
@@ -1113,7 +1113,7 @@ struct HfTrackIndexSkimCreator {
       array{hfTrack1.pxProng(), hfTrack1.pyProng(), hfTrack1.pzProng()},
       array{hfTrack2.pxProng(), hfTrack2.pyProng(), hfTrack2.pzProng()}};
 
-    auto pT = RecoDecay::pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
+    auto pT = RecoDecay::pt(arrMom[0], arrMom[1], arrMom[2]) + ptTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
 
