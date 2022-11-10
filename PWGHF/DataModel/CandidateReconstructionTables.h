@@ -586,7 +586,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // D0 in
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
 
-enum DecayType { BPlusToD0Pi = 0 };
+enum DecayType { BplusToD0Pi = 0 };
 
 // B± → D0bar(D0) π±
 
@@ -696,7 +696,7 @@ DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); //! resonant
 DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); //! resonant decay channel flag, generator level
 
 // mapping of decay types
-enum DecayType { DPlusToPiKPi = 0,
+enum DecayType { DplusToPiKPi = 0,
                  LcToPKPi,
                  DsToKKPi,
                  XicToPKPi,

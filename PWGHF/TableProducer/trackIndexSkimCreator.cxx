@@ -941,7 +941,7 @@ struct HfTrackIndexSkimCreator {
     arrMass2Prong[hf_cand_prong2::DecayType::JpsiToMuMu] = array{array{massMuon, massMuon},
                                                                  array{massMuon, massMuon}};
 
-    arrMass3Prong[hf_cand_prong3::DecayType::DPlusToPiKPi] = array{array{massPi, massK, massPi},
+    arrMass3Prong[hf_cand_prong3::DecayType::DplusToPiKPi] = array{array{massPi, massK, massPi},
                                                                    array{massPi, massK, massPi}};
 
     arrMass3Prong[hf_cand_prong3::DecayType::LcToPKPi] = array{array{massProton, massK, massPi},
@@ -1881,7 +1881,7 @@ struct HfTrackIndexSkimCreator {
                   if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                     switch (iDecay3P) {
-                      case hf_cand_prong3::DecayType::DPlusToPiKPi:
+                      case hf_cand_prong3::DecayType::DplusToPiKPi:
                         registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::DsToKKPi:
@@ -2084,7 +2084,7 @@ struct HfTrackIndexSkimCreator {
                   if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                     switch (iDecay3P) {
-                      case hf_cand_prong3::DecayType::DPlusToPiKPi:
+                      case hf_cand_prong3::DecayType::DplusToPiKPi:
                         registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::DsToKKPi:

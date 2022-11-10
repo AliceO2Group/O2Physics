@@ -159,7 +159,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // probably dummy since already selected? not sure...
+      if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
         continue;
       }
 
@@ -198,7 +198,7 @@ struct HfCorrelatorDplusDminus {
       }
       for (auto& candidate2 : selectedDPlusCandidatesGrouped) {
         // check decay channel flag for candidate2
-        if (!(candidate2.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // probably dummy since already selected? not sure...
+        if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
           continue;
         }
         auto innerSecondTrack = candidate2.index1_as<aod::BigTracks>();
@@ -266,7 +266,7 @@ struct HfCorrelatorDplusDminus {
     bool flagDminusSignal = false;
     for (auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
+      if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
@@ -286,7 +286,7 @@ struct HfCorrelatorDplusDminus {
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
-      if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi) {
+      if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
         // fill invariant mass plots and per-candidate distributions from Dplus/Dminus signal candidates
         if (outerParticleSign == 1) { // reco and matched as Dplus
           registry.fill(HIST("hMassDplusMCRecSig"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
@@ -314,16 +314,16 @@ struct HfCorrelatorDplusDminus {
       if (outerParticleSign == -1) {
         continue; // reject Dminus in outer loop
       }
-      flagDplusSignal = std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
+      flagDplusSignal = std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
       for (auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
-        if (!(candidate2.hfflag() & 1 << DecayType::DPlusToPiKPi)) { // check decay channel flag for candidate2
+        if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
           continue;
         }
         auto innerSecondTrack = candidate2.index1_as<aod::BigTracks>();
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
-        flagDminusSignal = std::abs(candidate2.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
+        flagDminusSignal = std::abs(candidate2.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
         if (yCandMax >= 0. && std::abs(YDPlus(candidate2)) > yCandMax) {
           continue;
         }
@@ -416,7 +416,7 @@ struct HfCorrelatorDplusDminus {
 
         // fill pairs vs etaCut plot
         bool rightDecayChannels = false;
-        if ((std::abs(particle1.flagMCMatchGen()) == 1 << DecayType::DPlusToPiKPi) && (std::abs(particle2.flagMCMatchGen()) == 1 << DecayType::DPlusToPiKPi)) {
+        if ((std::abs(particle1.flagMCMatchGen()) == 1 << DecayType::DplusToPiKPi) && (std::abs(particle2.flagMCMatchGen()) == 1 << DecayType::DplusToPiKPi)) {
           rightDecayChannels = true;
         }
         do {

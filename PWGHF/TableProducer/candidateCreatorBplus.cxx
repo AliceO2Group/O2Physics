@@ -190,7 +190,7 @@ struct HfCandidateCreatorBplus {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << hf_cand_bplus::DecayType::BPlusToD0Pi;
+        int hfFlag = 1 << hf_cand_bplus::DecayType::BplusToD0Pi;
 
         // fill candidate table rows
         rowCandidateBase(collision.globalIndex(),
@@ -245,7 +245,7 @@ struct HfCandidateCreatorBplusMc {
       indexRecD0 = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD0, pdg::Code::kD0, array{-kKPlus, +kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
-        flag = signB * (1 << hf_cand_bplus::DecayType::BPlusToD0Pi);
+        flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
       }
       rowMCMatchRec(flag);
     }
@@ -271,7 +271,7 @@ struct HfCandidateCreatorBplusMc {
           }
         }
         if (indexGenD0 > -1) {
-          flag = signB * (1 << hf_cand_bplus::DecayType::BPlusToD0Pi);
+          flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
         }
       }
       rowMCMatchGen(flag);

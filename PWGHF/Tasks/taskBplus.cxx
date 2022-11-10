@@ -127,7 +127,7 @@ struct HfTaskBplus {
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
+      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YBPlus(candidate)) > yCandMax) {
@@ -168,13 +168,13 @@ struct HfTaskBplus {
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
-      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
+      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YBPlus(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bplus::DecayType::BPlusToD0Pi) {
+      if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
 
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBPMCGen>>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -214,7 +214,7 @@ struct HfTaskBplus {
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bplus::DecayType::BPlusToD0Pi) {
+      if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {

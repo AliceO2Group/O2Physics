@@ -331,8 +331,8 @@ struct HfSelOptimisation {
             if (cand3Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
-                case o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi, 0>(cand3Prong, tracks);
+                case o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi:
+                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi, 0>(cand3Prong, tracks);
                   break;
                 case o2::aod::hf_cand_prong3::DecayType::LcToPKPi:
                   testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::LcToPKPi, 0>(cand3Prong, tracks);
@@ -347,8 +347,8 @@ struct HfSelOptimisation {
             } else if (cand3Prong.originMCRec() == RecoDecay::OriginType::NonPrompt) {
               isNonPrompt = true;
               switch (iDecay) {
-                case o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi, 1>(cand3Prong, tracks);
+                case o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi:
+                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi, 1>(cand3Prong, tracks);
                   break;
                 case o2::aod::hf_cand_prong3::DecayType::LcToPKPi:
                   testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::LcToPKPi, 1>(cand3Prong, tracks);
@@ -364,8 +364,8 @@ struct HfSelOptimisation {
           } else {
             isBkg = true;
             switch (iDecay) {
-              case o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi:
-                testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi, 2>(cand3Prong, tracks);
+              case o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi:
+                testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi, 2>(cand3Prong, tracks);
                 break;
               case o2::aod::hf_cand_prong3::DecayType::LcToPKPi:
                 testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::LcToPKPi, 2>(cand3Prong, tracks);

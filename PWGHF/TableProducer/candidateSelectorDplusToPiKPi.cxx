@@ -122,7 +122,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       // final selection flag:
       auto statusDplusToPiKPi = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
+      if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }

@@ -309,7 +309,7 @@ struct HfTreeCreatorBplusToD0Pi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::BPlusToD0Pi) {
+      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::BplusToD0Pi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

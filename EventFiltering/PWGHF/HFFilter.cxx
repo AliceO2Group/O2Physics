@@ -771,7 +771,7 @@ struct HfFilter { // Main struct for HF triggers
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
       std::array<int8_t, kNCharmParticles - 1> is3Prong = {
-        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi),
+        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::XicToPKPi)};

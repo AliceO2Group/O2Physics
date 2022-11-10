@@ -148,7 +148,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
+      if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
       double efficiencyWeight = 1.;
@@ -221,7 +221,7 @@ struct HfCorrelatorDplusHadrons {
     bool flagDplusSignal = false;
     for (auto& candidate1 : recoFlagDPlusCandidates) {
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
+      if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
@@ -238,7 +238,7 @@ struct HfCorrelatorDplusHadrons {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
-      if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi) {
+      if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
         // fill per-candidate distributions from Dplus true candidates
         registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
         registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
@@ -251,7 +251,7 @@ struct HfCorrelatorDplusHadrons {
       }
       // fill invariant mass plots from Dplus signal and background candidates
       registry.fill(HIST("hMassDplusMCRec"), InvMassDPlus(candidate1), efficiencyWeight);
-      if (candidate1.flagMCMatchRec() == 1 << DecayType::DPlusToPiKPi) { // also matched as Dplus
+      if (candidate1.flagMCMatchRec() == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
         registry.fill(HIST("hMassDplusMCRecSig"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
       } else {
         registry.fill(HIST("hMassDplusMCRecBkg"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
@@ -259,7 +259,7 @@ struct HfCorrelatorDplusHadrons {
 
       // Dplus-Hadron correlation dedicated section
       // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
-      flagDplusSignal = candidate1.flagMCMatchRec() == 1 << DecayType::DPlusToPiKPi;
+      flagDplusSignal = candidate1.flagMCMatchRec() == 1 << DecayType::DplusToPiKPi;
       for (const auto& track : tracks) {
         if (std::abs(track.eta()) > cutTrackEtaMax) {
           continue;

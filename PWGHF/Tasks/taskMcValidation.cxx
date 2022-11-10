@@ -648,7 +648,7 @@ struct HfTaskMcValidationRec {
     for (auto& cand3Prong : cand3Prongs) {
 
       // determine which kind of candidate it is
-      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi);
+      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi);
       bool isDStarSel = false; // FIXME: add proper check when D* will be added in HF vertexing
       bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi);
       bool isLcSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi);
@@ -657,7 +657,7 @@ struct HfTaskMcValidationRec {
         continue;
       }
       int whichHad = -1;
-      if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DPlusToPiKPi)) {
+      if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DplusToPiKPi)) {
         whichHad = 0;
       } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DsToKKPi)) {
         whichHad = 3;

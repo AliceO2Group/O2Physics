@@ -145,7 +145,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       int statusBplus = 0;
 
       // check if flagged as B+ --> D0bar Pi
-      if (!(hfCandB.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
+      if (!(hfCandB.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
         hfSelBPlusToD0PiCandidate(statusBplus);
         // Printf("B+ candidate selection failed at hfflag check");
         continue;

@@ -94,7 +94,7 @@ struct HfTaskDplus {
   {
     for (auto& candidate : selectedDPlusCandidates) {
       //not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
+      if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
@@ -135,13 +135,13 @@ struct HfTaskDplus {
     //Printf("MC Candidates: %d", candidates.size());
     for (auto& candidate : recoFlagDPlusCandidates) {
       //not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
+      if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi) {
+      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kDPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -192,7 +192,7 @@ struct HfTaskDplus {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::DPlusToPiKPi) {
+      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
