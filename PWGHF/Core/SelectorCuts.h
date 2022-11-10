@@ -68,7 +68,7 @@ static constexpr int nCutVarsTrack = 2;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any candidate type (2-prong, 3-prong)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBinsTrack[nBinsPtTrack + 1] = {
+constexpr double binsPtTrack[nBinsPtTrack + 1] = {
   0,
   0.5,
   1.0,
@@ -76,7 +76,7 @@ constexpr double pTBinsTrack[nBinsPtTrack + 1] = {
   2.0,
   3.0,
   1000.0};
-auto pTBinsTrack_v = std::vector<double>{pTBinsTrack, pTBinsTrack + nBinsPtTrack + 1};
+auto pTBinsTrack_v = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
 
 // default values for the cuts
 constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */

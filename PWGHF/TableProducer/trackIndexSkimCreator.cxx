@@ -267,7 +267,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", false, "check isGlobalTrackWoDCA status for tracks, for Run3 studies"};
   Configurable<int> tpcNClsFound{"tpcNClsFound", 70, ">= min. number of TPC clusters needed"};
   // pT bins for single-track cuts
-  Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for 2-prong DCAXY pT-depentend cut"};
+  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for 2-prong DCAXY pT-depentend cut"};
   // 2-prong cuts
   Configurable<double> pTMinTrack2Prong{"pTMinTrack2Prong", -1., "min. track pT for 2 prong candidate"};
   Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 2-prong candidates"};
@@ -382,7 +382,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   template <typename T>
   bool isSelectedTrack(const T& hfTrack, const array<float, 2>& dca, const int candType)
   {
-    auto pTBinTrack = findBin(pTBinsTrack, hfTrack.pt());
+    auto pTBinTrack = findBin(binsPtTrack, hfTrack.pt());
     if (pTBinTrack == -1) {
       return false;
     }
