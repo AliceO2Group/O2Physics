@@ -23,7 +23,7 @@ function(o2physics_add_header_only_library baseTargetName)
                         1
                         A
                         ""
-                        ""
+                        "TARGETVARNAME"
                         "INCLUDE_DIRECTORIES;INTERFACE_LINK_LIBRARIES")
 
   if(A_UNPARSED_ARGUMENTS)
@@ -42,24 +42,28 @@ function(o2physics_add_header_only_library baseTargetName)
   # namespace O2Physics::)
   set_property(TARGET ${target} PROPERTY EXPORT_NAME ${baseTargetName})
 
+  if(A_TARGETVARNAME)
+    set(${A_TARGETVARNAME} ${target} PARENT_SCOPE)
+  endif()
+
   if(NOT A_INCLUDE_DIRECTORIES)
     get_filename_component(dir include ABSOLUTE)
     if(EXISTS ${dir})
       set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${dir}>)
     else()
       set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
-      list(APPEND A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
     endif()
   endif()
 
   target_include_directories(
     ${target}
-    INTERFACE $<BUILD_INTERFACE:${A_INCLUDE_DIRECTORIES}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    INTERFACE $<BUILD_INTERFACE:${A_INCLUDE_DIRECTORIES}>)
 
   if(A_INTERFACE_LINK_LIBRARIES)
     target_link_libraries(${target} INTERFACE ${A_INTERFACE_LINK_LIBRARIES})
   endif()
+  install(DIRECTORY ${A_INCLUDE_DIRECTORIES}/
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
   install(TARGETS ${target}
           EXPORT O2PhysicsTargets
