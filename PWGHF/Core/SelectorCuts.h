@@ -90,7 +90,7 @@ constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0 
 static const std::vector<std::string> labelsPtTrack{};
 
 // column labels
-static const std::vector<std::string> cutVarLabelsTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
+static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
 } // namespace hf_cuts_single_track
 
 namespace hf_cuts_bdt_multiclass
