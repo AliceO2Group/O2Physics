@@ -2163,7 +2163,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
 
   // track cuts for bachelor
-  Configurable<bool> TPCRefitBach{"TPCRefitBach", true, "request TPC refit bachelor"};
+  Configurable<bool> tpcRefitBach{"tpcRefitBach", true, "request TPC refit bachelor"};
   Configurable<int> minCrossedRowsBach{"minCrossedRowsBach", 50, "min crossed rows bachelor"};
 
   // track cuts for V0 daughters
@@ -2287,7 +2287,7 @@ struct HfTrackIndexSkimCreatorCascades {
         continue;
       }
 
-      if (TPCRefitBach) {
+      if (tpcRefitBach) {
         if (!(bach.trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to TPCrefit");
           continue;
