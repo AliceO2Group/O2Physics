@@ -96,7 +96,7 @@ struct HfCorrelatorDplusHadrons {
   Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<double> cutPtTrackMin{"cutPtTrackMin", -1., "min. track pT"};
   Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
-  Configurable<std::vector<double>> binsPt{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
   Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
