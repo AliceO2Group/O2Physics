@@ -857,7 +857,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   // D0 cuts
-  Configurable<std::vector<double>> pTBinsD0ToPiK{"pTBinsD0ToPiK", std::vector<double>{hf_cuts_presel_2prong::pTBinsVec}, "pT bin limits for D0->piK pT-dependent cuts"};
+  Configurable<std::vector<double>> binsPtD0ToPiK{"binsPtD0ToPiK", std::vector<double>{hf_cuts_presel_2prong::pTBinsVec}, "pT bin limits for D0->piK pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsD0ToPiK{"cutsD0ToPiK", {hf_cuts_presel_2prong::cuts[0], hf_cuts_presel_2prong::nBinsPt, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::pTBinLabels, hf_cuts_presel_2prong::cutVarLabels}, "D0->piK selections per pT bin"};
   // Jpsi -> ee cuts
   Configurable<std::vector<double>> pTBinsJpsiToEE{"pTBinsJpsiToEE", std::vector<double>{hf_cuts_presel_2prong::pTBinsVec}, "pT bin limits for Jpsi->ee pT-dependent cuts"};
@@ -955,7 +955,7 @@ struct HfTrackIndexSkimCreator {
 
     // cuts for 2-prong decays retrieved by json. the order must be then one in hf_cand_prong2::DecayType
     cut2Prong = {cutsD0ToPiK, cutsJpsiToEE, cutsJpsiToMuMu};
-    pTBins2Prong = {pTBinsD0ToPiK, pTBinsJpsiToEE, pTBinsJpsiToMuMu};
+    pTBins2Prong = {binsPtD0ToPiK, pTBinsJpsiToEE, pTBinsJpsiToMuMu};
     // cuts for 3-prong decays retrieved by json. the order must be then one in hf_cand_prong3::DecayType
     cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToKKPi, cutsXicToPKPi};
     pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToKKPi, pTBinsXicToPKPi};
