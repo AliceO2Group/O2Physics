@@ -23,20 +23,23 @@ namespace o2::analysis
 {
 namespace pdg
 {
+/// \brief Declarations of named PDG codes of HF particles missing in ROOT PDG_t.
+/// \note Follow kCamelCase naming convention
+/// \link https://root.cern/doc/master/TPDGCode_8h.html
 enum Code {
   kD0 = 421,
-  kD0bar = -421,
+  kD0Bar = -421,
   kDPlus = 411,
   kDMinus = -411,
-  kDs = 431,
+  kDS = 431,
   kLambdaCPlus = 4122,
   kXiCPlus = 4232,
   kXiCCPlusPlus = 4422,
   kLambdaB0 = 5122,
-  kJpsi = 443,
-  kChic1 = 20443,
+  kJPsi = 443,
+  kChiC1 = 20443,
   kB0 = 511,
-  kB0bar = -511,
+  kB0Bar = -511,
   kBPlus = 521,
   kX3872 = 9920443
 };

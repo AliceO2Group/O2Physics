@@ -82,7 +82,7 @@ struct HfTaskChic {
       }
 
       registry.fill(HIST("hMass"), InvMassChicToJpsiGamma(candidate), candidate.pt());
-      registry.fill(HIST("hDeltaMass"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
+      registry.fill(HIST("hDeltaMass"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJPsi), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -172,7 +172,7 @@ struct HfTaskChicMc {
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
+        registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJPsi), candidate.pt());
         registry.fill(HIST("hMassRecSig"), InvMassChicToJpsiGamma(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
@@ -186,7 +186,7 @@ struct HfTaskChicMc {
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hDeltaMassRecBg"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
+        registry.fill(HIST("hDeltaMassRecBg"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJPsi), candidate.pt());
         registry.fill(HIST("hMassRecBg"), InvMassChicToJpsiGamma(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
@@ -201,7 +201,7 @@ struct HfTaskChicMc {
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (particle.flagMCMatchGen() == 1 << decayMode) {
-        auto mchic = RecoDecay::getMassPDG(pdg::Code::kChic1); // chi_c1(1p)
+        auto mchic = RecoDecay::getMassPDG(pdg::Code::kChiC1); // chi_c1(1p)
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;

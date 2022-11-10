@@ -267,7 +267,7 @@ struct HfCandidateCreator3ProngExpressions {
       // Ds± → K± K∓ π±
       if (flag == 0) {
         // Printf("Checking Ds± → K± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDs, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DsToKKPi);
         }
@@ -336,7 +336,7 @@ struct HfCandidateCreator3ProngExpressions {
       // Ds± → K± K∓ π±
       if (flag == 0) {
         // Printf("Checking Ds± → K± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDs, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::DsToKKPi);
         }
       }

@@ -261,7 +261,7 @@ struct HfCandidateCreatorXMc {
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;
-    int pdgCodeJpsi = pdg::Code::kJpsi;
+    int pdgCodeJpsi = pdg::Code::kJPsi;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
@@ -284,7 +284,7 @@ struct HfCandidateCreatorXMc {
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true);
       if (indexRec > -1) {
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
         if (indexRec > -1) {
@@ -293,7 +293,7 @@ struct HfCandidateCreatorXMc {
       }
 
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
           if (indexRec > -1) {

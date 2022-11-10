@@ -879,7 +879,7 @@ struct HfFilter { // Main struct for HF triggers
       if (is3Prong[1]) {
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[1]);
         if (applyOptimisation) {
-          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kDs, pt3Prong, myscores[1][0], myscores[1][1], myscores[1][2]);
+          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kDS, pt3Prong, myscores[1][0], myscores[1][1], myscores[1][2]);
         }
       }
       if (is3Prong[2]) {
@@ -914,7 +914,7 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
 
-        int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDs, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
+        int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
 
         float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};

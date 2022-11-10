@@ -411,7 +411,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
       registry.fill(HIST("hCountD0triggersMCGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
       for (auto& particle2 : particlesMC) {
-        if (particle2.pdgCode() != pdg::Code::kD0bar) { // check that inner particle is D0bar
+        if (particle2.pdgCode() != pdg::Code::kD0Bar) { // check that inner particle is D0bar
           continue;
         }
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {

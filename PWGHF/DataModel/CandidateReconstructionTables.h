@@ -376,19 +376,19 @@ auto CosThetaStarD0bar(const T& candidate)
 template <typename T>
 auto CtJpsi(const T& candidate)
 {
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kJpsi));
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kJPsi));
 }
 
 template <typename T>
 auto YJpsi(const T& candidate)
 {
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kJpsi));
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kJPsi));
 }
 
 template <typename T>
 auto EJpsi(const T& candidate)
 {
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kJpsi));
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kJPsi));
 }
 
 // J/ψ → e+ e−
@@ -735,19 +735,19 @@ auto InvMassDPlus(const T& candidate)
 template <typename T>
 auto CtDs(const T& candidate)
 {
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDs));
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDS));
 }
 
 template <typename T>
 auto YDs(const T& candidate)
 {
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDs));
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDS));
 }
 
 template <typename T>
 auto EDs(const T& candidate)
 {
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDs));
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDS));
 }
 
 template <typename T>
@@ -941,7 +941,7 @@ auto QX(const T& candidate)
   double massPiPi = RecoDecay::m(arrayMomenta, array{massPi, massPi});
 
   // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
-  double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJpsi);
+  double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJPsi);
 
   double massX = InvMassXToJpsiPiPi(candidate);
   return std::abs(massX - massJpsi - massPiPi);
@@ -1181,24 +1181,24 @@ enum DecayType { ChicToJpsiToEEGamma = 0,
 template <typename T>
 auto CtChic(const T& candidate)
 {
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kChic1));
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kChiC1));
 }
 
 template <typename T>
 auto YChic(const T& candidate)
 {
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kChic1));
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kChiC1));
 }
 
 template <typename T>
 auto EChic(const T& candidate)
 {
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kChic1));
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kChiC1));
 }
 template <typename T>
 auto InvMassChicToJpsiGamma(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kJpsi), 0.});
+  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kJPsi), 0.});
 }
 
 } // namespace hf_cand_chic
