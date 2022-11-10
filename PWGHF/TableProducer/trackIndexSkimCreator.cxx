@@ -869,7 +869,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<std::vector<double>> binsPtDplusToPiKPi{"binsPtDplusToPiKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for D+->piKpi pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsDplusToPiKPi{"cutsDplusToPiKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "D+->piKpi selections per pT bin"};
   // Ds+ cuts
-  Configurable<std::vector<double>> pTBinsDsToKKPi{"pTBinsDsToKKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Ds+->KKPi pT-dependent cuts"};
+  Configurable<std::vector<double>> binsPtDsToKKPi{"binsPtDsToKKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Ds+->KKPi pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsDsToKKPi{"cutsDsToKKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Ds+->KKPi selections per pT bin"};
   // Lc+ cuts
   Configurable<std::vector<double>> pTBinsLcToPKPi{"pTBinsLcToPKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Lc->pKpi pT-dependent cuts"};
@@ -958,7 +958,7 @@ struct HfTrackIndexSkimCreator {
     pTBins2Prong = {binsPtD0ToPiK, binsPtJpsiToEE, binsPtJpsiToMuMu};
     // cuts for 3-prong decays retrieved by json. the order must be then one in hf_cand_prong3::DecayType
     cut3Prong = {cutsDplusToPiKPi, cutsLcToPKPi, cutsDsToKKPi, cutsXicToPKPi};
-    pTBins3Prong = {binsPtDplusToPiKPi, pTBinsLcToPKPi, pTBinsDsToKKPi, pTBinsXicToPKPi};
+    pTBins3Prong = {binsPtDplusToPiKPi, pTBinsLcToPKPi, binsPtDsToKKPi, pTBinsXicToPKPi};
 
     // needed for PV refitting
     if (doPvRefit) {
