@@ -96,7 +96,7 @@ struct HfCorrelatorDplusHadrons {
   Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
   Configurable<double> cutPtTrackMin{"cutPtTrackMin", -1., "min. track pT"};
   Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
-  Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> binsPt{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
   Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
@@ -104,7 +104,7 @@ struct HfCorrelatorDplusHadrons {
 
   void init(o2::framework::InitContext&)
   {
-    auto vbins = (std::vector<double>)bins;
+    auto vbins = (std::vector<double>)binsPt;
     registry.add("hMassDplus_2D", "Dplus candidates;inv. mass (K^{-}#pi^{+}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDplusData", "Dplus candidates;inv. mass (K^{-}#pi^{+}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
     registry.add("hMassDplusMCRec", "Dplus candidates;inv. mass (K^{-}#pi^{+}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
@@ -153,7 +153,7 @@ struct HfCorrelatorDplusHadrons {
       }
       double efficiencyWeight = 1.;
       if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
+        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
       // fill invariant mass plots and generic info from all Dplus candidates
       registry.fill(HIST("hMassDplus_2D"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
@@ -235,7 +235,7 @@ struct HfCorrelatorDplusHadrons {
       }
       double efficiencyWeight = 1.;
       if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
+        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
       if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi) {

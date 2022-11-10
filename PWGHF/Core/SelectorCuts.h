@@ -48,15 +48,15 @@ enum Code {
 /// \return index of the pT bin
 /// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
 template <typename T1, typename T2>
-int findBin(T1 const& bins, T2 value)
+int findBin(T1 const& binsPt, T2 value)
 {
-  if (value < bins->front()) {
+  if (value < binsPt->front()) {
     return -1;
   }
-  if (value >= bins->back()) {
+  if (value >= binsPt->back()) {
     return -1;
   }
-  return std::distance(bins->begin(), std::upper_bound(bins->begin(), bins->end(), value)) - 1;
+  return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
 }
 
 // namespace per channel
