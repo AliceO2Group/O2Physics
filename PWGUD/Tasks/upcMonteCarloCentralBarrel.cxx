@@ -13,20 +13,14 @@
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  12.07.2022
 
-//#include <algorithm>
-//#include <iterator>
-
 // O2 headers
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-//#include "CommonConstants/PhysicsConstants.h"
 
 // O2Physics headers
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
 #include "PWGUD/Core/UPCMonteCarloCentralBarrelHelper.h"
 #include "PWGUD/DataModel/UDTables.h"
 
@@ -107,12 +101,8 @@ struct UpcMCCentralBarrel {
 //	Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
 
 	// declare shortcuts
-	using ReconstructedTCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-														aod::pidTPCFullEl,
-														aod::McTrackLabels>;
-	using ReconstructedCollision = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
-	//	using ReconstructedCollision = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator;
-
+	using ReconstructedTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDMcTrackLabels>;
+	using ReconstructedCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
 
 	// init
 	void init(InitContext&){
@@ -134,47 +124,41 @@ struct UpcMCCentralBarrel {
 
 	// declare preslices = table cross-connections
 	Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-	Preslice<aod::McCollisions> perBC = aod::mccollision::bcId;
 
 	// process
 	void processSimulatorLevel(ReconstructedCollision const& reconstructedCollision,
-														 aod::McCollisions const& generatedCollisions,
-														 ReconstructedTCs const& reconstructedBarrelTracks,
-	                           aod::McParticles const& generatedParticles,
-														 aod::BCs const& bcs,
-	                           aod::FT0s const& ft0s,
-	                           aod::FDDs const& fdds,
-	                           aod::FV0As const& fv0as){
+														 aod::UDMcCollisions const& generatedCollisions,
+														 ReconstructedTracks const& reconstructedBarrelTracks,
+	                           aod::UDMcParticles const& generatedParticles,
+														 soa::Join<aod::Collisions, aod::EvSels> const& infoEventSelection){
+
 
 		if(isFirstReconstructedCollisions){
 			isFirstReconstructedCollisions = false;
 			if (verboseInfo) printLargeMessage("START LOOPING OVER RECONSTRUCTED COLLISIONS");
 		}
 		if (verboseInfo) printLargeMessage("NEW COLLISION");
-		if (printMetaInfo) printCollisionData(reconstructedCollision, generatedCollisions, perBC);
 		countCollisions++;
 		registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(0);
 
-		fillEventSelectionHistogram(registry,reconstructedCollision);
+		auto thisCollisionEventSelectionInfo = infoEventSelection.iteratorAt(getEvSelsIndexOfThisCollisionBC(infoEventSelection,reconstructedCollision.globalBC()));
+		fillEventSelectionHistogram(registry,thisCollisionEventSelectionInfo);
 		fillTrackSelectionHistogram(registry,reconstructedBarrelTracks,reconstructedCollision);
 
 		registry.get<TH1>(HIST("hNcontributionsToReconstructedCollision"))->Fill(reconstructedCollision.numContrib());
 
-		auto thisReconstructedCollisionGeneratedParticles = generatedParticles.sliceBy(perMcCollision, reconstructedCollision.mcCollision().globalIndex());
-
-		int nGeneratedParticlesInThisReconstructedCollision = thisReconstructedCollisionGeneratedParticles.size();
+		// TODO fix when you can touch mcccollision // int nGeneratedParticlesInThisReconstructedCollision = ????????;
 		int nReconstructedTracksInThisReconstructedCollision = reconstructedBarrelTracks.size();
 		if (verboseDebug) LOGF(info,"collision number = %d has %d contributors",countCollisions,reconstructedCollision.numContrib());
-		if (verboseDebug) LOGF(info,"This slice: number of reconstructed tracks = %d, number of generated particles in this slice %d",
-													reconstructedBarrelTracks.size(),nGeneratedParticlesInThisReconstructedCollision);
+		// TODO fix when you can touch mcccollision //if (verboseDebug) LOGF(info,"This slice: number of reconstructed tracks = %d, number of generated particles in this slice %d", reconstructedBarrelTracks.size(),nGeneratedParticlesInThisReconstructedCollision);
 
-		registry.get<TH1>(HIST("hNgeneratedParticles"))->Fill(nGeneratedParticlesInThisReconstructedCollision);
+		// TODO fix when you can touch mcccollision //registry.get<TH1>(HIST("hNgeneratedParticles"))->Fill(nGeneratedParticlesInThisReconstructedCollision);
 		registry.get<TH1>(HIST("hNreconstructedTracks"))->Fill(nReconstructedTracksInThisReconstructedCollision);
 		registry.get<TH1>(HIST("hNreconstructedTracksWide"))->Fill(nReconstructedTracksInThisReconstructedCollision);
-		registry.get<TH2>(HIST("hNrecoVSgene"))->Fill(nReconstructedTracksInThisReconstructedCollision,nGeneratedParticlesInThisReconstructedCollision);
-		registry.get<TH2>(HIST("hNrecoVSgeneMany"))->Fill(nReconstructedTracksInThisReconstructedCollision,nGeneratedParticlesInThisReconstructedCollision);
+		// TODO fix when you can touch mcccollision //registry.get<TH2>(HIST("hNrecoVSgene"))->Fill(nReconstructedTracksInThisReconstructedCollision,nGeneratedParticlesInThisReconstructedCollision);
+		// TODO fix when you can touch mcccollision //registry.get<TH2>(HIST("hNrecoVSgeneMany"))->Fill(nReconstructedTracksInThisReconstructedCollision,nGeneratedParticlesInThisReconstructedCollision);
 		registry.get<TH1>(HIST("hVtxZ"))->Fill(reconstructedCollision.posZ());
-		registry.get<TH1>(HIST("hVtxZrecToGen"))->Fill(reconstructedCollision.posZ()-reconstructedCollision.mcCollision().posZ());
+		// TODO find a way how to fill in this histogram //registry.get<TH1>(HIST("hVtxZrecToGen"))->Fill(reconstructedCollision.posZ()-reconstructedCollision.mcCollision().posZ());
 		registry.get<TH2>(HIST("hVtxTransversal"))->Fill(reconstructedCollision.posX(),reconstructedCollision.posY());
 
 		int countReconstructedPrimaryTracks = 0;
@@ -185,23 +169,25 @@ struct UpcMCCentralBarrel {
 		int countContributorsToVertex = 0;
 		int countGlobalContributorsToVertex = 0;
 		for (auto& reconstructedBarrelTrack : reconstructedBarrelTracks){
+			float thisTrackMomentum = momentum(reconstructedBarrelTrack.px(),reconstructedBarrelTrack.py(),reconstructedBarrelTrack.pz());
+			float thisTrackTPCsignal = reconstructedBarrelTrack.tpcSignal();
 			if (!selectTrack(reconstructedBarrelTrack,applyTrackCuts)) continue;
-			if (reconstructedBarrelTrack.isPVContributor()) countContributorsToVertex++;
+			// TODO get tag for PV contributor //if (reconstructedBarrelTrack.isPVContributor()) countContributorsToVertex++;
 			if (selectTrack(reconstructedBarrelTrack,2)) countGlobalContributorsToVertex++;
-			if (reconstructedBarrelTrack.has_mcParticle()) {
-				if (reconstructedBarrelTrack.hasTPC()) registry.get<TH2>(HIST("hTPCsignalVsMom"))->Fill(reconstructedBarrelTrack.p(),reconstructedBarrelTrack.tpcSignal());
+			if (reconstructedBarrelTrack.has_udMcParticle()) {
+				if (reconstructedBarrelTrack.hasTPC()) registry.get<TH2>(HIST("hTPCsignalVsMom"))->Fill(thisTrackMomentum,thisTrackTPCsignal);
 				countReconstructedTracksWithGeneratedParticle++;
-				auto generatedParticle = reconstructedBarrelTrack.mcParticle();
+				auto generatedParticle = reconstructedBarrelTrack.udMcParticle();
 				if (generatedParticle.isPhysicalPrimary()) {
 					countPrimaryGeneratedParticlesWithReconstructedTrack++;
 					if (TMath::Abs(generatedParticle.pdgCode()) == 11) {
 						countPrimaryGeneratedElectronsWithReconstructedTrack++;
-						if (reconstructedBarrelTrack.hasTPC()) registry.get<TH2>(HIST("hTPCelectronIdentified"))->Fill(reconstructedBarrelTrack.p(),reconstructedBarrelTrack.tpcSignal());
+						if (reconstructedBarrelTrack.hasTPC()) registry.get<TH2>(HIST("hTPCelectronIdentified"))->Fill(thisTrackMomentum,thisTrackTPCsignal);
 					}
 				}
 			}
 			else countReconstructedTracksWithoutGeneratedParticle++;
-			if (reconstructedBarrelTrack.isPVContributor()) countReconstructedPrimaryTracks++;
+			// TODO get tag for PV contributor //if (reconstructedBarrelTrack.isPVContributor()) countReconstructedPrimaryTracks++;
 		}
 
 		if (printMetaInfo) printCollisionTracksData(reconstructedBarrelTracks,applyTrackCuts);
@@ -220,49 +206,33 @@ struct UpcMCCentralBarrel {
 		for (auto& reconstructedBarrelTrack : reconstructedBarrelTracks){
 			if (!trackSelection(reconstructedBarrelTrack,2)) continue;
 			if (!trackSelection(reconstructedBarrelTrack,5)) continue;
-			if (isEvSelFITempty(reconstructedCollision)) continue;
+			if (isFITempty(reconstructedCollision)) continue;
 			printTrackData(reconstructedBarrelTrack);
-			registry.get<TH1>(HIST("hTrackP"))->Fill(reconstructedBarrelTrack.p());
+			float trkPx = reconstructedBarrelTrack.px();
+			float trkPy = reconstructedBarrelTrack.py();
+			float trkPz = reconstructedBarrelTrack.pz();
+			registry.get<TH1>(HIST("hTrackP"))->Fill(momentum(trkPx,trkPy,trkPz));
 			registry.get<TH1>(HIST("hTrackPt"))->Fill(reconstructedBarrelTrack.pt());
-			registry.get<TH1>(HIST("hTrackPhi"))->Fill(reconstructedBarrelTrack.phi());
-			registry.get<TH1>(HIST("hTrackEta"))->Fill(reconstructedBarrelTrack.eta());
-			if (reconstructedBarrelTrack.has_mcParticle()) {
-				auto mcparticle = reconstructedBarrelTrack.mcParticle();
+			registry.get<TH1>(HIST("hTrackPhi"))->Fill(phi(trkPx,trkPy));
+			registry.get<TH1>(HIST("hTrackEta"))->Fill(eta(trkPx,trkPy,trkPz));
+			if (reconstructedBarrelTrack.has_udMcParticle()) {
+				auto mcparticle = reconstructedBarrelTrack.udMcParticle();
 				registry.get<TH1>(HIST("hPDGcodes"))->Fill(mcparticle.pdgCode());
 				auto pdgInfo = pdg->GetParticle(mcparticle.pdgCode());
 				if (pdgInfo != nullptr) {
 					float mass = pdgInfo->Mass();
-					registry.get<TH1>(HIST("hTrackEnergy"))->Fill(reconstructedBarrelTrack.energy(mass));
-					registry.get<TH1>(HIST("hTrackRapidity"))->Fill(reconstructedBarrelTrack.rapidity(mass));
+					registry.get<TH1>(HIST("hTrackEnergy"))->Fill(energy(mass,trkPx,trkPy,trkPz));
+					registry.get<TH1>(HIST("hTrackRapidity"))->Fill(rapidity(mass,trkPx,trkPy,trkPz));
 				}
 			}
-
 		}
 
 		//
 		// fetching FT0, FDD, FV0 information
 		//
-		std::map<uint64_t, int32_t> BCsWithFT0;
-		// collect BCs with FT0 signals
-		for (const auto& ft0 : ft0s) {
-			uint64_t bc = ft0.bc().globalBC();
-			BCsWithFT0[bc] = ft0.globalIndex();
-		}
-		std::map<uint64_t, int32_t> BCsWithFDD;
-		// collect BCs with FDD signals
-		for (const auto& fdd : fdds) {
-			uint64_t bc = fdd.bc().globalBC();
-			BCsWithFDD[bc] = fdd.globalIndex();
-		}
-		std::map<uint64_t, int32_t> BCsWithFV0A;
-		// collect BCs with FV0A signals
-		for (const auto& fv0a : fv0as) {
-			uint64_t bc = fv0a.bc().globalBC();
-			BCsWithFV0A[bc] = fv0a.globalIndex();
-		}
-		bool FITisEmpty = isFITempty(reconstructedCollision.bcId(), BCsWithFT0, BCsWithFDD, BCsWithFV0A, ft0s, fdds, fv0as);
+		bool FITisEmpty = isFITempty(reconstructedCollision);
 		if (FITisEmpty) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(1);
-		FITisEmpty = isEvSelFITempty(reconstructedCollision);
+		FITisEmpty = isEvSelFITempty(thisCollisionEventSelectionInfo);
 		if (FITisEmpty) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(2);
 		if (countContributorsToVertex == 2) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(3);
 		if (countGlobalContributorsToVertex == 2) registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(4);
@@ -279,17 +249,17 @@ struct UpcMCCentralBarrel {
 		int countTrks = 0;
 		if (countContributorsToVertex == 2) {
 			for (auto& reconstructedBarrelTrack : reconstructedBarrelTracks){
-				if (!reconstructedBarrelTrack.isPVContributor()) continue;
+				// TODO get tag for PV contributor //if (!reconstructedBarrelTrack.isPVContributor()) continue;
 				countTrks++;
 				trackFromVertex.SetPxPyPzE(reconstructedBarrelTrack.px(),reconstructedBarrelTrack.py(),reconstructedBarrelTrack.pz(),
-																	 reconstructedBarrelTrack.energy(constants::physics::MassElectron));
+																	 energy(constants::physics::MassElectron,reconstructedBarrelTrack.px(),reconstructedBarrelTrack.py(),reconstructedBarrelTrack.pz()));
 				sumOfVertexTracks+=trackFromVertex;
 				if (reconstructedBarrelTrack.hasTPC()){
 					if (countTrks == 1) dedxVC1 = reconstructedBarrelTrack.tpcSignal();
 					else if (countTrks == 2) dedxVC2 = reconstructedBarrelTrack.tpcSignal();
 					else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
-					if (reconstructedBarrelTrack.has_mcParticle()) {
-						auto generatedParticle = reconstructedBarrelTrack.mcParticle();
+					if (reconstructedBarrelTrack.has_udMcParticle()) {
+						auto generatedParticle = reconstructedBarrelTrack.udMcParticle();
 						if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11) {
 							if (countTrks == 1) dedxEl1 = reconstructedBarrelTrack.tpcSignal();
 							else if (countTrks == 2) dedxEl2 = reconstructedBarrelTrack.tpcSignal();
@@ -314,38 +284,39 @@ struct UpcMCCentralBarrel {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//   MC TRUTH STARTS HERE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (printMetaInfo) printCollisionGeneratedParticles(generatedParticles,perMcCollision,reconstructedCollision);
+// TODO fix when you can touch mcccollision
+//  if (printMetaInfo) printCollisionGeneratedParticles(generatedParticles,perMcCollision,reconstructedCollision);
+//		TLorentzVector candidateJpsi, electron;
+//		int countGeneratedElectrons = 0;
+//		int countGeneratedPrimaryElectrons = 0;
+//		int countGeneratedPrimaryParticles = 0;
+//		for (auto & generatedParticle: ???){
+//			if (verboseDebug) LOGF(info,"Particle type = %d",generatedParticle.pdgCode());
+//			if (verboseDebug) LOGF(info,"Particle isPhysicalPrimary = %d",generatedParticle.isPhysicalPrimary());
+//			if (generatedParticle.isPhysicalPrimary()) countGeneratedPrimaryParticles++;
+//			if (TMath::Abs(generatedParticle.pdgCode()) == 11) {
+//				countGeneratedElectrons++;
+//			}
+//			if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11){
+//				countGeneratedPrimaryElectrons++;
+//				electron.SetPxPyPzE(generatedParticle.px(),generatedParticle.py(),generatedParticle.pz(),generatedParticle.e());
+//			}
+//		}
+//		if(countGeneratedPrimaryElectrons==2){
+//			int electronCharge = 0;
+//			for (auto & generatedParticle: ???){
+//				if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11){
+//					electron.SetPxPyPzE(generatedParticle.px(),generatedParticle.py(),generatedParticle.pz(),generatedParticle.e());
+//					candidateJpsi+=electron;
+//					if (electronCharge == 0) electronCharge = getElectronCharge(generatedParticle);
+//					else if (electronCharge == getElectronCharge(generatedParticle))continue;
+//				}
+//			}
+//		}
+//		registry.get<TH1>(HIST("hNgeneratedElectronsWithRecoColl"))->Fill(countGeneratedElectrons);
+//		registry.get<TH1>(HIST("hNgeneratedPrimaryElectronsWithRecoColl"))->Fill(countGeneratedPrimaryElectrons);
+//		registry.get<TH1>(HIST("hNgeneratedPrimaryParticlesWithRecoColl"))->Fill(countGeneratedPrimaryParticles);
 
-		TLorentzVector candidateJpsi, electron;
-		int countGeneratedElectrons = 0;
-		int countGeneratedPrimaryElectrons = 0;
-		int countGeneratedPrimaryParticles = 0;
-		for (auto & generatedParticle: thisReconstructedCollisionGeneratedParticles){
-			if (verboseDebug) LOGF(info,"Particle type = %d",generatedParticle.pdgCode());
-			if (verboseDebug) LOGF(info,"Particle isPhysicalPrimary = %d",generatedParticle.isPhysicalPrimary());
-			if (generatedParticle.isPhysicalPrimary()) countGeneratedPrimaryParticles++;
-			if (TMath::Abs(generatedParticle.pdgCode()) == 11) {
-				countGeneratedElectrons++;
-			}
-			if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11){
-				countGeneratedPrimaryElectrons++;
-				electron.SetPxPyPzE(generatedParticle.px(),generatedParticle.py(),generatedParticle.pz(),generatedParticle.e());
-			}
-		}
-		if(countGeneratedPrimaryElectrons==2){
-			int electronCharge = 0;
-			for (auto & generatedParticle: thisReconstructedCollisionGeneratedParticles){
-				if (generatedParticle.isPhysicalPrimary() && TMath::Abs(generatedParticle.pdgCode()) == 11){
-					electron.SetPxPyPzE(generatedParticle.px(),generatedParticle.py(),generatedParticle.pz(),generatedParticle.e());
-					candidateJpsi+=electron;
-					if (electronCharge == 0) electronCharge = getElectronCharge(generatedParticle);
-					else if (electronCharge == getElectronCharge(generatedParticle))continue;
-				}
-			}
-		}
-		registry.get<TH1>(HIST("hNgeneratedElectronsWithRecoColl"))->Fill(countGeneratedElectrons);
-		registry.get<TH1>(HIST("hNgeneratedPrimaryElectronsWithRecoColl"))->Fill(countGeneratedPrimaryElectrons);
-		registry.get<TH1>(HIST("hNgeneratedPrimaryParticlesWithRecoColl"))->Fill(countGeneratedPrimaryParticles);
 
 	} // end processSimulatorLevel
 
@@ -409,26 +380,27 @@ struct UpcMCCentralBarrel {
 		registry.get<TH1>(HIST("hMotherRapidity"))->Fill(candidateJpsi.Rapidity());
 
 
-
 	} // end processGeneratorLevel
 
 	void processTest1(aod::McCollision const& generatedCollision, aod::McParticles const& generatedParticles){
 		if (verboseDebug) LOGF(info,"n particles %d",generatedParticles.size());
-	}// end processGeneratorLevelTest
+	}// end processTest1
 
 	void processTest2(aod::McCollision const& generatedCollision){
 
-	}// end processGeneratorLevelTest
+		LOGF(info,"MC generators ID %d",generatedCollision.generatorsID());
+
+	}// end processTest2
 
 	void processTest3(aod::McParticles const& generatedParticles){
 		if (verboseDebug) LOGF(info,"n particles %d",generatedParticles.size());
-	}// end processGeneratorLevelTest
+	}// end processTest3
 
 	void processTest4(aod::McParticle const& generatedParticle){
 
 		if (generatedParticle.mcCollisionId() < indexCollision) LOGF(warning,"WARNING: previous index %d, this index %d",indexCollision,generatedParticle.mcCollisionId());
 		indexCollision = generatedParticle.mcCollisionId();
-	}// end processGeneratorLevelTest
+	}// end processTest4
 
 	int largestIndex = 0;
 
@@ -440,25 +412,55 @@ struct UpcMCCentralBarrel {
 			if (largestIndex <= generatedCollision.globalIndex()) largestIndex = generatedCollision.globalIndex();
 		}
 
-	}// end processGeneratorLevelTest5
+	}// end processTest5
 
-	void processAnalysisFinished(aod::Collisions const& collisions){
+	void processTest6(aod::Collision const& collision){
 
-		if (verboseInfo) LOGF(info,"####################################### END #######################################");
-		if (verboseDebug) LOGF(info,"countCollisions = %d, largestIndex = %d",countCollisions,largestIndex);
-		isFirstReconstructedCollisions = true;
-		isFirstGeneratedCollisions = true;
+		LOGF(info,"Collision BC id %d",collision.bcId());
 
-	} // end processAnalysisFinished
+	}// end processTest6
+
+
+	void processTestUDtable1(soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDMcTrackLabels>::iterator const& track,
+													 aod::UDMcParticles const& particles){
+
+		LOGF(info,"IDX %d, mask %d",track.udMcParticleId(),track.mcMask());
+		printTrackParticleData(track);
+
+	}// end processTestUDtable1
+
+	void processTestUDtable2(soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA>::iterator const& track){
+
+//		printTrackData(track);
+
+		if (isUDglobalTrack(track)) {
+			LOGF(info,"++++++");
+			LOGF(info,"isUDprimaryTrack(track) %b",isUDprimaryTrack(track));
+			LOGF(info,"isUDinAcceptanceTrack(track) %b",isUDinAcceptanceTrack(track));
+			LOGF(info,"isUDqualityTrack(track) %b",isUDqualityTrack(track));
+		}
+
+
+	}// end processTestUDtable2
+
+	void processTestUDtable3(aod::UDCollision const& collision){
+
+		LOGF(info,"IDX %d, globalBC %d",collision.globalIndex(),collision.globalBC());
+
+	}// end processTestUDtable3
+
 
 	PROCESS_SWITCH(UpcMCCentralBarrel, processSimulatorLevel, "Iterate MC tables with reconstructed data", false);
 	PROCESS_SWITCH(UpcMCCentralBarrel, processGeneratorLevel, "Iterate MC tables with generated data", false);
-	PROCESS_SWITCH(UpcMCCentralBarrel, processTest1, "Test with data", false);
-	PROCESS_SWITCH(UpcMCCentralBarrel, processTest2, "Test with data", false);
-	PROCESS_SWITCH(UpcMCCentralBarrel, processTest3, "Test with data", false);
-	PROCESS_SWITCH(UpcMCCentralBarrel, processTest4, "Test with data", false);
-	PROCESS_SWITCH(UpcMCCentralBarrel, processTest5, "Test with data", false);
-	PROCESS_SWITCH(UpcMCCentralBarrel, processAnalysisFinished, "Simply runs in the end", true);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTest1, "Test MC collision + particles", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTest2, "Test MC collisions", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTest3, "Test MC particles", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTest4, "Test single MC particle", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTest5, "Test index sorting of MC collisions in reco collision", false)
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTest6, "Test single collision", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTestUDtable1, "Test tracks and its particles from UD table", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTestUDtable2, "Test tracks from UD table", false);
+	PROCESS_SWITCH(UpcMCCentralBarrel, processTestUDtable3, "Test collisions from UD table", false);
 
 };
 

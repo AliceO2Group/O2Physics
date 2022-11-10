@@ -21,6 +21,67 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+
+float momentum(float px, float py, float pz)
+// Just a simple function to return momentum
+{
+	return TMath::Sqrt(px*px+py*py+pz*py);
+}
+
+float invariantMass(float E, float px, float py, float pz)
+// Just a simple function to return invariant mass
+{
+	return TMath::Sqrt(E*E-px*px-py*py-pz*py);
+}
+
+float phi(float px, float py)
+// Just a simple function to return azimuthal angle
+{
+	if (px!=0) return TMath::ATan(py/px);
+	return -999.;
+}
+
+float eta(float px, float py, float pz)
+// Just a simple function to return pseudorapidity
+{
+	float eta = -999.;
+	float mom = momentum(px,py,pz);
+	if (mom!=0) eta = TMath::ATanH(pz/mom);
+	if (-1.<eta && eta<1.) return eta;
+	return -999.;
+}
+
+float energy(float mass, float px, float py, float pz)
+// Just a simple function to return track energy
+{
+	return TMath::Sqrt(mass*mass+px*px+py*py+pz*py);
+}
+
+float rapidity(float mass, float px, float py, float pz)
+// Just a simple function to return track rapidity
+{
+	return 0.5*TMath::Log((energy(mass,px,py,pz)+pz)/(energy(mass,px,py,pz)-pz));
+}
+
+template <typename E>
+int getElectronCharge(E generatedElectron)
+// Check if particle is electron or positron and return charge accordingly. Return zero if particle is not electron/positron
+{
+	if (generatedElectron.pdgCode() == 11) return -1;
+	else if (generatedElectron.pdgCode() == -11) return 1;
+	else return 0;
+}
+
+template <typename Es>
+int64_t getEvSelsIndexOfThisCollisionBC(Es infoEvSels, uint64_t globalBC)
+// reads full event selection table end return global index corresponding to given global BC. Return -1 when fails.
+{
+	for (auto& infoEvSel : infoEvSels){
+		if (infoEvSel.bcId() == globalBC) return infoEvSel.globalIndex();
+	}
+	return -1;
+}
+
 template <typename C>
 bool isEvSelFITempty(C collision)
 // Get FIT information from EventSelection task for each collision
@@ -30,20 +91,127 @@ bool isEvSelFITempty(C collision)
 }
 
 template <typename T>
-bool trackSelection(T track, int selection)
+bool isFITempty(T FITinfo)
+// Return true if FIT had no signal
+{
+	// check FT0 signal
+	bool hasNoFT0 = true;
+	bool isBB = FITinfo.bbFT0A() || FITinfo.bbFT0C();
+	bool isBG = FITinfo.bgFT0A() || FITinfo.bgFT0C();
+	hasNoFT0 = !isBB && !isBG;
+	// check FV0 signal
+	bool hasNoFV0A = true;
+	isBB = FITinfo.bbFV0A();
+	isBG = FITinfo.bgFV0A();
+	hasNoFV0A = !isBB && !isBG;
+	// check FDD signal
+	bool hasNoFDD = true;
+	isBB = FITinfo.bbFDDA() || FITinfo.bbFDDC();
+	isBG = FITinfo.bgFDDA() || FITinfo.bgFDDC();
+	hasNoFDD = !isBB && !isBG;
+
+	if (hasNoFT0 && hasNoFV0A && hasNoFDD) return true;
+	else return false;
+}
+
+template <typename T>
+bool isUDprimaryTrack(T udtrack)
+// TrackSelection::kPrimaryTracks = kGoldenChi2 | kDCAxy | kDCAz;
+{
+	// temporary hardcoded input
+	float maxDcaXY = 0.5;// in mm
+	float maxDcaZ = 2.;// in mm
+	// selection GoldenChi2
+	// seems to be always true for Run 3... at least it is not coded
+	// selection DCAxy
+	if (abs(udtrack.dcaXY()) > maxDcaXY) return false;
+	// selection DCAz
+	if (abs(udtrack.dcaZ()) > maxDcaZ) return false;
+	// passed all selections
+	return true;
+}
+
+template <typename T>
+bool isUDinAcceptanceTrack(T udtrack)
+// TrackSelection::kInAcceptanceTracks = kPtRange | kEtaRange;
+{
+	// temporary hardcoded input
+	float minPt = 0.;// in GeV
+	float minEta = -10.;
+	float maxPt = 10.;// in GeV
+	float maxEta = 10.;
+	float currentEta = eta(udtrack.px(),udtrack.py(),udtrack.pz());
+	// selection pt
+	if (udtrack.pt() < minPt || udtrack.pt() > maxPt) return false;
+	// selection eta
+	if (currentEta < minEta || currentEta > maxEta) return false;
+	// passed all selections
+	return true;
+}
+
+template <typename T>
+bool isUDqualityTrack(T udtrack)
+// TrackSelection::kQualityTracks = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
+{
+	// temporary hardcoded input
+	float cutITSchi2ndf = 6.;
+	uint8_t cutNitsClusters = 4;
+	float cutTPCchi2ndf = 4.;
+	int16_t cutNtpcClusters = 0;
+	int16_t cutNtpcCrossedRows = 70;
+	float cutCrossedRowsOverNclusters = 0.8;
+	// track type
+	// ignoring for the moment (its either innermost update track (0) or propagated track (1), the rest is Run 2)
+	// ITS hits
+	// ignoring for the moment (some crazy function which I haven't found anywhere to be used)
+	// ITS refit
+	if (!udtrack.hasITS()) return false;
+	// ITS chi2/ndf
+	if (udtrack.itsChi2NCl() > cutITSchi2ndf) return false;
+	// ITS n clusters
+	if (udtrack.itsNCls() < cutNitsClusters) return false;
+	// TPC refit
+	if (!udtrack.hasTPC()) return false;
+	// TPC chi2/ndf
+	if (udtrack.tpcChi2NCl() > cutTPCchi2ndf) return false;
+	// TPC n clusters
+	int16_t nFoundClusters = udtrack.tpcNClsFindable() - udtrack.tpcNClsFindableMinusFound();
+	if (nFoundClusters < cutNtpcClusters) return false;
+	// TPC crossed rows
+	if (udtrack.tpcNClsCrossedRows() < cutNtpcCrossedRows) return false;
+	// TPC crossed rows over n clusters
+	float crossedRowsOverNclusters = (float)udtrack.tpcNClsCrossedRows()/nFoundClusters;
+	if (crossedRowsOverNclusters < cutCrossedRowsOverNclusters) return false;
+	// passed all selections
+	return true;
+}
+
+template <typename T>
+bool isUDglobalTrack(T udtrack)
+// combine quality+primary+acceptance
+{
+	if (!isUDinAcceptanceTrack(udtrack)) return false;
+	if (!isUDprimaryTrack(udtrack)) return false;
+	if (!isUDqualityTrack(udtrack)) return false;
+	return true;
+}
+
+template <typename T>
+bool trackSelection(T udtrack, int selection)
 // Do selection of reconstructed track
 {
+
 	if (selection==0) return true;
 	// Is central barrel propagated track
-	if (selection==1 && track.trackType()!=1) return false;
+	// TODO //if (selection==1 && track.trackType()!=1) return false;
 	// Is central barrel vertex contributor
-	if (selection==2 && track.isPVContributor()!=1) return false;
+	// TODO //if (selection==2 && track.isPVContributor()!=1) return false;
 	// Is central barrel track selection global track
-	if (selection==3 && track.isQualityTrack()!=1) return false;
+ 	if (selection==3 && isUDqualityTrack(udtrack)!=1) return false;
 	// Is central barrel track selection global track
-	if (selection==4 && track.isPrimaryTrack()!=1) return false;
+ 	if (selection==4 && isUDprimaryTrack(udtrack)!=1) return false;
 	// Is central barrel track selection global track
-	if (selection==5 && track.isGlobalTrack()!=1) return false;
+ 	if (selection==5 && isUDglobalTrack(udtrack)!=1) return false;
 
 	return true;
 }
@@ -59,15 +227,6 @@ bool selectTrack(T track, int setOfCuts)
 	if (setOfCuts<3 && trackSelection(track,2)!=1) return false;
 
 	return true;
-}
-
-template <typename E>
-int getElectronCharge(E generatedElectron)
-// Check if particle is electron or positron and return charge accordingly. Return zero if particle is not electron/positron
-{
-	if (generatedElectron.pdgCode() == 11) return -1;
-	else if (generatedElectron.pdgCode() == -11) return 1;
-	else return 0;
 }
 
 template < typename C>
@@ -154,166 +313,35 @@ void fillTrackSelectionHistogram(HistogramRegistry &registry, Ts tracks, C colli
 		registry.get<TH1>(HIST("hEffectOfTrackSelections"))->GetXaxis()->ChangeLabel(16,70,0.02,30,-1,-1,"TPC+TOF");
 		if (hasITS && hasTPC && hasTOF) registry.get<TH1>(HIST("hEffectOfTrackSelections"))->Fill(16);
 		registry.get<TH1>(HIST("hEffectOfTrackSelections"))->GetXaxis()->ChangeLabel(17,70,0.02,30,-1,-1,"ITS+TPC+TOF");
-		if (isEvSelFITempty(collision)) registry.get<TH1>(HIST("hEffectOfTrackSelections"))->Fill(17);
+		if (isFITempty(collision)) registry.get<TH1>(HIST("hEffectOfTrackSelections"))->Fill(17);
 		registry.get<TH1>(HIST("hEffectOfTrackSelections"))->GetXaxis()->ChangeLabel(18,70,0.02,30,-1,-1,"FIT empty");
 
 	}
 }
 
-template <typename FTs, typename FDs, typename FVs>
-bool isFITempty(uint64_t bc,
-                std::map<uint64_t, int32_t>& bcsWithFT0,
-                std::map<uint64_t, int32_t>& bcsWithFDD,
-                std::map<uint64_t, int32_t>& bcsWithFV0A,
-                FTs ft0s, FDs fdds, FVs fv0as)
-// Return true if FIT had no signal
+template <typename T>
+void printTrackData(T track)
+// Function to print basic info on track
 {
-	// FIT beam-gas flags
-	bool isBGFT0A, isBGFT0C, isBGFV0A, isBGFDDA, isBGFDDC;
-	// FIT beam-beam flags
-	bool isBBFT0A, isBBFT0C, isBBFV0A, isBBFDDA, isBBFDDC;
-
-	// use "default" parameters
-	float fV0ABBlower = -3.0;  // ns
-	float fV0ABBupper = +2.0;  // ns
-	float fV0ABGlower = 2.0;   // ns
-	float fV0ABGupper = 5.0;   // ns
-
-	float fFDABBlower = -3.0;  // ns
-	float fFDABBupper = +3.0;  // ns
-	float fFDABGlower = 10.0;  // ns
-	float fFDABGupper = 13.0;  // ns
-	float fFDCBBlower = -3.0;  // ns
-	float fFDCBBupper = +3.0;  // ns
-	float fFDCBGlower = -10.0; // ns
-	float fFDCBGupper = -3.0;  // ns
-
-	float fT0ABBlower = -1.0;  // ns
-	float fT0ABBupper = +1.0;  // ns
-	float fT0CBBlower = -1.0;  // ns
-	float fT0CBBupper = +1.0;  // ns
-	float fT0ABGlower = +1.0;  // ns
-	float fT0ABGupper = +4.0;  // ns
-	float fT0CBGlower = -4.0;  // ns
-	float fT0CBGupper = -1.0;  // ns
-
-	float timeFV0A = -999.f;
-	float timeFT0A = -999.f;
-	float timeFT0C = -999.f;
-	float timeFDDA = -999.f;
-	float timeFDDC = -999.f;
-	float timeV0ABG = -999.f;
-	float timeT0ABG = -999.f;
-	float timeT0CBG = -999.f;
-	float timeFDABG = -999.f;
-	float timeFDCBG = -999.f;
-
-	// check FIT info in the same BC
-	auto it = bcsWithFT0.find(bc);
-	if (it != bcsWithFT0.end()) {
-		const auto& ft0 = ft0s.iteratorAt(it->second);
-		timeFT0A = ft0.timeA();
-		timeFT0C = ft0.timeC();
-	}
-
-	it = bcsWithFDD.find(bc);
-	if (it != bcsWithFDD.end()) {
-		const auto& fdd = fdds.iteratorAt(it->second);
-		timeFDDA = fdd.timeA();
-		timeFDDC = fdd.timeC();
-	}
-
-	it = bcsWithFV0A.find(bc);
-	if (it != bcsWithFV0A.end()) {
-		const auto& fv0a = fv0as.iteratorAt(it->second);
-		timeFV0A = fv0a.time();
-	}
-
-	// check beam-gas
-	it = bcsWithFT0.find(bc - 1);
-	if (it != bcsWithFT0.end()) {
-		const auto& ft0 = ft0s.iteratorAt(it->second);
-		timeT0ABG = ft0.timeA();
-		timeT0CBG = ft0.timeC();
-	}
-
-	it = bcsWithFDD.find(bc - 5);
-	if (it != bcsWithFDD.end()) {
-		const auto& ft0 = fdds.iteratorAt(it->second);
-		timeFDABG = ft0.timeA();
-		timeFDCBG = ft0.timeC();
-	}
-
-	it = bcsWithFV0A.find(bc - 1);
-	if (it != bcsWithFV0A.end()) {
-		const auto& fv0a = fv0as.iteratorAt(it->second);
-		timeV0ABG = fv0a.time();
-	}
-
-	// beam-gas flags
-	isBGFV0A = timeV0ABG > fV0ABGlower && timeV0ABG < fV0ABGupper;
-	isBGFDDA = timeFDABG > fFDABGlower && timeFDABG < fFDABGupper;
-	isBGFDDC = timeFDCBG > fFDCBGlower && timeFDCBG < fFDCBGupper;
-	isBGFT0A = timeT0ABG > fT0ABGlower && timeT0ABG < fT0ABGupper;
-	isBGFT0C = timeT0CBG > fT0CBGlower && timeT0CBG < fT0CBGupper;
-
-	// beam-beam flags
-	isBBFT0A = timeFT0A > fT0ABBlower && timeFT0A < fT0ABBupper;
-	isBBFT0C = timeFT0C > fT0CBBlower && timeFT0C < fT0CBBupper;
-	isBBFV0A = timeFV0A > fV0ABBlower && timeFV0A < fV0ABBupper;
-	isBBFDDA = timeFDDA > fFDABBlower && timeFDDA < fFDABBupper;
-	isBBFDDC = timeFDDC > fFDCBBlower && timeFDDC < fFDCBBupper;
-
-	// check FT0 signal
-	bool hasNoFT0 = true;
-	bool isBB = isBBFT0A || isBBFT0C;
-	bool isBG = isBGFT0A || isBGFT0C;
-	hasNoFT0 = !isBB && !isBG;
-	// check FV0 signal
-	bool hasNoFV0A = true;
-	isBB = isBBFV0A;
-	isBG = isBGFV0A;
-	hasNoFV0A = !isBB && !isBG;
-	// check FDD signal
-	bool hasNoFDD = true;
-	isBB = isBBFDDA || isBBFDDC;
-	isBG = isBGFDDA || isBGFDDC;
-	hasNoFDD = !isBB && !isBG;
-
-	if (hasNoFT0 && hasNoFV0A && hasNoFDD) return true;
-	else return false;
-}
-
-float invariantMass(float E, float px, float py, float pz)
-// Just a simple function to return invariant mass
-{
-	float im = E*E - px*px - py*py - pz*py;
-	return TMath::Sqrt(im);
-}
-
-template <typename C, typename MCs, typename P>
-void printCollisionData(C collision, MCs generatedCollisions, P slice)
-// Function to print collision info
-{
-
-	// sliced TF generated collisions according to BC id of the current reconstructed collision
-	auto slicedGeneratedCollisions = generatedCollisions.sliceBy(slice,collision.bcId());
-
-	LOGF(info,"Reconstructed collision idx: %d; Associated generated collision idx: %d",
-			 collision.globalIndex(),collision.mcCollision().globalIndex());
-	LOGF(info,"%d generated collisions in bunch crossing %d related to this reconstructed collisions",
-	     slicedGeneratedCollisions.size(),collision.bcId());
+	// TODO return to this version once PVContributor is fixed
+	//		LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d;"
+	//							" Associated MC particle idx %d, primary %d, PDG code %d",
+	LOGF(info,"Track idx %d, hasITS %d, hasTPC %d, hasTOF %d",
+	     track.globalIndex(),track.hasITS(),track.hasTPC(),track.hasTOF());
 }
 
 template <typename T>
-void printTrackData(T track)
+void printTrackParticleData(T track)
 // Function to print basic info on track and its associated mc particle
 {
-	if (track.has_mcParticle()) {
-		auto mcparticle = track.mcParticle();
-		LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d;"
-							" Associated MC particle idx %d, primary %d, PDG code %d",
-		     track.globalIndex(),track.isPVContributor(),track.hasITS(),track.hasTPC(),track.hasTOF(),
+	LOGF(info,"Track idx %d, hasITS %d, hasTPC %d, hasTOF %d",
+	     track.globalIndex(),track.hasITS(),track.hasTPC(),track.hasTOF());
+	if (track.has_udMcParticle()) {
+		auto mcparticle = track.udMcParticle();
+		// TODO return to this version once PVContributor is fixed
+		//		LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d;"
+		//							" Associated MC particle idx %d, primary %d, PDG code %d",
+		LOGF(info," Associated MC particle idx %d, primary %d, PDG code %d",
 		     mcparticle.globalIndex(),mcparticle.isPhysicalPrimary(), mcparticle.pdgCode());
 	}
 }
@@ -325,7 +353,7 @@ void printCollisionTracksData(Ts tracks, int setOfCuts)
 	int countNoMCparticle = 0;
 	for (auto& track : tracks){
 		if (!selectTrack(track,setOfCuts)) continue;
-		if (track.has_mcParticle()) {
+		if (track.has_udMcParticle()) {
 			printTrackData(track);
 		}
 		else countNoMCparticle++;
