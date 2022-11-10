@@ -2171,7 +2171,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<int> nCrossedRowsMinV0Daugh{"nCrossedRowsMinV0Daugh", 50, "min crossed rows V0 daughters"};
 
   // track cuts for V0 daughters
-  Configurable<double> etaMax{"etaMax", 1.1, "max. pseudorapidity V0 daughters"};
+  Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
   Configurable<double> ptMin{"ptMin", 0.05, "min. pT V0 daughters"};
 
   // bachelor cuts
@@ -2345,9 +2345,9 @@ struct HfTrackIndexSkimCreatorCascades {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMin << ")");
           continue;
         }
-        if (std::abs(trackV0DaughPos.eta()) > etaMax || // to the filters? I can't for now, it is not in the tables
-            std::abs(trackV0DaughNeg.eta()) > etaMax) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to eta --> pos " << trackV0DaughPos.eta() << ", neg " << trackV0DaughNeg.eta() << " (cut " << etaMax << ")");
+        if (std::abs(trackV0DaughPos.eta()) > etaMaxV0Daugh || // to the filters? I can't for now, it is not in the tables
+            std::abs(trackV0DaughNeg.eta()) > etaMaxV0Daugh) {
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to eta --> pos " << trackV0DaughPos.eta() << ", neg " << trackV0DaughNeg.eta() << " (cut " << etaMaxV0Daugh << ")");
           continue;
         }
 
