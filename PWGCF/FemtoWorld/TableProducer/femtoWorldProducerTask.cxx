@@ -110,7 +110,7 @@ struct femtoWorldProducerTask {
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
   Configurable<bool> ConfStorePhi{"ConfStorePhi", true, "True: store Phi table"};
-  // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
+  // just sanity check to make sure in case there are problems in conversion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
@@ -340,7 +340,7 @@ struct femtoWorldProducerTask {
     }
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fullfilled:
+    // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {

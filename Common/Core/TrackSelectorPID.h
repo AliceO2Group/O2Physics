@@ -20,6 +20,7 @@
 #include <TPDGCode.h>
 
 #include "Framework/Logger.h"
+#include "ReconstructionDataFormats/PID.h"
 
 /// Class for track selection using PID detectors
 
@@ -51,23 +52,23 @@ class TrackSelectorPID
     mPdg = std::abs(pdg);
     switch (mPdg) {
       case kElectron: {
-        mSpecies = track::PID::Electron;
+        mSpecies = o2::track::PID::Electron;
         break;
       }
       case kMuonMinus: {
-        mSpecies = track::PID::Muon;
+        mSpecies = o2::track::PID::Muon;
         break;
       }
       case kPiPlus: {
-        mSpecies = track::PID::Pion;
+        mSpecies = o2::track::PID::Pion;
         break;
       }
       case kKPlus: {
-        mSpecies = track::PID::Kaon;
+        mSpecies = o2::track::PID::Kaon;
         break;
       }
       case kProton: {
-        mSpecies = track::PID::Proton;
+        mSpecies = o2::track::PID::Proton;
         break;
       }
       default: {
@@ -549,8 +550,8 @@ class TrackSelectorPID
   }
 
  private:
-  uint mPdg = kPiPlus; ///< PDG code of the expected particle
-  uint mSpecies = track::PID::Pion; ///< Expected species of the track
+  uint mPdg = kPiPlus;                  ///< PDG code of the expected particle
+  uint mSpecies = o2::track::PID::Pion; ///< Expected species of the track
 
   // TPC
   float mPtTPCMin = 0.;                ///< minimum pT for TPC PID [GeV/c]

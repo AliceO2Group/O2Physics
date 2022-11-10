@@ -948,9 +948,9 @@ struct QaEfficiency {
       }
     }
 
-    auto& h = histosPos;
-    if (charge == 1) {
-      h = histosNeg;
+    HistogramRegistry* h = &histosPos;
+    if constexpr (charge == 1) {
+      h = &histosNeg;
     }
 
     constexpr int histogramIndex = id + charge * nSpecies;
@@ -964,70 +964,70 @@ struct QaEfficiency {
     histos.fill(HIST("MC/trackSelection"), 19 + id);
 
     if (passedITS) {
-      h.fill(HIST(hPtIts[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtIts[histogramIndex]), mcParticle.pt());
     }
     if (passedTPC) {
-      h.fill(HIST(hPtTpc[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtTpc[histogramIndex]), mcParticle.pt());
     }
     if (passedITS && passedTPC) {
-      h.fill(HIST(hPItsTpc[histogramIndex]), mcParticle.p());
-      h.fill(HIST(hPtItsTpc[histogramIndex]), mcParticle.pt());
-      h.fill(HIST(hEtaItsTpc[histogramIndex]), mcParticle.eta());
-      h.fill(HIST(hYItsTpc[histogramIndex]), mcParticle.y());
-      h.fill(HIST(hPhiItsTpc[histogramIndex]), mcParticle.phi());
+      h->fill(HIST(hPItsTpc[histogramIndex]), mcParticle.p());
+      h->fill(HIST(hPtItsTpc[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hEtaItsTpc[histogramIndex]), mcParticle.eta());
+      h->fill(HIST(hYItsTpc[histogramIndex]), mcParticle.y());
+      h->fill(HIST(hPhiItsTpc[histogramIndex]), mcParticle.phi());
 
-      h.fill(HIST(hPTrkItsTpc[histogramIndex]), track.p());
-      h.fill(HIST(hPtTrkItsTpc[histogramIndex]), track.pt());
-      h.fill(HIST(hEtaTrkItsTpc[histogramIndex]), track.eta());
-      h.fill(HIST(hPhiTrkItsTpc[histogramIndex]), track.phi());
+      h->fill(HIST(hPTrkItsTpc[histogramIndex]), track.p());
+      h->fill(HIST(hPtTrkItsTpc[histogramIndex]), track.pt());
+      h->fill(HIST(hEtaTrkItsTpc[histogramIndex]), track.eta());
+      h->fill(HIST(hPhiTrkItsTpc[histogramIndex]), track.phi());
 
       if (doPtEta) {
-        h.fill(HIST(hPtEtaItsTpc[histogramIndex]), mcParticle.pt(), mcParticle.eta());
-        h.fill(HIST(hPtEtaTrkItsTpc[histogramIndex]), track.pt(), track.eta());
+        h->fill(HIST(hPtEtaItsTpc[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+        h->fill(HIST(hPtEtaTrkItsTpc[histogramIndex]), track.pt(), track.eta());
         if (passedTOF) {
-          h.fill(HIST(hPtEtaItsTpcTof[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+          h->fill(HIST(hPtEtaItsTpcTof[histogramIndex]), mcParticle.pt(), mcParticle.eta());
         }
       }
     }
     if (passedITS && passedTOF) {
-      h.fill(HIST(hPtItsTof[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtItsTof[histogramIndex]), mcParticle.pt());
     }
     if (passedTPC && passedTOF) {
-      h.fill(HIST(hPtTpcTof[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtTpcTof[histogramIndex]), mcParticle.pt());
     }
     if (passedITS && passedTPC && passedTOF) {
-      h.fill(HIST(hPItsTpcTof[histogramIndex]), mcParticle.p());
-      h.fill(HIST(hPtItsTpcTof[histogramIndex]), mcParticle.pt());
-      h.fill(HIST(hEtaItsTpcTof[histogramIndex]), mcParticle.eta());
-      h.fill(HIST(hYItsTpcTof[histogramIndex]), mcParticle.y());
-      h.fill(HIST(hPhiItsTpcTof[histogramIndex]), mcParticle.phi());
+      h->fill(HIST(hPItsTpcTof[histogramIndex]), mcParticle.p());
+      h->fill(HIST(hPtItsTpcTof[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hEtaItsTpcTof[histogramIndex]), mcParticle.eta());
+      h->fill(HIST(hYItsTpcTof[histogramIndex]), mcParticle.y());
+      h->fill(HIST(hPhiItsTpcTof[histogramIndex]), mcParticle.phi());
     }
 
     if (mcParticle.isPhysicalPrimary()) {
       if (passedITS) {
-        h.fill(HIST(hPtItsPrm[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtItsPrm[histogramIndex]), mcParticle.pt());
       }
       if (passedITS && passedTPC) {
-        h.fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
-        h.fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
+        h->fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
         if (passedTOF) {
-          h.fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
+          h->fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
         }
       }
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       if (passedITS && passedTPC) {
-        h.fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
-        h.fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
+        h->fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
         if (passedTOF) {
-          h.fill(HIST(hPtItsTpcTofStr[histogramIndex]), mcParticle.pt());
+          h->fill(HIST(hPtItsTpcTofStr[histogramIndex]), mcParticle.pt());
         }
       }
     } else { // Material
       if (passedITS && passedTPC) {
-        h.fill(HIST(hPtItsTpcMat[histogramIndex]), mcParticle.pt());
-        h.fill(HIST(hPtTrkItsTpcMat[histogramIndex]), track.pt());
+        h->fill(HIST(hPtItsTpcMat[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtTrkItsTpcMat[histogramIndex]), track.pt());
         if (passedTOF) {
-          h.fill(HIST(hPtItsTpcTofMat[histogramIndex]), mcParticle.pt());
+          h->fill(HIST(hPtItsTpcTofMat[histogramIndex]), mcParticle.pt());
         }
       }
     }
@@ -1051,9 +1051,9 @@ struct QaEfficiency {
       }
     }
 
-    auto& h = histosPos;
+    HistogramRegistry* h = &histosPos;
     if (charge == 1) {
-      h = histosNeg;
+      h = &histosNeg;
     }
 
     constexpr int histogramIndex = id + charge * nSpecies;
@@ -1063,24 +1063,24 @@ struct QaEfficiency {
     }
     histos.fill(HIST("MC/particleSelection"), 7 + id);
 
-    h.fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
-    h.fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
+    h->fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
+    h->fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
 
     if (mcParticle.isPhysicalPrimary()) {
-      h.fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
     } else {
       if (mcParticle.getProcess() == 4) { // Particle deday
-        h.fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
       } else { // Material
-        h.fill(HIST(hPtGeneratedMat[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtGeneratedMat[histogramIndex]), mcParticle.pt());
       }
     }
 
-    h.fill(HIST(hEtaGenerated[histogramIndex]), mcParticle.eta());
-    h.fill(HIST(hYGenerated[histogramIndex]), mcParticle.y());
-    h.fill(HIST(hPhiGenerated[histogramIndex]), mcParticle.phi());
+    h->fill(HIST(hEtaGenerated[histogramIndex]), mcParticle.eta());
+    h->fill(HIST(hYGenerated[histogramIndex]), mcParticle.y());
+    h->fill(HIST(hPhiGenerated[histogramIndex]), mcParticle.phi());
     if (doPtEta) {
-      h.fill(HIST(hPtEtaGenerated[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+      h->fill(HIST(hPtEtaGenerated[histogramIndex]), mcParticle.pt(), mcParticle.eta());
     }
   }
 

@@ -117,7 +117,7 @@ struct HFCandidateCreatorChic {
         continue;
       }
 
-      // propogate prong tracks to Jpsi vertex
+      // propagate prong tracks to Jpsi vertex
       prong0TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
       prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();

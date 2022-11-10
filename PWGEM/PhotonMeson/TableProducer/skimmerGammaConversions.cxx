@@ -126,7 +126,7 @@ struct skimmerGammaConversions {
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking(); // no idea wether this is usefull or not, there is no documentation
+    ccdb->setLocalObjectValidityChecking(); // no idea wether this is useful or not, there is no documentation
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
     ccdb->setCreatedNotAfter(nolaterthan.value); // was like that in the tutorial efficiencyPerRun
@@ -385,8 +385,8 @@ struct skimmerGammaConversions {
     o2::track::TrackParametrization<TrackPrecision> trackPosInformation = getTrackPar(lTrackPos); //first get an object that stores Track information (positive)
     o2::track::TrackParametrization<TrackPrecision> trackNegInformation = getTrackPar(lTrackNeg); //first get an object that stores Track information (negative)
 
-    o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
-    o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
+    o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
+    o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
 
     conversionPosition[0] = (helixPos.xC * helixNeg.rC + helixNeg.xC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
     conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.

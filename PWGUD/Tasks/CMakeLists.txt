@@ -36,7 +36,7 @@ o2physics_add_dpl_workflow(diff-qa
 
 o2physics_add_dpl_workflow(dgcand-analyzer
                            SOURCES DGCandAnalyzer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::DGPIDSelector
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::UDGoodRunSelector O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upccand-analyzer

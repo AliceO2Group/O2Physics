@@ -362,7 +362,7 @@ struct HfTagSelTracks {
       registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionY, axisCollisionYOriginal});
       registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
       registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
-      registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors orginal PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
+      registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
 
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
@@ -987,7 +987,7 @@ struct HfTrackIndexSkimsCreator {
       registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionY, axisCollisionYOriginal});
       registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
       registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
-      registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors orginal PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
+      registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
 
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
@@ -1483,8 +1483,8 @@ struct HfTrackIndexSkimsCreator {
 
     // auto centrality = collision.centV0M(); //FIXME add centrality when option for variations to the process function appears
 
-    int n2ProngBit = BIT(n2ProngDecays) - 1; // bit value for 2-prong candidates where each candidiate is one bit and they are all set to 1
-    int n3ProngBit = BIT(n3ProngDecays) - 1; // bit value for 3-prong candidates where each candidiate is one bit and they are all set to 1
+    int n2ProngBit = BIT(n2ProngDecays) - 1; // bit value for 2-prong candidates where each candidate is one bit and they are all set to 1
+    int n3ProngBit = BIT(n3ProngDecays) - 1; // bit value for 3-prong candidates where each candidate is one bit and they are all set to 1
 
     bool cutStatus2Prong[n2ProngDecays][nCuts2Prong];
     bool cutStatus3Prong[n3ProngDecays][nCuts3Prong];

@@ -101,7 +101,9 @@ void applyFwdCuts(UPCCutparHolder& upcCuts, const ForwardTracks::iterator& track
 template <typename TSelectorsArray>
 void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& track, TSelectorsArray& barrelSelectors)
 {
-  barrelSelectors[kBarrelSelHasTOF] = track.hasTOF();                                                             // require TOF match
+  barrelSelectors[kBarrelSelHasTOF] = true;
+  if (upcCuts.getRequireTOF())
+    barrelSelectors[kBarrelSelHasTOF] = track.hasTOF();                                                           // require TOF match if needed
   barrelSelectors[kBarrelSelPt] = track.pt() > upcCuts.getBarPtLow() && track.pt() < upcCuts.getBarPtHigh();      // check Pt cuts
   barrelSelectors[kBarrelSelEta] = track.eta() > upcCuts.getBarEtaLow() && track.eta() < upcCuts.getBarEtaHigh(); // check pseudorapidity cuts
 

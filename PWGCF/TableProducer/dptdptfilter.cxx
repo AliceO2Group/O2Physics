@@ -53,7 +53,7 @@ using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA
 using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
 /// \enum MatchRecoGenSpecies
-/// \brief The species considered by the matching tast
+/// \brief The species considered by the matching test
 enum MatchRecoGenSpecies {
   kDptDptCharged = 0, ///< charged particle/track
   kDptDptElectron,    ///< electron
@@ -434,7 +434,7 @@ struct DptDptFilter {
     }
     traceCollId0 = cfgTraceCollId0;
 
-    /* if the system type is not known at this time, we have to put the initalization somewhere else */
+    /* if the system type is not known at this time, we have to put the initialization somewhere else */
     fSystem = getSystemType(cfgSystem);
     fDataType = getDataType(cfgDataType);
     fPDG = TDatabasePDG::Instance();

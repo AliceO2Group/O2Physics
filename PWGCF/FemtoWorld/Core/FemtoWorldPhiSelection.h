@@ -292,7 +292,7 @@ void FemtoWorldPhiSelection::init(HistogramRegistry* registry)
 
     mHistogramRegistry->add("PhiQA/hInvMassPhiNoCuts", "No cuts Phi", kTH1F, {massAxisPhi});
     mHistogramRegistry->add("PhiQA/hInvMassPhiInvMassCut", "Invariant mass cut Phi", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minumum Pt cut", kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minimum Pt cut", kTH1F, {massAxisPhi});
     mHistogramRegistry->add("PhiQA/hInvMassPhiPtMax", "Maximum Pt cut", kTH1F, {massAxisPhi});
     mHistogramRegistry->add("PhiQA/hInvMassPhiDCAPhiDaugh", "Phi-daughters DCA cut", kTH1F, {massAxisPhi});
     mHistogramRegistry->add("PhiQA/hInvMassPhiCPA", "CPA cut", kTH1F, {massAxisPhi});
@@ -353,7 +353,7 @@ void FemtoWorldPhiSelection::initPhi(HistogramRegistry* registry)
 
     mHistogramRegistry->add("PhiQA/hInvMasPhiNoCuts", "No cuts", kTH1F, {massAxisPhi});
     mHistogramRegistry->add("PhiQA/hInvMassPhiInvMassCut", "Invariant mass cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minumum Pt cut", kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minimum Pt cut", kTH1F, {massAxisPhi});
     mHistogramRegistry->add("PhiQA/hInvMassPhiPtMax", "Maximum Pt cut", kTH1F, {massAxisPhi});
     // mHistogramRegistry->add("PhiQA/hInvMassPhiDCAPhiDaugh", "Phi-daughters DCA cut", kTH1F, {massAxisPhi});
     // mHistogramRegistry->add("PhiQA/hInvMassPhiCPA", "CPA cut", kTH1F, {massAxisPhi});
