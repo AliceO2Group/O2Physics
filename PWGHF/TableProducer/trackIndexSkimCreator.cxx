@@ -2185,7 +2185,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
 
   // cascade cuts
-  Configurable<double> cutCascPtCandMin{"cutCascPtCandMin", -1., "min. pT of the cascade candidate"};              // PbPb 2018: use 1
+  Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};              // PbPb 2018: use 1
   Configurable<double> cutCascInvMassLc{"cutCascInvMassLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
   // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
 
@@ -2399,8 +2399,8 @@ struct HfTrackIndexSkimCreatorCascades {
 
         // cascade candidate pT cut
         auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
-        if (ptCascCand < cutCascPtCandMin) {
-          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to pt cut: " << ptCascCand << " (cut " << cutCascPtCandMin << ")");
+        if (ptCascCand < ptCascCandMin) {
+          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to pt cut: " << ptCascCand << " (cut " << ptCascCandMin << ")");
           continue;
         }
 
