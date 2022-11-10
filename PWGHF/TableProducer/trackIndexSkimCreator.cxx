@@ -2168,7 +2168,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
   // track cuts for V0 daughters
   Configurable<bool> tpcRefitV0Daugh{"tpcRefitV0Daugh", true, "request TPC refit V0 daughters"};
-  Configurable<int> minCrossedRowsV0Daugh{"minCrossedRowsV0Daugh", 50, "min crossed rows V0 daughters"};
+  Configurable<int> nCrossedRowsMinV0Daugh{"nCrossedRowsMinV0Daugh", 50, "min crossed rows V0 daughters"};
 
   // track cuts for V0 daughters
   Configurable<double> etaMax{"etaMax", 1.1, "max. pseudorapidity V0 daughters"};
@@ -2329,8 +2329,8 @@ struct HfTrackIndexSkimCreatorCascades {
             continue;
           }
         }
-        if (trackV0DaughPos.tpcNClsCrossedRows() < minCrossedRowsV0Daugh ||
-            trackV0DaughNeg.tpcNClsCrossedRows() < minCrossedRowsV0Daugh) {
+        if (trackV0DaughPos.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh ||
+            trackV0DaughNeg.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minCrossedRows");
           continue;
         }
