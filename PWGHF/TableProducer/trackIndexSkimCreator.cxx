@@ -2179,7 +2179,7 @@ struct HfTrackIndexSkimCreatorCascades {
   //  Configurable<double> ptminbach{"ptminbach", -1., "min. track pT bachelor"};
 
   // v0 cuts
-  Configurable<double> cosPAV0{"cosPAV0", .995, "CosPA V0"};                 // as in the task that create the V0s
+  Configurable<double> cpaV0Min{"cpaV0Min", .995, "min. cos PA V0"};                 // as in the task that create the V0s
   Configurable<double> dcaXYNegToPV{"dcaXYNegToPV", .1, "DCA_XY Neg To PV"}; // check: in HF Run 2, it was 0 at filtering
   Configurable<double> dcaXYPosToPV{"dcaXYPosToPV", .1, "DCA_XY Pos To PV"}; // check: in HF Run 2, it was 0 at filtering
   Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
@@ -2358,8 +2358,8 @@ struct HfTrackIndexSkimCreatorCascades {
         }
 
         // V0 cosPointingAngle selection
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cosPAV0) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cosPAV0 << ")");
+        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cpaV0Min) {
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cpaV0Min << ")");
           continue;
         }
 
