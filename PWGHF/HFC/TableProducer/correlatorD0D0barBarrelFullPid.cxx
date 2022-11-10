@@ -103,7 +103,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<std::vector<double>> binsPt{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
   Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
@@ -155,7 +155,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (yCandMax >= 0. && std::abs(YD0(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
       // check decay channel flag for candidate1
@@ -201,7 +201,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (yCandMax >= 0. && std::abs(YD0(candidate2)) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
         // excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
@@ -275,7 +275,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (yCandMax >= 0. && std::abs(YD0(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
 
@@ -333,7 +333,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (yCandMax >= 0. && std::abs(YD0(candidate2)) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
         // Excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
@@ -395,7 +395,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
@@ -417,7 +417,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
           continue;
         }
         entryD0D0barPair(getDeltaPhi(particle2.phi(), particle1.phi()),
@@ -492,7 +492,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
@@ -515,7 +515,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
           continue;
         }
         // check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it

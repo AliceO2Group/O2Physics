@@ -105,7 +105,7 @@ struct HfCorrelatorDplusDminus {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus,Dminus"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<std::vector<double>> binsPt{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
   Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
@@ -155,7 +155,7 @@ struct HfCorrelatorDplusDminus {
       if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
       // check decay channel flag for candidate1
@@ -208,7 +208,7 @@ struct HfCorrelatorDplusDminus {
         if (yCandMax >= 0. && std::abs(YDPlus(candidate2)) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
         entryDplusDminusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
@@ -272,7 +272,7 @@ struct HfCorrelatorDplusDminus {
       if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
 
@@ -327,7 +327,7 @@ struct HfCorrelatorDplusDminus {
         if (yCandMax >= 0. && std::abs(YDPlus(candidate2)) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && candidate2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
         // choice of options (Dplus/Dminus signal/bkg)
@@ -379,7 +379,7 @@ struct HfCorrelatorDplusDminus {
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
@@ -401,7 +401,7 @@ struct HfCorrelatorDplusDminus {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
           continue;
         }
         entryDplusDminusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
@@ -476,7 +476,7 @@ struct HfCorrelatorDplusDminus {
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
@@ -499,7 +499,7 @@ struct HfCorrelatorDplusDminus {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
-        if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
+        if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
           continue;
         }
         // check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it

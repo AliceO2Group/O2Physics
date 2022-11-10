@@ -93,7 +93,7 @@ struct HfCorrelatorDplusHadrons {
   Configurable<double> cutTrackEtaMax{"cutTrackEtaMax", -1., "max. eta of tracks"};
   Configurable<double> cutDCAxyMax{"cutDCAxyMax", -1., "max. DCAxy of tracks"};
   Configurable<double> cutDCAzMax{"cutDCAzMax", -1., "max. DCAz of tracks"};
-  Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<double> cutPtTrackMin{"cutPtTrackMin", -1., "min. track pT"};
   Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
   Configurable<std::vector<double>> binsPt{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
@@ -141,7 +141,7 @@ struct HfCorrelatorDplusHadrons {
       if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
       if (candidate1.pt() > cutPtCandMax) {
@@ -227,7 +227,7 @@ struct HfCorrelatorDplusHadrons {
       if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
       if (candidate1.pt() >= cutPtCandMax) {
@@ -300,7 +300,7 @@ struct HfCorrelatorDplusHadrons {
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
