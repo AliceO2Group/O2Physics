@@ -843,7 +843,7 @@ struct HfTrackIndexSkimCreator {
   // Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
   Configurable<bool> debug{"debug", false, "debug mode"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-  Configurable<int> do3prong{"do3prong", 0, "do 3 prong"};
+  Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // preselection parameters
@@ -1704,7 +1704,7 @@ struct HfTrackIndexSkimCreator {
         }
 
         // 3-prong vertex reconstruction
-        if (do3prong == 1) {
+        if (do3Prong == 1) {
           if (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1) {
             continue;
           }
