@@ -78,7 +78,7 @@ struct HfCandidateSelectorJpsi {
   Configurable<double> d_nSigmaRICH{"d_nSigmaRICH", 3., "Nsigma cut on RICH only"};
   Configurable<double> d_nSigmaRICHCombinedTOF{"d_nSigmaRICHCombinedTOF", 5., "Nsigma cut on RICH combined with TOF"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Jpsi_to_ee_cuts", {hf_cuts_jpsi_toee::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
 
   /// Conjugate-independent topological cuts
@@ -90,7 +90,7 @@ struct HfCandidateSelectorJpsi {
   bool selectionTopol(const T1& candidate, const T2& trackPos, const T2& trackNeg, int& selEE, int& selMuMu)
   {
     auto candpT = candidate.pt();
-    auto pTBin = findBin(pTBins, candpT);
+    auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }

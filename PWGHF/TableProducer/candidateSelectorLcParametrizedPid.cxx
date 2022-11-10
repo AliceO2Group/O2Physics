@@ -67,7 +67,7 @@ struct HfCandidateSelectorLcParametrizedPid {
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
   Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
 
   /*
@@ -93,7 +93,7 @@ struct HfCandidateSelectorLcParametrizedPid {
   {
     auto candpT = candidate.pt();
 
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -135,7 +135,7 @@ struct HfCandidateSelectorLcParametrizedPid {
   {
 
     auto candpT = candidate.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }

@@ -43,7 +43,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"DPlus_to_Pi_K_Pi_cuts", {hf_cuts_dplus_topikpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Dplus candidate selection per pT bin"};
 
   /*
@@ -71,7 +71,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   bool selection(const T1& candidate, const T2& trackPion1, const T2& trackKaon, const T2& trackPion2)
   {
     auto candpT = candidate.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }

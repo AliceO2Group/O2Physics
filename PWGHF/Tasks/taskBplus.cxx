@@ -57,7 +57,7 @@ struct HfTaskBplus {
 
   Configurable<int> selectionFlagBPlus{"selectionFlagBPlus", 1, "Selection Flag for B+"};
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"pTBins", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {

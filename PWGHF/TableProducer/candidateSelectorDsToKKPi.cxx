@@ -41,7 +41,7 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTOF{"nSigmaTOF", 3., "Nsigma cut on TOF"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_ds_tokkpi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_tokkpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Ds_to_K_K_Pi_cuts", {hf_cuts_ds_tokkpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Ds candidate selection per pT bin"};
 
   /// Candidate selections
@@ -54,7 +54,7 @@ struct HfCandidateSelectorDsToKKPi {
   bool selection(const T1& candidate, const T2& trackKaon1, const T2& trackKaon2, const T2& trackPion)
   {
     auto candpT = candidate.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }

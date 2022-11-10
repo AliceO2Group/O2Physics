@@ -64,7 +64,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
   Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_d0_topik::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_topik::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"D0_to_pi_K_cuts", {hf_cuts_d0_topik::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "D0 candidate selection per pT bin"};
 
   /*
@@ -89,7 +89,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
-    auto pTBin = findBin(pTBins, candpT);
+    auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -148,7 +148,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
   bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
   {
     auto candpT = candidate.pt();
-    auto pTBin = findBin(pTBins, candpT);
+    auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }

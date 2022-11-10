@@ -46,7 +46,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
 
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"X_to_jpsipipi_cuts", {hf_cuts_x_tojpsipipi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
 
   /// Selection on goodness of daughter tracks
@@ -69,7 +69,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   bool selectionTopol(const T1& hfCandX, const T2& hfCandJpsi, const T3& trackPos, const T3& trackNeg)
   {
     auto candpT = hfCandX.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       // Printf("X topol selection failed at getpTBin");
       return false;

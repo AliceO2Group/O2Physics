@@ -100,10 +100,10 @@ static constexpr int nCutBDTScores = 3;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any charm candidate
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0.,
   1000.0};
-auto pTBinsVec = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBinsVec = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cutsBDT[npTBins][nCutBDTScores] = {{0.1, 0.5, 0.5}};
@@ -122,11 +122,11 @@ static constexpr int nCutVars = 4;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any 2-prong candidate
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   1.,
   5.,
   1000.0};
-auto pTBinsVec = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBinsVec = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{1.65, 2.15, 0.5, 100.},  /* 1 < pt < 5 */
@@ -146,11 +146,11 @@ static constexpr int nCutVars = 4;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any 3-prong candidate
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   1.,
   5.,
   1000.0};
-auto pTBinsVec = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBinsVec = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{1.75, 2.05, 0.7, 0.02},  /* 1 < pt < 5 */
@@ -169,7 +169,7 @@ static constexpr int npTBins = 25;
 static constexpr int nCutVars = 14;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -196,7 +196,7 @@ constexpr double pTBins[npTBins + 1] = {
   36.0,
   50.0,
   100.0};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06},   /* 0   < pT < 0.5 */
@@ -263,7 +263,7 @@ static constexpr int npTBins = 10;
 static constexpr int nCutVars = 7;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0.,
   1.,
   2.,
@@ -275,7 +275,7 @@ constexpr double pTBins[npTBins + 1] = {
   12.,
   24.,
   36.};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{0.400, 0.4, 0.4, 0.4, 0., 0.005, 0.},  /* 0  < pT < 1  */
@@ -312,7 +312,7 @@ static constexpr int npTBins = 8;
 static constexpr int nCutVars = 8;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   1.,
   2.,
   3.,
@@ -322,7 +322,7 @@ constexpr double pTBins[npTBins + 1] = {
   8.,
   12.,
   24.};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 // mK0s(GeV)     mLambdas(GeV)    mGammas(GeV)    ptp     ptK0sdau     ptK0s     d0p     d0K0
@@ -356,7 +356,7 @@ static const int npTBins = 12;
 static const int nCutVars = 8;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   1.,
   2.,
   3.,
@@ -370,7 +370,7 @@ constexpr double pTBins[npTBins + 1] = {
   16.,
   24.,
   36.};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 // selections from pp at 5 TeV 2017 analysis https://alice-notes.web.cern.ch/node/808
@@ -411,7 +411,7 @@ namespace hf_cuts_ds_tokkpi
 static const int npTBins = 12;
 static const int nCutVars = 8;
 // momentary cuts
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   1.,
   2.,
   3.,
@@ -425,7 +425,7 @@ constexpr double pTBins[npTBins + 1] = {
   16.,
   24.,
   36.};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 constexpr double cuts[npTBins][nCutVars] = {{0.2, 0.3, 0.3, 0.07, 6., 0.96, 0.985, 2.5},  /* 1  < pT < 2  */
                                             {0.2, 0.3, 0.3, 0.07, 5., 0.96, 0.985, 2.5},  /* 2  < pT < 3  */
@@ -465,7 +465,7 @@ static const int npTBins = 10;
 static const int nCutVars = 7;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0.,
   1.,
   2.,
@@ -477,7 +477,7 @@ constexpr double pTBins[npTBins + 1] = {
   12.,
   24.,
   36.};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.8},  /* 0  < pT < 1  */
@@ -514,7 +514,7 @@ static const int npTBins = 10;
 static const int nCutVars = 14;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0.,
   1.,
   2.,
@@ -526,7 +526,7 @@ constexpr double pTBins[npTBins + 1] = {
   12.,
   24.,
   36.};
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{0.400, 0.5, 0.2, 1.e-3, 10.0, 1.e-3, 10.0, 9999., 1.e-3, 0.0, 50.0, 50.0, 0.8, 0.8},  /* 0  < pT < 1  */
@@ -563,7 +563,7 @@ static constexpr int npTBins = 9;
 static constexpr int nCutVars = 5;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -575,7 +575,7 @@ constexpr double pTBins[npTBins + 1] = {
   10.0,
   15.0,
 };
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 constexpr double cuts[npTBins][nCutVars] = {{0.5, 0.2, 0.4, 1, 1.},  /* 0   < pT < 0.5 */
@@ -610,7 +610,7 @@ static constexpr int npTBins = 12;
 static constexpr int nCutVars = 12;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -625,7 +625,7 @@ constexpr double pTBins[npTBins + 1] = {
   20.0,
   24.0};
 
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 // DeltaM CPA chi2PCA d0D d0Pi pTD pTPi B0DecayLength B0DecayLengthXY IPProd DeltaMD CthetaStr
@@ -666,7 +666,7 @@ static constexpr int npTBins = 12;
 static constexpr int nCutVars = 11;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -681,7 +681,7 @@ constexpr double pTBins[npTBins + 1] = {
   20.0,
   24.0};
 
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 // DeltaM CPA d0D0 d0Pi pTD0 pTPi BDecayLength BDecayLengthXY IPProd DeltaMD0 CthetaStr
@@ -722,7 +722,7 @@ static constexpr int npTBins = 12;
 static constexpr int nCutVars = 12;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -737,7 +737,7 @@ constexpr double pTBins[npTBins + 1] = {
   20.0,
   24.0};
 
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 // DeltaM CPA chi2PCA d0Lc d0Pi pTLc pTPi LbDecayLength LbDecayLengthXY IPProd DeltaMLc CthetaStr
@@ -778,7 +778,7 @@ static constexpr int npTBins = 9;
 static constexpr int nCutVars = 7;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -790,7 +790,7 @@ constexpr double pTBins[npTBins + 1] = {
   10.0,
   15.0,
 };
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 //                                            m   CPA  d0Jpsi  d0Pi pTJpsi pTPi chi2PCA
@@ -825,7 +825,7 @@ static constexpr int npTBins = 9;
 static constexpr int nCutVars = 7;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
-constexpr double pTBins[npTBins + 1] = {
+constexpr double binsPt[npTBins + 1] = {
   0,
   0.5,
   1.0,
@@ -837,7 +837,7 @@ constexpr double pTBins[npTBins + 1] = {
   10.0,
   15.0,
 };
-auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+auto pTBins_v = std::vector<double>{binsPt, binsPt + npTBins + 1};
 
 // default values for the cuts
 //                                            m   CPA  d0Jpsi  d0gamma pTJpsi pTgamma chi2PCA

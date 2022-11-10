@@ -44,7 +44,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
   Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_xicc_topkpipi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_topkpipi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Xicc_to_p_K_pi_pi_cuts", {hf_cuts_xicc_topkpipi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Xicc candidate selection per pT bin"};
 
   /// Conjugate-independent topological cuts
@@ -54,7 +54,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   bool selectionTopol(const T1& hfCandXicc, const T2& hfCandXic, const T3& trackPi)
   {
     auto candpT = hfCandXicc.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }

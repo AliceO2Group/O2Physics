@@ -52,7 +52,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   Configurable<double> nSigmaTOF{"nSigmaTOF", 5., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTOFCombined{"nSigmaTOFCombined", 999., "Nsigma cut on TOF combined with TPC"};
 
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"BPlus_to_d0pi_cuts", {hf_cuts_bplus_tod0pi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "B+ candidate selection per pT bin"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -62,7 +62,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   bool selectionTopol(const T1& hfCandBPlus, const T2& hfCandD0, const T3& trackPi)
   {
     auto candpT = hfCandBPlus.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       // Printf("B+ topol selection failed at getpTBin");
       return false;

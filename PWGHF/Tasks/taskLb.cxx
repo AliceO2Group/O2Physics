@@ -50,7 +50,7 @@ struct HfTaskLb {
 
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
   Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"pTBins", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -121,7 +121,7 @@ struct HfTaskLbMc {
 
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"pTBins", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {

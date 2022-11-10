@@ -46,7 +46,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
 
-  Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Chic_to_jpsigamma_cuts", {hf_cuts_chic_tojpsigamma::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
 
   /// Selection on goodness of daughter tracks
@@ -67,7 +67,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   bool selectionTopol(const T1& hfCandChic, const T2& hfCandJpsi, const T3& ecal)
   {
     auto candpT = hfCandChic.pt();
-    int pTBin = findBin(pTBins, candpT);
+    int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
