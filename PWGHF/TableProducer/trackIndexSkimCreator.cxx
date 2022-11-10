@@ -2167,7 +2167,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<int> nCrossedRowsMinBach{"nCrossedRowsMinBach", 50, "min crossed rows bachelor"};
 
   // track cuts for V0 daughters
-  Configurable<bool> TPCRefitV0Daugh{"TPCRefitV0Daugh", true, "request TPC refit V0 daughters"};
+  Configurable<bool> tpcRefitV0Daugh{"tpcRefitV0Daugh", true, "request TPC refit V0 daughters"};
   Configurable<int> minCrossedRowsV0Daugh{"minCrossedRowsV0Daugh", 50, "min crossed rows V0 daughters"};
 
   // track cuts for V0 daughters
@@ -2322,7 +2322,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
         MY_DEBUG_MSG(isLc, LOG(info) << "Combination of K0S and p which correspond to a Lc found!");
 
-        if (TPCRefitV0Daugh) {
+        if (tpcRefitV0Daugh) {
           if (!(trackV0DaughPos.trackType() & o2::aod::track::TPCrefit) ||
               !(trackV0DaughNeg.trackType() & o2::aod::track::TPCrefit)) {
             MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to TPCrefit");
