@@ -56,7 +56,7 @@ int testPIDhypothesis(T trackPIDinfo)
 	else if (trackPIDinfo.hasTOF()) return enumChoiceTOF;
 	// give warning and return non-sense
 	else {
-		LOGF(warn,"testPIDhypothesis failed - track did not leave information in TPC or TOF");
+		LOGF(warning,"testPIDhypothesis failed - track did not leave information in TPC or TOF");
 		return -1;
 	}
 }

@@ -135,14 +135,14 @@ struct RomanCentralBarrel {
 		int countContributorsToVertex = 0;
 		int countGlobalContributorsToVertex = 0;
 		for (auto& track : tracks){
-			float thisTrackMomentum = momentum(track.px(),track.py(),track.pz());
-			float thisTrackTPCsignal = track.tpcSignal();
 			if (!selectTrack(track,applyTrackCuts)) continue;
 			if (isUDprimaryTrack(track)) countContributorsToVertex++;
 			if (selectTrack(track,2)) countGlobalContributorsToVertex++;
 			if (isUDprimaryTrack(track)) countPrimaryTracks++;
+			if (track.hasTPC()) {
+				registry.get<TH2>(HIST("hTPCsignalVsMom"))->Fill(momentum(track.px(),track.py(),track.pz()),track.tpcSignal());
+			}
 		}
-		
 		registry.get<TH1>(HIST("hNcontributionsToVertex"))->Fill(countContributorsToVertex);
 		registry.get<TH1>(HIST("hNprimaryTracks"))->Fill(countPrimaryTracks);
 
@@ -185,31 +185,36 @@ struct RomanCentralBarrel {
 		// TPC signal info starts here
 		//
 		TLorentzVector sumOfVertexTracks, trackFromVertex;
-		float dedxVC1 = -999.;
-		float dedxVC2 = -999.;
-		float dedxEl1 = -999.;
-		float dedxEl2 = -999.;
+		float dedxVC[2] = {-999.,-999.};
+		const int NPARTICLES = 5;//TODO think of more elegant way how to pass this info
+		float dedx[2][NPARTICLES] = {{-999.,-999.,-999.,-999.,-999.},{-999.,-999.,-999.,-999.,-999.}};
 		int countTrks = 0;
 		if (countContributorsToVertex == 2) {
 			for (auto& track : tracks){
-				testPIDhypothesis(track);
-				// TODO get tag for PV contributor //if (!track.isPVContributor()) continue;
+				if (!isUDprimaryTrack(track)) continue;
 				countTrks++;
 				trackFromVertex.SetPxPyPzE(track.px(),track.py(),track.pz(),
 																	 energy(constants::physics::MassElectron,track.px(),track.py(),track.pz()));
 				sumOfVertexTracks+=trackFromVertex;
 				if (track.hasTPC()){
-					if (countTrks == 1) dedxVC1 = track.tpcSignal();
-					else if (countTrks == 2) dedxVC2 = track.tpcSignal();
+					if (countTrks == 1) dedxVC[0] = track.tpcSignal();
+					else if (countTrks == 2) dedxVC[1] = track.tpcSignal();
 					else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
-
-//							if (countTrks == 1) dedxEl1 = track.tpcSignal();// TODO
-//							else if (countTrks == 2) dedxEl2 = track.tpcSignal();// TODO
-//							else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");// TODO
+					int typeParticle = testPIDhypothesis(track);
+					if (typeParticle >= 0 && typeParticle <= NPARTICLES){
+							if (countTrks == 1) dedx[0][typeParticle] = track.tpcSignal();
+							else if (countTrks == 2) dedx[1][typeParticle] = track.tpcSignal();
+							else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
+					}
 				}
 			}
-			registry.get<TH2>(HIST("hTPCsignalVtxContributors"))->Fill(dedxVC1,dedxVC2);
-			registry.get<TH2>(HIST("hTPCsignalElectrons"))->Fill(dedxEl1,dedxEl2);
+			registry.get<TH2>(HIST("hTPCsignalVtxContributors"))->Fill(dedxVC[0],dedxVC[1]);
+			// pairs of different particles are filled in the following histograms, but outside of the range
+			registry.get<TH2>(HIST("hTPCsignalElectrons"))->Fill(dedx[0][P_ELECTRON],dedx[1][P_ELECTRON]);
+			registry.get<TH2>(HIST("hTPCsignalMuons"))->Fill(dedx[0][P_MUON],dedx[1][P_MUON]);
+			registry.get<TH2>(HIST("hTPCsignalPions"))->Fill(dedx[0][P_PION],dedx[1][P_PION]);
+			registry.get<TH2>(HIST("hTPCsignalKaons"))->Fill(dedx[0][P_KAON],dedx[1][P_KAON]);
+			registry.get<TH2>(HIST("hTPCsignalProtons"))->Fill(dedx[0][P_PROTON],dedx[1][P_PROTON]);
 			registry.get<TH1>(HIST("hInvariantMass"))->Fill(sumOfVertexTracks.M());
 			registry.get<TH1>(HIST("hInvariantMassWide"))->Fill(sumOfVertexTracks.M());
 			registry.get<TH1>(HIST("hMotherP"))->Fill(sumOfVertexTracks.P());
