@@ -21,8 +21,9 @@
 // O2Physics headers
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
-#include "PWGUD/Core/UPCMonteCarloCentralBarrelHelper.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/UPCMonteCarloCentralBarrelHelper.h"
+#include "PWGUD/Core/RomanPIDhelper.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
@@ -106,16 +107,16 @@ struct RomanCentralBarrel {
 														 FullTracks const& tracks,
 														 soa::Join<aod::Collisions, aod::EvSels> const& infoEventSelection){
 
-		const float massEl = constants::physics::MassElectron;
-		const float massMu = constants::physics::MassMuon;
-		const float massPi = constants::physics::MassPionCharged;
-		const float massKa = constants::physics::MassKaonCharged;
-		const float massPr = constants::physics::MassProton;
+		const float P_MASS[5] = {constants::physics::MassElectron,
+													 constants::physics::MassMuon,
+													 constants::physics::MassPionCharged,
+													 constants::physics::MassKaonCharged,
+													 constants::physics::MassProton};
 
 		if (verboseInfo) printLargeMessage("NEW COLLISION");
 		countCollisions++;
 		registry.get<TH1>(HIST("hEffectOfSelections"))->Fill(0);
-/*
+
 		auto thisCollisionEventSelectionInfo = infoEventSelection.iteratorAt(getEvSelsIndexOfThisCollisionBC(infoEventSelection,collision.globalBC()));
 		fillEventSelectionHistogram(registry,thisCollisionEventSelectionInfo);
 		fillTrackSelectionHistogram(registry,tracks,collision);
@@ -137,9 +138,9 @@ struct RomanCentralBarrel {
 			float thisTrackMomentum = momentum(track.px(),track.py(),track.pz());
 			float thisTrackTPCsignal = track.tpcSignal();
 			if (!selectTrack(track,applyTrackCuts)) continue;
-			// TODO get tag for PV contributor //if (track.isPVContributor()) countContributorsToVertex++;
+			if (isUDprimaryTrack(track)) countContributorsToVertex++;
 			if (selectTrack(track,2)) countGlobalContributorsToVertex++;
-			// TODO get tag for PV contributor //if (track.isPVContributor()) countPrimaryTracks++;
+			if (isUDprimaryTrack(track)) countPrimaryTracks++;
 		}
 		
 		registry.get<TH1>(HIST("hNcontributionsToVertex"))->Fill(countContributorsToVertex);
@@ -153,7 +154,7 @@ struct RomanCentralBarrel {
 			if (!trackSelection(track,2)) continue;
 			if (!trackSelection(track,5)) continue;
 			if (isFITempty(collision)) continue;
-			printTrackData(track);
+			if (printMetaInfo) printTrackData(track);
 			float trkPx = track.px();
 			float trkPy = track.py();
 			float trkPz = track.pz();
@@ -161,9 +162,12 @@ struct RomanCentralBarrel {
 			registry.get<TH1>(HIST("hTrackPt"))->Fill(track.pt());
 			registry.get<TH1>(HIST("hTrackPhi"))->Fill(phi(trkPx,trkPy));
 			registry.get<TH1>(HIST("hTrackEta"))->Fill(eta(trkPx,trkPy,trkPz));
-			float mass = massEl;//TODO do proper mass estimate
-			registry.get<TH1>(HIST("hTrackEnergy"))->Fill(energy(mass,trkPx,trkPy,trkPz));
-			registry.get<TH1>(HIST("hTrackRapidity"))->Fill(rapidity(mass,trkPx,trkPy,trkPz));
+			int typeParticle = testPIDhypothesis(track);
+			if (typeParticle >= 0 && typeParticle < (sizeof(P_MASS)/sizeof(float))){
+				float mass = P_MASS[typeParticle];
+				registry.get<TH1>(HIST("hTrackEnergy"))->Fill(energy(mass,trkPx,trkPy,trkPz));
+				registry.get<TH1>(HIST("hTrackRapidity"))->Fill(rapidity(mass,trkPx,trkPy,trkPz));
+			}
 		}
 
 		//
@@ -188,6 +192,7 @@ struct RomanCentralBarrel {
 		int countTrks = 0;
 		if (countContributorsToVertex == 2) {
 			for (auto& track : tracks){
+				testPIDhypothesis(track);
 				// TODO get tag for PV contributor //if (!track.isPVContributor()) continue;
 				countTrks++;
 				trackFromVertex.SetPxPyPzE(track.px(),track.py(),track.pz(),
@@ -213,7 +218,7 @@ struct RomanCentralBarrel {
 			registry.get<TH1>(HIST("hMotherPhi"))->Fill(sumOfVertexTracks.Phi());
 			registry.get<TH1>(HIST("hMotherRapidity"))->Fill(sumOfVertexTracks.Rapidity());
 		}
-		*/
+
 	} // end processCentralBarrel
 
 
