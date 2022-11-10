@@ -850,7 +850,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
-  Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<double> maxRad{"maxRad", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -1500,7 +1500,7 @@ struct HfTrackIndexSkimCreator {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
-    df2.setPropagateToPCA(propToDCA);
+    df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxRad);
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
@@ -1510,7 +1510,7 @@ struct HfTrackIndexSkimCreator {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(o2::base::Propagator::Instance()->getNominalBz());
-    df3.setPropagateToPCA(propToDCA);
+    df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxRad);
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
