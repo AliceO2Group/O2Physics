@@ -59,7 +59,7 @@ struct HfCandidateSelectorLcToK0sP {
 
   // cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_tok0sp::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_tok0sp::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_tok0sp::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
 
   // for debugging
 #ifdef MY_DEBUG

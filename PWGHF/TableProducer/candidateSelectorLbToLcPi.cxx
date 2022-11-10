@@ -51,7 +51,7 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<double> nSigmaTOFCombined{"nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Lb_to_lcpi_cuts", {hf_cuts_lb_tolcpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lb0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"Lb_to_lcpi_cuts", {hf_cuts_lb_tolcpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts

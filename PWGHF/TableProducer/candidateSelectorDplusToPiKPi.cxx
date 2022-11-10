@@ -44,7 +44,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"DPlus_to_Pi_K_Pi_cuts", {hf_cuts_dplus_topikpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Dplus candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"DPlus_to_Pi_K_Pi_cuts", {hf_cuts_dplus_topikpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Dplus candidate selection per pT bin"};
 
   /*
   /// Selection on goodness of daughter tracks

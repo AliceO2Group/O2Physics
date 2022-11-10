@@ -79,7 +79,7 @@ auto sidebandLeftInner_v = std::vector<double>{sidebandLeftInnerDefault, sideban
 auto sidebandLeftOuter_v = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
 auto sidebandRightInner_v = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
 auto sidebandRightOuter_v = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
-const int npTBinsEfficiency = o2::analysis::hf_cuts_d0_topik::npTBins;
+const int npTBinsEfficiency = o2::analysis::hf_cuts_d0_topik::nBinsPt;
 const double efficiencyDmesonDefault[npTBinsEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsEfficiency};
 

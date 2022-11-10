@@ -47,7 +47,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"X_to_jpsipipi_cuts", {hf_cuts_x_tojpsipipi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"X_to_jpsipipi_cuts", {hf_cuts_x_tojpsipipi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection

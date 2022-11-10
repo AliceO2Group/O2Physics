@@ -46,7 +46,7 @@ const double incrementEtaCut = 0.1;
 const double incrementPtThreshold = 0.5;
 const double epsilon = 1E-5;
 
-const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_topik::npTBins;
+const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_topik::nBinsPt;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
