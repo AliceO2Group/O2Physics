@@ -20,6 +20,13 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::dataformats;
 
+enum ParticleSpecies {
+    kPionTrack     = BIT(0),
+    kKaonTrack     = BIT(1),
+    kProtonTrack   = BIT(2),
+    kElectronTrack = BIT(3)
+};
+
 namespace o2::aod
 {
 namespace tpctree
@@ -29,6 +36,7 @@ DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
 DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
+DECLARE_SOA_COLUMN(PIDTrack, pidTrack, int);
 } // namespace tpctree
 
 DECLARE_SOA_TABLE(TPCTOFTree, "AOD", "TPCTOFTREE",
@@ -43,5 +51,6 @@ DECLARE_SOA_TABLE(TPCTOFTree, "AOD", "TPCTOFTREE",
                   tpctree::NormMultTPC,
                   tpctree::NormNClustersTPC,
                   tpctree::NSigTPC,
-                  tpctree::NSigTOF);
+                  tpctree::NSigTOF,
+                  tpctree::PIDTrack);
 } // namespace o2::aod

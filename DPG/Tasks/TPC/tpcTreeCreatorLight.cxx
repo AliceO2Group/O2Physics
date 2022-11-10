@@ -73,6 +73,8 @@ struct TreeWriterTPCTOF {
   Configurable<float> mindEdxTPCOnlyEl{"mindEdxTPCOnlyEl", 70., "dE/dx min for TPC only cut electron"};
   Configurable<float> maxdEdxTPCOnlyEl{"maxdEdxTPCOnlyEl", 100., "dE/dx max for TPC only cut electron"};
 
+  int TrackPID = 0;
+
   /// Function to fill trees
   template <typename T, typename C>
   void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, double dwnSmplFactor)
@@ -95,7 +97,8 @@ struct TreeWriterTPCTOF {
                     multTPC / 11000.,
                     std::sqrt(nClNorm / ncl),
                     nSigmaTPC,
-                    nSigmaTOF);
+                    nSigmaTOF,
+                    TrackPID);
     }
   };
 
@@ -114,7 +117,7 @@ struct TreeWriterTPCTOF {
     }
     return true;
   };
-
+  
   /// Track selection
   template <typename CollisionType, typename TrackType>
   bool isTrackSelected(const CollisionType& collision, const TrackType& track)
@@ -130,6 +133,49 @@ struct TreeWriterTPCTOF {
     }
     return true;
   };
+  
+  template <typename TrackType>
+  bool KeepTrack(const TrackType& trk)
+  {
+    bool ProtonTrack = false;
+    bool PionTrack = false;
+    bool KaonTrack = false;
+    bool ElectronTrack = false;
+    if ((trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr) || (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr))
+    {
+      ProtonTrack = true;
+      TrackPID |= kProtonTrack;
+    } else {
+      TrackPID &= ~kProtonTrack;
+    }
+    if ((trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa) || (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka))
+    {
+      KaonTrack = true;
+      TrackPID |= kKaonTrack;
+    } else {
+      TrackPID &= ~kKaonTrack;
+    }
+    if ((trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi) || (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi))
+    {
+      PionTrack = true;
+      TrackPID |= kPionTrack;
+    } else {
+      TrackPID &= ~kPionTrack;
+    }
+    if ((trk.tpcInnerParam() > minMomTPCOnlyEl &&  trk.tpcInnerParam() < maxMomTPCOnlyEl && trk.tpcSignal() > mindEdxTPCOnlyEl && trk.tpcSignal() < maxdEdxTPCOnlyEl))
+    {
+      ElectronTrack = true;
+      TrackPID |= kElectronTrack;
+    } else {
+      TrackPID &= ~kElectronTrack;
+    }
+    if (ProtonTrack || KaonTrack || PionTrack || ElectronTrack)
+    {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -147,7 +193,7 @@ struct TreeWriterTPCTOF {
       if (applyTrkSel == 1 && !isTrackSelected(collision, trk)) {
         continue;
       }
-      if ((trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr) || (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr) || (trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa) || (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka) || (trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi) || (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi) || (trk.tpcInnerParam() > minMomTPCOnlyEl &&  trk.tpcInnerParam() < maxMomTPCOnlyEl && trk.tpcSignal() > mindEdxTPCOnlyEl && trk.tpcSignal() < maxdEdxTPCOnlyEl)) {
+      if (KeepTrack(trk)) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), dwnSmplFactor);
       }
 
