@@ -2180,8 +2180,8 @@ struct HfTrackIndexSkimCreatorCascades {
 
   // v0 cuts
   Configurable<double> cpaV0Min{"cpaV0Min", .995, "min. cos PA V0"};                 // as in the task that create the V0s
-  Configurable<double> dcaXYNegToPvMin{"dcaXYNegToPvMin", .1, "DCA_XY Neg To PV"}; // check: in HF Run 2, it was 0 at filtering
-  Configurable<double> dcaXYPosToPV{"dcaXYPosToPV", .1, "DCA_XY Pos To PV"}; // check: in HF Run 2, it was 0 at filtering
+  Configurable<double> dcaXYNegToPvMin{"dcaXYNegToPvMin", .1, "min. DCA_XY Neg To PV"}; // check: in HF Run 2, it was 0 at filtering
+  Configurable<double> dcaXYPosToPvMin{"dcaXYPosToPvMin", .1, "min. DCA_XY Pos To PV"}; // check: in HF Run 2, it was 0 at filtering
   Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
 
   // cascade cuts
@@ -2335,7 +2335,7 @@ struct HfTrackIndexSkimCreatorCascades {
           continue;
         }
         //
-        // if (trackV0DaughPos.dcaXY() < dcaXYPosToPV ||   // to the filters?
+        // if (trackV0DaughPos.dcaXY() < dcaXYPosToPvMin ||   // to the filters?
         //     trackV0DaughNeg.dcaXY() < dcaXYNegToPvMin) {
         //   continue;
         // }
