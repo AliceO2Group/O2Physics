@@ -87,7 +87,7 @@ constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0 
                                                            {0.0000, 10.}}; /* 3   < pt < 1000 */
 
 // row labels
-static const std::vector<std::string> pTBinLabelsTrack{};
+static const std::vector<std::string> labelsPtTrack{};
 
 // column labels
 static const std::vector<std::string> cutVarLabelsTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
