@@ -269,7 +269,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // pT bins for single-track cuts
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for 2-prong DCA XY pT-dependent cut"};
   // 2-prong cuts
-  Configurable<double> pTMinTrack2Prong{"pTMinTrack2Prong", -1., "min. track pT for 2 prong candidate"};
+  Configurable<double> ptMinTrack2Prong{"ptMinTrack2Prong", -1., "min. track pT for 2 prong candidate"};
   Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for 2-prong candidates"};
   Configurable<double> etaMax2Prong{"etaMax2Prong", 4., "max. pseudorapidity for 2 prong candidate"};
   // 3-prong cuts
@@ -657,7 +657,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
       int iDebugCut = 2;
       // pT cut
-      if (trackPt < pTMinTrack2Prong) {
+      if (trackPt < ptMinTrack2Prong) {
         CLRBIT(statusProng, CandidateType::Cand2Prong); // set the nth bit to 0
         if (debug) {
           // cutStatus[CandidateType::Cand2Prong][0] = false;
