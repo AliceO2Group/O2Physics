@@ -383,20 +383,19 @@ struct UpcCandProducer {
   template <typename TTrack, typename TAmbTracks>
   uint64_t getTrackBC(TTrack& track,
                       TAmbTracks const& ambTracks,
-                      std::unordered_map<int64_t, int64_t>& ambTrIDs,
+                      int64_t ambTrId,
                       o2::aod::Collisions const& collisions,
                       BCsWithBcSels const& bcs)
   {
     uint64_t trackBC = 0;
-    auto ambIter = ambTrIDs.find(track.globalIndex());
-    if (ambIter == ambTrIDs.end()) {
-      const auto& col = track.collision();
-      trackBC = col.template bc_as<BCsWithBcSels>().globalBC();
-    } else {
-      const auto& ambTr = ambTracks.iteratorAt(ambIter->second);
+    if (ambTrId >= 0) {
+      const auto& ambTr = ambTracks.iteratorAt(ambTrId);
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
       trackBC = first.globalBC();
+    } else {
+      const auto& col = track.collision();
+      trackBC = col.template bc_as<BCsWithBcSels>().globalBC();
     }
     int64_t tint = std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
     uint64_t bc = trackBC + tint;
@@ -438,8 +437,10 @@ struct UpcCandProducer {
     for (auto trackID : trackIDs) {
       const auto& track = tracks.iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
-      bool isAmbiguous = false;
-      isAmbiguous = ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end();
+      int64_t colId = -1;
+      if (ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end()) {
+        colId = track.collisionId();
+      }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
       udTracksExtra(track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
@@ -447,7 +448,7 @@ struct UpcCandProducer {
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       udTracksDCA(track.dcaZ(), track.dcaXY());
-      udTracksFlags(isAmbiguous, track.isPVContributor());
+      udTracksFlags(colId, track.isPVContributor());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trackID);
@@ -485,174 +486,94 @@ struct UpcCandProducer {
     return hasNoFT0;
   }
 
-  template <typename TBCs>
-  void processFITInfo(TBCs const& bcs,
+  void processFITInfo(upchelpers::FITInfo& fitInfo,
+                      uint64_t midbc,
+                      std::vector<std::pair<uint64_t, int64_t>>& v,
+                      BCsWithBcSels const& bcs,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
-                      o2::aod::FV0As const& fv0as,
-                      std::vector<BCTracksPair>& bcsMatchedTrIds,
-                      std::unordered_map<uint64_t, upchelpers::FITInfo>& bcsWithFIT)
+                      o2::aod::FV0As const& fv0as)
   {
-    const uint64_t presBitNum = 16; // bit for present BC
+    const uint64_t range = 16;
+    uint64_t left = midbc >= range ? midbc - range : 0;
+    uint64_t right = fMaxBC >= midbc + range ? midbc + range : fMaxBC;
 
-    std::unordered_set<uint64_t> addedBCs;
-    std::vector<std::pair<uint64_t, upchelpers::FITInfo>> vbcsWithFIT;
+    std::pair<uint64_t, int64_t> dummyPair(left, 0);
+    auto curit = std::lower_bound(v.begin(), v.end(), dummyPair,
+                                  [](const std::pair<uint64_t, int64_t>& left, const std::pair<uint64_t, int64_t>& right) { return left.first < right.first; });
 
-    // gather FIT information for each BC
-    // even if there is no FIT info at all -> store dummy "info{}"
-    for (const auto& bc : bcs) {
-      int32_t ft0Id = bc.foundFT0Id();
-      upchelpers::FITInfo info{};
-      if (ft0Id != -1) {
-        const auto& ft0 = ft0s.iteratorAt(ft0Id);
-        info.timeFT0A = ft0.timeA();
-        info.timeFT0C = ft0.timeC();
+    if (curit == v.end()) // no BCs with FT0 info at all
+      return;
+
+    uint64_t curbc = curit->first;
+    while (curbc <= right) {
+      uint64_t bit = curbc - (midbc - range);
+      int64_t bcGlId = curit->second;
+      const auto& bc = bcs.iteratorAt(bcGlId);
+      if (bc.has_foundFT0()) {
+        const auto& ft0 = bc.foundFT0();
+        fitInfo.timeFT0A = ft0.timeA();
+        fitInfo.timeFT0C = ft0.timeC();
         const auto& ampsA = ft0.amplitudeA();
         const auto& ampsC = ft0.amplitudeC();
-        info.ampFT0A = 0.;
-        for (auto amp : ampsA) {
-          info.ampFT0A += amp;
-        }
-        info.ampFT0C = 0.;
-        for (auto amp : ampsC) {
-          info.ampFT0C += amp;
-        }
-        info.triggerMaskFT0 = ft0.triggerMask();
+        fitInfo.ampFT0A = 0.;
+        for (auto amp : ampsA)
+          fitInfo.ampFT0A += amp;
+        fitInfo.ampFT0C = 0.;
+        for (auto amp : ampsC)
+          fitInfo.ampFT0C += amp;
+        fitInfo.triggerMaskFT0 = ft0.triggerMask();
         if (!bc.selection()[evsel::kNoBGT0A])
-          SETBIT(info.BGFT0Apf, presBitNum);
+          SETBIT(fitInfo.BGFT0Apf, bit);
         if (!bc.selection()[evsel::kNoBGT0C])
-          SETBIT(info.BGFT0Cpf, presBitNum);
+          SETBIT(fitInfo.BGFT0Cpf, bit);
         if (bc.selection()[evsel::kIsBBT0A])
-          SETBIT(info.BBFT0Apf, presBitNum);
+          SETBIT(fitInfo.BBFT0Apf, bit);
         if (bc.selection()[evsel::kIsBBT0C])
-          SETBIT(info.BBFT0Cpf, presBitNum);
+          SETBIT(fitInfo.BBFT0Cpf, bit);
       }
-      int32_t fddId = bc.foundFDDId();
-      if (fddId != -1) {
-        const auto& fdd = fdds.iteratorAt(fddId);
-        info.timeFDDA = fdd.timeA();
-        info.timeFDDC = fdd.timeC();
+      if (bc.has_foundFV0()) {
+        const auto& fv0a = bc.foundFV0();
+        fitInfo.timeFV0A = fv0a.time();
+        const auto& amps = fv0a.amplitude();
+        fitInfo.ampFV0A = 0.;
+        for (auto amp : amps)
+          fitInfo.ampFV0A += amp;
+        fitInfo.triggerMaskFV0A = fv0a.triggerMask();
+        if (!bc.selection()[evsel::kNoBGV0A])
+          SETBIT(fitInfo.BGFV0Apf, bit);
+        if (bc.selection()[evsel::kIsBBV0A])
+          SETBIT(fitInfo.BBFV0Apf, bit);
+      }
+      if (bc.has_foundFDD()) {
+        const auto& fdd = bc.foundFDD();
+        fitInfo.timeFDDA = fdd.timeA();
+        fitInfo.timeFDDC = fdd.timeC();
         const auto& ampsA = fdd.chargeA();
         const auto& ampsC = fdd.chargeC();
-        info.ampFDDA = 0.;
+        fitInfo.ampFDDA = 0.;
         for (auto amp : ampsA) {
-          info.ampFDDA += amp;
+          fitInfo.ampFDDA += amp;
         }
-        info.ampFDDC = 0.;
+        fitInfo.ampFDDC = 0.;
         for (auto amp : ampsC) {
-          info.ampFDDC += amp;
+          fitInfo.ampFDDC += amp;
         }
-        info.triggerMaskFDD = fdd.triggerMask();
+        fitInfo.triggerMaskFDD = fdd.triggerMask();
         if (!bc.selection()[evsel::kNoBGFDA])
-          SETBIT(info.BGFDDApf, presBitNum);
+          SETBIT(fitInfo.BGFDDApf, bit);
         if (!bc.selection()[evsel::kNoBGFDC])
-          SETBIT(info.BGFDDCpf, presBitNum);
+          SETBIT(fitInfo.BGFDDCpf, bit);
         if (bc.selection()[evsel::kIsBBFDA])
-          SETBIT(info.BBFDDApf, presBitNum);
+          SETBIT(fitInfo.BBFDDApf, bit);
         if (bc.selection()[evsel::kIsBBFDC])
-          SETBIT(info.BBFDDCpf, presBitNum);
+          SETBIT(fitInfo.BBFDDCpf, bit);
       }
-      int32_t fv0aId = bc.foundFV0Id();
-      if (fv0aId != -1) {
-        const auto& fv0a = fv0as.iteratorAt(fv0aId);
-        info.timeFV0A = fv0a.time();
-        const auto& amps = fv0a.amplitude();
-        info.ampFV0A = 0.;
-        for (auto amp : amps) {
-          info.ampFV0A += amp;
-        }
-        info.triggerMaskFV0A = fv0a.triggerMask();
-        if (!bc.selection()[evsel::kNoBGV0A])
-          SETBIT(info.BGFV0Apf, presBitNum);
-        if (bc.selection()[evsel::kIsBBV0A])
-          SETBIT(info.BBFV0Apf, presBitNum);
-      }
-      vbcsWithFIT.push_back({bc.globalBC(), info});
-      addedBCs.insert(bc.globalBC());
+      ++curit;
+      if (curit == v.end())
+        break;
+      curbc = curit->first;
     }
-
-    // add BCs from event candidates if not yet there
-    for (const auto& item : bcsMatchedTrIds) {
-      uint64_t bc = item.first;
-      if (addedBCs.find(bc) == addedBCs.end()) {
-        addedBCs.insert(bc);
-        upchelpers::FITInfo info{};
-        vbcsWithFIT.push_back({bc, info});
-      }
-    }
-
-    addedBCs.clear();
-
-    std::sort(vbcsWithFIT.begin(), vbcsWithFIT.end(),
-              [](const auto& left, const auto& right) { return left.first < right.first; });
-
-    int32_t nBCsWithFIT = vbcsWithFIT.size();
-    for (int32_t ibc = 0; ibc < nBCsWithFIT; ++ibc) {
-      uint64_t bc = vbcsWithFIT[ibc].first;
-      auto& info = vbcsWithFIT[ibc].second;
-      // scrolling back on the original vector
-      for (int32_t jbc = ibc - 1; jbc >= 0; --jbc) {
-        uint64_t pastbc = vbcsWithFIT[jbc].first;
-        uint64_t deltaBC = bc - pastbc;
-        if (deltaBC > 16) // range [1, 16]
-          break;
-        const auto& pastInfo = vbcsWithFIT[jbc].second;
-        uint64_t pastBitNum = deltaBC - 1; // bits range in [0, 15]; bit == 16 -> present
-        if (TESTBIT(pastInfo.BGFT0Apf, presBitNum))
-          SETBIT(info.BGFT0Apf, pastBitNum);
-        if (TESTBIT(pastInfo.BGFT0Cpf, presBitNum))
-          SETBIT(info.BGFT0Cpf, pastBitNum);
-        if (TESTBIT(pastInfo.BBFT0Apf, presBitNum))
-          SETBIT(info.BBFT0Apf, pastBitNum);
-        if (TESTBIT(pastInfo.BBFT0Cpf, presBitNum))
-          SETBIT(info.BBFT0Cpf, pastBitNum);
-        if (TESTBIT(pastInfo.BGFDDApf, presBitNum))
-          SETBIT(info.BGFDDApf, pastBitNum);
-        if (TESTBIT(pastInfo.BGFDDCpf, presBitNum))
-          SETBIT(info.BGFDDCpf, pastBitNum);
-        if (TESTBIT(pastInfo.BBFDDApf, presBitNum))
-          SETBIT(info.BBFDDApf, pastBitNum);
-        if (TESTBIT(pastInfo.BBFDDCpf, presBitNum))
-          SETBIT(info.BBFDDCpf, pastBitNum);
-        if (TESTBIT(pastInfo.BGFV0Apf, presBitNum))
-          SETBIT(info.BGFV0Apf, pastBitNum);
-        if (TESTBIT(pastInfo.BBFV0Apf, presBitNum))
-          SETBIT(info.BBFV0Apf, pastBitNum);
-      }
-      // scrolling forward on the original vector
-      for (int32_t jbc = ibc + 1; jbc <= nBCsWithFIT; ++jbc) {
-        uint64_t futbc = vbcsWithFIT[jbc].first;
-        uint64_t deltaBC = futbc - bc;
-        if (deltaBC > 15) // [1, 15]
-          break;
-        const auto& futInfo = vbcsWithFIT[jbc].second;
-        uint64_t futBitNum = deltaBC + 16; // bits range in [17, 31]
-        if (TESTBIT(futInfo.BGFT0Apf, presBitNum))
-          SETBIT(info.BGFT0Apf, futBitNum);
-        if (TESTBIT(futInfo.BGFT0Cpf, presBitNum))
-          SETBIT(info.BGFT0Cpf, futBitNum);
-        if (TESTBIT(futInfo.BBFT0Apf, presBitNum))
-          SETBIT(info.BBFT0Apf, futBitNum);
-        if (TESTBIT(futInfo.BBFT0Cpf, presBitNum))
-          SETBIT(info.BBFT0Cpf, futBitNum);
-        if (TESTBIT(futInfo.BGFDDApf, presBitNum))
-          SETBIT(info.BGFDDApf, futBitNum);
-        if (TESTBIT(futInfo.BGFDDCpf, presBitNum))
-          SETBIT(info.BGFDDCpf, futBitNum);
-        if (TESTBIT(futInfo.BBFDDApf, presBitNum))
-          SETBIT(info.BBFDDApf, futBitNum);
-        if (TESTBIT(futInfo.BBFDDCpf, presBitNum))
-          SETBIT(info.BBFDDCpf, futBitNum);
-        if (TESTBIT(futInfo.BGFV0Apf, presBitNum))
-          SETBIT(info.BGFV0Apf, futBitNum);
-        if (TESTBIT(futInfo.BBFV0Apf, presBitNum))
-          SETBIT(info.BBFV0Apf, futBitNum);
-      }
-      // add current pair to map
-      bcsWithFIT.insert({bc, info});
-    }
-
-    vbcsWithFIT.clear();
   }
 
   template <int32_t tracksSwitch, typename TAmbTrack>
@@ -700,10 +621,19 @@ struct UpcCandProducer {
       if (!applyBarCuts(trk))
         continue;
       int64_t trkId = trk.globalIndex();
-      uint64_t bc = getTrackBC(trk, ambBarrelTracks, ambBarrelTrIds, collisions, bcs);
-      if (!upcCuts.getRequireITSTPC() && trk.hasTOF())
+      int64_t ambTrId = -1;
+      int32_t nContrib = -1;
+      auto ambIter = ambBarrelTrIds.find(trkId);
+      if (ambIter == ambBarrelTrIds.end()) {
+        const auto& col = trk.collision();
+        nContrib = col.numContrib();
+      } else {
+        ambTrId = ambIter->second;
+      }
+      uint64_t bc = getTrackBC(trk, ambBarrelTracks, ambTrId, collisions, bcs);
+      if (!upcCuts.getRequireITSTPC() && trk.hasTOF() && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
-      if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC())
+      if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC() && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
       if (fSearchITSTPC == 1 && !trk.hasTOF() && trk.hasITS() && trk.hasTPC())
         addTrack(bcsMatchedTrIdsITSTPC, bc, trkId);
@@ -721,9 +651,18 @@ struct UpcCandProducer {
       if (!applyFwdCuts(trk))
         continue;
       int64_t trkId = trk.globalIndex();
-      uint64_t bc = getTrackBC(trk, ambFwdTracks, ambFwdTrIds, collisions, bcs);
+      int64_t ambTrId = -1;
+      int32_t nContrib = -1;
+      auto ambIter = ambFwdTrIds.find(trkId);
+      if (ambIter == ambFwdTrIds.end()) {
+        const auto& col = trk.collision();
+        nContrib = col.numContrib();
+      } else {
+        ambTrId = ambIter->second;
+      }
+      uint64_t bc = getTrackBC(trk, ambFwdTracks, ambTrId, collisions, bcs);
       auto trkType = trk.trackType();
-      if (trkType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
+      if (trkType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsMID, bc, trkId);
     }
   }
@@ -787,9 +726,6 @@ struct UpcCandProducer {
     std::sort(bcsMatchedTrIdsITSTPC.begin(), bcsMatchedTrIdsITSTPC.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
-    std::unordered_map<uint64_t, upchelpers::FITInfo> bcsWithFIT;
-    processFITInfo(bcs, ft0s, fdds, fv0as, bcsMatchedTrIdsTOF, bcsWithFIT);
-
     fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
 
     if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
@@ -825,6 +761,13 @@ struct UpcCandProducer {
     float dummyY = 0.;
     float dummyZ = 0.;
 
+    std::vector<std::pair<uint64_t, int64_t>> indexBCglId;
+    indexBCglId.reserve(bcs.size());
+    for (const auto& bc : bcs) {
+      if (bc.has_foundFT0() || bc.has_foundFV0() || bc.has_foundFDD())
+        indexBCglId.emplace_back(std::make_pair(bc.globalBC(), bc.globalIndex()));
+    }
+
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
 
     // storing n-prong matches
@@ -839,13 +782,10 @@ struct UpcCandProducer {
       // if there is no relevant signal, dummy info will be used
       uint64_t bc = item.first;
       upchelpers::FITInfo fitInfo{};
-      auto it = bcsWithFIT.find(bc);
-      if (it != bcsWithFIT.end()) {
-        fitInfo = it->second;
-        if (fFilterFT0) {
-          if (!checkFT0(fitInfo, true))
-            continue;
-        }
+      processFITInfo(fitInfo, bc, indexBCglId, bcs, ft0s, fdds, fv0as);
+      if (fFilterFT0) {
+        if (!checkFT0(fitInfo, true))
+          continue;
       }
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
@@ -869,6 +809,7 @@ struct UpcCandProducer {
       candID++;
     }
 
+    indexBCglId.clear();
     ambBarrelTrIds.clear();
     bcsMatchedTrIdsTOF.clear();
   }
@@ -931,9 +872,6 @@ struct UpcCandProducer {
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
-    std::unordered_map<uint64_t, upchelpers::FITInfo> bcsWithFIT;
-    processFITInfo(bcs, ft0s, fdds, fv0as, bcsMatchedTrIdsMID, bcsWithFIT);
-
     fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
 
     if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
@@ -973,6 +911,13 @@ struct UpcCandProducer {
     float dummyY = 0.;
     float dummyZ = 0.;
 
+    std::vector<std::pair<uint64_t, int64_t>> indexBCglId;
+    indexBCglId.reserve(bcs.size());
+    for (const auto& bc : bcs) {
+      if (bc.has_foundFT0() || bc.has_foundFV0() || bc.has_foundFDD())
+        indexBCglId.emplace_back(std::make_pair(bc.globalBC(), bc.globalIndex()));
+    }
+
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
 
     // storing n-prong matches
@@ -992,13 +937,10 @@ struct UpcCandProducer {
       // if there is no relevant signal, dummy info will be used
       uint64_t bc = pairMID.first;
       upchelpers::FITInfo fitInfo{};
-      auto it = bcsWithFIT.find(bc);
-      if (it != bcsWithFIT.end()) {
-        fitInfo = it->second;
-        if (fFilterFT0) {
-          if (!checkFT0(fitInfo, false))
-            continue;
-        }
+      processFITInfo(fitInfo, bc, indexBCglId, bcs, ft0s, fdds, fv0as);
+      if (fFilterFT0) {
+        if (!checkFT0(fitInfo, false))
+          continue;
       }
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
@@ -1023,6 +965,7 @@ struct UpcCandProducer {
       candID++;
     }
 
+    indexBCglId.clear();
     ambFwdTrIds.clear();
     bcsMatchedTrIdsMID.clear();
     ambBarrelTrIds.clear();
