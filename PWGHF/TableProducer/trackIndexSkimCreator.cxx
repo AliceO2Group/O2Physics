@@ -2164,7 +2164,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
   // track cuts for bachelor
   Configurable<bool> tpcRefitBach{"tpcRefitBach", true, "request TPC refit bachelor"};
-  Configurable<int> minCrossedRowsBach{"minCrossedRowsBach", 50, "min crossed rows bachelor"};
+  Configurable<int> nCrossedRowsMinBach{"nCrossedRowsMinBach", 50, "min crossed rows bachelor"};
 
   // track cuts for V0 daughters
   Configurable<bool> TPCRefitV0Daugh{"TPCRefitV0Daugh", true, "request TPC refit V0 daughters"};
@@ -2293,8 +2293,8 @@ struct HfTrackIndexSkimCreatorCascades {
           continue;
         }
       }
-      if (bach.tpcNClsCrossedRows() < minCrossedRowsBach) {
-        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to minNUmberOfCrossedRows " << bach.tpcNClsCrossedRows() << " (cut " << minCrossedRowsBach << ")");
+      if (bach.tpcNClsCrossedRows() < nCrossedRowsMinBach) {
+        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to minNUmberOfCrossedRows " << bach.tpcNClsCrossedRows() << " (cut " << nCrossedRowsMinBach << ")");
         continue;
       }
       MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "KEPT! proton from Lc with daughters " << indexBach);
