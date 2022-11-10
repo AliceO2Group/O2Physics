@@ -2172,7 +2172,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
   // track cuts for V0 daughters
   Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
-  Configurable<double> ptMin{"ptMin", 0.05, "min. pT V0 daughters"};
+  Configurable<double> ptMinV0Daugh{"ptMinV0Daugh", 0.05, "min. pT V0 daughters"};
 
   // bachelor cuts
   //  Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
@@ -2340,9 +2340,9 @@ struct HfTrackIndexSkimCreatorCascades {
         //   continue;
         // }
         //
-        if (trackV0DaughPos.pt() < ptMin || // to the filters? I can't for now, it is not in the tables
-            trackV0DaughNeg.pt() < ptMin) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMin << ")");
+        if (trackV0DaughPos.pt() < ptMinV0Daugh || // to the filters? I can't for now, it is not in the tables
+            trackV0DaughNeg.pt() < ptMinV0Daugh) {
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMinV0Daugh << ")");
           continue;
         }
         if (std::abs(trackV0DaughPos.eta()) > etaMaxV0Daugh || // to the filters? I can't for now, it is not in the tables
