@@ -9,4 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_header_only_library(DataModel)
+o2physics_add_header_only_library(DataModel
+                                  HEADERS CaloClusters.h
+                                          Centrality.h
+                                          EventSelection.h
+                                          FT0Corrected.h
+                                          Multiplicity.h
+                                          PIDResponse.h
+                                          TrackSelectionTables.h)
