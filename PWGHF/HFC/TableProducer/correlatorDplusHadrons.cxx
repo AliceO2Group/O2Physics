@@ -90,7 +90,7 @@ struct HfCorrelatorDplusHadrons {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> cutTrackEtaMax{"cutTrackEtaMax", -1., "max. eta of tracks"};
+  Configurable<double> etaTrackMax{"etaTrackMax", -1., "max. eta of tracks"};
   Configurable<double> cutDCAxyMax{"cutDCAxyMax", -1., "max. DCAxy of tracks"};
   Configurable<double> cutDCAzMax{"cutDCAzMax", -1., "max. DCAz of tracks"};
   Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
@@ -121,7 +121,7 @@ struct HfCorrelatorDplusHadrons {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
         if (std::abs(track.dcaXY()) > cutDCAxyMax || std::abs(track.dcaZ()) > cutDCAzMax) {
@@ -170,7 +170,7 @@ struct HfCorrelatorDplusHadrons {
       // Dplus-Hadron correlation dedicated section
       // if the candidate is a Dplus, search for Hadrons and evaluate correlations
       for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
         if (track.pt() < cutPtTrackMin) {
@@ -202,7 +202,7 @@ struct HfCorrelatorDplusHadrons {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
         if (std::abs(track.dcaXY()) > cutDCAxyMax || std::abs(track.dcaZ()) > cutDCAzMax) {
@@ -261,7 +261,7 @@ struct HfCorrelatorDplusHadrons {
       // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
       flagDplusSignal = candidate1.flagMCMatchRec() == 1 << DecayType::DplusToPiKPi;
       for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
         if (track.pt() < cutPtTrackMin) {
@@ -315,7 +315,7 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
       for (auto& particle2 : particlesMC) {
-        if (std::abs(particle2.eta()) > cutTrackEtaMax) {
+        if (std::abs(particle2.eta()) > etaTrackMax) {
           continue;
         }
         if (particle2.pt() < cutPtTrackMin) {
