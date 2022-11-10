@@ -852,7 +852,7 @@ struct HfTrackIndexSkimCreator {
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
-  Configurable<double> maxRad{"maxRad", 200., "reject PCA's above this radius"};
+  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
@@ -1501,7 +1501,7 @@ struct HfTrackIndexSkimCreator {
     o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
     df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxRad);
+    df2.setMaxR(maxR);
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
@@ -1511,7 +1511,7 @@ struct HfTrackIndexSkimCreator {
     o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(o2::base::Propagator::Instance()->getNominalBz());
     df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxRad);
+    df3.setMaxR(maxR);
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
