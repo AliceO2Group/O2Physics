@@ -2186,7 +2186,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
   // cascade cuts
   Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};              // PbPb 2018: use 1
-  Configurable<double> cutCascInvMassLc{"cutCascInvMassLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
+  Configurable<double> cutInvMassCascLc{"cutInvMassCascLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
   // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
 
   // magnetic field setting from CCDB
@@ -2368,8 +2368,8 @@ struct HfTrackIndexSkimCreatorCascades {
         // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
         // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
         mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
-        if ((cutCascInvMassLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutCascInvMassLc)) {
-          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutCascInvMassLc << ")");
+        if ((cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutInvMassCascLc)) {
+          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")");
           continue;
         }
 
