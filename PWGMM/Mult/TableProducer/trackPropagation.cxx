@@ -33,7 +33,6 @@
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
 
-#include "DetectorsBase/Propagator.h"
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 

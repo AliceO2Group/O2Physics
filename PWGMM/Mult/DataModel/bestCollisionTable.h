@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
+#define PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -58,3 +60,5 @@ DECLARE_SOA_TABLE(ReassignedTracksExtra, "AOD", "EXRETRACKS",
                   track::PhiStatic);
 
 } // namespace o2::aod
+
+#endif
