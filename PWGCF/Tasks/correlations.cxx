@@ -26,6 +26,7 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 #include <TH1F.h>
 #include <cmath>
@@ -177,8 +178,10 @@ struct CorrelationTask {
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;
+    // static o2::parameters::GRPMagField* grpo = nullptr;
     if (grpo == nullptr) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      // grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
         LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
         return 0;
@@ -377,12 +380,15 @@ struct CorrelationTask {
   void processSameDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     if (cfgVerbosity > 0) {
-      LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.multiplicity());
+      LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks.size(), collision.posZ(), collision.multiplicity());
     }
     loadEfficiency(collision.timestamp());
 
     const auto multiplicity = collision.multiplicity();
-    const int field = getMagneticField(collision.timestamp());
+    int field = 0;
+    if (cfgTwoTrackCut > 0) {
+      field = getMagneticField(collision.timestamp());
+    }
 
     registry.fill(HIST("eventcount"), -2);
     fillQA(collision, multiplicity, tracks);
@@ -452,7 +458,10 @@ struct CorrelationTask {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       int bin = configurableBinning.getBin({collision1.posZ(), collision1.multiplicity()});
       float eventWeight = 1.0f / it.currentWindowNeighbours();
-      auto field = getMagneticField(collision1.timestamp());
+      int field = 0;
+      if (cfgTwoTrackCut > 0) {
+        field = getMagneticField(collision1.timestamp());
+      }
 
       if (cfgVerbosity > 0) {
         LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
