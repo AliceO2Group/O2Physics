@@ -17,17 +17,17 @@
 #ifndef VarManager_H
 #define VarManager_H
 
-#include <TObject.h>
-#include <TString.h>
-#include <Math/Vector4D.h>
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include <TRandom.h>
-
 #include <vector>
 #include <map>
 #include <cmath>
 #include <iostream>
+
+#include <TObject.h>
+#include <TString.h>
+#include "TRandom.h"
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/GenVector/Boost.h"
 
 #include "Framework/DataTypes.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -672,13 +672,13 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsGlobalTrack] = track.filteringFlags() & (uint64_t(1) << 0);
       values[kIsGlobalTrackSDD] = track.filteringFlags() & (uint64_t(1) << 1);
 
-      values[kIsLegFromGamma] = bool(track.filteringFlags() & (uint64_t(1) << 2));
-      values[kIsLegFromK0S] = bool(track.filteringFlags() & (uint64_t(1) << 3));
-      values[kIsLegFromLambda] = bool(track.filteringFlags() & (uint64_t(1) << 4));
-      values[kIsLegFromAntiLambda] = bool(track.filteringFlags() & (uint64_t(1) << 5));
-      values[kIsLegFromOmega] = bool(track.filteringFlags() & (uint64_t(1) << 6));
+      values[kIsLegFromGamma] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 2));
+      values[kIsLegFromK0S] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 3));
+      values[kIsLegFromLambda] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 4));
+      values[kIsLegFromAntiLambda] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 5));
+      values[kIsLegFromOmega] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 6));
 
-      values[kIsProtonFromLambdaAndAntiLambda] = bool((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
+      values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
     }
   }
 
