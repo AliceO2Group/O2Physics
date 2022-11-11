@@ -45,8 +45,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
 
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Chic_to_jpsigamma_cuts", {hf_cuts_chic_tojpsigamma::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Chic_to_jpsigamma_cuts", {hf_cuts_chic_tojpsigamma::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection

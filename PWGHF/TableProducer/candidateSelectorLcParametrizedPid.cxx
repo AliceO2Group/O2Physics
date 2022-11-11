@@ -50,7 +50,7 @@ struct HfCandidateSelectorLcParametrizedPidRichIndexBuilder { // Builder of the 
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLcParametrizedPid {
   Produces<aod::HFSelLcCandidateparametrizedPID> hfSelLcCandidateparametrizedPID;
-  
+
   Configurable<double> etaPerfectPidMax{"etaPerfectPidMax", 1.75, "Eta cut for perfect PID"};
   Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Normalised decay length"};
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
@@ -68,8 +68,8 @@ struct HfCandidateSelectorLcParametrizedPid {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
   /*
   /// Selection on goodness of daughter tracks

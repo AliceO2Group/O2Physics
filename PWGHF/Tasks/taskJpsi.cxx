@@ -46,7 +46,7 @@ struct HfTaskJpsi {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 0, "Selection Flag for Jpsi"};
   Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
   Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
   Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
@@ -149,7 +149,7 @@ struct HfTaskJpsiMc {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
   Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
   Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};

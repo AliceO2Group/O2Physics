@@ -41,8 +41,8 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_tokkpi::pTBins_v}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Ds_to_K_K_Pi_cuts", {hf_cuts_ds_tokkpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Ds candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_tokkpi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Ds_to_K_K_Pi_cuts", {hf_cuts_ds_tokkpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
 
   /// Candidate selections
   /// \param candidate is candidate
