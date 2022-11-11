@@ -42,7 +42,7 @@ struct HfTaskDplus {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  Configurable<int> d_selectionFlagDPlus{"d_selectionFlagDPlus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
+  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
 
@@ -88,7 +88,7 @@ struct HfTaskDplus {
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagDPlus;
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   void process(soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const& candidates)
   {
@@ -155,7 +155,7 @@ struct HfTaskDplus {
         if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
           registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
         }
-        if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
+        if (candidate.isSelDplusToPiKPi() >= selectionFlagDplus) {
           registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         }
         if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
@@ -166,7 +166,7 @@ struct HfTaskDplus {
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
           }
-          if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
+          if (candidate.isSelDplusToPiKPi() >= selectionFlagDplus) {
             registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
           }
         } else {
@@ -177,7 +177,7 @@ struct HfTaskDplus {
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
           }
-          if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
+          if (candidate.isSelDplusToPiKPi() >= selectionFlagDplus) {
             registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
           }
         }

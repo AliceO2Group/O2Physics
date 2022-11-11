@@ -44,9 +44,9 @@ struct HfTaskLcToK0sP {
      {"hEta", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -2.0f, 2.0f}}}},
      {"hSelectionStatus", "cascade candidates;selection status;entries", {HistType::kTH1F, {{5, -0.5f, 4.5f}}}}}};
 
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<int> selectionFlagLcbar{"selectionFlagLcbar", 1, "Selection Flag for Lcbar"};
-  Configurable<double> cutEtaCandMax{"cutEtaCandMax", -1., "max. cand. pseudorapidity"};
+  Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
+  Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
 
   void init(InitContext& context)
   {
@@ -64,7 +64,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLc || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbar);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcToK0sP || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbarToK0sP);
 
   void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate>> const& candidates)
   {
@@ -76,7 +76,7 @@ struct HfTaskLcToK0sP {
         continue;
       }
       */
-      if (cutEtaCandMax >= 0. && std::abs(candidate.eta()) > cutEtaCandMax) {
+      if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         // Printf("Candidate: eta rejection: %g", candidate.eta());
         continue;
       }
@@ -101,7 +101,7 @@ struct HfTaskLcToK0sP {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
-      if (cutEtaCandMax >= 0. && std::abs(candidate.eta()) > cutEtaCandMax) {
+      if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         // Printf("MC Rec.: eta rejection: %g", candidate.eta());
         continue;
       }
@@ -122,7 +122,7 @@ struct HfTaskLcToK0sP {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (cutEtaCandMax >= 0. && std::abs(particle.eta()) > cutEtaCandMax) {
+      if (etaCandMax >= 0. && std::abs(particle.eta()) > etaCandMax) {
         // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;
       }

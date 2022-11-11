@@ -126,11 +126,11 @@ struct HfTaskLc {
      {"MC/generated/prompt/hPhiGenPrompt", "MC particles (matched, prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
      {"MC/generated/nonprompt/hPhiGenNonPrompt", "MC particles (matched, non-prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}}}};
 
-  Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= d_selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= d_selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void init(o2::framework::InitContext&)
   {
@@ -259,12 +259,12 @@ struct HfTaskLc {
         continue;
       }
       auto pt = candidate.pt();
-      if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
+      if (candidate.isSelLcpKpi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), InvMassLcpKpi(candidate));
         registry.fill(HIST("Data/hMassVsPtVsMult"), InvMassLcpKpi(candidate), pt, nTracks);
         registry.fill(HIST("Data/hMassVsPt"), InvMassLcpKpi(candidate), pt);
       }
-      if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
+      if (candidate.isSelLcpiKp() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), InvMassLcpiKp(candidate));
         registry.fill(HIST("Data/hMassVsPtVsMult"), InvMassLcpiKp(candidate), pt, nTracks);
         registry.fill(HIST("Data/hMassVsPt"), InvMassLcpiKp(candidate), pt);
@@ -325,11 +325,11 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
         auto pt = candidate.pt();
         /// MC reconstructed signal
-        if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
+        if (candidate.isSelLcpKpi() >= selectionFlagLc) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), InvMassLcpKpi(candidate));
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), InvMassLcpKpi(candidate), pt);
         }
-        if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
+        if (candidate.isSelLcpiKp() >= selectionFlagLc) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), InvMassLcpiKp(candidate));
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), InvMassLcpiKp(candidate), pt);
         }
@@ -367,11 +367,11 @@ struct HfTaskLc {
 
         /// reconstructed signal prompt
         if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
-          if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
+          if (candidate.isSelLcpKpi() >= selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), InvMassLcpKpi(candidate));
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), InvMassLcpKpi(candidate), pt);
           }
-          if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
+          if (candidate.isSelLcpiKp() >= selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), InvMassLcpiKp(candidate));
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), InvMassLcpiKp(candidate), pt);
           }
@@ -406,11 +406,11 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2SigPrompt"), candidate.errorImpactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrSigPrompt"), candidate.errorDecayLength(), pt);
         } else {
-          if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
+          if (candidate.isSelLcpKpi() >= selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), InvMassLcpKpi(candidate));
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), InvMassLcpKpi(candidate), pt);
           }
-          if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
+          if (candidate.isSelLcpiKp() >= selectionFlagLc) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), InvMassLcpiKp(candidate));
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), InvMassLcpiKp(candidate), pt);
           }

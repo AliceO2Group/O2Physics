@@ -64,9 +64,9 @@ struct HfCandidateCreatorLb {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double massLcPi = 0.;
 
-  Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= d_selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= d_selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -99,10 +99,10 @@ struct HfCandidateCreatorLb {
       if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_prong3::DecayType::LcToPKPi)) {
         continue;
       }
-      if (lcCand.isSelLcpKpi() >= d_selectionFlagLc) {
+      if (lcCand.isSelLcpKpi() >= selectionFlagLc) {
         hMassLcToPKPi->Fill(InvMassLcpKpi(lcCand), lcCand.pt());
       }
-      if (lcCand.isSelLcpiKp() >= d_selectionFlagLc) {
+      if (lcCand.isSelLcpiKp() >= selectionFlagLc) {
         hMassLcToPKPi->Fill(InvMassLcpiKp(lcCand), lcCand.pt());
       }
       hPtLc->Fill(lcCand.pt());

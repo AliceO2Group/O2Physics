@@ -65,11 +65,11 @@ struct HfCandidateCreatorX {
   double massJpsi = RecoDecay::getMassPDG(443);
   double massJpsiPiPi;
 
-  Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= d_selectionFlagJpsi);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<

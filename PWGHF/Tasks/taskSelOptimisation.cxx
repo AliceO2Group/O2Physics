@@ -100,20 +100,20 @@ static std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histMinTrack
 
 struct HfSelOptimisation {
 
-  Configurable<std::vector<float>> cutsToTestCosp{"cutsToTestCosp", std::vector<float>{vecCutsCosp}, "cos(theta_P) cut values to test"};
+  Configurable<std::vector<float>> cutsToTestCpa{"cutsToTestCpa", std::vector<float>{vecCutsCosp}, "cos(theta_P) cut values to test"};
   Configurable<std::vector<float>> cutsToTestDecLen{"cutsToTestDecLen", std::vector<float>{vecCutsDecLen}, "decay length cut values to test"};
   Configurable<std::vector<float>> cutsToTestImpParProd{"cutsToTestImpParProd", std::vector<float>{vecCutsImpParProd}, "impact parameter product cut values to test (2-prongs only)"};
-  Configurable<std::vector<float>> cutsToTestMinDCAxy{"cutsToTestMinDCAxy", std::vector<float>{vecCutsMinDCAxy}, "min DCA xy cut values to test"};
+  Configurable<std::vector<float>> cutsToTestMinDcaXY{"cutsToTestMinDcaXY", std::vector<float>{vecCutsMinDCAxy}, "min DCA xy cut values to test"};
   Configurable<std::vector<float>> cutsToTestMinTrackPt{"cutsToTestMinTrackPt", std::vector<float>{vecCutsMinTrackPt}, "min track pT cut values to test"};
 
   ConfigurableAxis ptBinning{"ptBinning", {0, 0., 2., 5., 20.}, "pT bin limits"};
 
   AxisSpec axisPt = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
   // quantized axes
-  AxisSpec axisCosp = {static_cast<int>(cutsToTestCosp->size()), 0.5, cutsToTestCosp->size() + 0.5, "cos(#theta_{P}) >"};
+  AxisSpec axisCosp = {static_cast<int>(cutsToTestCpa->size()), 0.5, cutsToTestCpa->size() + 0.5, "cos(#theta_{P}) >"};
   AxisSpec axisDecLen = {static_cast<int>(cutsToTestDecLen->size()), 0.5, cutsToTestDecLen->size() + 0.5, "decay length (cm) >"};
   AxisSpec axisImpParProd = {static_cast<int>(cutsToTestImpParProd->size()), 0.5, cutsToTestImpParProd->size() + 0.5, "#it{d}_{0}#times#it{d}_{0} (cm^{2}) <"};
-  AxisSpec axisMinDCAxy = {static_cast<int>(cutsToTestMinDCAxy->size()), 0.5, cutsToTestMinDCAxy->size() + 0.5, "min track #it{d}_{0} (cm) >"};
+  AxisSpec axisMinDCAxy = {static_cast<int>(cutsToTestMinDcaXY->size()), 0.5, cutsToTestMinDcaXY->size() + 0.5, "min track #it{d}_{0} (cm) >"};
   AxisSpec axisMinTrackPt = {static_cast<int>(cutsToTestMinTrackPt->size()), 0.5, cutsToTestMinTrackPt->size() + 0.5, "min track #it{p}_{T} (cm) >"};
 
   HistogramRegistry registry{"registry", {}};
@@ -125,7 +125,7 @@ struct HfSelOptimisation {
         histPt2Prong[iOrig][i2Prong] = registry.add<TH1>(histoNames2Prong[iOrig][i2Prong].data(), "", HistType::kTH1F, {axisPt});
         histCospVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesCosp2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisCosp});
         for (int iBin{0}; iBin < histCospVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
-          histCospVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestCosp->at(iBin)));
+          histCospVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestCpa->at(iBin)));
         }
         histDecLenVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesDecLen2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisDecLen});
         for (int iBin{0}; iBin < histDecLenVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
@@ -137,7 +137,7 @@ struct HfSelOptimisation {
         }
         histMinDCAxyVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesMinDCAxy2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisMinDCAxy});
         for (int iBin{0}; iBin < histMinDCAxyVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
-          histMinDCAxyVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinDCAxy->at(iBin)));
+          histMinDCAxyVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinDcaXY->at(iBin)));
         }
         histMinTrackPtVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesMinTrackPt2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisMinTrackPt});
         for (int iBin{0}; iBin < histMinTrackPtVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
@@ -148,7 +148,7 @@ struct HfSelOptimisation {
         histPt3Prong[iOrig][i3Prong] = registry.add<TH1>(histoNames3Prong[iOrig][i3Prong].data(), "", HistType::kTH1F, {axisPt});
         histCospVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesCosp3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisCosp});
         for (int iBin{0}; iBin < histCospVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
-          histCospVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestCosp->at(iBin)));
+          histCospVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestCpa->at(iBin)));
         }
         histDecLenVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesDecLen3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisDecLen});
         for (int iBin{0}; iBin < histDecLenVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
@@ -156,7 +156,7 @@ struct HfSelOptimisation {
         }
         histMinDCAxyVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesMinDCAxy3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisMinDCAxy});
         for (int iBin{0}; iBin < histMinDCAxyVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
-          histMinDCAxyVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinDCAxy->at(iBin)));
+          histMinDCAxyVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinDcaXY->at(iBin)));
         }
         histMinTrackPtVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesMinTrackPt3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisMinTrackPt});
         for (int iBin{0}; iBin < histMinTrackPtVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
@@ -183,8 +183,8 @@ struct HfSelOptimisation {
 
     histPt2Prong[candOrig][candType]->Fill(pT);
 
-    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
-      if (candidate.cpa() > cutsToTestCosp->at(iCospCut)) {
+    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCpa->size(); ++iCospCut) {
+      if (candidate.cpa() > cutsToTestCpa->at(iCospCut)) {
         histCospVsPt2Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
       }
     }
@@ -201,8 +201,8 @@ struct HfSelOptimisation {
       }
     }
 
-    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
-      if (absDCA[0] > cutsToTestMinDCAxy->at(iMinDCAxy)) {
+    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDcaXY->size(); ++iMinDCAxy) {
+      if (absDCA[0] > cutsToTestMinDcaXY->at(iMinDCAxy)) {
         histMinDCAxyVsPt2Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
       }
     }
@@ -231,8 +231,8 @@ struct HfSelOptimisation {
 
     histPt3Prong[candOrig][candType]->Fill(pT);
 
-    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
-      if (candidate.cpa() > cutsToTestCosp->at(iCospCut)) {
+    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCpa->size(); ++iCospCut) {
+      if (candidate.cpa() > cutsToTestCpa->at(iCospCut)) {
         histCospVsPt3Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
       }
     }
@@ -243,8 +243,8 @@ struct HfSelOptimisation {
       }
     }
 
-    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
-      if (absDCA[0] > cutsToTestMinDCAxy->at(iMinDCAxy)) {
+    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDcaXY->size(); ++iMinDCAxy) {
+      if (absDCA[0] > cutsToTestMinDcaXY->at(iMinDCAxy)) {
         histMinDCAxyVsPt3Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
       }
     }

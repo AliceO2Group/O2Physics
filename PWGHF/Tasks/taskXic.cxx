@@ -42,7 +42,7 @@ struct HfTaskXic {
       {"hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}} ///
     }};
 
-  Configurable<int> d_selectionFlagXic{"d_selectionFlagXic", 1, "Selection Flag for Xic"};
+  Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_topkpi::pTBins_v}, "pT bin limits"};
 
@@ -91,7 +91,7 @@ struct HfTaskXic {
     registry.add("hPtProng2RecBg", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> selectedXicCandidates = aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic;
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> selectedXicCandidates = aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic;
 
   void process(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate> const& candidates)
   {
@@ -103,10 +103,10 @@ struct HfTaskXic {
         continue;
       }
 
-      if (candidate.isSelXicToPKPi() >= d_selectionFlagXic) {
+      if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
         registry.fill(HIST("hMass"), InvMassXicToPKPi(candidate), candidate.pt());
       }
-      if (candidate.isSelXicToPiKP() >= d_selectionFlagXic) {
+      if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
         registry.fill(HIST("hMass"), InvMassXicToPiKP(candidate), candidate.pt());
       }
 
@@ -131,7 +131,7 @@ struct HfTaskXic {
     }
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   void processMC(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)
@@ -148,10 +148,10 @@ struct HfTaskXic {
       auto mass = 0.;
       auto massC = 0.;
 
-      if (candidate.isSelXicToPKPi() >= d_selectionFlagXic) {
+      if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
         mass = InvMassXicToPKPi(candidate);
       }
-      if (candidate.isSelXicToPiKP() >= d_selectionFlagXic) {
+      if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
         massC = InvMassXicToPiKP(candidate);
       }
 

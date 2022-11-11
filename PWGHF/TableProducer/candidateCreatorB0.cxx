@@ -57,9 +57,9 @@ struct HfCandidateCreatorB0 {
   double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
   double massDPi = 0.;
 
-  Configurable<int> d_selectionFlagD{"d_selectionFlagD", 1, "Selection Flag for D"};
+  Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagD); // FIXME
+  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagD); // FIXME
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -92,7 +92,7 @@ struct HfCandidateCreatorB0 {
       if (!TESTBIT(dCand.hfflag(), hf_cand_prong3::DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (dCand.isSelDplusToPiKPi() >= d_selectionFlagD) {
+      if (dCand.isSelDplusToPiKPi() >= selectionFlagD) {
         hMassDToPiKPi->Fill(InvMassDPlus(dCand), dCand.pt());
       }
       hPtD->Fill(dCand.pt());

@@ -76,11 +76,12 @@ struct HfTaskQaPidRejection {
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
+
   // Particle selection
-  Configurable<int> etaBins{"etaBins", 40, "Number of eta bins"};
+  Configurable<int> nBinsEta{"nBinsEta", 40, "Number of eta bins"};
   Configurable<float> etaMin{"etaMin", -2.f, "Lower limit in eta"};
   Configurable<float> etaMax{"etaMax", 2.f, "Upper limit in eta"};
-  Configurable<int> ptBins{"ptBins", 400, "Number of pT bins"};
+  Configurable<int> nBinsPt{"nBinsPt", 400, "Number of pT bins"};
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 20.f, "Upper limit in pT"};
   // TPC
@@ -97,12 +98,13 @@ struct HfTaskQaPidRejection {
   Configurable<double> ptPidRichMax{"ptPidRichMax", 10., "Upper bound of track pT for RICH PID"};
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
+
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
   {
-    AxisSpec ptAxis{ptBins, ptMin, ptMax};
-    AxisSpec etaAxis{etaBins, etaMin, etaMax};
+    AxisSpec ptAxis{nBinsPt, ptMin, ptMax};
+    AxisSpec etaAxis{nBinsEta, etaMin, etaMax};
 
     TString commonTitle = "";
     if (particlePDG != 0) {
@@ -252,10 +254,10 @@ struct HfTaskQaPidRejectionGeneral {
   Configurable<float> etaMaxSel{"etaMaxSel", 1.44, "Max #eta single track"};
   Configurable<float> ptMinSel{"ptMinSel", 0.6, "p_{T} min single track"};
   // Particle selection
-  Configurable<int> etaBins{"etaBins", 40, "Number of eta bins"};
+  Configurable<int> nBinsEta{"nBinsEta", 40, "Number of eta bins"};
   Configurable<float> etaMin{"etaMin", -2.f, "Lower limit in eta"};
   Configurable<float> etaMax{"etaMax", 2.f, "Upper limit in eta"};
-  Configurable<int> ptBins{"ptBins", 400, "Number of pT bins"};
+  Configurable<int> nBinsPt{"nBinsPt", 400, "Number of pT bins"};
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 20.f, "Upper limit in pT"};
   // TPC
@@ -276,8 +278,8 @@ struct HfTaskQaPidRejectionGeneral {
 
   void init(InitContext&)
   {
-    AxisSpec ptAxis{ptBins, ptMin, ptMax};
-    AxisSpec etaAxis{etaBins, etaMin, etaMax};
+    AxisSpec ptAxis{nBinsPt, ptMin, ptMax};
+    AxisSpec etaAxis{nBinsEta, etaMin, etaMax};
 
     TString commonTitle = "";
 

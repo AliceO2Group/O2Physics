@@ -59,10 +59,10 @@ struct HfCandidateCreatorXicc {
   double massXic = RecoDecay::getMassPDG(int(pdg::Code::kXiCPlus));
   double massXicc{0.};
 
-  Configurable<int> d_selectionFlagXic{"d_selectionFlagXic", 1, "Selection Flag for Xic"};
+  Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> const& xicCands,
@@ -92,10 +92,10 @@ struct HfCandidateCreatorXicc {
       if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_prong3::XicToPKPi)) {
         continue;
       }
-      if (xicCand.isSelXicToPKPi() >= d_selectionFlagXic) {
+      if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
         hMassXic->Fill(InvMassXicToPKPi(xicCand), xicCand.pt());
       }
-      if (xicCand.isSelXicToPiKP() >= d_selectionFlagXic) {
+      if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
         hMassXic->Fill(InvMassXicToPiKP(xicCand), xicCand.pt());
       }
       auto track0 = xicCand.index0_as<aod::BigTracks>();

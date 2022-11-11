@@ -46,11 +46,11 @@ struct HfTaskLcCentrality {
      {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
 
-  Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= d_selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= d_selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void init(o2::framework::InitContext&)
   {
@@ -83,10 +83,10 @@ struct HfTaskLcCentrality {
       if (yCandMax >= 0. && std::abs(YLc(candidate)) > yCandMax) {
         continue;
       }
-      if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
+      if (candidate.isSelLcpKpi() >= selectionFlagLc) {
         registry.fill(HIST("hMass"), InvMassLcpKpi(candidate), candidate.pt(), centrality);
       }
-      if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
+      if (candidate.isSelLcpiKp() >= selectionFlagLc) {
         registry.fill(HIST("hMass"), InvMassLcpiKp(candidate), candidate.pt(), centrality);
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -121,11 +121,11 @@ struct HfTaskLcCentralityMc {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= d_selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= d_selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void init(o2::framework::InitContext&)
   {

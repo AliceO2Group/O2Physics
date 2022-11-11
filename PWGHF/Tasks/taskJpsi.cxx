@@ -43,8 +43,8 @@ struct HfTaskJpsi {
      {"hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}},
      {"hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}}}};
 
-  Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 0, "Selection Flag for Jpsi"};
-  Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 0, "Selection Flag for Jpsi"};
+  Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
   Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
@@ -54,7 +54,7 @@ struct HfTaskJpsi {
 
   void init(o2::framework::InitContext&)
   {
-    if (d_modeJpsiToMuMu) {
+    if (modeJpsiToMuMu) {
       registry.add("hMass", "2-prong candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2., 4.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     } else {
       registry.add("hMass", "2-prong candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2., 4.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -71,19 +71,19 @@ struct HfTaskJpsi {
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= d_selectionFlagJpsi);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>> const& candidates)
   {
-    int decayMode = d_modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
+    int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
     for (auto& candidate : candidates) {
 
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (d_selectionFlagJpsi > 0) {
-        if (d_modeJpsiToMuMu) {
+      if (selectionFlagJpsi > 0) {
+        if (modeJpsiToMuMu) {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
@@ -109,7 +109,7 @@ struct HfTaskJpsi {
         continue;
       }
 
-      if (d_modeJpsiToMuMu) {
+      if (modeJpsiToMuMu) {
         registry.fill(HIST("hMass"), InvMassJpsiToMuMu(candidate), candidate.pt());
       } else {
         registry.fill(HIST("hMass"), InvMassJpsiToEE(candidate), candidate.pt());
@@ -146,8 +146,8 @@ struct HfTaskJpsiMc {
      {"hEtaRecBg", "2-prong candidates (rec. unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "2-prong candidates (gen. matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
-  Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
+  Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
   Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
@@ -157,7 +157,7 @@ struct HfTaskJpsiMc {
 
   void init(o2::framework::InitContext&)
   {
-    if (d_modeJpsiToMuMu) {
+    if (modeJpsiToMuMu) {
       registry.add("hMassSig", "2-prong candidates (rec matched);inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2., 4.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
       registry.add("hMassBg", "2-prong candidates (rec unmatched);inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2., 4.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     } else {
@@ -186,7 +186,7 @@ struct HfTaskJpsiMc {
     registry.add("hPtGenProng1", "2-prong candidates (gen. matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= d_selectionFlagJpsi);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
@@ -195,15 +195,15 @@ struct HfTaskJpsiMc {
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
-    int decayMode = d_modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
+    int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
     for (auto& candidate : candidates) {
 
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (d_selectionFlagJpsi > 0) {
-        if (d_modeJpsiToMuMu) {
+      if (selectionFlagJpsi > 0) {
+        if (modeJpsiToMuMu) {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
@@ -237,7 +237,7 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hPtRecSig"), candidate.pt());      // rec. level pT
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
-        if (d_modeJpsiToMuMu) {
+        if (modeJpsiToMuMu) {
           registry.fill(HIST("hMassSig"), InvMassJpsiToMuMu(candidate), candidate.pt());
         } else {
           registry.fill(HIST("hMassSig"), InvMassJpsiToEE(candidate), candidate.pt());
@@ -256,7 +256,7 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
-        if (d_modeJpsiToMuMu) {
+        if (modeJpsiToMuMu) {
           registry.fill(HIST("hMassBg"), InvMassJpsiToMuMu(candidate), candidate.pt());
         } else {
           registry.fill(HIST("hMassBg"), InvMassJpsiToEE(candidate), candidate.pt());

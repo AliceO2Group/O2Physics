@@ -48,7 +48,7 @@ struct HfTaskX {
      {"hPtProng2", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hPtCand", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
-  Configurable<int> d_selectionFlagX{"d_selectionFlagX", 1, "Selection Flag for X"};
+  Configurable<int> selectionFlagX{"selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
@@ -68,7 +68,7 @@ struct HfTaskX {
     registry.add("hDecLenXYErr", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= d_selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= d_selectionFlagX);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HFSelXToJpsiPiPiCandidate>> const& candidates)
   {
@@ -109,7 +109,7 @@ struct HfTaskXMc {
      {"hPtGen", "3-prong candidates (gen. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
      {"hPtGenSig", "3-prong candidates (rec. matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
-  Configurable<int> d_selectionFlagX{"d_selectionFlagX", 1, "Selection Flag for X"};
+  Configurable<int> selectionFlagX{"selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
@@ -151,7 +151,7 @@ struct HfTaskXMc {
     registry.add("hYBg", "3-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= d_selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= d_selectionFlagX);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HFSelXToJpsiPiPiCandidate, aod::HfCandXMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMCGen> const& particlesMC, aod::BigTracksMC const& tracks)

@@ -350,7 +350,7 @@ struct HfTaskMcValidationGen {
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
 struct HfTaskMcValidationRec {
 
-  Configurable<bool> checkAmbiguousTracksWithHFEventsOnly{"checkAmbiguousTracksWithHFEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
+  Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
 
   static const int nCharmHadrons = 7;
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
@@ -463,7 +463,7 @@ struct HfTaskMcValidationRec {
         continue;
       }
       auto mcCollision = collision.mcCollision_as<mcCollisionWithHFSignalInfo>();
-      if (checkAmbiguousTracksWithHFEventsOnly && !mcCollision.hasHFsignal()) {
+      if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
         continue;
       }
       registry.fill(HIST("histXvtxReco"), collision.posX());
@@ -535,7 +535,7 @@ struct HfTaskMcValidationRec {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        if (checkAmbiguousTracksWithHFEventsOnly) {
+        if (checkAmbiguousTracksWithHfEventsOnly) {
           auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
           if (!mcCollision.hasHFsignal()) {
             continue;
