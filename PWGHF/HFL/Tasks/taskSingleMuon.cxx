@@ -57,7 +57,7 @@ constexpr static uint32_t gTrackMCFillMap(VarManager::ObjTypes::ParticleMC);
 void defineHistograms(HistogramManager*, TString);
 
 struct HfTaskSingleMuonEventSelection {
-  Configurable<bool> applySoftwareTrigger{"appllySoftwareTrigger", false, "whether to apply the software trigger"};
+  Configurable<bool> applySoftwareTrigger{"applySoftwareTrigger", false, "whether to apply the software trigger"};
   Configurable<int> softwareTrigger{"softwareTrigger", VarManager::kIsMuonSingleLowPt7, "software trigger flag"};
   Configurable<bool> applyCutZVtx{"applyCutZVtx", false, "whether to apply the VtxZ cut"};
   Configurable<float> zVtxMin{"zVtxMin", -10., "min. z of primary vertex [cm]"};
