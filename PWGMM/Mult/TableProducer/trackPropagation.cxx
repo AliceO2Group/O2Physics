@@ -168,7 +168,7 @@ struct AmbiguousTrackPropagation {
           auto collisions = bc.collisions();
           for (auto const& collision : collisions) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-            if ((dcaInfo[0] < bestDCA[0]) && (dcaInfo[1] < bestDCA[1])) {
+            if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
               bestCol = collision.globalIndex();
               bestDCA[0] = dcaInfo[0];
               bestDCA[1] = dcaInfo[1];
