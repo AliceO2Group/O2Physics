@@ -33,7 +33,6 @@
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
 
-#include "DetectorsBase/Propagator.h"
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 
@@ -64,7 +63,8 @@ using namespace o2::aod::track;
 struct AmbiguousTrackPropagation {
   //  Produces<aod::BestCollisions> tracksBestCollisions;
   Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
-  Produces<aod::ReassignedTracks> tracksReassigned;
+  Produces<aod::ReassignedTracksCore> tracksReassignedCore;
+  Produces<aod::ReassignedTracksExtra> tracksReassignedExtra;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
@@ -80,6 +80,8 @@ struct AmbiguousTrackPropagation {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+
+  Configurable<bool> produceExtra{"produceExtra", false, "Produce table with refitted track parameters"};
 
   using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
@@ -175,11 +177,13 @@ struct AmbiguousTrackPropagation {
           }
         }
       }
-      tracksReassigned(bestCol, bestDCA[0], bestDCA[1], bestTrackPar.getX(), bestTrackPar.getAlpha(),
-                       bestTrackPar.getY(), bestTrackPar.getZ(), bestTrackPar.getSnp(),
-                       bestTrackPar.getTgl(), bestTrackPar.getQ2Pt(), bestTrackPar.getPt(),
-                       bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi(),
-                       track.globalIndex());
+      tracksReassignedCore(bestCol, track.globalIndex(), bestDCA[0], bestDCA[1]);
+      if (produceExtra) {
+        tracksReassignedExtra(bestTrackPar.getX(), bestTrackPar.getAlpha(),
+                              bestTrackPar.getY(), bestTrackPar.getZ(), bestTrackPar.getSnp(),
+                              bestTrackPar.getTgl(), bestTrackPar.getQ2Pt(), bestTrackPar.getPt(),
+                              bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi());
+      }
     }
   }
   PROCESS_SWITCH(AmbiguousTrackPropagation, processCentral, "Fill ReassignedTracks for central ambiguous tracks", true);
