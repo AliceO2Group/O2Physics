@@ -11,6 +11,10 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+#ifndef PWGDQ_CORE_HISTOGRAMSLIBRARY_H_
+#define PWGDQ_CORE_HISTOGRAMSLIBRARY_H_
+
 #include <TString.h>
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/VarManager.h"
@@ -375,3 +379,5 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "DeltaEta_DeltaPhiSym", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhiSym);
   }
 }
+
+#endif // PWGDQ_CORE_HISTOGRAMSLIBRARY_H_
