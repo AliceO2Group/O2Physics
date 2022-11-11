@@ -14,8 +14,8 @@
 // Class to handle analysis variables
 //
 
-#ifndef VarManager_H
-#define VarManager_H
+#ifndef PWGDQ_CORE_VARMANAGER_H_
+#define PWGDQ_CORE_VARMANAGER_H_
 
 #include <vector>
 #include <map>
@@ -1464,4 +1464,4 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
   }
 }
-#endif
+#endif // PWGDQ_CORE_VARMANAGER_H_
