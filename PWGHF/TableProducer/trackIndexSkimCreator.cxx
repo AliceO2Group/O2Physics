@@ -2145,14 +2145,14 @@ struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
   // whether to do or not validation plots
-  Configurable<bool> doValPlots{"doValPlots", true, "fill histograms"};
+  Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
   // event selection
   // Configurable<int> triggerindex{"triggerindex", -1, "trigger index"};
 
   // vertexing parameters
-  // Configurable<double> bZ{"bZ", 5., "magnetic field"};
-  Configurable<bool> propDCA{"propDCA", true, "create tracks version propagated to PCA"};
+  // Configurable<double> bz{"bz", 5., "magnetic field"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -2262,7 +2262,7 @@ struct HfTrackIndexSkimCreatorCascades {
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(o2::base::Propagator::Instance()->getNominalBz());
-    fitter.setPropagateToPCA(propDCA);
+    fitter.setPropagateToPCA(propagateToPCA);
     fitter.setMaxR(maxR);
     fitter.setMinParamChange(minParamChange);
     fitter.setMinRelChi2Change(minRelChi2Change);
@@ -2418,7 +2418,7 @@ struct HfTrackIndexSkimCreatorCascades {
         rowTrackIndexCasc(bach.globalIndex(),
                           v0.globalIndex());
         // fill histograms
-        if (doValPlots) {
+        if (fillHistograms) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
           registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
           registry.fill(HIST("hVtx2ProngY"), posCasc[1]);

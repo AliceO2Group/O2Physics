@@ -61,22 +61,22 @@ struct HfCandidateSelectorJpsi {
   Produces<aod::HFSelJpsiCandidate> hfSelJpsiCandidate;
 
   Configurable<bool> selectENotPi{"selectENotPi", true, "Apply combined TOF + RICH e/π selection"};
-  Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> d_pTCandMax{"d_pTCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // TPC
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 10., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   // TOF
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 5., "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
-  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // RICH
-  Configurable<double> d_pidRICHMinpT{"d_pidRICHMinpT", 0.15, "Lower bound of track pT for RICH PID"};
-  Configurable<double> d_pidRICHMaxpT{"d_pidRICHMaxpT", 10., "Upper bound of track pT for RICH PID"};
-  Configurable<double> d_nSigmaRICH{"d_nSigmaRICH", 3., "Nsigma cut on RICH only"};
-  Configurable<double> d_nSigmaRICHCombinedTOF{"d_nSigmaRICHCombinedTOF", 5., "Nsigma cut on RICH combined with TOF"};
+  Configurable<double> ptPidRichMin{"ptPidRichMin", 0.15, "Lower bound of track pT for RICH PID"};
+  Configurable<double> ptPidRichMax{"ptPidRichMax", 10., "Upper bound of track pT for RICH PID"};
+  Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
+  Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 5., "Nsigma cut on RICH combined with TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Jpsi_to_ee_cuts", {hf_cuts_jpsi_toee::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
@@ -96,7 +96,7 @@ struct HfCandidateSelectorJpsi {
     }
 
     // check that the candidate pT is within the analysis range
-    if (candpT < d_pTCandMin || candpT >= d_pTCandMax) {
+    if (candpT < ptCandMin || candpT >= ptCandMax) {
       return false;
     }
 
@@ -143,14 +143,14 @@ struct HfCandidateSelectorJpsi {
   void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorElectron.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
-    selectorElectron.setRangePtRICH(d_pidRICHMinpT, d_pidRICHMaxpT);
-    selectorElectron.setRangeNSigmaRICH(-d_nSigmaRICH, d_nSigmaRICH);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
 
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
@@ -222,14 +222,14 @@ struct HfCandidateSelectorJpsi {
   void processAlice3(aod::HfCandProng2 const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorElectron.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
-    selectorElectron.setRangePtRICH(d_pidRICHMinpT, d_pidRICHMaxpT);
-    selectorElectron.setRangeNSigmaRICH(-d_nSigmaRICH, d_nSigmaRICH);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
 
     TrackSelectorPID selectorMuon(kMuonMinus);
 

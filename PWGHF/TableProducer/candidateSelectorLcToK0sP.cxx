@@ -40,22 +40,21 @@ using MyBigTracks = aod::BigTracksPID;
 #endif
 
 struct HfCandidateSelectorLcToK0sP {
-
   Produces<aod::HFSelLcK0sPCandidate> hfSelLcK0sPCandidate;
 
-  Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
 
   // PID
-  Configurable<double> applyPidTPCMinPt{"applyPidTPCMinPt", 4., "Lower bound of track pT to apply TPC PID"};
-  Configurable<double> pidTPCMinPt{"pidTPCMinPt", 0., "Lower bound of track pT for TPC PID"};
-  Configurable<double> pidTPCMaxPt{"pidTPCMaxPt", 100., "Upper bound of track pT for TPC PID"};
-  Configurable<double> pidCombMaxP{"pidCombMaxP", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
-  Configurable<double> nSigmaTPC{"nSigmaTPC", 3., "Nsigma cut on TPC only"};
+  Configurable<double> ptPidTpcApplyMin{"ptPidTpcApplyMin", 4., "Lower bound of track pT to apply TPC PID"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0., "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 100., "Upper bound of track pT for TPC PID"};
+  Configurable<double> pPidCombMax{"pPidCombMax", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
 
   // track quality
-  Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 50., "Lower bound of TPC findable clusters for good PID"};
-  Configurable<bool> requireTPC{"requireTPC", true, "Flag to require a positive Number of found clusters in TPC"};
+  // Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 50., "Lower bound of TPC findable clusters for good PID"};
+  // Configurable<bool> requireTpc{"requireTpc", true, "Flag to require a positive Number of found clusters in TPC"};
 
   // cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_tok0sp::pTBins_v}, "pT bin limits"};
@@ -91,8 +90,8 @@ struct HfCandidateSelectorLcToK0sP {
       return false;
     }
 
-    if (candPt < pTCandMin || candPt >= pTCandMax) {
-      LOG(debug) << "cand pt (first check) cut failed: from cascade --> " << candPt << ", cut --> " << pTCandMax;
+    if (candPt < ptCandMin || candPt >= ptCandMax) {
+      LOG(debug) << "cand pt (first check) cut failed: from cascade --> " << candPt << ", cut --> " << ptCandMax;
       return false; // check that the candidate pT is within the analysis range
     }
 
@@ -158,8 +157,8 @@ struct HfCandidateSelectorLcToK0sP {
   template <typename T>
   bool validTPCPID(const T& track)
   {
-    if (track.pt() < pidTPCMinPt || track.pt() >= pidTPCMaxPt) {
-      LOG(debug) << "Bachelor pt is " << track.pt() << ", we trust TPC PID in [" << pidTPCMinPt << ", " << pidTPCMaxPt << "]";
+    if (track.pt() < ptPidTpcMin || track.pt() >= ptPidTpcMax) {
+      LOG(debug) << "Bachelor pt is " << track.pt() << ", we trust TPC PID in [" << ptPidTpcMin << ", " << ptPidTpcMax << "]";
       return false;
     }
     return true;
@@ -172,11 +171,11 @@ struct HfCandidateSelectorLcToK0sP {
   template <typename T>
   bool applyTPCPID(const T& track)
   {
-    if (track.pt() < applyPidTPCMinPt) {
-      LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << applyPidTPCMinPt;
+    if (track.pt() < ptPidTpcApplyMin) {
+      LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << ptPidTpcApplyMin;
       return false;
     }
-    LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << applyPidTPCMinPt;
+    LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << ptPidTpcApplyMin;
     return true;
   }
 
@@ -187,7 +186,7 @@ struct HfCandidateSelectorLcToK0sP {
   template <typename T>
   bool validCombPID(const T& track)
   {
-    if (track.pt() > pidCombMaxP) { // is the pt sign used for the charge? If it is always positive, we should remove the abs
+    if (track.pt() > pPidCombMax) { // is the pt sign used for the charge? If it is always positive, we should remove the abs
       return false;
     }
     return true;
@@ -249,10 +248,10 @@ struct HfCandidateSelectorLcToK0sP {
 
     if (validTPCPID(track)) {
       LOG(debug) << "We check the TPC PID now";
-      if (!selectionPIDTPC(track, nSigmaTPC)) {
+      if (!selectionPIDTPC(track, nSigmaTpcMax)) {
         statusTPC = 0;
         /*
-        if (!selectionPIDTPC(track, nPDG, nSigmaTPCCombined)) {
+        if (!selectionPIDTPC(track, nPDG, nSigmaTpcCombinedMax)) {
           statusTPC = 0; //rejected by PID
         } else {
           statusTPC = 1; //potential to be acceepted if combined with TOF
@@ -269,8 +268,8 @@ struct HfCandidateSelectorLcToK0sP {
     return statusTPC;
     /*
     if (validTOFPID(track)) {
-      if (!selectionPIDTOF(track, nPDG, nSigmaTOF)) {
-        if (!selectionPIDTOF(track, nPDG, nSigmaTOFCombined)) {
+      if (!selectionPIDTOF(track, nPDG, nSigmaTofMax)) {
+        if (!selectionPIDTOF(track, nPDG, nSigmaTofCombinedMax)) {
           statusTOF = 0; //rejected by PID
         } else {
           statusTOF = 1; //potential to be acceepted if combined with TOF

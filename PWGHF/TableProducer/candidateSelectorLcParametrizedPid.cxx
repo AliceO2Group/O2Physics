@@ -50,22 +50,23 @@ struct HfCandidateSelectorLcParametrizedPidRichIndexBuilder { // Builder of the 
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLcParametrizedPid {
   Produces<aod::HFSelLcCandidateparametrizedPID> hfSelLcCandidateparametrizedPID;
-  Configurable<double> d_etaperfectPID{"d_etaperfectPID", 1.75, "Eta cut for perfect PID"};
-  Configurable<double> d_normaliseddecaylengthxyCand{"d_normaliseddecaylengthxyCand", 3., "Normalised decay length"};
-  Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> d_pTCandMax{"d_pTCandMax", 36., "Upper bound of candidate pT"};
-  Configurable<bool> d_FilterPID{"d_FilterPID", true, "Bool to use or not the PID at filtering level"};
+  
+  Configurable<double> etaPerfectPidMax{"etaPerfectPidMax", 1.75, "Eta cut for perfect PID"};
+  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Normalised decay length"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
+  Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
   // TPC
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.1, "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 1., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
-  Configurable<double> d_nSigmaTPCCombined{"d_nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
-  //Configurable<double> d_TPCNClsFindablePIDCut{"d_TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.1, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 1., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
   // TOF
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.5, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 2.5, "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
-  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.5, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 2.5, "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
@@ -99,7 +100,7 @@ struct HfCandidateSelectorLcParametrizedPid {
     }
 
     // check that the candidate pT is within the analysis range
-    if (candpT < d_pTCandMin || candpT >= d_pTCandMax) {
+    if (candpT < ptCandMin || candpT >= ptCandMax) {
       return false;
     }
 
@@ -117,7 +118,7 @@ struct HfCandidateSelectorLcParametrizedPid {
       return false;
     }
 
-    if (candidate.decayLengthXYNormalised() < d_normaliseddecaylengthxyCand) {
+    if (candidate.decayLengthXYNormalised() < decayLengthXYNormalisedMin) {
       return false;
     }
 
@@ -220,7 +221,7 @@ struct HfCandidateSelectorLcParametrizedPid {
       bool selectPos2Proton = false;
       bool selectNegKaon = false;
 
-      if (etaPos1Track >= d_etaperfectPID) {
+      if (etaPos1Track >= etaPerfectPidMax) {
         if (ptPos1Track < (19.58 / std::cosh(etaPos1Track))) {
           if (pdgPositive1 == 2212)
             selectPos1Proton = true;
@@ -259,7 +260,7 @@ struct HfCandidateSelectorLcParametrizedPid {
         }
       }
 
-      if (etaPos2Track >= d_etaperfectPID) {
+      if (etaPos2Track >= etaPerfectPidMax) {
         if (ptPos2Track < (19.58 / std::cosh(etaPos2Track))) {
           if (pdgPositive2 == 2212)
             selectPos2Proton = true;
@@ -298,7 +299,7 @@ struct HfCandidateSelectorLcParametrizedPid {
         }
       }
 
-      if (etaNegTrack >= d_etaperfectPID) {
+      if (etaNegTrack >= etaPerfectPidMax) {
         if (ptNegTrack < (19.58 / std::cosh(etaNegTrack))) {
           if (pdgNegative == -321)
             selectNegKaon = true;

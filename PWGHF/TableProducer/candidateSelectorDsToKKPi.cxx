@@ -29,17 +29,17 @@ using namespace o2::analysis::hf_cuts_ds_tokkpi;
 struct HfCandidateSelectorDsToKKPi {
   Produces<aod::HFSelDsToKKPiCandidate> hfSelDsToKKPiCandidate;
 
-  Configurable<double> pTCandMin{"pTCandMin", 1., "Lower bound of candidate pT"};
-  Configurable<double> pTCandMax{"pTCandMax", 36., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // TPC
-  Configurable<double> pidTPCMinpT{"pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 20., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTPC{"nSigmaTPC", 3., "Nsigma cut on TPC"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC"};
   // Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 50., "Lower bound of TPC findable clusters for good PID"};
   //  TOF
-  Configurable<double> pidTOFMinpT{"pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 20., "Upper bound of track pT for TOF PID"};
-  Configurable<double> nSigmaTOF{"nSigmaTOF", 3., "Nsigma cut on TOF"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_tokkpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Ds_to_K_K_Pi_cuts", {hf_cuts_ds_tokkpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Ds candidate selection per pT bin"};
@@ -59,7 +59,7 @@ struct HfCandidateSelectorDsToKKPi {
       return false;
     }
     // check that the candidate pT is within the analysis range
-    if (candpT < pTCandMin || candpT > pTCandMax) {
+    if (candpT < ptCandMin || candpT > ptCandMax) {
       return false;
     }
     // cut on daughter pT
@@ -93,10 +93,10 @@ struct HfCandidateSelectorDsToKKPi {
   void process(aod::HfCandProng3 const& candidates, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(pidTPCMinpT, pidTPCMaxpT);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTPC, nSigmaTPC);
-    selectorPion.setRangePtTOF(pidTOFMinpT, pidTOFMaxpT);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTOF, nSigmaTOF);
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
 
     TrackSelectorPID selectorKaon(selectorPion);
     selectorKaon.setPDG(kKPlus);

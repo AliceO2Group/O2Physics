@@ -44,14 +44,13 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfCandidateCreatorX {
   Produces<aod::HfCandXBase> rowCandidateBase;
 
-  Configurable<double> magneticField{"magneticField", 5., "magnetic field"};
-  Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
-  Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
-  Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<double> bz{"bz", 5., "magnetic field"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> ptPionMin{"ptPionMin", 1., "minimum pion pT threshold (GeV/c)"};
-  Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -68,7 +67,8 @@ struct HfCandidateCreatorX {
 
   Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> diffMassJpsiPDG{"diffMassJpsiPDG", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
+  Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
+
   Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= d_selectionFlagJpsi);
 
   void process(aod::Collision const& collision,
@@ -79,22 +79,22 @@ struct HfCandidateCreatorX {
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
     o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(magneticField);
-    df2.setPropagateToPCA(b_propdca);
-    df2.setMaxR(d_maxr);
-    df2.setMaxDZIni(d_maxdzini);
-    df2.setMinParamChange(d_minparamchange);
-    df2.setMinRelChi2Change(d_minrelchi2change);
+    df2.setBz(bz);
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(true);
 
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df3;
-    df3.setBz(magneticField);
-    df3.setPropagateToPCA(b_propdca);
-    df3.setMaxR(d_maxr);
-    df3.setMaxDZIni(d_maxdzini);
-    df3.setMinParamChange(d_minparamchange);
-    df3.setMinRelChi2Change(d_minrelchi2change);
+    df3.setBz(bz);
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(true);
 
     // loop over Jpsi candidates
@@ -106,13 +106,13 @@ struct HfCandidateCreatorX {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        if (std::abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+        if (std::abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
         hMassJpsiToEE->Fill(InvMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        if (std::abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+        if (std::abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
         hMassJpsiToMuMu->Fill(InvMassJpsiToMuMu(jpsiCand));
@@ -133,8 +133,8 @@ struct HfCandidateCreatorX {
       }
 
       // propagate prong tracks to Jpsi vertex
-      prong0TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
-      prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
+      prong0TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
+      prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
       auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); //FIXME: also needs covxyz???
@@ -196,9 +196,9 @@ struct HfCandidateCreatorX {
           o2::dataformats::DCA impactParameter0;
           o2::dataformats::DCA impactParameter1;
           o2::dataformats::DCA impactParameter2;
-          trackJpsi.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
-          trackParVarPos.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
-          trackParVarNeg.propagateToDCA(primaryVertex, magneticField, &impactParameter2);
+          trackJpsi.propagateToDCA(primaryVertex, bz, &impactParameter0);
+          trackParVarPos.propagateToDCA(primaryVertex, bz, &impactParameter1);
+          trackParVarNeg.propagateToDCA(primaryVertex, bz, &impactParameter2);
 
           // get uncertainty of the decay length
           double phi, theta;

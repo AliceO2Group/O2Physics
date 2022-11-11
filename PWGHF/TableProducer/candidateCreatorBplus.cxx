@@ -48,12 +48,12 @@ struct HfCandidateCreatorBplus {
   Produces<aod::HfCandBPlusBase> rowCandidateBase;
   // vertexing parameters
   Configurable<double> bz{"bz", 5., "magnetic field"};
-  Configurable<bool> propdca{"propdca", true, "create tracks version propagated to PCA"};
-  Configurable<double> maxr{"maxr", 5., "reject PCA's above this radius"};
-  Configurable<double> maxdzini{"maxdzini", 999, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> minparamchange{"minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minrelchi2change{"minrelchi2change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> useabsdca{"useabsdca", true, "use absolute DCAs"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<double> maxR{"maxR", 5., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 999, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "use absolute DCAs"};
 
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
@@ -64,7 +64,7 @@ struct HfCandidateCreatorBplus {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> cutEtaTrkMax{"cutEtaTrkMax", -1, "max. bach track. pseudorapidity"};
+  Configurable<double> etaTrackMax{"etaTrackMax", -1, "max. bach track. pseudorapidity"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
 
@@ -78,20 +78,20 @@ struct HfCandidateCreatorBplus {
     // Initialise fitter for B vertex
     o2::vertexing::DCAFitterN<2> bfitter;
     bfitter.setBz(bz);
-    bfitter.setPropagateToPCA(propdca);
-    bfitter.setMaxR(maxr);
-    bfitter.setMinParamChange(minparamchange);
-    bfitter.setMinRelChi2Change(minrelchi2change);
-    bfitter.setUseAbsDCA(useabsdca);
+    bfitter.setPropagateToPCA(propagateToPCA);
+    bfitter.setMaxR(maxR);
+    bfitter.setMinParamChange(minParamChange);
+    bfitter.setMinRelChi2Change(minRelChi2Change);
+    bfitter.setUseAbsDCA(useAbsDCA);
 
     // Initial fitter to redo D-vertex to get extrapolated daughter tracks
     o2::vertexing::DCAFitterN<2> df;
     df.setBz(bz);
-    df.setPropagateToPCA(propdca);
-    df.setMaxR(maxr);
-    df.setMinParamChange(minparamchange);
-    df.setMinRelChi2Change(minrelchi2change);
-    df.setUseAbsDCA(useabsdca);
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setUseAbsDCA(useAbsDCA);
 
     // loop over pairs of track indices
     for (auto& candidate : candidates) {
@@ -137,7 +137,7 @@ struct HfCandidateCreatorBplus {
         //   count++;
         //  }
 
-        if (cutEtaTrkMax >= 0. && std::abs(track.eta()) > cutEtaTrkMax) {
+        if (etaTrackMax >= 0. && std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
 

@@ -30,18 +30,18 @@ using namespace o2::analysis::hf_cuts_dplus_topikpi;
 struct HfCandidateSelectorDplusToPiKPi {
   Produces<aod::HFSelDplusToPiKPiCandidate> hfSelDplusToPiKPiCandidate;
 
-  Configurable<double> d_pTCandMin{"d_pTCandMin", 1., "Lower bound of candidate pT"};
-  Configurable<double> d_pTCandMax{"d_pTCandMax", 36., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // TPC
-  Configurable<bool> b_requireTPC{"b_requireTPC", true, "Flag to require a positive Number of found clusters in TPC"};
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 20., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC"};
-  //Configurable<double> d_TPCNClsFindablePIDCut{"d_TPCNClsFindablePIDCut", 50., "Lower bound of TPC findable clusters for good PID"};
+  // Configurable<bool> requireTpc{"requireTpc", true, "Flag to require a positive Number of found clusters in TPC"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC"};
+  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 50., "Lower bound of TPC findable clusters for good PID"};
   // TOF
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 20., "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"DPlus_to_Pi_K_Pi_cuts", {hf_cuts_dplus_topikpi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Dplus candidate selection per pT bin"};
@@ -76,7 +76,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // check that the candidate pT is within the analysis range
-    if (candpT < d_pTCandMin || candpT > d_pTCandMax) {
+    if (candpT < ptCandMin || candpT > ptCandMax) {
       return false;
     }
     // cut on daughter pT
@@ -108,10 +108,10 @@ struct HfCandidateSelectorDplusToPiKPi {
   void process(aod::HfCandProng3 const& candidates, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorPion.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorPion.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorPion.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
 
     TrackSelectorPID selectorKaon(selectorPion);
     selectorKaon.setPDG(kKPlus);

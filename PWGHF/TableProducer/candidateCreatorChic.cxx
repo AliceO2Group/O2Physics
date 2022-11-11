@@ -45,13 +45,13 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfCandidateCreatorChic {
   Produces<aod::HfCandChicBase> rowCandidateBase;
 
-  Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
-  Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
-  Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
-  Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> eneGammaMin{"eneGammaMin", 0.4, "minimum gamma energy threshold (GeV)"};
+  Configurable<double> bz{"bz", 20., "magnetic field"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<double> energyGammaMin{"energyGammaMin", 0.4, "minimum gamma energy threshold (GeV)"};
   Configurable<double> etaGammaMin{"etaGammaMin", -1.00, "minimum gamma pseudorapidity"};
   Configurable<double> etaGammaMax{"etaGammaMax", 1.00, "maximum gamma pseudorapidity"};
 
@@ -81,12 +81,12 @@ struct HfCandidateCreatorChic {
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
     o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(magneticField);
-    df2.setPropagateToPCA(b_propdca);
-    df2.setMaxR(d_maxr);
-    df2.setMaxDZIni(d_maxdzini);
-    df2.setMinParamChange(d_minparamchange);
-    df2.setMinRelChi2Change(d_minrelchi2change);
+    df2.setBz(bz);
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(true);
 
     // loop over Jpsi candidates
@@ -118,8 +118,8 @@ struct HfCandidateCreatorChic {
       }
 
       // propagate prong tracks to Jpsi vertex
-      prong0TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
-      prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
+      prong0TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
+      prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
       auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); //FIXME: also needs covxyz???
@@ -129,7 +129,7 @@ struct HfCandidateCreatorChic {
 
       for (auto& ecal : ecals) {
 
-        if (ecal.e() < eneGammaMin) {
+        if (ecal.e() < energyGammaMin) {
           continue;
         }
         auto etagamma = RecoDecay::eta(array{ecal.px(), ecal.py(), ecal.pz()});
@@ -147,7 +147,7 @@ struct HfCandidateCreatorChic {
         hCovPVXX->Fill(covMatrixPV[0]);
         o2::dataformats::DCA impactParameter0;
         o2::dataformats::DCA impactParameter1;
-        trackJpsi.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
+        trackJpsi.propagateToDCA(primaryVertex, bz, &impactParameter0);
 
         // get uncertainty of the decay length
         //double phi, theta;

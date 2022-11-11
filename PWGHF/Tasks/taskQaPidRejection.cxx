@@ -84,19 +84,19 @@ struct HfTaskQaPidRejection {
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 20.f, "Upper limit in pT"};
   // TPC
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 9999., "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 999999., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 99999, "Nsigma cut on TPC only"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 9999., "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 999999., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 99999, "Nsigma cut on TPC only"};
   // TOF
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 5., "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
-  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 0., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 0., "Nsigma cut on TOF combined with TPC"};
   // RICH
-  Configurable<double> d_pidRICHMinpT{"d_pidRICHMinpT", 0.15, "Lower bound of track pT for RICH PID"};
-  Configurable<double> d_pidRICHMaxpT{"d_pidRICHMaxpT", 10., "Upper bound of track pT for RICH PID"};
-  Configurable<double> d_nSigmaRICH{"d_nSigmaRICH", 3., "Nsigma cut on RICH only"};
-  Configurable<double> d_nSigmaRICHCombinedTOF{"d_nSigmaRICHCombinedTOF", 0., "Nsigma cut on RICH combined with TOF"};
+  Configurable<double> ptPidRichMin{"ptPidRichMin", 0.15, "Lower bound of track pT for RICH PID"};
+  Configurable<double> ptPidRichMax{"ptPidRichMax", 10., "Upper bound of track pT for RICH PID"};
+  Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
+  Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
@@ -145,14 +145,14 @@ struct HfTaskQaPidRejection {
                const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorElectron.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
-    selectorElectron.setRangePtRICH(d_pidRICHMinpT, d_pidRICHMaxpT);
-    selectorElectron.setRangeNSigmaRICH(-d_nSigmaRICH, d_nSigmaRICH);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
 
     auto selectorPion(selectorElectron);
     selectorPion.setPDG(kPiPlus);
@@ -259,19 +259,19 @@ struct HfTaskQaPidRejectionGeneral {
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 20.f, "Upper limit in pT"};
   // TPC
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 9999., "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 999999., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 99999, "Nsigma cut on TPC only"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 9999., "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 999999., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 99999, "Nsigma cut on TPC only"};
   // TOF
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 5., "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
-  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 0., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 0., "Nsigma cut on TOF combined with TPC"};
   // RICH
-  Configurable<double> d_pidRICHMinpT{"d_pidRICHMinpT", 0.15, "Lower bound of track pT for RICH PID"};
-  Configurable<double> d_pidRICHMaxpT{"d_pidRICHMaxpT", 10., "Upper bound of track pT for RICH PID"};
-  Configurable<double> d_nSigmaRICH{"d_nSigmaRICH", 3., "Nsigma cut on RICH only"};
-  Configurable<double> d_nSigmaRICHCombinedTOF{"d_nSigmaRICHCombinedTOF", 0., "Nsigma cut on RICH combined with TOF"};
+  Configurable<double> ptPidRichMin{"ptPidRichMin", 0.15, "Lower bound of track pT for RICH PID"};
+  Configurable<double> ptPidRichMax{"ptPidRichMax", 10., "Upper bound of track pT for RICH PID"};
+  Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
+  Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
@@ -337,14 +337,14 @@ struct HfTaskQaPidRejectionGeneral {
                const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorElectron.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
-    selectorElectron.setRangePtRICH(d_pidRICHMinpT, d_pidRICHMaxpT);
-    selectorElectron.setRangeNSigmaRICH(-d_nSigmaRICH, d_nSigmaRICH);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
 
     auto selectorPion(selectorElectron);
     selectorPion.setPDG(kPiPlus);
@@ -392,16 +392,16 @@ struct HfTaskQaPidRejectionGeneral {
       bool isrichpi = false;
 
       if (track.p() < 0.6) {
-        istofel = std::abs(track.tofNSigmaEl()) < d_pidTOFMaxpT;
-        istofpi = std::abs(track.tofNSigmaPi()) < d_pidTOFMaxpT;
-        isrichel = std::abs(track.rich().richNsigmaEl()) < d_pidRICHMaxpT;
+        istofel = std::abs(track.tofNSigmaEl()) < ptPidTofMax;
+        istofpi = std::abs(track.tofNSigmaPi()) < ptPidTofMax;
+        isrichel = std::abs(track.rich().richNsigmaEl()) < ptPidRichMax;
       } else if (track.p() > 0.6 && track.p() < 1.0) {
-        isrichel = std::abs(track.rich().richNsigmaEl()) < d_pidRICHMaxpT;
+        isrichel = std::abs(track.rich().richNsigmaEl()) < ptPidRichMax;
       } else if (track.p() > 1.0 && track.p() < 2.0) {
-        isrichel = std::abs(track.rich().richNsigmaEl()) < d_pidRICHMaxpT;
-        isrichpi = std::abs(track.rich().richNsigmaPi()) < d_pidRICHMaxpT;
+        isrichel = std::abs(track.rich().richNsigmaEl()) < ptPidRichMax;
+        isrichpi = std::abs(track.rich().richNsigmaPi()) < ptPidRichMax;
       } else {
-        isrichel = std::abs(track.rich().richNsigmaEl()) < d_pidRICHMaxpT;
+        isrichel = std::abs(track.rich().richNsigmaEl()) < ptPidRichMax;
       }
       isRICHElTight = isrichel && !isrichpi && istofel && !istofpi;
 

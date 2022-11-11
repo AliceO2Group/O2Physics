@@ -34,23 +34,23 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   Produces<aod::HFSelBPlusToD0PiCandidate> hfSelBPlusToD0PiCandidate;
 
-  Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
 
   // Enable PID
-  Configurable<bool> filterPID{"filterPID", true, "Bool to use or not the PID at filtering level"};
+  Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
 
   // TPC PID
-  Configurable<double> pidTPCMinpT{"pidTPCMinpT", 999, "Lower bound of track pT for TPC PID"};
-  Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 9999, "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTPC{"nSigmaTPC", 5., "Nsigma cut on TPC only"};
-  Configurable<double> nSigmaTPCCombined{"nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 999, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 9999, "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
 
   // TOF PID
-  Configurable<double> pidTOFMinpT{"pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 50., "Upper bound of track pT for TOF PID"};
-  Configurable<double> nSigmaTOF{"nSigmaTOF", 5., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTOFCombined{"nSigmaTOFCombined", 999., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 50., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 999., "Nsigma cut on TOF combined with TPC"};
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"BPlus_to_d0pi_cuts", {hf_cuts_bplus_tod0pi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "B+ candidate selection per pT bin"};
@@ -105,7 +105,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       return false;
     }
 
-    // if (candpT < pTCandMin || candpT >= pTCandMax) {
+    // if (candpT < ptCandMin || candpT >= ptCandMax) {
     //  Printf("B+ topol selection failed at cand pT check");
     //  return false;
     //  }
@@ -133,12 +133,12 @@ struct HfCandidateSelectorBplusToD0Pi {
   void process(aod::HfCandBPlus const& hfCandBs, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate> const&, aod::BigTracksPID const& tracks)
   {
     TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(pidTPCMinpT, pidTPCMaxpT);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTPC, nSigmaTPC);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTPCCombined, nSigmaTPCCombined);
-    selectorPion.setRangePtTOF(pidTOFMinpT, pidTOFMaxpT);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTOF, nSigmaTOF);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTOFCombined, nSigmaTOFCombined);
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
     for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
 
@@ -162,7 +162,7 @@ struct HfCandidateSelectorBplusToD0Pi {
         continue;
       }
 
-      if (filterPID) {
+      if (usePid) {
         // PID applied
         if (selectorPion.getStatusTrackPIDAll(trackPi) != TrackSelectorPID::Status::PIDAccepted) {
           // Printf("PID not successful");

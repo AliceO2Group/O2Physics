@@ -31,20 +31,19 @@ using namespace o2::analysis::hf_cuts_x_tojpsipipi;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorXToJpsiPiPi {
-
   Produces<aod::HFSelXToJpsiPiPiCandidate> hfSelXToJpsiPiPiCandidate;
 
-  Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> d_pTCandMax{"d_pTCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
 
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 10., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 10., "Upper bound of track pT for TOF PID"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
 
-  Configurable<double> d_TPCNClsFindablePIDCut{"d_TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
+  // Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"X_to_jpsipipi_cuts", {hf_cuts_x_tojpsipipi::cuts[0], nBinsPt, nCutVars, pTBinLabels, cutVarLabels}, "Jpsi candidate selection per pT bin"};
@@ -75,7 +74,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
       return false;
     }
 
-    if (candpT < d_pTCandMin || candpT >= d_pTCandMax) {
+    if (candpT < ptCandMin || candpT >= ptCandMax) {
       // Printf("X topol selection failed at cand pT check");
       return false; //check that the candidate pT is within the analysis range
     }
@@ -113,10 +112,10 @@ struct HfCandidateSelectorXToJpsiPiPi {
   template <typename T>
   bool validTPCPID(const T& track)
   {
-    if (TMath::Abs(track.pt()) < d_pidTPCMinpT || TMath::Abs(track.pt()) >= d_pidTPCMaxpT) {
+    if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
-    //if (track.TPCNClsFindable() < d_TPCNClsFindablePIDCut) return false;
+    //if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
     return true;
   }
 
@@ -127,7 +126,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   template <typename T>
   bool validTOFPID(const T& track)
   {
-    if (TMath::Abs(track.pt()) < d_pidTOFMinpT || TMath::Abs(track.pt()) >= d_pidTOFMaxpT) {
+    if (TMath::Abs(track.pt()) < ptPidTofMin || TMath::Abs(track.pt()) >= ptPidTofMax) {
       return false;
     }
     return true;
@@ -166,7 +165,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   int selectionPID(const T& track)
   { // use both TPC and TOF here; in run5 only TOF makes sense. add some flag for run3/run5 data later?
     if (validTOFPID(track)) {
-      if (!selectionPIDTOF(track, d_nSigmaTOF)) {
+      if (!selectionPIDTOF(track, nSigmaTofMax)) {
         return 0; //rejected by PID
       } else {
         return 1; //positive PID
@@ -177,7 +176,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
 
     // no tpc in run5, so for now comment it out
     // if (validTPCPID(track)) {
-    //   if (!selectionPIDTPC(track, d_nSigmaTPC)) {
+    //   if (!selectionPIDTPC(track, nSigmaTpcMax)) {
     //     return 0; //rejected by PID
     //   } else {
     //     return 1; //positive PID

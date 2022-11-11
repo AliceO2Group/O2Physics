@@ -40,13 +40,13 @@ struct HfCandidateCreator3Prong {
   Produces<aod::HfCandProng3Base> rowCandidateBase;
 
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
-  // Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
-  Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
-  Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
-  Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
+  // Configurable<double> bz{"bz", 5., "magnetic field"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -77,7 +77,7 @@ struct HfCandidateCreator3Prong {
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
   double massPiKPi{0.};
-  double magneticField = 0.;
+  double bz = 0.;
 
   void init(InitContext const&)
   {
@@ -98,12 +98,12 @@ struct HfCandidateCreator3Prong {
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
-    // df.setBz(magneticField);
-    df.setPropagateToPCA(b_propdca);
-    df.setMaxR(d_maxr);
-    df.setMaxDZIni(d_maxdzini);
-    df.setMinParamChange(d_minparamchange);
-    df.setMinRelChi2Change(d_minrelchi2change);
+    // df.setBz(bz);
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMaxDZIni(maxDZIni);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(true);
 
     // loop over triplets of track indices
@@ -123,12 +123,12 @@ struct HfCandidateCreator3Prong {
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-        magneticField = o2::base::Propagator::Instance()->getNominalBz();
-        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << magneticField;
-        // df.setBz(magneticField); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
+        bz = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
         // df.print();
       }
-      df.setBz(magneticField);
+      df.setBz(bz);
 
       // reconstruct the 3-prong secondary vertex
       if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
@@ -180,9 +180,9 @@ struct HfCandidateCreator3Prong {
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
       o2::dataformats::DCA impactParameter2;
-      trackParVar0.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
-      trackParVar1.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
-      trackParVar2.propagateToDCA(primaryVertex, magneticField, &impactParameter2);
+      trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
+      trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
+      trackParVar2.propagateToDCA(primaryVertex, bz, &impactParameter2);
       hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
       hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
       hDcaXYProngs->Fill(track2.pt(), impactParameter2.getY() * toMicrometers);
@@ -211,7 +211,7 @@ struct HfCandidateCreator3Prong {
                        rowTrackIndexProng3.hfflag());
 
       // fill histograms
-      if (b_dovalplots) {
+      if (fillHistograms) {
         // calculate invariant mass
         auto arrayMomenta = array{pvec0, pvec1, pvec2};
         massPiKPi = RecoDecay::m(std::move(arrayMomenta), array{massPi, massK, massPi});

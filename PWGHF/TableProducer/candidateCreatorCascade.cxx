@@ -45,13 +45,13 @@ using MyBigTracks = aod::BigTracks;
 struct HfCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
-  Configurable<double> bZ{"bZ", 5., "magnetic field"};
-  Configurable<bool> propDCA{"propDCA", true, "create tracks version propagated to PCA"};
+  Configurable<double> bz{"bz", 5., "magnetic field"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<bool> doValPlots{"doValPlots", true, "do validation plots"};
+  Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation histograms"};
   Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
 
   // for debugging
@@ -84,8 +84,8 @@ struct HfCandidateCreatorCascade {
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
-    df.setBz(bZ);
-    df.setPropagateToPCA(propDCA);
+    df.setBz(bz);
+    df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
     df.setMaxDZIni(maxDZIni);
     df.setMinParamChange(minParamChange);
@@ -124,8 +124,8 @@ struct HfCandidateCreatorCascade {
       auto trackParCovBach = getTrackParCov(bach);
       auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that MyBigTracks does not need TracksDCA!
       auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that MyBigTracks does not need TracksDCA!
-      trackParCovV0DaughPos.propagateTo(v0.posX(), bZ);             // propagate the track to the X closest to the V0 vertex
-      trackParCovV0DaughNeg.propagateTo(v0.negX(), bZ);             // propagate the track to the X closest to the V0 vertex
+      trackParCovV0DaughPos.propagateTo(v0.posX(), bz);             // propagate the track to the X closest to the V0 vertex
+      trackParCovV0DaughNeg.propagateTo(v0.negX(), bz);             // propagate the track to the X closest to the V0 vertex
       const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
       const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
       // we build the neutral track to then build the cascade
@@ -165,8 +165,8 @@ struct HfCandidateCreatorCascade {
       hCovPVXX->Fill(covMatrixPV[0]);
       o2::dataformats::DCA impactParameterV0;
       o2::dataformats::DCA impactParameterBach;
-      trackParVarV0.propagateToDCA(primaryVertex, bZ, &impactParameterV0); // we do this wrt the primary vtx
-      trackParVarBach.propagateToDCA(primaryVertex, bZ, &impactParameterBach);
+      trackParVarV0.propagateToDCA(primaryVertex, bz, &impactParameterV0); // we do this wrt the primary vtx
+      trackParVarBach.propagateToDCA(primaryVertex, bz, &impactParameterBach);
 
       // get uncertainty of the decay length
       double phi, theta;
@@ -196,7 +196,7 @@ struct HfCandidateCreatorCascade {
                        v0.dcanegtopv());
 
       // fill histograms
-      if (doValPlots) {
+      if (fillHistograms) {
         // calculate invariant masses
         mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
         hMass2->Fill(mass2K0sP);
