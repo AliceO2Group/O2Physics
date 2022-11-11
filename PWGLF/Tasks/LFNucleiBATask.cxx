@@ -16,6 +16,7 @@
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
 ///
+#include "PWGLF/DataModel/LFNucleiTables.h"
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -29,7 +30,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFNucleiTables.h"
 
 using namespace o2;
 using namespace o2::framework;
