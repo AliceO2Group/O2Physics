@@ -49,14 +49,12 @@ DECLARE_SOA_TABLE(ReassignedTracksCore, "AOD", "CRRETRACKS",
                   aod::track::BestCollisionId,
                   pwgmm::indices::TrackId,
                   aod::track::BestDCAXY,
-                  aod::track::BestDCAZ
-                  );
+                  aod::track::BestDCAZ);
 
 DECLARE_SOA_TABLE(ReassignedTracksExtra, "AOD", "EXRETRACKS",
                   track::X, track::Alpha, track::Y,
                   track::Z, track::Snp, track::Tgl, track::Signed1Pt,
                   track::PtStatic, track::PStatic, track::EtaStatic,
-                  track::PhiStatic
-                  );
+                  track::PhiStatic);
 
 } // namespace o2::aod
