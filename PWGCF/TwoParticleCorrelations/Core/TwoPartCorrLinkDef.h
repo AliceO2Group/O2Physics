@@ -47,3 +47,4 @@
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::MultiplicityBrick + ;
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::PileUpRejBrick + ;
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis + ;
+#pragma link C++ class o2::analysis::PWGCF::FilterAndAnalysisFramework + ;
