@@ -91,14 +91,14 @@ struct HfCorrelatorDplusHadrons {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> etaTrackMax{"etaTrackMax", -1., "max. eta of tracks"};
-  Configurable<double> cutDCAxyMax{"cutDCAxyMax", -1., "max. DCAxy of tracks"};
-  Configurable<double> cutDCAzMax{"cutDCAzMax", -1., "max. DCAz of tracks"};
+  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", -1., "max. DCA_xy of tracks"};
+  Configurable<double> dcaZTrackMax{"dcaZTrackMax", -1., "max. DCA_z of tracks"};
   Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
-  Configurable<double> cutPtTrackMin{"cutPtTrackMin", -1., "min. track pT"};
-  Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
+  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT"};
+  Configurable<double> ptTrackMax{"ptTrackMax", -1., "max. cand. pT"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
-  Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
 
@@ -124,7 +124,7 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (std::abs(track.dcaXY()) > cutDCAxyMax || std::abs(track.dcaZ()) > cutDCAzMax) {
+        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
         }
         nTracks++;
@@ -144,7 +144,7 @@ struct HfCorrelatorDplusHadrons {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      if (candidate1.pt() > cutPtCandMax) {
+      if (candidate1.pt() > ptTrackMax) {
         continue;
       }
       // check decay channel flag for candidate1
@@ -152,8 +152,8 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
       // fill invariant mass plots and generic info from all Dplus candidates
       registry.fill(HIST("hMassDplus_2D"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
@@ -173,10 +173,10 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (track.pt() < cutPtTrackMin) {
+        if (track.pt() < ptTrackMin) {
           continue;
         }
-        if (std::abs(track.dcaXY()) >= cutDCAxyMax || std::abs(track.dcaZ()) >= cutDCAzMax) {
+        if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
           continue; // Remove secondary tracks
         }
         // Removing Dplus daughters by checking track indices
@@ -205,7 +205,7 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (std::abs(track.dcaXY()) > cutDCAxyMax || std::abs(track.dcaZ()) > cutDCAzMax) {
+        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
         }
         nTracks++;
@@ -230,12 +230,12 @@ struct HfCorrelatorDplusHadrons {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      if (candidate1.pt() >= cutPtCandMax) {
+      if (candidate1.pt() >= ptTrackMax) {
         continue;
       }
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
       if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
@@ -264,14 +264,14 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (track.pt() < cutPtTrackMin) {
+        if (track.pt() < ptTrackMin) {
           continue;
         }
         // Removing Dplus daughters by checking track indices
         if ((candidate1.index0Id() == track.mRowIndex) || (candidate1.index1Id() == track.mRowIndex) || (candidate1.index2Id() == track.mRowIndex)) {
           continue;
         }
-        if (std::abs(track.dcaXY()) >= cutDCAxyMax || std::abs(track.dcaZ()) >= cutDCAzMax) {
+        if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
           continue; // Remove secondary tracks
         }
         entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
@@ -318,7 +318,7 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(particle2.eta()) > etaTrackMax) {
           continue;
         }
-        if (particle2.pt() < cutPtTrackMin) {
+        if (particle2.pt() < ptTrackMin) {
           continue;
         }
 

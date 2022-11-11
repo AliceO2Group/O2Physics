@@ -105,8 +105,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
-  Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
 
@@ -164,8 +164,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
 
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
       // fill invariant mass plots and generic info from all D0/D0bar candidates
@@ -280,8 +280,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
 
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPt, candidate1.pt()));
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
       if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::D0ToPiK) {

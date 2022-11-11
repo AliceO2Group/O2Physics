@@ -107,8 +107,8 @@ struct HfTaskCorrelationDplusHadrons {
       {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
     }};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_topikpi (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsCorrelations{"ptBinsForCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
-  Configurable<std::vector<double>> binsEfficiency{"ptBinsForEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for efficiency"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for efficiency"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
@@ -116,14 +116,14 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
-  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
-  Configurable<int> flagApplyEfficiency{"efficiencyFlagDplus", 1, "Flag for applying efficiency weights"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
+  Configurable<int> applyEfficiency{"efficiencyFlagDplus", 1, "Flag for applying efficiency weights"};
 
   void init(o2::framework::InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
-    int nBinspTaxis = binsCorrelations->size() - 1;
-    const double* valuespTaxis = binsCorrelations->data();
+    int nBinspTaxis = binsPtCorrelations->size() - 1;
+    const double* valuespTaxis = binsPtCorrelations->data();
 
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
@@ -150,8 +150,8 @@ struct HfTaskCorrelationDplusHadrons {
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
       double massD = pairEntry.mD();
-      int effBinD = o2::analysis::findBin(binsEfficiency, ptD);
-      int pTBinD = o2::analysis::findBin(binsCorrelations, ptD);
+      int effBinD = o2::analysis::findBin(binsPtEfficiency, ptD);
+      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
       // reject entries outside pT ranges of interest
       if (pTBinD < 0 || effBinD < 0) {
         continue;
@@ -161,8 +161,8 @@ struct HfTaskCorrelationDplusHadrons {
       }
       double efficiencyWeight = 1.;
       double efficiencyHadron = 1.; // Note: To be implemented later on
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyDmeson->at(effBinD) * efficiencyHadron);
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / (efficiencyD->at(effBinD) * efficiencyHadron);
       }
 
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
@@ -196,8 +196,8 @@ struct HfTaskCorrelationDplusHadrons {
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
       double massD = pairEntry.mD();
-      int effBinD = o2::analysis::findBin(binsEfficiency, ptD);
-      int pTBinD = o2::analysis::findBin(binsCorrelations, ptD);
+      int effBinD = o2::analysis::findBin(binsPtEfficiency, ptD);
+      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
       if (pTBinD < 0 || effBinD < 0) {
         continue;
       }
@@ -206,8 +206,8 @@ struct HfTaskCorrelationDplusHadrons {
       }
       double efficiencyWeight = 1.;
       double efficiencyHadron = 1.; // Note: To be implemented later on
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyDmeson->at(effBinD) * efficiencyHadron);
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / (efficiencyD->at(effBinD) * efficiencyHadron);
       }
       // fill correlation plots for signal/bagkground correlations
       if (pairEntry.signalStatus()) {
@@ -248,7 +248,7 @@ struct HfTaskCorrelationDplusHadrons {
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
       // reject entries outside pT ranges of interest
-      if (o2::analysis::findBin(binsCorrelations, ptD) < 0) {
+      if (o2::analysis::findBin(binsPtCorrelations, ptD) < 0) {
         continue;
       }
       if (ptHadron > 10.0) {

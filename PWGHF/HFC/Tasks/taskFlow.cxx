@@ -61,14 +61,14 @@ struct HfTaskFlow {
   Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
   Configurable<bool> processMC{"processMC", "false", "Flag to run on MC"};
 
-  Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
 
   //  configurables for collisions
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
+  Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
 
   //  configurables for associated particles
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> cfgCutPt{"cfgCutPt", 0.5f, "Minimum pT for tracks"};
+  Configurable<float> etaTrackAssocMax{"etaTrackAssocMax", 0.8f, "max. eta of associated tracks"};
+  Configurable<float> ptTrackAssocMin{"ptTrackAssocMin", 0.5f, "min. pT of associated tracks"};
 
   //  configurables for HF candidates
   Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
@@ -93,12 +93,12 @@ struct HfTaskFlow {
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
-  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
   //  Charged track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) &&
-                       (aod::track::pt > cfgCutPt) &&
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackAssocMax) &&
+                       (aod::track::pt > ptTrackAssocMin) &&
                        requireGlobalTrackWoPtEtaInFilter();
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
 
@@ -433,7 +433,7 @@ struct HfTaskFlow {
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
 
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, cfgNoMixedEvents, -1, collisions, tracksTuple};
+    Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple};
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
 

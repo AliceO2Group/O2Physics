@@ -146,9 +146,9 @@ struct HfTaskCorrelationDDbar {
      {"hDeltaPtMaxMinMCGen", stringMCParticles + stringDeltaPtMaxMin + "entries", {HistType::kTH1F, {{72, 0., 36.}}}}}};
 
   //pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_topik (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsCorrelations{"ptBinsForCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
   //pT bins for effiencies: same as above
-  Configurable<std::vector<double>> binsEfficiency{"ptBinsForEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for efficiency"};
+  Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for efficiency"};
   //signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
@@ -156,14 +156,14 @@ struct HfTaskCorrelationDDbar {
   Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
-  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
-  Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
 
   void init(o2::framework::InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
-    int nBinspTaxis = binsCorrelations->size() - 1;
-    const double* valuespTaxis = binsCorrelations->data();
+    int nBinspTaxis = binsPtCorrelations->size() - 1;
+    const double* valuespTaxis = binsPtCorrelations->data();
 
     for (int i = 2; i <= 3; i++) {
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairs"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
@@ -244,12 +244,12 @@ struct HfTaskCorrelationDDbar {
       double massD = pairEntry.mD();
       double massDbar = pairEntry.mDbar();
 
-      int pTBinD = o2::analysis::findBin(binsCorrelations, ptD);
-      int pTBinDbar = o2::analysis::findBin(binsCorrelations, ptDbar);
+      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
+      int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD)) * efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptDbar)));
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptD)) * efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptDbar)));
       }
 
       //fill 2D invariant mass plots
@@ -301,12 +301,12 @@ struct HfTaskCorrelationDDbar {
       double massD = pairEntry.mD();
       double massDbar = pairEntry.mDbar();
 
-      int pTBinD = o2::analysis::findBin(binsCorrelations, ptD);
-      int pTBinDbar = o2::analysis::findBin(binsCorrelations, ptDbar);
+      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
+      int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD)) * efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptDbar)));
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptD)) * efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptDbar)));
       }
 
       //fill 2D invariant mass plots
@@ -447,7 +447,7 @@ struct HfTaskCorrelationDDbar {
       double ptDbar = pairEntry.ptDbar();
 
       //reject entries outside pT ranges of interest
-      if (o2::analysis::findBin(binsCorrelations, ptD) == -1 || o2::analysis::findBin(binsCorrelations, ptDbar) == -1) {
+      if (o2::analysis::findBin(binsPtCorrelations, ptD) == -1 || o2::analysis::findBin(binsPtCorrelations, ptDbar) == -1) {
         continue;
       }
 
