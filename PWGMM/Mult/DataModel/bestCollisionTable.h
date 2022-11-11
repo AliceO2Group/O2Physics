@@ -61,4 +61,4 @@ DECLARE_SOA_TABLE(ReassignedTracksExtra, "AOD", "EXRETRACKS",
 
 } // namespace o2::aod
 
-#endif
+#endif // PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
