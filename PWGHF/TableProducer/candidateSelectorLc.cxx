@@ -34,24 +34,25 @@ struct HfCandidateSelectorLc {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
-  // TPC
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.1, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 1., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
-  // TOF
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.5, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 2.5, "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
-  // Bayesian
+  // Bayesian PID
   Configurable<bool> usePidBayes{"usePidBayes", true, "Bool to use or not the PID based on Bayesian probability cut at filtering level"};
   Configurable<double> ptPidBayesMin{"ptPidBayesMin", 0., "Lower bound of track pT for Bayesian PID"};
   Configurable<double> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+
+  using TrksPID = soa::Join<aod::BigTracksPID, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   /*
   /// Selection on goodness of daughter tracks
@@ -135,8 +136,6 @@ struct HfCandidateSelectorLc {
 
     return true;
   }
-
-  using TrksPID = soa::Join<aod::BigTracksPID, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   void process(aod::HfCandProng3 const& candidates, TrksPID const&)
   {

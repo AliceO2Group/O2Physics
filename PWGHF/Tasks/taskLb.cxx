@@ -41,16 +41,18 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Λb0 analysis task
 struct HfTaskLb {
+  Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
+  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtProng0", "Lb candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
      {"hPtProng1", "Lb candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
      {"hPtCand", "Lb candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
      {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
-
-  Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -68,8 +70,6 @@ struct HfTaskLb {
     registry.add("hIPProd", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hInvMassLc", "#Lambda_{b}^{0} candidates;prong0, #Lambda_{c}^{+} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
   void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate> const&, aod::BigTracks const&)
   {
@@ -112,16 +112,18 @@ struct HfTaskLb {
 
 /// Lb MC analysis and fill histograms
 struct HfTaskLbMc {
+  Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
+  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "Lb candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtRecBg", "Lb candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtGenSig", "Lb candidates (matched);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}}},
      {"hPtGen", "MC particles (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}}}};
-
-  Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -170,8 +172,6 @@ struct HfTaskLbMc {
     registry.add("hThetaStarRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hThetaStarRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
   void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate, aod::HfCandLbMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandLbMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)

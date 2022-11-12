@@ -32,13 +32,12 @@ struct HfCandidateSelectorD0 {
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-  // TPC
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 50., "Lower bound of TPC findable clusters for good PID"};
-  // TOF
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};

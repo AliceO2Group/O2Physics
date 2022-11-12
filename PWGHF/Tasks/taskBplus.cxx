@@ -44,6 +44,13 @@ const TString mcParticleMatched = "MC particles (matched);";
 
 /// B± analysis task
 struct HfTaskBplus {
+  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
+  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::vecBinsPt}, "pT bin limits"};
+
+  Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> selectedBPlusCandidates = aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
+
   HistogramRegistry registry{
     "registry",
     {{"hPtProng0", bPlusCandTitle + "prong 0 #it{p}_{T} (GeV/#it{c});" + entries, {HistType::kTH1F, {{1000, 0., 50.}}}},
@@ -54,10 +61,6 @@ struct HfTaskBplus {
      {"hPtRecBg", bPlusCandUnmatch + "candidate #it{p}_{T} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtGenSig", bPlusCandMatch + "candidate #it{p}_{T}^{gen.} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtGen", mcParticleMatched + "candidate #it{p}_{T} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}}}};
-
-  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -121,8 +124,6 @@ struct HfTaskBplus {
     registry.add("hd0d0RecBg", bPlusCandUnmatch + "product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
   }
 
-  Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> selectedBPlusCandidates = aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
-
   void process(aod::Collisions const& collision, soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate> const&, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate> const&, aod::BigTracks const&)
   {
 
@@ -160,8 +161,6 @@ struct HfTaskBplus {
       }
     } // candidate loop
   }   // process
-
-  Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
 
   void processMC(soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec> const&,
                  soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)

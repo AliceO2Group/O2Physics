@@ -110,6 +110,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
+
   int triggerClass;
 
   HistogramRegistry registry{"registry", {{"hNContributors", "Number of vertex contributors;entries", {HistType::kTH1F, {{20001, -0.5, 20000.5}}}}}};
@@ -256,11 +257,11 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HFSelTrack> rowSelectedTrack;
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
 
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<bool> debug{"debug", true, "debug mode"};
   // Configurable<double> bz{"bz", 5., "bz field"};
-  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
-  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
@@ -280,16 +281,12 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<double> ptMinTrackBach{"ptMinTrackBach", 0.3, "min. track pT for bachelor in cascade candidate"}; // 0.5 for PbPb 2015?
   Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
   Configurable<double> etaMaxTrackBach{"etaMaxTrackBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
-  // QA of PV refit
-  ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
-  ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
-  ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+  // CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-
   // for debugging
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -303,15 +300,20 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
+  // single-track cuts
+  static const int nCuts = 4;
+  // array of 2-prong and 3-prong cuts
+  std::array<LabeledArray<double>, 3> cutsSingleTrack;
+
+  // QA of PV refit
+  ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
+
   HistogramRegistry registry{
     "registry",
     {{"hRejTracks", "Tracks;;entries", {HistType::kTH1F, {{15, 0.5, 15.5}}}},
      {"hPtNoCuts", "all tracks;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}}};
-
-  static const int nCuts = 4;
-
-  // array of 2-prong and 3-prong single-track cuts
-  std::array<LabeledArray<double>, 3> cutsSingleTrack;
 
   void init(InitContext const&)
   {
@@ -840,15 +842,15 @@ struct HfTrackIndexSkimCreator {
   Produces<aod::HfCutStatusProng3> rowProng3CutStatus;
   Produces<aod::HfPvRefitProng3> rowProng3PVrefit;
 
-  // Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
-  Configurable<bool> debug{"debug", false, "debug mode"};
-  Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
-  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
-  // preselection parameters
+  Configurable<bool> debug{"debug", false, "debug mode"};
+  Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
+  // Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
+  // preselection
   Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
-  // vertexing parameters
+  // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -856,6 +858,13 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  // CCDB
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
   // D0 cuts
   Configurable<std::vector<double>> binsPtD0ToPiK{"binsPtD0ToPiK", std::vector<double>{hf_cuts_presel_2prong::vecBinsPt}, "pT bin limits for D0->piK pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsD0ToPiK{"cutsD0ToPiK", {hf_cuts_presel_2prong::cuts[0], hf_cuts_presel_2prong::nBinsPt, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "D0->piK selections per pT bin"};
@@ -877,21 +886,41 @@ struct HfTrackIndexSkimCreator {
   // Xic+ cuts
   Configurable<std::vector<double>> binsPtXicToPKPi{"binsPtXicToPKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Xic->pKpi pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsXicToPKPi{"cutsXicToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Xic->pKpi selections per pT bin"};
-  // QA of PV refit
-  ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
-  ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
-  ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
-  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
+
+  // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
+
+  static const int n2ProngDecays = hf_cand_prong2::DecayType::N2ProngDecays; // number of 2-prong hadron types
+  static const int n3ProngDecays = hf_cand_prong3::DecayType::N3ProngDecays; // number of 3-prong hadron types
+  static const int nCuts2Prong = 4;                                          // how many different selections are made on 2-prongs
+  static const int nCuts3Prong = 4;                                          // how many different selections are made on 3-prongs
+  std::array<std::array<std::array<double, 2>, 2>, n2ProngDecays> arrMass2Prong;
+  std::array<std::array<std::array<double, 3>, 2>, n3ProngDecays> arrMass3Prong;
+  // arrays of 2-prong and 3-prong cuts
+  std::array<LabeledArray<double>, n2ProngDecays> cut2Prong;
+  std::array<std::vector<double>, n2ProngDecays> pTBins2Prong;
+  std::array<LabeledArray<double>, n3ProngDecays> cut3Prong;
+  std::array<std::vector<double>, n3ProngDecays> pTBins3Prong;
+
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HFSelTrack, aod::HfPvRefitTrack>>;
+
+  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
+  Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
+
+  // FIXME
+  // Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
+  // Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
+
+  // QA of PV refit
+  ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
 
   HistogramRegistry registry{
     "registry",
@@ -915,20 +944,6 @@ struct HfTrackIndexSkimCreator {
      {"hMassLcToPKPi", "#Lambda_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      {"hMassDsToKKPi", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      {"hMassXicToPKPi", "#Xi_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
-
-  static const int n2ProngDecays = hf_cand_prong2::DecayType::N2ProngDecays; // number of 2-prong hadron types
-  static const int n3ProngDecays = hf_cand_prong3::DecayType::N3ProngDecays; // number of 3-prong hadron types
-  static const int nCuts2Prong = 4;                                          // how many different selections are made on 2-prongs
-  static const int nCuts3Prong = 4;                                          // how many different selections are made on 3-prongs
-
-  std::array<std::array<std::array<double, 2>, 2>, n2ProngDecays> arrMass2Prong;
-  std::array<std::array<std::array<double, 3>, 2>, n3ProngDecays> arrMass3Prong;
-
-  // arrays of 2-prong and 3-prong cuts
-  std::array<LabeledArray<double>, n2ProngDecays> cut2Prong;
-  std::array<std::vector<double>, n2ProngDecays> pTBins2Prong;
-  std::array<LabeledArray<double>, n3ProngDecays> cut3Prong;
-  std::array<std::vector<double>, n3ProngDecays> pTBins3Prong;
 
   void init(InitContext const&)
   {
@@ -1417,18 +1432,6 @@ struct HfTrackIndexSkimCreator {
 
     return;
   } /// end of performPvRefitCandProngs function
-
-  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
-  Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
-
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HFSelTrack, aod::HfPvRefitTrack>>;
-
-  // FIXME
-  // Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
-  // Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
-
-  // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
   void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions::iterator const& collision,
@@ -2144,13 +2147,11 @@ struct HfTrackIndexSkimCreator {
 struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
-  // whether to do or not validation plots
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-
   // event selection
   // Configurable<int> triggerindex{"triggerindex", -1, "trigger index"};
-
-  // vertexing parameters
+  // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
@@ -2158,55 +2159,56 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use Abs DCAs"};
-
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
-
   // track cuts for bachelor
   Configurable<bool> tpcRefitBach{"tpcRefitBach", true, "request TPC refit bachelor"};
   Configurable<int> nCrossedRowsMinBach{"nCrossedRowsMinBach", 50, "min crossed rows bachelor"};
-
   // track cuts for V0 daughters
   Configurable<bool> tpcRefitV0Daugh{"tpcRefitV0Daugh", true, "request TPC refit V0 daughters"};
   Configurable<int> nCrossedRowsMinV0Daugh{"nCrossedRowsMinV0Daugh", 50, "min crossed rows V0 daughters"};
-
-  // track cuts for V0 daughters
   Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
   Configurable<double> ptMinV0Daugh{"ptMinV0Daugh", 0.05, "min. pT V0 daughters"};
-
   // bachelor cuts
   //  Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
   //  Configurable<double> ptminbach{"ptminbach", -1., "min. track pT bachelor"};
-
   // v0 cuts
   Configurable<double> cpaV0Min{"cpaV0Min", .995, "min. cos PA V0"};                 // as in the task that create the V0s
   Configurable<double> dcaXYNegToPvMin{"dcaXYNegToPvMin", .1, "min. DCA_XY Neg To PV"}; // check: in HF Run 2, it was 0 at filtering
   Configurable<double> dcaXYPosToPvMin{"dcaXYPosToPvMin", .1, "min. DCA_XY Pos To PV"}; // check: in HF Run 2, it was 0 at filtering
   Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
-
   // cascade cuts
   Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};              // PbPb 2018: use 1
   Configurable<double> cutInvMassCascLc{"cutInvMassCascLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
   // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
-
-  // magnetic field setting from CCDB
-  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  // CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
-
   // for debugging
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
   Configurable<std::vector<int>> indexK0Sneg{"indexK0Sneg", {730, 2867, 4755, 5458, 6892, 7825, 9244, 9811}, "indices of K0S negative daughters, for debug"};
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+
+  double massP = RecoDecay::getMassPDG(kProton);
+  double massK0s = RecoDecay::getMassPDG(kK0Short);
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
+  double mass2K0sP{0.}; // WHY HERE?
+
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
+
+  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
+  // Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
 
   // histograms
   HistogramRegistry registry{
@@ -2215,16 +2217,6 @@ struct HfTrackIndexSkimCreatorCascades {
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hMass2", "2-prong candidates;inv. mass (K0s p) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
-
-  // using MyTracks = aod::BigTracksMC;
-  // Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
-  //  using SelectedV0s = soa::Filtered<aod::V0Datas>;
-
-  double massP = RecoDecay::getMassPDG(kProton);
-  double massK0s = RecoDecay::getMassPDG(kK0Short);
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
-  double mass2K0sP{0.}; // WHY HERE?
 
   void init(InitContext const&)
   {
@@ -2237,11 +2229,6 @@ struct HfTrackIndexSkimCreatorCascades {
     }
     runNumber = 0;
   }
-
-  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
-
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>;
 
   void process(SelectedCollisions::iterator const& collision,
                aod::BCsWithTimestamps const&,

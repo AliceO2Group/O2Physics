@@ -34,16 +34,18 @@ using namespace o2::framework::expressions;
 
 /// B0 analysis task
 struct HfTaskB0 {
+  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
+  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtProng0", "B0 candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
      {"hPtProng1", "B0 candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
      {"hPtCand", "B0 candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
      {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
-
-  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
-  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -61,8 +63,6 @@ struct HfTaskB0 {
     registry.add("hIPProd", "B^{0} candidates;B^{0} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hInvMassD", "B^{0} candidates;prong0, D^{#minus} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
   void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const&, aod::BigTracks const&)
   {
@@ -105,16 +105,18 @@ struct HfTaskB0 {
 
 /// B0 MC analysis and fill histograms
 struct HfTaskB0Mc {
+  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
+  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "B0 candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtRecBg", "B0 candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtGenSig", "B0 candidates (matched);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}}},
      {"hPtGen", "MC particles (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}}}};
-
-  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -163,8 +165,6 @@ struct HfTaskB0Mc {
     registry.add("hThetaStarRecSig", "B^{0} candidates (matched);B^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hThetaStarRecBg", "B^{0} candidates (unmatched);B^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
   void processMC(soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate, aod::HfCandB0MCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)

@@ -30,6 +30,12 @@ using namespace o2::framework::expressions;
 
 /// LcToK0sp analysis task
 struct HfTaskLcToK0sP {
+  Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
+  Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcToK0sP || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbarToK0sP);
+
   HistogramRegistry registry{
     "registry",
     {// data
@@ -43,10 +49,6 @@ struct HfTaskLcToK0sP {
      {"hV0CPA", "cascade candidates;v0 cosine of pointing angle;entries", {HistType::kTH1F, {{110, -0.98f, 1.1f}}}},
      {"hEta", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -2.0f, 2.0f}}}},
      {"hSelectionStatus", "cascade candidates;selection status;entries", {HistType::kTH1F, {{5, -0.5f, 4.5f}}}}}};
-
-  Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
-  Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
-  Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
 
   void init(InitContext& context)
   {
@@ -63,8 +65,6 @@ struct HfTaskLcToK0sP {
       registry.add("hEtaGen", "MC particles (MC);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
     }
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcToK0sP || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbarToK0sP);
 
   void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate>> const& candidates)
   {

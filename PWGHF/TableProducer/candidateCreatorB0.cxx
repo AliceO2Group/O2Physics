@@ -37,29 +37,31 @@ using namespace o2::framework::expressions;
 struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
+  // vertexing
   Configurable<double> bz{"bz", 20., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  // selection
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
+  Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
+  double massDPi = 0.;
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagD); // FIXME
 
   OutputObj<TH1F> hMassDToPiKPi{TH1F("hMassB0ToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD{TH1F("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPAD{TH1F("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassB0ToDPi{TH1F("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
-  double massDPi = 0.;
-
-  Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagD); // FIXME
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -292,6 +294,7 @@ struct HfCandidateCreatorB0 {
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorB0Expressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
+
   void init(InitContext const&) {}
 };
 

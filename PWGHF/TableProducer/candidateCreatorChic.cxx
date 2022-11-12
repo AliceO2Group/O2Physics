@@ -41,19 +41,28 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-/// Reconstruction of chic candidates
+/// Reconstruction of Chic candidates
 struct HfCandidateCreatorChic {
   Produces<aod::HfCandChicBase> rowCandidateBase;
 
+  // vertexing
   Configurable<double> bz{"bz", 20., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  // selection
   Configurable<double> energyGammaMin{"energyGammaMin", 0.4, "minimum gamma energy threshold (GeV)"};
   Configurable<double> etaGammaMin{"etaGammaMin", -1.00, "minimum gamma pseudorapidity"};
   Configurable<double> etaGammaMax{"etaGammaMax", 1.00, "maximum gamma pseudorapidity"};
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+
+  double massJpsi = RecoDecay::getMassPDG(pdg::Code::kJPsi);
+  double massJpsiGamma = 0;
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -61,16 +70,8 @@ struct HfCandidateCreatorChic {
   OutputObj<TH1F> hCPAJpsi{TH1F("hCPAJpsi", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassChicToJpsiToEEGamma{TH1F("hMassChicToJpsiToEEGamma", "2-prong candidates;inv. mass (J/#psi (#rightarrow e+ e-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGamma{TH1F("hMassChicToJpsiToMuMuGamma", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
-
-  double massJpsi = RecoDecay::getMassPDG(pdg::Code::kJPsi);
-  double massJpsiGamma = 0;
-
-  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -193,6 +194,7 @@ struct HfCandidateCreatorChic {
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorChicExpressions {
   Spawns<aod::HfCandChicExt> rowCandidateChic;
+
   void init(InitContext const&) {}
 };
 
@@ -200,10 +202,12 @@ struct HfCandidateCreatorChicExpressions {
 struct HfCandidateCreatorChicMc {
   Produces<aod::HfCandChicMCRec> rowMCMatchRec;
   Produces<aod::HfCandChicMCGen> rowMCMatchGen;
+
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGammaMatched{TH1F("hMassChicToJpsiToMuMuGammaMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+
   void process(aod::HfCandChic const& candidates,
                aod::HfCandProng2 const&,
                aod::BigTracksMC const& tracks,

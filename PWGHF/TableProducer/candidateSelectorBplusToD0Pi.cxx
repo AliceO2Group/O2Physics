@@ -31,31 +31,25 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_bplus_tod0pi;
 
 struct HfCandidateSelectorBplusToD0Pi {
-
   Produces<aod::HFSelBPlusToD0PiCandidate> hfSelBPlusToD0PiCandidate;
 
-  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-
+  // Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
-
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 999, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 9999, "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-
   // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 50., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 999., "Nsigma cut on TOF combined with TPC"};
-
+  // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"BPlus_to_d0pi_cuts", {hf_cuts_bplus_tod0pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B+ candidate selection per pT bin"};
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>

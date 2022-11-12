@@ -37,14 +37,14 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Forward {
+  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Forward::isSelHFFFlag >= 1);
+
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigBkgD0ForwardRICHPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0ForwardRICHPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0ForwardRICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Forward::isSelHFFFlag >= 1);
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Forward, aod::HfCandProng2MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)

@@ -30,6 +30,18 @@ using namespace o2::analysis::hf_cuts_d0_topik;
 
 /// D0 analysis task
 struct HfTaskD0 {
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
+  Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
+  Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
+  Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_topik::vecBinsPt}, "pT bin limits"};
+
+  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_selcandidate_d0::isRecoHFFlag >= selectionFlagHf;
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -100,15 +112,6 @@ struct HfTaskD0 {
      {"hMassReflBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}},
      {"hMassSigBkgD0bar", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}}}};
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
-  Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
-  Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
-  Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_topik::vecBinsPt}, "pT bin limits"};
-
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
@@ -139,8 +142,6 @@ struct HfTaskD0 {
     registry.add("hCtFinerBinning", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{500, -0., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPAFinerBinning", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   void process(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>& candidates)
   {
@@ -189,8 +190,6 @@ struct HfTaskD0 {
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), candidate.pt());
     }
   }
-
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_selcandidate_d0::isRecoHFFlag >= selectionFlagHf;
 
   void processMC(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)

@@ -32,6 +32,13 @@ using namespace o2::analysis::hf_cuts_xic_topkpi;
 
 /// Ξc± analysis task
 struct HfTaskXic {
+  Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_topkpi::vecBinsPt}, "pT bin limits"};
+
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> selectedXicCandidates = aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic;
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic);
+
   HistogramRegistry registry{
     "registry",
     {
@@ -41,10 +48,6 @@ struct HfTaskXic {
       {"hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
       {"hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}} ///
     }};
-
-  Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_topkpi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -91,8 +94,6 @@ struct HfTaskXic {
     registry.add("hPtProng2RecBg", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> selectedXicCandidates = aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic;
-
   void process(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate> const& candidates)
   {
     for (auto& candidate : selectedXicCandidates) {
@@ -130,8 +131,6 @@ struct HfTaskXic {
       registry.fill(HIST("hDecLenErr"), candidate.chi2PCA(), candidate.pt());
     }
   }
-
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   void processMC(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)

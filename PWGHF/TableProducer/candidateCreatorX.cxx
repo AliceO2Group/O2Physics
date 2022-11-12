@@ -44,13 +44,24 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfCandidateCreatorX {
   Produces<aod::HfCandXBase> rowCandidateBase;
 
+  // vertexing
   Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  // selection
   Configurable<double> ptPionMin{"ptPionMin", 1., "minimum pion pT threshold (GeV/c)"};
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
+
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  double massJpsi = RecoDecay::getMassPDG(443);
+  double massJpsiPiPi;
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -58,18 +69,8 @@ struct HfCandidateCreatorX {
   OutputObj<TH1F> hCPAJpsi{TH1F("hCPAJpsi", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassXToJpsiToEEPiPi{TH1F("hMassXToJpsiToEEPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow e+ e-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassXToJpsiToMuMuPiPi{TH1F("hMassXToJpsiToMuMuPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massJpsi = RecoDecay::getMassPDG(443);
-  double massJpsiPiPi;
-
-  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -246,6 +247,7 @@ struct HfCandidateCreatorX {
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorXExpressions {
   Spawns<aod::HfCandXExt> rowCandidateX;
+
   void init(InitContext const&) {}
 };
 

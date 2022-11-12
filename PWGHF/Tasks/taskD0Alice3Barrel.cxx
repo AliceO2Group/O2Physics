@@ -38,6 +38,11 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Barrel {
+  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
+  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelHFFlag >= 1);
+
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
@@ -60,11 +65,6 @@ struct HfTaskD0Alice3Barrel {
      {"hMassSigBkgD0PerfectPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0PerfectPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0PerfectPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
-
-  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
-  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelHFFlag >= 1);
 
   // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)

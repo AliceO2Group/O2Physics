@@ -31,14 +31,14 @@ using namespace o2::framework;
 struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
+
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtPi{TH1F("hPtPi", "#pi candidates;#it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0Prong0{TH1F("hPtD0Prong0", "D^{0} candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0Prong1{TH1F("hPtD0Prong1", "D^{0} candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0{TH1F("hPtD0", "D^{0} candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
 
   void process(aod::Collisions const&,
                aod::HfDstars const& rowsTrackIndexDstar,

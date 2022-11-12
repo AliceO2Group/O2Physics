@@ -57,17 +57,19 @@ constexpr static uint32_t gTrackMCFillMap(VarManager::ObjTypes::ParticleMC);
 void defineHistograms(HistogramManager*, TString);
 
 struct HfTaskSingleMuonEventSelection {
+  Produces<aod::EventCuts> eventSel;
+
   Configurable<bool> applySoftwareTrigger{"applySoftwareTrigger", false, "whether to apply the software trigger"};
   Configurable<int> softwareTrigger{"softwareTrigger", VarManager::kIsMuonSingleLowPt7, "software trigger flag"};
   Configurable<bool> applyCutZVtx{"applyCutZVtx", false, "whether to apply the VtxZ cut"};
   Configurable<float> zVtxMin{"zVtxMin", -10., "min. z of primary vertex [cm]"};
   Configurable<float> zVtxMax{"zVtxMax", 10., "max. z of primary vertex [cm]"};
 
-  HistogramManager* histMan;
-  OutputObj<THashList> outputList{"output"};
-
   float* values;
   AnalysisCompositeCut* eventCut;
+  HistogramManager* histMan;
+
+  OutputObj<THashList> outputList{"output"};
 
   void init(o2::framework::InitContext&)
   {
@@ -90,8 +92,6 @@ struct HfTaskSingleMuonEventSelection {
     VarManager::SetUseVars(histMan->GetUsedVars());
     outputList.setObject(histMan->GetMainHistogramList());
   }
-
-  Produces<aod::EventCuts> eventSel;
 
   template <uint32_t TEventFillMap, typename TEvent>
   void runEventSel(TEvent const& event, aod::BCs const& bcs)

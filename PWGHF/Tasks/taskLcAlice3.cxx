@@ -37,6 +37,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskLcAlice3 {
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_ALICE3::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_ALICE3::isSelLcPiKPNoPID == 1);
+
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "3-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
@@ -53,7 +55,6 @@ struct HfTaskLcAlice3 {
      {"hMassSigLcPerfectPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgLcPerfectPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_ALICE3::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_ALICE3::isSelLcPiKPNoPID == 1);
   void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidateALICE3, aod::HfCandProng3MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {

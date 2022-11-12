@@ -99,12 +99,13 @@ static std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histMinTrack
 } // namespace
 
 struct HfSelOptimisation {
-
   Configurable<std::vector<float>> cutsToTestCpa{"cutsToTestCpa", std::vector<float>{vecCutsCosp}, "cos(theta_P) cut values to test"};
   Configurable<std::vector<float>> cutsToTestDecLen{"cutsToTestDecLen", std::vector<float>{vecCutsDecLen}, "decay length cut values to test"};
   Configurable<std::vector<float>> cutsToTestImpParProd{"cutsToTestImpParProd", std::vector<float>{vecCutsImpParProd}, "impact parameter product cut values to test (2-prongs only)"};
   Configurable<std::vector<float>> cutsToTestMinDcaXY{"cutsToTestMinDcaXY", std::vector<float>{vecCutsMinDCAxy}, "min DCA xy cut values to test"};
   Configurable<std::vector<float>> cutsToTestMinTrackPt{"cutsToTestMinTrackPt", std::vector<float>{vecCutsMinTrackPt}, "min track pT cut values to test"};
+
+  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksDCA>;
 
   ConfigurableAxis ptBinning{"ptBinning", {0, 0., 2., 5., 20.}, "pT bin limits"};
 
@@ -256,7 +257,6 @@ struct HfSelOptimisation {
     }
   }
 
-  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksDCA>;
   void process(soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec> const& cand2Prongs,
                soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec> const& cand3Prongs,
                ExtendedTracks const&)

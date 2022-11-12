@@ -60,9 +60,9 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfCandidateSelectorJpsi {
   Produces<aod::HFSelJpsiCandidate> hfSelJpsiCandidate;
 
-  Configurable<bool> selectENotPi{"selectENotPi", true, "Apply combined TOF + RICH e/π selection"};
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<bool> selectENotPi{"selectENotPi", true, "Apply combined TOF + RICH e/π selection"};
   // TPC
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
@@ -80,6 +80,9 @@ struct HfCandidateSelectorJpsi {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Jpsi_to_ee_cuts", {hf_cuts_jpsi_toee::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+
+  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -135,10 +138,6 @@ struct HfCandidateSelectorJpsi {
     }
     return true;
   }
-
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
-
-  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;
 
   void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
   {

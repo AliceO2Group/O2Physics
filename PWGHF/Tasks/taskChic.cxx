@@ -41,16 +41,18 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// chi_c1(1P) analysis task
 struct HfTaskChic {
+  Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
+  Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
-
-  Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
-  Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
-  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -67,8 +69,6 @@ struct HfTaskChic {
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     //    registry.add("hEGamma", "Photon energy", {HistType::kTH1F, {{200, 0., 10.}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate>> const& candidates)
   {
@@ -102,17 +102,19 @@ struct HfTaskChic {
 };    // struct
 
 struct HfTaskChicMc {
+  Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
+  Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "2-prong candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
      {"hPtRecBg", "2-prong candidates (rec. unmatched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
      {"hPtGen", "2-prong candidates (gen. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
      {"hPtGenSig", "2-prong candidates (rec. matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
-
-  Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
-  Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
-  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -147,8 +149,6 @@ struct HfTaskChicMc {
     registry.add("hYRecSig", "2-prong candidates (rec. matched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hYRecBg", "2-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate, aod::HfCandChicMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)

@@ -38,6 +38,12 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLcCentrality {
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
@@ -45,12 +51,6 @@ struct HfTaskLcCentrality {
      {"hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
-
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void init(o2::framework::InitContext&)
   {
@@ -113,6 +113,12 @@ struct HfTaskLcCentrality {
 
 /// Fills MC histograms.
 struct HfTaskLcCentralityMc {
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
+
   HistogramRegistry registry{
     "registry",
     {{"hCPARecSig", "3-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
@@ -120,12 +126,6 @@ struct HfTaskLcCentralityMc {
      {"hEtaRecSig", "3-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
-
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void init(o2::framework::InitContext&)
   {

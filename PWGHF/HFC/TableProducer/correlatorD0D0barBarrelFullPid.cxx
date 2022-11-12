@@ -70,6 +70,19 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Produces<aod::DDbarPair> entryD0D0barPair;
   Produces<aod::DDbarRecoInfo> entryD0D0barRecoInfo;
 
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_topik::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
+
+  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel>> selectedD0candidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
+  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> selectedD0candidatesMC = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
+
   HistogramRegistry registry{
     "registry",
     // NOTE: use hMassD0 for trigger normalisation (S*0.955), and hMass2DCorrelationPairs (in final task) for 2D-sideband-subtraction purposes
@@ -100,16 +113,6 @@ struct HfCorrelatorD0D0barBarrelFullPid {
      {"hCountCCbarPerEvent", "c,cbar particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hCountCCbarPerEventBeforeEtaCut", "c,cbar particles - MC gen;Number per event pre #eta cut;entries", {HistType::kTH1F, {{20, 0., 20.}}}}}};
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_topik::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
@@ -125,8 +128,6 @@ struct HfCorrelatorD0D0barBarrelFullPid {
     registry.add("hCountD0triggersMCGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountCtriggersMCGen", "c trigger particles - MC gen;;N of trigger c quark", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel>> selectedD0candidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel> const& candidates)
@@ -238,8 +239,6 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   PROCESS_SWITCH(HfCorrelatorD0D0barBarrelFullPid, processData, "Process data", false);
 
   /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> selectedD0candidatesMC = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
-
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec> const& candidates)
   {
     int nTracks = 0;

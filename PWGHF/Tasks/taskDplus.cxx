@@ -30,6 +30,13 @@ using namespace o2::aod::hf_cand_prong3;
 
 /// D± analysis task
 struct HfTaskDplus {
+  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits"};
+
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0;
+
   HistogramRegistry registry{
     "registry",
     {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -41,10 +48,6 @@ struct HfTaskDplus {
      {"hEtaRecSig", "3-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
-
-  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
   {
@@ -88,8 +91,6 @@ struct HfTaskDplus {
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-
   void process(soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const& candidates)
   {
     for (auto& candidate : selectedDPlusCandidates) {
@@ -125,8 +126,6 @@ struct HfTaskDplus {
       registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), candidate.pt());
     }
   }
-
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0;
 
   void processMC(soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)

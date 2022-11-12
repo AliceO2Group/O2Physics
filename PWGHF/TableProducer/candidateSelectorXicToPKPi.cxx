@@ -31,22 +31,21 @@ using namespace o2::analysis::hf_cuts_xic_topkpi;
 struct HfCandidateSelectorXicToPKPi {
   Produces<aod::HFSelXicToPKPiCandidate> hfSelXicToPKPiCandidate;
 
-  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length XY"};
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
-  // TPC
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 1., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
-  // TOF
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.5, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 4., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
+  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length XY"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_topkpi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Xic_to_p_K_pi_cuts", {hf_cuts_xic_topkpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xic candidate selection per pT bin"};
 

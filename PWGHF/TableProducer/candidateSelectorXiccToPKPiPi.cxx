@@ -33,12 +33,12 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
-  // TPC
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 9999., "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 99999., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 9999., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 9999., "Nsigma cut on TPC combined with TOF"};
-  // TOF
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 4., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};

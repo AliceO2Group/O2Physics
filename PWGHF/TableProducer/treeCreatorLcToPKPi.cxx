@@ -180,11 +180,11 @@ struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandProng3FullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandProng3FullParticles> rowCandidateFullParticles;
 
+  Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+
   void init(InitContext const&)
   {
   }
-
-  Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   void processMC(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,

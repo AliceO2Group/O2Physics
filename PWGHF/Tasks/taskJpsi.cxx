@@ -37,20 +37,22 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// jpsitoee analysis task
 struct HfTaskJpsi {
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 0, "Selection Flag for Jpsi"};
+  Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
+  Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
+  Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
+  Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}},
      {"hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}},
      {"hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}}}};
-
-  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 0, "Selection Flag for Jpsi"};
-  Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
-  Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
-  Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
-  Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
-  Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -70,8 +72,6 @@ struct HfTaskJpsi {
     registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>> const& candidates)
   {
@@ -134,6 +134,19 @@ struct HfTaskJpsi {
 
 /// Fills MC histograms.
 struct HfTaskJpsiMc {
+  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
+  Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
+  Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
+  Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
+  Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
+
+  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
+
   HistogramRegistry registry{
     "registry",
     {{"hPtRecSig", "2-prong candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 20.}}}},
@@ -145,15 +158,6 @@ struct HfTaskJpsiMc {
      {"hEtaRecSig", "2-prong candidates (rec. matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaRecBg", "2-prong candidates (rec. unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "2-prong candidates (gen. matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
-
-  Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
-  Configurable<bool> modeJpsiToMuMu{"modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
-  Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
-  Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
-  Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
-  Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -185,10 +189,6 @@ struct HfTaskJpsiMc {
     registry.add("hPtGenProng0", "2-prong candidates (gen. matched);prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenProng1", "2-prong candidates (gen. matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
-
-  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate, aod::HfCandProng2MCRec>> const& candidates,
                McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)

@@ -84,6 +84,19 @@ const double efficiencyDmesonDefault[npTBinsEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsEfficiency};
 
 struct HfTaskCorrelationDDbar {
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
+  //pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_topik (i.e. the mass pT bins), but can be redefined via json files
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
+  //pT bins for effiencies: same as above
+  Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::vecBinsPt}, "pT bin limits for efficiency"};
+  //signal and sideband region edges, to be defined via json file (initialised to empty)
+  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
+  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
+  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInner_v}, "Inner values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
 
   HistogramRegistry registry{
     "registry",
@@ -144,20 +157,6 @@ struct HfTaskCorrelationDDbar {
      {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}, //note: axes 3 and 4 (the pT) are updated in the init()
      {"hDeltaPtDDbarMCGen", stringMCParticles + stringDeltaPt + "entries", {HistType::kTH1F, {{144, -36., 36.}}}},
      {"hDeltaPtMaxMinMCGen", stringMCParticles + stringDeltaPtMaxMin + "entries", {HistType::kTH1F, {{72, 0., 36.}}}}}};
-
-  //pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_topik (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
-  //pT bins for effiencies: same as above
-  Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::vecBinsPt}, "pT bin limits for efficiency"};
-  //signal and sideband region edges, to be defined via json file (initialised to empty)
-  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
-  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
-  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInner_v}, "Inner values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
 
   void init(o2::framework::InitContext&)
   {

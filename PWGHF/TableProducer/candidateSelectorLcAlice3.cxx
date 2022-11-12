@@ -44,6 +44,7 @@ DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackI
 
 struct HfCandidateSelectorLcAlice3RichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
+
   void init(o2::framework::InitContext&) {}
 };
 
@@ -51,24 +52,24 @@ struct HfCandidateSelectorLcAlice3RichIndexBuilder { // Builder of the RICH-trac
 struct HfCandidateSelectorLcAlice3 {
   Produces<aod::HFSelLcCandidateALICE3> hfSelLcCandidateALICE3;
 
-  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length"};
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
-  Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
-  // TPC
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.1, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 1., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
-  // TOF
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.5, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 2.5, "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
+  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+
+  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
 
   /*
   /// Selection on goodness of daughter tracks
@@ -158,7 +159,6 @@ struct HfCandidateSelectorLcAlice3 {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
   void process(aod::HfCandProng3 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
     for (auto& candidate : candidates) {

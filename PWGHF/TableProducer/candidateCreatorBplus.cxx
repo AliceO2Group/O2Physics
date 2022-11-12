@@ -46,6 +46,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
   Produces<aod::HfCandBPlusBase> rowCandidateBase;
+
   // vertexing parameters
   Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -54,19 +55,19 @@ struct HfCandidateCreatorBplus {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "use absolute DCAs"};
-
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1F> hNEvents{TH1F("hNEvents", "Number of events;Nevents;entries", 1, 0., 1)};
-  OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
-  OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
-
+  // selection
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> etaTrackMax{"etaTrackMax", -1, "max. bach track. pseudorapidity"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
+
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH1F> hNEvents{TH1F("hNEvents", "Number of events;Nevents;entries", 1, 0., 1)};
+  OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
+  OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
 
   void process(aod::Collision const& collisions,
                soa::Filtered<soa::Join<aod::HfCandProng2,
@@ -212,6 +213,7 @@ struct HfCandidateCreatorBplus {
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorBplusExpressions {
   Spawns<aod::HfCandBPlusExt> rowCandidateBPlus;
+
   void init(InitContext const&) {}
 };
 

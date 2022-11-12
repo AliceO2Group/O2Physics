@@ -186,11 +186,11 @@ struct HfTreeCreatorBplusToD0Pi {
   Produces<o2::aod::HfCandBplusFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandBplusFullParticles> rowCandidateFullParticles;
 
+  Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
+
   void init(InitContext const&)
   {
   }
-
-  Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,

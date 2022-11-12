@@ -44,19 +44,13 @@ struct HfCandidateSelectorLcToK0sP {
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-
   // PID
   Configurable<double> ptPidTpcApplyMin{"ptPidTpcApplyMin", 4., "Lower bound of track pT to apply TPC PID"};
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0., "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 100., "Upper bound of track pT for TPC PID"};
-  Configurable<double> pPidCombMax{"pPidCombMax", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
-
-  // track quality
-  // Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 50., "Lower bound of TPC findable clusters for good PID"};
-  // Configurable<bool> requireTpc{"requireTpc", true, "Flag to require a positive Number of found clusters in TPC"};
-
-  // cuts
+  Configurable<double> pPidCombMax{"pPidCombMax", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
+  // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_tok0sp::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_tok0sp::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 

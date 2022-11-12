@@ -44,29 +44,31 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfCandidateCreatorLb {
   Produces<aod::HfCandLbBase> rowCandidateBase;
 
+  // vertexing
   Configurable<double> bz{"bz", 20., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any Lb is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  // selection
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+
+  double massPi = RecoDecay::getMassPDG(kPiMinus);
+  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
+  double massLcPi = 0.;
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#minus} candidates;#pi^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPALc{TH1F("hCPALc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassLbToLcPi{TH1F("hMassLbToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
-
-  double massPi = RecoDecay::getMassPDG(kPiMinus);
-  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
-  double massLcPi = 0.;
-
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -213,6 +215,7 @@ struct HfCandidateCreatorLb {
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorLbExpressions {
   Spawns<aod::HfCandLbExt> rowCandidateLb;
+  
   void init(InitContext const&) {}
 };
 

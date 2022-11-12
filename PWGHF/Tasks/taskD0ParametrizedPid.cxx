@@ -39,6 +39,13 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0ParametrizedPid {
+  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
+  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
+
+  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_parametrizedPID::isSelD0NoPID >= 1 || aod::hf_selcandidate_d0_parametrizedPID::isSelD0barNoPID >= 1);
+
   HistogramRegistry registry{
     "registry",
     {{"hGenPtVsY", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
@@ -58,11 +65,6 @@ struct HfTaskD0ParametrizedPid {
      {"hMassSigD0PerfectPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0PerfectPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
-  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
-  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_parametrizedPID::isSelD0NoPID >= 1 || aod::hf_selcandidate_d0_parametrizedPID::isSelD0barNoPID >= 1);
-  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {

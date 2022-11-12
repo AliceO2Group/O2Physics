@@ -48,48 +48,21 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_d0_topik;
 
 struct HfTaskFlow {
-  HistogramRegistry registry{"registry"};
-
-  OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
-  OutputObj<CorrelationContainer> sameTPCMFTCh{"sameEventTPCMFTChHadrons"};
-  OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
-  OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
-  OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
-
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
   Configurable<bool> processMC{"processMC", "false", "Flag to run on MC"};
-
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
-
   //  configurables for collisions
   Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
-
   //  configurables for associated particles
   Configurable<float> etaTrackAssocMax{"etaTrackAssocMax", 0.8f, "max. eta of associated tracks"};
   Configurable<float> ptTrackAssocMin{"ptTrackAssocMin", 0.5f, "min. pT of associated tracks"};
-
   //  configurables for HF candidates
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_topik::vecBinsPt}, "pT bin limits"};
-
-  //  configurables for containers
-  ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
-  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
-  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
-  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
-  //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
-  //        either 1) add invariant mass axis or 2) define several containers for different inv. mass regions
-  //        Note: don't forget to check inv. mass separately for D0 and D0bar candidate
-  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
@@ -106,6 +79,29 @@ struct HfTaskFlow {
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
   using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>;
+
+  //  configurables for containers
+  ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0}, "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
+  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
+  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+  //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
+  //        either 1) add invariant mass axis or 2) define several containers for different inv. mass regions
+  //        Note: don't forget to check inv. mass separately for D0 and D0bar candidate
+  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
+
+  HistogramRegistry registry{"registry"};
+
+  OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
+  OutputObj<CorrelationContainer> sameTPCMFTCh{"sameEventTPCMFTChHadrons"};
+  OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
+  OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
+  OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
 
   //  =========================
   //      init()
@@ -194,6 +190,7 @@ struct HfTaskFlow {
                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
                                      {axisVertexEfficiency, "z-vtx (cm)"}};
     std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
+
     sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));

@@ -45,6 +45,7 @@ using MyBigTracks = aod::BigTracks;
 struct HfCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
+  // vertexing
   Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
@@ -53,7 +54,6 @@ struct HfCandidateCreatorCascade {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation histograms"};
   Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
-
   // for debugging
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -61,15 +61,15 @@ struct HfCandidateCreatorCascade {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-
   double massP = RecoDecay::getMassPDG(kProton);
   double massK0s = RecoDecay::getMassPDG(kK0Short);
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.};
+
+  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void process(aod::Collisions const&,
                aod::HfCascades const& rowsTrackIndexCasc,
@@ -207,10 +207,9 @@ struct HfCandidateCreatorCascade {
 
 /// Performs MC matching.
 struct HfCandidateCreatorCascadeMc {
+  Spawns<aod::HfCandCascExt> rowCandidateCasc;
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
   Produces<aod::HfCandCascadeMCGen> rowMCMatchGen;
-
-  Spawns<aod::HfCandCascExt> rowCandidateCasc;
 
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};

@@ -61,6 +61,23 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
 
+  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> etaTrackMax{"etaTrackMax", -1., "max. eta of tracks"};
+  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", -1., "max. DCA_xy of tracks"};
+  Configurable<double> dcaZTrackMax{"dcaZTrackMax", -1., "max. DCA_z of tracks"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT"};
+  Configurable<double> ptTrackMax{"ptTrackMax", -1., "max. cand. pT"};
+  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
+
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0;
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "Dplus,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
@@ -88,20 +105,6 @@ struct HfCorrelatorDplusHadrons {
      {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}}}};
 
-  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> etaTrackMax{"etaTrackMax", -1., "max. eta of tracks"};
-  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", -1., "max. DCA_xy of tracks"};
-  Configurable<double> dcaZTrackMax{"dcaZTrackMax", -1., "max. DCA_z of tracks"};
-  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
-  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT"};
-  Configurable<double> ptTrackMax{"ptTrackMax", -1., "max. cand. pT"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
@@ -112,8 +115,6 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hMassDplusMCRecBkg", "Dplus background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hcountDplustriggersMCGen", "Dplus trigger particles - MC gen;;N of trigger Dplus", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const& candidates)
@@ -195,8 +196,6 @@ struct HfCorrelatorDplusHadrons {
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0;
-
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec> const& candidates)
   {
     int nTracks = 0;

@@ -58,8 +58,8 @@ DECLARE_SOA_TABLE(CollWithHFSignal, "AOD", "COLLWHFSIGNAL", //!
 } // namespace o2::aod
 
 struct HfTaskMcValidationAddAmbiguousTrackInfo {
-
   Produces<o2::aod::TracksWithAmbiguousCollisionInfo> trackWithAmbiguousInfo;
+
   using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
 
   void process(TracksWithSel const& tracks,
@@ -118,7 +118,6 @@ struct HfTaskMcValidationAddAmbiguousTrackInfo {
 /// - Momentum Conservation for these particles
 
 struct HfTaskMcValidationGen {
-
   Produces<o2::aod::CollWithHFSignal> collWithHFSignal;
 
   Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
@@ -349,7 +348,6 @@ struct HfTaskMcValidationGen {
 ///   - Gen-Rec Level Momentum Difference per component;
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
 struct HfTaskMcValidationRec {
-
   Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
 
   static const int nCharmHadrons = 7;
@@ -359,6 +357,15 @@ struct HfTaskMcValidationRec {
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
   std::shared_ptr<TH1> histContributors;
+
+  using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
+  using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
+  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TracksWithAmbiguousCollisionInfo>;
+  using mcCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
+
+  Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
+  Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
 
   AxisSpec axisDeltaMom{2000, -1., 1.};
   AxisSpec axisOrigin{4, -1.5, 2.5};
@@ -445,15 +452,6 @@ struct HfTaskMcValidationRec {
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
   }
-
-  using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
-  using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
-  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
-  using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TracksWithAmbiguousCollisionInfo>;
-  using mcCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
-
-  Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
-  Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
 
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions, aod::BCs const&)
   {

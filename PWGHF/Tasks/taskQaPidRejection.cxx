@@ -73,10 +73,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Task to QA the efficiency of a particular particle defined by particlePDG
 template <o2::track::pid_constants::ID particle>
 struct HfTaskQaPidRejection {
-  static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
-  static_assert(particle < 5 && "Maximum of particles reached");
-  static constexpr int particlePDG = PDGs[particle];
-
   // Particle selection
   Configurable<int> nBinsEta{"nBinsEta", 40, "Number of eta bins"};
   Configurable<float> etaMin{"etaMin", -2.f, "Lower limit in eta"};
@@ -98,6 +94,11 @@ struct HfTaskQaPidRejection {
   Configurable<double> ptPidRichMax{"ptPidRichMax", 10., "Upper bound of track pT for RICH PID"};
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
+
+  static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
+  static_assert(particle < 5 && "Maximum of particles reached");
+  static constexpr int particlePDG = PDGs[particle];
+  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
@@ -138,8 +139,6 @@ struct HfTaskQaPidRejection {
     histos.add("trackingRICHselProton/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
     histos.add("trackingMIDselMuon/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
-
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
   void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
                const o2::soa::Join<TracksPID, o2::aod::McTrackLabels>& tracks,
@@ -274,6 +273,9 @@ struct HfTaskQaPidRejectionGeneral {
   Configurable<double> ptPidRichMax{"ptPidRichMax", 10., "Upper bound of track pT for RICH PID"};
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
+
+  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
@@ -330,8 +332,6 @@ struct HfTaskQaPidRejectionGeneral {
     histos.add("hPionMID/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
     histos.add("hKaonMID/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
-
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
   void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
                const o2::soa::Join<TracksPID, o2::aod::McTrackLabels>& tracks,

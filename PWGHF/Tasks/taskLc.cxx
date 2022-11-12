@@ -34,6 +34,12 @@ using namespace o2::analysis::hf_cuts_lc_topkpi;
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
+
   HistogramRegistry registry{
     "registry",
     {/// mass candidate
@@ -125,12 +131,6 @@ struct HfTaskLc {
      {"MC/generated/signal/hPhiGen", "MC particles (matched);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
      {"MC/generated/prompt/hPhiGenPrompt", "MC particles (matched, prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
      {"MC/generated/nonprompt/hPhiGenNonPrompt", "MC particles (matched, non-prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}}}};
-
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_topkpi::vecBinsPt}, "pT bin limits"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   void init(o2::framework::InitContext&)
   {

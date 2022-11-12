@@ -71,6 +71,18 @@ struct HfCorrelatorDplusDminus {
   Produces<aod::DDbarPair> entryDplusDminusPair;
   Produces<aod::DDbarRecoInfo> entryDplusDminusRecoInfo;
 
+  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus,Dminus"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
+
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> selectedDPlusCandidatesMC = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+
   HistogramRegistry registry{
     "registry",
     // NOTE: use hMassDplus for trigger normalisation (S*0.955), and hMass2DCorrelationPairs (in final task) for 2D-sideband-subtraction purposes
@@ -103,15 +115,6 @@ struct HfCorrelatorDplusDminus {
      {"hCountCCbarPerEvent", "c,cbar particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hCountCCbarPerEventBeforeEtaCut", "c,cbar particles - MC gen;Number per event pre #eta cut;entries", {HistType::kTH1F, {{20, 0., 20.}}}}}};
 
-  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus,Dminus"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
@@ -125,8 +128,6 @@ struct HfCorrelatorDplusDminus {
     registry.add("hCountDplustriggersMCGen", "Dplus trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountCtriggersMCGen", "c trigger particles - MC gen;;N of trigger c quark", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
-
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   /// Dplus-Dminus correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const& candidates, aod::BigTracks const& bigtracks)
@@ -237,8 +238,6 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processData, "Process data", false);
 
   /// Dplus-Dminus correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> selectedDPlusCandidatesMC = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec> const& candidates, aod::BigTracks const& bigtracks)
   {
     int nTracks = 0;

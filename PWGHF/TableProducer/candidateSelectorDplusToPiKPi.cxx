@@ -32,13 +32,11 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
-  // TPC
-  // Configurable<bool> requireTpc{"requireTpc", true, "Flag to require a positive Number of found clusters in TPC"};
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC"};
-  //Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 50., "Lower bound of TPC findable clusters for good PID"};
-  // TOF
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
