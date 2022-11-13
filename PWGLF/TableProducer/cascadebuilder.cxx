@@ -352,7 +352,7 @@ struct cascadeBuilder {
         covV0[4] = covVtxV0(2, 1);
         covV0[5] = covVtxV0(2, 2);
 
-        const std::array<float, 3> vertex = {static_cast<float> v0vtx[0], static_cast<float> v0vtx[1], static_cast<float> v0vtx[2]};
+        const std::array<float, 3> vertex = {static_cast<float>(v0vtx[0]), static_cast<float>(v0vtx[1]), static_cast<float>(v0vtx[2])};
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
