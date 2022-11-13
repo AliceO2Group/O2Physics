@@ -739,8 +739,10 @@ struct UpcCandProducer {
           std::vector<int64_t> tracks;
           tracks.reserve(fNBarProngs * 2); // precautions
           int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
-          if (res < 0) // too many tracks nearby -> rejecting
+          if (res < 0) { // too many tracks nearby -> rejecting
+            trackIds.push_back(0);
             continue;
+          }
         }
         if (nTOFtracks < fNBarProngs && !upcCuts.getRequireTOF()) { // add ITS-TPC track if needed
           uint32_t tracksToFind = fNBarProngs - nTOFtracks;
@@ -889,8 +891,10 @@ struct UpcCandProducer {
           std::vector<int64_t> tracks;
           tracks.reserve(fNBarProngs * 2); // precautions
           int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
-          if (res < 0) // too many tracks nearby -> rejecting
+          if (res < 0) { // too many tracks nearby -> rejecting
+            trackIdsTOF.push_back(0);
             continue;
+          }
         }
         if (nMIDtracks == fNFwdProngs && nTOFtracks < fNBarProngs && !upcCuts.getRequireTOF()) { // add ITS-TPC track if needed
           uint32_t tracksToFind = fNBarProngs - nTOFtracks;
@@ -931,7 +935,7 @@ struct UpcCandProducer {
       uint32_t nBarrelTracks = barrelTrackIDs.size(); // TOF + ITS-TPC tracks
       uint16_t numContrib = nBarrelTracks + nMIDtracks;
       // sanity check
-      if (numContrib != (fNBarProngs + fNFwdProngs))
+      if (nBarrelTracks != fNBarProngs || nMIDtracks != fNFwdProngs)
         continue;
       // fetching FT0, FDD, FV0 information
       // if there is no relevant signal, dummy info will be used
