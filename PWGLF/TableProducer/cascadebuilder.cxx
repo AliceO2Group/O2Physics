@@ -59,7 +59,6 @@
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
 #include "TDatabasePDG.h"
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;

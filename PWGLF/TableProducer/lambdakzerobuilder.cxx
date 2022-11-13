@@ -59,9 +59,7 @@
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
 #include "TDatabasePDG.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
