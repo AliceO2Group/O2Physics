@@ -31,6 +31,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -46,18 +50,15 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
+#include "TFile.h"
+#include "TH2F.h"
+#include "TProfile.h"
+#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
+#include "TPDGCode.h"
+#include "TDatabasePDG.h"
 #include "Framework/ASoAHelpers.h"
 
 using namespace o2;
@@ -352,7 +353,7 @@ struct cascadeBuilder {
         covV0[4] = covVtxV0(2, 1);
         covV0[5] = covVtxV0(2, 2);
 
-        const std::array<float, 3> vertex = {(float)v0vtx[0], (float)v0vtx[1], (float)v0vtx[2]};
+        const std::array<float, 3> vertex = {static_cast<float> v0vtx[0], static_cast<float> v0vtx[1], static_cast<float> v0vtx[2]};
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);

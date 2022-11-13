@@ -31,6 +31,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -46,18 +50,15 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
+#include "TFile.h"
+#include "TH2F.h"
+#include "TProfile.h"
+#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
+#include "TPDGCode.h"
+#include "TDatabasePDG.h"
 #include "Framework/ASoAHelpers.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
 #include "Common/DataModel/TrackSelectionTables.h"
