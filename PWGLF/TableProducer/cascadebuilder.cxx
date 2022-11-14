@@ -362,7 +362,7 @@ struct cascadeBuilder {
         } catch (...) {
           LOG(error) << "Exception caught in fitterCasc.process";
         };
-        if(nCand2 == 0){
+        if (nCand2 == 0) {
           continue;
         }
         double finalXv0 = fitterCasc.getTrack(0).getX();

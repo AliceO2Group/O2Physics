@@ -55,8 +55,6 @@ struct qaK0sTrackingEfficiency {
     registry.add("Test/h_R", "h_R", {HistType::kTH1D, {RAxis}});
     registry.add("Test/h_pT", "h_pT", {HistType::kTH1D, {pTAxis}});
     registry.add("Test/h_mass", "h_mass", {HistType::kTH1D, {mAxis}});
-    registry.add("Lambda/h_mass", "h_mass", {HistType::kTH1D, {mAxisLambda}});
-    registry.add("AntiLambda/h_mass", "h_mass", {HistType::kTH1D, {mAxisLambda}});
     registry.add("Test/h_negITSStatus", "h_negITSStatus", {HistType::kTH1I, {statusAxis}});
     registry.add("Test/h_posITSStatus", "h_posITSStatus", {HistType::kTH1I, {statusAxis}});
     registry.add("Test/h_negITSHitMap", "h_negITSHitMap", {HistType::kTH1I, {hitMapAxis}});
