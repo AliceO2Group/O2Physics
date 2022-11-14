@@ -84,8 +84,8 @@ struct HfTaskLb {
         continue;
       }
 
-      auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfSelLc>>();
-      auto candPi = candidate.index1_as<aod::BigTracks>();
+      auto candLc = candidate.prong0_as<soa::Join<aod::HfCandProng3, aod::HfSelLc>>();
+      auto candPi = candidate.prong1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassLbToLcPi(candidate), candidate.pt(), centrality);
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -185,10 +185,10 @@ struct HfTaskLbMc {
       if (yCandMax >= 0. && std::abs(YLb(candidate)) > yCandMax) {
         continue;
       }
-      auto candLc = candidate.index0_as<aod::HfCandProng3>();
+      auto candLc = candidate.prong0_as<aod::HfCandProng3>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMCGen>>(), pdg::Code::kLambdaB0, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMCGen>>(), pdg::Code::kLambdaB0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());

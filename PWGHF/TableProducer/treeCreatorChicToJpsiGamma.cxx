@@ -166,8 +166,8 @@ struct HfTreeCreatorChicToJpsiGamma {
                            float FunctionY) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.index0().index0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.index0().index0_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.prong0().prong0_as<aod::BigTracksPID>().collision().bcId(),
+            candidate.prong0().prong0_as<aod::BigTracksPID>().collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),

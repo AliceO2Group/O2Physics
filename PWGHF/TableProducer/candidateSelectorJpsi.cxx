@@ -160,8 +160,8 @@ struct HfCandidateSelectorJpsi {
         continue;
       }
 
-      auto trackPos = candidate.index0_as<aod::BigTracksPIDExtended>(); // positive daughter
-      auto trackNeg = candidate.index1_as<aod::BigTracksPIDExtended>(); // negative daughter
+      auto trackPos = candidate.prong0_as<aod::BigTracksPIDExtended>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<aod::BigTracksPIDExtended>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;
@@ -241,8 +241,8 @@ struct HfCandidateSelectorJpsi {
         continue;
       }
 
-      auto trackPos = candidate.index0_as<ExtendedTracksPID>(); // positive daughter
-      auto trackNeg = candidate.index1_as<ExtendedTracksPID>(); // negative daughter
+      auto trackPos = candidate.prong0_as<ExtendedTracksPID>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<ExtendedTracksPID>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;

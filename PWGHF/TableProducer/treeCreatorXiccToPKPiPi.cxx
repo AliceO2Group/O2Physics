@@ -194,7 +194,7 @@ struct HfTreeCreatorXiccToPKPiPi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          auto xicCand = candidate.index0();
+          auto xicCand = candidate.prong0();
 
           rowCandidateFull(
             candidate.rSecondaryVertex(),
@@ -215,7 +215,7 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.pyProng1(),
             candidate.pzProng1(),
             candidate.chi2PCA(),
-            candidate.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
+            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi(),
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.errorImpactParameter0(),
@@ -232,11 +232,11 @@ struct HfTreeCreatorXiccToPKPiPi {
             xicCand.decayLength(),
             xicCand.decayLengthXY(),
             xicCand.decayLengthXYNormalised(),
-            xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPr(),
-            xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
-            xicCand.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPr(),
-            xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPi(),
+            xicCand.prong0_as<aod::BigTracksPID>().tofNSigmaPr(),
+            xicCand.prong0_as<aod::BigTracksPID>().tofNSigmaPi(),
+            xicCand.prong1_as<aod::BigTracksPID>().tofNSigmaKa(),
+            xicCand.prong2_as<aod::BigTracksPID>().tofNSigmaPr(),
+            xicCand.prong2_as<aod::BigTracksPID>().tofNSigmaPi(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),

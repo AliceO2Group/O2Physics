@@ -57,10 +57,10 @@ struct AddCollisionId {
                aod::Tracks const&)
   {
     for (const auto& cand2Prong : cand2Prongs) {
-      colls2Prong(cand2Prong.index0_as<aod::Tracks>().collisionId());
+      colls2Prong(cand2Prong.prong0_as<aod::Tracks>().collisionId());
     }
     for (const auto& cand3Prong : cand3Prongs) {
-      colls3Prong(cand3Prong.index0_as<aod::Tracks>().collisionId());
+      colls3Prong(cand3Prong.prong0_as<aod::Tracks>().collisionId());
     }
   }
 };
@@ -626,8 +626,8 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      auto trackPos = cand2Prong.index0_as<BigTracksWithProtonPID>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<BigTracksWithProtonPID>(); // negative daughter
+      auto trackPos = cand2Prong.prong0_as<BigTracksWithProtonPID>(); // positive daughter
+      auto trackNeg = cand2Prong.prong1_as<BigTracksWithProtonPID>(); // negative daughter
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
 
@@ -779,9 +779,9 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      auto trackFirst = cand3Prong.index0_as<BigTracksWithProtonPID>();
-      auto trackSecond = cand3Prong.index1_as<BigTracksWithProtonPID>();
-      auto trackThird = cand3Prong.index2_as<BigTracksWithProtonPID>();
+      auto trackFirst = cand3Prong.prong0_as<BigTracksWithProtonPID>();
+      auto trackSecond = cand3Prong.prong1_as<BigTracksWithProtonPID>();
+      auto trackThird = cand3Prong.prong2_as<BigTracksWithProtonPID>();
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
@@ -995,8 +995,8 @@ struct HfFilter { // Main struct for HF triggers
   {
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
 
-      auto trackPos = cand2Prong.index0_as<BigTracksMCPID>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<BigTracksMCPID>(); // negative daughter
+      auto trackPos = cand2Prong.prong0_as<BigTracksMCPID>(); // positive daughter
+      auto trackNeg = cand2Prong.prong1_as<BigTracksMCPID>(); // negative daughter
 
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
@@ -1029,9 +1029,9 @@ struct HfFilter { // Main struct for HF triggers
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
 
-      auto trackFirst = cand3Prong.index0_as<BigTracksMCPID>();  // first daughter
-      auto trackSecond = cand3Prong.index1_as<BigTracksMCPID>(); // second daughter
-      auto trackThird = cand3Prong.index2_as<BigTracksMCPID>();  // third daughter
+      auto trackFirst = cand3Prong.prong0_as<BigTracksMCPID>();  // first daughter
+      auto trackSecond = cand3Prong.prong1_as<BigTracksMCPID>(); // second daughter
+      auto trackThird = cand3Prong.prong2_as<BigTracksMCPID>();  // third daughter
       auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};

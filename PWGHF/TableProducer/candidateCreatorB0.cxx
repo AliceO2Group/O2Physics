@@ -101,9 +101,9 @@ struct HfCandidateCreatorB0 {
       hCPAD->Fill(dCand.cpa());
 
       // track0 <-> pi, track1 <-> K, track2 <-> pi
-      auto track0 = dCand.index0_as<aod::BigTracks>();
-      auto track1 = dCand.index1_as<aod::BigTracks>();
-      auto track2 = dCand.index2_as<aod::BigTracks>();
+      auto track0 = dCand.prong0_as<aod::BigTracks>();
+      auto track1 = dCand.prong1_as<aod::BigTracks>();
+      auto track2 = dCand.prong2_as<aod::BigTracks>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -320,14 +320,14 @@ struct HfCandidateCreatorB0Mc {
       flag = 0;
       origin = 0;
       debug = 0;
-      auto candD = candidate.index0();
-      auto arrayDaughters = array{candD.index0_as<aod::BigTracksMC>(),
-                                  candD.index1_as<aod::BigTracksMC>(),
-                                  candD.index2_as<aod::BigTracksMC>(),
-                                  candidate.index1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersD = array{candD.index0_as<aod::BigTracksMC>(),
-                                   candD.index1_as<aod::BigTracksMC>(),
-                                   candD.index2_as<aod::BigTracksMC>()};
+      auto candD = candidate.prong0();
+      auto arrayDaughters = array{candD.prong0_as<aod::BigTracksMC>(),
+                                  candD.prong1_as<aod::BigTracksMC>(),
+                                  candD.prong2_as<aod::BigTracksMC>(),
+                                  candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersD = array{candD.prong0_as<aod::BigTracksMC>(),
+                                   candD.prong1_as<aod::BigTracksMC>(),
+                                   candD.prong2_as<aod::BigTracksMC>()};
       // B0 → D- π+ → (π- K+ π-) π+
       // Printf("Checking B0 → D- π+");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kB0, array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);

@@ -47,10 +47,10 @@ struct HfCandidateCreatorDstar {
   {
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
-      auto trackPi = rowTrackIndexDstar.index0_as<aod::BigTracks>();
+      auto trackPi = rowTrackIndexDstar.prong0_as<aod::BigTracks>();
       auto prongD0 = rowTrackIndexDstar.indexD0_as<aod::Hf2Prongs>();
-      auto trackD0Prong0 = prongD0.index0_as<aod::BigTracks>();
-      auto trackD0Prong1 = prongD0.index1_as<aod::BigTracks>();
+      auto trackD0Prong0 = prongD0.prong0_as<aod::BigTracks>();
+      auto trackD0Prong1 = prongD0.prong1_as<aod::BigTracks>();
       // auto collisionPiId = trackPi.collisionId();
       // auto collisionD0Id = trackD0Prong0.collisionId();
 

@@ -104,8 +104,8 @@ struct HfCandidateCreator2Prong {
 
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
-      auto track0 = rowTrackIndexProng2.index0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng2.index1_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng2.prong0_as<aod::BigTracks>();
+      auto track1 = rowTrackIndexProng2.prong1_as<aod::BigTracks>();
       auto trackParVarPos1 = getTrackParCov(track0);
       auto trackParVarNeg1 = getTrackParCov(track1);
       auto collision = track0.collision();
@@ -193,7 +193,7 @@ struct HfCandidateCreator2Prong {
                        pvec1[0], pvec1[1], pvec1[2],
                        impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                       rowTrackIndexProng2.index0Id(), rowTrackIndexProng2.index1Id(),
+                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(),
                        rowTrackIndexProng2.hfflag());
 
       // fill histograms
@@ -234,7 +234,7 @@ struct HfCandidateCreator2ProngExpressions {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
-      auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(), candidate.index1_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{candidate.prong0_as<aod::BigTracksMC>(), candidate.prong1_as<aod::BigTracksMC>()};
 
       // D0(bar) → π± K∓
       // Printf("Checking D0(bar) → π± K∓");

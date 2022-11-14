@@ -99,9 +99,9 @@ struct HfCandidateCreatorXicc {
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
         hMassXic->Fill(InvMassXicToPiKP(xicCand), xicCand.pt());
       }
-      auto track0 = xicCand.index0_as<aod::BigTracks>();
-      auto track1 = xicCand.index1_as<aod::BigTracks>();
-      auto track2 = xicCand.index2_as<aod::BigTracks>();
+      auto track0 = xicCand.prong0_as<aod::BigTracks>();
+      auto track1 = xicCand.prong1_as<aod::BigTracks>();
+      auto track2 = xicCand.prong2_as<aod::BigTracks>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -215,14 +215,14 @@ struct HfCandidateCreatorXiccMc {
       flag = 0;
       origin = 0;
       debug = 0;
-      auto xicCand = candidate.index0();
-      auto arrayDaughters = array{xicCand.index0_as<aod::BigTracksMC>(),
-                                  xicCand.index1_as<aod::BigTracksMC>(),
-                                  xicCand.index2_as<aod::BigTracksMC>(),
-                                  candidate.index1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersXic = array{xicCand.index0_as<aod::BigTracksMC>(),
-                                     xicCand.index1_as<aod::BigTracksMC>(),
-                                     xicCand.index2_as<aod::BigTracksMC>()};
+      auto xicCand = candidate.prong0();
+      auto arrayDaughters = array{xicCand.prong0_as<aod::BigTracksMC>(),
+                                  xicCand.prong1_as<aod::BigTracksMC>(),
+                                  xicCand.prong2_as<aod::BigTracksMC>(),
+                                  candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersXic = array{xicCand.prong0_as<aod::BigTracksMC>(),
+                                     xicCand.prong1_as<aod::BigTracksMC>(),
+                                     xicCand.prong2_as<aod::BigTracksMC>()};
       // Ξcc±± → p± K∓ π± π±
       //Printf("Checking Ξcc±± → p± K∓ π± π±");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCCPlusPlus, array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);

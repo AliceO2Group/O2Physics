@@ -124,8 +124,8 @@ struct HfCandidateCreatorX {
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
       array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
-      auto prong0 = jpsiCand.index0_as<aod::BigTracks>();
-      auto prong1 = jpsiCand.index1_as<aod::BigTracks>();
+      auto prong0 = jpsiCand.prong0_as<aod::BigTracks>();
+      auto prong1 = jpsiCand.prong1_as<aod::BigTracks>();
       auto prong0TrackParCov = getTrackParCov(prong0);
       auto prong1TrackParCov = getTrackParCov(prong1);
 
@@ -141,8 +141,8 @@ struct HfCandidateCreatorX {
       auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); //FIXME: also needs covxyz???
 
       // used to check that prongs used for Jpsi and X reco are not the same prongs
-      int index0Jpsi = jpsiCand.index0Id();
-      int index1Jpsi = jpsiCand.index1Id();
+      int index0Jpsi = jpsiCand.prong0Id();
+      int index1Jpsi = jpsiCand.prong1Id();
 
       // loop over pi+ candidates
       for (auto& trackPos : tracks) {
@@ -275,12 +275,12 @@ struct HfCandidateCreatorXMc {
       flag = 0;
       origin = 0;
       channel = 0;
-      auto jpsiTrack = candidate.index0();
-      auto daughterPosJpsi = jpsiTrack.index0_as<aod::BigTracksMC>();
-      auto daughterNegJpsi = jpsiTrack.index1_as<aod::BigTracksMC>();
+      auto jpsiTrack = candidate.prong0();
+      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::BigTracksMC>();
+      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::BigTracksMC>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
-      auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),
-                                  candidate.index2_as<aod::BigTracksMC>(),
+      auto arrayDaughters = array{candidate.prong1_as<aod::BigTracksMC>(),
+                                  candidate.prong2_as<aod::BigTracksMC>(),
                                   daughterPosJpsi,
                                   daughterNegJpsi};
 

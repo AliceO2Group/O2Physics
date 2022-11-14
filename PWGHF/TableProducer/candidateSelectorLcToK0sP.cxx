@@ -295,7 +295,7 @@ struct HfCandidateSelectorLcToK0sP {
     // int pidLc = -1;
 
     for (const auto& candidate : candidates) {               // looping over cascade candidates
-      const auto& bach = candidate.index0_as<MyBigTracks>(); // bachelor track
+      const auto& bach = candidate.prong0_as<MyBigTracks>(); // bachelor track
 #ifdef MY_DEBUG
       auto indexV0DaughPos = candidate.posTrack_as<MyBigTracks>().mcParticleId();
       auto indexV0DaughNeg = candidate.negTrack_as<MyBigTracks>().mcParticleId();

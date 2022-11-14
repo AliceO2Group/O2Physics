@@ -212,8 +212,8 @@ struct HfCandidateSelectorD0Alice3Forward {
         continue;
       }
 
-      auto trackPos = candidate.index0_as<Trks>();
-      auto trackNeg = candidate.index1_as<Trks>();
+      auto trackPos = candidate.prong0_as<Trks>();
+      auto trackNeg = candidate.prong1_as<Trks>();
 
       //auto momentumPosTrack = trackPos.p();
       //auto momentumNegTrack = trackNeg.p();

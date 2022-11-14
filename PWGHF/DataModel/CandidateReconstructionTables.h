@@ -92,9 +92,9 @@ using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
 
 namespace hf_track_index
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, Tracks, "_0"); //! Index to first prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, Tracks, "_1"); //! Index to second prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Index2, index2, int, Tracks, "_2"); //! Index to third prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! Index to first prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! Index to second prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, Tracks, "_2"); //! Index to third prong
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                 //! Index to V0 prong
 DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                      //!
 
@@ -110,22 +110,22 @@ DECLARE_SOA_COLUMN(XicToPKPiFlag, xicToPKPiFlag, uint8_t);   //!
 
 DECLARE_SOA_TABLE(Hf2Prongs, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates
                   o2::soa::Index<>,
-                  hf_track_index::Index0Id,
-                  hf_track_index::Index1Id,
+                  hf_track_index::Prong0Id,
+                  hf_track_index::Prong1Id,
                   hf_track_index::HFflag);
 using Hf2Prong = Hf2Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
                   o2::soa::Index<>,
-                  hf_track_index::Index0Id,
+                  hf_track_index::Prong0Id,
                   hf_track_index::V0Id);
 using HfCascade = HfCascades::iterator;
 
 DECLARE_SOA_TABLE(Hf3Prongs, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
                   o2::soa::Index<>,
-                  hf_track_index::Index0Id,
-                  hf_track_index::Index1Id,
-                  hf_track_index::Index2Id,
+                  hf_track_index::Prong0Id,
+                  hf_track_index::Prong1Id,
+                  hf_track_index::Prong2Id,
                   hf_track_index::HFflag);
 using Hf3Prong = Hf3Prongs::iterator;
 
@@ -136,7 +136,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(IndexD0, indexD0, int, Hf2Prongs, ""); //! Index t
 
 DECLARE_SOA_TABLE(HfDstars, "AOD", "HFDSTAR", //! D* -> D0pi candidates
                   o2::soa::Index<>,
-                  hf_track_index::Index0Id,
+                  hf_track_index::Prong0Id,
                   hf_track_index::IndexD0Id);
 using HfDstar = HfDstars::iterator;
 
@@ -438,7 +438,7 @@ DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //!
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_track_index::Index0Id, hf_track_index::Index1Id,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -519,7 +519,7 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_track_index::Index0Id,
+                  hf_track_index::Prong0Id,
                   hf_track_index::V0Id, // V0 index
                   // V0
                   v0data::X, v0data::Y, v0data::Z,
@@ -581,7 +581,7 @@ DECLARE_SOA_TABLE(HfCandCascadeMCGen, "AOD", "HFCANDCASCMCGEN", //!
 // specific BPlus candidate properties
 namespace hf_cand_bplus
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // D0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCandProng2, "_0"); // D0 index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
@@ -630,7 +630,7 @@ DECLARE_SOA_TABLE(HfCandBPlusBase, "AOD", "HFCANDBPLUSBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_bplus::Index0Id, hf_track_index::Index1Id,
+                  hf_cand_bplus::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -839,7 +839,7 @@ DECLARE_SOA_TABLE(HfCandProng3Base, "AOD", "HFCANDP3BASE", //!
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
-                  hf_track_index::Index0Id, hf_track_index::Index1Id, hf_track_index::Index2Id,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong3::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
@@ -889,7 +889,7 @@ DECLARE_SOA_TABLE(HfCandProng3MCGen, "AOD", "HFCANDP3MCGEN", //!
 // specific X candidate properties
 namespace hf_cand_x
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // Jpsi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCandProng2, "_0"); // Jpsi index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t);         // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t);         // generator level
@@ -988,7 +988,7 @@ DECLARE_SOA_TABLE(HfCandXBase, "AOD", "HFCANDXBASE",
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
-                  hf_cand_x::Index0Id, hf_track_index::Index1Id, hf_track_index::Index2Id, // note the difference between Jpsi and pion indices
+                  hf_cand_x::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, // note the difference between Jpsi and pion indices
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong3::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
@@ -1075,7 +1075,7 @@ DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
 // specific Xicc candidate properties
 namespace hf_cand_xicc
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng3, "_0"); // Xic index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCandProng3, "_0"); // Xic index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
@@ -1121,7 +1121,7 @@ DECLARE_SOA_TABLE(HfCandXiccBase, "AOD", "HFCANDXICCBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_xicc::Index0Id, hf_track_index::Index1Id,
+                  hf_cand_xicc::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -1164,8 +1164,8 @@ DECLARE_SOA_TABLE(HfCandXiccMCGen, "AOD", "HFCANDXICCMCGEN", //!
 // specific chic candidate properties
 namespace hf_cand_chic
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // Jpsi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ECALs, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCandProng2, "_0"); // Jpsi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, ECALs, "_1");
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t);         // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t);         // generator level
@@ -1212,7 +1212,7 @@ DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_chic::Index0Id, hf_cand_chic::Index1Id,
+                  hf_cand_chic::Prong0Id, hf_cand_chic::Prong1Id,
                   hf_track_index::HFflag, hf_cand_chic::JpsiToMuMuMass,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -1259,7 +1259,7 @@ DECLARE_SOA_TABLE(HfCandChicMCGen, "AOD", "HFCANDCHICMCGEN", //!
 // specific Lb candidate properties
 namespace hf_cand_lb
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng3, "_0"); // Lb index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCandProng3, "_0"); // Lb index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
@@ -1304,7 +1304,7 @@ DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_lb::Index0Id, hf_track_index::Index1Id,
+                  hf_cand_lb::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -1347,7 +1347,7 @@ DECLARE_SOA_TABLE(HfCandLbMCGen, "AOD", "HFCANDLBMCGEN", //!
 // specific B0 candidate properties
 namespace hf_cand_b0
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng3, "_0"); // D index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCandProng3, "_0"); // D index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
@@ -1399,7 +1399,7 @@ DECLARE_SOA_TABLE(HfCandB0Base, "AOD", "HFCANDB0BASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_b0::Index0Id, hf_track_index::Index1Id,
+                  hf_cand_b0::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,

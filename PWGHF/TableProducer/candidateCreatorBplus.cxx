@@ -108,13 +108,13 @@ struct HfCandidateCreatorBplus {
       const std::array<float, 3> vertexD0 = {candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex()};
       const std::array<float, 3> momentumD0 = {candidate.px(), candidate.py(), candidate.pz()};
 
-      auto prong0 = candidate.index0_as<aod::BigTracks>();
-      auto prong1 = candidate.index1_as<aod::BigTracks>();
+      auto prong0 = candidate.prong0_as<aod::BigTracks>();
+      auto prong1 = candidate.prong1_as<aod::BigTracks>();
       auto prong0TrackParCov = getTrackParCov(prong0);
       auto prong1TrackParCov = getTrackParCov(prong1);
       auto collision = prong0.collision();
 
-      // LOGF(info, "All track: %d (prong0); %d (prong1)", candidate.index0().globalIndex(), candidate.index1().globalIndex());
+      // LOGF(info, "All track: %d (prong0); %d (prong1)", candidate.prong0().globalIndex(), candidate.prong1().globalIndex());
       // LOGF(info, "All track pT: %f (prong0); %f (prong1)", prong0.pt(), prong1.pt());
 
       // reconstruct D0 secondary vertex
@@ -144,7 +144,7 @@ struct HfCandidateCreatorBplus {
 
         hEtaPi->Fill(track.eta());
 
-        if (candidate.index0Id() == track.globalIndex() || candidate.index1Id() == track.globalIndex()) {
+        if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
           continue; // daughter track id and bachelor track id not the same
         }
 
@@ -237,9 +237,9 @@ struct HfCandidateCreatorBplusMc {
       // Printf("New rec. candidate");
 
       flag = 0;
-      auto candDaughterD0 = candidate.index0_as<aod::HfCandProng2>();
-      auto arrayDaughtersD0 = array{candDaughterD0.index0_as<aod::BigTracksMC>(), candDaughterD0.index1_as<aod::BigTracksMC>()};
-      auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(), candDaughterD0.index0_as<aod::BigTracksMC>(), candDaughterD0.index1_as<aod::BigTracksMC>()};
+      auto candDaughterD0 = candidate.prong0_as<aod::HfCandProng2>();
+      auto arrayDaughtersD0 = array{candDaughterD0.prong0_as<aod::BigTracksMC>(), candDaughterD0.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{candidate.prong1_as<aod::BigTracksMC>(), candDaughterD0.prong0_as<aod::BigTracksMC>(), candDaughterD0.prong1_as<aod::BigTracksMC>()};
 
       // B± → D0bar(D0) π± → (K± π∓) π±
       // Printf("Checking B± → D0(bar) π±");

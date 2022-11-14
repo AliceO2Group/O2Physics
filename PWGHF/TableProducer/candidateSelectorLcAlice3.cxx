@@ -146,7 +146,7 @@ struct HfCandidateSelectorLcAlice3 {
       return false;
     }
 
-    if (trackProton.globalIndex() == candidate.index0Id()) {
+    if (trackProton.globalIndex() == candidate.prong0Id()) {
       if (std::abs(InvMassLcToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
@@ -185,9 +185,9 @@ struct HfCandidateSelectorLcAlice3 {
         continue;
       }
 
-      auto trackPos1 = candidate.index0_as<Trks>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.index1_as<Trks>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.index2_as<Trks>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<Trks>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<Trks>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<Trks>(); // positive daughter (negative for the antiparticles)
 
       auto momentumPos1Track = trackPos1.p();
       auto momentumNegTrack = trackNeg.p();

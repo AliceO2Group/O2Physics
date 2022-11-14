@@ -608,8 +608,8 @@ struct HfTaskMcValidationRec {
 
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
-        if (cand2Prong.index0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand2Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
@@ -673,8 +673,8 @@ struct HfTaskMcValidationRec {
 
       if (whichHad >= 0) {
         int indexParticle = 0;
-        if (cand3Prong.index0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand3Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());

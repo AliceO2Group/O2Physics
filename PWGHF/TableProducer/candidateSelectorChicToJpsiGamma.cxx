@@ -182,8 +182,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
   {
     for (auto& hfCandChic : hfCandChics) { //looping over chi_c candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
-      auto candJpsi = hfCandChic.index0();
-      auto gamma = hfCandChic.index1_as<aod::ECALs>();
+      auto candJpsi = hfCandChic.prong0();
+      auto gamma = hfCandChic.prong1_as<aod::ECALs>();
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;

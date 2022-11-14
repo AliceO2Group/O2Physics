@@ -41,7 +41,7 @@ struct HfRefitPvDummy {
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
 
       // original PV information
-      auto track0 = rowTrackIndexProng2.index0_as<aod::Tracks>();
+      auto track0 = rowTrackIndexProng2.prong0_as<aod::Tracks>();
       auto collision = track0.collision();
       auto primaryVertex = getPrimaryVertex(collision);
 
@@ -54,7 +54,7 @@ struct HfRefitPvDummy {
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
 
       // original PV information
-      auto track0 = rowTrackIndexProng3.index0_as<aod::Tracks>();
+      auto track0 = rowTrackIndexProng3.prong0_as<aod::Tracks>();
       auto collision = track0.collision();
       auto primaryVertex = getPrimaryVertex(collision);
 

@@ -96,7 +96,7 @@ struct HfTaskChic {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-      //      registry.fill(HIST("hEGamma"), candidate.index1().e());
+      //      registry.fill(HIST("hEGamma"), candidate.prong1().e());
     } // candidate loop
   }   // process
 };    // struct
@@ -165,7 +165,7 @@ struct HfTaskChicMc {
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
         //FIXME the access to the MC particle gen not yet functional
-        //int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.index1().mcParticle_as<aod::McParticles_000>().globalIndex()), 20443);
+        //int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcParticle_as<aod::McParticles_000>().globalIndex()), 20443);
         //auto particleMother = particlesMC.rawIteratorAt(indexMother);
         //registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());

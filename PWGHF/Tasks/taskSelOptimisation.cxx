@@ -264,8 +264,8 @@ struct HfSelOptimisation {
     // looping over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {
 
-      auto trackPos = cand2Prong.index0_as<ExtendedTracks>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<ExtendedTracks>(); // negative daughter
+      auto trackPos = cand2Prong.prong0_as<ExtendedTracks>(); // positive daughter
+      auto trackNeg = cand2Prong.prong1_as<ExtendedTracks>(); // negative daughter
       std::array tracks = {trackPos, trackNeg};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
@@ -319,9 +319,9 @@ struct HfSelOptimisation {
     // looping over 3-prong candidates
     for (const auto& cand3Prong : cand3Prongs) {
 
-      auto trackFirst = cand3Prong.index0_as<ExtendedTracks>();  // first daughter
-      auto trackSecond = cand3Prong.index1_as<ExtendedTracks>(); // second daughter
-      auto trackThird = cand3Prong.index2_as<ExtendedTracks>();  // third daughter
+      auto trackFirst = cand3Prong.prong0_as<ExtendedTracks>();  // first daughter
+      auto trackSecond = cand3Prong.prong1_as<ExtendedTracks>(); // second daughter
+      auto trackThird = cand3Prong.prong2_as<ExtendedTracks>();  // third daughter
       std::array tracks = {trackFirst, trackSecond, trackThird};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;

@@ -110,9 +110,9 @@ struct HfCandidateCreatorLb {
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());
 
-      auto track0 = lcCand.index0_as<aod::BigTracks>();
-      auto track1 = lcCand.index1_as<aod::BigTracks>();
-      auto track2 = lcCand.index2_as<aod::BigTracks>();
+      auto track0 = lcCand.prong0_as<aod::BigTracks>();
+      auto track1 = lcCand.prong1_as<aod::BigTracks>();
+      auto track2 = lcCand.prong2_as<aod::BigTracks>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -241,14 +241,14 @@ struct HfCandidateCreatorLbMc {
       flag = 0;
       origin = 0;
       debug = 0;
-      auto lcCand = candidate.index0();
-      auto arrayDaughters = array{lcCand.index0_as<aod::BigTracksMC>(),
-                                  lcCand.index1_as<aod::BigTracksMC>(),
-                                  lcCand.index2_as<aod::BigTracksMC>(),
-                                  candidate.index1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersLc = array{lcCand.index0_as<aod::BigTracksMC>(),
-                                    lcCand.index1_as<aod::BigTracksMC>(),
-                                    lcCand.index2_as<aod::BigTracksMC>()};
+      auto lcCand = candidate.prong0();
+      auto arrayDaughters = array{lcCand.prong0_as<aod::BigTracksMC>(),
+                                  lcCand.prong1_as<aod::BigTracksMC>(),
+                                  lcCand.prong2_as<aod::BigTracksMC>(),
+                                  candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersLc = array{lcCand.prong0_as<aod::BigTracksMC>(),
+                                    lcCand.prong1_as<aod::BigTracksMC>(),
+                                    lcCand.prong2_as<aod::BigTracksMC>()};
       // Λb → Λc+ π-
       //Printf("Checking Λb → Λc+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);

@@ -197,8 +197,8 @@ struct HfCandidateSelectorD0 {
       }
       statusHFFlag = 1;
 
-      auto trackPos = candidate.index0_as<aod::BigTracksPIDExtended>(); // positive daughter
-      auto trackNeg = candidate.index1_as<aod::BigTracksPIDExtended>(); // negative daughter
+      auto trackPos = candidate.prong0_as<aod::BigTracksPIDExtended>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<aod::BigTracksPIDExtended>(); // negative daughter
 
       /*
       if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {

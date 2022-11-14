@@ -135,8 +135,8 @@ struct HfTaskBplus {
         continue;
       }
 
-      auto candD0 = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HfSelD0>>();
-      auto candPi = candidate.index1_as<aod::BigTracks>();
+      auto candD0 = candidate.prong0_as<soa::Join<aod::HfCandProng2, aod::HfSelD0>>();
+      auto candPi = candidate.prong1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassBPlus(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -175,7 +175,7 @@ struct HfTaskBplus {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBPMCGen>>(), pdg::Code::kBPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBPMCGen>>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());

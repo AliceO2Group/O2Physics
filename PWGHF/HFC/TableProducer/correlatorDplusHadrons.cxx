@@ -181,7 +181,7 @@ struct HfCorrelatorDplusHadrons {
           continue; // Remove secondary tracks
         }
         // Removing Dplus daughters by checking track indices
-        if ((candidate1.index0Id() == track.mRowIndex) || (candidate1.index1Id() == track.mRowIndex) || (candidate1.index2Id() == track.mRowIndex)) {
+        if ((candidate1.prong0Id() == track.mRowIndex) || (candidate1.prong1Id() == track.mRowIndex) || (candidate1.prong2Id() == track.mRowIndex)) {
           continue;
         }
         entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
@@ -267,7 +267,7 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
         // Removing Dplus daughters by checking track indices
-        if ((candidate1.index0Id() == track.mRowIndex) || (candidate1.index1Id() == track.mRowIndex) || (candidate1.index2Id() == track.mRowIndex)) {
+        if ((candidate1.prong0Id() == track.mRowIndex) || (candidate1.prong1Id() == track.mRowIndex) || (candidate1.prong2Id() == track.mRowIndex)) {
           continue;
         }
         if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {

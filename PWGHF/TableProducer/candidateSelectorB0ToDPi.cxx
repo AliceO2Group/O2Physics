@@ -135,9 +135,9 @@ struct HfCandidateSelectorB0ToDPi {
       }
 
       // D is always index0 and pi is index1 by default
-      // auto candD = hfCandD.index0();
-      auto candD = hfCandB0.index0_as<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>>();
-      auto trackPi = hfCandB0.index1_as<aod::BigTracksPID>();
+      // auto candD = hfCandD.prong0();
+      auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>>();
+      auto trackPi = hfCandB0.prong1_as<aod::BigTracksPID>();
 
       // topological cuts
       if (!selectionTopol(hfCandB0, candD, trackPi)) {

@@ -136,8 +136,8 @@ struct HfCandidateSelectorXiccToPKPiPi {
 
     // looping over 3-prong candidates
     for (auto& hfCandXicc : hfCandXiccs) {
-      auto hfCandXic = hfCandXicc.index0();
-      auto trackPi = hfCandXicc.index1_as<aod::BigTracksPID>();
+      auto hfCandXic = hfCandXicc.prong0();
+      auto trackPi = hfCandXicc.prong1_as<aod::BigTracksPID>();
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXiccToPKPiPi = 0;
 

@@ -221,11 +221,11 @@ struct HfTreeCreatorBplusToD0Pi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        auto d0Cand = candidate.index0();
-        auto piCand = candidate.index1_as<aod::BigTracksPID>();
+        auto d0Cand = candidate.prong0();
+        auto piCand = candidate.prong1_as<aod::BigTracksPID>();
         //adding D0 daughters to the table
-        auto d0Daughter0 = d0Cand.index0_as<aod::BigTracksPID>();
-        auto d0Daughter1 = d0Cand.index1_as<aod::BigTracksPID>();
+        auto d0Daughter0 = d0Cand.prong0_as<aod::BigTracksPID>();
+        auto d0Daughter1 = d0Cand.prong1_as<aod::BigTracksPID>();
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {

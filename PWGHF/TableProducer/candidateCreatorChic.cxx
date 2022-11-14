@@ -109,8 +109,8 @@ struct HfCandidateCreatorChic {
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
       array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
-      auto prong0 = jpsiCand.index0_as<aod::BigTracks>();
-      auto prong1 = jpsiCand.index1_as<aod::BigTracks>();
+      auto prong0 = jpsiCand.prong0_as<aod::BigTracks>();
+      auto prong1 = jpsiCand.prong1_as<aod::BigTracks>();
       auto prong0TrackParCov = getTrackParCov(prong0);
       auto prong1TrackParCov = getTrackParCov(prong1);
 
@@ -225,22 +225,22 @@ struct HfCandidateCreatorChicMc {
       flag = 0;
       origin = 0;
       channel = 0;
-      auto jpsiTrack = candidate.index0();
-      auto daughterPosJpsi = jpsiTrack.index0_as<aod::BigTracksMC>();
-      auto daughterNegJpsi = jpsiTrack.index1_as<aod::BigTracksMC>();
+      auto jpsiTrack = candidate.prong0();
+      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::BigTracksMC>();
+      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::BigTracksMC>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
 
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true);
       if (indexRec > -1) {
-        hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.index0()));
+        hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.prong0()));
 
         int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(indexRec), pdg::Code::kChiC1);
-        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChiC1);
-        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
+        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcparticleId()), pdg::Code::kChiC1);
+        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.prong1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.rawIteratorAt(indexMother);
-          hEphotonMatched->Fill(candidate.index1().e());
-          hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
+          hEphotonMatched->Fill(candidate.prong1().e());
+          hMassEMatched->Fill(sqrt(candidate.prong1().px() * candidate.prong1().px() + candidate.prong1().py() * candidate.prong1().py() + candidate.prong1().pz() * candidate.prong1().pz()));
           if (particleMother.has_daughters()) {
             std::vector<int> arrAllDaughtersIndex;
             RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, array{(int)(kGamma), (int)(pdg::Code::kJPsi)}, 1);

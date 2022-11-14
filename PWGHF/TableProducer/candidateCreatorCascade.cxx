@@ -95,7 +95,7 @@ struct HfCandidateCreatorCascade {
     // loop over pairs of track indeces
     for (const auto& casc : rowsTrackIndexCasc) {
 
-      const auto& bach = casc.index0_as<MyBigTracks>();
+      const auto& bach = casc.prong0_as<MyBigTracks>();
       LOGF(debug, "V0 %d in HF cascade %d.", casc.v0Id(), casc.globalIndex());
       if (!casc.has_v0()) {
         LOGF(error, "V0 not there for HF cascade %d. Skipping candidate.", casc.globalIndex());
@@ -185,7 +185,7 @@ struct HfCandidateCreatorCascade {
                        pVecV0[0], pVecV0[1], pVecV0[2],
                        impactParameterBach.getY(), impactParameterV0.getY(),
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
-                       casc.index0Id(), casc.v0Id(),
+                       casc.prong0Id(), casc.v0Id(),
                        v0.x(), v0.y(), v0.z(),
                        // v0.posTrack(), v0.negTrack(), // why this was not fine?
                        trackV0DaughPos.globalIndex(), trackV0DaughNeg.globalIndex(),
@@ -229,7 +229,7 @@ struct HfCandidateCreatorCascadeMc {
     rowCandidateCasc->bindExternalIndices(&tracks);
     for (auto& candidate : *rowCandidateCasc) {
 
-      const auto& bach = candidate.index0_as<aod::BigTracksMC>();
+      const auto& bach = candidate.prong0_as<aod::BigTracksMC>();
       const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
       const auto& trackV0DaughNeg = candidate.negTrack_as<aod::BigTracksMC>();
 

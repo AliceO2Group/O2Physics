@@ -109,9 +109,9 @@ struct HfCandidateCreator3Prong {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
-      auto track0 = rowTrackIndexProng3.index0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng3.index1_as<aod::BigTracks>();
-      auto track2 = rowTrackIndexProng3.index2_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng3.prong0_as<aod::BigTracks>();
+      auto track1 = rowTrackIndexProng3.prong1_as<aod::BigTracks>();
+      auto track2 = rowTrackIndexProng3.prong2_as<aod::BigTracks>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -208,7 +208,7 @@ struct HfCandidateCreator3Prong {
                        pvec2[0], pvec2[1], pvec2[2],
                        impactParameter0.getY(), impactParameter1.getY(), impactParameter2.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), std::sqrt(impactParameter2.getSigmaY2()),
-                       rowTrackIndexProng3.index0Id(), rowTrackIndexProng3.index1Id(), rowTrackIndexProng3.index2Id(),
+                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(),
                        rowTrackIndexProng3.hfflag());
 
       // fill histograms
@@ -257,7 +257,7 @@ struct HfCandidateCreator3ProngExpressions {
       swapping = 0;
       channel = 0;
       arrDaughIndex.clear();
-      auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(), candidate.index1_as<aod::BigTracksMC>(), candidate.index2_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{candidate.prong0_as<aod::BigTracksMC>(), candidate.prong1_as<aod::BigTracksMC>(), candidate.prong2_as<aod::BigTracksMC>()};
 
       // D± → π± K∓ π±
       // Printf("Checking D± → π± K∓ π±");

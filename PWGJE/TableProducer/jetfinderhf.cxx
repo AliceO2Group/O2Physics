@@ -107,7 +107,7 @@ struct JetFinderHFTask {
       inputParticles.clear();
       for (auto& track : tracks) {
         auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) { //is it global index?
+        if (candidate.prong0().globalIndex() == track.globalIndex() || candidate.prong1().globalIndex() == track.globalIndex()) { //is it global index?
           continue;
         }
         inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
@@ -159,7 +159,7 @@ struct JetFinderHFTask {
           LOGF(info, "Rejecting track %d with track cuts", track.globalIndex());
           continue;
         }
-        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) {
+        if (candidate.prong0().globalIndex() == track.globalIndex() || candidate.prong1().globalIndex() == track.globalIndex()) {
           LOGF(info, "Rejecting track %d as daughter of candidate %d", track.globalIndex(), candidate.globalIndex());
           continue;
         }

@@ -114,9 +114,9 @@ struct HfCandidateSelectorDsToKKPi {
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoSkims);
       SETBIT(statusDsToPiKK, aod::SelectionStep::RecoSkims);
 
-      auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
 
       // topological selection
       bool topoDsToKKPi = selection(candidate, trackPos1, trackNeg, trackPos2);

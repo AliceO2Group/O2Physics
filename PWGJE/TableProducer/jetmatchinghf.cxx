@@ -66,8 +66,8 @@ struct JetMatchingHF {
         continue;
       }
       for (const auto& cand : cands) {
-        const auto& daughter0 = cand.index0_as<Tracks>();
-        const auto& daughter1 = cand.index1_as<Tracks>();
+        const auto& daughter0 = cand.prong0_as<Tracks>();
+        const auto& daughter1 = cand.prong1_as<Tracks>();
         if (!daughter0.has_mcParticle() || !daughter1.has_mcParticle()) {
           LOGF(warning, "Encountered candidate daughter (%d or %d) without MC particle", daughter0.globalIndex(), daughter1.globalIndex());
           continue;
@@ -124,9 +124,9 @@ struct JetMatchingHF {
         int candIdx = 0;
         for (const auto& prong : hfcandidates) {
           LOGF(info, "checking prong %d with daughters %d-%d, %d-%d",
-               prong.globalIndex(), prong.index0Id(), prong.index0_as<Tracks>().globalIndex(), prong.index1Id(), prong.index1_as<Tracks>().globalIndex());
-          if ((prong.index0_as<Tracks>().globalIndex() == index0 && prong.index1_as<Tracks>().globalIndex() == index1) ||
-              (prong.index0Id() == index1 && prong.index1Id() == index0)) {
+               prong.globalIndex(), prong.prong0Id(), prong.prong0_as<Tracks>().globalIndex(), prong.prong1Id(), prong.prong1_as<Tracks>().globalIndex());
+          if ((prong.prong0_as<Tracks>().globalIndex() == index0 && prong.prong1_as<Tracks>().globalIndex() == index1) ||
+              (prong.prong0Id() == index1 && prong.prong1Id() == index0)) {
             candIdx = prong.globalIndex();
             LOGF(info, "Found matching 2prong candidate: %d", candIdx);
           }

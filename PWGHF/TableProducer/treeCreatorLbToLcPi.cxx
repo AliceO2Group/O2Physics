@@ -208,11 +208,11 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc>>();
-          auto track0 = candidate.index1_as<TracksExtendedPID>(); // daughter pion track
-          auto track1 = candLc.index0_as<TracksExtendedPID>();    // granddaughter tracks (lc decay particles)
-          auto track2 = candLc.index1_as<TracksExtendedPID>();
-          auto track3 = candLc.index2_as<TracksExtendedPID>();
+          auto candLc = candidate.prong0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc>>();
+          auto track0 = candidate.prong1_as<TracksExtendedPID>(); // daughter pion track
+          auto track1 = candLc.prong0_as<TracksExtendedPID>();    // granddaughter tracks (lc decay particles)
+          auto track2 = candLc.prong1_as<TracksExtendedPID>();
+          auto track3 = candLc.prong2_as<TracksExtendedPID>();
 
           auto RICHTrk0Pi = -5000.0;
           auto RICHTrk1Pi = -5000.0;

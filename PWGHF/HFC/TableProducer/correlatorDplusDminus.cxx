@@ -170,7 +170,7 @@ struct HfCorrelatorDplusDminus {
       }
 
       int outerParticleSign = 1; // Dplus
-      auto outerSecondTrack = candidate1.index1_as<aod::BigTracks>();
+      auto outerSecondTrack = candidate1.prong1_as<aod::BigTracks>();
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
@@ -202,7 +202,7 @@ struct HfCorrelatorDplusDminus {
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
           continue;
         }
-        auto innerSecondTrack = candidate2.index1_as<aod::BigTracks>();
+        auto innerSecondTrack = candidate2.prong1_as<aod::BigTracks>();
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
@@ -281,7 +281,7 @@ struct HfCorrelatorDplusDminus {
       }
 
       int outerParticleSign = 1; // Dplus
-      auto outerSecondTrack = candidate1.index1_as<aod::BigTracks>();
+      auto outerSecondTrack = candidate1.prong1_as<aod::BigTracks>();
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
@@ -318,7 +318,7 @@ struct HfCorrelatorDplusDminus {
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
           continue;
         }
-        auto innerSecondTrack = candidate2.index1_as<aod::BigTracks>();
+        auto innerSecondTrack = candidate2.prong1_as<aod::BigTracks>();
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
