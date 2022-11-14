@@ -52,7 +52,7 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<double> pPidCombMax{"pPidCombMax", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
   // for debugging
 #ifdef MY_DEBUG

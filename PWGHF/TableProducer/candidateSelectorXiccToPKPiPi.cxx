@@ -45,7 +45,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Xicc_to_p_K_pi_pi_cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate

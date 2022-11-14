@@ -79,7 +79,7 @@ struct HfCandidateSelectorJpsi {
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 5., "Nsigma cut on RICH combined with TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Jpsi_to_ee_cuts", {hf_cuts_jpsi_to_e_e::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
   using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;
