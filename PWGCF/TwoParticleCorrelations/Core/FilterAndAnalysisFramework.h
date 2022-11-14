@@ -11,6 +11,8 @@
 #ifndef FILTERANDANALYSISFRAMEWORK_H
 #define FILTERANDANALYSISFRAMEWORK_H
 
+#include <vector>
+#include <string>
 #include <Rtypes.h>
 #include <TString.h>
 #include <TObject.h>
@@ -117,4 +119,4 @@ extern void registerConfiguration(o2::analysis::PWGCF::FilterAndAnalysisFramewor
 } // namespace analysis
 } // namespace o2
 
-#endif // FILTERANDANALYSISFRAMEWORK_H
+#endif //
