@@ -49,7 +49,7 @@ struct HfCandidateSelectorD0Alice3ForwardRichIndexBuilder { // Builder of the RI
 
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0Alice3Forward {
-  Produces<aod::HFSelD0CandidateALICE3Forward> hfSelD0CandidateALICE3Forward;
+  Produces<aod::HfSelD0Alice3Forward> hfSelD0CandidateALICE3Forward;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

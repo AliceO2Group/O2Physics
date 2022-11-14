@@ -58,7 +58,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Struct for applying J/ψ → e+ e−, μ+ μ− selection cuts
 struct HfCandidateSelectorJpsi {
-  Produces<aod::HFSelJpsiCandidate> hfSelJpsiCandidate;
+  Produces<aod::HfSelJpsi> hfSelJpsiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

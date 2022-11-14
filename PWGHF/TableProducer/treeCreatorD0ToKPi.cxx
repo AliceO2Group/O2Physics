@@ -157,7 +157,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec, aod::HFSelD0Candidate> const& candidates,
+               soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec, aod::HfSelD0> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particles,
                aod::BigTracksPID const& tracks)
   {

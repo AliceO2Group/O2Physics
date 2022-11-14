@@ -76,7 +76,7 @@ struct HfCandidateCreatorChic {
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
                  aod::HfCandProng2,
-                 aod::HFSelJpsiCandidate>> const& jpsiCands,
+                 aod::HfSelJpsi>> const& jpsiCands,
                aod::BigTracks const& tracks,
                aod::ECALs const& ecals)
   {

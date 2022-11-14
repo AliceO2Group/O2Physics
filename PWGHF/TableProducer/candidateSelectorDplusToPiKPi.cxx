@@ -28,7 +28,7 @@ using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 
 /// Struct for applying Dplus to piKpi selection cuts
 struct HfCandidateSelectorDplusToPiKPi {
-  Produces<aod::HFSelDplusToPiKPiCandidate> hfSelDplusToPiKPiCandidate;
+  Produces<aod::HfSelDplusToPiKPi> hfSelDplusToPiKPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};

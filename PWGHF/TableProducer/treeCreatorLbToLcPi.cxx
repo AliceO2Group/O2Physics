@@ -183,7 +183,7 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
 
 struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
-  
+
   void init(o2::framework::InitContext&) {}
 };
 
@@ -193,8 +193,8 @@ struct HfTreeCreatorLbToLcPi {
 
   using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
-  void process(soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HFSelLbToLcPiCandidate> const& candidates,
-               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const&,
+  void process(soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HfSelLbToLcPi> const& candidates,
+               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc> const&,
                TracksExtendedPID const&,
                aod::FRICHs const&,
                aod::RICHs const&)
@@ -208,7 +208,7 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
+          auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc>>();
           auto track0 = candidate.index1_as<TracksExtendedPID>(); // daughter pion track
           auto track1 = candLc.index0_as<TracksExtendedPID>();    // granddaughter tracks (lc decay particles)
           auto track2 = candLc.index1_as<TracksExtendedPID>();

@@ -84,20 +84,20 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #ifdef MY_DEBUG
 using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
-using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksDCA, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HfSelTrack, aod::TracksDCA, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
 using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
-using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksDCA>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HfSelTrack, aod::TracksDCA>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
 /// Event selection
 struct HfTrackIndexSkimCreatorTagSelCollisions {
-  Produces<aod::HFSelCollision> rowSelectedCollision;
+  Produces<aod::HfSelCollision> rowSelectedCollision;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of primary vertex [cm]"};
@@ -254,7 +254,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
 /// Track selection
 struct HfTrackIndexSkimCreatorTagSelTracks {
-  Produces<aod::HFSelTrack> rowSelectedTrack;
+  Produces<aod::HfSelTrack> rowSelectedTrack;
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -907,8 +907,8 @@ struct HfTrackIndexSkimCreator {
   std::array<LabeledArray<double>, n3ProngDecays> cut3Prong;
   std::array<std::vector<double>, n3ProngDecays> pTBins3Prong;
 
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HFSelTrack, aod::HfPvRefitTrack>>;
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   Filter filterSelectTracks = aod::hf_sel_track::isSelProng > 0;
@@ -2205,7 +2205,7 @@ struct HfTrackIndexSkimCreatorCascades {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.}; // WHY HERE?
 
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   // Partition<MyTracks> selectedTracks = aod::hf_sel_track::isSelProng >= 4;

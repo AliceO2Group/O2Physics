@@ -48,7 +48,7 @@ struct HfCandidateSelectorD0ParametrizedPidRichIndexBuilder { // Builder of the 
 
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0ParametrizedPid {
-  Produces<aod::HFSelD0CandidateparametrizedPID> hfSelD0CandidateparametrizedPID;
+  Produces<aod::HfSelD0ParametrizedPid> hfSelD0CandidateparametrizedPID;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

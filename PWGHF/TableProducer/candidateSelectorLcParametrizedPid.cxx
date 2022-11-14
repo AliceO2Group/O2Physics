@@ -50,7 +50,7 @@ struct HfCandidateSelectorLcParametrizedPidRichIndexBuilder { // Builder of the 
 
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLcParametrizedPid {
-  Produces<aod::HFSelLcCandidateparametrizedPID> hfSelLcCandidateparametrizedPID;
+  Produces<aod::HfSelLcParametrizedPid> hfSelLcCandidateparametrizedPID;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};

@@ -35,7 +35,7 @@ namespace hf_sel_collision
 DECLARE_SOA_COLUMN(WhyRejectColl, whyRejectColl, int); //!
 } // namespace hf_sel_collision
 
-DECLARE_SOA_TABLE(HFSelCollision, "AOD", "HFSELCOLLISION", //!
+DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
                   hf_sel_collision::WhyRejectColl);
 
 namespace hf_sel_track
@@ -46,7 +46,7 @@ DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
 DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 } // namespace hf_sel_track
 
-DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
+DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::IsSelProng,
                   hf_sel_track::PxProng,
                   hf_sel_track::PyProng,

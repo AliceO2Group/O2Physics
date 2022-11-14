@@ -28,7 +28,7 @@ using namespace o2::analysis::hf_cuts_xicc_to_p_k_pi_pi;
 
 /// Struct for applying Xicc selection cuts
 struct HfCandidateSelectorXiccToPKPiPi {
-  Produces<aod::HFSelXiccToPKPiPiCandidate> hfSelXiccToPKPiPiCandidate;
+  Produces<aod::HfSelXiccToPKPiPi> hfSelXiccToPKPiPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};

@@ -40,7 +40,7 @@ using MyBigTracks = aod::BigTracksPID;
 #endif
 
 struct HfCandidateSelectorLcToK0sP {
-  Produces<aod::HFSelLcK0sPCandidate> hfSelLcK0sPCandidate;
+  Produces<aod::HfSelLcK0sP> hfSelLcK0sPCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

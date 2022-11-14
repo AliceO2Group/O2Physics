@@ -66,7 +66,7 @@ struct HfCandidateCreatorB0 {
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
                  aod::HfCandProng3,
-                 aod::HFSelDplusToPiKPiCandidate>> const& dCands,
+                 aod::HfSelDplusToPiKPi>> const& dCands,
                aod::BigTracks const& tracks)
   {
     // Initialise fitter for B vertex (2-prong vertex filter)

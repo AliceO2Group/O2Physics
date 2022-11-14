@@ -48,8 +48,8 @@ struct HfTaskBplus {
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
-  Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
 
   HistogramRegistry registry{
     "registry",
@@ -124,7 +124,7 @@ struct HfTaskBplus {
     registry.add("hd0d0RecBg", bPlusCandUnmatch + "product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
   }
 
-  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate> const&, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate> const&, aod::BigTracks const&)
+  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCandProng2, aod::HfSelD0> const&, aod::BigTracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
@@ -135,7 +135,7 @@ struct HfTaskBplus {
         continue;
       }
 
-      auto candD0 = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>();
+      auto candD0 = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HfSelD0>>();
       auto candPi = candidate.index1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassBPlus(candidate), candidate.pt());
@@ -162,7 +162,7 @@ struct HfTaskBplus {
     } // candidate loop
   }   // process
 
-  void processMc(soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec> const&,
+  void processMc(soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi, aod::HfCandBPMCRec> const&,
                  soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)
   {
     // MC rec

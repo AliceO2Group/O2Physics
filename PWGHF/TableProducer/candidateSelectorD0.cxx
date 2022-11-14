@@ -28,7 +28,7 @@ using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0 {
-  Produces<aod::HFSelD0Candidate> hfSelD0Candidate;
+  Produces<aod::HfSelD0> hfSelD0Candidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

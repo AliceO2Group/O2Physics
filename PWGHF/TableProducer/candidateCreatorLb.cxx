@@ -73,7 +73,7 @@ struct HfCandidateCreatorLb {
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
                  aod::HfCandProng3,
-                 aod::HFSelLcCandidate>> const& lcCands,
+                 aod::HfSelLc>> const& lcCands,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter

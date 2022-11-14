@@ -188,7 +188,7 @@ struct HfTreeCreatorLcToPKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
-                 soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& candidates,
+                 soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particles,
                  aod::BigTracksPID const& tracks)
   {
@@ -316,7 +316,7 @@ struct HfTreeCreatorLcToPKPi {
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMc, "Process MC tree writer", true);
 
   void processData(aod::Collisions const& collisions,
-                   soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate> const& candidates,
+                   soa::Join<aod::HfCandProng3, aod::HfSelLc> const& candidates,
                    aod::BigTracksPID const& tracks)
   {
 

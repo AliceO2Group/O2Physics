@@ -27,7 +27,7 @@ using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
 
 /// Struct for applying Ds to KKpi selection cuts
 struct HfCandidateSelectorDsToKKPi {
-  Produces<aod::HFSelDsToKKPiCandidate> hfSelDsToKKPiCandidate;
+  Produces<aod::HfSelDsToKKPi> hfSelDsToKKPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};

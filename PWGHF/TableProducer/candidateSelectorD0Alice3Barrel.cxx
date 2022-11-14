@@ -49,7 +49,7 @@ struct HfCandidateSelectorD0Alice3BarrelRichIndexBuilder { // Builder of the RIC
 
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0Alice3Barrel {
-  Produces<aod::HFSelD0CandidateALICE3Barrel> hfSelD0CandidateALICE3Barrel;
+  Produces<aod::HfSelD0Alice3Barrel> hfSelD0CandidateALICE3Barrel;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

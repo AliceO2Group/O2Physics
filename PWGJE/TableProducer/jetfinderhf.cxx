@@ -93,7 +93,7 @@ struct JetFinderHFTask {
 
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                    soa::Filtered<aod::Tracks> const& tracks,
-                   soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
+                   soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0>> const& candidates)
   {
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
@@ -143,7 +143,7 @@ struct JetFinderHFTask {
 
   void processMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                   soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks,
-                  soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates)
+                  soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>> const& candidates)
   {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere

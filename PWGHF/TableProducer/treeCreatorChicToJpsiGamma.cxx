@@ -125,7 +125,7 @@ struct HfTreeCreatorChicToJpsiGamma {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandChic, aod::HfCandChicMCRec, aod::HFSelChicToJpsiGammaCandidate> const& candidates,
+               soa::Join<aod::HfCandChic, aod::HfCandChicMCRec, aod::HfSelChicToJpsiGamma> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particles,
                aod::BigTracksPID const& tracks,
                aod::HfCandProng2 const& jpsiCands)

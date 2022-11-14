@@ -235,7 +235,7 @@ struct HfTaskLc {
     registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HfSelLc>> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -305,7 +305,7 @@ struct HfTaskLc {
   }
 
   /// Fills MC histograms.
-  void processMc(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate, aod::HfCandProng3MCRec>> const& candidates,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HfSelLc, aod::HfCandProng3MCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& /*tracks*/)
   {
     for (auto& candidate : candidates) {

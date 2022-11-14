@@ -30,7 +30,7 @@ using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 // using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;  // used if we apply D mass cut
 
 struct HfCandidateSelectorB0ToDPi {
-  Produces<aod::HFSelB0ToDPiCandidate> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
+  Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -121,7 +121,7 @@ struct HfCandidateSelectorB0ToDPi {
     return true;
   }
 
-  void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate> const&, aod::BigTracksPID const&)
+  void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi> const&, aod::BigTracksPID const&)
   {
     for (auto const& hfCandB0 : hfCandB0s) { // looping over B0 candidates
 
@@ -136,7 +136,7 @@ struct HfCandidateSelectorB0ToDPi {
 
       // D is always index0 and pi is index1 by default
       // auto candD = hfCandD.index0();
-      auto candD = hfCandB0.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>>();
+      auto candD = hfCandB0.index0_as<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>>();
       auto trackPi = hfCandB0.index1_as<aod::BigTracksPID>();
 
       // topological cuts

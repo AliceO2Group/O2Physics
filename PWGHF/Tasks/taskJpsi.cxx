@@ -73,7 +73,7 @@ struct HfTaskJpsi {
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>> const& candidates)
+  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelJpsi>> const& candidates)
   {
     int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
@@ -190,7 +190,7 @@ struct HfTaskJpsiMc {
     registry.add("hPtGenProng1", "2-prong candidates (gen. matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate, aod::HfCandProng2MCRec>> const& candidates,
+  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelJpsi, aod::HfCandProng2MCRec>> const& candidates,
                McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.

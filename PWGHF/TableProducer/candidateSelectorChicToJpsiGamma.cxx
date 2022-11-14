@@ -31,7 +31,7 @@ using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorChicToJpsiGamma {
-  Produces<aod::HFSelChicToJpsiGammaCandidate> hfSelChicToJpsiGammaCandidate;
+  Produces<aod::HfSelChicToJpsiGamma> hfSelChicToJpsiGammaCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};

@@ -71,7 +71,7 @@ struct HfCandidateCreatorBplus {
 
   void process(aod::Collision const& collisions,
                soa::Filtered<soa::Join<aod::HfCandProng2,
-                                       aod::HFSelD0Candidate>> const& candidates,
+                                       aod::HfSelD0>> const& candidates,
                aod::BigTracks const& tracks)
   {
     hNEvents->Fill(0);

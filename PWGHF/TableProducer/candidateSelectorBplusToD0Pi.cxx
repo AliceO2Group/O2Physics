@@ -31,7 +31,7 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 struct HfCandidateSelectorBplusToD0Pi {
-  Produces<aod::HFSelBPlusToD0PiCandidate> hfSelBPlusToD0PiCandidate;
+  Produces<aod::HfSelBplusToD0Pi> hfSelBPlusToD0PiCandidate;
 
   // Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -124,7 +124,7 @@ struct HfCandidateSelectorBplusToD0Pi {
     return true;
   }
 
-  void process(aod::HfCandBPlus const& hfCandBs, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate> const&, aod::BigTracksPID const& tracks)
+  void process(aod::HfCandBPlus const& hfCandBs, soa::Join<aod::HfCandProng2, aod::HfSelD0> const&, aod::BigTracksPID const& tracks)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -146,7 +146,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
 
       // D0 is always index0 and pi is index1 by default
-      auto candD0 = hfCandB.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>();
+      auto candD0 = hfCandB.index0_as<soa::Join<aod::HfCandProng2, aod::HfSelD0>>();
       auto trackPi = hfCandB.index1_as<aod::BigTracksPID>();
 
       // topological cuts

@@ -34,7 +34,7 @@ DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);   //!
 DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);     //!
 DECLARE_SOA_COLUMN(IsRecoPID, isRecoPID, int);
 } // namespace hf_sel_candidate_d0
-DECLARE_SOA_TABLE(HFSelD0Candidate, "AOD", "HFSELD0CAND", //!
+DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
                   hf_sel_candidate_d0::IsSelD0,
                   hf_sel_candidate_d0::IsSelD0bar,
                   hf_sel_candidate_d0::IsRecoHFFlag,
@@ -51,7 +51,7 @@ DECLARE_SOA_COLUMN(IsSelD0barNoPID, isSelD0barNoPID, int);           //!
 DECLARE_SOA_COLUMN(IsSelD0barPerfectPID, isSelD0barPerfectPID, int); //!
 DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int);                     //!
 } // namespace hf_sel_candidate_d0_parametrized_pid
-DECLARE_SOA_TABLE(HFSelD0CandidateparametrizedPID, "AOD", "HFSELD0CANDP", //!
+DECLARE_SOA_TABLE(HfSelD0ParametrizedPid, "AOD", "HFSELD0P", //!
                   hf_sel_candidate_d0_parametrized_pid::IsSelD0NoPID,
                   hf_sel_candidate_d0_parametrized_pid::IsSelD0PerfectPID,
                   hf_sel_candidate_d0_parametrized_pid::IsSelD0,
@@ -69,7 +69,7 @@ DECLARE_SOA_COLUMN(IsSelD0RICHPID, isSelD0RICHPID, int);               //!
 DECLARE_SOA_COLUMN(IsSelD0TOFplusRICHPID, isSelD0TOFplusRICHPID, int); //!
 DECLARE_SOA_COLUMN(IsSelD0barTOFplusRICHPID, isSelD0barTOFplusRICHPID, int); //!
 } // namespace hf_sel_candidate_d0_alice3_barrel
-DECLARE_SOA_TABLE(HFSelD0CandidateALICE3Barrel, "AOD", "HFSELD0CANDA3B", //!
+DECLARE_SOA_TABLE(HfSelD0Alice3Barrel, "AOD", "HFSELD0A3B", //!
                   hf_sel_candidate_d0_alice3_barrel::IsSelHFFlag,
                   hf_sel_candidate_d0_alice3_barrel::IsSelD0NoPID,
                   hf_sel_candidate_d0_alice3_barrel::IsSelD0PerfectPID,
@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(IsSelHFFFlag, isSelHFFFlag, int);       //!
 DECLARE_SOA_COLUMN(IsSelD0FNoPID, isSelD0FNoPID, int);     //!
 DECLARE_SOA_COLUMN(IsSelD0FRICHPID, isSelD0FRICHPID, int); //!
 } // namespace hf_sel_candidate_d0_alice3_forward
-DECLARE_SOA_TABLE(HFSelD0CandidateALICE3Forward, "AOD", "HFSELD0CANDA3F", //!
+DECLARE_SOA_TABLE(HfSelD0Alice3Forward, "AOD", "HFSELD0A3F", //!
                   hf_sel_candidate_d0_alice3_forward::IsSelHFFFlag,
                   hf_sel_candidate_d0_alice3_forward::IsSelD0FNoPID,
                   hf_sel_candidate_d0_alice3_forward::IsSelD0FRICHPID);
@@ -93,7 +93,7 @@ namespace hf_sel_candidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
 } // namespace hf_sel_candidate_dplus
-DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELDPLUSCAND", //!
+DECLARE_SOA_TABLE(HfSelDplusToPiKPi, "AOD", "HFSELDPLUS", //!
                   hf_sel_candidate_dplus::IsSelDplusToPiKPi);
 
 namespace hf_sel_candidate_ds
@@ -101,7 +101,7 @@ namespace hf_sel_candidate_ds
 DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
 DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
 } // namespace hf_sel_candidate_ds
-DECLARE_SOA_TABLE(HFSelDsToKKPiCandidate, "AOD", "HFSELDSCAND", //!
+DECLARE_SOA_TABLE(HfSelDsToKKPi, "AOD", "HFSELDS", //!
                   hf_sel_candidate_ds::IsSelDsToKKPi, hf_sel_candidate_ds::IsSelDsToPiKK);
 
 namespace hf_sel_candidate_lc
@@ -109,7 +109,7 @@ namespace hf_sel_candidate_lc
 DECLARE_SOA_COLUMN(IsSelLcpKpi, isSelLcpKpi, int); //!
 DECLARE_SOA_COLUMN(IsSelLcpiKp, isSelLcpiKp, int); //!
 } // namespace hf_sel_candidate_lc
-DECLARE_SOA_TABLE(HFSelLcCandidate, "AOD", "HFSELLCCAND", //!
+DECLARE_SOA_TABLE(HfSelLc, "AOD", "HFSELLC", //!
                   hf_sel_candidate_lc::IsSelLcpKpi, hf_sel_candidate_lc::IsSelLcpiKp);
 
 namespace hf_sel_candidate_lc_alice3
@@ -123,7 +123,7 @@ DECLARE_SOA_COLUMN(IsSelLcPiKPPerfectPID, isSelLcPiKPPerfectPID, int);         /
 DECLARE_SOA_COLUMN(IsSelLcPiKPTOFPID, isSelLcPiKPTOFPID, int);                 //!
 DECLARE_SOA_COLUMN(IsSelLcPiKPTOFplusRICHPID, isSelLcPiKPTOFplusRICHPID, int); //!
 } // namespace hf_sel_candidate_lc_alice3
-DECLARE_SOA_TABLE(HFSelLcCandidateALICE3, "AOD", "HFSELLCCANDA3B", //!
+DECLARE_SOA_TABLE(HfSelLcAlice3, "AOD", "HFSELLCA3B", //!
                   hf_sel_candidate_lc_alice3::IsSelLcPKPiNoPID,
                   hf_sel_candidate_lc_alice3::IsSelLcPKPiPerfectPID,
                   hf_sel_candidate_lc_alice3::IsSelLcPKPiTOFPID,
@@ -142,7 +142,7 @@ DECLARE_SOA_COLUMN(IsSelLcPiKPNoPID, isSelLcPiKPNoPID, int);           //!
 DECLARE_SOA_COLUMN(IsSelLcPiKPPerfectPID, isSelLcPiKPPerfectPID, int); //!
 DECLARE_SOA_COLUMN(IsSelLcPiKP, isSelLcPiKP, int);                     //!
 } // namespace hf_sel_candidate_lc_parametrized_pid
-DECLARE_SOA_TABLE(HFSelLcCandidateparametrizedPID, "AOD", "HFSELLCCANDP", //!
+DECLARE_SOA_TABLE(HfSelLcParametrizedPid, "AOD", "HFSELLCP", //!
                   hf_sel_candidate_lc_parametrized_pid::IsSelLcPKPiNoPID,
                   hf_sel_candidate_lc_parametrized_pid::IsSelLcPKPiPerfectPID,
                   hf_sel_candidate_lc_parametrized_pid::IsSelLcPKPi,
@@ -162,7 +162,7 @@ DECLARE_SOA_COLUMN(IsSelJpsiToEETofRich, isSelJpsiToEETofRich, int); //!
 DECLARE_SOA_COLUMN(IsSelJpsiToMuMuTopol, isSelJpsiToMuMuTopol, int); //!
 DECLARE_SOA_COLUMN(IsSelJpsiToMuMuMid, isSelJpsiToMuMuMid, int);     //!
 } // namespace hf_sel_candidate_jpsi
-DECLARE_SOA_TABLE(HFSelJpsiCandidate, "AOD", "HFSELJPSICAND", //!
+DECLARE_SOA_TABLE(HfSelJpsi, "AOD", "HFSELJPSI", //!
                   hf_sel_candidate_jpsi::IsSelJpsiToEE,
                   hf_sel_candidate_jpsi::IsSelJpsiToMuMu,
                   hf_sel_candidate_jpsi::IsSelJpsiToEETopol,
@@ -177,28 +177,28 @@ namespace hf_sel_candidate_lc_to_k0s_p
 {
 DECLARE_SOA_COLUMN(IsSelLcK0sP, isSelLcK0sP, int);
 } // namespace hf_sel_candidate_lc_to_k0s_p
-DECLARE_SOA_TABLE(HFSelLcK0sPCandidate, "AOD", "HFSELLCK0SPCAND", //!
+DECLARE_SOA_TABLE(HfSelLcK0sP, "AOD", "HFSELLCK0SP", //!
                   hf_sel_candidate_lc_to_k0s_p::IsSelLcK0sP);
 
 namespace hf_sel_candidate_b0
 {
 DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int); //!
 } // namespace hf_sel_candidate_b0
-DECLARE_SOA_TABLE(HFSelB0ToDPiCandidate, "AOD", "HFSELB0CAND", //!
+DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
                   hf_sel_candidate_b0::IsSelB0ToDPi);
 
 namespace hf_sel_candidate_bplus
 {
 DECLARE_SOA_COLUMN(IsSelBPlusToD0Pi, isSelBPlusToD0Pi, int); //!
 } // namespace hf_sel_candidate_bplus
-DECLARE_SOA_TABLE(HFSelBPlusToD0PiCandidate, "AOD", "HFSELBPLUSCAND", //!
+DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
                   hf_sel_candidate_bplus::IsSelBPlusToD0Pi);
 
 namespace hf_sel_candidate_lb
 {
 DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int); //!
 } // namespace hf_sel_candidate_lb
-DECLARE_SOA_TABLE(HFSelLbToLcPiCandidate, "AOD", "HFSELLBCAND", //!
+DECLARE_SOA_TABLE(HfSelLbToLcPi, "AOD", "HFSELLB", //!
                   hf_sel_candidate_lb::IsSelLbToLcPi);
 
 namespace hf_sel_candidate_x
@@ -206,7 +206,7 @@ namespace hf_sel_candidate_x
 DECLARE_SOA_COLUMN(IsSelXToJpsiToEEPiPi, isSelXToJpsiToEEPiPi, int);     //!
 DECLARE_SOA_COLUMN(IsSelXToJpsiToMuMuPiPi, isSelXToJpsiToMuMuPiPi, int); //!
 } // namespace hf_sel_candidate_x
-DECLARE_SOA_TABLE(HFSelXToJpsiPiPiCandidate, "AOD", "HFSELXCAND", //!
+DECLARE_SOA_TABLE(HfSelXToJpsiPiPi, "AOD", "HFSELX", //!
                   hf_sel_candidate_x::IsSelXToJpsiToEEPiPi, hf_sel_candidate_x::IsSelXToJpsiToMuMuPiPi);
 
 namespace hf_sel_candidate_chic
@@ -214,7 +214,7 @@ namespace hf_sel_candidate_chic
 DECLARE_SOA_COLUMN(IsSelChicToJpsiToEEGamma, isSelChicToJpsiToEEGamma, int);     //!
 DECLARE_SOA_COLUMN(IsSelChicToJpsiToMuMuGamma, isSelChicToJpsiToMuMuGamma, int); //!
 } // namespace hf_sel_candidate_chic
-DECLARE_SOA_TABLE(HFSelChicToJpsiGammaCandidate, "AOD", "HFSELCHICCAND", //!
+DECLARE_SOA_TABLE(HfSelChicToJpsiGamma, "AOD", "HFSELCHIC", //!
                   hf_sel_candidate_chic::IsSelChicToJpsiToEEGamma, hf_sel_candidate_chic::IsSelChicToJpsiToMuMuGamma);
 
 namespace hf_sel_candidate_xic
@@ -222,14 +222,14 @@ namespace hf_sel_candidate_xic
 DECLARE_SOA_COLUMN(IsSelXicToPKPi, isSelXicToPKPi, int); //!
 DECLARE_SOA_COLUMN(IsSelXicToPiKP, isSelXicToPiKP, int); //!
 } // namespace hf_sel_candidate_xic
-DECLARE_SOA_TABLE(HFSelXicToPKPiCandidate, "AOD", "HFSELXICCAND", //!
+DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!
                   hf_sel_candidate_xic::IsSelXicToPKPi, hf_sel_candidate_xic::IsSelXicToPiKP);
 
 namespace hf_sel_candidate_xicc
 {
 DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
 } // namespace hf_sel_candidate_xicc
-DECLARE_SOA_TABLE(HFSelXiccToPKPiPiCandidate, "AOD", "HFSELXICCCAND", //!
+DECLARE_SOA_TABLE(HfSelXiccToPKPiPi, "AOD", "HFSELXICC", //!
                   hf_sel_candidate_xicc::IsSelXiccToPKPiPi);
 } // namespace o2::aod
 #endif // O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_

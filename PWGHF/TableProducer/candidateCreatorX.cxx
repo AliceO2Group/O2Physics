@@ -75,7 +75,7 @@ struct HfCandidateCreatorX {
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
                  aod::HfCandProng2,
-                 aod::HFSelJpsiCandidate>> const& jpsiCands,
+                 aod::HfSelJpsi>> const& jpsiCands,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)

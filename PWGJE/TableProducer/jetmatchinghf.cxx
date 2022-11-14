@@ -33,7 +33,7 @@ using namespace o2::framework::expressions;
 struct JetMatchingHF {
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-  using HfCandidates = soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>;
+  using HfCandidates = soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>;
   using McParticles = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
   using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
   using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;

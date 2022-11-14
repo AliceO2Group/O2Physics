@@ -71,7 +71,7 @@ struct HfTaskLb {
     registry.add("hInvMassLc", "#Lambda_{b}^{0} candidates;prong0, #Lambda_{c}^{+} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate> const&, aod::BigTracks const&)
+  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi>> const& candidates, soa::Join<aod::HfCandProng3, aod::HfSelLc> const&, aod::BigTracks const&)
   {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
@@ -84,7 +84,7 @@ struct HfTaskLb {
         continue;
       }
 
-      auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
+      auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfSelLc>>();
       auto candPi = candidate.index1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassLbToLcPi(candidate), candidate.pt(), centrality);
@@ -173,7 +173,7 @@ struct HfTaskLbMc {
     registry.add("hThetaStarRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate, aod::HfCandLbMCRec>> const& candidates,
+  void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandLbMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
     //MC rec

@@ -29,7 +29,7 @@ using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLc {
-  Produces<aod::HFSelLcCandidate> hfSelLcCandidate;
+  Produces<aod::HfSelLc> hfSelLcCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};

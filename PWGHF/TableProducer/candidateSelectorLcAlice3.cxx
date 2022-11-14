@@ -50,7 +50,7 @@ struct HfCandidateSelectorLcAlice3RichIndexBuilder { // Builder of the RICH-trac
 
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLcAlice3 {
-  Produces<aod::HFSelLcCandidateALICE3> hfSelLcCandidateALICE3;
+  Produces<aod::HfSelLcAlice3> hfSelLcCandidateALICE3;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};

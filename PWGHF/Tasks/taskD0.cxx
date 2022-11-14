@@ -39,8 +39,8 @@ struct HfTaskD0 {
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_sel_candidate_d0::isRecoHFFlag >= selectionFlagHf;
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_sel_candidate_d0::isRecoHFFlag >= selectionFlagHf;
 
   HistogramRegistry registry{
     "registry",
@@ -143,7 +143,7 @@ struct HfTaskD0 {
     registry.add("hCPAFinerBinning", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>& candidates)
+  void process(soa::Join<aod::HfCandProng2, aod::HfSelD0>& candidates)
   {
     for (auto& candidate : selectedD0Candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
@@ -191,7 +191,7 @@ struct HfTaskD0 {
     }
   }
 
-  void processMc(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>& candidates,
+  void processMc(soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
