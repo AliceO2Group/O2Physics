@@ -23,7 +23,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::analysis::hf_cuts_ds_tokkpi;
+using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
 
 /// Struct for applying Ds to KKpi selection cuts
 struct HfCandidateSelectorDsToKKPi {
@@ -40,8 +40,8 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_tokkpi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Ds_to_K_K_Pi_cuts", {hf_cuts_ds_tokkpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Ds_to_K_K_Pi_cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
 
   /// Candidate selections
   /// \param candidate is candidate

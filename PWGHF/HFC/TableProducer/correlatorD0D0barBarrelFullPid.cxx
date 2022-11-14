@@ -26,7 +26,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_correlation_ddbar;
-using namespace o2::analysis::hf_cuts_d0_topik;
+using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 using namespace o2::constants::math;
 
 #include "Framework/runDataProcessing.h"
@@ -46,7 +46,7 @@ const double incrementEtaCut = 0.1;
 const double incrementPtThreshold = 0.5;
 const double epsilon = 1E-5;
 
-const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_topik::nBinsPt;
+const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::nBinsPt;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
@@ -77,7 +77,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_topik::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
 
   Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel>> selectedD0candidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);

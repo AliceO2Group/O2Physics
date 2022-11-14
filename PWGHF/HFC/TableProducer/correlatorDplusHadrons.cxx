@@ -25,7 +25,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_correlation_dplushadron;
-using namespace o2::analysis::hf_cuts_dplus_topikpi;
+using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 using namespace o2::constants::math;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
@@ -36,7 +36,7 @@ double getDeltaPhi(double phiD, double phiHadron)
 }
 
 /// definition of variables for Dplus hadron pairs (in data-like, MC-reco and MC-kine tasks)
-const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_topikpi::nBinsPt;
+const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
@@ -72,7 +72,7 @@ struct HfCorrelatorDplusHadrons {
   Configurable<double> ptTrackMax{"ptTrackMax", -1., "max. cand. pT"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
 
   Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;

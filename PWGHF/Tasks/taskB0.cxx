@@ -29,14 +29,14 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_b0;            // from CandidateReconstructionTables.h
-using namespace o2::analysis::hf_cuts_b0_todpi; // from SelectorCuts.h
+using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 
 /// B0 analysis task
 struct HfTaskB0 {
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
@@ -107,7 +107,7 @@ struct HfTaskB0 {
 struct HfTaskB0Mc {
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 

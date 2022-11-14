@@ -45,7 +45,7 @@ using namespace o2::framework::expressions;
 using namespace constants::math;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_d0_topik;
+using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskFlow {
   //  configurables for processing options
@@ -62,7 +62,7 @@ struct HfTaskFlow {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_topik::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!

@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
+using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_chic;
 using namespace o2::framework::expressions;
@@ -44,7 +44,7 @@ struct HfTaskChic {
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
   Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
@@ -105,7 +105,7 @@ struct HfTaskChicMc {
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
   Configurable<double> yCandMax{"yCandMax", 1., "max. cand. rapidity"};
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 

@@ -166,7 +166,7 @@ static const std::vector<std::string> labelsPt{};
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
 } // namespace hf_cuts_presel_3prong
 
-namespace hf_cuts_d0_topik
+namespace hf_cuts_d0_to_pi_k
 {
 static constexpr int nBinsPt = 25;
 static constexpr int nCutVars = 14;
@@ -258,9 +258,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "normalized decay length XY", "decay length", "decay length XY", "minimum decay length"};
-} // namespace hf_cuts_d0_topik
+} // namespace hf_cuts_d0_to_pi_k
 
-namespace hf_cuts_lc_topkpi
+namespace hf_cuts_lc_to_p_k_pi
 {
 static constexpr int nBinsPt = 10;
 static constexpr int nCutVars = 7;
@@ -307,9 +307,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "pT p", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle"};
-} // namespace hf_cuts_lc_topkpi
+} // namespace hf_cuts_lc_to_p_k_pi
 
-namespace hf_cuts_lc_tok0sp
+namespace hf_cuts_lc_to_k0s_p
 {
 static constexpr int nBinsPt = 8;
 static constexpr int nCutVars = 8;
@@ -351,9 +351,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"mK0s", "mLambda", "mGamma", "ptBach", "ptV0Dau", "ptV0", "d0Bach", "d0V0"};
-} // namespace hf_cuts_lc_tok0sp
+} // namespace hf_cuts_lc_to_k0s_p
 
-namespace hf_cuts_dplus_topikpi
+namespace hf_cuts_dplus_to_pi_k_pi
 {
 static const int nBinsPt = 12;
 static const int nCutVars = 8;
@@ -407,9 +407,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"deltaM", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP"};
-} // namespace hf_cuts_dplus_topikpi
+} // namespace hf_cuts_dplus_to_pi_k_pi
 
-namespace hf_cuts_ds_tokkpi
+namespace hf_cuts_ds_to_k_k_pi
 {
 static const int nBinsPt = 12;
 static const int nCutVars = 8;
@@ -460,9 +460,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP"};
-} // namespace hf_cuts_ds_tokkpi
+} // namespace hf_cuts_ds_to_k_k_pi
 
-namespace hf_cuts_xic_topkpi
+namespace hf_cuts_xic_to_p_k_pi
 {
 static const int nBinsPt = 10;
 static const int nCutVars = 7;
@@ -509,9 +509,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "pT p", "pT K", "pT Pi", "chi2PCA", "decay length", "cos pointing angle"};
-} // namespace hf_cuts_xic_topkpi
+} // namespace hf_cuts_xic_to_p_k_pi
 
-namespace hf_cuts_xicc_topkpipi
+namespace hf_cuts_xicc_to_p_k_pi_pi
 {
 static const int nBinsPt = 10;
 static const int nCutVars = 14;
@@ -558,9 +558,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "pT Xic", "pT Pi", "min d0 Xic", "max d0 Xic", "min d0 Pi", "max d0 Pi", "d0d0", "chi2PCA", "min decay length", "max decay length", "max decay length XY", "cos pointing angle", "cos pointing angle XY"};
-} // namespace hf_cuts_xicc_topkpipi
+} // namespace hf_cuts_xicc_to_p_k_pi_pi
 
-namespace hf_cuts_jpsi_toee
+namespace hf_cuts_jpsi_to_e_e
 {
 static constexpr int nBinsPt = 9;
 static constexpr int nCutVars = 5;
@@ -605,9 +605,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "DCA_xy", "DCA_z", "pT El", "chi2PCA"};
-} // namespace hf_cuts_jpsi_toee
+} // namespace hf_cuts_jpsi_to_e_e
 
-namespace hf_cuts_b0_todpi
+namespace hf_cuts_b0_to_d_pi
 {
 static constexpr int nBinsPt = 12;
 static constexpr int nCutVars = 12;
@@ -661,9 +661,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 D", "d0 Pi", "pT D", "pT Pi", "B0 decLen", "B0 decLenXY", "Imp. Par. Product", "DeltaMD", "Cos ThetaStar"};
-} // namespace hf_cuts_b0_todpi
+} // namespace hf_cuts_b0_to_d_pi
 
-namespace hf_cuts_bplus_tod0pi
+namespace hf_cuts_bplus_to_d0_pi
 {
 static constexpr int nBinsPt = 12;
 static constexpr int nCutVars = 11;
@@ -717,9 +717,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 D0", "d0 Pi", "pT D0", "pT Pi", "B decLen", "B decLenXY", "Imp. Par. Product", "DeltaMD0", "Cos ThetaStar"};
-} // namespace hf_cuts_bplus_tod0pi
+} // namespace hf_cuts_bplus_to_d0_pi
 
-namespace hf_cuts_lb_tolcpi
+namespace hf_cuts_lb_to_lc_pi
 {
 static constexpr int nBinsPt = 12;
 static constexpr int nCutVars = 12;
@@ -773,9 +773,9 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 Lc+", "d0 Pi", "pT Lc+", "pT Pi", "Lb decLen", "Lb decLenXY", "Imp. Par. Product", "DeltaMLc", "Cos ThetaStar"};
-} // namespace hf_cuts_lb_tolcpi
+} // namespace hf_cuts_lb_to_lc_pi
 
-namespace hf_cuts_x_tojpsipipi
+namespace hf_cuts_x_to_jpsi_pi_pi
 {
 static constexpr int nBinsPt = 9;
 static constexpr int nCutVars = 7;
@@ -819,9 +819,9 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 8"};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 Jpsi", "d0 Pi", "pT Jpsi", "pT Pi", "chi2PCA"};
-} // namespace hf_cuts_x_tojpsipipi
+} // namespace hf_cuts_x_to_jpsi_pi_pi
 
-namespace hf_cuts_chic_tojpsigamma
+namespace hf_cuts_chic_to_jpsi_gamma
 {
 // dummy selections for chic --> TO BE IMPLEMENTED
 static constexpr int nBinsPt = 9;
@@ -866,7 +866,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 8"};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 Jpsi", "d0 Gamma", "pT Jpsi", "pT Gamma", "chi2PCA"};
-} // namespace hf_cuts_chic_tojpsigamma
+} // namespace hf_cuts_chic_to_jpsi_gamma
 
 } // namespace o2::analysis
 

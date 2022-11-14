@@ -26,7 +26,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_jpsi_toee;
+using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 namespace o2::aod
 {
@@ -78,8 +78,8 @@ struct HfCandidateSelectorJpsi {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 5., "Nsigma cut on RICH combined with TOF"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Jpsi_to_ee_cuts", {hf_cuts_jpsi_toee::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Jpsi_to_ee_cuts", {hf_cuts_jpsi_to_e_e::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
   using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;

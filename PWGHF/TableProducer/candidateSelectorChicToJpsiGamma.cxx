@@ -27,7 +27,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_chic;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
+using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorChicToJpsiGamma {
@@ -45,8 +45,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<double> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_tojpsigamma::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Chic_to_jpsigamma_cuts", {hf_cuts_chic_tojpsigamma::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Chic_to_jpsigamma_cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection

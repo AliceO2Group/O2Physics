@@ -26,7 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::analysis::hf_cuts_xic_topkpi;
+using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 #include "Framework/runDataProcessing.h"
 
@@ -34,7 +34,7 @@ using namespace o2::analysis::hf_cuts_xic_topkpi;
 struct HfTaskXic {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_topkpi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
   Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> selectedXicCandidates = aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic;
   Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic);

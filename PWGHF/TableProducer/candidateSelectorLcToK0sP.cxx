@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
-using namespace o2::analysis::hf_cuts_lc_tok0sp;
+using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 
 //#define MY_DEBUG
 #ifdef MY_DEBUG
@@ -51,8 +51,8 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> pPidCombMax{"pPidCombMax", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_tok0sp::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_tok0sp::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Lc_to_K0s_p_cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
   // for debugging
 #ifdef MY_DEBUG

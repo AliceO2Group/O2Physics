@@ -27,7 +27,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_lb;
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_lb_tolcpi;
+using namespace o2::analysis::hf_cuts_lb_to_lc_pi;
 
 struct HfCandidateSelectorLbToLcPi {
   Produces<aod::HFSelLbToLcPiCandidate> hfSelLbToLcPiCandidate;
@@ -45,8 +45,8 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Lb_to_lcpi_cuts", {hf_cuts_lb_tolcpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lb0 candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Lb_to_lcpi_cuts", {hf_cuts_lb_to_lc_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts

@@ -31,7 +31,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_bplus;
-using namespace o2::analysis::hf_cuts_bplus_tod0pi;
+using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 using namespace o2::framework::expressions;
 
 // string definitions, used for histogram axis labels
@@ -46,7 +46,7 @@ const TString mcParticleMatched = "MC particles (matched);";
 struct HfTaskBplus {
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_tod0pi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
   Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> selectedBPlusCandidates = aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
   Partition<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;

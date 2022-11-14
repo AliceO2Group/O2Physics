@@ -39,7 +39,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfTaskXicc {
   Configurable<int> selectionFlagXicc{"selectionFlagXicc", 1, "Selection Flag for Xicc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_topkpipi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_xicc::isSelXiccToPKPiPi >= selectionFlagXicc);
 
@@ -103,7 +103,7 @@ struct HfTaskXicc {
 struct HfTaskXiccMc {
   Configurable<int> selectionFlagXicc{"selectionFlagXicc", 1, "Selection Flag for Xicc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_topkpipi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_xicc::isSelXiccToPKPiPi >= selectionFlagXicc);
 

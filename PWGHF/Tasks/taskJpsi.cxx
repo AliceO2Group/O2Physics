@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_jpsi_toee;
+using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -44,7 +44,7 @@ struct HfTaskJpsi {
   Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
@@ -141,7 +141,7 @@ struct HfTaskJpsiMc {
   Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_toee::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 

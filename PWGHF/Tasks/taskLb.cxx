@@ -28,7 +28,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_lb;
-using namespace o2::analysis::hf_cuts_lb_tolcpi;
+using namespace o2::analysis::hf_cuts_lb_to_lc_pi;
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -43,7 +43,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfTaskLb {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
   Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
@@ -114,7 +114,7 @@ struct HfTaskLb {
 struct HfTaskLbMc {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_tolcpi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 

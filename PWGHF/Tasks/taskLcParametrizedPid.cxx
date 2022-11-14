@@ -25,7 +25,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::analysis::hf_cuts_lc_topkpi;
+using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {

@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_x_tojpsipipi;
+using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
@@ -44,7 +44,7 @@ struct HfTaskX {
   Configurable<int> selectionFlagX{"selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
@@ -105,7 +105,7 @@ struct HfTaskXMc {
   Configurable<int> selectionFlagX{"selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_tojpsipipi::vecBinsPt}, "pT bin limits"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 

@@ -26,8 +26,8 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_b0_todpi; // from SelectorCuts.h
-// using namespace o2::analysis::hf_cuts_dplus_topikpi;  // used if we apply D mass cut
+using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
+// using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;  // used if we apply D mass cut
 
 struct HfCandidateSelectorB0ToDPi {
   Produces<aod::HFSelB0ToDPiCandidate> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
@@ -45,8 +45,8 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_todpi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"B0_to_dpi_cuts", {hf_cuts_b0_todpi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"B0_to_dpi_cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>

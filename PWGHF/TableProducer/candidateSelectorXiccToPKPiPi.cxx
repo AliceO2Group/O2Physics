@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 //using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_xicc;
-using namespace o2::analysis::hf_cuts_xicc_topkpipi;
+using namespace o2::analysis::hf_cuts_xicc_to_p_k_pi_pi;
 
 /// Struct for applying Xicc selection cuts
 struct HfCandidateSelectorXiccToPKPiPi {
@@ -44,8 +44,8 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_topkpipi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"Xicc_to_p_K_pi_pi_cuts", {hf_cuts_xicc_topkpipi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"Xicc_to_p_K_pi_pi_cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
