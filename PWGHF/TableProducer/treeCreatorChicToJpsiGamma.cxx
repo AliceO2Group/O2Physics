@@ -125,10 +125,10 @@ struct HfTreeCreatorChicToJpsiGamma {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandChic, aod::HfCandChicMCRec, aod::HfSelChicToJpsiGamma> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particles,
+               soa::Join<aod::HfCandChic, aod::HfCandChicMcRec, aod::HfSelChicToJpsiGamma> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particles,
                aod::BigTracksPID const& tracks,
-               aod::HfCandProng2 const& jpsiCands)
+               aod::HfCand2Prong const& jpsiCands)
   {
 
     // Filling event properties
@@ -194,7 +194,7 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.phi(),
             FunctionY,
             candidate.jpsiToMuMuMass(),
-            candidate.flagMCMatchRec());
+            candidate.flagMcMatchRec());
         }
       };
       fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
@@ -205,7 +205,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     float massChic = RecoDecay::getMassPDG(pdg::Code::kChiC1);
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMCMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
@@ -213,7 +213,7 @@ struct HfTreeCreatorChicToJpsiGamma {
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massChic),
           0., // put here the jpsi mass
-          particle.flagMCMatchGen());
+          particle.flagMcMatchGen());
       }
     }
   }

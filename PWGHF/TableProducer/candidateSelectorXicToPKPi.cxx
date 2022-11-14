@@ -24,7 +24,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 /// Struct for applying Xic selection cuts
@@ -137,7 +137,7 @@ struct HfCandidateSelectorXicToPKPi {
     return true;
   }
 
-  void process(aod::HfCandProng3 const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);

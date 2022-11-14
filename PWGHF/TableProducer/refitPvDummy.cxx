@@ -27,8 +27,8 @@ using namespace o2::framework;
 struct HfRefitPvDummy {
 
   // Tables to be added
-  Produces<aod::HfPvRefitProng2> rowProng2PVrefit;
-  Produces<aod::HfPvRefitProng3> rowProng3PVrefit;
+  Produces<aod::HfPvRefit2Prong> rowProng2PVrefit;
+  Produces<aod::HfPvRefit3Prong> rowProng3PVrefit;
 
   // process function
   void process(aod::Collisions const& collisions,

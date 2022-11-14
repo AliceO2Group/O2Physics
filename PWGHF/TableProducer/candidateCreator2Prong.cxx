@@ -25,13 +25,13 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreator2Prong {
-  Produces<aod::HfCandProng2Base> rowCandidateBase;
+  Produces<aod::HfCand2ProngBase> rowCandidateBase;
 
   // vertexing
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
@@ -88,7 +88,7 @@ struct HfCandidateCreator2Prong {
   }
 
   void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf2Prongs, aod::HfPvRefitProng2> const& rowsTrackIndexProng2,
+               soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -211,9 +211,9 @@ struct HfCandidateCreator2Prong {
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreator2ProngExpressions {
-  Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
-  Produces<aod::HfCandProng2MCRec> rowMCMatchRec;
-  Produces<aod::HfCandProng2MCGen> rowMCMatchGen;
+  Spawns<aod::HfCand2ProngExt> rowCandidateProng2;
+  Produces<aod::HfCand2ProngMcRec> rowMcMatchRec;
+  Produces<aod::HfCand2ProngMcGen> rowMcMatchGen;
 
   void init(InitContext const&) {}
 
@@ -267,7 +267,7 @@ struct HfCandidateCreator2ProngExpressions {
         origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
-      rowMCMatchRec(flag, origin);
+      rowMcMatchRec(flag, origin);
     }
 
     // Match generated particles.
@@ -303,7 +303,7 @@ struct HfCandidateCreator2ProngExpressions {
         origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
-      rowMCMatchGen(flag, origin);
+      rowMcMatchGen(flag, origin);
     }
   }
 

@@ -28,7 +28,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 namespace o2::aod
@@ -159,7 +159,7 @@ struct HfCandidateSelectorLcAlice3 {
     return true;
   }
 
-  void process(aod::HfCandProng3 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand3Prong const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
     for (auto& candidate : candidates) {
 

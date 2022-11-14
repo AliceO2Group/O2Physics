@@ -29,7 +29,7 @@ using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_chic;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -150,8 +150,8 @@ struct HfTaskChicMc {
     registry.add("hYRecBg", "2-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma, aod::HfCandChicMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma, aod::HfCandChicMcRec>> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -163,7 +163,7 @@ struct HfTaskChicMc {
       if (yCandMax >= 0. && std::abs(YChic(candidate)) > yCandMax) {
         continue;
       }
-      if (candidate.flagMCMatchRec() == 1 << decayMode) {
+      if (candidate.flagMcMatchRec() == 1 << decayMode) {
         //FIXME the access to the MC particle gen not yet functional
         //int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcParticle_as<aod::McParticles_000>().globalIndex()), 20443);
         //auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -200,7 +200,7 @@ struct HfTaskChicMc {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (particle.flagMCMatchGen() == 1 << decayMode) {
+      if (particle.flagMcMatchGen() == 1 << decayMode) {
         auto mchic = RecoDecay::getMassPDG(pdg::Code::kChiC1); // chi_c1(1p)
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));

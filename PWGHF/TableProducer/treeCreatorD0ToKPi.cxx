@@ -26,7 +26,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 
 namespace o2::aod
 {
@@ -70,7 +70,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandProng2Full, "AOD", "HFCANDP2Full",
+DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -126,7 +126,7 @@ DECLARE_SOA_TABLE(HfCandProng2Full, "AOD", "HFCANDP2Full",
                   full::E,
                   full::MCflag);
 
-DECLARE_SOA_TABLE(HfCandProng2FullEvents, "AOD", "HFCANDP2FullE",
+DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -135,7 +135,7 @@ DECLARE_SOA_TABLE(HfCandProng2FullEvents, "AOD", "HFCANDP2FullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandProng2FullParticles, "AOD", "HFCANDP2FullP",
+DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -147,9 +147,9 @@ DECLARE_SOA_TABLE(HfCandProng2FullParticles, "AOD", "HFCANDP2FullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorD0ToKPi {
-  Produces<o2::aod::HfCandProng2Full> rowCandidateFull;
-  Produces<o2::aod::HfCandProng2FullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandProng2FullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCand2ProngFull> rowCandidateFull;
+  Produces<o2::aod::HfCand2ProngFullEvents> rowCandidateFullEvents;
+  Produces<o2::aod::HfCand2ProngFullParticles> rowCandidateFullParticles;
 
   void init(InitContext const&)
   {
@@ -157,8 +157,8 @@ struct HfTreeCreatorD0ToKPi {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec, aod::HfSelD0> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particles,
+               soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
                aod::BigTracksPID const& tracks)
   {
 
@@ -240,7 +240,7 @@ struct HfTreeCreatorD0ToKPi {
             candidate.phi(),
             FunctionY,
             FunctionE,
-            candidate.flagMCMatchRec());
+            candidate.flagMcMatchRec());
         }
       };
 
@@ -251,14 +251,14 @@ struct HfTreeCreatorD0ToKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMCMatchGen());
+          particle.flagMcMatchGen());
       }
     }
   }

@@ -24,7 +24,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 
 #include "Framework/runDataProcessing.h"
 
@@ -34,8 +34,8 @@ struct HfTaskDplus {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi > 0;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> recoFlagDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi > 0;
 
   HistogramRegistry registry{
     "registry",
@@ -91,7 +91,7 @@ struct HfTaskDplus {
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  void process(soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi> const& candidates)
+  void process(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     for (auto& candidate : selectedDPlusCandidates) {
       //not possible in Filter since expressions do not support binary operators
@@ -127,8 +127,8 @@ struct HfTaskDplus {
     }
   }
 
-  void processMc(soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi, aod::HfCandProng3MCRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void processMc(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -140,9 +140,9 @@ struct HfTaskDplus {
       if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kDPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
@@ -157,7 +157,7 @@ struct HfTaskDplus {
         if (candidate.isSelDplusToPiKPi() >= selectionFlagDplus) {
           registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         }
-        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtVsYRecSigPrompt_RecoSkim"), ptRec, yRec);
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), ptRec, yRec);
@@ -191,7 +191,7 @@ struct HfTaskDplus {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::DplusToPiKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
@@ -199,7 +199,7 @@ struct HfTaskDplus {
         }
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
-        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
         } else {

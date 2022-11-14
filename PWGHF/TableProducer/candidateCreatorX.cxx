@@ -28,7 +28,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
 
@@ -74,7 +74,7 @@ struct HfCandidateCreatorX {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
-                 aod::HfCandProng2,
+                 aod::HfCand2Prong,
                  aod::HfSelJpsi>> const& jpsiCands,
                aod::BigTracks const& tracks)
   {
@@ -100,7 +100,7 @@ struct HfCandidateCreatorX {
 
     // loop over Jpsi candidates
     for (auto& jpsiCand : jpsiCands) {
-      if (!(jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu)) {
+      if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > yCandMax) {
@@ -208,10 +208,10 @@ struct HfCandidateCreatorX {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           int hfFlag = 0;
-          if (TESTBIT(jpsiCand.hfflag(), hf_cand_prong2::DecayType::JpsiToMuMu)) {
+          if (TESTBIT(jpsiCand.hfflag(), hf_cand_2prong::DecayType::JpsiToMuMu)) {
             SETBIT(hfFlag, hf_cand_x::DecayType::XToJpsiToMuMuPiPi); // dimuon channel
           }
-          if (TESTBIT(jpsiCand.hfflag(), hf_cand_prong2::DecayType::JpsiToEE)) {
+          if (TESTBIT(jpsiCand.hfflag(), hf_cand_2prong::DecayType::JpsiToEE)) {
             SETBIT(hfFlag, hf_cand_x::DecayType::XToJpsiToEEPiPi); // dielectron channel
           }
 
@@ -253,11 +253,11 @@ struct HfCandidateCreatorXExpressions {
 
 /// Performs MC matching.
 struct HfCandidateCreatorXMc {
-  Produces<aod::HfCandXMCRec> rowMCMatchRec;
-  Produces<aod::HfCandXMCGen> rowMCMatchGen;
+  Produces<aod::HfCandXMcRec> rowMcMatchRec;
+  Produces<aod::HfCandXMcGen> rowMcMatchGen;
 
   void process(aod::HfCandX const& candidates,
-               aod::HfCandProng2 const&,
+               aod::HfCand2Prong const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -310,7 +310,7 @@ struct HfCandidateCreatorXMc {
         origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
-      rowMCMatchRec(flag, origin, channel);
+      rowMcMatchRec(flag, origin, channel);
     }
 
     // Match generated particles.
@@ -343,7 +343,7 @@ struct HfCandidateCreatorXMc {
         origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
-      rowMCMatchGen(flag, origin, channel);
+      rowMcMatchGen(flag, origin, channel);
     } // candidate loop
   }   // process
 };    // struct

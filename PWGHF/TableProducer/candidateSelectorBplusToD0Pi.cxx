@@ -27,7 +27,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_bplus;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 struct HfCandidateSelectorBplusToD0Pi {
@@ -53,9 +53,9 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
-  bool selectionTopol(const T1& hfCandBPlus, const T2& hfCandD0, const T3& trackPi)
+  bool selectionTopol(const T1& hfCandBplus, const T2& hfCandD0, const T3& trackPi)
   {
-    auto candpT = hfCandBPlus.pt();
+    auto candpT = hfCandBplus.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       // Printf("B+ topol selection failed at getpTBin");
@@ -68,7 +68,7 @@ struct HfCandidateSelectorBplusToD0Pi {
     }
 
     // d0(D0)xd0(pi)
-    if (hfCandBPlus.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+    if (hfCandBplus.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
       return false;
     }
 
@@ -85,17 +85,17 @@ struct HfCandidateSelectorBplusToD0Pi {
     }
 
     // B Decay length
-    if (hfCandBPlus.decayLength() < cuts->get(pTBin, "B decLen")) {
+    if (hfCandBplus.decayLength() < cuts->get(pTBin, "B decLen")) {
       return false;
     }
 
     // B Decay length XY
-    if (hfCandBPlus.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+    if (hfCandBplus.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
       return false;
     }
 
     // B+ CPA cut
-    if (hfCandBPlus.cpa() < cuts->get(pTBin, "CPA")) {
+    if (hfCandBplus.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
     }
 
@@ -105,16 +105,16 @@ struct HfCandidateSelectorBplusToD0Pi {
     //  }
 
     // B+ mass cut
-    // if (std::abs(InvMassBPlus(hfCandBPlus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+    // if (std::abs(InvMassBPlus(hfCandBplus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
     //  Printf("B+ topol selection failed at mass diff check");
     //   return false;
     //  }
 
     // d0 of D0 and pi
-    if (std::abs(hfCandBPlus.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
+    if (std::abs(hfCandBplus.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
       return false;
     }
-    if (std::abs(hfCandBPlus.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+    if (std::abs(hfCandBplus.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
       return false;
     }
     // D0 CPA
@@ -124,7 +124,7 @@ struct HfCandidateSelectorBplusToD0Pi {
     return true;
   }
 
-  void process(aod::HfCandBPlus const& hfCandBs, soa::Join<aod::HfCandProng2, aod::HfSelD0> const&, aod::BigTracksPID const& tracks)
+  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::BigTracksPID const& tracks)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -146,7 +146,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
 
       // D0 is always index0 and pi is index1 by default
-      auto candD0 = hfCandB.prong0_as<soa::Join<aod::HfCandProng2, aod::HfSelD0>>();
+      auto candD0 = hfCandB.prong0_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>();
       auto trackPi = hfCandB.prong1_as<aod::BigTracksPID>();
 
       // topological cuts

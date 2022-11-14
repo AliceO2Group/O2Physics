@@ -24,7 +24,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -73,7 +73,7 @@ struct HfTaskJpsi {
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelJpsi>> const& candidates)
+  void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi>> const& candidates)
   {
     int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
@@ -143,7 +143,7 @@ struct HfTaskJpsiMc {
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
 
-  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
@@ -190,7 +190,7 @@ struct HfTaskJpsiMc {
     registry.add("hPtGenProng1", "2-prong candidates (gen. matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelJpsi, aod::HfCandProng2MCRec>> const& candidates,
+  void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi, aod::HfCand2ProngMcRec>> const& candidates,
                McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
@@ -229,7 +229,7 @@ struct HfTaskJpsiMc {
       if (yCandMax >= 0. && std::abs(YJpsi(candidate)) > yCandMax) {
         continue;
       }
-      if (candidate.flagMCMatchRec() == 1 << decayMode) {
+      if (candidate.flagMcMatchRec() == 1 << decayMode) {
         //Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<McParticlesHf>(), pdg::Code::kJPsi, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -274,7 +274,7 @@ struct HfTaskJpsiMc {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (particle.flagMCMatchGen() == 1 << decayMode) {
+      if (particle.flagMcMatchGen() == 1 << decayMode) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }

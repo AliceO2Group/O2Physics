@@ -45,8 +45,8 @@ auto vecCutsImpParProd = std::vector<float>{cutsImpParProd, cutsImpParProd + nCu
 auto vecCutsMinDCAxy = std::vector<float>{cutsMinDCAxy, cutsMinDCAxy + nCutsToTestMinDCAxy};
 auto vecCutsMinTrackPt = std::vector<float>{cutsMinTrackPt, cutsMinTrackPt + nCutsToTestMinTrackPt};
 
-static const int n2Prong = o2::aod::hf_cand_prong2::DecayType::N2ProngDecays;
-static const int n3Prong = o2::aod::hf_cand_prong3::DecayType::N3ProngDecays;
+static const int n2Prong = o2::aod::hf_cand_2prong::DecayType::N2ProngDecays;
+static const int n3Prong = o2::aod::hf_cand_3prong::DecayType::N3ProngDecays;
 
 static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNames2Prong = {{{"hPromptVsPtD0ToPiK", "hPromptVsPtJpsiToEE", "hPromptVsPtJpsiToMuMu", "hPromptVsPt2Prong"},
                                                                                                {"hNonPromptVsPtD0ToPiK", "hNonPromptVsPtJpsiToEE", "hNonPromptVsPtJpsiToMuMu", "hNonPromptVsPt2Prong"},
@@ -257,8 +257,8 @@ struct HfSelOptimisation {
     }
   }
 
-  void process(soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec> const& cand2Prongs,
-               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec> const& cand3Prongs,
+  void process(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec> const& cand2Prongs,
+               soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const& cand3Prongs,
                ExtendedTracks const&)
   {
     // looping over 2-prong candidates
@@ -271,36 +271,36 @@ struct HfSelOptimisation {
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n2Prong; ++iDecay) {
         if (TESTBIT(cand2Prong.hfflag(), iDecay)) {
-          if (std::abs(cand2Prong.flagMCMatchRec()) == BIT(iDecay)) {
-            if (cand2Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
+          if (std::abs(cand2Prong.flagMcMatchRec()) == BIT(iDecay)) {
+            if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
-                case o2::aod::hf_cand_prong2::DecayType::D0ToPiK:
-                  testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::D0ToPiK, 0>(cand2Prong, tracks);
+                case o2::aod::hf_cand_2prong::DecayType::D0ToPiK:
+                  testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::D0ToPiK, 0>(cand2Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong2::DecayType::JpsiToEE:
-                  testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::JpsiToEE, 0>(cand2Prong, tracks);
+                case o2::aod::hf_cand_2prong::DecayType::JpsiToEE:
+                  testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::JpsiToEE, 0>(cand2Prong, tracks);
                   break;
               }
-            } else if (cand2Prong.originMCRec() == RecoDecay::OriginType::NonPrompt) {
+            } else if (cand2Prong.originMcRec() == RecoDecay::OriginType::NonPrompt) {
               isNonPrompt = true;
               switch (iDecay) {
-                case o2::aod::hf_cand_prong2::DecayType::D0ToPiK:
-                  testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::D0ToPiK, 1>(cand2Prong, tracks);
+                case o2::aod::hf_cand_2prong::DecayType::D0ToPiK:
+                  testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::D0ToPiK, 1>(cand2Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong2::DecayType::JpsiToEE:
-                  testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::JpsiToEE, 1>(cand2Prong, tracks);
+                case o2::aod::hf_cand_2prong::DecayType::JpsiToEE:
+                  testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::JpsiToEE, 1>(cand2Prong, tracks);
                   break;
               }
             }
           } else {
             isBkg = true;
             switch (iDecay) {
-              case o2::aod::hf_cand_prong2::DecayType::D0ToPiK:
-                testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::D0ToPiK, 2>(cand2Prong, tracks);
+              case o2::aod::hf_cand_2prong::DecayType::D0ToPiK:
+                testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::D0ToPiK, 2>(cand2Prong, tracks);
                 break;
-              case o2::aod::hf_cand_prong2::DecayType::JpsiToEE:
-                testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::JpsiToEE, 2>(cand2Prong, tracks);
+              case o2::aod::hf_cand_2prong::DecayType::JpsiToEE:
+                testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::JpsiToEE, 2>(cand2Prong, tracks);
                 break;
             }
           }
@@ -308,11 +308,11 @@ struct HfSelOptimisation {
       }
 
       if (isPrompt) {
-        testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::N2ProngDecays, 0>(cand2Prong, tracks);
+        testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::N2ProngDecays, 0>(cand2Prong, tracks);
       } else if (isNonPrompt) {
-        testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::N2ProngDecays, 1>(cand2Prong, tracks);
+        testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::N2ProngDecays, 1>(cand2Prong, tracks);
       } else if (isBkg) {
-        testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::N2ProngDecays, 2>(cand2Prong, tracks);
+        testSelections2Prong<o2::aod::hf_cand_2prong::DecayType::N2ProngDecays, 2>(cand2Prong, tracks);
       }
     } // loop over 2-prong candidates
 
@@ -327,65 +327,65 @@ struct HfSelOptimisation {
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n3Prong; ++iDecay) {
         if (TESTBIT(cand3Prong.hfflag(), iDecay)) {
-          if (std::abs(cand3Prong.flagMCMatchRec()) == BIT(iDecay)) {
-            if (cand3Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
+          if (std::abs(cand3Prong.flagMcMatchRec()) == BIT(iDecay)) {
+            if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
-                case o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi, 0>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi, 0>(cand3Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong3::DecayType::LcToPKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::LcToPKPi, 0>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::LcToPKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::LcToPKPi, 0>(cand3Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong3::DecayType::DsToKKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DsToKKPi, 0>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::DsToKKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::DsToKKPi, 0>(cand3Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong3::DecayType::XicToPKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::XicToPKPi, 0>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::XicToPKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::XicToPKPi, 0>(cand3Prong, tracks);
                   break;
               }
-            } else if (cand3Prong.originMCRec() == RecoDecay::OriginType::NonPrompt) {
+            } else if (cand3Prong.originMcRec() == RecoDecay::OriginType::NonPrompt) {
               isNonPrompt = true;
               switch (iDecay) {
-                case o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi, 1>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi, 1>(cand3Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong3::DecayType::LcToPKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::LcToPKPi, 1>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::LcToPKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::LcToPKPi, 1>(cand3Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong3::DecayType::DsToKKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DsToKKPi, 1>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::DsToKKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::DsToKKPi, 1>(cand3Prong, tracks);
                   break;
-                case o2::aod::hf_cand_prong3::DecayType::XicToPKPi:
-                  testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::XicToPKPi, 1>(cand3Prong, tracks);
+                case o2::aod::hf_cand_3prong::DecayType::XicToPKPi:
+                  testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::XicToPKPi, 1>(cand3Prong, tracks);
                   break;
               }
             }
           } else {
             isBkg = true;
             switch (iDecay) {
-              case o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi:
-                testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi, 2>(cand3Prong, tracks);
+              case o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi:
+                testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi, 2>(cand3Prong, tracks);
                 break;
-              case o2::aod::hf_cand_prong3::DecayType::LcToPKPi:
-                testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::LcToPKPi, 2>(cand3Prong, tracks);
+              case o2::aod::hf_cand_3prong::DecayType::LcToPKPi:
+                testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::LcToPKPi, 2>(cand3Prong, tracks);
                 break;
-              case o2::aod::hf_cand_prong3::DecayType::DsToKKPi:
-                testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::DsToKKPi, 2>(cand3Prong, tracks);
+              case o2::aod::hf_cand_3prong::DecayType::DsToKKPi:
+                testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::DsToKKPi, 2>(cand3Prong, tracks);
                 break;
-              case o2::aod::hf_cand_prong3::DecayType::XicToPKPi:
-                testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::XicToPKPi, 2>(cand3Prong, tracks);
+              case o2::aod::hf_cand_3prong::DecayType::XicToPKPi:
+                testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::XicToPKPi, 2>(cand3Prong, tracks);
                 break;
             }
           }
         }
       }
       if (isPrompt) {
-        testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::N3ProngDecays, 0>(cand3Prong, tracks);
+        testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::N3ProngDecays, 0>(cand3Prong, tracks);
       } else if (isNonPrompt) {
-        testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::N3ProngDecays, 1>(cand3Prong, tracks);
+        testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::N3ProngDecays, 1>(cand3Prong, tracks);
       } else if (isBkg) {
-        testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::N3ProngDecays, 2>(cand3Prong, tracks);
+        testSelections3Prong<o2::aod::hf_cand_3prong::DecayType::N3ProngDecays, 2>(cand3Prong, tracks);
       }
     } // loop over 3-prong candidates
   }

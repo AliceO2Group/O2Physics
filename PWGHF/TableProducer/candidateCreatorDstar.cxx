@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 // using namespace o2::aod::hf_cand;
-// using namespace o2::aod::hf_cand_prong2;
+// using namespace o2::aod::hf_cand_2prong;
 
 /// Reconstruction of D* decay candidates
 struct HfCandidateCreatorDstar {
@@ -48,7 +48,7 @@ struct HfCandidateCreatorDstar {
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
       auto trackPi = rowTrackIndexDstar.prong0_as<aod::BigTracks>();
-      auto prongD0 = rowTrackIndexDstar.indexD0_as<aod::Hf2Prongs>();
+      auto prongD0 = rowTrackIndexDstar.prongD0_as<aod::Hf2Prongs>();
       auto trackD0Prong0 = prongD0.prong0_as<aod::BigTracks>();
       auto trackD0Prong1 = prongD0.prong1_as<aod::BigTracks>();
       // auto collisionPiId = trackPi.collisionId();

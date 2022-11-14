@@ -23,7 +23,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// Struct for applying D0 selection cuts
@@ -167,7 +167,7 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
+  void process(aod::HfCand2Prong const& candidates, aod::BigTracksPIDExtended const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);

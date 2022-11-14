@@ -24,7 +24,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 /// Struct for applying Lc selection cuts
@@ -137,7 +137,7 @@ struct HfCandidateSelectorLc {
     return true;
   }
 
-  void process(aod::HfCandProng3 const& candidates, TrksPID const&)
+  void process(aod::HfCand3Prong const& candidates, TrksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);

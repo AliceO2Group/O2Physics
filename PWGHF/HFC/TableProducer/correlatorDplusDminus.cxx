@@ -24,7 +24,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_correlation_d_dbar;
 using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 using namespace o2::constants::math;
@@ -64,8 +64,8 @@ const int ptDAxisBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
-using MCParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
-using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCandProng3MCGen>;
+using MCParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
 struct HfCorrelatorDplusDminus {
   Produces<aod::DDbarPair> entryDplusDminusPair;
@@ -80,8 +80,8 @@ struct HfCorrelatorDplusDminus {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi, aod::HfCandProng3MCRec>> selectedDPlusCandidatesMC = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> selectedDPlusCandidatesMC = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   HistogramRegistry registry{
     "registry",
@@ -130,7 +130,7 @@ struct HfCorrelatorDplusDminus {
   }
 
   /// Dplus-Dminus correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi> const& candidates, aod::BigTracks const& bigtracks)
+  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BigTracks const& bigtracks)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -238,7 +238,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processData, "Process data", false);
 
   /// Dplus-Dminus correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi, aod::HfCandProng3MCRec> const& candidates, aod::BigTracks const& bigtracks)
+  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates, aod::BigTracks const& bigtracks)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -285,7 +285,7 @@ struct HfCorrelatorDplusDminus {
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
-      if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+      if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
         // fill invariant mass plots and per-candidate distributions from Dplus/Dminus signal candidates
         if (outerParticleSign == 1) { // reco and matched as Dplus
           registry.fill(HIST("hMassDplusMCRecSig"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
@@ -313,7 +313,7 @@ struct HfCorrelatorDplusDminus {
       if (outerParticleSign == -1) {
         continue; // reject Dminus in outer loop
       }
-      flagDplusSignal = std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
+      flagDplusSignal = std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
       for (auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
           continue;
@@ -322,7 +322,7 @@ struct HfCorrelatorDplusDminus {
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
-        flagDminusSignal = std::abs(candidate2.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
+        flagDminusSignal = std::abs(candidate2.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
         if (yCandMax >= 0. && std::abs(YDPlus(candidate2)) > yCandMax) {
           continue;
         }
@@ -415,7 +415,7 @@ struct HfCorrelatorDplusDminus {
 
         // fill pairs vs etaCut plot
         bool rightDecayChannels = false;
-        if ((std::abs(particle1.flagMCMatchGen()) == 1 << DecayType::DplusToPiKPi) && (std::abs(particle2.flagMCMatchGen()) == 1 << DecayType::DplusToPiKPi)) {
+        if ((std::abs(particle1.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) && (std::abs(particle2.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi)) {
           rightDecayChannels = true;
         }
         do {

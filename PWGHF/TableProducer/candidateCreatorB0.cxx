@@ -28,8 +28,8 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_2prong;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
@@ -65,7 +65,7 @@ struct HfCandidateCreatorB0 {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
-                 aod::HfCandProng3,
+                 aod::HfCand3Prong,
                  aod::HfSelDplusToPiKPi>> const& dCands,
                aod::BigTracks const& tracks)
   {
@@ -91,7 +91,7 @@ struct HfCandidateCreatorB0 {
 
     // loop over D candidates
     for (auto const& dCand : dCands) {
-      if (!TESTBIT(dCand.hfflag(), hf_cand_prong3::DecayType::DplusToPiKPi)) {
+      if (!TESTBIT(dCand.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }
       if (dCand.isSelDplusToPiKPi() >= selectionFlagD) {
@@ -300,11 +300,11 @@ struct HfCandidateCreatorB0Expressions {
 
 /// Performs MC matching.
 struct HfCandidateCreatorB0Mc {
-  Produces<aod::HfCandB0MCRec> rowMCMatchRec; // table defined in CandidateReconstructionTables.h
-  Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0McRec> rowMcMatchRec; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0McGen> rowMcMatchGen; // table defined in CandidateReconstructionTables.h
 
   void processMc(aod::HfCandB0 const& candidates,
-                 aod::HfCandProng3 const&,
+                 aod::HfCand3Prong const&,
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
@@ -342,7 +342,7 @@ struct HfCandidateCreatorB0Mc {
           LOGF(info, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
       }
-      rowMCMatchRec(flag, origin, debug);
+      rowMcMatchRec(flag, origin, debug);
     }
 
     // Match generated particles.
@@ -359,7 +359,7 @@ struct HfCandidateCreatorB0Mc {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }
-      rowMCMatchGen(flag, origin);
+      rowMcMatchGen(flag, origin);
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorB0Mc, processMc, "Process MC", false);

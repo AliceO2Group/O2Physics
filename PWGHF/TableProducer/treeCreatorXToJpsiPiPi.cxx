@@ -148,8 +148,8 @@ struct HfTreeCreatorXToJpsiPiPi {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandX, aod::HfCandXMCRec, aod::HfSelXToJpsiPiPi> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXMCGen> const& particles,
+               soa::Join<aod::HfCandX, aod::HfCandXMcRec, aod::HfSelXToJpsiPiPi> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particles,
                aod::BigTracksPID const& tracks)
   {
 
@@ -225,7 +225,7 @@ struct HfTreeCreatorXToJpsiPiPi {
             FunctionDR1,
             FunctionDR2,
             FunctionPiBalance,
-            candidate.flagMCMatchRec());
+            candidate.flagMcMatchRec());
         }
       };
 
@@ -236,14 +236,14 @@ struct HfTreeCreatorXToJpsiPiPi {
     float massX = 3.872;
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi || std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi || std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massX),
-          particle.flagMCMatchGen());
+          particle.flagMcMatchGen());
       }
     }
   }

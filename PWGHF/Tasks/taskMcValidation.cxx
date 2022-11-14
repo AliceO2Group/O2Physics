@@ -26,8 +26,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
-using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_2prong;
+using namespace o2::aod::hf_cand_3prong;
 
 namespace
 {
@@ -358,8 +358,8 @@ struct HfTaskMcValidationRec {
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
   std::shared_ptr<TH1> histContributors;
 
-  using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
-  using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
+  using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
+  using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TracksWithAmbiguousCollisionInfo>;
   using mcCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
@@ -453,7 +453,7 @@ struct HfTaskMcValidationRec {
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
   }
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions, aod::BCs const&)
+  void process(HfCand2ProngWithMCRec const& cand2Prongs, HfCand3ProngWithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions, aod::BCs const&)
   {
     // loop over collisions
     for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
@@ -588,19 +588,19 @@ struct HfTaskMcValidationRec {
     for (auto& cand2Prong : cand2Prongs) {
 
       // determine which kind of candidate it is
-      bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_prong2::DecayType::D0ToPiK);
-      bool isJPsiSel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_prong2::DecayType::JpsiToEE);
+      bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
+      bool isJPsiSel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::JpsiToEE);
       if (!isD0Sel && !isJPsiSel) {
         continue;
       }
       int whichHad = -1;
-      if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMCMatchRec()), hf_cand_prong2::DecayType::D0ToPiK)) {
+      if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
         whichHad = 2;
-      } else if (isJPsiSel && TESTBIT(std::abs(cand2Prong.flagMCMatchRec()), hf_cand_prong2::DecayType::JpsiToEE)) {
+      } else if (isJPsiSel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::JpsiToEE)) {
         whichHad = 6;
       }
       int whichOrigin = -1;
-      if (cand2Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
+      if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
@@ -646,26 +646,26 @@ struct HfTaskMcValidationRec {
     for (auto& cand3Prong : cand3Prongs) {
 
       // determine which kind of candidate it is
-      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DplusToPiKPi);
+      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
       bool isDStarSel = false; // FIXME: add proper check when D* will be added in HF vertexing
-      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi);
-      bool isLcSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi);
-      bool isXicSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::XicToPKPi);
+      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+      bool isLcSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
+      bool isXicSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::XicToPKPi);
       if (!isDPlusSel && !isDStarSel && !isDsSel && !isLcSel && !isXicSel) {
         continue;
       }
       int whichHad = -1;
-      if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DplusToPiKPi)) {
+      if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
         whichHad = 0;
-      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::DsToKKPi)) {
+      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
         whichHad = 3;
-      } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::LcToPKPi)) {
+      } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
         whichHad = 4;
-      } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMCMatchRec()), hf_cand_prong3::DecayType::XicToPKPi)) {
+      } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
         whichHad = 5;
       }
       int whichOrigin = -1;
-      if (cand3Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
+      if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;

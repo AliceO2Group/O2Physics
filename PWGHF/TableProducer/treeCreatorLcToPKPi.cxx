@@ -26,7 +26,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 
 namespace o2::aod
 {
@@ -82,7 +82,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandProng3Full, "AOD", "HFCANDP3Full",
+DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -155,7 +155,7 @@ DECLARE_SOA_TABLE(HfCandProng3Full, "AOD", "HFCANDP3Full",
                   full::MCflag,
                   full::IsCandidateSwapped);
 
-DECLARE_SOA_TABLE(HfCandProng3FullEvents, "AOD", "HFCANDP3FullE",
+DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -164,7 +164,7 @@ DECLARE_SOA_TABLE(HfCandProng3FullEvents, "AOD", "HFCANDP3FullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandProng3FullParticles, "AOD", "HFCANDP3FullP",
+DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -176,9 +176,9 @@ DECLARE_SOA_TABLE(HfCandProng3FullParticles, "AOD", "HFCANDP3FullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLcToPKPi {
-  Produces<o2::aod::HfCandProng3Full> rowCandidateFull;
-  Produces<o2::aod::HfCandProng3FullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandProng3FullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCand3ProngFull> rowCandidateFull;
+  Produces<o2::aod::HfCand3ProngFullEvents> rowCandidateFullEvents;
+  Produces<o2::aod::HfCand3ProngFullParticles> rowCandidateFullParticles;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
@@ -188,8 +188,8 @@ struct HfTreeCreatorLcToPKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
-                 soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particles,
+                 soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                  aod::BigTracksPID const& tracks)
   {
 
@@ -219,7 +219,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1 && std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -290,7 +290,7 @@ struct HfTreeCreatorLcToPKPi {
             candidate.phi(),
             FunctionY,
             FunctionE,
-            candidate.flagMCMatchRec(),
+            candidate.flagMcMatchRec(),
             candidate.isCandidateSwapped());
         }
       };
@@ -302,21 +302,21 @@ struct HfTreeCreatorLcToPKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMCMatchGen());
+          particle.flagMcMatchGen());
       }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMc, "Process MC tree writer", true);
 
   void processData(aod::Collisions const& collisions,
-                   soa::Join<aod::HfCandProng3, aod::HfSelLc> const& candidates,
+                   soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                    aod::BigTracksPID const& tracks)
   {
 

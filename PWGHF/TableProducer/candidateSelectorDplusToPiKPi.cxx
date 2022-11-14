@@ -23,7 +23,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 
 /// Struct for applying Dplus to piKpi selection cuts
@@ -103,7 +103,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     return true;
   }
 
-  void process(aod::HfCandProng3 const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);

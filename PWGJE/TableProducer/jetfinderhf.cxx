@@ -93,7 +93,7 @@ struct JetFinderHFTask {
 
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                    soa::Filtered<aod::Tracks> const& tracks,
-                   soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0>> const& candidates)
+                   soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates)
   {
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
@@ -143,7 +143,7 @@ struct JetFinderHFTask {
 
   void processMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                   soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks,
-                  soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>> const& candidates)
+                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> const& candidates)
   {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
@@ -199,7 +199,7 @@ struct JetFinderHFTask {
           candconst.push_back(candidate.globalIndex());
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
-          if (candidate.flagMCMatchRec() & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK))
+          if (candidate.flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK))
             hJetPtTrue->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
           break;
@@ -210,17 +210,17 @@ struct JetFinderHFTask {
   PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
 
   void processMCP(aod::McCollision const& collision,
-                  soa::Filtered<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>> const& particles)
+                  soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>> const& particles)
   {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
     // TODO: probably should do this as a filter
-    std::vector<soa::Filtered<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>>::iterator> candidates;
+    std::vector<soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>::iterator> candidates;
     for (auto const& part : particles) {
       // TODO: generalise to any D0
-      if (std::abs(part.flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
+      if (std::abs(part.flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         candidates.push_back(part);
         LOGF(info, "MC candidate %d -> %d", part.globalIndex(), candidates.back().globalIndex());
       }

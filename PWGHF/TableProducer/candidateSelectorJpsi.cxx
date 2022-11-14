@@ -25,7 +25,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 namespace o2::aod
@@ -139,7 +139,7 @@ struct HfCandidateSelectorJpsi {
     return true;
   }
 
-  void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
+  void processAlice2(aod::HfCand2Prong const& candidates, aod::BigTracksPIDExtended const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
     selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -218,7 +218,7 @@ struct HfCandidateSelectorJpsi {
 
   PROCESS_SWITCH(HfCandidateSelectorJpsi, processAlice2, "Use ALICE 2 detector setup", true);
 
-  void processAlice3(aod::HfCandProng2 const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
+  void processAlice3(aod::HfCand2Prong const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
     selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);

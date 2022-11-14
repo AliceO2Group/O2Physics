@@ -186,7 +186,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
     // }
   }
 
-  void process(aod::HfCandX const& hfCandXs, aod::HfCandProng2 const&, aod::BigTracksPID const& tracks)
+  void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks)
   {
     for (auto& hfCandX : hfCandXs) { //looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)

@@ -22,7 +22,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-//using namespace o2::aod::hf_cand_prong2;
+//using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_xicc;
 using namespace o2::analysis::hf_cuts_xicc_to_p_k_pi_pi;
 
@@ -124,7 +124,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
     return true;
   }
 
-  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCandProng3 const&, aod::BigTracksPID const&)
+  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);

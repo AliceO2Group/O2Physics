@@ -29,7 +29,7 @@ using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -153,8 +153,8 @@ struct HfTaskXMc {
     registry.add("hYBg", "3-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HfSelXToJpsiPiPi, aod::HfCandXMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HfSelXToJpsiPiPi, aod::HfCandXMcRec>> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -166,8 +166,8 @@ struct HfTaskXMc {
       if (yCandMax >= 0. && std::abs(YX(candidate)) > yCandMax) {
         continue;
       }
-      if (candidate.flagMCMatchRec() == 1 << decayMode) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXMCGen>>(), 9920443, true);
+      if (candidate.flagMcMatchRec() == 1 << decayMode) {
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXMcGen>>(), 9920443, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
@@ -206,7 +206,7 @@ struct HfTaskXMc {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (particle.flagMCMatchGen() == 1 << decayMode) {
+      if (particle.flagMcMatchGen() == 1 << decayMode) {
         // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));

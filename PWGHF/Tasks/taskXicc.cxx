@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_xicc;
-//using namespace o2::aod::hf_cand_prong3;
+//using namespace o2::aod::hf_cand_3prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -173,8 +173,8 @@ struct HfTaskXiccMc {
   }
 
   //void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
-  void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi, aod::HfCandXiccMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXiccMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi, aod::HfCandXiccMcRec>> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -185,9 +185,9 @@ struct HfTaskXiccMc {
       if (yCandMax >= 0. && std::abs(YXicc(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XiccToXicPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMCGen>>(), 4422, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMcGen>>(), 4422, true);
         auto particleXicc = particlesMC.rawIteratorAt(indexMother);
         auto particleXic = particlesMC.rawIteratorAt(particleXicc.daughtersIds().front());
         /*
@@ -246,7 +246,7 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hYVsPtRecBg"), YXicc(candidate), candidate.pt());
         registry.fill(HIST("hImpParErr0VsPtRecBg"), candidate.errorImpactParameter0(), candidate.pt());
         registry.fill(HIST("hImpParErr1VsPtRecBg"), candidate.errorImpactParameter1(), candidate.pt());
-        registry.fill(HIST("hDebugMCmatching"), candidate.debugMCRec(), candidate.pt());
+        registry.fill(HIST("hDebugMCmatching"), candidate.debugMcRec(), candidate.pt());
         // Check Y dependence (To be removed)
         registry.fill(HIST("hMassVsPtVsYRecBg"), InvMassXiccToXicPi(candidate), candidate.pt(), YXicc(candidate));
         registry.fill(HIST("hDecLengthVsPtVsYRecBg"), candidate.decayLength(), candidate.pt(), YXicc(candidate));
@@ -260,7 +260,7 @@ struct HfTaskXiccMc {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }

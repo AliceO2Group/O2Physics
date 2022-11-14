@@ -33,8 +33,8 @@ using namespace o2::framework::expressions;
 struct JetMatchingHF {
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-  using HfCandidates = soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>;
-  using McParticles = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+  using HfCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>;
+  using McParticles = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
   using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
   using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
 
@@ -61,7 +61,7 @@ struct JetMatchingHF {
 
       const auto& cands = jet.hfcandidates_as<HfCandidates>();
       int matchedIdx = -1;
-      if ((cands.front().flagMCMatchRec() & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) == 0) {
+      if ((cands.front().flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0) {
         jetsDetToPartMatching(matchedIdx);
         continue;
       }
@@ -79,7 +79,7 @@ struct JetMatchingHF {
              daughter1.globalIndex(), daughter1.mcParticle_as<McParticles>().globalIndex());
         LOGF(info, "MC ids of mothers: %d - %d", mother0Id, mother1Id);
         if ((mother0Id == mother1Id) &&
-            std::abs(daughter0.mcParticle_as<McParticles>().mothers_as<McParticles>().front().flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
+            std::abs(daughter0.mcParticle_as<McParticles>().mothers_as<McParticles>().front().flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           LOGF(info, "D0 - looking for jet");
           for (const auto& pjet : jetsPL) {
             for (const auto& cand : pjet.hfcandidates_as<McParticles>()) {

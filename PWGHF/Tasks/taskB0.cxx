@@ -26,8 +26,8 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_2prong;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_b0;            // from CandidateReconstructionTables.h
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
@@ -64,7 +64,7 @@ struct HfTaskB0 {
     registry.add("hInvMassD", "B^{0} candidates;prong0, D^{#minus} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi> const&, aod::BigTracks const&)
+  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, aod::BigTracks const&)
   {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
@@ -77,7 +77,7 @@ struct HfTaskB0 {
         continue;
       }
 
-      auto candD = candidate.prong0_as<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>>();
+      auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
       auto candPi = candidate.prong1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassB0(candidate), candidate.pt());
@@ -166,8 +166,8 @@ struct HfTaskB0Mc {
     registry.add("hThetaStarRecBg", "B^{0} candidates (unmatched);B^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0MCRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
+  void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0McRec>> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCand3Prong const&)
   {
     // MC rec
     for (auto const& candidate : candidates) {
@@ -177,10 +177,10 @@ struct HfTaskB0Mc {
       if (yCandMax >= 0. && std::abs(YB0(candidate)) > yCandMax) {
         continue;
       }
-      auto candD = candidate.prong0_as<aod::HfCandProng3>();
-      if (TESTBIT(std::abs(candidate.flagMCMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
+      auto candD = candidate.prong0_as<aod::HfCand3Prong>();
+      if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0MCGen>>(), pdg::Code::kB0, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
@@ -226,7 +226,7 @@ struct HfTaskB0Mc {
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto const& particle : particlesMC) {
-      if (TESTBIT(std::abs(particle.flagMCMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {

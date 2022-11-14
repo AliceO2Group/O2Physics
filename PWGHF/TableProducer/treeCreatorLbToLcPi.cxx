@@ -193,8 +193,8 @@ struct HfTreeCreatorLbToLcPi {
 
   using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
-  void process(soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HfSelLbToLcPi> const& candidates,
-               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc> const&,
+  void process(soa::Join<aod::HfCandLb, aod::HfCandLbMcRec, aod::HfSelLbToLcPi> const& candidates,
+               soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const&,
                TracksExtendedPID const&,
                aod::FRICHs const&,
                aod::RICHs const&)
@@ -208,7 +208,7 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          auto candLc = candidate.prong0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HfSelLc>>();
+          auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc>>();
           auto track0 = candidate.prong1_as<TracksExtendedPID>(); // daughter pion track
           auto track1 = candLc.prong0_as<TracksExtendedPID>();    // granddaughter tracks (lc decay particles)
           auto track2 = candLc.prong1_as<TracksExtendedPID>();
@@ -295,10 +295,10 @@ struct HfTreeCreatorLbToLcPi {
             track2.tofNSigmaKa(),
             track3.tofNSigmaPi(),
             track3.tofNSigmaPr(),
-            o2::aod::hf_cand_prong3::InvMassLcToPKPi(candLc),
-            o2::aod::hf_cand_prong3::CtLc(candLc),
-            o2::aod::hf_cand_prong3::YLc(candLc),
-            o2::aod::hf_cand_prong3::ELc(candLc),
+            o2::aod::hf_cand_3prong::InvMassLcToPKPi(candLc),
+            o2::aod::hf_cand_3prong::CtLc(candLc),
+            o2::aod::hf_cand_3prong::YLc(candLc),
+            o2::aod::hf_cand_3prong::ELc(candLc),
             candLc.eta(),
             candLc.cpa(),
             candLc.cpaXY(),
@@ -319,7 +319,7 @@ struct HfTreeCreatorLbToLcPi {
             candidate.eta(),
             candidate.phi(),
             FunctionY,
-            candidate.flagMCMatchRec());
+            candidate.flagMcMatchRec());
         }
       };
       fillTable(candidate.isSelLbToLcPi(), InvMassLbToLcPi(candidate), CtLb(candidate), YLb(candidate));

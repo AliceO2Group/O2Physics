@@ -44,7 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskFlow {
@@ -78,7 +78,7 @@ struct HfTaskFlow {
   //  HF candidate filter
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0>>;
+  using hfCandidates = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
   //  configurables for containers
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};

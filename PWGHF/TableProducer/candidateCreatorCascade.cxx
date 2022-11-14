@@ -26,7 +26,7 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 
 //#define MY_DEBUG
 
@@ -208,8 +208,8 @@ struct HfCandidateCreatorCascade {
 /// Performs MC matching.
 struct HfCandidateCreatorCascadeMc {
   Spawns<aod::HfCandCascExt> rowCandidateCasc;
-  Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
-  Produces<aod::HfCandCascadeMCGen> rowMCMatchGen;
+  Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
+  Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
 
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -260,7 +260,7 @@ struct HfCandidateCreatorCascadeMc {
         MY_DEBUG_MSG(sign, LOG(info) << "Lc found with sign " << sign; printf("\n"));
       }
 
-      rowMCMatchRec(sign);
+      rowMcMatchRec(sign);
     }
     //}
 
@@ -286,7 +286,7 @@ struct HfCandidateCreatorCascadeMc {
           MY_DEBUG_MSG(sign == 0, LOG(info) << "Pity, the three final daughters are not p, pi+, pi-, but " << arrDaughLcPDG[0] << ", " << arrDaughLcPDG[1] << ", " << arrDaughLcPDG[2]);
         }
       }
-      rowMCMatchGen(sign);
+      rowMcMatchGen(sign);
     }
   }
 

@@ -166,10 +166,10 @@ struct HfTreeCreatorXiccToPKPiPi {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandXicc, aod::HfCandXiccMCRec, aod::HfSelXiccToPKPiPi> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXiccMCGen> const& particles,
+               soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
                aod::BigTracksPID const& tracks,
-               aod::HfCandProng3 const&)
+               aod::HfCand3Prong const&)
   {
 
     // Filling event properties
@@ -221,10 +221,10 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             candidate.impactParameterProduct(),
-            o2::aod::hf_cand_prong3::InvMassXicToPKPi(xicCand),
-            o2::aod::hf_cand_prong3::CtXic(xicCand),
-            o2::aod::hf_cand_prong3::YXic(xicCand),
-            o2::aod::hf_cand_prong3::EXic(xicCand),
+            o2::aod::hf_cand_3prong::InvMassXicToPKPi(xicCand),
+            o2::aod::hf_cand_3prong::CtXic(xicCand),
+            o2::aod::hf_cand_3prong::YXic(xicCand),
+            o2::aod::hf_cand_3prong::EXic(xicCand),
             xicCand.eta(),
             xicCand.cpa(),
             xicCand.cpaXY(),
@@ -247,7 +247,7 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.eta(),
             candidate.phi(),
             FunctionY,
-            candidate.flagMCMatchRec());
+            candidate.flagMcMatchRec());
         }
       };
 
@@ -257,14 +257,14 @@ struct HfTreeCreatorXiccToPKPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMCMatchGen());
+          particle.flagMcMatchGen());
       }
     }
   }

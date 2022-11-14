@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_bplus;
 using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 using namespace o2::framework::expressions;
@@ -48,8 +48,8 @@ struct HfTaskBplus {
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
-  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
 
   HistogramRegistry registry{
     "registry",
@@ -124,7 +124,7 @@ struct HfTaskBplus {
     registry.add("hd0d0RecBg", bPlusCandUnmatch + "product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
   }
 
-  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCandProng2, aod::HfSelD0> const&, aod::BigTracks const&)
+  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::BigTracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
@@ -135,7 +135,7 @@ struct HfTaskBplus {
         continue;
       }
 
-      auto candD0 = candidate.prong0_as<soa::Join<aod::HfCandProng2, aod::HfSelD0>>();
+      auto candD0 = candidate.prong0_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>();
       auto candPi = candidate.prong1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassBPlus(candidate), candidate.pt());
@@ -162,8 +162,8 @@ struct HfTaskBplus {
     } // candidate loop
   }   // process
 
-  void processMc(soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi, aod::HfCandBPMCRec> const&,
-                 soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)
+  void processMc(soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const&,
+                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCand2Prong const&)
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
@@ -173,9 +173,9 @@ struct HfTaskBplus {
       if (yCandMax >= 0. && std::abs(YBPlus(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBPMCGen>>(), pdg::Code::kBPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
@@ -213,7 +213,7 @@ struct HfTaskBplus {
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {

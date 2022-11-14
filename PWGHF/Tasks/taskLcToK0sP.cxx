@@ -94,8 +94,8 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMCRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandCascadeMCGen> const& particlesMC,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
                  aod::BigTracksMC const& tracks)
   {
     // MC rec.
@@ -105,9 +105,9 @@ struct HfTaskLcToK0sP {
         // Printf("MC Rec.: eta rejection: %g", candidate.eta());
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandCascadeMCGen>>(), pdg::Code::kLambdaCPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandCascadeMcGen>>(), pdg::Code::kLambdaCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         registry.fill(HIST("hPtRecSig"), candidate.pt());      // rec. level pT
@@ -126,7 +126,7 @@ struct HfTaskLcToK0sP {
         // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;
       }
-      if (std::abs(particle.flagMCMatchGen()) == 1) {
+      if (std::abs(particle.flagMcMatchGen()) == 1) {
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta());
       }

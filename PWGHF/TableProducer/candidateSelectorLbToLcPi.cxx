@@ -26,7 +26,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_lb;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_lb_to_lc_pi;
 
 struct HfCandidateSelectorLbToLcPi {
@@ -122,7 +122,7 @@ struct HfCandidateSelectorLbToLcPi {
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCandProng3 const&, aod::HfSelLc> const&, aod::BigTracksPID const&)
+  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::BigTracksPID const&)
   {
     for (auto& hfCandLb : hfCandLbs) { //looping over Lb candidates
 
@@ -137,7 +137,7 @@ struct HfCandidateSelectorLbToLcPi {
 
       // Lc is always index0 and pi is index1 by default
       //auto candLc = hfCandLb.prong0();
-      auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCandProng3, aod::HfSelLc>>();
+      auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
       auto trackPi = hfCandLb.prong1_as<aod::BigTracksPID>();
 
       //topological cuts

@@ -32,7 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_bplus;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -45,7 +45,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
-  Produces<aod::HfCandBPlusBase> rowCandidateBase;
+  Produces<aod::HfCandBplusBase> rowCandidateBase;
 
   // vertexing parameters
   Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -70,7 +70,7 @@ struct HfCandidateCreatorBplus {
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
 
   void process(aod::Collision const& collisions,
-               soa::Filtered<soa::Join<aod::HfCandProng2,
+               soa::Filtered<soa::Join<aod::HfCand2Prong,
                                        aod::HfSelD0>> const& candidates,
                aod::BigTracks const& tracks)
   {
@@ -96,7 +96,7 @@ struct HfCandidateCreatorBplus {
 
     // loop over pairs of track indices
     for (auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_prong2::DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
@@ -212,18 +212,18 @@ struct HfCandidateCreatorBplus {
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorBplusExpressions {
-  Spawns<aod::HfCandBPlusExt> rowCandidateBPlus;
+  Spawns<aod::HfCandBplusExt> rowCandidateBPlus;
 
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
 struct HfCandidateCreatorBplusMc {
-  Produces<aod::HfCandBPMCRec> rowMCMatchRec;
-  Produces<aod::HfCandBPMCGen> rowMCMatchGen;
+  Produces<aod::HfCandBplusMcRec> rowMcMatchRec;
+  Produces<aod::HfCandBplusMcGen> rowMcMatchGen;
 
-  void process(aod::HfCandBPlus const& candidates,
-               aod::HfCandProng2 const&,
+  void process(aod::HfCandBplus const& candidates,
+               aod::HfCand2Prong const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -237,7 +237,7 @@ struct HfCandidateCreatorBplusMc {
       // Printf("New rec. candidate");
 
       flag = 0;
-      auto candDaughterD0 = candidate.prong0_as<aod::HfCandProng2>();
+      auto candDaughterD0 = candidate.prong0_as<aod::HfCand2Prong>();
       auto arrayDaughtersD0 = array{candDaughterD0.prong0_as<aod::BigTracksMC>(), candDaughterD0.prong1_as<aod::BigTracksMC>()};
       auto arrayDaughters = array{candidate.prong1_as<aod::BigTracksMC>(), candDaughterD0.prong0_as<aod::BigTracksMC>(), candDaughterD0.prong1_as<aod::BigTracksMC>()};
 
@@ -249,7 +249,7 @@ struct HfCandidateCreatorBplusMc {
       if (indexRecD0 > -1 && indexRec > -1) {
         flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
       }
-      rowMCMatchRec(flag);
+      rowMcMatchRec(flag);
     }
 
     // Match generated particles.
@@ -276,7 +276,7 @@ struct HfCandidateCreatorBplusMc {
           flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
         }
       }
-      rowMCMatchGen(flag);
+      rowMcMatchGen(flag);
     } // B candidate
   }   // process
 };    // struct

@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 #include "Framework/runDataProcessing.h"
@@ -36,8 +36,8 @@ struct HfTaskXic {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelXicToPKPi>> selectedXicCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelXicToPKPi, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> selectedXicCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   HistogramRegistry registry{
     "registry",
@@ -94,7 +94,7 @@ struct HfTaskXic {
     registry.add("hPtProng2RecBg", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::HfCandProng3, aod::HfSelXicToPKPi> const& candidates)
+  void process(soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi> const& candidates)
   {
     for (auto& candidate : selectedXicCandidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
@@ -132,8 +132,8 @@ struct HfTaskXic {
     }
   }
 
-  void processMc(soa::Join<aod::HfCandProng3, aod::HfSelXicToPKPi, aod::HfCandProng3MCRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)
+  void processMc(soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
     for (auto& candidate : selectedMCXicCandidates) {
@@ -154,9 +154,9 @@ struct HfTaskXic {
         massC = InvMassXicToPiKP(candidate);
       }
 
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XicToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XicToPKPi) {
         // Signal
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kXiCPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kXiCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
@@ -204,7 +204,7 @@ struct HfTaskXic {
     }
     // MC gen.
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XicToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }

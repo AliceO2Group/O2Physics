@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -66,8 +66,8 @@ struct HfTaskD0Alice3Barrel {
      {"hMassSigD0PerfectPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0PerfectPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
-  // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     //float centrality = collision.centV0M();
     for (auto& candidate : candidates) {
@@ -88,7 +88,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
@@ -97,7 +97,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0TofPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0TofPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
@@ -106,10 +106,10 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0RichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
           }
           registry.fill(HIST("hMassBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -118,7 +118,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0TofPlusRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
@@ -127,7 +127,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0barTofPlusRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
@@ -136,7 +136,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0PerfectPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
@@ -145,7 +145,7 @@ struct HfTaskD0Alice3Barrel {
     }
 
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;
         }

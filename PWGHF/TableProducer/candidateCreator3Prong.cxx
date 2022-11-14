@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -37,7 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
-  Produces<aod::HfCandProng3Base> rowCandidateBase;
+  Produces<aod::HfCand3ProngBase> rowCandidateBase;
 
   // vertexing
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
@@ -93,7 +93,7 @@ struct HfCandidateCreator3Prong {
   }
 
   void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf3Prongs, aod::HfPvRefitProng3> const& rowsTrackIndexProng3,
+               soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
                aod::BigTracks const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -224,9 +224,9 @@ struct HfCandidateCreator3Prong {
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreator3ProngExpressions {
-  Spawns<aod::HfCandProng3Ext> rowCandidateProng3;
-  Produces<aod::HfCandProng3MCRec> rowMCMatchRec;
-  Produces<aod::HfCandProng3MCGen> rowMCMatchGen;
+  Spawns<aod::HfCand3ProngExt> rowCandidateProng3;
+  Produces<aod::HfCand3ProngMcRec> rowMcMatchRec;
+  Produces<aod::HfCand3ProngMcGen> rowMcMatchGen;
 
   void init(InitContext const&) {}
 
@@ -318,7 +318,7 @@ struct HfCandidateCreator3ProngExpressions {
         origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
-      rowMCMatchRec(flag, origin, swapping, channel);
+      rowMcMatchRec(flag, origin, swapping, channel);
     }
 
     // Match generated particles.
@@ -380,7 +380,7 @@ struct HfCandidateCreator3ProngExpressions {
         origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
-      rowMCMatchGen(flag, origin, channel);
+      rowMcMatchGen(flag, origin, channel);
     }
   }
 

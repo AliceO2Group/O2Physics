@@ -194,10 +194,10 @@ struct HfTreeCreatorBplusToD0Pi {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandBPlus, aod::HfCandBPMCRec, aod::HfSelBplusToD0Pi> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandBPMCGen> const& particles,
+               soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi> const& candidates,
+               soa::Join<aod::McParticles_000, aod::HfCandBplusMcGen> const& particles,
                aod::BigTracksPID const& tracks,
-               aod::HfCandProng2 const&)
+               aod::HfCand2Prong const&)
   {
 
     // Filling event properties
@@ -229,13 +229,13 @@ struct HfTreeCreatorBplusToD0Pi {
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {
-          invMassD0 = o2::aod::hf_cand_prong2::InvMassD0bar(d0Cand);
+          invMassD0 = o2::aod::hf_cand_2prong::InvMassD0bar(d0Cand);
         } else if (piCand.sign() < 0) {
-          invMassD0 = o2::aod::hf_cand_prong2::InvMassD0(d0Cand);
+          invMassD0 = o2::aod::hf_cand_2prong::InvMassD0(d0Cand);
         }
 
         //if (FunctionSelection >= 1) {
-        if (std::abs(candidate.flagMCMatchRec()) >= isSignal) {
+        if (std::abs(candidate.flagMcMatchRec()) >= isSignal) {
 
           rowCandidateFull(
             candidate.rSecondaryVertex(),
@@ -273,11 +273,11 @@ struct HfTreeCreatorBplusToD0Pi {
             piCand.tofNSigmaKa(),
             piCand.tpcNSigmaPi(),
             piCand.tpcNSigmaKa(),
-            candidate.flagMCMatchRec(),
+            candidate.flagMcMatchRec(),
             invMassD0,
             d0Cand.ptProng0(),
             d0Cand.ptProng1(),
-            o2::aod::hf_cand_prong2::YD0(d0Cand),
+            o2::aod::hf_cand_2prong::YD0(d0Cand),
             d0Cand.eta(),
             d0Cand.cpa(),
             d0Cand.cpaXY(),
@@ -309,14 +309,14 @@ struct HfTreeCreatorBplusToD0Pi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::BplusToD0Pi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::BplusToD0Pi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMCMatchGen());
+          particle.flagMcMatchGen());
       }
     }
   }

@@ -25,7 +25,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_prong2;
+using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 // using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;  // used if we apply D mass cut
 
@@ -121,7 +121,7 @@ struct HfCandidateSelectorB0ToDPi {
     return true;
   }
 
-  void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi> const&, aod::BigTracksPID const&)
+  void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, aod::BigTracksPID const&)
   {
     for (auto const& hfCandB0 : hfCandB0s) { // looping over B0 candidates
 
@@ -136,7 +136,7 @@ struct HfCandidateSelectorB0ToDPi {
 
       // D is always index0 and pi is index1 by default
       // auto candD = hfCandD.prong0();
-      auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>>();
+      auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
       auto trackPi = hfCandB0.prong1_as<aod::BigTracksPID>();
 
       // topological cuts

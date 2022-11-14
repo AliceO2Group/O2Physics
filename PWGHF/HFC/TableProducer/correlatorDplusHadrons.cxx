@@ -23,7 +23,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_correlation_dplus_hadron;
 using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 using namespace o2::constants::math;
@@ -54,7 +54,7 @@ const int ptDAxisBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
-using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCandProng3MCGen>;
+using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
 /// Dplus-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorDplusHadrons {
@@ -75,8 +75,8 @@ struct HfCorrelatorDplusHadrons {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi > 0;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> recoFlagDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi > 0;
 
   HistogramRegistry registry{
     "registry",
@@ -117,7 +117,7 @@ struct HfCorrelatorDplusHadrons {
   }
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi> const& candidates)
+  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -196,7 +196,7 @@ struct HfCorrelatorDplusHadrons {
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng3, aod::HfSelDplusToPiKPi, aod::HfCandProng3MCRec> const& candidates)
+  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -237,7 +237,7 @@ struct HfCorrelatorDplusHadrons {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
-      if (std::abs(candidate1.flagMCMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+      if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
         // fill per-candidate distributions from Dplus true candidates
         registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
         registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
@@ -250,7 +250,7 @@ struct HfCorrelatorDplusHadrons {
       }
       // fill invariant mass plots from Dplus signal and background candidates
       registry.fill(HIST("hMassDplusMCRec"), InvMassDPlus(candidate1), efficiencyWeight);
-      if (candidate1.flagMCMatchRec() == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
+      if (candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
         registry.fill(HIST("hMassDplusMCRecSig"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
       } else {
         registry.fill(HIST("hMassDplusMCRecBkg"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
@@ -258,7 +258,7 @@ struct HfCorrelatorDplusHadrons {
 
       // Dplus-Hadron correlation dedicated section
       // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
-      flagDplusSignal = candidate1.flagMCMatchRec() == 1 << DecayType::DplusToPiKPi;
+      flagDplusSignal = candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi;
       for (const auto& track : tracks) {
         if (std::abs(track.eta()) > etaTrackMax) {
           continue;

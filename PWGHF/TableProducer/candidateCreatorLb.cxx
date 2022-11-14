@@ -27,8 +27,8 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_2prong;
+using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_lb;
 using namespace o2::framework::expressions;
 
@@ -72,7 +72,7 @@ struct HfCandidateCreatorLb {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
-                 aod::HfCandProng3,
+                 aod::HfCand3Prong,
                  aod::HfSelLc>> const& lcCands,
                aod::BigTracks const& tracks)
   {
@@ -98,7 +98,7 @@ struct HfCandidateCreatorLb {
 
     // loop over Lc candidates
     for (auto& lcCand : lcCands) {
-      if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_prong3::DecayType::LcToPKPi)) {
+      if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
       if (lcCand.isSelLcToPKPi() >= selectionFlagLc) {
@@ -221,11 +221,11 @@ struct HfCandidateCreatorLbExpressions {
 
 /// Performs MC matching.
 struct HfCandidateCreatorLbMc {
-  Produces<aod::HfCandLbMCRec> rowMCMatchRec;
-  Produces<aod::HfCandLbMCGen> rowMCMatchGen;
+  Produces<aod::HfCandLbMcRec> rowMcMatchRec;
+  Produces<aod::HfCandLbMcGen> rowMcMatchGen;
 
   void process(aod::HfCandLb const& candidates,
-               aod::HfCandProng3 const&,
+               aod::HfCand3Prong const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -263,7 +263,7 @@ struct HfCandidateCreatorLbMc {
           LOGF(info, "WARNING: Λb in decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
       }
-      rowMCMatchRec(flag, origin, debug);
+      rowMcMatchRec(flag, origin, debug);
     }
 
     // Match generated particles.
@@ -280,7 +280,7 @@ struct HfCandidateCreatorLbMc {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
         }
       }
-      rowMCMatchGen(flag, origin);
+      rowMcMatchGen(flag, origin);
     }
   }
 };

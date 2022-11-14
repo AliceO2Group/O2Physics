@@ -66,7 +66,7 @@ struct HfCandidateCreatorXicc {
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<aod::HfCandProng3, aod::HfSelXicToPKPi>> const& xicCands,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
                aod::BigTracks const& tracks)
   {
     // 3-prong vertex fitter to rebuild the Xic vertex
@@ -90,7 +90,7 @@ struct HfCandidateCreatorXicc {
     df2.setUseAbsDCA(true);
 
     for (auto& xicCand : xicCands) {
-      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_prong3::XicToPKPi)) {
+      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
@@ -195,11 +195,11 @@ struct HfCandidateCreatorXiccExpressions {
 
 /// Performs MC matching.
 struct HfCandidateCreatorXiccMc {
-  Produces<aod::HfCandXiccMCRec> rowMCMatchRec;
-  Produces<aod::HfCandXiccMCGen> rowMCMatchGen;
+  Produces<aod::HfCandXiccMcRec> rowMcMatchRec;
+  Produces<aod::HfCandXiccMcGen> rowMcMatchGen;
 
   void process(aod::HfCandXicc const& candidates,
-               aod::HfCandProng3 const&,
+               aod::HfCand3Prong const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -237,7 +237,7 @@ struct HfCandidateCreatorXiccMc {
           LOGF(info, "WARNING: Ξc±± in decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
       }
-      rowMCMatchRec(flag, origin, debug);
+      rowMcMatchRec(flag, origin, debug);
     }
 
     // Match generated particles.
@@ -254,7 +254,7 @@ struct HfCandidateCreatorXiccMc {
           flag = sign * (1 << DecayType::XiccToXicPi);
         }
       }
-      rowMCMatchGen(flag, origin);
+      rowMcMatchGen(flag, origin);
     }
   }
 };
