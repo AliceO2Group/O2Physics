@@ -11,9 +11,9 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
 
+#include <CCDB/BasicCCDBManager.h>
 #include <vector>
 #include <string>
-#include <CCDB/BasicCCDBManager.h>
 #include <Rtypes.h>
 #include <TString.h>
 #include <TObject.h>
