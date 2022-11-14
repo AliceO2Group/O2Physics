@@ -79,7 +79,7 @@ constexpr double binsPtTrack[nBinsPtTrack + 1] = {
   2.0,
   3.0,
   1000.0};
-auto pTBinsTrack_v = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
+auto vecBinsPtTrack = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
 
 // default values for the cuts
 constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
