@@ -101,9 +101,9 @@ class FilterAndAnalysisFramework : public TNamed
   std::string ccdbpath = "";
   std::string filterdate = "";
   bool forceupdate = false;
-  PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr; /// the track filter
-  PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr; /// the event filter
-  PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;     /// the PID filter
+  PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;  /// the track filter
+  PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;  /// the event filter
+  PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;      /// the PID filter
   PWGCF::TrackSelectionFilterAndAnalysis* _fTrackFilter = nullptr; /// the track filter temporal storage until initialized
   PWGCF::EventSelectionFilterAndAnalysis* _fEventFilter = nullptr; /// the event filter temporal storage until initialized
   PWGCF::PIDSelectionFilterAndAnalysis* _fPIDFilter = nullptr;     /// the PID filter temporal storage until initialized
