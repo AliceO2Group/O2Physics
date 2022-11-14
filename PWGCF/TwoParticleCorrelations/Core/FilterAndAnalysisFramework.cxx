@@ -13,8 +13,10 @@
 #include <TList.h>
 #include <TObjString.h>
 
-#include <fairlogger/Logger.h>
 #include "FilterAndAnalysisFramework.h"
+#include <map>
+#include <string>
+#include <fairlogger/Logger.h>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;
@@ -50,10 +52,10 @@ void FilterAndAnalysisFramework::RegisterConfiguration()
   LOGF(info, "Registering configuration into CCDB for date %s", filterdate.data());
 
   /* sanity checks */
-  if (_fTrackFilter == nullptr or _fEventFilter == nullptr or _fPIDFilter == nullptr) {
+  if (_fTrackFilter == nullptr || _fEventFilter == nullptr || _fPIDFilter == nullptr) {
     LOGF(fatal, "Configuration not stored yet, please use SetConfiguration(evtf, trkf, pidf, mode), or configuration already registered");
   }
-  if (fTrackFilter != nullptr or fEventFilter != nullptr or fPIDFilter != nullptr) {
+  if (fTrackFilter != nullptr ||r fEventFilter != nullptr || fPIDFilter != nullptr) {
     LOGF(fatal, "Configuration already registered");
   }
 
@@ -103,7 +105,7 @@ void FilterAndAnalysisFramework::RegisterConfiguration()
     auto domatch = [&signatures](int index, auto filter) {
       return (strcmp(signatures->At(index)->GetName(), filter->getCutStringSignature().Data()) == 0);
     };
-    if (domatch(0, _fEventFilter) and domatch(1, _fTrackFilter) and domatch(2, _fPIDFilter)) {
+    if (domatch(0, _fEventFilter) && domatch(1, _fTrackFilter) && domatch(2, _fPIDFilter)) {
       /* signatures match so configuration already registered and available for skimming and/or analysis */
       LOGF(info, "Filter signatures already registered in the CCDB. You can proceed with the skimming and/or analysis");
     } else {
@@ -132,10 +134,10 @@ void FilterAndAnalysisFramework::Init()
   LOGF(info, "Initializing filter configuration from date %s", filterdate.data());
 
   /* sanity checks */
-  if (_fTrackFilter == nullptr or _fEventFilter == nullptr or _fPIDFilter == nullptr) {
+  if (_fTrackFilter == nullptr || _fEventFilter == nullptr || _fPIDFilter == nullptr) {
     LOGF(fatal, "Configuration not stored yet, please use SetConfiguration(evtf, trkf, pidf, mode, force), or configuration already initalized");
   }
-  if (fTrackFilter != nullptr or fEventFilter != nullptr or fPIDFilter != nullptr) {
+  if (fTrackFilter != nullptr || fEventFilter != nullptr || fPIDFilter != nullptr) {
     LOGF(fatal, "Configuration already initialized");
   }
 
@@ -163,7 +165,7 @@ void FilterAndAnalysisFramework::Init()
     auto domatch = [&signatures](int index, auto filter) {
       return (strcmp(signatures->At(index)->GetName(), filter->getCutStringSignature().Data()) == 0);
     };
-    if (domatch(0, _fEventFilter) and domatch(1, _fTrackFilter) and domatch(2, _fPIDFilter)) {
+    if (domatch(0, _fEventFilter) && domatch(1, _fTrackFilter) && domatch(2, _fPIDFilter)) {
       /* signatures match the configuration proceed with skimming and/or analysis */
       LOGF(info, "Filter signatures registered in the CCDB. Proceeding with the skimming and/or analysis");
       fEventFilter = _fEventFilter;
