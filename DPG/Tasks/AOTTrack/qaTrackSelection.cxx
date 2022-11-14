@@ -58,6 +58,19 @@ struct QaTrackCuts {
     h->GetXaxis()->SetBinLabel(21, "isGlobalTrack");
     h->GetXaxis()->SetBinLabel(22, "isGlobalTrackWoPtEta");
     h->GetXaxis()->SetBinLabel(23, "isGlobalTrackWoDCA");
+
+    h = histos.add<TH1>("isQualityTrack", "Tracks selection for isQualityTrack", kTH1F, {axisSelections});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "passedTrackType");
+    h->GetXaxis()->SetBinLabel(3, "passedTPCNCls");
+    h->GetXaxis()->SetBinLabel(4, "passedTPCCrossedRows");
+    h->GetXaxis()->SetBinLabel(5, "passedTPCCrossedRowsOverNCls");
+    h->GetXaxis()->SetBinLabel(6, "passedTPCChi2NDF");
+    h->GetXaxis()->SetBinLabel(7, "passedTPCRefit");
+    h->GetXaxis()->SetBinLabel(8, "passedITSNCls");
+    h->GetXaxis()->SetBinLabel(9, "passedITSChi2NDF");
+    h->GetXaxis()->SetBinLabel(10, "passedITSRefit");
+    h->GetXaxis()->SetBinLabel(11, "passedITSHits");
   }
 
   void process(const o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>& tracks,
@@ -130,6 +143,38 @@ struct QaTrackCuts {
       }
       if (track.isGlobalTrackWoDCA()) {
         histos.fill(HIST("tracks"), 23.f);
+      }
+      // isQualityTrack
+      histos.fill(HIST("isQualityTrack"), 1.f);
+      if (track.passedTrackType()) {
+        histos.fill(HIST("isQualityTrack"), 2.f);
+        if (track.passedTPCNCls()) {
+          histos.fill(HIST("isQualityTrack"), 3.f);
+          if (track.passedTPCCrossedRows()) {
+            histos.fill(HIST("isQualityTrack"), 4.f);
+            if (track.passedTPCCrossedRowsOverNCls()) {
+              histos.fill(HIST("isQualityTrack"), 5.f);
+              if (track.passedTPCChi2NDF()) {
+                histos.fill(HIST("isQualityTrack"), 6.f);
+                if (track.passedTPCRefit()) {
+                  histos.fill(HIST("isQualityTrack"), 7.f);
+                  if (track.passedITSNCls()) {
+                    histos.fill(HIST("isQualityTrack"), 8.f);
+                    if (track.passedITSChi2NDF()) {
+                      histos.fill(HIST("isQualityTrack"), 9.f);
+                      if (track.passedITSRefit()) {
+                        histos.fill(HIST("isQualityTrack"), 10.f);
+                        if (track.passedITSHits()) {
+                          histos.fill(HIST("isQualityTrack"), 11.f);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
