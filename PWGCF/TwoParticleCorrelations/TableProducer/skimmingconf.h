@@ -61,4 +61,10 @@ struct : o2::framework::ConfigurableGroup {
 #endif
 } pidfilter;
 
+struct : o2::framework::ConfigurableGroup {
+  o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the skimming ccdb repository"};
+  o2::framework::Configurable<std::string> ccdbpath{"ccdbpath", "Users/v/victor/Skimming", "url of the skimming ccdb repository"};
+  o2::framework::Configurable<std::string> filterdate{"filterdate", "20221115", "the date for the skimming production with the current filter configuration"};
+} filterccdb;
+
 #endif // O2_ANALYSIS_CFSKIMMINGCONF_H

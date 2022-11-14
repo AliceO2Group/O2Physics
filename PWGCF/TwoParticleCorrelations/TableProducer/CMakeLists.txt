@@ -9,6 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(twopartcorr-register-skim
+                           SOURCES twoParticleCorrelationsRegisterSkimming.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(twopartcorr-skim
                            SOURCES twoParticleCorrelationsSkimming.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore

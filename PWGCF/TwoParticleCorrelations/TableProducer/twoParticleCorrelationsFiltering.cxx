@@ -85,7 +85,9 @@ struct TwoParticleCorrelationsFilter {
     PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
 #endif
-    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
+    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
+    fFilterFramework->SetConfiguration(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
+    fFilterFramework->Init();
     nReportedTracks = 0;
     collisionmask = fFilterFramework->getCollisionMask();
     collisionmask_opt = fFilterFramework->getCollisionOptMask();

@@ -142,7 +142,9 @@ struct TwoParticleCorrelationsSkimming {
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
 #endif
 
-    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
+    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
+    fFilterFramework->SetConfiguration(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
+    fFilterFramework->Init();
     nReportedTracks = 0;
 
     /* TODO: upload the cuts signatures to the CCDB */
