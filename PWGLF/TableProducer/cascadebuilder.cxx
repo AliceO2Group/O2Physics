@@ -361,8 +361,15 @@ struct cascadeBuilder {
         // Act on copies for minimization
         auto tV0Copy = o2::track::TrackParCov(tV0);
         auto bTrackCopy = o2::track::TrackParCov(bTrack);
-
-        int nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+        int nCand2 = 0;
+        try {
+          nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+        } catch (...) {
+          LOG(error) << "Exception caught in fitterCasc.process";
+        };
+        if (nCand2 == 0) {
+          continue;
+        }
         double finalXv0 = fitterCasc.getTrack(0).getX();
         double finalXbach = fitterCasc.getTrack(1).getX();
 
