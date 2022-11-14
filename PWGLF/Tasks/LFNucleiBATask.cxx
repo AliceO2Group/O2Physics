@@ -452,6 +452,11 @@ struct LFNucleiBATask {
       histos.add<TH2>("tracks/evtime/ft0tof/deuteron/h2TOFmass2antiDeuteronVsPt", "#Delta M^{2} (#bar{d}) vs #it{p}_{T}; #Delta M^{2} (#bar{d}); #it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{1000, -5., 5.}, {800, 0., 8.}});
 
       if (enableDebug) {
+        histos.add<TH2>("debug/qa/h2TPCncrVsPt", "number of crossed rows in TPC vs Pt;  #it{p}_{T} (GeV/#it{c}); TPCncr", HistType::kTH2F, {{ptAxis}, {150, 60, 170}});
+        histos.add<TH1>("debug/qa/h1TPCncrLowP", "number of crossed rows in TPC (p<0.5 GeV/c); TPCncr; counts", HistType::kTH1F, {{150, 60, 170}});
+        histos.add<TH1>("debug/qa/h1TPCncrMedP", "number of crossed rows in TPC (0.5<p<1.0 GeV/c); TPCncr; counts", HistType::kTH1F, {{150, 60, 170}});
+        histos.add<TH1>("debug/qa/h1TPCncrHighP", "number of crossed rows in TPC (p>1.0 GeV/c); TPCncr; counts", HistType::kTH1F, {{150, 60, 170}});
+
         // Beta < 0.5
         //  NSigmasTPC histograms
         histos.add<TH2>("debug/evtime/fill/proton/h2ProtonVspTNSigmaTPC_BetaCut", "NSigmaTPC(p) vs pT (#beta < 0.5); #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {2000, -100, 100}});
@@ -610,6 +615,20 @@ struct LFNucleiBATask {
       histos.fill(HIST("qa/h1rTPC"), track.rTPC());
       histos.fill(HIST("qa/h1chi2ITS"), track.chi2TPC());
       histos.fill(HIST("qa/h1chi2TPC"), track.chi2ITS());
+
+      if (enableDebug) {
+        histos.fill(HIST("debug/qa/h2TPCncrVsPt"), track.tpcInnerParam(), track.ncrTPC());
+
+        if (track.tpcInnerParam() < 0.5f) {
+          histos.fill(HIST("debug/qa/h1TPCncrLowP"), track.ncrTPC());
+        }
+        if ((track.tpcInnerParam() >= 0.5f) && (track.tpcInnerParam() < 1.f)) {
+          histos.fill(HIST("debug/qa/h1TPCncrMidP"), track.ncrTPC());
+        }
+        if (track.tpcInnerParam() >= 1.f) {
+          histos.fill(HIST("debug/qa/h1TPCncrHighP"), track.ncrTPC());
+        }
+      }
 
       // Tracks DCA histos fill
       histos.fill(HIST("tracks/hDCAxy"), track.dcaxy());
