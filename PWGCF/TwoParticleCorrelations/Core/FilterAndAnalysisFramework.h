@@ -8,18 +8,18 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef FILTERANDANALYSISFRAMEWORK_H
-#define FILTERANDANALYSISFRAMEWORK_H
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
 
 #include <vector>
 #include <string>
+#include <CCDB/BasicCCDBManager.h>
 #include <Rtypes.h>
 #include <TString.h>
 #include <TObject.h>
 #include <TNamed.h>
 #include <TList.h>
 
-#include <CCDB/BasicCCDBManager.h>
 #include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
@@ -119,4 +119,4 @@ extern void registerConfiguration(o2::analysis::PWGCF::FilterAndAnalysisFramewor
 } // namespace analysis
 } // namespace o2
 
-#endif //
+#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
