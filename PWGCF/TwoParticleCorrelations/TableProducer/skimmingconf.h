@@ -13,6 +13,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include <vector>
+#include <string>
 
 struct : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> bfield{"evtflt_bfield", {"positive-yes", "negative-yes"}, "B filed polarity cut: both 'yes' default, anything else alternative"};
@@ -67,4 +69,4 @@ struct : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> filterdate{"filterdate", "20221115", "the date for the skimming production with the current filter configuration"};
 } filterccdb;
 
-#endif // O2_ANALYSIS_CFSKIMMINGCONF_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
