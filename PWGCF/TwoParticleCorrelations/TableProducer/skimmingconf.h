@@ -8,13 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_CFSKIMMINGCONF_H
-#define O2_ANALYSIS_CFSKIMMINGCONF_H
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include <vector>
 #include <string>
+#include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
 
 struct : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> bfield{"evtflt_bfield", {"positive-yes", "negative-yes"}, "B filed polarity cut: both 'yes' default, anything else alternative"};
