@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
+
 #include "Framework/AnalysisTask.h"
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
@@ -24,8 +26,6 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <TProfile3D.h>
-
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -102,7 +102,7 @@ struct TwoParticleCorrelationsFilter {
     LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%016lx, %s, and 0x%016lx and multiplicity index %d", collisionmask, fFilterFramework->printCollisionOptionalMasks().Data(), collisionmask_forced, fMultiplicityIndex);
     LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%016lx, %s, and 0x%016lx ", trackmask, fFilterFramework->printTrackOptionalMasks().Data(), trackmask_forced);
     LOGF(info, "TwoParticleCorrelationsFilter::init(), PID selection masks 0x%016lx, %s, and 0x%016lx ", pidmask, fFilterFramework->printPIDOptionalMasks().Data(), pidmask_forced);
-    if (collisionmask == uint64_t(0) or trackmask == uint64_t(0)) {
+    if (collisionmask == uint64_t(0) || trackmask == uint64_t(0)) {
       LOGF(fatal, "TwoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
     }
     /* TODO: check the cuts signatures against the CCDB contents */
@@ -123,12 +123,12 @@ struct TwoParticleCorrelationsFilter {
       return all;
     };
 
-    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced and passOptions(collisionmask_opt, collision.selflags())) {
+    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced && passOptions(collisionmask_opt, collision.selflags())) {
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
       acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
-        if ((track.trackflags() & trackmask_forced) == trackmask_forced and passOptions(trackmask_opt, track.trackflags())) {
+        if ((track.trackflags() & trackmask_forced) == trackmask_forced && passOptions(trackmask_opt, track.trackflags())) {
           accepteddtracks(0); // TODO: the kind of accepted track
           nAcceptedTracks++;
         } else {
