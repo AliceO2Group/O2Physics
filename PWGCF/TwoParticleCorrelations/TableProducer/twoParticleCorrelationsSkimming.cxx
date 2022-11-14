@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -20,7 +21,6 @@
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "Framework/runDataProcessing.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,7 +100,7 @@ struct TwoParticleCorrelationsSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "skimmingconf.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/skimmingconf.h"
 
   int nReportedTracks;
   int runNumber = 0;
@@ -172,27 +172,27 @@ struct TwoParticleCorrelationsSkimming {
 
     // NOT CONFIGURABLE EVENT SELECTION
     /* incomplete data acquisition */
-    if (not TESTBIT(eventcuts, kIncompleteDAQ)) {
+    if (!TESTBIT(eventcuts, kIncompleteDAQ)) {
       accepted = false;
     }
     /* pile-up */
     /* TODO: check if this is also valid for Run 1 data */
-    if (not TESTBIT(eventcuts, kPileupInMultBins) or
-        not TESTBIT(eventcuts, kTrackletsVsClusters) or
-        not TESTBIT(eventcuts, kPileUpMV) or
-        not TESTBIT(eventcuts, kTimeRangeCut) or
-        not TESTBIT(eventcuts, kTPCPileUp) or
-        TESTBIT(eventcuts, kIsPileupFromSPD) or
+    if (!TESTBIT(eventcuts, kPileupInMultBins) ||
+        !TESTBIT(eventcuts, kTrackletsVsClusters) ||
+        !TESTBIT(eventcuts, kPileUpMV) ||
+        !TESTBIT(eventcuts, kTimeRangeCut) ||
+        !TESTBIT(eventcuts, kTPCPileUp) ||
+        TESTBIT(eventcuts, kIsPileupFromSPD) ||
         TESTBIT(eventcuts, kIsV0PFPileup)) {
       accepted = false;
     }
     /* TPC issues*/
-    if (TESTBIT(eventcuts, kIsTPCHVdip) or
+    if (TESTBIT(eventcuts, kIsTPCHVdip) ||
         TESTBIT(eventcuts, kIsTPCLaserWarmUp)) {
       accepted = false;
     }
     /* vertex */
-    if (not TESTBIT(eventcuts, kNonZeroNContribs) or
+    if (!TESTBIT(eventcuts, kNonZeroNContribs) ||
         (((collision.flags() & Run2VertexerZ) == Run2VertexerZ) && collision.covZZ() < 0.25)) {
       accepted = false;
     }
@@ -233,7 +233,7 @@ struct TwoParticleCorrelationsSkimming {
           skimmtrackpid(pidmask);
           nFilteredTracks++;
         }
-        if (trkmask != 0UL and nReportedTracks < 1000) {
+        if (trkmask != 0UL && nReportedTracks < 1000) {
           if (nCollisionReportedTracks < 20) {
             LOGF(LOGTRACKTRACKS, "  Got track mask 0x%016lx and PID mask 0x%016lx", trkmask, pidmask);
             LOGF(LOGTRACKTRACKS, "    TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
