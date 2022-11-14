@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "Framework/runDataProcessing.h"
-#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,7 +31,7 @@ struct TwoParticleCorrelationsRegisterSkimming {
   bool registered = false;
   PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
 
-#include "skimmingconf.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/skimmingconf.h"
 
   void init(InitContext const&)
   {
@@ -59,7 +59,7 @@ struct TwoParticleCorrelationsRegisterSkimming {
 
   void process(aod::Collisions const&)
   {
-    if (not registered) {
+    if (!registered) {
       LOGF(info, "Registering filter configuration");
       PWGCF::registerConfiguration(fFilterFramework);
       registered = true;
