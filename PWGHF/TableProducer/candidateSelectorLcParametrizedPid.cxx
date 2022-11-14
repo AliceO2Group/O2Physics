@@ -148,11 +148,11 @@ struct HfCandidateSelectorLcParametrizedPid {
     }
 
     if (trackProton.globalIndex() == candidate.index0Id()) {
-      if (std::abs(InvMassLcpKpi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(InvMassLcToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(InvMassLcpiKp(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(InvMassLcToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -165,21 +165,21 @@ struct HfCandidateSelectorLcParametrizedPid {
     for (auto& candidate : candidates) {
 
       // selection flag
-      int statusLcPKPiNoPID = 0;
-      int statusLcPKPiPerfectPID = 0;
-      int statusLcPKPi = 0;
-      int statusLcPiKPNoPID = 0;
-      int statusLcPiKPPerfectPID = 0;
-      int statusLcPiKP = 0;
+      int statusLcToPKPiNoPid = 0;
+      int statusLcToPKPiPerfectPid = 0;
+      int statusLcToPKPi = 0;
+      int statusLcToPiKPNoPid = 0;
+      int statusLcToPiKPPerfectPid = 0;
+      int statusLcToPiKP = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
-        hfSelLcCandidateparametrizedPID(statusLcPKPiNoPID, statusLcPKPiPerfectPID, statusLcPKPi, statusLcPiKPNoPID, statusLcPiKPPerfectPID, statusLcPiKP);
+        hfSelLcCandidateparametrizedPID(statusLcToPKPiNoPid, statusLcToPKPiPerfectPid, statusLcToPKPi, statusLcToPiKPNoPid, statusLcToPiKPPerfectPid, statusLcToPiKP);
         continue;
       }
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelLcCandidateparametrizedPID(statusLcPKPiNoPID, statusLcPKPiPerfectPID, statusLcPKPi, statusLcPiKPNoPID, statusLcPiKPPerfectPID, statusLcPiKP);
+        hfSelLcCandidateparametrizedPID(statusLcToPKPiNoPid, statusLcToPKPiPerfectPid, statusLcToPKPi, statusLcToPiKPNoPid, statusLcToPiKPPerfectPid, statusLcToPiKP);
         continue;
       }
 
@@ -187,10 +187,10 @@ struct HfCandidateSelectorLcParametrizedPid {
       auto trackNeg = candidate.index1_as<Trks>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.index2_as<Trks>(); // positive daughter (negative for the antiparticles)
 
-      bool topolLcpKpi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolLcpiKp = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
-      if (!topolLcpKpi && !topolLcpiKp) {
-        hfSelLcCandidateparametrizedPID(statusLcPKPiNoPID, statusLcPKPiPerfectPID, statusLcPKPi, statusLcPiKPNoPID, statusLcPiKPPerfectPID, statusLcPiKP);
+      bool topolLcToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
+      bool topolLcToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
+      if (!topolLcToPKPi && !topolLcToPiKP) {
+        hfSelLcCandidateparametrizedPID(statusLcToPKPiNoPid, statusLcToPKPiPerfectPid, statusLcToPKPi, statusLcToPiKPNoPid, statusLcToPiKPPerfectPid, statusLcToPiKP);
         continue;
       }
 
@@ -320,26 +320,26 @@ struct HfCandidateSelectorLcParametrizedPid {
         }
       }
 
-      if (topolLcpKpi) {
-        statusLcPKPiNoPID = 1;
+      if (topolLcToPKPi) {
+        statusLcToPKPiNoPid = 1;
         if (pdgPositive1 == kProton && pdgPositive2 == kPiPlus && pdgNegative == kKMinus) {
-          statusLcPKPiPerfectPID = 1;
+          statusLcToPKPiPerfectPid = 1;
         }
         if (selectPos1Proton && selectPos2Pion && selectNegKaon) {
-          statusLcPKPi = 1;
+          statusLcToPKPi = 1;
         }
       }
 
-      if (topolLcpiKp) {
-        statusLcPiKPNoPID = 1;
+      if (topolLcToPiKP) {
+        statusLcToPiKPNoPid = 1;
         if (pdgPositive2 == kProton && pdgPositive1 == kPiPlus && pdgNegative == kKMinus) {
-          statusLcPiKPPerfectPID = 1;
+          statusLcToPiKPPerfectPid = 1;
         }
         if (selectPos2Proton && selectPos1Pion && selectNegKaon) {
-          statusLcPiKP = 1;
+          statusLcToPiKP = 1;
         }
       }
-      hfSelLcCandidateparametrizedPID(statusLcPKPiNoPID, statusLcPKPiPerfectPID, statusLcPKPi, statusLcPiKPNoPID, statusLcPiKPPerfectPID, statusLcPiKP);
+      hfSelLcCandidateparametrizedPID(statusLcToPKPiNoPid, statusLcToPKPiPerfectPid, statusLcToPKPi, statusLcToPiKPNoPid, statusLcToPiKPPerfectPid, statusLcToPiKP);
     }
   }
 };

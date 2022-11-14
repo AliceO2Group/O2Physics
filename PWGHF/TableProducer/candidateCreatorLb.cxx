@@ -60,7 +60,7 @@ struct HfCandidateCreatorLb {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double massLcPi = 0.;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcpiKp >= selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
@@ -101,11 +101,11 @@ struct HfCandidateCreatorLb {
       if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_prong3::DecayType::LcToPKPi)) {
         continue;
       }
-      if (lcCand.isSelLcpKpi() >= selectionFlagLc) {
-        hMassLcToPKPi->Fill(InvMassLcpKpi(lcCand), lcCand.pt());
+      if (lcCand.isSelLcToPKPi() >= selectionFlagLc) {
+        hMassLcToPKPi->Fill(InvMassLcToPKPi(lcCand), lcCand.pt());
       }
-      if (lcCand.isSelLcpiKp() >= selectionFlagLc) {
-        hMassLcToPKPi->Fill(InvMassLcpiKp(lcCand), lcCand.pt());
+      if (lcCand.isSelLcToPiKP() >= selectionFlagLc) {
+        hMassLcToPKPi->Fill(InvMassLcToPiKP(lcCand), lcCand.pt());
       }
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());
@@ -201,10 +201,10 @@ struct HfCandidateCreatorLb {
         // calculate invariant mass
         auto arrayMomenta = array{pvecLc, pvecPion};
         massLcPi = RecoDecay::m(std::move(arrayMomenta), array{massLc, massPi});
-        if (lcCand.isSelLcpKpi() > 0) {
+        if (lcCand.isSelLcToPKPi() > 0) {
           hMassLbToLcPi->Fill(massLcPi);
         }
-        if (lcCand.isSelLcpiKp() > 0) {
+        if (lcCand.isSelLcToPiKP() > 0) {
           hMassLbToLcPi->Fill(massLcPi);
         }
       } // pi- loop

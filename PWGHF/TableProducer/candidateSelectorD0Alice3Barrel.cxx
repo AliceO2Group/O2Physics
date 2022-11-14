@@ -197,21 +197,21 @@ struct HfCandidateSelectorD0Alice3Barrel {
 
       // selection flag
       int statusHFFlag = 0;
-      int statusD0NoPID = 0;
-      int statusD0PerfectPID = 0;
-      int statusD0TOFPID = 0;
+      int statusD0NoPid = 0;
+      int statusD0PerfectPid = 0;
+      int statusD0TofPid = 0;
       int statusD0RICHPID = 0;
-      int statusD0TOFplusRICHPID = 0;
-      int statusD0barTOFplusRICHPID = 0;
+      int statusD0TofPlusRichPid = 0;
+      int statusD0barTofPlusRichPid = 0;
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID, statusD0barTOFplusRICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
         continue;
       }
       statusHFFlag = 1;
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID, statusD0barTOFplusRICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
         continue;
       }
 
@@ -225,7 +225,7 @@ struct HfCandidateSelectorD0Alice3Barrel {
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
-        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID, statusD0barTOFplusRICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
         continue;
       }
 
@@ -288,21 +288,21 @@ struct HfCandidateSelectorD0Alice3Barrel {
         selectPosKaonTOFplusRICH = true;
 
       if (topolD0) {
-        statusD0NoPID = 1;
+        statusD0NoPid = 1;
         if (pdgPositive == 211 && pdgNegative == -321)
-          statusD0PerfectPID = 1;
+          statusD0PerfectPid = 1;
         if ((std::abs(nsigmaTOFPosPion) < 3.0 && std::abs(nsigmaTOFNegKaon) < 3.0))
-          statusD0TOFPID = 1;
+          statusD0TofPid = 1;
         if ((std::abs(nsigmaRICHPosPion) < 3.0 && std::abs(nsigmaRICHNegKaon) < 3.0))
           statusD0RICHPID = 1;
         if (selectPosPionTOFplusRICH && selectNegKaonTOFplusRICH)
-          statusD0TOFplusRICHPID = 1;
+          statusD0TofPlusRichPid = 1;
       }
       if (topolD0bar) {
         if (selectNegPionTOFplusRICH && selectPosKaonTOFplusRICH)
-          statusD0barTOFplusRICHPID = 1;
+          statusD0barTofPlusRichPid = 1;
       }
-      hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID, statusD0barTOFplusRICHPID);
+      hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
     }
   }
 };

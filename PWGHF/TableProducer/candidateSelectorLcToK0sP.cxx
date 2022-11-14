@@ -40,7 +40,7 @@ using MyBigTracks = aod::BigTracksPID;
 #endif
 
 struct HfCandidateSelectorLcToK0sP {
-  Produces<aod::HfSelLcK0sP> hfSelLcK0sPCandidate;
+  Produces<aod::HfSelLcToK0sP> hfSelLcToK0sPCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -261,7 +261,7 @@ struct HfCandidateSelectorLcToK0sP {
 
     return statusTPC;
     /*
-    if (validTOFPID(track)) {
+    if (validTofPid(track)) {
       if (!selectionPIDTOF(track, nPDG, nSigmaTofMax)) {
         if (!selectionPIDTOF(track, nPDG, nSigmaTofCombinedMax)) {
           statusTOF = 0; //rejected by PID
@@ -321,7 +321,7 @@ struct HfCandidateSelectorLcToK0sP {
       LOG(debug) << "daughterSelection(bach) = " << daughterSelection(bach);
       if (!daughterSelection(bach)) {
         MY_DEBUG_MSG(isLc, LOG(info) << "In selector: Lc rejected due to selections on bachelor");
-        hfSelLcK0sPCandidate(statusLc);
+        hfSelLcToK0sPCandidate(statusLc);
         continue;
       }
 
@@ -330,7 +330,7 @@ struct HfCandidateSelectorLcToK0sP {
       LOG(debug) << "selectionTopol(candidate) = " << selectionTopol(candidate);
       if (!selectionTopol(candidate)) {
         MY_DEBUG_MSG(isLc, LOG(info) << "In selector: Lc rejected due to topological selections");
-        hfSelLcK0sPCandidate(statusLc);
+        hfSelLcToK0sPCandidate(statusLc);
         continue;
       }
 
@@ -345,7 +345,7 @@ struct HfCandidateSelectorLcToK0sP {
       MY_DEBUG_MSG(isLc && pidProton != 1, LOG(info) << "In selector: Lc rejected due to PID selections on bachelor");
       MY_DEBUG_MSG(isLc && pidProton == 1, LOG(info) << "In selector: Lc ACCEPTED");
 
-      hfSelLcK0sPCandidate(statusLc);
+      hfSelLcToK0sPCandidate(statusLc);
     }
   }
 };

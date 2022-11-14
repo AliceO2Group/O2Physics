@@ -34,7 +34,7 @@ struct HfTaskLcToK0sP {
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
   Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcK0sP >= selectionFlagLcbarToK0sP);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
   HistogramRegistry registry{
     "registry",
@@ -66,7 +66,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcK0sP>> const& candidates)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates)
   {
     // Printf("Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
@@ -90,11 +90,11 @@ struct HfTaskLcToK0sP {
       registry.fill(HIST("hd0V0neg"), candidate.dcanegtopv());
       registry.fill(HIST("hV0CPA"), candidate.v0cosPA());
       registry.fill(HIST("hEta"), candidate.eta());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcK0sP());
+      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcToK0sP());
     }
   }
 
-  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcK0sP, aod::HfCandCascadeMCRec>> const& candidates,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMCGen> const& particlesMC,
                  aod::BigTracksMC const& tracks)
   {

@@ -197,18 +197,18 @@ struct HfCandidateSelectorD0Alice3Forward {
 
       // selection flag
       int statusHFFlag = 0;
-      int statusD0NoPID = 0;
+      int statusD0NoPid = 0;
       int statusD0RICHPID = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPID, statusD0RICHPID);
+        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
         continue;
       }
       statusHFFlag = 1;
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPID, statusD0RICHPID);
+        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
         continue;
       }
 
@@ -222,7 +222,7 @@ struct HfCandidateSelectorD0Alice3Forward {
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
-        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPID, statusD0RICHPID);
+        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
         continue;
       }
 
@@ -242,11 +242,11 @@ struct HfCandidateSelectorD0Alice3Forward {
       //bool selectKaonTOFplusRICH = false;
 
       if (topolD0) {
-        statusD0NoPID = 1;
+        statusD0NoPid = 1;
         if ((std::abs(nsigmaRICHPosPion) < 3.0 && std::abs(nsigmaRICHNegKaon) < 3.0))
           statusD0RICHPID = 1;
       }
-      hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPID, statusD0RICHPID);
+      hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
     }
   }
 };

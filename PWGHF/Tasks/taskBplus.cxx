@@ -48,8 +48,8 @@ struct HfTaskBplus {
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
-  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBPlusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
+  Partition<soa::Join<aod::HfCandBPlus, aod::HfSelBplusToD0Pi, aod::HfCandBPMCRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
 
   HistogramRegistry registry{
     "registry",

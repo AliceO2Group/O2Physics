@@ -42,7 +42,7 @@ struct HfTaskLcCentrality {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcpiKp >= selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   HistogramRegistry registry{
     "registry",
@@ -83,11 +83,11 @@ struct HfTaskLcCentrality {
       if (yCandMax >= 0. && std::abs(YLc(candidate)) > yCandMax) {
         continue;
       }
-      if (candidate.isSelLcpKpi() >= selectionFlagLc) {
-        registry.fill(HIST("hMass"), InvMassLcpKpi(candidate), candidate.pt(), centrality);
+      if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
+        registry.fill(HIST("hMass"), InvMassLcToPKPi(candidate), candidate.pt(), centrality);
       }
-      if (candidate.isSelLcpiKp() >= selectionFlagLc) {
-        registry.fill(HIST("hMass"), InvMassLcpiKp(candidate), candidate.pt(), centrality);
+      if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
+        registry.fill(HIST("hMass"), InvMassLcToPiKP(candidate), candidate.pt(), centrality);
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -100,8 +100,8 @@ struct HfTaskLcCentrality {
       registry.fill(HIST("hCt"), CtLc(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcpKpi(), candidate.pt());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcpiKp(), candidate.pt());
+      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcToPKPi(), candidate.pt());
+      registry.fill(HIST("hSelectionStatus"), candidate.isSelLcToPiKP(), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter2(), candidate.pt());
@@ -117,7 +117,7 @@ struct HfTaskLcCentralityMc {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcpiKp >= selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   HistogramRegistry registry{
     "registry",

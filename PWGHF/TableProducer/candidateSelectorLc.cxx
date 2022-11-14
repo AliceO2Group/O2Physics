@@ -125,11 +125,11 @@ struct HfCandidateSelectorLc {
     }
 
     if (trackProton.globalIndex() == candidate.index0Id()) {
-      if (std::abs(InvMassLcpKpi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(InvMassLcToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(InvMassLcpiKp(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(InvMassLcToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -158,11 +158,11 @@ struct HfCandidateSelectorLc {
     for (auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
-      auto statusLcpKpi = 0;
-      auto statusLcpiKp = 0;
+      auto statusLcToPKPi = 0;
+      auto statusLcToPiKP = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
-        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
 
@@ -173,7 +173,7 @@ struct HfCandidateSelectorLc {
       /*
       // daughter track validity selection
       if (!daughterSelection(trackPos1) || !daughterSelection(trackNeg) || !daughterSelection(trackPos2)) {
-        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
       */
@@ -182,29 +182,29 @@ struct HfCandidateSelectorLc {
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
 
       // conjugate-dependent topological selection for Lc
 
-      bool topolLcpKpi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolLcpiKp = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
+      bool topolLcToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
+      bool topolLcToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
 
-      if (!topolLcpKpi && !topolLcpiKp) {
-        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+      if (!topolLcToPKPi && !topolLcToPiKP) {
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
 
-      auto pidLcpKpi = -1;
-      auto pidLcpiKp = -1;
-      auto pidBayesLcpKpi = -1;
-      auto pidBayesLcpiKp = -1;
+      auto pidLcToPKPi = -1;
+      auto pidLcToPiKP = -1;
+      auto pidBayesLcToPKPi = -1;
+      auto pidBayesLcToPiKP = -1;
 
       if (!usePid) {
         // PID non applied
-        pidLcpKpi = 1;
-        pidLcpiKp = 1;
+        pidLcToPKPi = 1;
+        pidLcToPiKP = 1;
       } else {
         // track-level PID selection
         int pidTrackPos1Proton = selectorProton.getStatusTrackPIDAll(trackPos1);
@@ -216,27 +216,27 @@ struct HfCandidateSelectorLc {
         if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
             pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
             pidTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
-          pidLcpKpi = 1; // accept LcpKpi
+          pidLcToPKPi = 1; // accept LcToPKPi
         } else if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
                    pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
                    pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
-          pidLcpKpi = 0; // exclude LcpKpi
+          pidLcToPKPi = 0; // exclude LcToPKPi
         }
         if (pidTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
             pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
             pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
-          pidLcpiKp = 1; // accept LcpiKp
+          pidLcToPiKP = 1; // accept LcToPiKP
         } else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
                    pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
                    pidTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
-          pidLcpiKp = 0; // exclude LcpiKp
+          pidLcToPiKP = 0; // exclude LcToPiKP
         }
       }
 
       if (!usePidBayes) {
         // PID non applied
-        pidBayesLcpKpi = 1;
-        pidBayesLcpiKp = 1;
+        pidBayesLcToPKPi = 1;
+        pidBayesLcToPiKP = 1;
       } else {
         int pidBayesTrackPos1Proton = selectorProton.getStatusTrackBayesPID(trackPos1);
         int pidBayesTrackPos2Proton = selectorProton.getStatusTrackBayesPID(trackPos2);
@@ -247,41 +247,41 @@ struct HfCandidateSelectorLc {
         if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
             pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
             pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
-          pidBayesLcpKpi = 1; // accept LcpKpi
+          pidBayesLcToPKPi = 1; // accept LcToPKPi
         } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
                    pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
                    pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
-          pidBayesLcpKpi = 0; // exclude LcpKpi
+          pidBayesLcToPKPi = 0; // exclude LcToPKPi
         }
         if (pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
             pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
             pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
-          pidBayesLcpiKp = 1; // accept LcpiKp
+          pidBayesLcToPiKP = 1; // accept LcToPiKP
         } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
                    pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
                    pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
-          pidBayesLcpiKp = 0; // exclude LcpiKp
+          pidBayesLcToPiKP = 0; // exclude LcToPiKP
         }
       }
 
-      if (pidLcpKpi == 0 && pidLcpiKp == 0) {
-        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+      if (pidLcToPKPi == 0 && pidLcToPiKP == 0) {
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
 
-      if (pidBayesLcpKpi == 0 && pidBayesLcpiKp == 0) {
-        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+      if (pidBayesLcToPKPi == 0 && pidBayesLcToPiKP == 0) {
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
 
-      if ((pidLcpKpi == -1 || pidLcpKpi == 1) && (pidBayesLcpKpi == -1 || pidBayesLcpKpi == 1) && topolLcpKpi) {
-        statusLcpKpi = 1; // identified as LcpKpi
+      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
+        statusLcToPKPi = 1; // identified as LcToPKPi
       }
-      if ((pidLcpiKp == -1 || pidLcpiKp == 1) && (pidBayesLcpiKp == -1 || pidBayesLcpiKp == 1) && topolLcpiKp) {
-        statusLcpiKp = 1; // identified as LcpiKp
+      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
+        statusLcToPiKP = 1; // identified as LcToPiKP
       }
 
-      hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+      hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
     }
   }
 };

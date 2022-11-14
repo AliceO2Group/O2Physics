@@ -31,7 +31,7 @@ using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 struct HfCandidateSelectorBplusToD0Pi {
-  Produces<aod::HfSelBplusToD0Pi> hfSelBPlusToD0PiCandidate;
+  Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate;
 
   // Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -140,7 +140,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
       // check if flagged as B+ --> D0bar Pi
       if (!(hfCandB.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        hfSelBPlusToD0PiCandidate(statusBplus);
+        hfSelBplusToD0PiCandidate(statusBplus);
         // Printf("B+ candidate selection failed at hfflag check");
         continue;
       }
@@ -151,7 +151,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
       // topological cuts
       if (!selectionTopol(hfCandB, candD0, trackPi)) {
-        hfSelBPlusToD0PiCandidate(statusBplus);
+        hfSelBplusToD0PiCandidate(statusBplus);
         // Printf("B+ candidate selection failed at selection topology");
         continue;
       }
@@ -160,14 +160,14 @@ struct HfCandidateSelectorBplusToD0Pi {
         // PID applied
         if (selectorPion.getStatusTrackPIDAll(trackPi) != TrackSelectorPID::Status::PIDAccepted) {
           // Printf("PID not successful");
-          hfSelBPlusToD0PiCandidate(statusBplus);
+          hfSelBplusToD0PiCandidate(statusBplus);
           continue;
         }
       }
 
       statusBplus = 1; // Successful topological and PID
 
-      hfSelBPlusToD0PiCandidate(statusBplus);
+      hfSelBplusToD0PiCandidate(statusBplus);
       // Printf("B+ candidate selection successful, candidate should be selected");
     }
   }

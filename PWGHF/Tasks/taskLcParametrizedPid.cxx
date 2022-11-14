@@ -37,20 +37,20 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskLcParametrizedPid {
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_parametrized_pid::isSelLcPKPiNoPID == 1 || aod::hf_sel_candidate_lc_parametrized_pid::isSelLcPiKPNoPID == 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_parametrized_pid::isSelLcToPKPiNoPid == 1 || aod::hf_sel_candidate_lc_parametrized_pid::isSelLcToPiKPNoPid == 1);
 
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "3-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigBkgLcNoPID", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigLcNoPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgLcNoPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgLcNoPid", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigLcNoPid", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgLcNoPid", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassSigBkgLc", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigLc", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgLc", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgLcPerfectPID", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigLcPerfectPID", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgLcPerfectPID", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}}}};
+     {"hMassSigBkgLcPerfectPid", "3-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigLcPerfectPid", "3-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgLcPerfectPid", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HfSelLcParametrizedPid, aod::HfCandProng3MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
@@ -63,59 +63,59 @@ struct HfTaskLcParametrizedPid {
         continue;
       }
 
-      auto massLc = InvMassLcpKpi(candidate);
-      auto massLcSwap = InvMassLcpiKp(candidate);
+      auto massLc = InvMassLcToPKPi(candidate);
+      auto massLcSwap = InvMassLcToPiKP(candidate);
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(YLc(candidate));
 
-      if (candidate.isSelLcPKPiNoPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcNoPID"), massLc, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPKPiPerfectPID() == 1) {
-          registry.fill(HIST("hMassSigLcNoPID"), massLc, ptCandidate, rapidityCandidate);
+      if (candidate.isSelLcToPKPiNoPid() == 1) {
+        registry.fill(HIST("hMassSigBkgLcNoPid"), massLc, ptCandidate, rapidityCandidate);
+        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcToPKPiPerfectPid() == 1) {
+          registry.fill(HIST("hMassSigLcNoPid"), massLc, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgLcNoPID"), massLc, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgLcNoPid"), massLc, ptCandidate, rapidityCandidate);
         }
       }
-      if (candidate.isSelLcPiKPNoPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcNoPID"), massLcSwap, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPiKPPerfectPID() == 1) {
-          registry.fill(HIST("hMassSigLcNoPID"), massLcSwap, ptCandidate, rapidityCandidate);
+      if (candidate.isSelLcToPiKPNoPid() == 1) {
+        registry.fill(HIST("hMassSigBkgLcNoPid"), massLcSwap, ptCandidate, rapidityCandidate);
+        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcToPiKPPerfectPid() == 1) {
+          registry.fill(HIST("hMassSigLcNoPid"), massLcSwap, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgLcNoPID"), massLcSwap, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgLcNoPid"), massLcSwap, ptCandidate, rapidityCandidate);
         }
       }
 
-      if (candidate.isSelLcPKPi() == 1) {
+      if (candidate.isSelLcToPKPi() == 1) {
         registry.fill(HIST("hMassSigBkgLc"), massLc, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPKPiPerfectPID() == 1) {
+        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcToPKPiPerfectPid() == 1) {
           registry.fill(HIST("hMassSigLc"), massLc, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgLc"), massLc, ptCandidate, rapidityCandidate);
         }
       }
-      if (candidate.isSelLcPiKP() == 1) {
+      if (candidate.isSelLcToPiKP() == 1) {
         registry.fill(HIST("hMassSigBkgLc"), massLcSwap, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcPiKPPerfectPID() == 1) {
+        if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi) && candidate.isSelLcToPiKPPerfectPid() == 1) {
           registry.fill(HIST("hMassSigLc"), massLcSwap, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgLc"), massLcSwap, ptCandidate, rapidityCandidate);
         }
       }
 
-      if (candidate.isSelLcPKPiPerfectPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcPerfectPID"), massLc, ptCandidate, rapidityCandidate);
+      if (candidate.isSelLcToPKPiPerfectPid() == 1) {
+        registry.fill(HIST("hMassSigBkgLcPerfectPid"), massLc, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi)) {
-          registry.fill(HIST("hMassSigLcPerfectPID"), massLc, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigLcPerfectPid"), massLc, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgLcPerfectPID"), massLc, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgLcPerfectPid"), massLc, ptCandidate, rapidityCandidate);
         }
       }
-      if (candidate.isSelLcPiKPPerfectPID() == 1) {
-        registry.fill(HIST("hMassSigBkgLcPerfectPID"), massLcSwap, ptCandidate, rapidityCandidate);
+      if (candidate.isSelLcToPiKPPerfectPid() == 1) {
+        registry.fill(HIST("hMassSigBkgLcPerfectPid"), massLcSwap, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::LcToPKPi)) {
-          registry.fill(HIST("hMassSigLcPerfectPID"), massLcSwap, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigLcPerfectPid"), massLcSwap, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgLcPerfectPID"), massLcSwap, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgLcPerfectPid"), massLcSwap, ptCandidate, rapidityCandidate);
         }
       }
     }

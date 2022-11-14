@@ -80,8 +80,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel>> selectedD0candidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel, aod::HfCandProng2MCRec>> selectedD0candidatesMC = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel>> selectedD0candidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TofPlusRichPid >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTofPlusRichPid >= selectionFlagD0bar);
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel, aod::HfCandProng2MCRec>> selectedD0candidatesMC = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TofPlusRichPid >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTofPlusRichPid >= selectionFlagD0bar);
 
   HistogramRegistry registry{
     "registry",
@@ -170,11 +170,11 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
 
       // fill invariant mass plots and generic info from all D0/D0bar candidates
-      if (candidate1.isSelD0TOFplusRICHPID() >= selectionFlagD0) {
+      if (candidate1.isSelD0TofPlusRichPid() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
         registry.fill(HIST("hMassD0"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
       }
-      if (candidate1.isSelD0barTOFplusRICHPID() >= selectionFlagD0bar) {
+      if (candidate1.isSelD0barTofPlusRichPid() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), InvMassD0bar(candidate1), candidate1.pt(), efficiencyWeight);
         registry.fill(HIST("hMassD0bar"), InvMassD0bar(candidate1), candidate1.pt(), efficiencyWeight);
       }
@@ -184,18 +184,18 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       registry.fill(HIST("hEta"), candidate1.eta());
       registry.fill(HIST("hPhi"), candidate1.phi());
       registry.fill(HIST("hY"), YD0(candidate1));
-      registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0barTOFplusRICHPID() + (candidate1.isSelD0TOFplusRICHPID() * 2));
+      registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0barTofPlusRichPid() + (candidate1.isSelD0TofPlusRichPid() * 2));
 
       // D-Dbar correlation dedicated section
       // if the candidate is a D0, search for D0bar and evaluate correlations
-      if (candidate1.isSelD0TOFplusRICHPID() < selectionFlagD0) {
+      if (candidate1.isSelD0TofPlusRichPid() < selectionFlagD0) {
         continue;
       }
       for (auto& candidate2 : selectedD0candidatesGrouped) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
-        if (candidate2.isSelD0barTOFplusRICHPID() < selectionFlagD0bar) { // keep only D0bar candidates passing the selection
+        if (candidate2.isSelD0barTofPlusRichPid() < selectionFlagD0bar) { // keep only D0bar candidates passing the selection
           continue;
         }
         // kinematic selection on D0bar candidates
@@ -291,10 +291,10 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         registry.fill(HIST("hEtaMCRec"), candidate1.eta());
         registry.fill(HIST("hPhiMCRec"), candidate1.phi());
         registry.fill(HIST("hYMCRec"), YD0(candidate1));
-        registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0barTOFplusRICHPID() + (candidate1.isSelD0TOFplusRICHPID() * 2));
+        registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0barTofPlusRichPid() + (candidate1.isSelD0TofPlusRichPid() * 2));
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
-      if (candidate1.isSelD0TOFplusRICHPID() >= selectionFlagD0) {    // only reco as D0
+      if (candidate1.isSelD0TofPlusRichPid() >= selectionFlagD0) {    // only reco as D0
         if (candidate1.flagMCMatchRec() == 1 << DecayType::D0ToPiK) { // also matched as D0
           registry.fill(HIST("hMassD0MCRecSig"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
         } else if (candidate1.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
@@ -303,7 +303,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
           registry.fill(HIST("hMassD0MCRecBkg"), InvMassD0(candidate1), candidate1.pt(), efficiencyWeight);
         }
       }
-      if (candidate1.isSelD0barTOFplusRICHPID() >= selectionFlagD0bar) { // only reco as D0bar
+      if (candidate1.isSelD0barTofPlusRichPid() >= selectionFlagD0bar) { // only reco as D0bar
         if (candidate1.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) { // also matched as D0bar
           registry.fill(HIST("hMassD0barMCRecSig"), InvMassD0bar(candidate1), candidate1.pt(), efficiencyWeight);
         } else if (candidate1.flagMCMatchRec() == 1 << DecayType::D0ToPiK) {
@@ -315,7 +315,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
       // D-Dbar correlation dedicated section
       // if the candidate is selected ad D0, search for D0bar and evaluate correlations
-      if (candidate1.isSelD0TOFplusRICHPID() < selectionFlagD0) { // discard candidates not selected as D0 in outer loop
+      if (candidate1.isSelD0TofPlusRichPid() < selectionFlagD0) { // discard candidates not selected as D0 in outer loop
         continue;
       }
       flagD0Signal = candidate1.flagMCMatchRec() == 1 << DecayType::D0ToPiK;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
@@ -324,7 +324,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
-        if (candidate2.isSelD0barTOFplusRICHPID() < selectionFlagD0bar) { // discard candidates not selected as D0bar in inner loop
+        if (candidate2.isSelD0barTofPlusRichPid() < selectionFlagD0bar) { // discard candidates not selected as D0bar in inner loop
           continue;
         }
         flagD0barSignal = candidate2.flagMCMatchRec() == -(1 << DecayType::D0ToPiK);  // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)

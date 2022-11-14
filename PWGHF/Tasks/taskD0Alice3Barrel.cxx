@@ -41,30 +41,30 @@ struct HfTaskD0Alice3Barrel {
   //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
   //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelHFFlag >= 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelHfFlag >= 1);
 
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigBkgD0NoPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0NoPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0NoPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgD0TOFPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0TOFPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0TOFPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgD0NoPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0NoPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0NoPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgD0TofPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0TofPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0TofPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassSigBkgD0RICHPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0RICHPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0RICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassReflBkgD0RICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgD0TOFplusRICHPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0TOFplusRICHPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0TOFplusRICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgD0barTOFplusRICHPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0barTOFplusRICHPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0barTOFplusRICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgD0PerfectPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0PerfectPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0PerfectPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
+     {"hMassSigBkgD0TofPlusRichPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0TofPlusRichPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0TofPlusRichPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgD0barTofPlusRichPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0barTofPlusRichPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0barTofPlusRichPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgD0PerfectPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0PerfectPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0PerfectPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
   // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0Alice3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
@@ -86,25 +86,25 @@ struct HfTaskD0Alice3Barrel {
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(YD0(candidate));
 
-      if (candidate.isSelD0NoPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0NoPID"), massD0, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0NoPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0NoPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0NoPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         }
       }
 
-      if (candidate.isSelD0TOFPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0TOFPID"), massD0, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0TofPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0TOFPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0TofPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0TOFPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
         }
       }
 
-      if (candidate.isSelD0RICHPID() >= 1) {
+      if (candidate.isSelD0RichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -116,30 +116,30 @@ struct HfTaskD0Alice3Barrel {
         }
       }
 
-      if (candidate.isSelD0TOFplusRICHPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0TOFplusRICHPID"), massD0, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0TofPlusRichPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0TOFplusRICHPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0TOFplusRICHPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
         }
       }
 
-      if (candidate.isSelD0barTOFplusRICHPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0barTOFplusRICHPID"), massD0bar, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0barTofPlusRichPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0barTOFplusRICHPID"), massD0bar, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0barTOFplusRICHPID"), massD0bar, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
         }
       }
 
-      if (candidate.isSelD0PerfectPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0PerfectPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         }
       }
     }

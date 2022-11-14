@@ -103,7 +103,7 @@ DECLARE_SOA_COLUMN(JpsiToEEFlag, jpsiToEEFlag, uint8_t);     //!
 DECLARE_SOA_COLUMN(JpsiToMuMuFlag, jpsiToMuMuFlag, uint8_t); //!
 
 DECLARE_SOA_COLUMN(DPlusPiKPiFlag, dPlusPiKPiFlag, uint8_t); //!
-DECLARE_SOA_COLUMN(LcPKPiFlag, lcPKPiFlag, uint8_t);         //!
+DECLARE_SOA_COLUMN(LcToPKPiFlag, lcPKPiFlag, uint8_t);         //!
 DECLARE_SOA_COLUMN(DsKKPiFlag, dsKKPiFlag, uint8_t);         //!
 DECLARE_SOA_COLUMN(XicToPKPiFlag, xicToPKPiFlag, uint8_t);   //!
 } // namespace hf_track_index
@@ -147,7 +147,7 @@ DECLARE_SOA_TABLE(HfCutStatusProng2, "AOD", "HFCUTSTATUSP2", //!
 
 DECLARE_SOA_TABLE(HfCutStatusProng3, "AOD", "HFCUTSTATUSP3", //!
                   hf_track_index::DPlusPiKPiFlag,
-                  hf_track_index::LcPKPiFlag,
+                  hf_track_index::LcToPKPiFlag,
                   hf_track_index::DsKKPiFlag,
                   hf_track_index::XicToPKPiFlag);
 
@@ -783,13 +783,13 @@ auto ELc(const T& candidate)
 }
 
 template <typename T>
-auto InvMassLcpKpi(const T& candidate)
+auto InvMassLcToPKPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto InvMassLcpiKp(const T& candidate)
+auto InvMassLcToPiKP(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kProton)});
 }
@@ -817,13 +817,13 @@ auto EXic(const T& candidate)
 template <typename T>
 auto InvMassXicToPKPi(const T& candidate)
 {
-  return InvMassLcpKpi(candidate);
+  return InvMassLcToPKPi(candidate);
 }
 
 template <typename T>
 auto InvMassXicToPiKP(const T& candidate)
 {
-  return InvMassLcpiKp(candidate);
+  return InvMassLcToPiKP(candidate);
 }
 
 } // namespace hf_cand_prong3

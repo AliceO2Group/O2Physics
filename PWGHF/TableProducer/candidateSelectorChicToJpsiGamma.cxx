@@ -121,7 +121,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   /// \note function to be expanded
   /// \return true if track is ok for TOF PID
   template <typename T>
-  bool validTOFPID(const T& track)
+  bool validTofPid(const T& track)
   {
     if (TMath::Abs(track.pt()) < ptPidTofMin || TMath::Abs(track.pt()) >= ptPidTofMax) {
       return false;
@@ -164,7 +164,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   template <typename T>
   int selectionPID(const T& track)
   { // use both TPC and TOF here; in run5 only TOF makes sense. add some flag for run3/run5 data later?
-    // if (validTOFPID(track)) {
+    // if (validTofPid(track)) {
     //   if (!selectionPIDTOF(track, nSigmaTofMax)) {
     //     return 0; //rejected by PID
     //   } else {

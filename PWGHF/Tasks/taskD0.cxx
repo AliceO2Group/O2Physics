@@ -40,7 +40,7 @@ struct HfTaskD0 {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
   Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_sel_candidate_d0::isRecoHFFlag >= selectionFlagHf;
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelD0, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramRegistry registry{
     "registry",
@@ -211,7 +211,7 @@ struct HfTaskD0 {
         auto ptRec = candidate.pt();
         auto yRec = YD0(candidate);
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        if (candidate.isRecoHFFlag() >= selectionFlagHf) {
+        if (candidate.isRecoHfFlag() >= selectionFlagHf) {
           registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
         }
         if (candidate.isRecoTopol() >= selectionTopol) {
@@ -220,13 +220,13 @@ struct HfTaskD0 {
         if (candidate.isRecoCand() >= selectionCand) {
           registry.fill(HIST("hPtVsYRecSigRecoCand"), ptRec, yRec);
         }
-        if (candidate.isRecoPID() >= selectionPid) {
+        if (candidate.isRecoPid() >= selectionPid) {
           registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
         }
 
         if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-          if (candidate.isRecoHFFlag() >= selectionFlagHf) {
+          if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoHFFlag"), ptRec, yRec);
           }
           if (candidate.isRecoTopol() >= selectionTopol) {
@@ -235,12 +235,12 @@ struct HfTaskD0 {
           if (candidate.isRecoCand() >= selectionCand) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoCand"), ptRec, yRec);
           }
-          if (candidate.isRecoPID() >= selectionPid) {
+          if (candidate.isRecoPid() >= selectionPid) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
           }
         } else {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
-          if (candidate.isRecoHFFlag() >= selectionFlagHf) {
+          if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoHFFlag"), ptRec, yRec);
           }
           if (candidate.isRecoTopol() >= selectionTopol) {
@@ -249,7 +249,7 @@ struct HfTaskD0 {
           if (candidate.isRecoCand() >= selectionCand) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoCand"), ptRec, yRec);
           }
-          if (candidate.isRecoPID() >= selectionPid) {
+          if (candidate.isRecoPid() >= selectionPid) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
           }
         }

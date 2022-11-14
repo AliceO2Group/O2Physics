@@ -37,7 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Forward {
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_forward::isSelHFFFlag >= 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_forward::isSelHfFlag >= 1);
 
   HistogramRegistry registry{
     "registry",
@@ -62,7 +62,7 @@ struct HfTaskD0Alice3Forward {
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(YD0(candidate));
 
-      if (candidate.isSelD0FRICHPID() >= 1) {
+      if (candidate.isSelD0FRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);

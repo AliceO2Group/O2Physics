@@ -44,7 +44,7 @@ struct HfTaskD0ParametrizedPid {
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_parametrized_pid::isSelD0NoPID >= 1 || aod::hf_sel_candidate_d0_parametrized_pid::isSelD0barNoPID >= 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_parametrized_pid::isSelD0NoPid >= 1 || aod::hf_sel_candidate_d0_parametrized_pid::isSelD0barNoPid >= 1);
 
   HistogramRegistry registry{
     "registry",
@@ -54,16 +54,16 @@ struct HfTaskD0ParametrizedPid {
      {"hGenPtCMSYCutCMSDaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
      {"hGenPtFiducialYCutALICE2DaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
      {"hGenPtFiducialYCutCMSDaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
-     {"hMassSigBkgD0NoPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0NoPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0NoPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgD0NoPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0NoPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0NoPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassSigBkgD0", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassReflBkgD0", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassSigBkgD0PerfectPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hMassSigD0PerfectPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
-     {"hMassBkgD0PerfectPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
+     {"hMassSigBkgD0PerfectPid", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0PerfectPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0PerfectPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0ParametrizedPid, aod::HfCandProng2MCRec>> const& candidates, McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfSelD0ParametrizedPid, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
@@ -85,12 +85,12 @@ struct HfTaskD0ParametrizedPid {
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(YD0(candidate));
 
-      if (candidate.isSelD0NoPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0NoPID"), massD0, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0NoPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0NoPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0NoPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         }
       }
 
@@ -106,12 +106,12 @@ struct HfTaskD0ParametrizedPid {
         }
       }
 
-      if (candidate.isSelD0PerfectPID() >= 1) {
-        registry.fill(HIST("hMassSigBkgD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
+      if (candidate.isSelD0PerfectPid() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         }
       }
     }

@@ -83,7 +83,7 @@ struct HfCandidateSelectorLbToLcPi {
 
     //Lc mass
     //if (trackPi.sign() < 0) {
-    //if (std::abs(InvMassLcpKpi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
+    //if (std::abs(InvMassLcToPKPi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
     //return false;
     //}
     //}

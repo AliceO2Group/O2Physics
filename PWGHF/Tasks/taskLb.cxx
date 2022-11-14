@@ -104,7 +104,7 @@ struct HfTaskLb {
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
       if (candPi.sign() < 0) {
-        registry.fill(HIST("hInvMassLc"), InvMassLcpKpi(candLc), candidate.pt());
+        registry.fill(HIST("hInvMassLc"), InvMassLcToPKPi(candLc), candidate.pt());
       }
     } // candidate loop
   }   // process

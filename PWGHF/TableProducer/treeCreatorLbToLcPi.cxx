@@ -295,7 +295,7 @@ struct HfTreeCreatorLbToLcPi {
             track2.tofNSigmaKa(),
             track3.tofNSigmaPi(),
             track3.tofNSigmaPr(),
-            o2::aod::hf_cand_prong3::InvMassLcpKpi(candLc),
+            o2::aod::hf_cand_prong3::InvMassLcToPKPi(candLc),
             o2::aod::hf_cand_prong3::CtLc(candLc),
             o2::aod::hf_cand_prong3::YLc(candLc),
             o2::aod::hf_cand_prong3::ELc(candLc),

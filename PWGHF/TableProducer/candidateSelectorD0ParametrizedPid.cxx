@@ -196,21 +196,21 @@ struct HfCandidateSelectorD0ParametrizedPid {
     for (auto& candidate : candidates) {
 
       // selection flag
-      int statusD0NoPID = 0;
-      int statusD0PerfectPID = 0;
+      int statusD0NoPid = 0;
+      int statusD0PerfectPid = 0;
       int statusD0 = 0;
-      int statusD0barNoPID = 0;
-      int statusD0barPerfectPID = 0;
+      int statusD0barNoPid = 0;
+      int statusD0barPerfectPid = 0;
       int statusD0bar = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        hfSelD0CandidateparametrizedPID(statusD0NoPID, statusD0PerfectPID, statusD0, statusD0barNoPID, statusD0barPerfectPID, statusD0bar);
+        hfSelD0CandidateparametrizedPID(statusD0NoPid, statusD0PerfectPid, statusD0, statusD0barNoPid, statusD0barPerfectPid, statusD0bar);
         continue;
       }
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelD0CandidateparametrizedPID(statusD0NoPID, statusD0PerfectPID, statusD0, statusD0barNoPID, statusD0barPerfectPID, statusD0bar);
+        hfSelD0CandidateparametrizedPID(statusD0NoPid, statusD0PerfectPid, statusD0, statusD0barNoPid, statusD0barPerfectPid, statusD0bar);
         continue;
       }
 
@@ -228,7 +228,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
-        hfSelD0CandidateparametrizedPID(statusD0NoPID, statusD0PerfectPID, statusD0, statusD0barNoPID, statusD0barPerfectPID, statusD0bar);
+        hfSelD0CandidateparametrizedPID(statusD0NoPid, statusD0PerfectPid, statusD0, statusD0barNoPid, statusD0barPerfectPid, statusD0bar);
         continue;
       }
 
@@ -325,24 +325,24 @@ struct HfCandidateSelectorD0ParametrizedPid {
       }
 
       if (topolD0) {
-        statusD0NoPID = 1;
+        statusD0NoPid = 1;
         if (pdgPositive == 211 && pdgNegative == -321) {
-          statusD0PerfectPID = 1;
+          statusD0PerfectPid = 1;
         }
         if (selectPosPion && selectNegKaon) {
           statusD0 = 1;
         }
       }
       if (topolD0bar) {
-        statusD0barNoPID = 1;
+        statusD0barNoPid = 1;
         if (pdgPositive == 321 && pdgNegative == -211) {
-          statusD0barPerfectPID = 1;
+          statusD0barPerfectPid = 1;
         }
         if (selectNegPion && selectPosKaon) {
           statusD0bar = 1;
         }
       }
-      hfSelD0CandidateparametrizedPID(statusD0NoPID, statusD0PerfectPID, statusD0, statusD0barNoPID, statusD0barPerfectPID, statusD0bar);
+      hfSelD0CandidateparametrizedPID(statusD0NoPid, statusD0PerfectPid, statusD0, statusD0barNoPid, statusD0barPerfectPid, statusD0bar);
     }
   }
 };
