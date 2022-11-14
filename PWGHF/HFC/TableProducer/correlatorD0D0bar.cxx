@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_correlation_ddbar;
+using namespace o2::aod::hf_correlation_d_dbar;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 using namespace o2::constants::math;
 

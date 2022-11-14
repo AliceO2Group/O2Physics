@@ -910,8 +910,8 @@ struct HfTrackIndexSkimCreator {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
   using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HFSelTrack, aod::HfPvRefitTrack>>;
 
-  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
-  Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectTracks = aod::hf_sel_track::isSelProng > 0;
 
   // FIXME
   // Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
@@ -2207,8 +2207,8 @@ struct HfTrackIndexSkimCreatorCascades {
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
 
-  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
-  // Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  // Partition<MyTracks> selectedTracks = aod::hf_sel_track::isSelProng >= 4;
 
   // histograms
   HistogramRegistry registry{
