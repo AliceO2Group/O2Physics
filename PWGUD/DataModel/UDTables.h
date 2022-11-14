@@ -170,16 +170,20 @@ using UDCollisionsSel = UDCollisionsSels::iterator;
 
 namespace udtrack
 {
-DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);         //!
-DECLARE_SOA_COLUMN(Px, px, float);                          //!
-DECLARE_SOA_COLUMN(Py, py, float);                          //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                          //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                        //!
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);           //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);           //!
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);      //! time resolution
-DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);      //!
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);         //!
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
+DECLARE_SOA_COLUMN(Px, px, float);                     //!
+DECLARE_SOA_COLUMN(Py, py, float);                     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t); //! Id of original collision if any, -1 if ambiguous
+DECLARE_SOA_DYNAMIC_COLUMN(IsAmbiguous, isAmbiguous,
+                           [](int32_t collisionId) -> bool {
+                             return collisionId == -1;
+                           });                              //!
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                          //!
                            [](float px, float py) -> float {
@@ -237,8 +241,9 @@ DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
                   track::DcaXY)
 
 DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
-                  udtrack::IsAmbiguous,
-                  udtrack::IsPVContributor);
+                  udtrack::CollisionId,
+                  udtrack::IsPVContributor,
+                  udtrack::IsAmbiguous<udtrack::CollisionId>);
 
 using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
