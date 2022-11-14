@@ -536,7 +536,7 @@ struct DQFilterPPTask {
           continue;
         }
         // construct the pair and apply pair cuts
-        VarManager::FillPair<VarManager::kJpsiToEE, TTrackFillMap>(t1, t2); // compute pair quantities
+        VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
@@ -587,7 +587,7 @@ struct DQFilterPPTask {
           continue;
         }
         // construct the pair and apply cuts
-        VarManager::FillPair<VarManager::kJpsiToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
+        VarManager::FillPair<VarManager::kDecayToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNMuonCuts; icut++) {
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
