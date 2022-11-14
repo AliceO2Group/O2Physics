@@ -55,7 +55,7 @@ void FilterAndAnalysisFramework::RegisterConfiguration()
   if (_fTrackFilter == nullptr || _fEventFilter == nullptr || _fPIDFilter == nullptr) {
     LOGF(fatal, "Configuration not stored yet, please use SetConfiguration(evtf, trkf, pidf, mode), or configuration already registered");
   }
-  if (fTrackFilter != nullptr ||r fEventFilter != nullptr || fPIDFilter != nullptr) {
+  if (fTrackFilter != nullptr || fEventFilter != nullptr || fPIDFilter != nullptr) {
     LOGF(fatal, "Configuration already registered");
   }
 
