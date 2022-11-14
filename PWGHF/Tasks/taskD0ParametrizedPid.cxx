@@ -44,7 +44,7 @@ struct HfTaskD0ParametrizedPid {
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_parametrizedPID::isSelD0NoPID >= 1 || aod::hf_selcandidate_d0_parametrizedPID::isSelD0barNoPID >= 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_parametrized_pid::isSelD0NoPID >= 1 || aod::hf_sel_candidate_d0_parametrized_pid::isSelD0barNoPID >= 1);
 
   HistogramRegistry registry{
     "registry",

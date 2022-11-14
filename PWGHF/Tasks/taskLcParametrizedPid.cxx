@@ -37,7 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskLcParametrizedPid {
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_parametrizedPID::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_parametrizedPID::isSelLcPiKPNoPID == 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_parametrized_pid::isSelLcPKPiNoPID == 1 || aod::hf_sel_candidate_lc_parametrized_pid::isSelLcPiKPNoPID == 1);
 
   HistogramRegistry registry{
     "registry",

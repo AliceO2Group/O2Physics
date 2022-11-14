@@ -59,7 +59,7 @@ struct HfCandidateCreatorXicc {
   double massXic = RecoDecay::getMassPDG(int(pdg::Code::kXiCPlus));
   double massXicc{0.};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= selectionFlagXic);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   OutputObj<TH1F> hMassXic{TH1F("hMassXic", "xic candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.6)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};

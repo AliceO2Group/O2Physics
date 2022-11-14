@@ -37,7 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Forward {
-  Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Forward::isSelHFFFlag >= 1);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_forward::isSelHFFFlag >= 1);
 
   HistogramRegistry registry{
     "registry",

@@ -60,7 +60,7 @@ struct HfCandidateCreatorLb {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double massLcPi = 0.;
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= selectionFlagLc);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcpKpi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcpiKp >= selectionFlagLc);
 
   OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
@@ -215,7 +215,7 @@ struct HfCandidateCreatorLb {
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorLbExpressions {
   Spawns<aod::HfCandLbExt> rowCandidateLb;
-  
+
   void init(InitContext const&) {}
 };
 

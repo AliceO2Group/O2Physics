@@ -46,7 +46,7 @@ struct HfTaskJpsi {
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
   HistogramRegistry registry{
     "registry",
@@ -145,7 +145,7 @@ struct HfTaskJpsiMc {
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
   HistogramRegistry registry{
     "registry",

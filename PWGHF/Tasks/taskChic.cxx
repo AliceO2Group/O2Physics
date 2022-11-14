@@ -46,7 +46,7 @@ struct HfTaskChic {
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_sel_candidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   HistogramRegistry registry{
     "registry",
@@ -107,7 +107,7 @@ struct HfTaskChicMc {
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_sel_candidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   HistogramRegistry registry{
     "registry",

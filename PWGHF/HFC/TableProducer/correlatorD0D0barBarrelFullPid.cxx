@@ -80,8 +80,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel>> selectedD0candidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> selectedD0candidatesMC = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_selcandidate_d0_ALICE3_Barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
+  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel>> selectedD0candidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
+  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> selectedD0candidatesMC = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TOFplusRICHPID >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTOFplusRICHPID >= selectionFlagD0bar);
 
   HistogramRegistry registry{
     "registry",
