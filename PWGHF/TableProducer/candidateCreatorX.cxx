@@ -103,20 +103,20 @@ struct HfCandidateCreatorX {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        if (std::abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToEE->Fill(InvMassJpsiToEE(jpsiCand));
+        hMassJpsiToEE->Fill(invMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        if (std::abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToMuMu->Fill(InvMassJpsiToMuMu(jpsiCand));
+        hMassJpsiToMuMu->Fill(invMassJpsiToMuMu(jpsiCand));
       }
 
       hPtJpsi->Fill(jpsiCand.pt());

@@ -197,8 +197,8 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.flagMcMatchRec());
         }
       };
-      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
-      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
+      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), invMassChicToJpsiGamma(candidate), ctChic(candidate), yChic(candidate));
+      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), invMassChicToJpsiGamma(candidate), ctChic(candidate), yChic(candidate));
     }
 
     // Filling particle properties

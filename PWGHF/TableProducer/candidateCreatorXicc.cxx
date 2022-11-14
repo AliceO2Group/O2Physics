@@ -94,10 +94,10 @@ struct HfCandidateCreatorXicc {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
-        hMassXic->Fill(InvMassXicToPKPi(xicCand), xicCand.pt());
+        hMassXic->Fill(invMassXicToPKPi(xicCand), xicCand.pt());
       }
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
-        hMassXic->Fill(InvMassXicToPiKP(xicCand), xicCand.pt());
+        hMassXic->Fill(invMassXicToPiKP(xicCand), xicCand.pt());
       }
       auto track0 = xicCand.prong0_as<aod::BigTracks>();
       auto track1 = xicCand.prong1_as<aod::BigTracks>();

@@ -295,10 +295,10 @@ struct HfTreeCreatorLbToLcPi {
             track2.tofNSigmaKa(),
             track3.tofNSigmaPi(),
             track3.tofNSigmaPr(),
-            o2::aod::hf_cand_3prong::InvMassLcToPKPi(candLc),
-            o2::aod::hf_cand_3prong::CtLc(candLc),
-            o2::aod::hf_cand_3prong::YLc(candLc),
-            o2::aod::hf_cand_3prong::ELc(candLc),
+            o2::aod::hf_cand_3prong::invMassLcToPKPi(candLc),
+            o2::aod::hf_cand_3prong::ctLc(candLc),
+            o2::aod::hf_cand_3prong::yLc(candLc),
+            o2::aod::hf_cand_3prong::eLc(candLc),
             candLc.eta(),
             candLc.cpa(),
             candLc.cpaXY(),
@@ -322,7 +322,7 @@ struct HfTreeCreatorLbToLcPi {
             candidate.flagMcMatchRec());
         }
       };
-      fillTable(candidate.isSelLbToLcPi(), InvMassLbToLcPi(candidate), CtLb(candidate), YLb(candidate));
+      fillTable(candidate.isSelLbToLcPi(), invMassLbToLcPi(candidate), ctLb(candidate), yLb(candidate));
     }
   }
 };

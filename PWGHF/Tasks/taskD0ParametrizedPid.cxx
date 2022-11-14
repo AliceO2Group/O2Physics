@@ -76,14 +76,14 @@ struct HfTaskD0ParametrizedPid {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (std::abs(YD0(candidate)) > 4.0) {
+      if (std::abs(yD0(candidate)) > 4.0) {
         continue;
       }
 
-      auto massD0 = InvMassD0(candidate);
-      //auto massD0bar = InvMassD0bar(candidate);
+      auto massD0 = invMassD0ToPiK(candidate);
+      //auto massD0bar = invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
-      auto rapidityCandidate = std::abs(YD0(candidate));
+      auto rapidityCandidate = std::abs(yD0(candidate));
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);

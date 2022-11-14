@@ -73,14 +73,14 @@ struct HfTaskB0 {
       if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YB0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
         continue;
       }
 
       auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
       auto candPi = candidate.prong1_as<aod::BigTracks>();
 
-      registry.fill(HIST("hMass"), InvMassB0(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), invMassB0ToDPi(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -91,13 +91,13 @@ struct HfTaskB0 {
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hRapidity"), YB0(candidate), candidate.pt());
+      registry.fill(HIST("hRapidity"), yB0(candidate), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
       if (candPi.sign() < 0) {
-        registry.fill(HIST("hInvMassD"), InvMassDPlus(candD), candidate.pt());
+        registry.fill(HIST("hInvMassD"), invMassDplusToPiKPi(candD), candidate.pt());
       }
     } // candidate loop
   }   // process
@@ -174,7 +174,7 @@ struct HfTaskB0Mc {
       if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YB0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
         continue;
       }
       auto candD = candidate.prong0_as<aod::HfCand3Prong>();
@@ -187,10 +187,10 @@ struct HfTaskB0Mc {
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hCPAxyRecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
-        registry.fill(HIST("hRapidityRecSig"), YB0(candidate), candidate.pt());
+        registry.fill(HIST("hRapidityRecSig"), yB0(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), candidate.pt());
-        registry.fill(HIST("hMassRecSig"), InvMassB0(candidate), candidate.pt());
+        registry.fill(HIST("hMassRecSig"), invMassB0ToDPi(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hPtProng0RecSig"), candidate.ptProng0(), candidate.pt());
@@ -206,10 +206,10 @@ struct HfTaskB0Mc {
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hCPAxyRecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
-        registry.fill(HIST("hRapidityRecBg"), YB0(candidate), candidate.pt());
+        registry.fill(HIST("hRapidityRecBg"), yB0(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), candidate.pt());
-        registry.fill(HIST("hMassRecBg"), InvMassB0(candidate), candidate.pt());
+        registry.fill(HIST("hMassRecBg"), invMassB0ToDPi(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0(), candidate.pt());

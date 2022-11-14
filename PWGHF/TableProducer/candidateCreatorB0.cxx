@@ -95,7 +95,7 @@ struct HfCandidateCreatorB0 {
         continue;
       }
       if (dCand.isSelDplusToPiKPi() >= selectionFlagD) {
-        hMassDToPiKPi->Fill(InvMassDPlus(dCand), dCand.pt());
+        hMassDToPiKPi->Fill(invMassDplusToPiKPi(dCand), dCand.pt());
       }
       hPtD->Fill(dCand.pt());
       hCPAD->Fill(dCand.cpa());

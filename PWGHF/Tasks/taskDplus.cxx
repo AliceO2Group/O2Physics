@@ -98,13 +98,13 @@ struct HfTaskDplus {
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
         continue;
       }
-      registry.fill(HIST("hMass"), InvMassDPlus(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate), candidate.pt());
       registry.fill(HIST("hPt"), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hCt"), CtDPlus(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), ctDplus(candidate), candidate.pt());
       registry.fill(HIST("hDecayLength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), candidate.pt());
@@ -137,7 +137,7 @@ struct HfTaskDplus {
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YDPlus(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
@@ -146,7 +146,7 @@ struct HfTaskDplus {
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
-        auto yRec = YDPlus(candidate);
+        auto yRec = yDplus(candidate);
         registry.fill(HIST("hPtVsYRecSig_RecoSkim"), ptRec, yRec);
         if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
           registry.fill(HIST("hPtVsYRecSigRecoTopol"), ptRec, yRec);

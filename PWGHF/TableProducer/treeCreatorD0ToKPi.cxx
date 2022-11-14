@@ -244,8 +244,8 @@ struct HfTreeCreatorD0ToKPi {
         }
       };
 
-      fillTable(0, candidate.isSelD0(), InvMassD0(candidate), CosThetaStarD0(candidate), CtD0(candidate), YD0(candidate), ED0(candidate));
-      fillTable(1, candidate.isSelD0bar(), InvMassD0bar(candidate), CosThetaStarD0bar(candidate), CtD0(candidate), YD0(candidate), ED0(candidate));
+      fillTable(0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD0(candidate), yD0(candidate), eD0(candidate));
+      fillTable(1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD0(candidate), yD0(candidate), eD0(candidate));
     }
 
     // Filling particle properties

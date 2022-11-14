@@ -295,8 +295,8 @@ struct HfTreeCreatorLcToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), InvMassLcToPKPi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), InvMassLcToPiKP(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), invMassLcToPKPi(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), invMassLcToPiKP(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
     }
 
     // Filling particle properties
@@ -422,8 +422,8 @@ struct HfTreeCreatorLcToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), InvMassLcToPKPi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), InvMassLcToPiKP(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), invMassLcToPKPi(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), invMassLcToPiKP(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
     }
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processData, "Process data tree writer", false);

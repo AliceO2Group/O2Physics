@@ -59,14 +59,14 @@ struct HfTaskLcParametrizedPid {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
-      if (std::abs(YLc(candidate)) > 4.0) {
+      if (std::abs(yLc(candidate)) > 4.0) {
         continue;
       }
 
-      auto massLc = InvMassLcToPKPi(candidate);
-      auto massLcSwap = InvMassLcToPiKP(candidate);
+      auto massLc = invMassLcToPKPi(candidate);
+      auto massLcSwap = invMassLcToPiKP(candidate);
       auto ptCandidate = candidate.pt();
-      auto rapidityCandidate = std::abs(YLc(candidate));
+      auto rapidityCandidate = std::abs(yLc(candidate));
 
       if (candidate.isSelLcToPKPiNoPid() == 1) {
         registry.fill(HIST("hMassSigBkgLcNoPid"), massLc, ptCandidate, rapidityCandidate);

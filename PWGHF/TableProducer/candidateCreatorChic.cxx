@@ -95,14 +95,14 @@ struct HfCandidateCreatorChic {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        hMassJpsiToEE->Fill(InvMassJpsiToEE(jpsiCand));
+        hMassJpsiToEE->Fill(invMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        hMassJpsiToMuMu->Fill(InvMassJpsiToMuMu(jpsiCand));
+        hMassJpsiToMuMu->Fill(invMassJpsiToMuMu(jpsiCand));
       }
       hPtJpsi->Fill(jpsiCand.pt());
       hCPAJpsi->Fill(jpsiCand.cpa());
@@ -175,7 +175,7 @@ struct HfCandidateCreatorChic {
                          impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
                          std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
                          jpsiCand.globalIndex(), ecal.globalIndex(),
-                         hfFlag, InvMassJpsiToMuMu(jpsiCand));
+                         hfFlag, invMassJpsiToMuMu(jpsiCand));
 
         // calculate invariant mass
         auto arrayMomenta = array{pvecJpsi, pvecGamma};
@@ -233,7 +233,7 @@ struct HfCandidateCreatorChicMc {
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true);
       if (indexRec > -1) {
-        hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.prong0()));
+        hMassJpsiToMuMuMatched->Fill(invMassJpsiToMuMu(candidate.prong0()));
 
         int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(indexRec), pdg::Code::kChiC1);
         int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcparticleId()), pdg::Code::kChiC1);
@@ -246,7 +246,7 @@ struct HfCandidateCreatorChicMc {
             RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, array{(int)(kGamma), (int)(pdg::Code::kJPsi)}, 1);
             if (arrAllDaughtersIndex.size() == 2) {
               flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
-              hMassChicToJpsiToMuMuGammaMatched->Fill(InvMassChicToJpsiGamma(candidate));
+              hMassChicToJpsiToMuMuGammaMatched->Fill(invMassChicToJpsiGamma(candidate));
             }
           }
         }

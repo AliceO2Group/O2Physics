@@ -148,11 +148,11 @@ struct HfCandidateSelectorLcParametrizedPid {
     }
 
     if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(InvMassLcToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(invMassLcToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(InvMassLcToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(invMassLcToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }

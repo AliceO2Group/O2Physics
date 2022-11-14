@@ -221,10 +221,10 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             candidate.impactParameterProduct(),
-            o2::aod::hf_cand_3prong::InvMassXicToPKPi(xicCand),
-            o2::aod::hf_cand_3prong::CtXic(xicCand),
-            o2::aod::hf_cand_3prong::YXic(xicCand),
-            o2::aod::hf_cand_3prong::EXic(xicCand),
+            o2::aod::hf_cand_3prong::invMassXicToPKPi(xicCand),
+            o2::aod::hf_cand_3prong::ctXic(xicCand),
+            o2::aod::hf_cand_3prong::yXic(xicCand),
+            o2::aod::hf_cand_3prong::eXic(xicCand),
             xicCand.eta(),
             xicCand.cpa(),
             xicCand.cpaXY(),
@@ -251,7 +251,7 @@ struct HfTreeCreatorXiccToPKPiPi {
         }
       };
 
-      fillTable(0, candidate.isSelXiccToPKPiPi(), InvMassXiccToXicPi(candidate), CtXicc(candidate), YXicc(candidate));
+      fillTable(0, candidate.isSelXiccToPKPiPi(), invMassXiccToXicPi(candidate), ctXicc(candidate), yXicc(candidate));
     }
 
     // Filling particle properties

@@ -74,12 +74,12 @@ struct HfCandidateSelectorBplusToD0Pi {
 
     // D0 mass
     if (trackPi.sign() > 0) {
-      if (std::abs(InvMassD0bar(hfCandD0) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "DeltaMD0")) {
+      if (std::abs(invMassD0barToKPi(hfCandD0) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "DeltaMD0")) {
         return false;
       }
     }
     if (trackPi.sign() < 0) {
-      if (std::abs(InvMassD0(hfCandD0) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "DeltaMD0")) {
+      if (std::abs(invMassD0ToPiK(hfCandD0) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "DeltaMD0")) {
         return false;
       }
     }
@@ -105,7 +105,7 @@ struct HfCandidateSelectorBplusToD0Pi {
     //  }
 
     // B+ mass cut
-    // if (std::abs(InvMassBPlus(hfCandBplus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+    // if (std::abs(invMassBplusToD0Pi(hfCandBplus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
     //  Printf("B+ topol selection failed at mass diff check");
     //   return false;
     //  }

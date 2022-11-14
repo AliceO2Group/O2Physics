@@ -65,7 +65,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
     }
 
     // check candidate mass is within a defined mass window
-    if (std::abs(InvMassXiccToXicPi(hfCandXicc) - RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassXiccToXicPi(hfCandXicc) - RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus)) > cuts->get(pTBin, "m")) {
       return false;
     }
 

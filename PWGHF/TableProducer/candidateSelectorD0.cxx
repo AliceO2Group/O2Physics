@@ -134,11 +134,11 @@ struct HfCandidateSelectorD0 {
 
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(InvMassD0(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+      if (std::abs(invMassD0ToPiK(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(InvMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+      if (std::abs(invMassD0barToKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -155,11 +155,11 @@ struct HfCandidateSelectorD0 {
 
     // cut on cos(theta*)
     if (trackPion.sign() > 0) {
-      if (std::abs(CosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
+      if (std::abs(cosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
         return false;
       }
     } else {
-      if (std::abs(CosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
+      if (std::abs(cosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
         return false;
       }
     }

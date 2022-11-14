@@ -149,17 +149,17 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
         continue;
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), InvMassD0(candidate), candidate.pt());
-        registry.fill(HIST("hMassFinerBinning"), InvMassD0(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMassFinerBinning"), invMassD0ToPiK(candidate), candidate.pt());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), InvMassD0bar(candidate), candidate.pt());
-        registry.fill(HIST("hMassFinerBinning"), InvMassD0bar(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassFinerBinning"), invMassD0barToKPi(candidate), candidate.pt());
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -175,8 +175,8 @@ struct HfTaskD0 {
       registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), candidate.pt());
       registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), CosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), CtD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
@@ -185,8 +185,8 @@ struct HfTaskD0 {
       registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTSFinerBinning"), CosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCtFinerBinning"), CtD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTSFinerBinning"), cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCtFinerBinning"), ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), candidate.pt());
     }
   }
@@ -200,7 +200,7 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
@@ -209,7 +209,7 @@ struct HfTaskD0 {
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
-        auto yRec = YD0(candidate);
+        auto yRec = yD0(candidate);
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
           registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
@@ -260,12 +260,12 @@ struct HfTaskD0 {
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
-      auto massD0 = InvMassD0(candidate);
-      auto massD0bar = InvMassD0bar(candidate);
+      auto massD0 = invMassD0ToPiK(candidate);
+      auto massD0bar = invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
-      auto rapidityCandidate = YD0(candidate);
+      auto rapidityCandidate = yD0(candidate);
       auto declengthCandidate = candidate.decayLength();
       auto declengthxyCandidate = candidate.decayLengthXY();
       auto normaliseddeclengthCandidate = candidate.decayLengthNormalised();
@@ -273,8 +273,8 @@ struct HfTaskD0 {
       auto d0Prong0 = candidate.impactParameter0();
       auto d0Prong1 = candidate.impactParameter1();
       auto d0d0Candidate = candidate.impactParameterProduct();
-      auto ctsCandidate = CosThetaStarD0(candidate);
-      auto ctCandidate = CtD0(candidate);
+      auto ctsCandidate = cosThetaStarD0(candidate);
+      auto ctCandidate = ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
       if (candidate.isSelD0() >= selectionFlagD0) {

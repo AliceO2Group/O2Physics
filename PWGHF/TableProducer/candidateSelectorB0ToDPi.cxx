@@ -65,7 +65,7 @@ struct HfCandidateSelectorB0ToDPi {
     }
 
     // B0 mass cut
-    if (std::abs(InvMassB0(hfCandB0) - RecoDecay::getMassPDG(pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassB0ToDPi(hfCandB0) - RecoDecay::getMassPDG(pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
       // Printf("B0 topol selection failed at mass diff check");
       return false;
     }

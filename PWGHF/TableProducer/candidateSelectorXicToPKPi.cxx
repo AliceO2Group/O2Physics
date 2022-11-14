@@ -125,11 +125,11 @@ struct HfCandidateSelectorXicToPKPi {
     }
 
     if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(InvMassXicToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(invMassXicToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(InvMassXicToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(invMassXicToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }

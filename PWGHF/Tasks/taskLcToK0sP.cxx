@@ -81,7 +81,7 @@ struct HfTaskLcToK0sP {
         continue;
       }
 
-      registry.fill(HIST("hMass"), InvMassLcToK0sP(candidate));
+      registry.fill(HIST("hMass"), invMassLcToK0sP(candidate));
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtBach"), candidate.ptProng0());
       registry.fill(HIST("hPtV0"), candidate.ptProng1());

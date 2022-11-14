@@ -99,11 +99,11 @@ struct HfCandidateCreatorBplus {
       if (!(candidate.hfflag() & 1 << hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
         continue;
       }
 
-      hRapidityD0->Fill(YD0(candidate));
+      hRapidityD0->Fill(yD0(candidate));
 
       const std::array<float, 3> vertexD0 = {candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex()};
       const std::array<float, 3> momentumD0 = {candidate.px(), candidate.py(), candidate.pz()};

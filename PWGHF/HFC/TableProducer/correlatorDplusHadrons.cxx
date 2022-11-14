@@ -139,7 +139,7 @@ struct HfCorrelatorDplusHadrons {
     registry.fill(HIST("hMultiplicity"), nTracks);
 
     for (auto& candidate1 : selectedDPlusCandidates) {
-      if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -157,15 +157,15 @@ struct HfCorrelatorDplusHadrons {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
       // fill invariant mass plots and generic info from all Dplus candidates
-      registry.fill(HIST("hMassDplus_2D"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
-      registry.fill(HIST("hMassDplusData"), InvMassDPlus(candidate1), efficiencyWeight);
+      registry.fill(HIST("hMassDplus_2D"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+      registry.fill(HIST("hMassDplusData"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
       registry.fill(HIST("hPtCand"), candidate1.pt());
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
       registry.fill(HIST("hPtProng2"), candidate1.ptProng2());
       registry.fill(HIST("hEta"), candidate1.eta());
       registry.fill(HIST("hPhi"), candidate1.phi());
-      registry.fill(HIST("hY"), YDPlus(candidate1));
+      registry.fill(HIST("hY"), yDplus(candidate1));
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
 
       // Dplus-Hadron correlation dedicated section
@@ -188,7 +188,7 @@ struct HfCorrelatorDplusHadrons {
                              track.eta() - candidate1.eta(),
                              candidate1.pt(),
                              track.pt());
-        entryDplusHadronRecoInfo(InvMassDPlus(candidate1), 0);
+        entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), 0);
       } // Hadron Tracks loop
     }   // end outer Dplus loop
   }
@@ -223,7 +223,7 @@ struct HfCorrelatorDplusHadrons {
       if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(YDPlus(candidate1)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -245,15 +245,15 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hPtProng2MCRec"), candidate1.ptProng2());
         registry.fill(HIST("hEtaMCRec"), candidate1.eta());
         registry.fill(HIST("hPhiMCRec"), candidate1.phi());
-        registry.fill(HIST("hYMCRec"), YDPlus(candidate1));
+        registry.fill(HIST("hYMCRec"), yDplus(candidate1));
         registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelDplusToPiKPi());
       }
       // fill invariant mass plots from Dplus signal and background candidates
-      registry.fill(HIST("hMassDplusMCRec"), InvMassDPlus(candidate1), efficiencyWeight);
+      registry.fill(HIST("hMassDplusMCRec"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
       if (candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
-        registry.fill(HIST("hMassDplusMCRecSig"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassDplusMCRecSig"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
       } else {
-        registry.fill(HIST("hMassDplusMCRecBkg"), InvMassDPlus(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassDplusMCRecBkg"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
       }
 
       // Dplus-Hadron correlation dedicated section
@@ -277,7 +277,7 @@ struct HfCorrelatorDplusHadrons {
                              track.eta() - candidate1.eta(),
                              candidate1.pt(),
                              track.pt());
-        entryDplusHadronRecoInfo(InvMassDPlus(candidate1), (int)flagDplusSignal);
+        entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), (int)flagDplusSignal);
       } // end inner loop (Tracks)
 
     } // end outer Dplus loop

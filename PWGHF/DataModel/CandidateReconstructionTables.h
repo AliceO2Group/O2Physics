@@ -330,43 +330,43 @@ enum DecayType { D0ToPiK = 0,
 // D0(bar) → π± K∓
 
 template <typename T>
-auto CtD0(const T& candidate)
+auto ctD0(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kD0));
 }
 
 template <typename T>
-auto YD0(const T& candidate)
+auto yD0(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0));
 }
 
 template <typename T>
-auto ED0(const T& candidate)
+auto eD0(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kD0));
 }
 
 template <typename T>
-auto InvMassD0(const T& candidate)
+auto invMassD0ToPiK(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)});
 }
 
 template <typename T>
-auto InvMassD0bar(const T& candidate)
+auto invMassD0barToKPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto CosThetaStarD0(const T& candidate)
+auto cosThetaStarD0(const T& candidate)
 {
   return candidate.cosThetaStar(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)}, RecoDecay::getMassPDG(pdg::Code::kD0), 1);
 }
 
 template <typename T>
-auto CosThetaStarD0bar(const T& candidate)
+auto cosThetaStarD0bar(const T& candidate)
 {
   return candidate.cosThetaStar(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kD0), 0);
 }
@@ -374,33 +374,33 @@ auto CosThetaStarD0bar(const T& candidate)
 // J/ψ
 
 template <typename T>
-auto CtJpsi(const T& candidate)
+auto ctJpsi(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kJPsi));
 }
 
 template <typename T>
-auto YJpsi(const T& candidate)
+auto yJpsi(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kJPsi));
 }
 
 template <typename T>
-auto EJpsi(const T& candidate)
+auto eJpsi(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kJPsi));
 }
 
 // J/ψ → e+ e−
 template <typename T>
-auto InvMassJpsiToEE(const T& candidate)
+auto invMassJpsiToEE(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
 }
 // J/ψ → μ+ μ−
 
 template <typename T>
-auto InvMassJpsiToMuMu(const T& candidate)
+auto invMassJpsiToMuMu(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kMuonPlus), RecoDecay::getMassPDG(kMuonMinus)});
 }
@@ -498,13 +498,13 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction l
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 
 template <typename T>
-auto InvMassLcToK0sP(const T& candidate)
+auto invMassLcToK0sP(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kK0Short), RecoDecay::getMassPDG(kProton)}); // first daughter is K0s
 }
 
 template <typename T>
-auto InvMassGamma(const T& candidate)
+auto invMassGammaToEE(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
 }
@@ -591,31 +591,31 @@ enum DecayType { BplusToD0Pi = 0 };
 // B± → D0bar(D0) π±
 
 template <typename T>
-auto CtBPlus(const T& candidate)
+auto ctBplus(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kBPlus));
 }
 
 template <typename T>
-auto YBPlus(const T& candidate)
+auto yBplus(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kBPlus));
 }
 
 template <typename T>
-auto EBPlus(const T& candidate)
+auto eBplus(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kBPlus));
 }
 
 template <typename T>
-auto InvMassBPlus(const T& candidate)
+auto invMassBplusToD0Pi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kD0), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto CosThetaStarBPlus(const T& candidate)
+auto cosThetaStarBplus(const T& candidate)
 {
   return candidate.cosThetaStar(array{RecoDecay::getMassPDG(pdg::Code::kD0), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kBPlus), 1);
 }
@@ -707,25 +707,25 @@ enum DecayType { DplusToPiKPi = 0,
 // D± → π± K∓ π±
 
 template <typename T>
-auto CtDPlus(const T& candidate)
+auto ctDplus(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDPlus));
 }
 
 template <typename T>
-auto YDPlus(const T& candidate)
+auto yDplus(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus));
 }
 
 template <typename T>
-auto EDPlus(const T& candidate)
+auto eDplus(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDPlus));
 }
 
 template <typename T>
-auto InvMassDPlus(const T& candidate)
+auto invMassDplusToPiKPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
@@ -733,31 +733,31 @@ auto InvMassDPlus(const T& candidate)
 // Ds± → K± K∓ π±
 
 template <typename T>
-auto CtDs(const T& candidate)
+auto ctDs(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDS));
 }
 
 template <typename T>
-auto YDs(const T& candidate)
+auto yDs(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDS));
 }
 
 template <typename T>
-auto EDs(const T& candidate)
+auto eDs(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDS));
 }
 
 template <typename T>
-auto InvMassDsKKPi(const T& candidate)
+auto invMassDsToKKPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto InvMassDsPiKK(const T& candidate)
+auto invMassDsToPiKK(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
 }
@@ -765,31 +765,31 @@ auto InvMassDsPiKK(const T& candidate)
 // Λc± → p± K∓ π±
 
 template <typename T>
-auto CtLc(const T& candidate)
+auto ctLc(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus));
 }
 
 template <typename T>
-auto YLc(const T& candidate)
+auto yLc(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus));
 }
 
 template <typename T>
-auto ELc(const T& candidate)
+auto eLc(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus));
 }
 
 template <typename T>
-auto InvMassLcToPKPi(const T& candidate)
+auto invMassLcToPKPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto InvMassLcToPiKP(const T& candidate)
+auto invMassLcToPiKP(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kProton)});
 }
@@ -797,33 +797,33 @@ auto InvMassLcToPiKP(const T& candidate)
 // Ξc± → p± K∓ π±
 
 template <typename T>
-auto CtXic(const T& candidate)
+auto ctXic(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kXiCPlus));
 }
 
 template <typename T>
-auto YXic(const T& candidate)
+auto yXic(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kXiCPlus));
 }
 
 template <typename T>
-auto EXic(const T& candidate)
+auto eXic(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kXiCPlus));
 }
 
 template <typename T>
-auto InvMassXicToPKPi(const T& candidate)
+auto invMassXicToPKPi(const T& candidate)
 {
-  return InvMassLcToPKPi(candidate);
+  return invMassLcToPKPi(candidate);
 }
 
 template <typename T>
-auto InvMassXicToPiKP(const T& candidate)
+auto invMassXicToPiKP(const T& candidate)
 {
-  return InvMassLcToPiKP(candidate);
+  return invMassLcToPiKP(candidate);
 }
 
 } // namespace hf_cand_3prong
@@ -906,32 +906,32 @@ enum DecayType { XToJpsiToEEPiPi = 0,
 // TODO: add pdg code for X (9920443), temporarily hardcode mass here:
 float massX = 3.872; // replace this with: "RecoDecay::getMassPDG(9920443)" when pdg is added
 template <typename T>
-auto CtX(const T& candidate)
+auto ctX(const T& candidate)
 {
   return candidate.ct(massX);
 }
 
 template <typename T>
-auto YX(const T& candidate)
+auto yX(const T& candidate)
 {
   return candidate.y(massX);
 }
 
 template <typename T>
-auto EX(const T& candidate)
+auto eX(const T& candidate)
 {
   return candidate.e(massX);
 }
 
 template <typename T>
-auto InvMassXToJpsiPiPi(const T& candidate)
+auto invMassXToJpsiPiPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 /// Difference between the X mass and the sum of the J/psi and di-pion masses
 template <typename T>
-auto QX(const T& candidate)
+auto qX(const T& candidate)
 {
   auto piVec1 = array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
   auto piVec2 = array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
@@ -943,13 +943,13 @@ auto QX(const T& candidate)
   // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
   double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJPsi);
 
-  double massX = InvMassXToJpsiPiPi(candidate);
+  double massX = invMassXToJpsiPiPi(candidate);
   return std::abs(massX - massJpsi - massPiPi);
 }
 
 /// Angular difference between the J/psi and the pion
 template <typename T>
-auto DRX(const T& candidate, int numPi)
+auto dRX(const T& candidate, int numPi)
 {
   double etaJpsi = RecoDecay::eta(array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
   double phiJpsi = RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0());
@@ -972,7 +972,7 @@ auto DRX(const T& candidate, int numPi)
 
 /// Difference in pT between the two pions
 template <typename T>
-auto PiBalanceX(const T& candidate)
+auto balancePtPionsX(const T& candidate)
 {
   double ptPi1 = RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1());
   double ptPi2 = RecoDecay::pt(candidate.pxProng2(), candidate.pyProng2());
@@ -1088,25 +1088,25 @@ enum DecayType { XiccToXicPi = 0 }; // move this to a dedicated cascade namespac
 // Ξcc±± → p± K∓ π± π±
 
 template <typename T>
-auto CtXicc(const T& candidate)
+auto ctXicc(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus));
 }
 
 template <typename T>
-auto YXicc(const T& candidate)
+auto yXicc(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus));
 }
 
 template <typename T>
-auto EXicc(const T& candidate)
+auto eXicc(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus));
 }
 
 template <typename T>
-auto InvMassXiccToXicPi(const T& candidate)
+auto invMassXiccToXicPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kXiCPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
@@ -1179,24 +1179,24 @@ enum DecayType { ChicToJpsiToEEGamma = 0,
                  ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
 // chic → Jpsi gamma
 template <typename T>
-auto CtChic(const T& candidate)
+auto ctChic(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kChiC1));
 }
 
 template <typename T>
-auto YChic(const T& candidate)
+auto yChic(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kChiC1));
 }
 
 template <typename T>
-auto EChic(const T& candidate)
+auto eChic(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kChiC1));
 }
 template <typename T>
-auto InvMassChicToJpsiGamma(const T& candidate)
+auto invMassChicToJpsiGamma(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kJPsi), 0.});
 }
@@ -1272,24 +1272,24 @@ enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in th
 // Λb → Λc+ π- → p K- π+ π-
 // float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
 template <typename T>
-auto CtLb(const T& candidate)
+auto ctLb(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
 }
 
 template <typename T>
-auto YLb(const T& candidate)
+auto yLb(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
 }
 
 template <typename T>
-auto ELb(const T& candidate)
+auto eLb(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
 }
 template <typename T>
-auto InvMassLbToLcPi(const T& candidate)
+auto invMassLbToLcPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
@@ -1360,31 +1360,31 @@ enum DecayType { B0ToDPi };
 
 // B0(B0bar) → D∓ π±
 template <typename T>
-auto CtB0(const T& candidate)
+auto ctB0(const T& candidate)
 {
   return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kB0));
 }
 
 template <typename T>
-auto YB0(const T& candidate)
+auto yB0(const T& candidate)
 {
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kB0));
 }
 
 template <typename T>
-auto EB0(const T& candidate)
+auto eB0(const T& candidate)
 {
   return candidate.e(RecoDecay::getMassPDG(pdg::Code::kB0));
 }
 
 template <typename T>
-auto InvMassB0(const T& candidate)
+auto invMassB0ToDPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto CosThetaStarB0(const T& candidate)
+auto cosThetaStarB0(const T& candidate)
 {
   return candidate.cosThetaStar(array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kB0), 1);
 }

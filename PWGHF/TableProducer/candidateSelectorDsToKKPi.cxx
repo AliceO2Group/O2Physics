@@ -66,7 +66,7 @@ struct HfCandidateSelectorDsToKKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(InvMassDsKKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kDS)) > cuts->get(pTBin, "m") && (std::abs(InvMassDsPiKK(candidate) - RecoDecay::getMassPDG(pdg::Code::kDS)) > cuts->get(pTBin, "m"))) {
+    if (std::abs(invMassDsToKKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kDS)) > cuts->get(pTBin, "m") && (std::abs(invMassDsToPiKK(candidate) - RecoDecay::getMassPDG(pdg::Code::kDS)) > cuts->get(pTBin, "m"))) {
       return false;
     }
     // decay length cut

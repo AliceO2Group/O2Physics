@@ -301,7 +301,7 @@ struct HfTaskFlow {
     if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
       return false;
     }
-    if (yCandMax >= 0. && std::abs(YD0(candidate)) > yCandMax) {
+    if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
       return false;
     }
     return true;
@@ -317,10 +317,10 @@ struct HfTaskFlow {
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), InvMassD0(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), InvMassD0bar(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
       }
 
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -331,8 +331,8 @@ struct HfTaskFlow {
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), CosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), CtD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEtaCand"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
@@ -368,7 +368,7 @@ struct HfTaskFlow {
           continue;
         }
         fillingHFcontainer = true;
-        invmass = InvMassD0(track1);
+        invmass = invMassD0ToPiK(track1);
       }
 
       //  fill single-track distributions
