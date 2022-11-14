@@ -305,7 +305,7 @@ struct HfTaskLc {
   }
 
   /// Fills MC histograms.
-  void processMC(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate, aod::HfCandProng3MCRec>> const& candidates,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate, aod::HfCandProng3MCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& /*tracks*/)
   {
     for (auto& candidate : candidates) {
@@ -486,7 +486,7 @@ struct HfTaskLc {
     }
   }
 
-  PROCESS_SWITCH(HfTaskLc, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskLc, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

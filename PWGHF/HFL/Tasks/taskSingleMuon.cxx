@@ -113,14 +113,13 @@ struct HfTaskSingleMuonEventSelection {
   {
     runEventSel<gEventFillMap>(event, bcs);
   }
+  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEvent, "run event selection with real data", true);
 
-  void processEventMC(MyMcCollisions::iterator const& event, aod::BCs const& bcs)
+  void processEventMc(MyMcCollisions::iterator const& event, aod::BCs const& bcs)
   {
     runEventSel<gEventFillMap>(event, bcs);
   }
-
-  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEvent, "run event selection with real data", true);
-  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMC, "run event selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMc, "run event selection with MC data", false);
 };
 
 struct HfTaskSingleMuonSelection {
@@ -280,14 +279,14 @@ struct HfTaskSingleMuonSelection {
     runMuonSel<gEventFillMap, gMuonFillMap>(event, bcs, tracks);
   }
 
-  void processMuonMC(MyMcEventsSelected::iterator const& event, aod::BCs const& bcs,
+  void processMuonMc(MyMcEventsSelected::iterator const& event, aod::BCs const& bcs,
                      MyMcMuons const& tracks, aod::McParticles const& mc)
   {
     runMuonSelMC<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
   }
 
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", true);
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMC, "run muon selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMc, "run muon selection with MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

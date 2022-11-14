@@ -166,7 +166,7 @@ struct HfTaskB0Mc {
     registry.add("hThetaStarRecBg", "B^{0} candidates (unmatched);B^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void processMC(soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate, aod::HfCandB0MCRec>> const& candidates,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate, aod::HfCandB0MCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandB0MCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
     // MC rec
@@ -258,7 +258,7 @@ struct HfTaskB0Mc {
       }
     } // gen
   }   // process
-  PROCESS_SWITCH(HfTaskB0Mc, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskB0Mc, processMc, "Process MC", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

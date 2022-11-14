@@ -51,7 +51,7 @@ struct HfTaskFlow {
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
-  Configurable<bool> processMC{"processMC", "false", "Flag to run on MC"};
+  Configurable<bool> processMc{"processMc", "false", "Flag to run on MC"};
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
   //  configurables for collisions
   Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
@@ -209,7 +209,7 @@ struct HfTaskFlow {
       //  Run 2: trigger selection for data case
       if (fillHistograms)
         registry.fill(HIST("hEventCounter"), 1);
-      if (!processMC) {
+      if (!processMc) {
         if (!collision.alias()[kINT7]) {
           return false;
         }
@@ -463,7 +463,7 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-h case
   // =====================================
-  void processSameTPCTPChh(aodCollisions::iterator const& collision,
+  void processSameTpcTpcHH(aodCollisions::iterator const& collision,
                            aodTracks const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
@@ -487,12 +487,12 @@ struct HfTaskFlow {
     fillQA(multiplicity, tracks);
     fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
   }
-  PROCESS_SWITCH(HfTaskFlow, processSameTPCTPChh, "Process same-event correlations for h-h case", true);
+  PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcHH, "Process same-event correlations for h-h case", true);
 
   // =====================================
   //    process same event correlations: HF-h case
   // =====================================
-  void processSameHFHadrons(aodCollisions::iterator const& collision,
+  void processSameHfHadrons(aodCollisions::iterator const& collision,
                             aodTracks const& tracks,
                             hfCandidates const& candidates)
   {
@@ -506,12 +506,12 @@ struct HfTaskFlow {
     fillCandidateQA(candidates);
     fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
   }
-  PROCESS_SWITCH(HfTaskFlow, processSameHFHadrons, "Process same-event correlations for HF-h case", true);
+  PROCESS_SWITCH(HfTaskFlow, processSameHfHadrons, "Process same-event correlations for HF-h case", true);
 
   // =====================================
   //    process same event correlations: h-MFT case
   // =====================================
-  void processSameTPCMFThh(aodCollisions::iterator const& collision,
+  void processSameTpcMftHH(aodCollisions::iterator const& collision,
                            aodTracks const& tracks,
                            aod::MFTTracks const& mfttracks)
   {
@@ -525,13 +525,13 @@ struct HfTaskFlow {
     fillMFTQA(multiplicity, mfttracks);
     fillCorrelations(sameTPCMFTCh, tracks, mfttracks, multiplicity, collision.posZ());
   }
-  PROCESS_SWITCH(HfTaskFlow, processSameTPCMFThh, "Process same-event correlations for h-MFT case", true);
+  PROCESS_SWITCH(HfTaskFlow, processSameTpcMftHH, "Process same-event correlations for h-MFT case", true);
 
   //  TODO: add also MFT option
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedTPCTPChh(aodCollisions& collisions,
+  void processMixedTpcTpcHH(aodCollisions& collisions,
                             aodTracks& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
@@ -543,12 +543,12 @@ struct HfTaskFlow {
 
     mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCCh);
   }
-  PROCESS_SWITCH(HfTaskFlow, processMixedTPCTPChh, "Process mixed-event correlations for h-h case", true);
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcHH, "Process mixed-event correlations for h-h case", true);
 
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedHFHadrons(aodCollisions& collisions,
+  void processMixedHfHadrons(aodCollisions& collisions,
                              aodTracks& tracks,
                              hfCandidates& candidates)
   {
@@ -561,7 +561,7 @@ struct HfTaskFlow {
 
     mixCollisions(collisions, candidates, tracks, getTracksSize, mixedHF);
   }
-  PROCESS_SWITCH(HfTaskFlow, processMixedHFHadrons, "Process mixed-event correlations for HF-h case", true);
+  PROCESS_SWITCH(HfTaskFlow, processMixedHfHadrons, "Process mixed-event correlations for HF-h case", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

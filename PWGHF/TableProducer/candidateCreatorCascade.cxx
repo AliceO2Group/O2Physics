@@ -217,7 +217,7 @@ struct HfCandidateCreatorCascadeMc {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  void processMC(aod::BigTracksMC const& tracks,
+  void processMc(aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
@@ -290,7 +290,7 @@ struct HfCandidateCreatorCascadeMc {
     }
   }
 
-  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMC, "Process MC data", false);
+  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMc, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

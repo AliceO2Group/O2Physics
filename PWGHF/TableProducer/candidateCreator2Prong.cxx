@@ -218,7 +218,7 @@ struct HfCandidateCreator2ProngExpressions {
   void init(InitContext const&) {}
 
   /// Performs MC matching.
-  void processMC(aod::BigTracksMC const& tracks,
+  void processMc(aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
@@ -307,7 +307,7 @@ struct HfCandidateCreator2ProngExpressions {
     }
   }
 
-  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

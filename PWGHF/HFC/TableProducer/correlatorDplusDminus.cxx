@@ -455,7 +455,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcGen, "Process MC Gen mode", false);
 
   /// c-cbar correlator table builder - for MC gen-level analysis
-  void processccbar(aod::McCollision const& mccollision, MCParticlesPlus2Prong const& particlesMC)
+  void processCCbar(aod::McCollision const& mccollision, MCParticlesPlus2Prong const& particlesMC)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
@@ -518,7 +518,7 @@ struct HfCorrelatorDplusDminus {
     registry.fill(HIST("hCountCCbarPerEventBeforeEtaCut"), counterCCbarBeforeEtasel);
   }
 
-  PROCESS_SWITCH(HfCorrelatorDplusDminus, processccbar, "Process ccbar pairs", false);
+  PROCESS_SWITCH(HfCorrelatorDplusDminus, processCCbar, "Process c-cbar pairs", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

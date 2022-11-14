@@ -191,7 +191,7 @@ struct HfTaskD0 {
     }
   }
 
-  void processMC(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>& candidates,
+  void processMc(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
@@ -351,7 +351,7 @@ struct HfTaskD0 {
     }
   }
 
-  PROCESS_SWITCH(HfTaskD0, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskD0, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -162,7 +162,7 @@ struct HfTaskBplus {
     } // candidate loop
   }   // process
 
-  void processMC(soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec> const&,
+  void processMc(soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec> const&,
                  soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)
   {
     // MC rec
@@ -244,9 +244,9 @@ struct HfTaskBplus {
         registry.fill(HIST("hEtaGen"), particle.eta(), particle.pt());
       }
     } // gen
-  }   // processMC
+  }   // processMc
 
-  PROCESS_SWITCH(HfTaskBplus, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskBplus, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

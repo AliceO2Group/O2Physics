@@ -53,7 +53,7 @@ struct HfTaskLcToK0sP {
   void init(InitContext& context)
   {
     // add MC histograms
-    if (context.mOptions.get<bool>("processMC")) {
+    if (context.mOptions.get<bool>("processMc")) {
       registry.add("hPtRecSig", "cascade candidates (MC);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
       registry.add("hPtRecBg", "cascade candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
       registry.add("hPtGen", "cascade (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
@@ -94,7 +94,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void processMC(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate, aod::HfCandCascadeMCRec>> const& candidates,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate, aod::HfCandCascadeMCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMCGen> const& particlesMC,
                  aod::BigTracksMC const& tracks)
   {
@@ -133,7 +133,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  PROCESS_SWITCH(HfTaskLcToK0sP, processMC, "Process MC data", false);
+  PROCESS_SWITCH(HfTaskLcToK0sP, processMc, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

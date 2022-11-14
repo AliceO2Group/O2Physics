@@ -186,7 +186,7 @@ struct HfTreeCreatorLcToPKPi {
   {
   }
 
-  void processMC(aod::Collisions const& collisions,
+  void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particles,
@@ -313,7 +313,7 @@ struct HfTreeCreatorLcToPKPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMC, "Process MC tree writer", true);
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMc, "Process MC tree writer", true);
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate> const& candidates,

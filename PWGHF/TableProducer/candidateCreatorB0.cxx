@@ -303,7 +303,7 @@ struct HfCandidateCreatorB0Mc {
   Produces<aod::HfCandB0MCRec> rowMCMatchRec; // table defined in CandidateReconstructionTables.h
   Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in CandidateReconstructionTables.h
 
-  void processMC(aod::HfCandB0 const& candidates,
+  void processMc(aod::HfCandB0 const& candidates,
                  aod::HfCandProng3 const&,
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
@@ -362,7 +362,7 @@ struct HfCandidateCreatorB0Mc {
       rowMCMatchGen(flag, origin);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorB0Mc, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorB0Mc, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
