@@ -9,8 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSSKIMMED_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSSKIMMED_H_
+
+#include <vector>
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
@@ -19,13 +24,6 @@
 #include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
 #include "Framework/runDataProcessing.h"
-
-/* TODO: this will go to its proper header at some point */
-#ifndef O2_ANALYSIS_cfskimMED_H
-#define O2_ANALYSIS_cfskimMED_H
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
 
 namespace o2
 {
@@ -108,4 +106,4 @@ DECLARE_SOA_TABLE(CFMCTrackLabels, "AOD", "CFMCTRACKLABEL",
 } // namespace aod
 } // namespace o2
 
-#endif // O2_ANALYSIS_cfskimMED_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSSKIMMED_H_
