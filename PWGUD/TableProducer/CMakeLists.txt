@@ -11,12 +11,12 @@
 
 o2physics_add_dpl_workflow(dgcand-producer
                            SOURCES DGCandProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::DGSelector
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dgbccand-producer
                            SOURCES DGBCCandProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::DGSelector
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upccand-producer
