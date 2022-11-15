@@ -2188,7 +2188,13 @@ struct HfTrackIndexSkimsCreatorCascades {
   // cascade cuts
   Configurable<double> cutCascPtCandMin{"cutCascPtCandMin", -1., "min. pT of the cascade candidate"};              // PbPb 2018: use 1
   Configurable<double> cutCascInvMassLc{"cutCascInvMassLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
+  Configurable<double> cutInvMassXi{"cutInvMassXi", 1., "Xi candidate invariant mass difference wrt PDG"};
+  Configurable<double> cutInvMassOmegac{"cutInvMassOmegac", 1., "Omegac candidate invariant mass difference wrt PDG"};
   // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
+
+  Configurable<bool> Run2TPCRefit{"Run2TPCRefit", false, "Switch to true for Run2 data to have TPC refit"};
+  Configurable<bool> studyLc{"studyLc", true, "Apply cuts for Lc"};
+  Configurable<bool> studyOmegac{"studyOmegac", false, "Apply cuts for Omegac"}; 
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -2215,7 +2221,7 @@ struct HfTrackIndexSkimsCreatorCascades {
     {{"hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
-     {"hMass2", "2-prong candidates;inv. mass (K0s p) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
+     {"hMass2", "2-prong candidates;cascade inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
   // using MyTracks = aod::BigTracksMC;
   // Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
@@ -2226,6 +2232,11 @@ struct HfTrackIndexSkimsCreatorCascades {
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.}; // WHY HERE?
+  double massOmegac = 2.6952;
+  double massLambda = 1.115683;
+  double massXi = 1.32171;
+  double massLambdaPi{0.};
+
 
   void init(InitContext const&)
   {
@@ -2288,7 +2299,7 @@ struct HfTrackIndexSkimsCreatorCascades {
         continue;
       }
 
-      if (TPCRefitBach) {
+      if (TPCRefitBach && Run2TPCRefit) {
         if (!(bach.trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to TPCrefit");
           continue;
@@ -2303,6 +2314,15 @@ struct HfTrackIndexSkimsCreatorCascades {
       auto trackBach = getTrackParCov(bach);
       // now we loop over the V0s
       for (const auto& v0 : V0s) {
+
+        //check not to take the same particle twice in the decay chain
+        if (bach.sign() > 0 && (bach.globalIndex() == v0.posTrack_as<MyTracks>().globalIndex())) {
+          continue;
+        }
+        if (bach.sign() < 0 && (bach.globalIndex() == v0.negTrack_as<MyTracks>().globalIndex())) {
+          continue;
+        }
+
         MY_DEBUG_MSG(1, LOG(info) << "*** Checking next K0S");
         // selections on the V0 daughters
         const auto& trackV0DaughPos = v0.posTrack_as<MyTracks>();
@@ -2323,7 +2343,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
         MY_DEBUG_MSG(isLc, LOG(info) << "Combination of K0S and p which correspond to a Lc found!");
 
-        if (TPCRefitV0Daugh) {
+        if (TPCRefitV0Daugh && Run2TPCRefit) {
           if (!(trackV0DaughPos.trackType() & o2::aod::track::TPCrefit) ||
               !(trackV0DaughNeg.trackType() & o2::aod::track::TPCrefit)) {
             MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to TPCrefit");
@@ -2353,8 +2373,11 @@ struct HfTrackIndexSkimsCreatorCascades {
         }
 
         // V0 invariant mass selection
-        if (std::abs(v0.mK0Short() - massK0s) > cutInvMassV0) {
+        if (studyLc && (std::abs(v0.mK0Short() - massK0s) > cutInvMassV0)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to invMass --> " << v0.mK0Short() - massK0s << " (cut " << cutInvMassV0 << ")");
+          continue; // should go to the filter, but since it is a dynamic column, I cannot use it there
+        }
+        if (studyOmegac && (std::abs(v0.mLambda() - massLambda) > cutInvMassV0)) {
           continue; // should go to the filter, but since it is a dynamic column, I cannot use it there
         }
 
@@ -2369,8 +2392,13 @@ struct HfTrackIndexSkimsCreatorCascades {
         // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
         // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
         mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
-        if ((cutCascInvMassLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutCascInvMassLc)) {
+        massLambdaPi = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massPi, massLambda});
+        
+        if (studyLc && (cutCascInvMassLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutCascInvMassLc)) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutCascInvMassLc << ")");
+          continue;
+        }
+        if (studyOmegac && (cutInvMassXi >= 0.) && (std::abs(massLambdaPi - massXi) > cutInvMassXi)) {
           continue;
         }
 
@@ -2408,6 +2436,7 @@ struct HfTrackIndexSkimsCreatorCascades {
         // invariant mass
         // re-calculate invariant masses with updated momenta, to fill the histogram
         mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
+        massLambdaPi = RecoDecay::m(array{pVecBach, pVecV0}, array{massPi, massLambda});
 
         std::array<float, 3> posCasc = {0., 0., 0.};
         const auto& cascVtx = fitter.getPCACandidate();
@@ -2424,7 +2453,12 @@ struct HfTrackIndexSkimsCreatorCascades {
           registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
           registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
           registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
-          registry.fill(HIST("hMass2"), mass2K0sP);
+          if(studyOmegac){
+            registry.fill(HIST("hMass2"), massLambdaPi);
+          } else {
+            registry.fill(HIST("hMass2"), mass2K0sP);
+          }
+          
         }
 
       } // loop over V0s

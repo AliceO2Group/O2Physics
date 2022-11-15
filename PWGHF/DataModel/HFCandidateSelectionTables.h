@@ -22,6 +22,19 @@ enum SelectionStep {
   NSelectionSteps
 };
 
+namespace hf_sel_omegac{
+  DECLARE_SOA_COLUMN(StatusPidLambda, statuspidlambda, int);
+  DECLARE_SOA_COLUMN(StatusPidCascade, statuspidcascade, int);
+  DECLARE_SOA_COLUMN(StatusPidOmegac, statuspidomegac, int);
+  DECLARE_SOA_COLUMN(StatusInvMassLambda, statusinvmasslambda, int);
+  DECLARE_SOA_COLUMN(StatusInvMassCascade, statusinvmasscascade, int);
+  DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusinvmassomegac, int);
+}
+DECLARE_SOA_TABLE(HFSelOmegacCandidate, "AOD", "HFSELOMECCAND",
+                  hf_sel_omegac::StatusPidLambda, hf_sel_omegac::StatusPidCascade, hf_sel_omegac::StatusPidOmegac,
+                  hf_sel_omegac::StatusInvMassLambda, hf_sel_omegac::StatusInvMassCascade, hf_sel_omegac::StatusInvMassOmegac
+                 );
+
 namespace hf_selcandidate_d0
 {
 DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);           //!
