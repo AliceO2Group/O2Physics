@@ -84,6 +84,7 @@ struct tpcPidFull {
   Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
   Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
+  Configurable<int> networkSetNumThreads{"networkSetNumThreads", 0, "Especially important for running on a SLURM cluster. Sets the number of threads used for execution."};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -163,7 +164,8 @@ struct tpcPidFull {
             Network temp_net(networkPathLocally.value,
                              strtoul(headers["Valid-From"].c_str(), NULL, 0),
                              strtoul(headers["Valid-Until"].c_str(), NULL, 0),
-                             enableNetworkOptimizations.value);
+                             enableNetworkOptimizations.value,
+                             networkSetNumThreads.value);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
           } else {
@@ -176,7 +178,8 @@ struct tpcPidFull {
           }
           LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
           Network temp_net(networkPathLocally.value,
-                           enableNetworkOptimizations.value);
+                           enableNetworkOptimizations.value,
+                           networkSetNumThreads.value);
           network = temp_net;
           network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
         }
@@ -234,7 +237,8 @@ struct tpcPidFull {
             Network temp_net(networkPathLocally.value,
                              strtoul(headers["Valid-From"].c_str(), NULL, 0),
                              strtoul(headers["Valid-Until"].c_str(), NULL, 0),
-                             enableNetworkOptimizations.value);
+                             enableNetworkOptimizations.value,
+                             networkSetNumThreads.value);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
           } else {

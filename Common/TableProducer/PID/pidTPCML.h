@@ -36,8 +36,8 @@ class Network
  public:
   // Constructor, destructor and copy-constructor
   Network() = default;
-  Network(std::string, bool);
-  Network(std::string, unsigned long, unsigned long, bool); // initialization with timestamps
+  Network(std::string, bool, int);
+  Network(std::string, unsigned long, unsigned long, bool, int); // initialization with timestamps
   ~Network() = default;
 
   // Operators
