@@ -40,7 +40,8 @@ std::string Network::printShape(const std::vector<int64_t>& v)
 }
 
 Network::Network(std::string path,
-                 bool enableOptimization = true)
+                 bool enableOptimization = true,
+                 int setNumThreads = 0)
 {
 
   /*
@@ -57,6 +58,9 @@ Network::Network(std::string path,
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
   if (enableOptimization) {
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+  if(setNumThreads>0){
+    sessionOptions.SetIntraOpNumThreads(setNumThreads);
   }
 
   mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
@@ -83,7 +87,8 @@ Network::Network(std::string path,
 Network::Network(std::string path,
                  unsigned long start,
                  unsigned long end,
-                 bool enableOptimization = true)
+                 bool enableOptimization = true,
+                 int setNumThreads = 0)
 {
 
   /*
@@ -100,6 +105,9 @@ Network::Network(std::string path,
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
   if (enableOptimization) {
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+  if(setNumThreads>0){
+    sessionOptions.SetIntraOpNumThreads(setNumThreads);
   }
 
   mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
