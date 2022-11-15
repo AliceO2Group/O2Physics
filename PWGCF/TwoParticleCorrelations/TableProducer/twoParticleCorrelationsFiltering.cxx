@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
+
 #include "Framework/AnalysisTask.h"
-#include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
-#include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
-#include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsFiltered.h"
 #include "Framework/runDataProcessing.h"
@@ -26,8 +26,6 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <TProfile3D.h>
-
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,9 +48,7 @@ uint64_t pidmask = 0UL;
 std::vector<uint64_t> pidmask_opt;
 uint64_t pidmask_forced = 0UL;
 
-PWGCF::EventSelectionFilterAndAnalysis* fCollisionFilter = nullptr;
-PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;
-PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;
+PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
 
 int fMultiplicityIndex = -1; //! the index to the multiplicity values array
 } // namespace o2::analysis::twopfilter
@@ -65,7 +61,7 @@ struct TwoParticleCorrelationsFilter {
   Produces<aod::TwoPAcceptedGenCollisions> acceptedgencollisions;
   Produces<aod::TwoPFilteredParticles> acceptedgentracks;
 
-#include "skimmingconf.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/skimmingconf.h"
 
   int nReportedTracks;
   //  HistogramRegistry historeg;
@@ -78,12 +74,9 @@ struct TwoParticleCorrelationsFilter {
 
     /* collision filtering configuration */
     PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
-    fCollisionFilter = new PWGCF::EventSelectionFilterAndAnalysis(eventsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
-
     /* track filtering configuration */
     PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
                                              trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
-    fTrackFilter = new PWGCF::TrackSelectionFilterAndAnalysis(trksel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
 #ifdef INCORPORATEBAYESIANPID
     PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr,
@@ -92,29 +85,30 @@ struct TwoParticleCorrelationsFilter {
     PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
 #endif
-    fPIDFilter = new PWGCF::PIDSelectionFilterAndAnalysis(pidsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
-
+    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
+    fFilterFramework->SetConfiguration(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kAnalysis);
+    fFilterFramework->Init();
     nReportedTracks = 0;
-    collisionmask = fCollisionFilter->getMask();
-    collisionmask_opt = fCollisionFilter->getOptMask();
-    collisionmask_forced = fCollisionFilter->getForcedMask();
-    fMultiplicityIndex = fCollisionFilter->getMultiplicityIndex();
-    trackmask = fTrackFilter->getMask();
-    trackmask_opt = fTrackFilter->getOptMask();
-    trackmask_forced = fTrackFilter->getForcedMask();
-    pidmask = fPIDFilter->getMask();
-    pidmask_opt = fPIDFilter->getOptMask();
-    pidmask_forced = fPIDFilter->getForcedMask();
-    LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%016lx, %s, and 0x%016lx and multiplicity index %d", collisionmask, fCollisionFilter->printOptionalMasks().Data(), collisionmask_forced, fMultiplicityIndex);
-    LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%016lx, %s, and 0x%016lx ", trackmask, fTrackFilter->printOptionalMasks().Data(), trackmask_forced);
-    LOGF(info, "TwoParticleCorrelationsFilter::init(), PID selection masks 0x%016lx, %s, and 0x%016lx ", pidmask, fPIDFilter->printOptionalMasks().Data(), pidmask_forced);
-    if (collisionmask == uint64_t(0) or trackmask == uint64_t(0)) {
+    collisionmask = fFilterFramework->getCollisionMask();
+    collisionmask_opt = fFilterFramework->getCollisionOptMask();
+    collisionmask_forced = fFilterFramework->getCollisionForcedMask();
+    fMultiplicityIndex = fFilterFramework->getCollisionMultiplicityIndex();
+    trackmask = fFilterFramework->getTrackMask();
+    trackmask_opt = fFilterFramework->getTrackOptMask();
+    trackmask_forced = fFilterFramework->getTrackForcedMask();
+    pidmask = fFilterFramework->getPIDMask();
+    pidmask_opt = fFilterFramework->getPIDOptMask();
+    pidmask_forced = fFilterFramework->getPIDForcedMask();
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), collision selection masks 0x%016lx, %s, and 0x%016lx and multiplicity index %d", collisionmask, fFilterFramework->printCollisionOptionalMasks().Data(), collisionmask_forced, fMultiplicityIndex);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), track selection masks 0x%016lx, %s, and 0x%016lx ", trackmask, fFilterFramework->printTrackOptionalMasks().Data(), trackmask_forced);
+    LOGF(info, "TwoParticleCorrelationsFilter::init(), PID selection masks 0x%016lx, %s, and 0x%016lx ", pidmask, fFilterFramework->printPIDOptionalMasks().Data(), pidmask_forced);
+    if (collisionmask == uint64_t(0) || trackmask == uint64_t(0)) {
       LOGF(fatal, "TwoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
     }
     /* TODO: check the cuts signatures against the CCDB contents */
-    LOGF(info, "Collision skimming signature: %s", fCollisionFilter->getCutStringSignature().Data());
-    LOGF(info, "Track skimming signature: %s", fTrackFilter->getCutStringSignature().Data());
-    LOGF(info, "PID skimming signature: %s", fPIDFilter->getCutStringSignature().Data());
+    LOGF(info, "Collision skimming signature: %s", fFilterFramework->getEventFilterCutStringSignature().Data());
+    LOGF(info, "Track skimming signature: %s", fFilterFramework->getTrackFilterCutStringSignature().Data());
+    LOGF(info, "PID skimming signature: %s", fFilterFramework->getPIDFilterCutStringSignature().Data());
   }
 
   void processRun2(aod::CFCollision const& collision, aod::CFTracks const& tracks)
@@ -129,12 +123,12 @@ struct TwoParticleCorrelationsFilter {
       return all;
     };
 
-    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced and passOptions(collisionmask_opt, collision.selflags())) {
+    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced && passOptions(collisionmask_opt, collision.selflags())) {
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
       acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
-        if ((track.trackflags() & trackmask_forced) == trackmask_forced and passOptions(trackmask_opt, track.trackflags())) {
+        if ((track.trackflags() & trackmask_forced) == trackmask_forced && passOptions(trackmask_opt, track.trackflags())) {
           accepteddtracks(0); // TODO: the kind of accepted track
           nAcceptedTracks++;
         } else {

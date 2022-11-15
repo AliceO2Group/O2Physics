@@ -8,9 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_CFSKIMMINGCONF_H
-#define O2_ANALYSIS_CFSKIMMINGCONF_H
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
 
+#include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -61,4 +63,10 @@ struct : o2::framework::ConfigurableGroup {
 #endif
 } pidfilter;
 
-#endif // O2_ANALYSIS_CFSKIMMINGCONF_H
+struct : o2::framework::ConfigurableGroup {
+  o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the skimming ccdb repository"};
+  o2::framework::Configurable<std::string> ccdbpath{"ccdbpath", "Users/v/victor/Skimming", "url of the skimming ccdb repository"};
+  o2::framework::Configurable<std::string> filterdate{"filterdate", "20221115", "the date for the skimming production with the current filter configuration"};
+} filterccdb;
+
+#endif // PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
