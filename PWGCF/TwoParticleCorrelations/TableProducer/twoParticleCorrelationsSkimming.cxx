@@ -100,7 +100,7 @@ struct TwoParticleCorrelationsSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/skimmingconf.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
 
   int nReportedTracks;
   int runNumber = 0;

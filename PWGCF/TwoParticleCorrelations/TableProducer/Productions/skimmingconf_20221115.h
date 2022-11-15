@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
-#define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_PRODUCTIONS_SKIMMINGCONF_20221115_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_PRODUCTIONS_SKIMMINGCONF_20221115_H_
 
 #include <vector>
 #include <string>
@@ -69,4 +69,4 @@ struct : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> filterdate{"filterdate", "20221115", "the date for the skimming production with the current filter configuration"};
 } filterccdb;
 
-#endif // PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_SKIMMINGCONF_H_
+#endif // PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_PRODUCTIONS_SKIMMINGCONF_20221115_H_
