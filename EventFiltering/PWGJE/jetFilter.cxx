@@ -11,6 +11,10 @@
 
 // Author: Filip Krizek
 
+#include <TMath.h>
+#include <cmath>
+#include <string>
+
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,10 +34,6 @@
 #include "../filterTables.h"
 
 #include "Framework/HistogramRegistry.h"
-
-#include <TMath.h>
-#include <cmath>
-#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -112,6 +112,8 @@ struct jetFilter {
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::antikt_algorithm;
     jetReclusterer.jetR = cfgJetR;
+    jetReclusterer.jetEtaMin = -2 * cfgTPCVolume;
+    jetReclusterer.jetEtaMax = 2 * cfgTPCVolume;
   }
 
   // declare filters on tracks
@@ -158,11 +160,11 @@ struct jetFilter {
 
     // Check whether there is a high pT charged jet
     for (auto& jet : jetReclustered) { // start loop over charged jets
-      if (fabs(jet.eta()) < cfgTPCVolume) {
-        if (jet.pt() >= selectionJetChHighPt) {
-          spectra.fill(HIST("ptphiJetChSelected"), jet.pt(),
+      if (fabs(jet.eta()) < 2 * cfgTPCVolume) {
+        if (jet.perp() >= selectionJetChHighPt) {
+          spectra.fill(HIST("ptphiJetChSelected"), jet.perp(),
                        jet.phi()); // charged jet pT vs phi
-          spectra.fill(HIST("ptetaJetChSelected"), jet.pt(),
+          spectra.fill(HIST("ptetaJetChSelected"), jet.perp(),
                        jet.eta()); // charged jet pT vs eta
           keepEvent[kJetChHighPt] = true;
           break;
