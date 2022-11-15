@@ -36,6 +36,7 @@ namespace cfskim
 {
 DECLARE_SOA_COLUMN(CFCollisionCentMult, centmult, std::vector<float>); //! The centrality/multiplicity pecentile
 DECLARE_SOA_COLUMN(CFCollisionFlags, selflags, uint64_t);              //! The skimming flags for collision selection
+DECLARE_SOA_COLUMN(CFMCCollisionFlags, mcselflags, uint64_t);          //! The skimming flags for generated collision selection
 } // namespace cfskim
 DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Accepted reconstructed collisions/events filtered table
                   o2::soa::Index<>,
@@ -45,18 +46,27 @@ DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Accepted reconstructed
                   cfskim::CFCollisionFlags,
                   cfskim::CFCollisionCentMult);
 using CFCollision = CFCollisions::iterator;
+DECLARE_SOA_TABLE(CFCollMasks, "AOD", "CFCOLLMASK", //! collision/event minimal filtered table
+                  cfskim::CFCollisionFlags,
+                  cfskim::CFCollisionCentMult);
+using CFCollMask = CFCollMasks::iterator;
 DECLARE_SOA_TABLE(CFMCCollisions, "AOD", "CFMCCOLLISION", //! Accepted generated collisions/events filtered table
                   o2::soa::Index<>,
                   mccollision::PosZ,
-                  cfskim::CFCollisionFlags,
-                  cfskim::CFCollisionCentMult); //! To check if to have this columng does make sense for generated collisions
+                  cfskim::CFMCCollisionFlags,
+                  cfskim::CFCollisionCentMult); //! TODO: To check if to have this columng does make sense for generated collisions
 using CFMCCollision = CFMCCollisions::iterator;
+DECLARE_SOA_TABLE(CFMCCollMasks, "AOD", "CFMCCOLLMASK", //! Generated collision/event minimal filtered table
+                  cfskim::CFMCCollisionFlags,
+                  cfskim::CFCollisionCentMult); //! TODO: To check if to have this columng does make sense for generated collisions
+using CFMCCollMask = CFMCCollMasks::iterator;
 namespace cfskim
 {
 DECLARE_SOA_INDEX_COLUMN(CFCollision, cfcollision);     //! Reconstructed collision/event
 DECLARE_SOA_INDEX_COLUMN(CFMCCollision, cfmccollision); //! Generated collision/event
 DECLARE_SOA_COLUMN(CFTrackFlags, trackflags, uint64_t); //! The skimming flags for track selection, B0 track/particle positive charge, B1 track/particle negative charge
-DECLARE_SOA_COLUMN(CFPidFlags, pidflags, uint64_t);     //! The PID skimming flags for track selection
+DECLARE_SOA_COLUMN(CFMCTrackFlags, mctrackflags, uint64_t); //! The skimming flags for particle selection, B0 track/particle positive charge, B1 track/particle negative charge
+DECLARE_SOA_COLUMN(CFPidFlags, pidflags, uint64_t);         //! The PID skimming flags for track selection
 DECLARE_SOA_COLUMN(Pt, pt, float);                      //! The track transverse momentum
 DECLARE_SOA_COLUMN(Eta, eta, float);                    //! The track pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                    //! The track azimuthal angle
@@ -68,16 +78,22 @@ DECLARE_SOA_TABLE(CFTracks, "AOD", "CFTRACK", //! The reconstructed tracks filte
                   cfskim::Eta,
                   cfskim::Phi);
 using CFTrack = CFTracks::iterator;
+DECLARE_SOA_TABLE(CFTrackMasks, "AOD", "CFTRACKMASK", //! The reconstructed tracks filtered table
+                  cfskim::CFTrackFlags);
+using CFTrackMask = CFTrackMasks::iterator;
 DECLARE_SOA_TABLE(CFTrackPIDs, "AOD", "CFTRACKPID", //! The reconstructed tracks PID filtered table
                   cfskim::CFPidFlags);
 using CFTrackPID = CFTrackPIDs::iterator;
 DECLARE_SOA_TABLE(CFMCParticles, "AOD", "CFMCPARICLE", //! The generated particles filtered table
                   o2::soa::Index<>,
                   cfskim::CFMCCollisionId,
-                  cfskim::CFTrackFlags,
+                  cfskim::CFMCTrackFlags,
                   cfskim::Pt,
                   cfskim::Eta,
                   cfskim::Phi);
+using CFMCParticle = CFMCParticles::iterator;
+DECLARE_SOA_TABLE(CFMCPartMask, "AOD", "CFMCPARTMASK", //! The generated particles filtered table
+                  cfskim::CFMCTrackFlags);
 using CFMCParticle = CFMCParticles::iterator;
 namespace cfskim
 {

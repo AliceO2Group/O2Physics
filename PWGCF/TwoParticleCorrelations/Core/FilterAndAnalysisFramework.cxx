@@ -163,6 +163,12 @@ void FilterAndAnalysisFramework::Init()
   if (signatures != nullptr) {
     /* signatures registered in the CCDB, check if they match with the current configuration */
     auto domatch = [&signatures](int index, auto filter) {
+      LOGF(info,
+           "Comparing signatures\n"
+           "\t\t%s\n"
+           "\tand"
+           "\t\t%s",
+           signatures->At(index)->GetName(), filter->getCutStringSignature().Data());
       return (strcmp(signatures->At(index)->GetName(), filter->getCutStringSignature().Data()) == 0);
     };
     if (domatch(0, _fEventFilter) && domatch(1, _fTrackFilter) && domatch(2, _fPIDFilter)) {
