@@ -1433,7 +1433,6 @@ struct HfTrackIndexSkimsCreator {
   void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions::iterator const& collision,
     aod::Collisions const&,
-    aod::BCs const& bcs,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     SelectedTracks const& tracks,
     BigTracks const& tracksUnfiltered)
@@ -2245,7 +2244,7 @@ struct HfTrackIndexSkimsCreatorCascades {
   using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>;
 
   void process(SelectedCollisions::iterator const& collision,
-               aod::BCs const& bcs,
+               aod::BCsWithTimestamps const&,
                // soa::Filtered<aod::V0Datas> const& V0s,
                aod::V0Datas const& V0s,
                MyTracks const& tracks
