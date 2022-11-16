@@ -25,6 +25,7 @@
 #include <fmt/format.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include <string_view>
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -202,6 +203,7 @@ struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
+  Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "Timing tolerance in number of sigma for selecting BCs compatible with the collision"};
 
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -318,19 +320,35 @@ struct centralEventFilterTask {
     }
     auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
     auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
+    auto columnCollTimeRes{collTabPtr->GetColumnByName("fCollisionTimeRes")};
 
-    int entryD = 0;
+    std::unordered_map<int32_t, int64_t> decisions;
 
     for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
       auto chunkBC{columnBCId->chunk(iC)};
       auto chunkCollTime{columnCollTime->chunk(iC)};
+      auto chunkCollTimeRes{columnCollTimeRes->chunk(iC)};
 
       auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
       auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
+      auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTimeRes);
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
-        tags(BCArray->Value(iD), CollTimeArray->Value(iD), outDecision[iD]);
-        entryD++;
+        auto collTime = CollTimeArray->Value(iD);
+        auto collTimeRes = CollTimeResArray->Value(iD);
+        int startBC{BCArray->Value(iD) - int(std::floor(collTime - cfgTimingCut * collTimeRes))};
+        int endBC{BCArray->Value(iD) + int(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
+        for (int iB{startBC}; iB < endBC; ++iB) {
+          if (std::find(decisions.begin(), decisions.end(), iB) == decisions.end()) {
+            decisions[iB] = outDecision[iD];
+          } else {
+            decisions[iB] |= outDecision[iD];
+          }
+        }
       }
+    }
+
+    for (auto& decision : decisions) {
+      tags(decision.first, decision.second);
     }
   }
 
