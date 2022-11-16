@@ -28,7 +28,7 @@ o2physics_add_dpl_workflow(nuclei-filter
 
 o2physics_add_dpl_workflow(diffraction-filter
                            SOURCES PWGUD/diffractionFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::DGSelector
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter

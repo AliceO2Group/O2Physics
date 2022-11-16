@@ -51,7 +51,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/Core/DGSelector.h"
 
@@ -66,7 +65,7 @@ struct DGCandProducer {
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // DG selector
-  DGSelector dgSelector = DGSelector();
+  DGSelector dgSelector;
 
   void init(InitContext&)
   {
@@ -328,8 +327,7 @@ struct DGCandProducer {
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
     // apply DG selection
-    //auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
-    auto isDGEvent = false;
+    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
     if (isDGEvent == 0) {
@@ -424,8 +422,7 @@ struct DGCandProducer {
       auto bcRange = udhelpers::MCcompatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
       // apply DG selection
-      //auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, collisionTracks, collisionFwdTracks);
-      auto isDGEvent = false;
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, collisionTracks, collisionFwdTracks);
       LOGF(debug, "  isDG %i", (int)isDGEvent);
 
       // save information of DG events

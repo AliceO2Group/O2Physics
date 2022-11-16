@@ -448,8 +448,7 @@ struct DGBCCandProducer {
         auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
         auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
         auto bcRange = udhelpers::compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-        //isDG = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
-        isDG = false;
+        isDG = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
 
         // update UDTables
         if (isDG == 0) {
@@ -487,17 +486,14 @@ struct DGBCCandProducer {
           auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
           if (ftibcSlice.size() > 0) {
             auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
-            //isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-            isDG = false;
+            isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           } else {
             auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-            //isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-            isDG = false;
+            isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
         } else {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          //isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG = false;
+          isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
 
         // update UDTables
@@ -539,17 +535,14 @@ struct DGBCCandProducer {
 
         if (ftibcPart.size() > 0) {
           auto fwdTracksArray = ftibcPart.begin().fwdtrack_as<FTCs>();
-          //isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG = false;
+          isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          //isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG = false;
+          isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
       } else {
         auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-        //isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-        isDG = false;
+        isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
       }
 
       // update UDTables
@@ -638,8 +631,7 @@ struct DGBCCandProducer {
           auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
           auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
           auto bcRange = udhelpers::compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-          //isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
-          isDG1 = false;
+          isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
           if (isDG1 == 0) {
             // this is a DG candidate with proper collision vertex
             SETBIT(bcFlag, 3);
@@ -671,12 +663,10 @@ struct DGBCCandProducer {
         }
         if (ftibc.bcnum() == bcnum) {
           auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
-          //isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG2 = false;
+          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          //isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG2 = false;
+          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
         if (isDG2 == 0) {
           // this is a DG candidate with tracks-in-BC
@@ -770,8 +760,7 @@ struct DGBCCandProducer {
           auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
           auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
           auto bcRange = udhelpers::MCcompatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-          //isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
-          isDG1 = false;
+          isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
           if (isDG1 == 0) {
             // this is a DG candidate with proper collision vertex
             SETBIT(bcFlag, 3);
@@ -815,12 +804,10 @@ struct DGBCCandProducer {
         }
         if (ftibc.bcnum() == bcnum) {
           auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
-          //isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG2 = false;
+          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          //isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-          isDG2 = false;
+          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
         if (isDG2 == 0) {
           // this is a DG candidate with tracks-in-BC
