@@ -205,7 +205,7 @@ struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
-  Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "Timing tolerance in number of sigma for selecting BCs compatible with the collision"};
+  Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "nsigma timing cut associating BC and collisions"};
 
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -337,13 +337,13 @@ struct centralEventFilterTask {
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
         auto collTime = CollTimeArray->Value(iD);
         auto collTimeRes = CollTimeResArray->Value(iD);
-        int startBC{BCArray->Value(iD) - static_cast<int>(std::floor(collTime - cfgTimingCut * collTimeRes))};
-        int endBC{BCArray->Value(iD) + static_cast<int>(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
-        for (int iB{startBC}; iB < endBC; ++iB) {
-          if (std::find(decisions.begin(), decisions.end(), iB) == decisions.end()) {
-            decisions[iB] = outDecision[iD];
+        int32_t startBC{BCArray->Value(iD) - static_cast<int>(std::floor(collTime - cfgTimingCut * collTimeRes))};
+        int32_t endBC{BCArray->Value(iD) + static_cast<int>(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
+        for (int32_t iB{startBC}; iB < endBC; ++iB) {
+          if (decisions.find(iB) == decisions.end()) {
+            decisions[iB] = static_cast<int64_t>(outDecision[iD]);
           } else {
-            decisions[iB] |= outDecision[iD];
+            decisions[iB] |= static_cast<int64_t>(outDecision[iD]);
           }
         }
       }
