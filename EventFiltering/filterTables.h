@@ -195,4 +195,4 @@ unsigned int NumberOfColumns()
 
 } // namespace o2::aod
 
-#endif  // EVENTFILTERING_FILTERTABLES_H_
+#endif // EVENTFILTERING_FILTERTABLES_H_
