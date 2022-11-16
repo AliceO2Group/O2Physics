@@ -14,20 +14,21 @@
 // Class to handle analysis variables
 //
 
-#ifndef VarManager_H
-#define VarManager_H
-
-#include <TObject.h>
-#include <TString.h>
-#include <Math/Vector4D.h>
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include <TRandom.h>
+#ifndef PWGDQ_CORE_VARMANAGER_H_
+#define PWGDQ_CORE_VARMANAGER_H_
 
 #include <vector>
 #include <map>
 #include <cmath>
 #include <iostream>
+#include <utility>
+
+#include <TObject.h>
+#include <TString.h>
+#include "TRandom.h"
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/GenVector/Boost.h"
 
 #include "Framework/DataTypes.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -191,6 +192,7 @@ class VarManager : public TObject
     kITSlayerHit,
     kIsTPCrefit,
     kTPCncls,
+    kITSClusterMap,
     kTPCnclsCR,
     kTPCchi2,
     kTPCsignal,
@@ -221,6 +223,9 @@ class VarManager : public TObject
     kTPCnSigmaPiRandomizedDelta,
     kTPCnSigmaKa,
     kTPCnSigmaPr,
+    kTPCnSigmaEl_Corr,
+    kTPCnSigmaPi_Corr,
+    kTPCnSigmaPr_Corr,
     kTPCnSigmaPrRandomized,
     kTPCnSigmaPrRandomizedDelta,
     kTOFnSigmaEl,
@@ -315,6 +320,7 @@ class VarManager : public TObject
     kPairPtDau,
     kPairEta,
     kPairPhi,
+    kPairPhiv,
     kDeltaEta,
     kDeltaPhi,
     kDeltaPhiSym,
@@ -436,7 +442,8 @@ class VarManager : public TObject
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
-
+  static float GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period);
+  static TString GetRunPeriod(float runNumber);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
 
@@ -670,16 +677,18 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsGlobalTrack] = track.filteringFlags() & (uint64_t(1) << 0);
       values[kIsGlobalTrackSDD] = track.filteringFlags() & (uint64_t(1) << 1);
 
-      values[kIsLegFromGamma] = bool(track.filteringFlags() & (uint64_t(1) << 2));
-      values[kIsLegFromK0S] = bool(track.filteringFlags() & (uint64_t(1) << 3));
-      values[kIsLegFromLambda] = bool(track.filteringFlags() & (uint64_t(1) << 4));
-      values[kIsLegFromAntiLambda] = bool(track.filteringFlags() & (uint64_t(1) << 5));
-      values[kIsLegFromOmega] = bool(track.filteringFlags() & (uint64_t(1) << 6));
+      values[kIsLegFromGamma] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 2));
+      values[kIsLegFromK0S] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 3));
+      values[kIsLegFromLambda] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 4));
+      values[kIsLegFromAntiLambda] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 5));
+      values[kIsLegFromOmega] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 6));
+
+      values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
       
       for (int i = 0; i < 8; i++) {
-        values[kIsDalitzLeg + i] = bool(track.filteringFlags() & (uint64_t(1) << (15 + i)));
+        values[kIsDalitzLeg + i] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << (15 + i)));
       }
-      values[kIsProtonFromLambdaAndAntiLambda] = bool((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
+
     }
   }
 
@@ -712,6 +721,9 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     if (fgUsedVars[kIsSPDany]) {
       values[kIsSPDany] = (track.itsClusterMap() & uint8_t(1)) || (track.itsClusterMap() & uint8_t(2));
+    }
+    if (fgUsedVars[kITSClusterMap]) {
+      values[kITSClusterMap] = track.itsClusterMap();
     }
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
@@ -809,7 +821,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTRDsignal] = track.trdSignal();
     values[kTOFbeta] = track.beta();
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
-      // NOTE: this is needed temporarilly for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
+      // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
       //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
       //     For this we smear the dE/dx and n-sigmas using a gaus distribution with a width of 3.3%
       //         which is approx the needed amount to get dE/dx to a resolution of 6%
@@ -822,6 +834,11 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
+    }
+    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
+      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
     }
   }
 
@@ -929,6 +946,70 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAabsXY] = std::sqrt((dca1 * dca1 + dca2 * dca2) / 2);
       values[kQuadDCAsigXY] = std::sqrt((dca1sig * dca1sig + dca2sig * dca2sig) / 2);
     }
+  }
+  if (fgUsedVars[kPairPhiv]) {
+    // cos(phiv) = w*a /|w||a|
+    // with w = u x v
+    // and  a = u x z / |u x z|   , unit vector perpendicular to v12 and z-direction (magnetic field)
+    // u = v12 / |v12|            , the unit vector of v12
+    // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
+
+    float bz = fgFitterTwoProngBarrel.getBz();
+
+    // ordering of tracks, so v1 has larger momentum
+    if (v1.P() < v2.P()) {
+      ROOT::Math::PtEtaPhiMVector v3 = v1;
+      v1 = v2;
+      v2 = v3;
+    }
+
+    // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
+    // vector product of pep X pem
+    float vpx = 0, vpy = 0, vpz = 0;
+    if (t1.sign() * t2.sign() > 0) { // Like Sign
+      if (bz * t1.sign() < 0) {
+        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+      } else {
+        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      }
+    } else { // Unlike Sign
+      if (bz * t1.sign() > 0) {
+        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+      } else {
+        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      }
+    }
+
+    // unit vector of pep X pem
+    float vx = vpx / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
+    float vy = vpy / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
+    float vz = vpz / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
+
+    float px = v12.Px();
+    float py = v12.Py();
+    float pz = v12.Pz();
+
+    // unit vector of (pep+pem)
+    float ux = px / TMath::Sqrt(px * px + py * py + pz * pz);
+    float uy = py / TMath::Sqrt(px * px + py * py + pz * pz);
+    float uz = pz / TMath::Sqrt(px * px + py * py + pz * pz);
+    float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
+    float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
+
+    // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
+    float wx = uy * vz - uz * vy;
+    float wy = uz * vx - ux * vz;
+    // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
+    // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
+    values[kPairPhiv] = TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
   }
 }
 
@@ -1407,4 +1488,4 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
   }
 }
-#endif
+#endif // PWGDQ_CORE_VARMANAGER_H_

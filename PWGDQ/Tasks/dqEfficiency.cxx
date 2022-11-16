@@ -360,7 +360,7 @@ struct AnalysisMuonSelection {
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
       for (auto& sig : fMCSignals) {
-        TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName());
+        TString nameStr2 = Form("Muon_%s_%s", cut.GetName(), sig.GetName());
         printf("Adding my histogram class %s\n", nameStr2.Data());
         mcnames.push_back(nameStr2);
         histClasses += Form("%s;", nameStr2.Data());
@@ -895,7 +895,7 @@ struct AnalysisDileptonTrack {
 
   // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
   //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
-  //      The current condition should be replaced when bitwise operators will become available in Filter expresions
+  //      The current condition should be replaced when bitwise operators will become available in Filter expressions
   int fNHadronCutBit;
 
   void init(o2::framework::InitContext& context)

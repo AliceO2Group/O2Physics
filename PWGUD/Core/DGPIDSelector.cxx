@@ -30,17 +30,17 @@ DGPIDCut::DGPIDCut()
 }
 
 DGPIDCut::DGPIDCut(float numPart, float cutPID, float cutDetector, float cutType, float cutApply,
-                   float ptMin, float ptMax, float nSigmamin, float nSigmamax) : mnumPart{(int)numPart}, mcutPID{(int)cutPID}, mcutDetector{(int)cutDetector}, mcutType{(int)cutType}, mcutApply{(int)cutApply}, mptMin{ptMin}, mptMax{ptMax}, mdetValuemin{nSigmamin}, mdetValuemax{nSigmamax}
+                   float ptMin, float ptMax, float nSigmamin, float nSigmamax) : mnumPart{static_cast<int>(numPart)}, mcutPID{static_cast<int>(cutPID)}, mcutDetector{static_cast<int>(cutDetector)}, mcutType{static_cast<int>(cutType)}, mcutApply{static_cast<int>(cutApply)}, mptMin{ptMin}, mptMax{ptMax}, mdetValuemin{nSigmamin}, mdetValuemax{nSigmamax}
 {
 }
 
 DGPIDCut::DGPIDCut(float* cutValues)
 {
-  mnumPart = (int)cutValues[0];
-  mcutPID = (int)cutValues[1];
-  mcutDetector = (int)cutValues[2];
-  mcutType = (int)cutValues[3];
-  mcutApply = (int)cutValues[4];
+  mnumPart = static_cast<int>(cutValues[0]);
+  mcutPID = static_cast<int>(cutValues[1]);
+  mcutDetector = static_cast<int>(cutValues[2]);
+  mcutType = static_cast<int>(cutValues[3]);
+  mcutApply = static_cast<int>(cutValues[4]);
   mptMin = cutValues[5];
   mptMax = cutValues[6];
   mdetValuemin = cutValues[7];
@@ -167,7 +167,7 @@ void DGAnaparHolder::makeUniquePermutations()
     cnt = -1;
     for (auto ind : perm) {
       cnt++;
-      perminfo[cnt] = (int)mDGPIDs[ind];
+      perminfo[cnt] = static_cast<int>(mDGPIDs[ind]);
     }
     hashstr = "";
     for (auto tok : perminfo) {
@@ -368,7 +368,6 @@ float DGPIDSelector::getTOFnSigma(UDTrackFull track, int pid)
 // -----------------------------------------------------------------------------
 bool DGPIDSelector::isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks)
 {
-
   // compute net charge of track combination
   int netCharge = 0.;
   for (auto const& ind : comb) {
@@ -393,6 +392,15 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
   // unknown PID
   auto pidhypo = pid2ind(pid);
   if (pidhypo < 0) {
+    return false;
+  }
+
+  // cut on dcaXY and dcaZ
+  if (track.dcaXY() < -0.1 || track.dcaXY() > 0.1) {
+    return false;
+  }
+
+  if (track.dcaZ() < -0.2 || track.dcaZ() > 0.2) {
     return false;
   }
 

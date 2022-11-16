@@ -388,7 +388,7 @@ struct EventSelectionTask {
     bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C]; // TODO apply other cuts for sel8
     bool sel1 = selection[kIsINT1] & selection[kNoBGV0A] & selection[kNoBGV0C] & selection[kNoTPCLaserWarmUp] & selection[kNoTPCHVdip];
 
-    // INT1 (SPDFO>0 | V0A | V0C) mimimum bias trigger logic used in pp2010 and pp2011
+    // INT1 (SPDFO>0 | V0A | V0C) minimum bias trigger logic used in pp2010 and pp2011
     bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
 
     // fill counters

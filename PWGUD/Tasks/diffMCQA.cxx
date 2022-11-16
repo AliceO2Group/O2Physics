@@ -62,7 +62,7 @@ struct DiffMCQA {
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
-  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
   Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
   Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};

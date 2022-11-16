@@ -74,7 +74,7 @@ struct rsn_analysis {
   // Create Output Objects
   void init(o2::framework::InitContext&)
   {
-    // Histogram is added to the ouput registry
+    // Histogram is added to the output registry
     //
     //  Event QA
     uHistograms.add("QA/Event/EnumEvents",

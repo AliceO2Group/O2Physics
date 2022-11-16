@@ -201,7 +201,7 @@ class FemtoDreamCutculator
             break;
         }
 
-        /// for upper and lower limit we have to substract/add an epsilon so that the cut is actually fulfilled
+        /// for upper and lower limit we have to subtract/add an epsilon so that the cut is actually fulfilled
         if (sel.isSelected(input + signOffset * 1.e-6 * input)) {
           output |= 1UL << counter;
           for (int i = internal_index; i > 0; i--) {

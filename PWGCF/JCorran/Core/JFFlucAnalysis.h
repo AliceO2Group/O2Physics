@@ -116,7 +116,7 @@ class JFFlucAnalysis
   template <class JInputClass>
   inline void CalculateQvectorsQC(JInputClass& inputInst)
   {
-    // calcualte Q-vector for QC method ( no subgroup )
+    // calculate Q-vector for QC method ( no subgroup )
     for (UInt_t ih = 0; ih < kNH; ih++) {
       for (UInt_t ik = 0; ik < nKL; ++ik) {
         QvectorQC[ih][ik] = TComplex(0, 0);
