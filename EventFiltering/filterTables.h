@@ -8,10 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_TRIGGER_H_
-#define O2_ANALYSIS_TRIGGER_H_
+#ifndef EVENTFILTERING_FILTERTABLES_H_
+#define EVENTFILTERING_FILTERTABLES_H_
 
 #include <array>
+#include <unordered_map>
+#include <string>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -192,4 +195,4 @@ unsigned int NumberOfColumns()
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_TRIGGER_H_
+#endif  // EVENTFILTERING_FILTERTABLES_H_

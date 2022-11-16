@@ -10,22 +10,24 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "filterTables.h"
-
-#include "Framework/HistogramRegistry.h"
-
 #include <iostream>
 #include <cstdio>
 #include <random>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include <fmt/format.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
-#include <string_view>
+
+#include "filterTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -335,8 +337,8 @@ struct centralEventFilterTask {
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
         auto collTime = CollTimeArray->Value(iD);
         auto collTimeRes = CollTimeResArray->Value(iD);
-        int startBC{BCArray->Value(iD) - int(std::floor(collTime - cfgTimingCut * collTimeRes))};
-        int endBC{BCArray->Value(iD) + int(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
+        int startBC{BCArray->Value(iD) - static_cast<int>(std::floor(collTime - cfgTimingCut * collTimeRes))};
+        int endBC{BCArray->Value(iD) + static_cast<int>(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
         for (int iB{startBC}; iB < endBC; ++iB) {
           if (std::find(decisions.begin(), decisions.end(), iB) == decisions.end()) {
             decisions[iB] = outDecision[iD];
