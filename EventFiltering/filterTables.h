@@ -8,10 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_TRIGGER_H_
-#define O2_ANALYSIS_TRIGGER_H_
+#ifndef EVENTFILTERING_FILTERTABLES_H_
+#define EVENTFILTERING_FILTERTABLES_H_
 
 #include <array>
+#include <unordered_map>
+#include <string>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -68,6 +71,7 @@ DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);       //! at least 2 Xi
 DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);       //! at least 3 Xi
 DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool); //! at least 4 Xi
 DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R > 24.39 cm (YN interactions)
+
 // multiplicity
 DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);                 //! high trk muliplicity
 DECLARE_SOA_COLUMN(HighFddFt0cMftFv0Mult, hasHighFddFt0cMftFv0Mult, bool); //! high FDD MFT FT0 FV0 multiplicity
@@ -93,7 +97,6 @@ namespace decision
 {
 
 DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
-DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float); //! Collision time
 DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
 
 } // namespace decision
@@ -149,7 +152,7 @@ using MultFilter = MultFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::CollisionTime, decision::CefpSelected);
+                  decision::BCId, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
@@ -192,4 +195,4 @@ unsigned int NumberOfColumns()
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_TRIGGER_H_
+#endif // EVENTFILTERING_FILTERTABLES_H_
