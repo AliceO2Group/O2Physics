@@ -302,8 +302,8 @@ struct ChJetTriggerQATask {
       }
 
       if (leadingJetPt > -1. && leadingTrackPt > -1.) {
-        // deta = fabs(leadingTrackEta - leadingJetEta);
-        // dphi = fabs(TVector2::Phi_mpi_pi(leadingTrackPhi - leadingJetPhi));
+        //deta = fabs(leadingTrackEta - leadingJetEta);
+        //dphi = fabs(TVector2::Phi_mpi_pi(leadingTrackPhi - leadingJetPhi));
 
         if ((leadingTrackPt - leadingJetPt) > 1.) { // pathological case
           spectra.fill(HIST("fLeadJetEtaVsLeadingTrackEtaPathologicalAll"),
@@ -312,7 +312,7 @@ struct ChJetTriggerQATask {
                        leadingTrackPhi, leadingJetPhi);
 
           int CollisionId = -1;
-          for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
+          for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
             if (trk.isQualityTrack()) {
               CollisionId = trk.collisionId();
               tableWithTracksFromPathologicalEvents(trk.pt(), trk.eta(), trk.phi(), trk.collisionId());
