@@ -55,11 +55,11 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, 
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                  aod::McTrackLabels>;
 using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
-                                 aod::McTrackLabels, aod::DalitzBits>;
+                                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                               aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                               aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                               aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                               aod::McTrackLabels, aod::DalitzBits>;
 using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -790,7 +790,6 @@ struct TableMakerMC {
     }
     histMCsignals->GetXaxis()->SetBinLabel(fMCSignals.size() + 1, "Others (matched to reco tracks)");
     fStatsList->Add(histMCsignals);
-
   }
 
   // Produce barrel + muon tables ------------------------------------------------------------------------------------

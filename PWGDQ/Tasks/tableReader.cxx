@@ -236,7 +236,7 @@ struct AnalysisTrackSelection {
 
     trackSel.reserve(tracks.size());
     uint32_t filterMap = 0;
-    uint8_t filterMapDalitz  = 0.;
+    uint8_t filterMapDalitz = 0.;
     int iCut = 0;
 
     for (auto& track : tracks) {
@@ -538,12 +538,10 @@ struct AnalysisPrefilterSelection {
     for (auto& track : tracks) {
       dalitzbits(static_cast<int>(dalitzmap[track.globalIndex()]));
     }
-    
   }
 
   void processDummy(MyEvents&)
   {
-
   }
 
   PROCESS_SWITCH(AnalysisPrefilterSelection, processBarrelSkimmed, "Run Dalitz selection on reduced tracks", false);
@@ -808,11 +806,11 @@ struct AnalysisSameEventPairing {
   Configurable<string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<bool> fPrefilter{"fPrefilter", false, "Whether or not apply prefilter"}; 
+  Configurable<bool> fPrefilter{"fPrefilter", false, "Whether or not apply prefilter"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
-  Filter filterBarrelTrackSelected = ifnode(fPrefilter, (aod::DalBits::dalitzBits == 0) && (aod::dqanalysisflags::isBarrelSelected > 0), (aod::dqanalysisflags::isBarrelSelected > 0)); 
+  Filter filterBarrelTrackSelected = ifnode(fPrefilter, (aod::DalBits::dalitzBits == 0) && (aod::dqanalysisflags::isBarrelSelected > 0), (aod::dqanalysisflags::isBarrelSelected > 0));
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
 
   HistogramManager* fHistMan;

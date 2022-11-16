@@ -242,7 +242,7 @@ class VarManager : public TObject
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
-    kIsDalitzLeg,  // Up to 8 dalitz selections
+    kIsDalitzLeg, // Up to 8 dalitz selections
     kNBarrelTrackVariables = kIsDalitzLeg + 8,
 
     // Muon track variables
@@ -684,11 +684,10 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsLegFromOmega] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 6));
 
       values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
-      
+
       for (int i = 0; i < 8; i++) {
         values[kIsDalitzLeg + i] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << (15 + i)));
       }
-
     }
   }
 
@@ -799,7 +798,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the dalitz selections
-  if constexpr((fillMap & DalitzBits) > 0) {
+  if constexpr ((fillMap & DalitzBits) > 0) {
     for (int i = 0; i < 8; i++) {
       values[kIsDalitzLeg + i] = bool(track.dalitzBits() & (uint8_t(1) << i));
     }
