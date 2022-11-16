@@ -383,7 +383,7 @@ struct UpcCandProducer {
   }
 
   template <typename TTrack, typename TAmbTracks>
-  uint64_t getTrackBC(TTrack& track,
+  uint64_t getTrackBC(TTrack track,
                       TAmbTracks const& ambTracks,
                       int64_t ambTrId,
                       o2::aod::Collisions const& collisions,
@@ -633,6 +633,8 @@ struct UpcCandProducer {
         ambTrId = ambIter->second;
       }
       uint64_t bc = getTrackBC(trk, ambBarrelTracks, ambTrId, collisions, bcs);
+      if (bc > fMaxBC)
+        continue;
       if (!upcCuts.getRequireITSTPC() && trk.hasTOF() && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
       if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC() && nContrib <= upcCuts.getMaxNContrib())
@@ -663,6 +665,8 @@ struct UpcCandProducer {
         ambTrId = ambIter->second;
       }
       uint64_t bc = getTrackBC(trk, ambFwdTracks, ambTrId, collisions, bcs);
+      if (bc > fMaxBC)
+        continue;
       auto trkType = trk.trackType();
       if (trkType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsMID, bc, trkId);
