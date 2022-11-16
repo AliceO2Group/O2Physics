@@ -26,6 +26,13 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "CCDB/BasicCCDBManager.h"            
+#include "DataFormatsParameters/GRPObject.h"  
+#include "DetectorsBase/Propagator.h"         
+#include "DetectorsBase/GeometryManager.h"    
+#include "DataFormatsParameters/GRPMagField.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+
 
 using namespace o2;
 using namespace o2::aod;
@@ -48,8 +55,12 @@ struct HfCandidateCreatorOmegac {
   Produces<aod::HfCandOmegacBase> rowCandidateBase; //produced table
 
   // - - - - - - - - - - CONFIGURABLES - - - - - - - - - -
-  Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
-  Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
+  //Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
+  Configurable<bool> b_propdca{"b_propdca", false, "create tracks version propagated to PCA"};
+  /*NOT: it's better to call fitter.process() with setPropagateToPCA(false) beforehand and call propagateTracksToVertex() only if I am sure I will use the vertex. 
+  The reason is (apart from the fact that one may reject the vertex after the chi2 or DCA check etc.) that in principle e.g. 2 vertices can be found for a pair 
+  of tracks, in this case the automatic propagation will create copies of propagated tracks for both of them, even if we usually use only 1st (best) vertex. 
+  While by using the configurable false and then adding the command propagateTracksToVertex() in the code one has  a control on what is propagated*/
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -62,6 +73,18 @@ struct HfCandidateCreatorOmegac {
   TRUE -> simple average of tracks position propagated to respective X_dca parameters and rotated to the lab. frame
   FALSE -> weighted (by tracks covariances) average of tracks position propagated to respective X_dca parameters and rotated to the lab. frame
   */
+
+  //magnetic field setting from CCDB
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
 
   /*ABOUT DCA FITTER: To get the most precise results one can request ft.setRefitWithMatCorr(true): in this case when propagateTracksToVertex() is 
   called, the tracks will be propagated to the V0 with requested material corrections, one new V0 minimization will be done and only after that 
@@ -87,6 +110,19 @@ struct HfCandidateCreatorOmegac {
 
   //Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  }
+
+
   // - - - - - - - - - - PROCESS - - - - - - - - - -
   void process(aod::Collision const& collision,
                aod::HfCascades const& cascades,
@@ -95,6 +131,11 @@ struct HfCandidateCreatorOmegac {
                aod::V0sLinked const&)
                
   {
+    //set the magnetic field from CCDB
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+
+    auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); //z component
   
     // 2-prong vertex fitter to build the omegac vertex
     o2::vertexing::DCAFitterN<2> df;
@@ -181,11 +222,16 @@ struct HfCandidateCreatorOmegac {
       auto vertexV0FromFitter = dfv.getPCACandidate(); //After finding the vertex tracks are propagated to the PCA if setPropagateToPCA is set to true
       auto chi2PCA_v0 = dfv.getChi2AtPCACandidate();
       //NOT NEEDED, PropagateTracksToVertex() IS CALLED
+      /*NOTA SU TRACK PROPAGATION METHODS: propagateTo does 1 step propagation with fixed Bz field, while the propagateTracksToVertex optionally invokes the Propagator 
+      which does multi-step 3D field propagation with material effects corrections. PropagateTracksToVertex() eventually calls propagateTo multiple times */
       //trackParCovV0Dau0.propagateTo(vertexV0FromFitter[0],magneticField);
       //trackParCovV0Dau1.propagateTo(vertexV0FromFitter[0],magneticField);
       array<float, 3> pvecV0Dau0;
       array<float, 3> pvecV0Dau1;
       dfv.propagateTracksToVertex();
+      if(!dfv.isPropagateTracksToVertexDone()){
+        continue;
+      }
       dfv.getTrack(0).getPxPyPzGlo(pvecV0Dau0); // update V0daughter0 momentum at V0 decay vertex (track number follows the order of tracks used in the function df.process)
       dfv.getTrack(1).getPxPyPzGlo(pvecV0Dau1); // update V0daughter1 momentum at V0 decay vertex
       array<float, 3> pvecV0_m = {pvecV0Dau0[0]+pvecV0Dau1[0], pvecV0Dau0[1]+pvecV0Dau1[1], pvecV0Dau0[2]+pvecV0Dau1[2]};
@@ -224,6 +270,9 @@ struct HfCandidateCreatorOmegac {
       array<float, 3> pvecV0_d;
       array<float, 3> pvecpionfromcasc;
       dfc.propagateTracksToVertex();
+      if(!dfc.isPropagateTracksToVertexDone()){
+        continue;
+      }
       dfc.getTrack(0).getPxPyPzGlo(pvecV0_d); // update V0 momentum at cascade decay vertex
       dfc.getTrack(1).getPxPyPzGlo(pvecpionfromcasc); // update pi <- cascade momentum at cascade decay vertex
       array<float, 3> pveccasc_m = {pvecV0_d[0]+pvecpionfromcasc[0], pvecV0_d[1]+pvecpionfromcasc[1], pvecV0_d[2]+pvecpionfromcasc[2]};
@@ -282,6 +331,9 @@ struct HfCandidateCreatorOmegac {
         array<float, 3> pveccasc_d;
         array<float, 3> pvecpionfromomegac;
         df.propagateTracksToVertex();
+        if(!df.isPropagateTracksToVertexDone()){
+          continue;
+        }
         df.getTrack(0).getPxPyPzGlo(pveccasc_d); // update cascade momentum at omegac decay vertex
         df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac); // update pi <- omegac momentum at omegac decay vertex
         array<float, 3> pvecomegac = {pveccasc_d[0]+pvecpionfromomegac[0], pveccasc_d[1]+pvecpionfromomegac[1], pveccasc_d[2]+pvecpionfromomegac[2]};  //omegac momentum
