@@ -125,6 +125,7 @@ struct HfCandidateCreatorOmegac {
 
   // - - - - - - - - - - PROCESS - - - - - - - - - -
   void process(aod::Collision const& collision,
+               aod::BCsWithTimestamps const& bcWithTimeStamps,
                aod::HfCascades const& cascades,
                aod::BigTracks const& tracks,
                aod::V0Datas const&,

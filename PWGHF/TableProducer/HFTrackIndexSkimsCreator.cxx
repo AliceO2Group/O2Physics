@@ -2257,6 +2257,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
   void process(SelectedCollisions::iterator const& collision,
                aod::BCs const& bcs,
+               aod::BCsWithTimestamps const& bcWithTimeStamps,
                // soa::Filtered<aod::V0Datas> const& V0s,
                aod::V0Datas const& V0s,
                MyTracks const& tracks
