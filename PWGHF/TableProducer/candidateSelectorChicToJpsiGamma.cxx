@@ -72,17 +72,17 @@ struct HfCandidateSelectorChicToJpsiGamma {
     }
 
     if (candpT < ptCandMin || candpT >= ptCandMax) {
-      return false; //check that the candidate pT is within the analysis range
+      return false; // check that the candidate pT is within the analysis range
     }
 
     auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
     if (TMath::Abs(invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
       // Printf("Chic topol selection failed at mass diff check");
-      return false; //check that mass difference is within bounds
+      return false; // check that mass difference is within bounds
     }
 
     if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi"))) { // adf: Warning: no cut on photon
-      return false;                                        //cut on daughter pT
+      return false;                                        // cut on daughter pT
     }
 
     // if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
@@ -112,7 +112,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
     if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
-    //if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
+    // if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
     return true;
   }
 
@@ -180,7 +180,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
 
   void process(aod::HfCandChic const& hfCandChics, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks, aod::ECALs const& ecals)
   {
-    for (auto& hfCandChic : hfCandChics) { //looping over chi_c candidates
+    for (auto& hfCandChic : hfCandChics) { // looping over chi_c candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandChic.prong0();
       auto gamma = hfCandChic.prong1_as<aod::ECALs>();
@@ -208,8 +208,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
         continue;
       }
 
-      //implement filter bit 4 cut - should be done before this task at the track selection level
-      //need to add special cuts (additional cuts on decay length and d0 norm)
+      // implement filter bit 4 cut - should be done before this task at the track selection level
+      // need to add special cuts (additional cuts on decay length and d0 norm)
 
       if (!selectionTopol(hfCandChic, candJpsi, gamma)) { // check selections
         hfSelChicToJpsiGammaCandidate(0, 0);

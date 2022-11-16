@@ -117,7 +117,7 @@ struct HfCandidateSelectorD0Alice3Forward {
       return false;
     }
     // candidate DCA
-    //if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
+    // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
 
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
@@ -135,7 +135,7 @@ struct HfCandidateSelectorD0Alice3Forward {
       return false;
     }
     if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
-      //return false; // add back when getter fixed
+      // return false; // add back when getter fixed
     }
     return true;
   }
@@ -215,8 +215,8 @@ struct HfCandidateSelectorD0Alice3Forward {
       auto trackPos = candidate.prong0_as<Trks>();
       auto trackNeg = candidate.prong1_as<Trks>();
 
-      //auto momentumPosTrack = trackPos.p();
-      //auto momentumNegTrack = trackNeg.p();
+      // auto momentumPosTrack = trackPos.p();
+      // auto momentumNegTrack = trackNeg.p();
 
       bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
@@ -226,9 +226,9 @@ struct HfCandidateSelectorD0Alice3Forward {
         continue;
       }
 
-      //float nsigmaTOFNegKaon = -5000.0;
+      // float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
-      //float nsigmaTOFPosPion = -5000.0;
+      // float nsigmaTOFPosPion = -5000.0;
       float nsigmaRICHPosPion = -5000.0;
 
       if (trackPos.has_frich()) {
@@ -238,8 +238,8 @@ struct HfCandidateSelectorD0Alice3Forward {
         nsigmaRICHNegKaon = trackNeg.frich().frichNsigmaKa();
       }
 
-      //bool selectPionTOFplusRICH = false;
-      //bool selectKaonTOFplusRICH = false;
+      // bool selectPionTOFplusRICH = false;
+      // bool selectKaonTOFplusRICH = false;
 
       if (topolD0) {
         statusD0NoPid = 1;

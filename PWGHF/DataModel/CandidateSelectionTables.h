@@ -61,12 +61,12 @@ DECLARE_SOA_TABLE(HfSelD0ParametrizedPid, "AOD", "HFSELD0P", //!
 
 namespace hf_sel_candidate_d0_alice3_barrel
 {
-DECLARE_SOA_COLUMN(IsSelHfFlag, isSelHfFlag, int);                     //!
-DECLARE_SOA_COLUMN(IsSelD0NoPid, isSelD0NoPid, int);                   //!
-DECLARE_SOA_COLUMN(IsSelD0PerfectPid, isSelD0PerfectPid, int);         //!
-DECLARE_SOA_COLUMN(IsSelD0TofPid, isSelD0TofPid, int);                 //!
-DECLARE_SOA_COLUMN(IsSelD0RichPid, isSelD0RichPid, int);               //!
-DECLARE_SOA_COLUMN(IsSelD0TofPlusRichPid, isSelD0TofPlusRichPid, int); //!
+DECLARE_SOA_COLUMN(IsSelHfFlag, isSelHfFlag, int);                           //!
+DECLARE_SOA_COLUMN(IsSelD0NoPid, isSelD0NoPid, int);                         //!
+DECLARE_SOA_COLUMN(IsSelD0PerfectPid, isSelD0PerfectPid, int);               //!
+DECLARE_SOA_COLUMN(IsSelD0TofPid, isSelD0TofPid, int);                       //!
+DECLARE_SOA_COLUMN(IsSelD0RichPid, isSelD0RichPid, int);                     //!
+DECLARE_SOA_COLUMN(IsSelD0TofPlusRichPid, isSelD0TofPlusRichPid, int);       //!
 DECLARE_SOA_COLUMN(IsSelD0barTofPlusRichPid, isSelD0barTofPlusRichPid, int); //!
 } // namespace hf_sel_candidate_d0_alice3_barrel
 DECLARE_SOA_TABLE(HfSelD0Alice3Barrel, "AOD", "HFSELD0A3B", //!
@@ -80,7 +80,7 @@ DECLARE_SOA_TABLE(HfSelD0Alice3Barrel, "AOD", "HFSELD0A3B", //!
 
 namespace hf_sel_candidate_d0_alice3_forward
 {
-DECLARE_SOA_COLUMN(IsSelHfFlag, isSelHfFlag, int);       //!
+DECLARE_SOA_COLUMN(IsSelHfFlag, isSelHfFlag, int);         //!
 DECLARE_SOA_COLUMN(IsSelD0FNoPid, isSelD0FNoPid, int);     //!
 DECLARE_SOA_COLUMN(IsSelD0FRichPid, isSelD0FRichPid, int); //!
 } // namespace hf_sel_candidate_d0_alice3_forward

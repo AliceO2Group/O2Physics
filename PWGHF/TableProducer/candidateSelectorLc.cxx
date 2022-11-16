@@ -92,7 +92,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    //candidate chi2PCA
+    // candidate chi2PCA
     if (candidate.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
       return false;
     }

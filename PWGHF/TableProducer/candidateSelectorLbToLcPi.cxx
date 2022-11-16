@@ -34,12 +34,12 @@ struct HfCandidateSelectorLbToLcPi {
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-  //TPC PID
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-  //TOF PID
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
@@ -67,54 +67,54 @@ struct HfCandidateSelectorLbToLcPi {
 
     //Λb0 mass cut
     if (std::abs(invMassLbToLcPi(hfCandLb) - RecoDecay::getMassPDG(pdg::Code::kLambdaB0)) > cuts->get(pTBin, "m")) {
-      //Printf("Lb topol selection failed at mass diff check");
+      // Printf("Lb topol selection failed at mass diff check");
       return false;
     }
 
-    //pion pt
+    // pion pt
     if (trackPi.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
 
-    //Lc+ pt
+    // Lc+ pt
     if (hfCandLc.pt() < cuts->get(pTBin, "pT Lc+")) {
       return false;
     }
 
-    //Lc mass
-    //if (trackPi.sign() < 0) {
-    //if (std::abs(invMassLcToPKPi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
-    //return false;
-    //}
-    //}
+    // Lc mass
+    // if (trackPi.sign() < 0) {
+    // if (std::abs(invMassLcToPKPi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
+    // return false;
+    // }
+    // }
 
-    //Lb Decay length
+    // Lb Decay length
     if (hfCandLb.decayLength() < cuts->get(pTBin, "Lb decLen")) {
       return false;
     }
 
-    //Lb Decay length XY
+    // Lb Decay length XY
     if (hfCandLb.decayLengthXY() < cuts->get(pTBin, "Lb decLenXY")) {
       return false;
     }
 
-    //Lb chi2PCA cut
+    // Lb chi2PCA cut
     if (hfCandLb.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      //Printf("Lb selection failed at chi2PCA");
+      // Printf("Lb selection failed at chi2PCA");
       return false;
     }
 
-    //Lb CPA cut
+    // Lb CPA cut
     if (hfCandLb.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
     }
 
-    //d0 of pi
+    // d0 of pi
     if (std::abs(hfCandLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
       return false;
     }
 
-    //d0 of Lc+
+    // d0 of Lc+
     if (std::abs(hfCandLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc+")) {
       return false;
     }
@@ -124,23 +124,23 @@ struct HfCandidateSelectorLbToLcPi {
 
   void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::BigTracksPID const&)
   {
-    for (auto& hfCandLb : hfCandLbs) { //looping over Lb candidates
+    for (auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
       int statusLb = 0;
 
       // check if flagged as Λb --> Λc+ π-
       if (!(hfCandLb.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         hfSelLbToLcPiCandidate(statusLb);
-        //Printf("Lb candidate selection failed at hfflag check");
+        // Printf("Lb candidate selection failed at hfflag check");
         continue;
       }
 
       // Lc is always index0 and pi is index1 by default
-      //auto candLc = hfCandLb.prong0();
+      // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
       auto trackPi = hfCandLb.prong1_as<aod::BigTracksPID>();
 
-      //topological cuts
+      // topological cuts
       if (!selectionTopol(hfCandLb, candLc, trackPi)) {
         hfSelLbToLcPiCandidate(statusLb);
         // Printf("Lb candidate selection failed at selection topology");
@@ -148,7 +148,7 @@ struct HfCandidateSelectorLbToLcPi {
       }
 
       hfSelLbToLcPiCandidate(1);
-      //Printf("Lb candidate selection successful, candidate should be selected");
+      // Printf("Lb candidate selection successful, candidate should be selected");
     }
   }
 };

@@ -58,7 +58,7 @@ struct HfTaskD0Alice3Forward {
       }
 
       auto massD0 = invMassD0ToPiK(candidate);
-      //auto massD0bar = invMassD0barToKPi(candidate);
+      // auto massD0bar = invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(yD0(candidate));
 

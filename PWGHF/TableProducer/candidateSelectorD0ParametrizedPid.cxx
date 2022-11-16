@@ -117,7 +117,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
       return false;
     }
     // candidate DCA
-    //if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
+    // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
 
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
@@ -135,7 +135,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
       return false;
     }
     if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
-      //return false; // add back when getter fixed
+      // return false; // add back when getter fixed
     }
     return true;
   }
@@ -217,8 +217,8 @@ struct HfCandidateSelectorD0ParametrizedPid {
       auto trackPos = candidate.prong0_as<Trks>();
       auto trackNeg = candidate.prong1_as<Trks>();
 
-      //auto momentumPosTrack = trackPos.p();
-      //auto momentumNegTrack = trackNeg.p();
+      // auto momentumPosTrack = trackPos.p();
+      // auto momentumNegTrack = trackNeg.p();
       auto ptPosTrack = trackPos.pt();
       auto ptNegTrack = trackNeg.pt();
       auto etaPosTrack = std::abs(trackPos.eta());

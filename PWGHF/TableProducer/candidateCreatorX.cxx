@@ -138,7 +138,7 @@ struct HfCandidateCreatorX {
       prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
-      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); //FIXME: also needs covxyz???
+      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); // FIXME: also needs covxyz???
 
       // used to check that prongs used for Jpsi and X reco are not the same prongs
       int index0Jpsi = jpsiCand.prong0Id();
@@ -271,7 +271,7 @@ struct HfCandidateCreatorXMc {
 
     // Match reconstructed candidates.
     for (auto& candidate : candidates) {
-      //Printf("New rec. candidate");
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       channel = 0;
@@ -285,7 +285,7 @@ struct HfCandidateCreatorXMc {
                                   daughterNegJpsi};
 
       // X → J/ψ π+ π-
-      //Printf("Checking X → J/ψ π+ π-");
+      // Printf("Checking X → J/ψ π+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true);
       if (indexRec > -1) {
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
@@ -315,13 +315,13 @@ struct HfCandidateCreatorXMc {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       channel = 0;
 
       // X → J/ψ π+ π-
-      //Printf("Checking X → J/ψ π+ π-");
+      // Printf("Checking X → J/ψ π+ π-");
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeX, array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;

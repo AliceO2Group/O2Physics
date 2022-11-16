@@ -38,8 +38,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Barrel {
-  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
-  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
+  // Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
+  // Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelHfFlag >= 1);
 
@@ -69,11 +69,11 @@ struct HfTaskD0Alice3Barrel {
   // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
-    //float centrality = collision.centV0M();
+    // float centrality = collision.centV0M();
     for (auto& candidate : candidates) {
-      //if (centrality<=centralitySelectionMin && centrality>centralitySelectionMax) {
-      //continue;
-      //}
+      // if (centrality<=centralitySelectionMin && centrality>centralitySelectionMax) {
+      // continue;
+      // }
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }

@@ -156,7 +156,7 @@ struct HfCandidateSelectorJpsi {
 
       if (!(candidate.hfflag() & 1 << DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << DecayType::JpsiToMuMu)) {
         hfSelJpsiCandidate(0, 0, 0, 0, 0, 0, 0, 0, 0);
-        //hfSelJpsiCandidate(0, 0);
+        // hfSelJpsiCandidate(0, 0);
         continue;
       }
 
@@ -180,9 +180,9 @@ struct HfCandidateSelectorJpsi {
         selectedMuMuTopol = 0;
         selectedEE = 0;
         selectedMuMu = 0;
-        //if (!selectionTopol(candidate, trackPos, trackNeg, selectedEE, selectedMuMu)) {
-        //hfSelJpsiCandidate(0, 0);
-        //continue;
+        // if (!selectionTopol(candidate, trackPos, trackNeg, selectedEE, selectedMuMu)) {
+        // hfSelJpsiCandidate(0, 0);
+        // continue;
       }
 
       // track-level electron PID TOF selection
@@ -190,10 +190,10 @@ struct HfCandidateSelectorJpsi {
           selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::Status::PIDRejected) {
         selectedEETof = 0;
         selectedEE = 0;
-        //if (selectedMuMu == 0) {
-        //  hfSelJpsiCandidate(0, 0);
-        //  continue;
-        //}
+        // if (selectedMuMu == 0) {
+        //   hfSelJpsiCandidate(0, 0);
+        //   continue;
+        // }
       }
 
       // track-level electron PID TPC selection
@@ -212,7 +212,7 @@ struct HfCandidateSelectorJpsi {
                          selectedEETofRich,
                          selectedMuMuTopol,
                          selectedMuMuMid);
-      //hfSelJpsiCandidate(selectedEE, selectedMuMu);
+      // hfSelJpsiCandidate(selectedEE, selectedMuMu);
     }
   }
 
@@ -237,7 +237,7 @@ struct HfCandidateSelectorJpsi {
 
       if (!(candidate.hfflag() & 1 << DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << DecayType::JpsiToMuMu)) {
         hfSelJpsiCandidate(0, 0, 0, 0, 0, 0, 0, 0, 0);
-        //hfSelJpsiCandidate(0, 0);
+        // hfSelJpsiCandidate(0, 0);
         continue;
       }
 
@@ -261,13 +261,13 @@ struct HfCandidateSelectorJpsi {
         selectedMuMuTopol = 0;
         selectedEE = 0;
         selectedMuMu = 0;
-        //if (!selectionTopol(candidate, trackPos, trackNeg, selectedEE, selectedMuMu)) {
-        //hfSelJpsiCandidate(0, 0);
-        //continue;
+        // if (!selectionTopol(candidate, trackPos, trackNeg, selectedEE, selectedMuMu)) {
+        // hfSelJpsiCandidate(0, 0);
+        // continue;
       }
 
-      //if (selectENotPi) {
-      // combined TOF + RICH e selection with π rejection
+      // if (selectENotPi) {
+      //  combined TOF + RICH e selection with π rejection
       if (!selectorElectron.isElectronAndNotPion(trackPos) ||
           !selectorElectron.isElectronAndNotPion(trackNeg)) {
         selectedEETofRich = 0;
@@ -279,10 +279,10 @@ struct HfCandidateSelectorJpsi {
           selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::Status::PIDRejected) {
         selectedEETof = 0;
         selectedEE = 0;
-        //if (selectedMuMu == 0) {
-        //  hfSelJpsiCandidate(0, 0);
-        //  continue;
-        //}
+        // if (selectedMuMu == 0) {
+        //   hfSelJpsiCandidate(0, 0);
+        //   continue;
+        // }
       }
 
       // track-level electron PID RICH selection
@@ -293,10 +293,10 @@ struct HfCandidateSelectorJpsi {
       }
       //}
 
-      //if (selectedEE == 0 && selectedMuMu == 0) {
-      //  hfSelJpsiCandidate(0, 0);
-      //  continue;
-      //}
+      // if (selectedEE == 0 && selectedMuMu == 0) {
+      //   hfSelJpsiCandidate(0, 0);
+      //   continue;
+      // }
 
       // track-level muon PID MID selection
       if (selectorMuon.getStatusTrackPIDMID(trackPos) != TrackSelectorPID::Status::PIDAccepted ||
@@ -314,7 +314,7 @@ struct HfCandidateSelectorJpsi {
                          selectedEETofRich,
                          selectedMuMuTopol,
                          selectedMuMuMid);
-      //hfSelJpsiCandidate(selectedEE, selectedMuMu);
+      // hfSelJpsiCandidate(selectedEE, selectedMuMu);
     }
   }
 

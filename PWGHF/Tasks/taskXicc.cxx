@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_xicc;
-//using namespace o2::aod::hf_cand_3prong;
+// using namespace o2::aod::hf_cand_3prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -78,7 +78,7 @@ struct HfTaskXicc {
       if (yCandMax >= 0. && std::abs(yXicc(candidate)) > yCandMax) {
         continue;
       }
-      registry.fill(HIST("hMass"), invMassXiccToXicPi(candidate), candidate.pt()); //FIXME need to consider the two mass hp
+      registry.fill(HIST("hMass"), invMassXiccToXicPi(candidate), candidate.pt()); // FIXME need to consider the two mass hp
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -172,7 +172,7 @@ struct HfTaskXiccMc {
     registry.add("hCPAVsPtVsYRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{2200, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {20, -5., 5.}}});
   }
 
-  //void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
+  // void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi, aod::HfCandXiccMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
@@ -206,7 +206,7 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hPtRecSig"), candidate.pt());    // rec. level pT
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
         registry.fill(HIST("hYRecSig"), yXicc(candidate));
-        registry.fill(HIST("hMassVsPtRecSig"), invMassXiccToXicPi(candidate), candidate.pt()); //FIXME need to consider the two mass hp
+        registry.fill(HIST("hMassVsPtRecSig"), invMassXiccToXicPi(candidate), candidate.pt()); // FIXME need to consider the two mass hp
         registry.fill(HIST("hDecLengthVsPtRecSig"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCAVsPtRecSig"), candidate.chi2PCA(), candidate.pt());
         registry.fill(HIST("hCPAVsPtRecSig"), candidate.cpa(), candidate.pt());
@@ -234,7 +234,7 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
         registry.fill(HIST("hYRecBg"), yXicc(candidate));
-        registry.fill(HIST("hMassVsPtRecBg"), invMassXiccToXicPi(candidate), candidate.pt()); //FIXME need to consider the two mass hp
+        registry.fill(HIST("hMassVsPtRecBg"), invMassXiccToXicPi(candidate), candidate.pt()); // FIXME need to consider the two mass hp
         registry.fill(HIST("hDecLengthVsPtRecBg"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCAVsPtRecBg"), candidate.chi2PCA(), candidate.pt());
         registry.fill(HIST("hCPAVsPtRecBg"), candidate.cpa(), candidate.pt());

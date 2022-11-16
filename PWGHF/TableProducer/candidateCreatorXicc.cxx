@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_xicc;
-using namespace o2::framework::expressions; //FIXME not sure if this is needed
+using namespace o2::framework::expressions; // FIXME not sure if this is needed
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -184,7 +184,7 @@ struct HfCandidateCreatorXicc {
       } // if on selected Xicc
     }   // loop over candidates
   }     // end of process
-};      //end of struct
+};      // end of struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorXiccExpressions {
@@ -211,7 +211,7 @@ struct HfCandidateCreatorXiccMc {
 
     // Match reconstructed candidates.
     for (auto& candidate : candidates) {
-      //Printf("New rec. candidate");
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -224,11 +224,11 @@ struct HfCandidateCreatorXiccMc {
                                      xicCand.prong1_as<aod::BigTracksMC>(),
                                      xicCand.prong2_as<aod::BigTracksMC>()};
       // Ξcc±± → p± K∓ π± π±
-      //Printf("Checking Ξcc±± → p± K∓ π± π±");
+      // Printf("Checking Ξcc±± → p± K∓ π± π±");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCCPlusPlus, array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
-        //Printf("Checking Ξc± → p± K∓ π±");
+        // Printf("Checking Ξc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersXic, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << DecayType::XiccToXicPi;
@@ -242,14 +242,14 @@ struct HfCandidateCreatorXiccMc {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // Xicc → Xic + π+
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCCPlusPlus, array{int(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
         // Match Xic -> pKπ
         auto XicCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
-        //Printf("Checking Ξc± → p± K∓ π±");
+        // Printf("Checking Ξc± → p± K∓ π±");
         if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, int(pdg::Code::kXiCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::XiccToXicPi);
         }

@@ -40,7 +40,7 @@ DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);
-//DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
+// DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
@@ -104,7 +104,7 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::PProng0,
                   full::PtProng1,
                   full::PProng1,
-                  //full::CandidateSelFlag,
+                  // full::CandidateSelFlag,
                   full::M,
                   full::Pt,
                   full::P,
@@ -217,13 +217,13 @@ struct HfTreeCreatorBplusToD0Pi {
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
       auto fillTable = [&](int CandFlag,
-                           //int FunctionSelection,
+                           // int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
         auto d0Cand = candidate.prong0();
         auto piCand = candidate.prong1_as<aod::BigTracksPID>();
-        //adding D0 daughters to the table
+        // adding D0 daughters to the table
         auto d0Daughter0 = d0Cand.prong0_as<aod::BigTracksPID>();
         auto d0Daughter1 = d0Cand.prong1_as<aod::BigTracksPID>();
 
@@ -234,7 +234,7 @@ struct HfTreeCreatorBplusToD0Pi {
           invMassD0 = o2::aod::hf_cand_2prong::invMassD0ToPiK(d0Cand);
         }
 
-        //if (FunctionSelection >= 1) {
+        // if (FunctionSelection >= 1) {
         if (std::abs(candidate.flagMcMatchRec()) >= isSignal) {
 
           rowCandidateFull(
@@ -243,7 +243,7 @@ struct HfTreeCreatorBplusToD0Pi {
             RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.ptProng1(),
             RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-            //1 << CandFlag,
+            // 1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
             candidate.p(),
@@ -302,7 +302,7 @@ struct HfTreeCreatorBplusToD0Pi {
         }
       };
 
-      //fillTable(0, candidate.isSelBplusToD0Pi(), invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
+      // fillTable(0, candidate.isSelBplusToD0Pi(), invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
       fillTable(0, invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
     }
 

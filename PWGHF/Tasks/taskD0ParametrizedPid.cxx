@@ -39,8 +39,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Fills MC histograms.
 struct HfTaskD0ParametrizedPid {
-  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
-  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
+  // Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
+  // Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
@@ -68,11 +68,11 @@ struct HfTaskD0ParametrizedPid {
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
-    //float ncontributor = collision.numContrib();
+    // float ncontributor = collision.numContrib();
     for (auto& candidate : candidates) {
-      //if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
-      //  continue;
-      //}
+      // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
+      //   continue;
+      // }
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -81,7 +81,7 @@ struct HfTaskD0ParametrizedPid {
       }
 
       auto massD0 = invMassD0ToPiK(candidate);
-      //auto massD0bar = invMassD0barToKPi(candidate);
+      // auto massD0bar = invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(yD0(candidate));
 
@@ -117,9 +117,9 @@ struct HfTaskD0ParametrizedPid {
     }
 
     for (auto& particle : particlesMC) {
-      //if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
-      //  continue;
-      //}
+      // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
+      //   continue;
+      // }
       float maxFiducialY = 0.8;
       float minFiducialY = -0.8;
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {

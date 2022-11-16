@@ -94,7 +94,7 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     // candidate DCA
-    //if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
+    // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
 
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
@@ -112,7 +112,7 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
-      //return false; // add back when getter fixed
+      // return false; // add back when getter fixed
     }
     return true;
   }

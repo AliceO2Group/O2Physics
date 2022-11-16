@@ -28,7 +28,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_b0;            // from CandidateReconstructionTables.h
+using namespace o2::aod::hf_cand_b0;              // from CandidateReconstructionTables.h
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 

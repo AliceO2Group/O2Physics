@@ -137,7 +137,7 @@ struct HfCandidateCreatorLb {
       int index0Lc = track0.globalIndex();
       int index1Lc = track1.globalIndex();
       int index2Lc = track2.globalIndex();
-      //int charge = track0.sign() + track1.sign() + track2.sign();
+      // int charge = track0.sign() + track1.sign() + track2.sign();
 
       for (auto& trackPion : tracks) {
         if (trackPion.pt() < ptPionMin) {
@@ -237,7 +237,7 @@ struct HfCandidateCreatorLbMc {
 
     // Match reconstructed candidates.
     for (auto& candidate : candidates) {
-      //Printf("New rec. candidate");
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -250,11 +250,11 @@ struct HfCandidateCreatorLbMc {
                                     lcCand.prong1_as<aod::BigTracksMC>(),
                                     lcCand.prong2_as<aod::BigTracksMC>()};
       // Λb → Λc+ π-
-      //Printf("Checking Λb → Λc+ π-");
+      // Printf("Checking Λb → Λc+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Λb → Λc+ π-
-        //Printf("Checking Λb → Λc+ π-");
+        // Printf("Checking Λb → Λc+ π-");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
@@ -268,14 +268,14 @@ struct HfCandidateCreatorLbMc {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // Λb → Λc+ π-
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{int(pdg::Code::kLambdaCPlus), -kPiPlus}, true)) {
         // Match Λc+ -> pKπ
         auto LcCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
-        //Printf("Checking Λc+ → p K- π+");
+        // Printf("Checking Λc+ → p K- π+");
         if (RecoDecay::isMatchedMCGen(particlesMC, LcCandMC, int(pdg::Code::kLambdaCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
         }

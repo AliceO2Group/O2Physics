@@ -76,18 +76,18 @@ struct HfCandidateSelectorXToJpsiPiPi {
 
     if (candpT < ptCandMin || candpT >= ptCandMax) {
       // Printf("X topol selection failed at cand pT check");
-      return false; //check that the candidate pT is within the analysis range
+      return false; // check that the candidate pT is within the analysis range
     }
 
     // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
     if (TMath::Abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
       // Printf("X topol selection failed at mass diff check");
-      return false; //check that mass difference is within bounds
+      return false; // check that mass difference is within bounds
     }
 
     if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
       // Printf("X topol selection failed at daughter pT check");
-      return false; //cut on daughter pT
+      return false; // cut on daughter pT
     }
 
     if (hfCandX.cpa() < cuts->get(pTBin, "CPA")) {
@@ -115,7 +115,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
     if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
-    //if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
+    // if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
     return true;
   }
 
@@ -166,12 +166,12 @@ struct HfCandidateSelectorXToJpsiPiPi {
   { // use both TPC and TOF here; in run5 only TOF makes sense. add some flag for run3/run5 data later?
     if (validTofPid(track)) {
       if (!selectionPIDTOF(track, nSigmaTofMax)) {
-        return 0; //rejected by PID
+        return 0; // rejected by PID
       } else {
-        return 1; //positive PID
+        return 1; // positive PID
       }
     } else {
-      return -1; //no PID info
+      return -1; // no PID info
     }
 
     // no tpc in run5, so for now comment it out
@@ -188,11 +188,11 @@ struct HfCandidateSelectorXToJpsiPiPi {
 
   void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks)
   {
-    for (auto& hfCandX : hfCandXs) { //looping over X candidates
+    for (auto& hfCandX : hfCandXs) { // looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandX.prong0();
-      auto trackPos = hfCandX.prong1_as<aod::BigTracksPID>(); //positive daughter
-      auto trackNeg = hfCandX.prong2_as<aod::BigTracksPID>(); //negative daughter
+      auto trackPos = hfCandX.prong1_as<aod::BigTracksPID>(); // positive daughter
+      auto trackNeg = hfCandX.prong2_as<aod::BigTracksPID>(); // negative daughter
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;
@@ -218,8 +218,8 @@ struct HfCandidateSelectorXToJpsiPiPi {
         continue;
       }
 
-      //implement filter bit 4 cut - should be done before this task at the track selection level
-      //need to add special cuts (additional cuts on decay length and d0 norm)
+      // implement filter bit 4 cut - should be done before this task at the track selection level
+      // need to add special cuts (additional cuts on decay length and d0 norm)
 
       if (!selectionTopol(hfCandX, candJpsi, trackPos, trackNeg)) {
         hfSelXToJpsiPiPiCandidate(0, 0);
