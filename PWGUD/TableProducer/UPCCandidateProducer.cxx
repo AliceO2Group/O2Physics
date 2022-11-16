@@ -134,10 +134,12 @@ struct UpcCandProducerQa {
     }
 
     for (const auto& track : tracks) {
-      int32_t colId = -1;
-      if (ambTrIds.find(track.globalIndex()) == ambTrIds.end())
-        colId = track.collisionId();
-      updateBarrelTrackQA(track, colId >= 0 ? colId : -1);
+      int32_t nContrib = -1;
+      if (ambTrIds.find(track.globalIndex()) == ambTrIds.end()) {
+        const auto& col = track.collision();
+        nContrib = col.numContrib();
+      }
+      updateBarrelTrackQA(track, nContrib);
     }
 
     ambTrIds.clear();
@@ -427,7 +429,7 @@ struct UpcCandProducer {
     }
   }
 
-  void fillBarrelTracks(BarrelTracks tracks,
+  void fillBarrelTracks(BarrelTracks const& tracks,
                         std::vector<int64_t> const& trackIDs,
                         int32_t candID,
                         uint64_t bc,
@@ -438,7 +440,7 @@ struct UpcCandProducer {
       const auto& track = tracks.iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
       int64_t colId = -1;
-      if (ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end()) {
+      if (ambBarrelTrIds.find(trackID) == ambBarrelTrIds.end()) {
         colId = track.collisionId();
       }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
@@ -707,6 +709,8 @@ struct UpcCandProducer {
                                o2::aod::FV0As const& fv0as,
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels)
   {
+    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
+
     // pairs of global BCs and vectors of matched track IDs:
     std::vector<BCTracksPair> bcsMatchedTrIdsTOF;
     std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
@@ -725,8 +729,6 @@ struct UpcCandProducer {
               [](const auto& left, const auto& right) { return left.first < right.first; });
     std::sort(bcsMatchedTrIdsITSTPC.begin(), bcsMatchedTrIdsITSTPC.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
-
-    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
 
     if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
       for (auto& pair : bcsMatchedTrIdsTOF) {
@@ -828,6 +830,8 @@ struct UpcCandProducer {
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels,
                                const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
+    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
+
     // pairs of global BCs and vectors of matched track IDs:
     std::vector<BCTracksPair> bcsMatchedTrIdsTOF;
     std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
@@ -873,8 +877,6 @@ struct UpcCandProducer {
               [](const auto& left, const auto& right) { return left.first < right.first; });
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
-
-    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
 
     if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
       for (uint32_t ibc = 0; ibc < nBCsWithMID; ++ibc) {
