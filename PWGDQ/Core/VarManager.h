@@ -237,7 +237,8 @@ class VarManager : public TObject
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
-    kNBarrelTrackVariables,
+    kIsDalitzLeg,  // Up to 8 dalitz selections
+    kNBarrelTrackVariables = kIsDalitzLeg + 8,
 
     // Muon track variables
     kMuonNClusters,
@@ -674,7 +675,10 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsLegFromLambda] = bool(track.filteringFlags() & (uint64_t(1) << 4));
       values[kIsLegFromAntiLambda] = bool(track.filteringFlags() & (uint64_t(1) << 5));
       values[kIsLegFromOmega] = bool(track.filteringFlags() & (uint64_t(1) << 6));
-
+      
+      for (int i = 0; i < 8; i++) {
+        values[kIsDalitzLeg + i] = bool(track.filteringFlags() & (uint64_t(1) << (15 + i)));
+      }
       values[kIsProtonFromLambdaAndAntiLambda] = bool((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
     }
   }
@@ -780,6 +784,13 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTrackCSnpSnp] = track.cSnpSnp();
     values[kTrackCTglTgl] = track.cTglTgl();
     values[kTrackC1Pt21Pt2] = track.c1Pt21Pt2();
+  }
+
+  // Quantities based on the dalitz selections
+  if constexpr((fillMap & DalitzBits) > 0) {
+    for (int i = 0; i < 8; i++) {
+      values[kIsDalitzLeg + i] = bool(track.dalitzBits() & (uint8_t(1) << i));
+    }
   }
 
   // Quantities based on the barrel PID tables
@@ -890,10 +901,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
 
-  if constexpr ((fillMap & DalitzBits) > 0) {
+  if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
-    double chipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
-    values[kPsiPair] = TMath::ASin((v1.Theta() - v2.Theta()) / chipair);
+    double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
+    values[kPsiPair] = TMath::ASin((v1.Theta() - v2.Theta()) / xipair);
   }
 
   // CosTheta Helicity calculation

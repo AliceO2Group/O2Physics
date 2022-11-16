@@ -78,10 +78,52 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  for (int i = 1; i <= 8; i++) {
+    if (!nameStr.compare(Form("DalitzCut1_dalitzSelected%d", i))) {
+      cut->AddCut(GetAnalysisCut("PIDStandardKine"));
+      cut->AddCut(GetAnalysisCut("SPDany"));
+      cut->AddCut(GetAnalysisCut("electronPIDOnly"));
+      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("DalitzCut2_dalitzSelected%d", i))) {
+      cut->AddCut(GetAnalysisCut("PIDStandardKine"));
+      cut->AddCut(GetAnalysisCut("SPDany"));
+      cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
+      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("DalitzCut1SPDfirst_dalitzSelected%d", i))) {
+      cut->AddCut(GetAnalysisCut("PIDStandardKine"));
+      cut->AddCut(GetAnalysisCut("SPDfirst"));
+      cut->AddCut(GetAnalysisCut("electronPIDOnly"));
+      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("DalitzCut2SPDfirst_dalitzSelected%d", i))) {
+      cut->AddCut(GetAnalysisCut("PIDStandardKine"));
+      cut->AddCut(GetAnalysisCut("SPDfirst"));
+      cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
+      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
+      return cut;
+    }
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts2")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2MCdebugCuts2_prefiltered1")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
+    cut->AddCut(GetAnalysisCut("notDalitzLeg1"));
     return cut;
   }
 
@@ -941,6 +983,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
     cut->AddCut(VarManager::kTPCchi2, 0, 4);
     return cut;
+  }
+
+  for (int i = 1; i <= 8; i++) {
+    if (!nameStr.compare(Form("dalitzLeg%d", i))) {
+      cut->AddCut(VarManager::kIsDalitzLeg + i - 1, 0.5, 1.5);
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("notDalitzLeg%d", i))) {
+      cut->AddCut(VarManager::kIsDalitzLeg + i - 1, -0.5, 0.5);
+      return cut;
+    }
   }
 
   if (!nameStr.compare("muonQualityCuts")) {
