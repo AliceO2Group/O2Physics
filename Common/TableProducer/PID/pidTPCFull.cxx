@@ -157,8 +157,7 @@ struct tpcPidFull {
       /// Testing hyperloop core settings
       const char* alien_cores = gSystem->Getenv("ALIEN_JDL_CPUCORES");
       if (alien_cores != NULL) {
-        std::string msg_cores = "Hyperloop-run detected! Number of cores = ";
-        LOGP(info, msg_cores + std::string(alien_cores));
+        LOGP(info, "Hyperloop test/Grid job detected! Number of cores = {}. Setting threads anyway to 1.", alien_cores);
         activeThreads = 1;
       } else {
         if (networkSetNumThreads > 0) {
