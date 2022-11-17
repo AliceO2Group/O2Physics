@@ -134,10 +134,12 @@ struct UpcCandProducerQa {
     }
 
     for (const auto& track : tracks) {
-      int32_t colId = -1;
-      if (ambTrIds.find(track.globalIndex()) == ambTrIds.end())
-        colId = track.collisionId();
-      updateBarrelTrackQA(track, colId >= 0 ? colId : -1);
+      int32_t nContrib = -1;
+      if (ambTrIds.find(track.globalIndex()) == ambTrIds.end()) {
+        const auto& col = track.collision();
+        nContrib = col.numContrib();
+      }
+      updateBarrelTrackQA(track, nContrib);
     }
 
     ambTrIds.clear();
@@ -381,7 +383,7 @@ struct UpcCandProducer {
   }
 
   template <typename TTrack, typename TAmbTracks>
-  uint64_t getTrackBC(TTrack& track,
+  uint64_t getTrackBC(TTrack track,
                       TAmbTracks const& ambTracks,
                       int64_t ambTrId,
                       o2::aod::Collisions const& collisions,
@@ -427,7 +429,7 @@ struct UpcCandProducer {
     }
   }
 
-  void fillBarrelTracks(BarrelTracks tracks,
+  void fillBarrelTracks(BarrelTracks const& tracks,
                         std::vector<int64_t> const& trackIDs,
                         int32_t candID,
                         uint64_t bc,
@@ -438,7 +440,7 @@ struct UpcCandProducer {
       const auto& track = tracks.iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
       int64_t colId = -1;
-      if (ambBarrelTrIds.find(trackID) != ambBarrelTrIds.end()) {
+      if (ambBarrelTrIds.find(trackID) == ambBarrelTrIds.end()) {
         colId = track.collisionId();
       }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
@@ -631,6 +633,8 @@ struct UpcCandProducer {
         ambTrId = ambIter->second;
       }
       uint64_t bc = getTrackBC(trk, ambBarrelTracks, ambTrId, collisions, bcs);
+      if (bc > fMaxBC)
+        continue;
       if (!upcCuts.getRequireITSTPC() && trk.hasTOF() && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsTOF, bc, trkId);
       if (upcCuts.getRequireITSTPC() && trk.hasTOF() && trk.hasITS() && trk.hasTPC() && nContrib <= upcCuts.getMaxNContrib())
@@ -661,6 +665,8 @@ struct UpcCandProducer {
         ambTrId = ambIter->second;
       }
       uint64_t bc = getTrackBC(trk, ambFwdTracks, ambTrId, collisions, bcs);
+      if (bc > fMaxBC)
+        continue;
       auto trkType = trk.trackType();
       if (trkType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack && nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsMID, bc, trkId);
@@ -707,6 +713,8 @@ struct UpcCandProducer {
                                o2::aod::FV0As const& fv0as,
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels)
   {
+    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
+
     // pairs of global BCs and vectors of matched track IDs:
     std::vector<BCTracksPair> bcsMatchedTrIdsTOF;
     std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
@@ -726,8 +734,6 @@ struct UpcCandProducer {
     std::sort(bcsMatchedTrIdsITSTPC.begin(), bcsMatchedTrIdsITSTPC.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
-    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
-
     if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
       for (auto& pair : bcsMatchedTrIdsTOF) {
         uint64_t bc = pair.first;
@@ -739,8 +745,10 @@ struct UpcCandProducer {
           std::vector<int64_t> tracks;
           tracks.reserve(fNBarProngs * 2); // precautions
           int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
-          if (res < 0) // too many tracks nearby -> rejecting
+          if (res < 0) { // too many tracks nearby -> rejecting
+            trackIds.push_back(0);
             continue;
+          }
         }
         if (nTOFtracks < fNBarProngs && !upcCuts.getRequireTOF()) { // add ITS-TPC track if needed
           uint32_t tracksToFind = fNBarProngs - nTOFtracks;
@@ -826,6 +834,8 @@ struct UpcCandProducer {
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels,
                                const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
+    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
+
     // pairs of global BCs and vectors of matched track IDs:
     std::vector<BCTracksPair> bcsMatchedTrIdsTOF;
     std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
@@ -872,8 +882,6 @@ struct UpcCandProducer {
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
-    fMaxBC = bcs.iteratorAt(bcs.size() - 1).globalBC(); // restrict ITS-TPC track search to [0, fMaxBC]
-
     if (nBCsWithITSTPC > 0 && fSearchITSTPC == 1) {
       for (uint32_t ibc = 0; ibc < nBCsWithMID; ++ibc) {
         auto& pairMID = bcsMatchedTrIdsMID[ibc];
@@ -889,8 +897,10 @@ struct UpcCandProducer {
           std::vector<int64_t> tracks;
           tracks.reserve(fNBarProngs * 2); // precautions
           int32_t res = searchTracks(bc, fSearchRangeITSTPC, 0, tracks, bcsMatchedTrIdsITSTPC);
-          if (res < 0) // too many tracks nearby -> rejecting
+          if (res < 0) { // too many tracks nearby -> rejecting
+            trackIdsTOF.push_back(0);
             continue;
+          }
         }
         if (nMIDtracks == fNFwdProngs && nTOFtracks < fNBarProngs && !upcCuts.getRequireTOF()) { // add ITS-TPC track if needed
           uint32_t tracksToFind = fNBarProngs - nTOFtracks;
@@ -931,7 +941,7 @@ struct UpcCandProducer {
       uint32_t nBarrelTracks = barrelTrackIDs.size(); // TOF + ITS-TPC tracks
       uint16_t numContrib = nBarrelTracks + nMIDtracks;
       // sanity check
-      if (numContrib != (fNBarProngs + fNFwdProngs))
+      if (nBarrelTracks != fNBarProngs || nMIDtracks != fNFwdProngs)
         continue;
       // fetching FT0, FDD, FV0 information
       // if there is no relevant signal, dummy info will be used

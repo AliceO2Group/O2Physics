@@ -82,7 +82,33 @@ std::shared_ptr<TH3> hNsigma[2][4][2];
 std::shared_ptr<TH3> hDCAxy[2][4][2];
 } // namespace nuclei
 
+namespace o2::aod
+{
+namespace NucleiTableNS
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
+DECLARE_SOA_COLUMN(PIDcut, pidcut, int);   // 0 - TPC only, 1 - TPC + TOF
+DECLARE_SOA_COLUMN(Species, species, int); // deut, trit, he3, he4
+DECLARE_SOA_COLUMN(Charge, charge, int);
+DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, float);
+DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, float);
+DECLARE_SOA_COLUMN(EventId, eventid, int);
+} // namespace NucleiTableNS
+DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::PIDcut,
+                  NucleiTableNS::Species,
+                  NucleiTableNS::Charge,
+                  NucleiTableNS::TPCnsigma,
+                  NucleiTableNS::TOFnsigma,
+                  NucleiTableNS::EventId)
+} //namespace o2::aod
+
 struct NucleiSpectraTask {
+
+  Produces<o2::aod::NucleiTable> nucleiTable;
 
   Configurable<std::string> cfgCentralityEstimator{"cfgCentralityEstimator", "V0A", "Centrality estimator name"};
   Configurable<float> cfgCMrapidity{"cfgCMrapidity", 0.f, "Rapidity of the center of mass (only for p-Pb)"};
@@ -196,6 +222,7 @@ struct NucleiSpectraTask {
             nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), track.dcaXY());
             if (std::abs(track.dcaXY()) < cfgDCAcut->get(iS, 0u)) {
               nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+              nucleiTable(fvector.pt(), track.dcaXY(), iPID, iS, iC, nSigma[0][iS], nSigma[1][iS], collision.globalIndex());
             }
           }
         }

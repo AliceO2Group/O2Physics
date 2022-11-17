@@ -25,7 +25,7 @@
 
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::aod;

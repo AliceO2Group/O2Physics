@@ -96,7 +96,7 @@ void VarManager::FillEventDerived(float* values)
   // Fill event-wise derived quantities (these are all quantities which can be computed just based on the values already filled in the FillEvent() function)
   //
   if (fgUsedVars[kRunId]) {
-    values[kRunId] = (fgRunMap.size() > 0 ? fgRunMap[int(values[kRunNo])] : 0);
+    values[kRunId] = (fgRunMap.size() > 0 ? fgRunMap[static_cast<int>(values[kRunNo])] : 0);
   }
 }
 
@@ -439,6 +439,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairEta] = "";
   fgVariableNames[kPairPhi] = "#varphi";
   fgVariableUnits[kPairPhi] = "rad.";
+  fgVariableNames[kPairPhiv] = "#varphi_{V}";
+  fgVariableUnits[kPairPhiv] = "rad.";
   fgVariableNames[kDeltaEta] = "#Delta#eta";
   fgVariableUnits[kDeltaEta] = "";
   fgVariableNames[kDeltaPhi] = "#Delta#phi";

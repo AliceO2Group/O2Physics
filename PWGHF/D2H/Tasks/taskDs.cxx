@@ -18,16 +18,23 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong3;
+using namespace o2::aod::hf_cand_3prong;
 
 /// Ds± analysis task
 struct HfTaskDs {
+  Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
+
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>> selectedDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+
   HistogramRegistry registry{
     "registry",
     {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 100.}}}},
@@ -40,13 +47,9 @@ struct HfTaskDs {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_ds_tokkpi::pTBins_v}, "pT bin limits"};
-
   void init(o2::framework::InitContext&)
   {
-    auto vbins = (std::vector<double>)bins;
+    auto vbins = (std::vector<double>)binsPt;
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     registry.add("hMass", "3-prong candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -87,22 +90,20 @@ struct HfTaskDs {
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDsToKKPiCandidate>> selectedDsCandidates = aod::hf_selcandidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_selcandidate_ds::isSelDsToPiKK >= selectionFlagDs;
-
-  void process(soa::Join<aod::HfCandProng3, aod::HFSelDsToKKPiCandidate> const& candidates)
+  void process(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const& candidates)
   {
     for (auto& candidate : selectedDsCandidates) {
       // not possible in Filter since expressions do not support binary operators
       if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YDs(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      registry.fill(HIST("hMass"), InvMassDsKKPi(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), invMassDsToKKPi(candidate), candidate.pt());
       registry.fill(HIST("hPt"), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hCt"), CtDs(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), ctDs(candidate), candidate.pt());
       registry.fill(HIST("hDecayLength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), candidate.pt());
@@ -125,10 +126,8 @@ struct HfTaskDs {
     }
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDsToKKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDsCandidates = aod::hf_selcandidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_selcandidate_ds::isSelDsToPiKK >= selectionFlagDs;
-
-  void processMC(soa::Join<aod::HfCandProng3, aod::HFSelDsToKKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)
+  void processMc(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
     for (auto& candidate : recoFlagDsCandidates) {
@@ -136,16 +135,16 @@ struct HfTaskDs {
       if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YDs(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kDs, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
-        auto yRec = YDs(candidate);
+        auto yRec = yDs(candidate);
         auto DsToKKPi = candidate.isSelDsToKKPi();
         auto DsToPiKK = candidate.isSelDsToPiKK();
         registry.fill(HIST("hPtvsYRecSigRecoSkim"), ptRec, yRec);
@@ -156,7 +155,7 @@ struct HfTaskDs {
           registry.fill(HIST("hPtvsYRecSigRecoPID"), ptRec, yRec);
         }
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtvsYRecSigPromptRecoSkim"), ptRec, yRec);
           if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoTopol) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoTopol)) {
             registry.fill(HIST("hPtvsYRecSigPromptRecoTopol"), ptRec, yRec);
@@ -186,15 +185,15 @@ struct HfTaskDs {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (cutYCandMax >= 0. && std::abs(yGen) > cutYCandMax) {
+        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
-        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
         } else {
@@ -205,7 +204,7 @@ struct HfTaskDs {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskDs, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskDs, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
