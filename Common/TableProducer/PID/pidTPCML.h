@@ -22,11 +22,11 @@
 #define COMMON_TABLEPRODUCER_PID_PIDTPCML_H_
 
 // C++ and system includes
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #include <vector>
 #include <array>
 #include <string>
 #include <memory>
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
 // O2 includes
 #include "ReconstructionDataFormats/PID.h"
@@ -40,7 +40,7 @@ class Network
   // Constructor, destructor and copy-constructor
   Network() = default;
   Network(std::string, bool, int);
-  Network(std::string, unsigned long, unsigned long, bool, int); // initialization with timestamps
+  Network(std::string, uint64_t, uint64_t, bool, int); // initialization with timestamps
   ~Network() = default;
 
   // Operators
@@ -54,15 +54,15 @@ class Network
   // Getters & Setters
   int getInputDimensions() const { return mInputShapes[0][1]; }
   int getOutputDimensions() const { return mOutputShapes[0][1]; }
-  unsigned long getValidityFrom() const { return valid_from; }
-  unsigned long getValidityUntil() const { return valid_until; }
-  void setValidityFrom(unsigned long t) { valid_from = t; }
-  void setValidityUntil(unsigned long t) { valid_until = t; }
+  uint64_t  getValidityFrom() const { return valid_from; }
+  uint64_t getValidityUntil() const { return valid_until; }
+  void setValidityFrom(uint64_t t) { valid_from = t; }
+  void setValidityUntil(uint64_t t) { valid_until = t; }
 
  private:
   // Range of validity in timestamps
-  unsigned long valid_from = 0;
-  unsigned long valid_until = 0;
+  uint64_t valid_from = 0;
+  uint64_t valid_until = 0;
 
   // Environment variables for the ONNX runtime
   std::shared_ptr<Ort::Env> mEnv = nullptr;

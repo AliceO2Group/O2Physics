@@ -143,8 +143,9 @@ struct tpcPid {
         LOGP(info, "Initialising TPC PID response for fixed timestamp {}:", time);
         ccdb->setTimestamp(time);
         response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
-      } else
+      } else {
         LOGP(info, "Initialising default TPC PID response:");
+      }
       response.PrintAll();
     }
 
