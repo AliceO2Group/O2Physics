@@ -54,7 +54,7 @@ class Network
   // Getters & Setters
   int getInputDimensions() const { return mInputShapes[0][1]; }
   int getOutputDimensions() const { return mOutputShapes[0][1]; }
-  uint64_t  getValidityFrom() const { return valid_from; }
+  uint64_t getValidityFrom() const { return valid_from; }
   uint64_t getValidityUntil() const { return valid_until; }
   void setValidityFrom(uint64_t t) { valid_from = t; }
   void setValidityUntil(uint64_t t) { valid_until = t; }
