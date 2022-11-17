@@ -21,11 +21,12 @@
 
 // ROOT includes
 #include "TFile.h"
+#include "TSystem.h"
 
 // O2 includes
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -77,13 +78,14 @@ struct tpcPid {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
+  Configurable<uint64_t> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Parameters for loading network from a file / downloading the file
   Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
   Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
   Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
+  Configurable<int> networkSetNumThreads{"networkSetNumThreads", 0, "Especially important for running on a SLURM cluster. Sets the number of threads used for execution."};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -94,6 +96,9 @@ struct tpcPid {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+
+  // Thread configuration
+  int activeThreads = networkSetNumThreads.value;
 
   // Paramatrization configuration
   bool useCCDBParam = false;
@@ -114,6 +119,7 @@ struct tpcPid {
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
 
+    /// TPC PID Response
     const TString fname = paramfile.value;
     if (fname != "") { // Loading the parametrization from file
       LOGP(info, "Loading TPC response from file {}", fname);
@@ -123,7 +129,7 @@ struct tpcPid {
         response.SetParameters(responseptr);
       } catch (...) {
         LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
-      };
+      }
     } else {
       useCCDBParam = true;
       const std::string path = ccdbPath.value;
@@ -137,14 +143,30 @@ struct tpcPid {
         LOGP(info, "Initialising TPC PID response for fixed timestamp {}:", time);
         ccdb->setTimestamp(time);
         response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
-      } else
+      } else {
         LOGP(info, "Initialising default TPC PID response:");
+      }
       response.PrintAll();
     }
+
+    /// Neural network init for TPC PID
 
     if (!useNetworkCorrection) {
       return;
     } else {
+
+      /// Testing hyperloop core settings
+      const char* alien_cores = gSystem->Getenv("ALIEN_JDL_CPUCORES");
+      if (alien_cores != NULL) {
+        LOGP(info, "Hyperloop test/Grid job detected! Number of cores = {}. Setting threads anyway to 1.", alien_cores);
+        activeThreads = 1;
+      } else {
+        if (networkSetNumThreads > 0) {
+          LOGP(info, "Not running on Hyperloop. Threads for neural network inference are fixed: {} threads", std::to_string(networkSetNumThreads));
+        }
+      }
+
+      /// CCDB and auto-fetching
       ccdbApi.init(url);
       if (!autofetchNetworks) {
         if (ccdbTimestamp > 0) {
@@ -163,7 +185,8 @@ struct tpcPid {
             Network temp_net(networkPathLocally.value,
                              strtoul(headers["Valid-From"].c_str(), NULL, 0),
                              strtoul(headers["Valid-Until"].c_str(), NULL, 0),
-                             enableNetworkOptimizations.value);
+                             enableNetworkOptimizations.value,
+                             activeThreads);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
           } else {
@@ -176,7 +199,8 @@ struct tpcPid {
           }
           LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
           Network temp_net(networkPathLocally.value,
-                           enableNetworkOptimizations.value);
+                           enableNetworkOptimizations.value,
+                           activeThreads);
           network = temp_net;
           network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
         }
@@ -190,7 +214,7 @@ struct tpcPid {
                aod::BCsWithTimestamps const&)
   {
 
-    const unsigned long tracks_size = tracks.size();
+    const uint64_t tracks_size = tracks.size();
 
     auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
@@ -235,7 +259,8 @@ struct tpcPid {
             Network temp_net(networkPathLocally.value,
                              strtoul(headers["Valid-From"].c_str(), NULL, 0),
                              strtoul(headers["Valid-Until"].c_str(), NULL, 0),
-                             enableNetworkOptimizations.value);
+                             enableNetworkOptimizations.value,
+                             activeThreads);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
           } else {
@@ -247,15 +272,15 @@ struct tpcPid {
       // Defining some network parameters
       int input_dimensions = network.getInputDimensions();
       int output_dimensions = network.getOutputDimensions();
-      const unsigned long track_prop_size = input_dimensions * tracks_size;
-      const unsigned long prediction_size = output_dimensions * tracks_size;
+      const uint64_t track_prop_size = input_dimensions * tracks_size;
+      const uint64_t prediction_size = output_dimensions * tracks_size;
 
       network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
 
       float duration_network = 0;
 
       std::vector<float> track_properties(track_prop_size);
-      unsigned long counter_track_props = 0;
+      uint64_t counter_track_props = 0;
       int loop_counter = 0;
 
       // Filling a std::vector<float> to be evaluated by the network
@@ -275,7 +300,7 @@ struct tpcPid {
         float* output_network = network.evalNetwork(track_properties);
         auto stop_network_eval = std::chrono::high_resolution_clock::now();
         duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-        for (unsigned long i = 0; i < prediction_size; i += output_dimensions) {
+        for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
           for (int j = 0; j < output_dimensions; j++) {
             network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
           }
@@ -292,7 +317,7 @@ struct tpcPid {
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
-    unsigned long count_tracks = 0;
+    uint64_t count_tracks = 0;
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
