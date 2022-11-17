@@ -76,7 +76,7 @@ class Network
   std::string printShape(const std::vector<int64_t>& v);
 
   // Class version
-  ClassDefNV(Network, 3);
+  ClassDefNV(Network, 4);
 
 }; // class Network
 

@@ -21,6 +21,7 @@
 
 // ROOT includes
 #include "TFile.h"
+#include "TSystem.h"
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
@@ -96,6 +97,9 @@ struct tpcPid {
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
 
+  // Thread configuration
+  int activeThreads = networkSetNumThreads.value;
+
   // Paramatrization configuration
   bool useCCDBParam = false;
 
@@ -115,6 +119,7 @@ struct tpcPid {
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
 
+    /// TPC PID Response
     const TString fname = paramfile.value;
     if (fname != "") { // Loading the parametrization from file
       LOGP(info, "Loading TPC response from file {}", fname);
@@ -143,9 +148,26 @@ struct tpcPid {
       response.PrintAll();
     }
 
+    /// Neural network init for TPC PID
+
     if (!useNetworkCorrection) {
       return;
     } else {
+
+      /// Testing hyperloop core settings
+      const char* alien_cores = gSystem->Getenv("ALIEN_JDL_CPUCORES");
+      if(alien_cores!=NULL){
+        std::string msg_cores = "Hyperloop-run detected! Number of cores = ";
+        LOGP(info, msg_cores + std::string(alien_cores));
+        activeThreads = 1;
+      }
+      else{
+        if(networkSetNumThreads>0){
+          LOGP(info, "Not running on Hyperloop. Threads for neural network inference are fixed: {} threads", std::to_string(networkSetNumThreads));
+        }
+      }
+
+      /// CCDB and auto-fetching
       ccdbApi.init(url);
       if (!autofetchNetworks) {
         if (ccdbTimestamp > 0) {
@@ -165,7 +187,7 @@ struct tpcPid {
                              strtoul(headers["Valid-From"].c_str(), NULL, 0),
                              strtoul(headers["Valid-Until"].c_str(), NULL, 0),
                              enableNetworkOptimizations.value,
-                             networkSetNumThreads.value);
+                             activeThreads);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
           } else {
@@ -179,7 +201,7 @@ struct tpcPid {
           LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
           Network temp_net(networkPathLocally.value,
                            enableNetworkOptimizations.value,
-                           networkSetNumThreads.value);
+                           activeThreads);
           network = temp_net;
           network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
         }
@@ -239,7 +261,7 @@ struct tpcPid {
                              strtoul(headers["Valid-From"].c_str(), NULL, 0),
                              strtoul(headers["Valid-Until"].c_str(), NULL, 0),
                              enableNetworkOptimizations.value,
-                             networkSetNumThreads.value);
+                             activeThreads);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
           } else {
