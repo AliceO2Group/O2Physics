@@ -61,7 +61,7 @@ struct TwoParticleCorrelationsFilter {
   Produces<aod::TwoPAcceptedGenCollisions> acceptedgencollisions;
   Produces<aod::TwoPFilteredParticles> acceptedgentracks;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/skimmingconf.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
 
   int nReportedTracks;
   //  HistogramRegistry historeg;
@@ -73,7 +73,7 @@ struct TwoParticleCorrelationsFilter {
     LOGF(info, "TwoParticleCorrelationsFilter::init()");
 
     /* collision filtering configuration */
-    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, {});
+    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, eventfilter.pileuprej);
     /* track filtering configuration */
     PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
                                              trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
@@ -111,7 +111,8 @@ struct TwoParticleCorrelationsFilter {
     LOGF(info, "PID skimming signature: %s", fFilterFramework->getPIDFilterCutStringSignature().Data());
   }
 
-  void processRun2(aod::CFCollision const& collision, aod::CFTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::CFCollMasks>::iterator const& collision,
+                   soa::Join<aod::FullTracks, aod::CFTrackMasks> const& tracks)
   {
     using namespace twopfilter;
     LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
@@ -140,7 +141,38 @@ struct TwoParticleCorrelationsFilter {
       acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(false));
     }
   }
-  PROCESS_SWITCH(TwoParticleCorrelationsFilter, processRun2, "Process Run 2 two particle correlations filtering", true);
+  PROCESS_SWITCH(TwoParticleCorrelationsFilter, processRun2, "Process Run 2, i.e. over NOT stored derived data, two particle correlations filtering", true);
+
+  void processRun3(aod::CFCollision const& collision, aod::CFTracks const& tracks)
+  {
+    using namespace twopfilter;
+    LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
+    auto passOptions = [](auto options, auto mask) {
+      bool all = true;
+      for (auto option : options) {
+        all = all && ((option & mask) != 0UL);
+      }
+      return all;
+    };
+
+    if ((collision.selflags() & collisionmask_forced) == collisionmask_forced && passOptions(collisionmask_opt, collision.selflags())) {
+      LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
+      acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(true));
+      int nAcceptedTracks = 0;
+      for (const auto& track : tracks) {
+        if ((track.trackflags() & trackmask_forced) == trackmask_forced && passOptions(trackmask_opt, track.trackflags())) {
+          accepteddtracks(0); // TODO: the kind of accepted track
+          nAcceptedTracks++;
+        } else {
+          accepteddtracks(-1);
+        }
+      }
+      LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %d accepted tracks", collision.selflags(), nAcceptedTracks);
+    } else {
+      acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(false));
+    }
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsFilter, processRun3, "Process Run 3, i.e. over stored derived data, two particle correlations filtering", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

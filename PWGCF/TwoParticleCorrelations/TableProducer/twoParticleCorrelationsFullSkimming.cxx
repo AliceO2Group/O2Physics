@@ -30,8 +30,8 @@ using namespace o2::analysis;
 
 namespace o2::analysis::cfskim
 {
-#define LOGTRACKCOLLISIONS info
-#define LOGTRACKTRACKS info
+#define LOGTRACKCOLLISIONS debug
+#define LOGTRACKTRACKS debug
 #ifdef INCORPORATEBAYESIANPID
 using pidTables = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                             aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
@@ -100,7 +100,7 @@ struct TwoParticleCorrelationsSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/skimmingconf.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
 
   int nReportedTracks;
   int runNumber = 0;
@@ -246,7 +246,44 @@ struct TwoParticleCorrelationsSkimming {
       LOGF(LOGTRACKCOLLISIONS, ">> Filtered %d tracks", nFilteredTracks);
     }
   }
-  PROCESS_SWITCH(TwoParticleCorrelationsSkimming, processRun2, "Process on Run 1 or Run 2 data", true);
+  PROCESS_SWITCH(TwoParticleCorrelationsSkimming, processRun2, "Process on Run 1 or Run 2 data, i.e. do not store derived data ", true);
+
+  void processRun3(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& collision,
+                   soa::Join<aod::BCs, aod::Timestamps, aod::Run2BCInfos> const&, soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks)
+  {
+    /* for the time being this will apply only to Run 1+2 converted data */
+    LOGF(LOGTRACKCOLLISIONS, "Got a new collision with zvtx %.2f and V0M %.2f, CL0 %.2f, CL1 %.2f", collision.posZ(), collision.centRun2V0M(), collision.centRun2CL0(), collision.centRun2CL1());
+
+    auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::Run2BCInfos>>();
+    auto colmask = filterRun2Collision(collision, tracks, bc);
+    LOGF(LOGTRACKCOLLISIONS, "Got mask 0x%16lx", colmask);
+
+    if (colmask != 0UL) {
+      skimmedcollision(collision.posZ(), bc.runNumber(), bc.timestamp(), colmask, fFilterFramework->GetCollisionMultiplicities());
+      int nFilteredTracks = 0;
+      int nCollisionReportedTracks = 0;
+      for (auto const& track : tracks) {
+        auto trkmask = fFilterFramework->FilterTrack(track);
+        auto pidmask = fFilterFramework->FilterTrackPID(track);
+        if (trkmask != 0UL) {
+          skimmedtrack(skimmedcollision.lastIndex(), trkmask, track.pt(), track.eta(), track.phi());
+          skimmtrackpid(pidmask);
+          nFilteredTracks++;
+        }
+        if (trkmask != 0UL && nReportedTracks < 1000) {
+          if (nCollisionReportedTracks < 20) {
+            LOGF(LOGTRACKTRACKS, "  Got track mask 0x%016lx and PID mask 0x%016lx", trkmask, pidmask);
+            LOGF(LOGTRACKTRACKS, "    TPC clusters %d, Chi2 per TPC cluster %f, pT %f, eta %f, track type %d",
+                 track.tpcNClsFound(), track.tpcChi2NCl(), track.pt(), track.eta(), track.trackType());
+            nCollisionReportedTracks++;
+            nReportedTracks++;
+          }
+        }
+      }
+      LOGF(LOGTRACKCOLLISIONS, ">> Filtered %d tracks", nFilteredTracks);
+    }
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsSkimming, processRun3, "Process on Run 3, i.e. store derived data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

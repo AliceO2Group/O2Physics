@@ -13,8 +13,14 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "Framework/runDataProcessing.h"
+#include "DataFormatsParameters/GRPObject.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -22,21 +28,36 @@ using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
 
-void o2::analysis::PWGCF::registerConfiguration(PWGCF::FilterAndAnalysisFramework* fFilterFramework)
+namespace o2::analysis::cfskim
 {
-  fFilterFramework->RegisterConfiguration();
-}
+#define LOGTRACKTRACKS debug
+#ifdef INCORPORATEBAYESIANPID
+using pidTables = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                            aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
+                            aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr>;
+#else
+using pidTables = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                            aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+#endif
 
-struct TwoParticleCorrelationsRegisterSkimming {
-  bool registered = false;
-  PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
+PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
+} // namespace o2::analysis::cfskim
+
+using namespace cfskim;
+
+struct TwoParticleCorrelationsTrackSkimming {
+  /* skimmed data tables */
+  Produces<aod::CFTrackMask> trackmask;
+  Produces<aod::CFTrackPIDs> skimmtrackpid;
+  Produces<aod::CFMCPartMask> particlemask;
 
 #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
 
   void init(InitContext const&)
   {
+    using namespace cfskim;
 
-    LOGF(info, "TwoParticleCorrelationsRegisterSkimming::init()");
+    LOGF(info, "DptDptSkimTask::init()");
 
     /* collision filtering configuration */
     PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, eventfilter.pileuprej);
@@ -54,22 +75,43 @@ struct TwoParticleCorrelationsRegisterSkimming {
 
     fFilterFramework = new PWGCF::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
     fFilterFramework->SetConfiguration(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
-    registered = false;
+    fFilterFramework->Init();
+
+    /* TODO: upload the cuts signatures to the CCDB */
+    LOGF(info, "Collision skimming signature: %s", fFilterFramework->getEventFilterCutStringSignature().Data());
+    LOGF(info, "Track skimming signature: %s", fFilterFramework->getTrackFilterCutStringSignature().Data());
+    LOGF(info, "PID skimming signature: %s", fFilterFramework->getPIDFilterCutStringSignature().Data());
   }
 
-  void process(aod::Collisions const&)
+  void processRun2(soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks, soa::Join<aod::Collisions, aod::CFCollMasks> const&)
   {
-    if (!registered) {
-      LOGF(info, "Registering filter configuration");
-      PWGCF::registerConfiguration(fFilterFramework);
-      registered = true;
+    trackmask.reserve(tracks.size());
+    skimmtrackpid.reserve(tracks.size());
+
+    int nfilteredtracks = 0;
+    for (auto const& track : tracks) {
+      if (!track.has_collision()) {
+        /* track not assigned to any collision */
+        trackmask(0UL);
+        skimmtrackpid(0UL);
+      } else {
+        auto trkmask = fFilterFramework->FilterTrack(track);
+        auto pidmask = fFilterFramework->FilterTrackPID(track);
+        trackmask(trkmask);
+        skimmtrackpid(pidmask);
+        if (trkmask != 0UL) {
+          nfilteredtracks++;
+        }
+      }
     }
+    LOGF(info, "Filtered %d tracks out of %d", nfilteredtracks, tracks.size());
   }
+  PROCESS_SWITCH(TwoParticleCorrelationsTrackSkimming, processRun2, "Process on Run 1 or Run 2 data, i.e. do not store derived data ", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TwoParticleCorrelationsRegisterSkimming>(cfgc)};
+    adaptAnalysisTask<TwoParticleCorrelationsTrackSkimming>(cfgc)};
   return workflow;
 }
