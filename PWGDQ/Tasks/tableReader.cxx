@@ -93,8 +93,8 @@ constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | 
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 
-constexpr static int pairTypeEE = VarManager::kJpsiToEE;
-constexpr static int pairTypeMuMu = VarManager::kJpsiToMuMu;
+constexpr static int pairTypeEE = VarManager::kDecayToEE;
+constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
 // Global function used to define needed histogram classes
