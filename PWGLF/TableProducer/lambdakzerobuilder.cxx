@@ -59,7 +59,7 @@
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
 #include "TDatabasePDG.h"
-#include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
 using namespace o2::framework;

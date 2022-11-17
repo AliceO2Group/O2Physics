@@ -24,8 +24,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequenceArea.hh"
@@ -81,19 +81,19 @@ struct JetFinderHFTask {
                              60, 0., 60.));
   }
 
-  Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
 
   //need enum as configurable
   enum pdgCode { pdgD0 = 421 };
 
   Filter trackCuts = (aod::track::pt > 0.15f && aod::track::eta > -0.9f && aod::track::eta < 0.9f);
   Filter partCuts = (aod::mcparticle::pt > 0.15f && aod::mcparticle::eta > -0.9f && aod::mcparticle::eta < 0.9f);
-  Filter seltrack = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
+  Filter seltrack = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
 
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                    soa::Filtered<aod::Tracks> const& tracks,
-                   soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
+                   soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates)
   {
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
@@ -107,7 +107,7 @@ struct JetFinderHFTask {
       inputParticles.clear();
       for (auto& track : tracks) {
         auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) { //is it global index?
+        if (candidate.prong0().globalIndex() == track.globalIndex() || candidate.prong1().globalIndex() == track.globalIndex()) { // is it global index?
           continue;
         }
         inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
@@ -143,7 +143,7 @@ struct JetFinderHFTask {
 
   void processMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                   soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks,
-                  soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates)
+                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> const& candidates)
   {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
@@ -159,7 +159,7 @@ struct JetFinderHFTask {
           LOGF(info, "Rejecting track %d with track cuts", track.globalIndex());
           continue;
         }
-        if (candidate.index0().globalIndex() == track.globalIndex() || candidate.index1().globalIndex() == track.globalIndex()) {
+        if (candidate.prong0().globalIndex() == track.globalIndex() || candidate.prong1().globalIndex() == track.globalIndex()) {
           LOGF(info, "Rejecting track %d as daughter of candidate %d", track.globalIndex(), candidate.globalIndex());
           continue;
         }
@@ -199,7 +199,7 @@ struct JetFinderHFTask {
           candconst.push_back(candidate.globalIndex());
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
-          if (candidate.flagMCMatchRec() & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK))
+          if (candidate.flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK))
             hJetPtTrue->Fill(jet.pt());
           hD0Pt->Fill(candidate.pt());
           break;
@@ -210,17 +210,17 @@ struct JetFinderHFTask {
   PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
 
   void processMCP(aod::McCollision const& collision,
-                  soa::Filtered<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>> const& particles)
+                  soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>> const& particles)
   {
     LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
 
     // TODO: probably should do this as a filter
-    std::vector<soa::Filtered<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>>::iterator> candidates;
+    std::vector<soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>::iterator> candidates;
     for (auto const& part : particles) {
       // TODO: generalise to any D0
-      if (std::abs(part.flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
+      if (std::abs(part.flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         candidates.push_back(part);
         LOGF(info, "MC candidate %d -> %d", part.globalIndex(), candidates.back().globalIndex());
       }
