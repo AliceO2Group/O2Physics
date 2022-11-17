@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DGSELECTOR_H_
-#define O2_ANALYSIS_DGSELECTOR_H_
+#ifndef PWGUD_CORE_DGSELECTOR_H_
+#define PWGUD_CORE_DGSELECTOR_H_
 
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
@@ -26,8 +26,8 @@ class DGSelector
 {
  public:
   // constructor/destructor
-  DGSelector() { fPDG = TDatabasePDG::Instance(); };
-  ~DGSelector() { delete fPDG; };
+  DGSelector() { fPDG = TDatabasePDG::Instance(); }
+  ~DGSelector() { delete fPDG; }
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
   int Print(DGCutparHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
@@ -170,7 +170,7 @@ class DGSelector
     }
 
     // number of tracks
-    if ((int)tracks.size() < diffCuts.minNTracks() || (int)tracks.size() > diffCuts.maxNTracks()) {
+    if (static_cast<int>(tracks.size()) < diffCuts.minNTracks() || static_cast<int>(tracks.size()) > diffCuts.maxNTracks()) {
       return 6;
     }
 
@@ -226,5 +226,4 @@ class DGSelector
   ClassDefNV(DGSelector, 1);
 };
 
-// -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_DGSELECTOR_H_
+#endif // PWGUD_CORE_DGSELECTOR_H_

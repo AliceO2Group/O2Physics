@@ -172,12 +172,14 @@ struct DGCandAnalyzer {
 
     // skip events with too few/many tracks
     if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
+      LOGF(info, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), diffCuts.minNTracks(), diffCuts.maxNTracks());
       return;
     }
 
     // skip events with out-of-range net charge
     auto netChargeValues = diffCuts.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
+      LOGF(info, "Rejected 2: %d not in set.", dgcand.netCharge());
       return;
     }
 
@@ -186,6 +188,7 @@ struct DGCandAnalyzer {
     auto minRgtrwTOF = candCase != 1 ? 1.0 : diffCuts.minRgtrwTOF();
     LOGF(debug, "candCase %i rtrwTOF %f minRgtrwTOF %f", candCase, rtrwTOF, minRgtrwTOF);
     if (rtrwTOF < minRgtrwTOF) {
+      LOGF(info, "Rejected 3: %d below threshold of %d.", rtrwTOF, minRgtrwTOF);
       return;
     }
 
@@ -204,6 +207,8 @@ struct DGCandAnalyzer {
       } else {
         bcnums.insert(bcnum);
       }
+    } else {
+      LOGF(info, "Rejected 4: no IVMs.");
     }
 
     // update histograms

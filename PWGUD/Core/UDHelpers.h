@@ -16,6 +16,7 @@
 #ifndef PWGUD_CORE_UDHELPERS_H_
 #define PWGUD_CORE_UDHELPERS_H_
 
+#include <vector>
 #include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Common/DataModel/EventSelection.h"
