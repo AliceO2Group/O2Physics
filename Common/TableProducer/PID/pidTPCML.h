@@ -18,15 +18,18 @@
 /// \brief    A class for loading an ONNX neural network and evaluating it for the TPC PID response
 ///
 
-#ifndef O2_PID_TPC_ML_H_
-#define O2_PID_TPC_ML_H_
+#ifndef COMMON_TABLEPRODUCER_PID_PIDTPCML_H_
+#define COMMON_TABLEPRODUCER_PID_PIDTPCML_H_
 
-// O2 includes
-#include "ReconstructionDataFormats/PID.h"
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+// C++ and system includes
 #include <vector>
 #include <array>
 #include <string>
+#include <memory>
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+
+// O2 includes
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid::tpc
 {
@@ -82,4 +85,4 @@ class Network
 
 } // namespace o2::pid::tpc
 
-#endif // O2_PID_TPC_ML_H_
+#endif // COMMON_TABLEPRODUCER_PID_PIDTPCML_H_

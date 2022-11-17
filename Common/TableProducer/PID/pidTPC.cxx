@@ -24,9 +24,9 @@
 #include "TSystem.h"
 
 // O2 includes
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -78,7 +78,7 @@ struct tpcPid {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
+  Configurable<uint64_t> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Parameters for loading network from a file / downloading the file
   Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
@@ -129,7 +129,7 @@ struct tpcPid {
         response.SetParameters(responseptr);
       } catch (...) {
         LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
-      };
+      }
     } else {
       useCCDBParam = true;
       const std::string path = ccdbPath.value;
@@ -213,7 +213,7 @@ struct tpcPid {
                aod::BCsWithTimestamps const&)
   {
 
-    const unsigned long tracks_size = tracks.size();
+    const uint64_t tracks_size = tracks.size();
 
     auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
@@ -271,15 +271,15 @@ struct tpcPid {
       // Defining some network parameters
       int input_dimensions = network.getInputDimensions();
       int output_dimensions = network.getOutputDimensions();
-      const unsigned long track_prop_size = input_dimensions * tracks_size;
-      const unsigned long prediction_size = output_dimensions * tracks_size;
+      const uint64_t track_prop_size = input_dimensions * tracks_size;
+      const uint64_t prediction_size = output_dimensions * tracks_size;
 
       network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
 
       float duration_network = 0;
 
       std::vector<float> track_properties(track_prop_size);
-      unsigned long counter_track_props = 0;
+      uint64_t counter_track_props = 0;
       int loop_counter = 0;
 
       // Filling a std::vector<float> to be evaluated by the network
@@ -299,7 +299,7 @@ struct tpcPid {
         float* output_network = network.evalNetwork(track_properties);
         auto stop_network_eval = std::chrono::high_resolution_clock::now();
         duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-        for (unsigned long i = 0; i < prediction_size; i += output_dimensions) {
+        for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
           for (int j = 0; j < output_dimensions; j++) {
             network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
           }
@@ -316,7 +316,7 @@ struct tpcPid {
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
-    unsigned long count_tracks = 0;
+    uint64_t count_tracks = 0;
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
