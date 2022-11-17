@@ -386,6 +386,7 @@ struct DGCandProducer {
     bool isPythiaDiff = udhelpers::isPythiaCDE(McParts);
     bool isGraniittiDiff = udhelpers::isGraniittiCDE(McParts);
     LOGF(debug, "mcCol %i type %i / %i / %i", (int)McCol.globalIndex(), !isPythiaDiff && !isGraniittiDiff, isPythiaDiff, isGraniittiDiff);
+    /*
     // mctruth
     int mctruth = -1;
     if (isPythiaDiff) {
@@ -393,6 +394,7 @@ struct DGCandProducer {
     } else if (isGraniittiDiff) {
       mctruth = 2;
     }
+    */
 
     // MC BC
     auto mcbc = McCol.bc_as<BCs>();
