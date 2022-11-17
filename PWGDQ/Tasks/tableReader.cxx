@@ -105,7 +105,7 @@ struct AnalysisEventSelection {
   Produces<aod::MixingHashes> hash;
   OutputObj<THashList> fOutputList{"output"};
   // TODO: Provide the mixing variables and binning directly via configurables (e.g. vectors of float)
-  Configurable<string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a coma, default no mixing"};
+  Configurable<string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   Configurable<string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
 
@@ -356,6 +356,7 @@ struct AnalysisEventMixing {
   // TODO: Create a configurable to specify exactly on which of the bits one should run the event mixing
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
+  Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -497,8 +498,9 @@ struct AnalysisEventMixing {
   {
     events.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
+    int mixingDepth = fConfigMixingDepth.value;
     GroupSlicer slicerTracks(events, tracksTuple);
-    for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
+    for (auto& [event1, event2] : selfCombinations(hashBin, mixingDepth, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
       auto it1 = slicerTracks.begin();
