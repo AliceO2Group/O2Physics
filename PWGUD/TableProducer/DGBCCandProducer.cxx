@@ -575,8 +575,8 @@ struct DGBCCandProducer {
   PROCESS_SWITCH(DGBCCandProducer, processTable, "Produce UDTables", true);
 
   void processData(BCs const& bcs, CCs const& collisions,
-                 TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
-                 aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                   TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
+                   aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     int isDG1, isDG2;
     int ntr1, ntr2;

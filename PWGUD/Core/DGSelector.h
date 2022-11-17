@@ -22,14 +22,16 @@
 // -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events
 // Selector for Double Gap events
-class DGSelector {
+class DGSelector
+{
  public:
   // constructor/destructor
   DGSelector() { fPDG = TDatabasePDG::Instance(); };
   ~DGSelector() { delete fPDG; };
-  
+
   template <typename CC, typename BCs, typename TCs, typename FWs>
-  int Print(DGCutparHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks) {
+  int Print(DGCutparHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  {
     LOGF(info, "Size of array %i", collision.size());
     return 1;
   }
@@ -217,7 +219,7 @@ class DGSelector {
     // if we arrive here then the event is good!
     return 0;
   };
-  
+
  private:
   TDatabasePDG* fPDG;
 

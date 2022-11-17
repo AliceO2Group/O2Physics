@@ -189,7 +189,6 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
   }
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-
 }
 
 // -----------------------------------------------------------------------------
@@ -402,17 +401,17 @@ int64_t sameMCCollision(T tracks, aod::McCollisions mccols, aod::McParticles mcp
           colID = mccol.globalIndex();
         } else {
           if (colID != mccol.globalIndex()) {
-            return (int64_t) -1;
+            return (int64_t)-1;
           }
         }
       } else {
-        return (int64_t) -1;
+        return (int64_t)-1;
       }
     } else {
-      return (int64_t) -1;
+      return (int64_t)-1;
     }
   }
-  
+
   return colID;
 }
 
