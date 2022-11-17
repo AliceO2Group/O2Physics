@@ -156,13 +156,12 @@ struct tpcPid {
 
       /// Testing hyperloop core settings
       const char* alien_cores = gSystem->Getenv("ALIEN_JDL_CPUCORES");
-      if(alien_cores!=NULL){
+      if (alien_cores != NULL) {
         std::string msg_cores = "Hyperloop-run detected! Number of cores = ";
         LOGP(info, msg_cores + std::string(alien_cores));
         activeThreads = 1;
-      }
-      else{
-        if(networkSetNumThreads>0){
+      } else {
+        if (networkSetNumThreads > 0) {
           LOGP(info, "Not running on Hyperloop. Threads for neural network inference are fixed: {} threads", std::to_string(networkSetNumThreads));
         }
       }
