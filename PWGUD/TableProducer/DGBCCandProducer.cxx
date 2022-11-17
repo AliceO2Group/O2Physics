@@ -381,11 +381,11 @@ struct DGBCCandProducer {
 
   // update UDTables
   template <typename TTracks>
-  void updateUDTables(bool onlyPV, uint64_t bcnum, int rnum, int mctruth, float vx, float vy, float vz,
+  void updateUDTables(bool onlyPV, uint64_t bcnum, int rnum, float vx, float vy, float vz,
                       uint16_t const& ntrks, int8_t const& ncharge, float const& rtrwTOF,
                       TTracks const& tracks, upchelpers::FITInfo const& fitInfo)
   {
-    outputCollisions(bcnum, rnum, vx, vy, vz, ntrks, ncharge, rtrwTOF, mctruth);
+    outputCollisions(bcnum, rnum, vx, vy, vz, ntrks, ncharge, rtrwTOF);
     outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                          fitInfo.triggerMaskFT0,
                          fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
@@ -459,7 +459,7 @@ struct DGBCCandProducer {
           outputCollisions(bc.globalBC(), bc.runNumber(),
                            col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge,
-                           rtrwTOF, -1);
+                           rtrwTOF);
           outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                                fitInfo.triggerMaskFT0,
                                fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
@@ -505,7 +505,7 @@ struct DGBCCandProducer {
           outputCollisions(bc.globalBC(), bc.runNumber(),
                            -1., 1., -1.,
                            tracksArray.size(), nCharge,
-                           rtrwTOF, -1);
+                           rtrwTOF);
           outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                                fitInfo.triggerMaskFT0,
                                fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
@@ -554,7 +554,7 @@ struct DGBCCandProducer {
         outputCollisions(bcnum, tibc.runNumber(),
                          -2., 2., -2.,
                          tracksArray.size(), nCharge,
-                         rtrwTOF, -1);
+                         rtrwTOF);
         outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                              fitInfo.triggerMaskFT0,
                              fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
@@ -640,7 +640,7 @@ struct DGBCCandProducer {
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-            updateUDTables(true, bcnum, bc.runNumber(), -1, col.posX(), col.posY(), col.posZ(),
+            updateUDTables(true, bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
           }
         }
@@ -676,7 +676,7 @@ struct DGBCCandProducer {
           auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
           auto nCharge = udhelpers::netCharge<false>(tracksArray);
           auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-          updateUDTables(false, bcnum, tibc.runNumber(), -1, -1., 1., -1,
+          updateUDTables(false, bcnum, tibc.runNumber(), -1., 1., -1,
                          tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
         }
       }
@@ -691,160 +691,7 @@ struct DGBCCandProducer {
     }
   }
 
-  PROCESS_SWITCH(DGBCCandProducer, processData, "process real data", false);
-  
-  using mcCCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using mcTCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                aod::TOFSignal,
-                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                aod::McTrackLabels>;
-
-  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-
-  void processMC(BCs const& bcs, mcCCs const& collisions, aod::McCollisions const& mccols,
-                 mcTCs const& tracks, aod::McParticles const& mcparts, FTCs const& fwdtracks,
-                 TIBCs const& tibcs, FTIBCs const& ftibcs,
-                 aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
-  {
-    int isDG1, isDG2;
-    int ntr1, ntr2;
-    // flag BCs
-    //  0: all
-    //  1: in BCs table
-    //  2: has associated collision
-    //  3: is DG1 candidate
-    //  4: in TIBCs table
-    //  5: is DG2 candidate
-    int8_t bcFlag = 0;
-
-    // loop over all possible BCs
-    if (bcs.size() <= 0) {
-      return;
-    }
-
-    // run over globalBC [minGlobalBC, maxGlobalBC] ...
-    uint64_t minGlobalBC = bcs.iteratorAt(0).globalBC();
-    uint64_t maxGlobalBC = bcs.iteratorAt(bcs.size() - 1).globalBC();
-    // ... and advance these pointers step-by-step
-    auto bc = bcs.iteratorAt(0);
-    auto tibc = tibcs.iteratorAt(0);
-    auto ftibc = ftibcs.iteratorAt(0);
-    auto lastbc = bcs.iteratorAt(bcs.size() - 1);
-    auto lasttibc = tibcs.iteratorAt(tibcs.size() - 1);
-    auto lastftibc = ftibcs.iteratorAt(ftibcs.size() - 1);
-
-    for (auto bcnum = minGlobalBC; bcnum <= maxGlobalBC; bcnum++) {
-
-      // reset counters
-      bcFlag = 1; // bit 0 is always set
-      isDG1 = -1;
-      isDG2 = -1;
-      ntr1 = -1;
-      ntr2 = -1;
-
-      // find BC in BCs table
-      while (bc.globalBC() < bcnum && bc != lastbc) {
-        ++bc;
-      }
-      if (bc.globalBC() == bcnum) {
-        SETBIT(bcFlag, 1);
-
-        // find associated collision
-        auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
-        if (colSlize.size() > 0) {
-          SETBIT(bcFlag, 2);
-
-          auto col = colSlize.begin();
-          ntr1 = col.numContrib();
-          auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
-          auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
-          auto bcRange = udhelpers::MCcompatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
-          isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
-          if (isDG1 == 0) {
-            // this is a DG candidate with proper collision vertex
-            SETBIT(bcFlag, 3);
-            registry.get<TH1>(HIST("candCase"))->Fill(1, 1.);
-
-            int mctruth = -1;
-            auto mccolId = udhelpers::sameMCCollision(colTracks, mccols, mcparts);
-            if (mccolId >= 0) {
-              mctruth = 0;
-              auto mcpartsslice = mcparts.sliceBy(perMcCollision, mccolId);
-              if (udhelpers::isPythiaCDE(mcpartsslice)) {
-                mctruth = 1;
-              } else if (udhelpers::isGraniittiCDE(mcpartsslice)) {
-                mctruth = 2;
-              }
-            }
-            
-            auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
-            auto nCharge = udhelpers::netCharge<true>(colTracks);
-            auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-            updateUDTables(true, bcnum, bc.runNumber(), mctruth, col.posX(), col.posY(), col.posZ(),
-                           col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
-          }
-        }
-      }
-
-      // find BC in TIBCs table
-      while (tibc.bcnum() < bcnum && tibc != lasttibc) {
-        ++tibc;
-      }
-      if (tibc.bcnum() == bcnum) {
-        SETBIT(bcFlag, 4);
-
-        auto bcRange = udhelpers::compatibleBCs(bc, bcnum, diffCuts.minNBCs(), bcs);
-        auto tracksArray = tibc.track_as<mcTCs>();
-        ntr2 = tracksArray.size();
-
-        // find BC in FTIBCs table
-        while (ftibc.bcnum() < bcnum && ftibc != lastftibc) {
-          ++ftibc;
-        }
-        if (ftibc.bcnum() == bcnum) {
-          auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
-          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-        } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-        }
-        if (isDG2 == 0) {
-          // this is a DG candidate with tracks-in-BC
-          SETBIT(bcFlag, 5);
-          registry.get<TH1>(HIST("candCase"))->Fill(2, 1.);
-
-          int mctruth = -1;
-          auto mccolId = udhelpers::sameMCCollision(tracksArray, mccols, mcparts);
-          if (mccolId >= 0) {
-            mctruth = 0;
-            auto mcpartsslice = mcparts.sliceBy(perMcCollision, mccolId);
-            if (udhelpers::isPythiaCDE(mcpartsslice)) {
-              mctruth = 1;
-            } else if (udhelpers::isGraniittiCDE(mcpartsslice)) {
-              mctruth = 2;
-            }
-          }
-            
-          auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
-          auto nCharge = udhelpers::netCharge<false>(tracksArray);
-          auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-          updateUDTables(false, bcnum, tibc.runNumber(), mctruth, -1., 1., -1,
-                         tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
-        }
-      }
-
-      // update histograms
-      registry.get<TH1>(HIST("bcFlag"))->Fill(bcFlag, 1.);
-      registry.get<TH2>(HIST("isDG1vsisDG2"))->Fill(isDG1, isDG2);
-      registry.get<TH2>(HIST("ntr1vsntr2All"))->Fill(ntr1, ntr2);
-      if (isDG1 == 0 && isDG2 == 0) {
-        registry.get<TH2>(HIST("ntr1vsntr2Cand"))->Fill(ntr1, ntr2);
-      }
-    }
-  }
-
-  PROCESS_SWITCH(DGBCCandProducer, processMC, "Process MC data", false);
+  PROCESS_SWITCH(DGBCCandProducer, processData, "Produce UDTables", true);
 };
 
 // -----------------------------------------------------------------------------

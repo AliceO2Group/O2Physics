@@ -77,7 +77,6 @@ namespace udcollision
 // general information
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
-DECLARE_SOA_COLUMN(MCTruth, mcTruth, int32_t);  //! 
 DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t);  //! Sum of track signs
 DECLARE_SOA_COLUMN(RgtrwTOF, rgtrwTOF, float);     //! Fraction of global tracks with TOF hit
 // FT0 information
@@ -143,8 +142,7 @@ DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
                   collision::PosZ,
                   collision::NumContrib,
                   udcollision::NetCharge,
-                  udcollision::RgtrwTOF,
-                  udcollision::MCTruth);
+                  udcollision::RgtrwTOF);
 
 DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::TotalFT0AmplitudeA,

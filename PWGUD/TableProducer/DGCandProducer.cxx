@@ -341,7 +341,7 @@ struct DGCandProducer {
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
-                       rtrwTOF, -1);
+                       rtrwTOF);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,
                            fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
@@ -440,7 +440,7 @@ struct DGCandProducer {
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          collision.posX(), collision.posY(), collision.posZ(),
                          collision.numContrib(), udhelpers::netCharge<true>(tracks),
-                         rtrwTOF, mctruth);
+                         rtrwTOF);
 
         // UDTracks, UDTrackCollisionID, UDTracksExtras, UDMcTrackLabels
         for (auto& track : collisionTracks) {
