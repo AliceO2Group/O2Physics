@@ -33,7 +33,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra,
-                            aod::pidTOFbeta, aod::pidTOFmass, aod::trackSelection,
+                            aod::pidTOFbeta, aod::pidTOFmass, aod::TrackSelection,
                             aod::pidTPCFullPi, aod::pidTPCFullPr,
                             aod::pidTOFFullPi, aod::pidTOFFullPr>;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
