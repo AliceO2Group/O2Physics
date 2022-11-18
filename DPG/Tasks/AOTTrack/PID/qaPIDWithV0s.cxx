@@ -177,9 +177,9 @@ struct pidQaWithV0s {
       }
       fillHistogram("tracks", 4.f);
       if (trk.sign() > 0) {
-        fillHistogram("tracks", 2.f);
+        fillHistogram("tracks", 5.f);
       } else {
-        fillHistogram("tracks", 3.f);
+        fillHistogram("tracks", 6.f);
       }
     }
 
@@ -193,6 +193,7 @@ struct pidQaWithV0s {
           continue;
         }
         fillHistogram("K0s/masscut", v0.mK0Short());
+
         fillHistogram("K0s/TOF/pos", posTrack.pt(), posTrack.tofNSigmaPi());
         fillHistogram("K0s/TOF/neg", negTrack.pt(), negTrack.tofNSigmaPi());
         fillHistogram("K0s/TPC/pos", posTrack.pt(), posTrack.tpcNSigmaPi());
@@ -208,6 +209,7 @@ struct pidQaWithV0s {
         fillHistogram("Lambda/mass", v0.mLambda());
         if (v0.mLambda() > minMassLambda && v0.mLambda() < maxMassLambda) {
           fillHistogram("Lambda/masscut", v0.mLambda());
+
           fillHistogram("Lambda/TOF/pos", posTrack.pt(), posTrack.tofNSigmaPr());
           fillHistogram("Lambda/TOF/neg", negTrack.pt(), negTrack.tofNSigmaPi());
           fillHistogram("Lambda/TPC/pos", posTrack.pt(), posTrack.tpcNSigmaPr());
@@ -222,6 +224,7 @@ struct pidQaWithV0s {
         fillHistogram("AntiLambda/mass", v0.mAntiLambda());
         if (v0.mAntiLambda() > minMassAntiLambda && v0.mAntiLambda() < maxMassAntiLambda) {
           fillHistogram("AntiLambda/masscut", v0.mAntiLambda());
+
           fillHistogram("AntiLambda/TOF/pos", posTrack.pt(), posTrack.tofNSigmaPi());
           fillHistogram("AntiLambda/TOF/neg", negTrack.pt(), negTrack.tofNSigmaPr());
           fillHistogram("AntiLambda/TPC/pos", posTrack.pt(), posTrack.tpcNSigmaPi());
