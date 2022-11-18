@@ -71,6 +71,13 @@ struct QaTrackCuts {
     h->GetXaxis()->SetBinLabel(9, "passedITSChi2NDF");
     h->GetXaxis()->SetBinLabel(10, "passedITSRefit");
     h->GetXaxis()->SetBinLabel(11, "passedITSHits");
+
+    h = histos.add<TH1>("tracktypes", "Tracks types seen", kTH1F, {axisSelections});
+    h->GetXaxis()->SetBinLabel(1, "TrackIU");
+    h->GetXaxis()->SetBinLabel(2, "Track");
+    h->GetXaxis()->SetBinLabel(3, "Run2Track");
+    h->GetXaxis()->SetBinLabel(4, "Run2Tracklet");
+    h->GetXaxis()->SetBinLabel(5, "Undefined");
   }
 
   void process(const o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>& tracks,
@@ -175,6 +182,24 @@ struct QaTrackCuts {
             }
           }
         }
+      }
+      // Track types
+      switch (track.trackType()) {
+        case o2::aod::track::TrackTypeEnum::TrackIU:
+          histos.fill(HIST("tracktypes"), 1.f);
+          break;
+        case o2::aod::track::TrackTypeEnum::Track:
+          histos.fill(HIST("tracktypes"), 2.f);
+          break;
+        case o2::aod::track::TrackTypeEnum::Run2Track:
+          histos.fill(HIST("tracktypes"), 3.f);
+          break;
+        case o2::aod::track::TrackTypeEnum::Run2Tracklet:
+          histos.fill(HIST("tracktypes"), 4.f);
+          break;
+        default:
+          histos.fill(HIST("tracktypes"), 5.f);
+          break;
       }
     }
   }

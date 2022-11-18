@@ -33,6 +33,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra,
+                            aod::pidTOFbeta, aod::pidTOFmass, aod::TrackSelection,
                             aod::pidTPCFullPi, aod::pidTPCFullPr,
                             aod::pidTOFFullPi, aod::pidTOFFullPr>;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -42,7 +43,14 @@ struct pidQaWithV0s {
   ConfigurableAxis nSigmaBins{"nSigmaBins", {1000, -100.f, 100.f}, "Binning for the nSigma histograms"};
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"};
   Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
+  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5, "minimumV0Radius (cm)"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
+  Configurable<float> minMassK0s{"minMassK0s", 0.47f, "Minimum K0s mass"};
+  Configurable<float> maxMassK0s{"maxMassK0s", 0.52f, "Maximum K0s mass"};
+  Configurable<float> minMassLambda{"minMassLambda", 1.105f, "Minimum Lambda mass"};
+  Configurable<float> maxMassLambda{"maxMassLambda", 1.125f, "Maximum Lambda mass"};
+  Configurable<float> minMassAntiLambda{"minMassAntiLambda", 1.105f, "Minimum AntiLambda mass"};
+  Configurable<float> maxMassAntiLambda{"maxMassAntiLambda", 1.125f, "Maximum AntiLambda mass"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
   HistogramRegistry histos{"K0sTrackingEfficiency"};
 #define fillHistogram(name, ...) histos.fill(HIST(name), __VA_ARGS__)
@@ -52,6 +60,8 @@ struct pidQaWithV0s {
     const AxisSpec mAxisK0s{200, 0.4f, 0.6f, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec mAxisLambda{400, 1.0f, 1.250f, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec betaAxis{100, 0, 2, "TOF #it{#beta}"};
+    const AxisSpec dedxAxis{500, 0, 1000, "d#it{E}/d#it{x} A.U."};
     const AxisSpec nsigmaTOFAxis{nSigmaBins, "N#sigma(TOF)"};
     const AxisSpec nsigmaTPCAxis{nSigmaBins, "N#sigma(TPC)"};
 
@@ -59,12 +69,27 @@ struct pidQaWithV0s {
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Ev. sel. passed");
 
+    h = histos.add<TH1>("tracks", "tracks", HistType::kTH1F, {{6, 0.5, 6.5}});
+    h->GetXaxis()->SetBinLabel(1, "tracks read");
+    h->GetXaxis()->SetBinLabel(2, "pos tracks read");
+    h->GetXaxis()->SetBinLabel(3, "neg tracks read");
+    h->GetXaxis()->SetBinLabel(4, "tracks passed cuts");
+    h->GetXaxis()->SetBinLabel(5, "pos tracks passed cuts");
+    h->GetXaxis()->SetBinLabel(6, "neg tracks passed cuts");
+
+    h = histos.add<TH1>("v0s", "v0s", HistType::kTH1F, {{2, 0.5, 2.5}});
+    h->GetXaxis()->SetBinLabel(1, "V0s read");
+
     histos.add("K0s/mass", "mass", HistType::kTH1F, {mAxisK0s});
     histos.add("K0s/masscut", "masscut", HistType::kTH1F, {mAxisK0s});
-    histos.add("K0s/TOF/pos", "TOF pos", HistType::kTH2F, {ptAxis, nsigmaTOFAxis});
-    histos.add("K0s/TOF/neg", "TOF neg", HistType::kTH2F, {ptAxis, nsigmaTOFAxis});
-    histos.add("K0s/TPC/pos", "TPC pos", HistType::kTH2F, {ptAxis, nsigmaTPCAxis});
-    histos.add("K0s/TPC/neg", "TPC neg", HistType::kTH2F, {ptAxis, nsigmaTPCAxis});
+    histos.add<TH2>("K0s/TOF/pos", "TOF pos", HistType::kTH2F, {ptAxis, nsigmaTOFAxis})->GetYaxis()->SetTitle("N#sigma_{TOF}(#pi^{+})");
+    histos.add<TH2>("K0s/TOF/neg", "TOF neg", HistType::kTH2F, {ptAxis, nsigmaTOFAxis})->GetYaxis()->SetTitle("N#sigma_{TOF}(#pi^{-})");
+    histos.add<TH2>("K0s/TPC/pos", "TPC pos", HistType::kTH2F, {ptAxis, nsigmaTPCAxis})->GetYaxis()->SetTitle("N#sigma_{TPC}(#pi^{+})");
+    histos.add<TH2>("K0s/TPC/neg", "TPC neg", HistType::kTH2F, {ptAxis, nsigmaTPCAxis})->GetYaxis()->SetTitle("N#sigma_{TPC}(#pi^{-})");
+    histos.add<TH2>("K0s/TOF/beta/pos", "TOF beta pos", HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add<TH2>("K0s/TOF/beta/neg", "TOF beta neg", HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add<TH2>("K0s/TPC/dedx/pos", "TPC dedx pos", HistType::kTH2F, {ptAxis, dedxAxis});
+    histos.add<TH2>("K0s/TPC/dedx/neg", "TPC dedx neg", HistType::kTH2F, {ptAxis, dedxAxis});
 
     histos.add("Lambda/mass", "mass", HistType::kTH1F, {mAxisLambda});
     histos.add("Lambda/masscut", "masscut", HistType::kTH1F, {mAxisLambda});
@@ -72,6 +97,10 @@ struct pidQaWithV0s {
     histos.add<TH2>("Lambda/TOF/neg", "TOF neg", HistType::kTH2F, {ptAxis, nsigmaTOFAxis})->GetYaxis()->SetTitle("N#sigma_{TOF}(#pi^{-})");
     histos.add<TH2>("Lambda/TPC/pos", "TPC pos", HistType::kTH2F, {ptAxis, nsigmaTPCAxis})->GetYaxis()->SetTitle("N#sigma_{TPC}(p)");
     histos.add<TH2>("Lambda/TPC/neg", "TPC neg", HistType::kTH2F, {ptAxis, nsigmaTPCAxis})->GetYaxis()->SetTitle("N#sigma_{TPC}(#pi^{-})");
+    histos.add<TH2>("Lambda/TOF/beta/pos", "TOF beta pos", HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add<TH2>("Lambda/TOF/beta/neg", "TOF beta neg", HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add<TH2>("Lambda/TPC/dedx/pos", "TPC dedx pos", HistType::kTH2F, {ptAxis, dedxAxis});
+    histos.add<TH2>("Lambda/TPC/dedx/neg", "TPC dedx neg", HistType::kTH2F, {ptAxis, dedxAxis});
 
     histos.add("AntiLambda/mass", "mass", HistType::kTH1F, {mAxisLambda});
     histos.add("AntiLambda/masscut", "mass", HistType::kTH1F, {mAxisLambda});
@@ -79,6 +108,10 @@ struct pidQaWithV0s {
     histos.add<TH2>("AntiLambda/TOF/neg", "TOF neg", HistType::kTH2F, {ptAxis, nsigmaTOFAxis})->GetYaxis()->SetTitle("N#sigma_{TOF}(#bar{p})");
     histos.add<TH2>("AntiLambda/TPC/pos", "TPC pos", HistType::kTH2F, {ptAxis, nsigmaTPCAxis})->GetYaxis()->SetTitle("N#sigma_{TPC}(#pi^{+})");
     histos.add<TH2>("AntiLambda/TPC/neg", "TPC neg", HistType::kTH2F, {ptAxis, nsigmaTPCAxis})->GetYaxis()->SetTitle("N#sigma_{TPC}(#bar{p})");
+    histos.add<TH2>("AntiLambda/TOF/beta/pos", "TOF beta pos", HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add<TH2>("AntiLambda/TOF/beta/neg", "TOF beta neg", HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add<TH2>("AntiLambda/TPC/dedx/pos", "TPC dedx pos", HistType::kTH2F, {ptAxis, dedxAxis});
+    histos.add<TH2>("AntiLambda/TPC/dedx/neg", "TPC dedx neg", HistType::kTH2F, {ptAxis, dedxAxis});
   }
 
   template <typename T1, typename T2, typename C>
@@ -87,6 +120,9 @@ struct pidQaWithV0s {
     // Apply selections on V0
     if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa)
       return kFALSE;
+    if (v0.v0radius() < minimumV0Radius) {
+      return kFALSE;
+    }
     if (TMath::Abs(v0.yK0Short()) > rapidity)
       return kFALSE;
 
@@ -106,6 +142,9 @@ struct pidQaWithV0s {
       return kFALSE;
     if (TMath::Abs(v0.yLambda()) > rapidity)
       return kFALSE;
+    if (v0.v0radius() < minimumV0Radius) {
+      return kFALSE;
+    }
 
     // Apply selections on V0 daughters
     if (!ntrack.hasTPC() || !ptrack.hasTPC())
@@ -121,45 +160,77 @@ struct pidQaWithV0s {
                aod::V0Datas const& fullV0s,
                PIDTracks const& tracks)
   {
-    histos.fill(HIST("evsel"), 0.);
+    histos.fill(HIST("evsel"), 1.);
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    histos.fill(HIST("evsel"), 1.);
+    histos.fill(HIST("evsel"), 2.);
+    for (auto& trk : tracks) {
+      fillHistogram("tracks", 1.f);
+      if (trk.sign() > 0) {
+        fillHistogram("tracks", 2.f);
+      } else {
+        fillHistogram("tracks", 3.f);
+      }
+      if (!trk.isGlobalTrack()) {
+        continue;
+      }
+      fillHistogram("tracks", 4.f);
+      if (trk.sign() > 0) {
+        fillHistogram("tracks", 2.f);
+      } else {
+        fillHistogram("tracks", 3.f);
+      }
+    }
 
     for (auto& v0 : fullV0s) {
+      histos.fill(HIST("v0s"), 1.);
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
       const auto& negTrack = v0.negTrack_as<PIDTracks>();
       if (acceptK0s(v0, negTrack, posTrack, collision)) {
         fillHistogram("K0s/mass", v0.mK0Short());
-        if (v0.mK0Short() < 0.47f || v0.mK0Short() > 0.52f) {
+        if (v0.mK0Short() < minMassK0s || v0.mK0Short() > maxMassK0s) {
           continue;
         }
         fillHistogram("K0s/masscut", v0.mK0Short());
         fillHistogram("K0s/TOF/pos", posTrack.pt(), posTrack.tofNSigmaPi());
-
         fillHistogram("K0s/TOF/neg", negTrack.pt(), negTrack.tofNSigmaPi());
         fillHistogram("K0s/TPC/pos", posTrack.pt(), posTrack.tpcNSigmaPi());
         fillHistogram("K0s/TPC/neg", negTrack.pt(), negTrack.tpcNSigmaPi());
+
+        fillHistogram("K0s/TOF/beta/pos", posTrack.pt(), posTrack.beta());
+        fillHistogram("K0s/TOF/beta/neg", negTrack.pt(), negTrack.beta());
+        fillHistogram("K0s/TPC/dedx/pos", posTrack.pt(), posTrack.tpcSignal());
+        fillHistogram("K0s/TPC/dedx/neg", negTrack.pt(), negTrack.tpcSignal());
       }
 
       if (acceptLambda(v0, negTrack, posTrack, collision)) {
         fillHistogram("Lambda/mass", v0.mLambda());
-        if (v0.mLambda() > 1.105f && v0.mLambda() < 1.125f) {
+        if (v0.mLambda() > minMassLambda && v0.mLambda() < maxMassLambda) {
           fillHistogram("Lambda/masscut", v0.mLambda());
           fillHistogram("Lambda/TOF/pos", posTrack.pt(), posTrack.tofNSigmaPr());
           fillHistogram("Lambda/TOF/neg", negTrack.pt(), negTrack.tofNSigmaPi());
           fillHistogram("Lambda/TPC/pos", posTrack.pt(), posTrack.tpcNSigmaPr());
           fillHistogram("Lambda/TPC/neg", negTrack.pt(), negTrack.tpcNSigmaPi());
+
+          fillHistogram("Lambda/TOF/beta/pos", posTrack.pt(), posTrack.beta());
+          fillHistogram("Lambda/TOF/beta/neg", negTrack.pt(), negTrack.beta());
+          fillHistogram("Lambda/TPC/dedx/pos", posTrack.pt(), posTrack.tpcSignal());
+          fillHistogram("Lambda/TPC/dedx/neg", negTrack.pt(), negTrack.tpcSignal());
         }
 
         fillHistogram("AntiLambda/mass", v0.mAntiLambda());
-        if (v0.mAntiLambda() > 1.105f && v0.mAntiLambda() < 1.125f) {
+        if (v0.mAntiLambda() > minMassAntiLambda && v0.mAntiLambda() < maxMassAntiLambda) {
           fillHistogram("AntiLambda/masscut", v0.mAntiLambda());
           fillHistogram("AntiLambda/TOF/pos", posTrack.pt(), posTrack.tofNSigmaPi());
           fillHistogram("AntiLambda/TOF/neg", negTrack.pt(), negTrack.tofNSigmaPr());
           fillHistogram("AntiLambda/TPC/pos", posTrack.pt(), posTrack.tpcNSigmaPi());
           fillHistogram("AntiLambda/TPC/neg", negTrack.pt(), negTrack.tpcNSigmaPr());
+
+          fillHistogram("AntiLambda/TOF/beta/pos", posTrack.pt(), posTrack.beta());
+          fillHistogram("AntiLambda/TOF/beta/neg", negTrack.pt(), negTrack.beta());
+          fillHistogram("AntiLambda/TPC/dedx/pos", posTrack.pt(), posTrack.tpcSignal());
+          fillHistogram("AntiLambda/TPC/dedx/neg", negTrack.pt(), negTrack.tpcSignal());
         }
       }
     }
