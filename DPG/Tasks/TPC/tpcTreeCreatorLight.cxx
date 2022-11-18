@@ -77,7 +77,7 @@ struct TreeWriterTPCTOF {
 
   /// Function to fill trees
   template <typename T, typename C>
-  void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, double dwnSmplFactor)
+  void fillSkimmedTPCTOFTable(T const& track, C const& collision, int runnumber, double dwnSmplFactor)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -87,7 +87,6 @@ struct TreeWriterTPCTOF {
     const double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
-                    1. / dEdxExp,
                     p,
                     track.tgl(),
                     track.signed1Pt(),
@@ -96,9 +95,8 @@ struct TreeWriterTPCTOF {
                     track.y(),
                     multTPC / 11000.,
                     std::sqrt(nClNorm / ncl),
-                    nSigmaTPC,
-                    nSigmaTOF,
-                    TrackPID);
+                    TrackPID,
+                    runnumber);
     }
   };
 
@@ -176,12 +174,16 @@ struct TreeWriterTPCTOF {
   void init(o2::framework::InitContext& initContext)
   {
   }
-  void process(Coll::iterator const& collision, Trks const& tracks)
+  void process(Coll::iterator const& collision, Trks const& tracks, aod::BCsWithTimestamps const&)
   {
     /// Check event selection
     if (!isEventSelected(collision, tracks)) {
       return;
     }
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const int runnumber = bc.runNumber();
+
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
 
@@ -190,7 +192,7 @@ struct TreeWriterTPCTOF {
         continue;
       }
       if (KeepTrack(trk)) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), dwnSmplFactor);
+        fillSkimmedTPCTOFTable(trk, collision, runnumber, dwnSmplFactor);
       }
 
     } /// Loop tracks

@@ -31,17 +31,14 @@ namespace o2::aod
 {
 namespace tpctree
 {
-DECLARE_SOA_COLUMN(InvDeDxExpTPC, invdEdxExpTPC, float);
 DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
-DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
-DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
 DECLARE_SOA_COLUMN(PIDTrack, pidTrack, int);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace tpctree
 
 DECLARE_SOA_TABLE(TPCTOFTree, "AOD", "TPCTOFTREE",
                   o2::aod::track::TPCSignal,
-                  tpctree::InvDeDxExpTPC,
                   o2::aod::track::TPCInnerParam,
                   o2::aod::track::Tgl,
                   o2::aod::track::Signed1Pt,
@@ -50,7 +47,6 @@ DECLARE_SOA_TABLE(TPCTOFTree, "AOD", "TPCTOFTREE",
                   o2::aod::track::Y,
                   tpctree::NormMultTPC,
                   tpctree::NormNClustersTPC,
-                  tpctree::NSigTPC,
-                  tpctree::NSigTOF,
-                  tpctree::PIDTrack);
+                  tpctree::PIDTrack,
+                  tpctree::RunNumber);
 } // namespace o2::aod
