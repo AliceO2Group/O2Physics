@@ -31,6 +31,7 @@ using namespace o2::analysis;
 namespace o2::analysis::cfskim
 {
 #define LOGTRACKCOLLISIONS debug
+#define LOGTRACKTRACKS debug
 #ifdef INCORPORATEBAYESIANPID
 using pidTables = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                             aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
@@ -96,7 +97,7 @@ struct TwoParticleCorrelationsCollisionSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx"
 
   int nReportedTracks;
   int runNumber = 0;
@@ -222,9 +223,74 @@ struct TwoParticleCorrelationsCollisionSkimming {
   PROCESS_SWITCH(TwoParticleCorrelationsCollisionSkimming, processRun2, "Process on Run 1 or Run 2 data, i.e. do not store derived data ", true);
 };
 
+struct TwoParticleCorrelationsTrackSkimming {
+  /* skimmed data tables */
+  Produces<aod::CFTrackMask> trackmask;
+  Produces<aod::CFTrackPIDs> skimmtrackpid;
+  Produces<aod::CFMCPartMask> particlemask;
+
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx"
+
+  void init(InitContext const&)
+  {
+    using namespace cfskim;
+
+    LOGF(info, "DptDptSkimTask::init()");
+
+    /* collision filtering configuration */
+    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, eventfilter.pileuprej);
+    /* track filtering configuration */
+    PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
+                                             trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
+#ifdef INCORPORATEBAYESIANPID
+    PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
+                                           pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr,
+                                           pidfilter.pidbayesfilter.bayel, pidfilter.pidbayesfilter.baymu, pidfilter.pidbayesfilter.baypi, pidfilter.pidbayesfilter.bayka, pidfilter.pidbayesfilter.baypr);
+#else
+    PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
+                                           pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
+#endif
+
+    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
+    fFilterFramework->SetConfiguration(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
+    fFilterFramework->Init();
+
+    /* TODO: upload the cuts signatures to the CCDB */
+    LOGF(info, "Collision skimming signature: %s", fFilterFramework->getEventFilterCutStringSignature().Data());
+    LOGF(info, "Track skimming signature: %s", fFilterFramework->getTrackFilterCutStringSignature().Data());
+    LOGF(info, "PID skimming signature: %s", fFilterFramework->getPIDFilterCutStringSignature().Data());
+  }
+
+  void processRun2(soa::Join<aod::FullTracks, aod::TracksDCA, pidTables> const& tracks, soa::Join<aod::Collisions, aod::CFCollMasks> const&)
+  {
+    trackmask.reserve(tracks.size());
+    skimmtrackpid.reserve(tracks.size());
+
+    int nfilteredtracks = 0;
+    for (auto const& track : tracks) {
+      if (!track.has_collision()) {
+        /* track not assigned to any collision */
+        trackmask(0UL);
+        skimmtrackpid(0UL);
+      } else {
+        auto trkmask = fFilterFramework->FilterTrack(track);
+        auto pidmask = fFilterFramework->FilterTrackPID(track);
+        trackmask(trkmask);
+        skimmtrackpid(pidmask);
+        if (trkmask != 0UL) {
+          nfilteredtracks++;
+        }
+      }
+    }
+    LOGF(info, "Filtered %d tracks out of %d", nfilteredtracks, tracks.size());
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsTrackSkimming, processRun2, "Process on Run 1 or Run 2 data, i.e. do not store derived data ", true);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TwoParticleCorrelationsCollisionSkimming>(cfgc)};
+    adaptAnalysisTask<TwoParticleCorrelationsCollisionSkimming>(cfgc),
+    adaptAnalysisTask<TwoParticleCorrelationsTrackSkimming>(cfgc)};
   return workflow;
 }

@@ -35,8 +35,8 @@ using namespace o2::analysis;
 
 namespace o2::analysis::twopfilter
 {
-#define TWOPFILTERLOGCOLLISIONS info
-#define TWOPFILTERLOGTRACKS info
+#define TWOPFILTERLOGCOLLISIONS debug
+#define TWOPFILTERLOGTRACKS debug
 
 uint64_t collisionmask = 0UL;
 std::vector<uint64_t> collisionmask_opt;
@@ -61,7 +61,7 @@ struct TwoParticleCorrelationsFilter {
   Produces<aod::TwoPAcceptedGenCollisions> acceptedgencollisions;
   Produces<aod::TwoPFilteredParticles> acceptedgentracks;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx"
 
   int nReportedTracks;
   //  HistogramRegistry historeg;
