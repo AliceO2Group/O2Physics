@@ -33,7 +33,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra,
-                            aod::pidTOFbeta, aod::pidTOFmass,
+                            aod::pidTOFbeta, aod::pidTOFmass, aod::trackSelection,
                             aod::pidTPCFullPi, aod::pidTPCFullPr,
                             aod::pidTOFFullPi, aod::pidTOFFullPr>;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -68,6 +68,17 @@ struct pidQaWithV0s {
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1F, {{2, 0.5, 2.5}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Ev. sel. passed");
+
+    h = histos.add<TH1>("tracks", "tracks", HistType::kTH1F, {{6, 0.5, 6.5}});
+    h->GetXaxis()->SetBinLabel(1, "tracks read");
+    h->GetXaxis()->SetBinLabel(2, "pos tracks read");
+    h->GetXaxis()->SetBinLabel(3, "neg tracks read");
+    h->GetXaxis()->SetBinLabel(4, "tracks passed cuts");
+    h->GetXaxis()->SetBinLabel(5, "pos tracks passed cuts");
+    h->GetXaxis()->SetBinLabel(6, "neg tracks passed cuts");
+
+    h = histos.add<TH1>("v0s", "v0s", HistType::kTH1F, {{2, 0.5, 2.5}});
+    h->GetXaxis()->SetBinLabel(1, "V0s read");
 
     histos.add("K0s/mass", "mass", HistType::kTH1F, {mAxisK0s});
     histos.add("K0s/masscut", "masscut", HistType::kTH1F, {mAxisK0s});
@@ -149,13 +160,31 @@ struct pidQaWithV0s {
                aod::V0Datas const& fullV0s,
                PIDTracks const& tracks)
   {
-    histos.fill(HIST("evsel"), 0.);
+    histos.fill(HIST("evsel"), 1.);
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    histos.fill(HIST("evsel"), 1.);
+    histos.fill(HIST("evsel"), 2.);
+    for (auto& trk : tracks) {
+      fillHistogram("tracks", 1.f);
+      if (trk.sign() > 0) {
+        fillHistogram("tracks", 2.f);
+      } else {
+        fillHistogram("tracks", 3.f);
+      }
+      if (!trk.isGlobalTrack()) {
+        continue;
+      }
+      fillHistogram("tracks", 4.f);
+      if (trk.sign() > 0) {
+        fillHistogram("tracks", 2.f);
+      } else {
+        fillHistogram("tracks", 3.f);
+      }
+    }
 
     for (auto& v0 : fullV0s) {
+      histos.fill(HIST("v0s"), 1.);
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
       const auto& negTrack = v0.negTrack_as<PIDTracks>();
       if (acceptK0s(v0, negTrack, posTrack, collision)) {
