@@ -160,8 +160,7 @@ struct DGFilterRun3 {
       LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
       // apply DG selection
-      //auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
-      auto isDGEvent = false;
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
       // save decision
       if (isDGEvent == 0) {
