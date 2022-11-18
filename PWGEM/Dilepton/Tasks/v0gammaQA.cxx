@@ -234,6 +234,7 @@ struct ProducePCMPhoton {
 
   // Configurables
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  Configurable<double> maxpsipair{"maxpsipair", 0.5, "maximum psipair for v0"};
   Configurable<double> minv0cospa{"minv0cospa", 0.9, "minimum V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> maxdcav0dau{"maxdcav0dau", 1.5, "max DCA between V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
@@ -303,7 +304,7 @@ struct ProducePCMPhoton {
   void addhistograms()
   {
     const TString tracktype[2] = {"NonAmb", "Amb"};
-    const TString pairtype[3] = {"NonAmbNonAmb", "NonAmbAmb", "AmbAmb"};
+    const TString pairtype[2] = {"NonAmb", "Amb"};
 
     // for single tracks
     for (int i = 0; i < 2; i++) {
@@ -327,19 +328,19 @@ struct ProducePCMPhoton {
     }
 
     // for V0s
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
       registry.add(Form("h%sV0Pt", pairtype[i].Data()), "pT", HistType::kTH1F, {{1000, 0.0f, 10}});
       registry.add(Form("h%sV0EtaPhi", pairtype[i].Data()), "#eta vs. #varphi", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
       registry.add(Form("h%sV0Radius", pairtype[i].Data()), "hV0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {2500, 0.0f, 250.0f}});
-      registry.add(Form("h%sV0CosPA", pairtype[i].Data()), "hV0CosPA", HistType::kTH1F, {{100, 0.9f, 1.0f}});
+      registry.add(Form("h%sV0CosPA", pairtype[i].Data()), "hV0CosPA", HistType::kTH1F, {{2000, 0.8f, 1.0f}});
       registry.add(Form("h%sDCAxyPosToPV", pairtype[i].Data()), "hDCAxyPosToPV;DCA_{xy} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
       registry.add(Form("h%sDCAxyNegToPV", pairtype[i].Data()), "hDCAxyNegToPV;DCA_{xy} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
       registry.add(Form("h%sDCAzPosToPV", pairtype[i].Data()), "hDCAzPosToPV;DCA_{z} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
       registry.add(Form("h%sDCAzNegToPV", pairtype[i].Data()), "hDCAzNegToPV;DCA_{z} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
       registry.add(Form("h%sDCAV0Dau", pairtype[i].Data()), "hDCAV0Dau", HistType::kTH1F, {{100, 0.0f, 10.0f}});
       registry.add(Form("h%sV0APplot", pairtype[i].Data()), "hV0APplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
-      registry.add(Form("h%sGammaPsiPair", pairtype[i].Data()), "#psi_{pair} for photon conversion", HistType::kTH2F, {{160, 0.0, TMath::PiOver2()}, {100, 0.0f, 0.1f}});
-      registry.add(Form("h%sMassGamma", pairtype[i].Data()), "hMassGamma", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
+      registry.add(Form("h%sGammaPsiPair", pairtype[i].Data()), "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{160, 0.0, TMath::PiOver2()}, {100, 0.0f, 0.1f}});
+      registry.add(Form("h%sMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
     }
   }
 
@@ -423,7 +424,7 @@ struct ProducePCMPhoton {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
-    //printf("number of collisions = %ld , negTracks = %ld, posTracks = %ld\n", collisions.size(), negTracks.size(), posTracks.size());
+    // printf("number of collisions = %ld , negTracks = %ld, posTracks = %ld\n", collisions.size(), negTracks.size(), posTracks.size());
     for (auto& collision : collisions) {
       auto groupEle = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
       auto groupPos = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
@@ -439,15 +440,7 @@ struct ProducePCMPhoton {
       std::array<float, 3> pvec1 = {0.};
 
       // create V0 pairs
-      // for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks, posTracks))) {
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(groupEle, groupPos))) {
-        // if (ele.collisionId() != pos.collisionId()) {
-        //     continue;
-        // }
-        // if (ele.collisionId() < 0 || pos.collisionId() < 0) {
-        //     continue;
-        // }
-
         if (!mysel.IsSelected(ele) || abs(ele.tpcNSigmaEl()) > maxTPCNsigmaEl) {
           continue;
         }
@@ -513,78 +506,54 @@ struct ProducePCMPhoton {
         if (!checkAP(alpha, qtarm)) {
           continue;
         }
-        if (psipair > 0.3) {
+        if (psipair > maxpsipair) {
           continue;
         }
 
         float mGamma = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
 
         if (!ele.isAmbiguousTrack() && !pos.isAmbiguousTrack()) {
-          registry.fill(HIST("hNonAmbNonAmbV0Pt"), v0pt);
-          registry.fill(HIST("hNonAmbNonAmbV0EtaPhi"), v0phi, v0eta);
-          registry.fill(HIST("hNonAmbNonAmbV0CosPA"), v0CosinePA);
-          registry.fill(HIST("hNonAmbNonAmbDCAV0Dau"), v0dca);
-
+          registry.fill(HIST("hNonAmbV0Pt"), v0pt);
+          registry.fill(HIST("hNonAmbV0EtaPhi"), v0phi, v0eta);
+          registry.fill(HIST("hNonAmbV0CosPA"), v0CosinePA);
+          registry.fill(HIST("hNonAmbDCAV0Dau"), v0dca);
           if (ele.sign() > 0) {
-            registry.fill(HIST("hNonAmbNonAmbDCAxyPosToPV"), ele.dcaXY());
-            registry.fill(HIST("hNonAmbNonAmbDCAzPosToPV"), ele.dcaZ());
-            registry.fill(HIST("hNonAmbNonAmbDCAxyNegToPV"), pos.dcaXY());
-            registry.fill(HIST("hNonAmbNonAmbDCAzNegToPV"), pos.dcaZ());
+            registry.fill(HIST("hNonAmbDCAxyPosToPV"), ele.dcaXY());
+            registry.fill(HIST("hNonAmbDCAzPosToPV"), ele.dcaZ());
+            registry.fill(HIST("hNonAmbDCAxyNegToPV"), pos.dcaXY());
+            registry.fill(HIST("hNonAmbDCAzNegToPV"), pos.dcaZ());
           } else {
-            registry.fill(HIST("hNonAmbNonAmbDCAxyPosToPV"), pos.dcaXY());
-            registry.fill(HIST("hNonAmbNonAmbDCAzPosToPV"), pos.dcaZ());
-            registry.fill(HIST("hNonAmbNonAmbDCAxyNegToPV"), ele.dcaXY());
-            registry.fill(HIST("hNonAmbNonAmbDCAzNegToPV"), ele.dcaZ());
+            registry.fill(HIST("hNonAmbDCAxyPosToPV"), pos.dcaXY());
+            registry.fill(HIST("hNonAmbDCAzPosToPV"), pos.dcaZ());
+            registry.fill(HIST("hNonAmbDCAxyNegToPV"), ele.dcaXY());
+            registry.fill(HIST("hNonAmbDCAzNegToPV"), ele.dcaZ());
           }
-          registry.fill(HIST("hNonAmbNonAmbV0Radius"), v0z, v0radius);
-          registry.fill(HIST("hNonAmbNonAmbV0APplot"), alpha, qtarm);
-          registry.fill(HIST("hNonAmbNonAmbMassGamma"), v0radius, mGamma);
-          registry.fill(HIST("hNonAmbNonAmbGammaPsiPair"), psipair, mGamma);
-        } else if (ele.isAmbiguousTrack() && pos.isAmbiguousTrack()) {
-          registry.fill(HIST("hAmbAmbV0Pt"), v0pt);
-          registry.fill(HIST("hAmbAmbV0EtaPhi"), v0phi, v0eta);
-          registry.fill(HIST("hAmbAmbV0CosPA"), v0CosinePA);
-          registry.fill(HIST("hAmbAmbDCAV0Dau"), v0dca);
-
-          if (ele.sign() > 0) {
-            registry.fill(HIST("hAmbAmbDCAxyPosToPV"), ele.dcaXY());
-            registry.fill(HIST("hAmbAmbDCAzPosToPV"), ele.dcaZ());
-            registry.fill(HIST("hAmbAmbDCAxyNegToPV"), pos.dcaXY());
-            registry.fill(HIST("hAmbAmbDCAzNegToPV"), pos.dcaZ());
-          } else {
-            registry.fill(HIST("hAmbAmbDCAxyPosToPV"), pos.dcaXY());
-            registry.fill(HIST("hAmbAmbDCAzPosToPV"), pos.dcaZ());
-            registry.fill(HIST("hAmbAmbDCAxyNegToPV"), ele.dcaXY());
-            registry.fill(HIST("hAmbAmbDCAzNegToPV"), ele.dcaZ());
-          }
-          registry.fill(HIST("hAmbAmbV0Radius"), v0z, v0radius);
-          registry.fill(HIST("hAmbAmbV0APplot"), alpha, qtarm);
-          registry.fill(HIST("hAmbAmbMassGamma"), v0radius, mGamma);
-          registry.fill(HIST("hAmbAmbGammaPsiPair"), psipair, mGamma);
+          registry.fill(HIST("hNonAmbV0Radius"), v0z, v0radius);
+          registry.fill(HIST("hNonAmbV0APplot"), alpha, qtarm);
+          registry.fill(HIST("hNonAmbMassGamma"), v0radius, mGamma);
+          registry.fill(HIST("hNonAmbGammaPsiPair"), psipair, mGamma);
         } else {
-          registry.fill(HIST("hNonAmbAmbV0Pt"), v0pt);
-          registry.fill(HIST("hNonAmbAmbV0EtaPhi"), v0phi, v0eta);
-          registry.fill(HIST("hNonAmbAmbV0CosPA"), v0CosinePA);
-          registry.fill(HIST("hNonAmbAmbDCAV0Dau"), v0dca);
-
+          registry.fill(HIST("hAmbV0Pt"), v0pt);
+          registry.fill(HIST("hAmbV0EtaPhi"), v0phi, v0eta);
+          registry.fill(HIST("hAmbV0CosPA"), v0CosinePA);
+          registry.fill(HIST("hAmbDCAV0Dau"), v0dca);
           if (ele.sign() > 0) {
-            registry.fill(HIST("hNonAmbAmbDCAxyPosToPV"), ele.dcaXY());
-            registry.fill(HIST("hNonAmbAmbDCAzPosToPV"), ele.dcaZ());
-            registry.fill(HIST("hNonAmbAmbDCAxyNegToPV"), pos.dcaXY());
-            registry.fill(HIST("hNonAmbAmbDCAzNegToPV"), pos.dcaZ());
+            registry.fill(HIST("hAmbDCAxyPosToPV"), ele.dcaXY());
+            registry.fill(HIST("hAmbDCAzPosToPV"), ele.dcaZ());
+            registry.fill(HIST("hAmbDCAxyNegToPV"), pos.dcaXY());
+            registry.fill(HIST("hAmbDCAzNegToPV"), pos.dcaZ());
           } else {
-            registry.fill(HIST("hNonAmbAmbDCAxyPosToPV"), pos.dcaXY());
-            registry.fill(HIST("hNonAmbAmbDCAzPosToPV"), pos.dcaZ());
-            registry.fill(HIST("hNonAmbAmbDCAxyNegToPV"), ele.dcaXY());
-            registry.fill(HIST("hNonAmbAmbDCAzNegToPV"), ele.dcaZ());
+            registry.fill(HIST("hAmbDCAxyPosToPV"), pos.dcaXY());
+            registry.fill(HIST("hAmbDCAzPosToPV"), pos.dcaZ());
+            registry.fill(HIST("hAmbDCAxyNegToPV"), ele.dcaXY());
+            registry.fill(HIST("hAmbDCAzNegToPV"), ele.dcaZ());
           }
-          registry.fill(HIST("hNonAmbAmbV0Radius"), v0z, v0radius);
-          registry.fill(HIST("hNonAmbAmbV0APplot"), alpha, qtarm);
-          registry.fill(HIST("hNonAmbAmbMassGamma"), v0radius, mGamma);
-          registry.fill(HIST("hNonAmbAmbGammaPsiPair"), psipair, mGamma);
+          registry.fill(HIST("hAmbV0Radius"), v0z, v0radius);
+          registry.fill(HIST("hAmbV0APplot"), alpha, qtarm);
+          registry.fill(HIST("hAmbMassGamma"), v0radius, mGamma);
+          registry.fill(HIST("hAmbGammaPsiPair"), psipair, mGamma);
         }
 
-        // v0gamma(pos.collisionId(), v0pt, v0eta, v0phi, mGamma);
         v0gamma(collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0pt, v0eta, v0phi, mGamma);
       }
     }
@@ -609,7 +578,8 @@ struct PhotonPairing {
       {"hV0Pt", "pT", {HistType::kTH1F, {{1000, 0.0, 10}}}},
       {"hNgamma", "number of photon conversion per event", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"hV0EtaPhi", "#eta vs. #varphi", {HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}}}},
-      {"h2MggPt", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", {HistType::kTH2F, {{400, 0.0, 0.8}, {100, 0.0, 10.}}}},
+      {"h2MggPt_Same", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", {HistType::kTH2F, {{400, 0.0, 0.8}, {100, 0.0, 10.}}}},
+      {"h2MggPt_Mixed", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", {HistType::kTH2F, {{400, 0.0, 0.8}, {100, 0.0, 10.}}}},
     },
   };
 
@@ -620,13 +590,16 @@ struct PhotonPairing {
 
   void addhistograms()
   {
+    const TString eventtype[2] = {"Same", "Mixed"};
     const TString pairtype[2] = {"NonAmb", "Amb"};
-    for (int i = 0; i < 2; i++) {
-      registry.add(Form("h2MggPt_%s", pairtype[i].Data()), Form("M_{#gamma#gamma} vs. p_{T} %s;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", pairtype[i].Data()), HistType::kTH2F, {{400, 0.0, 0.8}, {100, 0.0, 10.}}, true);
+    for (int ie = 0; ie < 2; ie++) {
+      for (int ip = 0; ip < 2; ip++) {
+        registry.add(Form("h2MggPt_%s_%s", eventtype[ie].Data(), pairtype[ip].Data()), Form("M_{#gamma#gamma} vs. p_{T} %s %s;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", eventtype[ie].Data(), pairtype[ip].Data()), HistType::kTH2F, {{400, 0.0, 0.8}, {100, 0.0, 10.}}, true);
+      }
     }
   }
 
-  void processNM(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Gammas const& PCMPhotons, MyTracks const&)
+  void processSame(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Gammas const& PCMPhotons, MyTracks const&)
   {
     registry.fill(HIST("hEventCounter"), 1.0); // all
     if (!collision.sel8()) {
@@ -654,30 +627,69 @@ struct PhotonPairing {
       ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
       ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
       ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-      registry.fill(HIST("h2MggPt"), v12.M(), v12.Pt());
+      registry.fill(HIST("h2MggPt_Same"), v12.M(), v12.Pt());
 
       auto ele1 = g1.negTrack_as<MyTracks>(); // Obtain the corresponding track
       auto pos1 = g1.posTrack_as<MyTracks>(); // Obtain the corresponding track
       auto ele2 = g2.negTrack_as<MyTracks>(); // Obtain the corresponding track
       auto pos2 = g2.posTrack_as<MyTracks>(); // Obtain the corresponding track
 
-      if (
-        (!ele1.isAmbiguousTrack() && !pos1.isAmbiguousTrack()) && (!ele2.isAmbiguousTrack() && !pos2.isAmbiguousTrack())) {
-        registry.fill(HIST("h2MggPt_NonAmb"), v12.M(), v12.Pt());
+      if ((!ele1.isAmbiguousTrack() && !pos1.isAmbiguousTrack()) && (!ele2.isAmbiguousTrack() && !pos2.isAmbiguousTrack())) {
+        registry.fill(HIST("h2MggPt_Same_NonAmb"), v12.M(), v12.Pt());
       } else {
-        registry.fill(HIST("h2MggPt_Amb"), v12.M(), v12.Pt());
+        registry.fill(HIST("h2MggPt_Same_Amb"), v12.M(), v12.Pt());
       }
 
     } // end of combination
 
-  } // end of process
+  } // end of processSame
+
+  Configurable<int> ndepth{"ndepth", 10, "depth of event mixing"};
+  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
+  BinningType colBinning{{ConfVtxBins}, true};
+
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using MyCollision = MyCollisions::iterator;
+  Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  using MyFilteredCollisions = soa::Filtered<MyCollisions>;
+  SameKindPair<MyFilteredCollisions, aod::V0Gammas, BinningType> pair{colBinning, ndepth, -1}; // indicates that ndepth events should be mixed and under/overflow (-1) to be ignored
+  void processMixed(MyFilteredCollisions const& collisions, aod::V0Gammas const& PCMPhotons, MyTracks const&)
+  {
+    for (auto& [coll1, gammas_coll1, coll2, gammas_coll2] : pair) {
+      // LOGF(info, "Mixed event collisions: (%d, %d)", coll1.globalIndex(), coll2.globalIndex());
+
+      for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(gammas_coll1, gammas_coll2))) {
+        // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), coll1.index(), coll2.index(), g1.collision().index(), g2.collision().index());
+
+        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
+        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        registry.fill(HIST("h2MggPt_Mixed"), v12.M(), v12.Pt());
+
+        auto ele1 = g1.negTrack_as<MyTracks>(); // Obtain the corresponding track
+        auto pos1 = g1.posTrack_as<MyTracks>(); // Obtain the corresponding track
+        auto ele2 = g2.negTrack_as<MyTracks>(); // Obtain the corresponding track
+        auto pos2 = g2.posTrack_as<MyTracks>(); // Obtain the corresponding track
+
+        if ((!ele1.isAmbiguousTrack() && !pos1.isAmbiguousTrack()) && (!ele2.isAmbiguousTrack() && !pos2.isAmbiguousTrack())) {
+          registry.fill(HIST("h2MggPt_Mixed_NonAmb"), v12.M(), v12.Pt());
+        } else {
+          registry.fill(HIST("h2MggPt_Mixed_Amb"), v12.M(), v12.Pt());
+        }
+      }
+
+    } // end of combination
+
+  } // end of processMixed
 
   void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Gammas const& PCMPhotons)
   {
     // do nothing
   }
 
-  PROCESS_SWITCH(PhotonPairing, processNM, "Run gamma->ee QA", false);
+  PROCESS_SWITCH(PhotonPairing, processSame, "enable pairing in same event", false);
+  PROCESS_SWITCH(PhotonPairing, processMixed, "enable pairing in mixed event", false);
   PROCESS_SWITCH(PhotonPairing, processDummy, "Dummy function", true);
 };
 
