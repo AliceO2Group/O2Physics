@@ -43,7 +43,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-int8_t getBinnedValue(double val, double max) {
+int8_t getBinnedValue(double val, double max)
+{
   if (val > max) {
     return 127;
   } else if (val < -max) {
@@ -131,8 +132,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Flags,
                   NucleiTableNS::TPCnsigma,
                   NucleiTableNS::TOFnsigma,
-                  NucleiTableNS::TOFmass
-                  )
+                  NucleiTableNS::TOFmass)
 } //namespace o2::aod
 
 struct NucleiSpectraTask {
@@ -276,7 +276,7 @@ struct NucleiSpectraTask {
           }
           if (track.hasTOF()) {
             flag |= kHasTOF;
-            massTOF = getBinnedValue(beta > 1.e-6f ? track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS] : -999.f,cfgBinnedVariables->get(4u, 1u));
+            massTOF = getBinnedValue(beta > 1.e-6f ? track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS] : -999.f, cfgBinnedVariables->get(4u, 1u));
           }
           flag |= BIT(iS);
           int8_t dcaxy = getBinnedValue(track.dcaXY(), cfgBinnedVariables->get(0u, 1u));
@@ -286,7 +286,6 @@ struct NucleiSpectraTask {
 
           nucleiTable(track.sign() * track.pt() * nuclei::charges[iS], track.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
         }
-
       }
     } // end loop over tracks
   }
