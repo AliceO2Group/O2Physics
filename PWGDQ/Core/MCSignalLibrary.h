@@ -11,6 +11,11 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+#ifndef PWGDQ_CORE_MCSIGNALLIBRARY_H_
+#define PWGDQ_CORE_MCSIGNALLIBRARY_H_
+
+#include <string>
 #include "PWGDQ/Core/MCProng.h"
 #include "PWGDQ/Core/MCSignal.h"
 
@@ -553,3 +558,4 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   return nullptr;
 }
+#endif // PWGDQ_CORE_MCSIGNALLIBRARY_H_

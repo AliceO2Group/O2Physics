@@ -11,6 +11,11 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+#ifndef PWGDQ_CORE_CUTSLIBRARY_H_
+#define PWGDQ_CORE_CUTSLIBRARY_H_
+
+#include <string>
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/VarManager.h"
@@ -1110,3 +1115,4 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   delete cut;
   return nullptr;
 }
+#endif // PWGDQ_CORE_CUTSLIBRARY_H_
