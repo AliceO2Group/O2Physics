@@ -205,7 +205,7 @@ bool trackSelection(T udtrack, int selection)
 	// Is central barrel propagated track
 	// TODO //if (selection==1 && track.trackType()!=1) return false;
 	// Is central barrel vertex contributor
-	// TODO //if (selection==2 && track.isPVContributor()!=1) return false;
+	if (selection==2 && udtrack.isPVContributor()!=1) return false;
 	// Is central barrel track selection global track
  	if (selection==3 && isUDqualityTrack(udtrack)!=1) return false;
 	// Is central barrel track selection global track

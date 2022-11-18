@@ -83,7 +83,7 @@ struct RomanCentralBarrel {
 //	Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
 
 	// declare shortcuts
-	using FullTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID>;
+	using FullTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 	using FullCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
 
 	// init
@@ -136,7 +136,7 @@ struct RomanCentralBarrel {
 		int countGlobalContributorsToVertex = 0;
 		for (auto& track : tracks){
 			if (!selectTrack(track,applyTrackCuts)) continue;
-			if (isUDprimaryTrack(track)) countContributorsToVertex++;
+			if (trackSelection(track,2)) countContributorsToVertex++;
 			if (selectTrack(track,2)) countGlobalContributorsToVertex++;
 			if (isUDprimaryTrack(track)) countPrimaryTracks++;
 			if (track.hasTPC()) {
