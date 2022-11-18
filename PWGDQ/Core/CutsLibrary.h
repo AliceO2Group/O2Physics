@@ -708,7 +708,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-
   if (!nameStr.compare("electronStandardQuality")) {
     cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
     cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
