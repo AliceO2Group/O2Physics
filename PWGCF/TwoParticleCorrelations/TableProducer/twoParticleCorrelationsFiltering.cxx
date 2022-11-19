@@ -61,7 +61,7 @@ struct TwoParticleCorrelationsFilter {
   Produces<aod::TwoPAcceptedGenCollisions> acceptedgencollisions;
   Produces<aod::TwoPFilteredParticles> acceptedgentracks;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
 
   int nReportedTracks;
   //  HistogramRegistry historeg;

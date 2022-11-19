@@ -97,7 +97,7 @@ struct TwoParticleCorrelationsCollisionSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
 
   int nReportedTracks;
   int runNumber = 0;
@@ -229,7 +229,7 @@ struct TwoParticleCorrelationsTrackSkimming {
   Produces<aod::CFTrackPIDs> skimmtrackpid;
   Produces<aod::CFMCPartMask> particlemask;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
 
   void init(InitContext const&)
   {
