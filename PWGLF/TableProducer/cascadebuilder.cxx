@@ -373,7 +373,8 @@ struct cascadeBuilder {
         } catch (...) {
           registry.fill(HIST("hCatchedExceptions"), 1.5f);
           LOG(error) << "Exception caught in fitterCasc.process";
-        };
+        }
+
         if (nCand2 == 0) {
           continue;
         }
