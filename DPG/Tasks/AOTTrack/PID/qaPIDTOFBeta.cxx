@@ -38,18 +38,17 @@ struct tofPidBetaQa {
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
-  Configurable<int> nBinsBeta{"nBinsBeta", 4000, "Number of bins for the beta"};
-  Configurable<float> minBeta{"minBeta", 0, "Minimum beta in range"};
-  Configurable<float> maxBeta{"maxBeta", 2.f, "Maximum beta in range"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  ConfigurableAxis tofMassBins{"tofMassBins", {1000, 0, 3.f}, "Binning in the TOF mass plot"};
+  ConfigurableAxis tofBetaBins{"tofBetaBins", {4000, 0, 2.f}, "Binning in the TOF beta plot"};
 
   void init(o2::framework::InitContext&)
   {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
-    const AxisSpec betaAxis{nBinsBeta, minBeta, maxBeta, "TOF #beta"};
-    const AxisSpec massAxis{1000, 0, 3, "TOF mass (GeV/#it{c}^{2})"};
+    const AxisSpec betaAxis{tofBetaBins, "TOF #beta"};
+    const AxisSpec massAxis{tofMassBins, "TOF mass (GeV/#it{c}^{2})"};
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
@@ -64,7 +63,7 @@ struct tofPidBetaQa {
 
     // Event properties
     histos.add("event/tofsignal", "", HistType::kTH2F, {pAxis, tofAxis});
-    histos.add("event/tofmass", "TOF mass", HistType::kTH1F, {massAxis});
+    histos.add("event/tofmass", "TOF mass", HistType::kTH2F, {pAxis, massAxis});
     histos.add("event/tofmassEvTimeTOF", "TOF mass Ev. Time TOF", HistType::kTH2F, {pAxis, massAxis});
     histos.add("event/tofmassEvTimeTOFOnly", "TOF mass Ev. Time TOF Only", HistType::kTH2F, {pAxis, massAxis});
     histos.add("event/tofmassEvTimeT0AC", "TOF mass Ev. Time T0AC", HistType::kTH2F, {pAxis, massAxis});

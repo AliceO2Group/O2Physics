@@ -57,6 +57,8 @@ struct pidQaWithV0s {
 
   void init(InitContext const&)
   {
+    const AxisSpec cospaAxis{200, 0.9f, 1.01f, "Cos. PA"};
+    const AxisSpec decayRadiusAxis{400, 0.f, 400.f, "Decay radius (cm)"};
     const AxisSpec mAxisK0s{200, 0.4f, 0.6f, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec mAxisLambda{400, 1.0f, 1.250f, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -79,6 +81,11 @@ struct pidQaWithV0s {
 
     h = histos.add<TH1>("v0s", "v0s", HistType::kTH1F, {{2, 0.5, 2.5}});
     h->GetXaxis()->SetBinLabel(1, "V0s read");
+    h->GetXaxis()->SetBinLabel(2, "V0s accepted");
+    histos.add("beforeselections/cospa", "cospa", HistType::kTH1F, {cospaAxis});
+    histos.add("afterselections/cospa", "cospa", HistType::kTH1F, {cospaAxis});
+    histos.add("beforeselections/decayradius", "decayradius", HistType::kTH1F, {decayRadiusAxis});
+    histos.add("afterselections/decayradius", "decayradius", HistType::kTH1F, {decayRadiusAxis});
 
     histos.add("K0s/mass", "mass", HistType::kTH1F, {mAxisK0s});
     histos.add("K0s/masscut", "masscut", HistType::kTH1F, {mAxisK0s});
@@ -114,57 +121,64 @@ struct pidQaWithV0s {
     histos.add<TH2>("AntiLambda/TPC/dedx/neg", "TPC dedx neg", HistType::kTH2F, {ptAxis, dedxAxis});
   }
 
-  template <typename T1, typename T2, typename C>
-  bool acceptK0s(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
+  template <typename T1, typename C>
+  bool acceptV0s(const T1& v0, const C& collision) // Apply general selections on V0
   {
-    // Apply selections on V0
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa)
-      return kFALSE;
-    if (v0.v0radius() < minimumV0Radius) {
-      return kFALSE;
+    float cospa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    fillHistogram("beforeselections/cospa", cospa);
+    fillHistogram("beforeselections/decayradius", v0.v0radius());
+    if (cospa < v0cospa) {
+      return false;
     }
-    if (TMath::Abs(v0.yK0Short()) > rapidity)
-      return kFALSE;
-
-    // Apply selections on V0 daughters
-    if (!ntrack.hasTPC() || !ptrack.hasTPC())
-      return kFALSE;
-    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
-      return kFALSE;
-    return kTRUE;
+    if (v0.v0radius() < minimumV0Radius) {
+      return false;
+    }
+    fillHistogram("afterselections/cospa", cospa);
+    fillHistogram("afterselections/decayradius", v0.v0radius());
+    return true;
   }
 
   template <typename T1, typename T2, typename C>
-  bool acceptLambda(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
+  bool acceptK0s(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision) // Apply selection for K0s
   {
-    // Apply selections on V0
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa)
-      return kFALSE;
-    if (TMath::Abs(v0.yLambda()) > rapidity)
-      return kFALSE;
-    if (v0.v0radius() < minimumV0Radius) {
-      return kFALSE;
+    if (TMath::Abs(v0.yK0Short()) > rapidity) {
+      return false;
     }
 
     // Apply selections on V0 daughters
     if (!ntrack.hasTPC() || !ptrack.hasTPC())
-      return kFALSE;
+      return false;
+    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
+      return false;
+    return true;
+  }
+
+  template <typename T1, typename T2, typename C>
+  bool acceptLambda(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision) // Apply selection for Lambdas
+  {
+    if (TMath::Abs(v0.yLambda()) > rapidity) {
+      return false;
+    }
+
+    // Apply selections on V0 daughters
+    if (!ntrack.hasTPC() || !ptrack.hasTPC())
+      return false;
     if (ntrack.tpcNSigmaPi() > nSigTPC && ptrack.tpcNSigmaPr() > nSigTPC)
-      return kFALSE;
+      return false;
     if (ntrack.tpcNSigmaPr() > nSigTPC && ptrack.tpcNSigmaPi() > nSigTPC)
-      return kFALSE;
-    return kTRUE;
+      return false;
+    return true;
   }
 
   void process(SelectedCollisions::iterator const& collision,
                aod::V0Datas const& fullV0s,
                PIDTracks const& tracks)
   {
-    histos.fill(HIST("evsel"), 1.);
+    fillHistogram("evsel", 1.);
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    histos.fill(HIST("evsel"), 2.);
+    fillHistogram("evsel", 2.);
     for (auto& trk : tracks) {
       fillHistogram("tracks", 1.f);
       if (trk.sign() > 0) {
@@ -184,7 +198,12 @@ struct pidQaWithV0s {
     }
 
     for (auto& v0 : fullV0s) {
-      histos.fill(HIST("v0s"), 1.);
+      fillHistogram("v0s", 1.);
+      if (!acceptV0s(v0, collision)) {
+        continue;
+      }
+      fillHistogram("v0s", 2.);
+
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
       const auto& negTrack = v0.negTrack_as<PIDTracks>();
       if (acceptK0s(v0, negTrack, posTrack, collision)) {
