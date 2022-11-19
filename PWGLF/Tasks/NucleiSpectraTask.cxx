@@ -43,6 +43,17 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
+int8_t getBinnedValue(double val, double max)
+{
+  if (val > max) {
+    return 127;
+  } else if (val < -max) {
+    return -127;
+  } else {
+    return std::round(val / 254);
+  }
+}
+
 namespace nuclei
 {
 constexpr double betheBlochDefault[4][6]{
@@ -65,6 +76,17 @@ constexpr double DCAcutDefault[4][2]{
   {1., 1.},
   {1., 1.},
   {1., 1.}};
+constexpr int TreeConfigDefault[4][2]{
+  {0, 0},
+  {0, 0},
+  {0, 0},
+  {0, 0}};
+constexpr double BinnedVariablesDefaultMax[5][1]{
+  {1.27},
+  {2.54},
+  {5.08},
+  {5.08},
+  {5.08}};
 // constexpr bool storeTreesDefault[4]{false, false, false, false};
 constexpr int species{4};
 // constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
@@ -73,9 +95,12 @@ constexpr float masses[4]{MassDeuteron, MassTriton, MassHelium3, MassAlpha};
 static const std::vector<std::string> matter{"M", "A"};
 static const std::vector<std::string> pidName{"TPC", "TOF"};
 static const std::vector<std::string> names{"deuteron", "triton", "He3", "alpha"};
+static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+static const std::vector<std::string> binnedVariableNames{"DCAxy", "DCAz", "TPCnsigma", "TOFnsigma", "TOFmass"};
+static const std::vector<std::string> binnedLabelNames{"Maximum value of binned variables"};
 
 float pidCuts[2][4][2];
 std::shared_ptr<TH3> hNsigma[2][4][2];
@@ -87,26 +112,37 @@ namespace o2::aod
 namespace NucleiTableNS
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
-DECLARE_SOA_COLUMN(PIDcut, pidcut, int);   // 0 - TPC only, 1 - TPC + TOF
-DECLARE_SOA_COLUMN(Species, species, int); // deut, trit, he3, he4
-DECLARE_SOA_COLUMN(Charge, charge, int);
-DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, float);
-DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, float);
-DECLARE_SOA_COLUMN(EventId, eventid, int);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
+DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
+DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
+DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
+DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, int8_t);
+DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, int8_t);
+DECLARE_SOA_COLUMN(TOFmass, tofmass, int8_t);
 } // namespace NucleiTableNS
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls,
                   NucleiTableNS::DCAxy,
-                  NucleiTableNS::PIDcut,
-                  NucleiTableNS::Species,
-                  NucleiTableNS::Charge,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::Flags,
                   NucleiTableNS::TPCnsigma,
                   NucleiTableNS::TOFnsigma,
-                  NucleiTableNS::EventId)
+                  NucleiTableNS::TOFmass)
 } //namespace o2::aod
 
 struct NucleiSpectraTask {
+  enum {
+    kDeuteron = BIT(0),
+    kTriton = BIT(1),
+    kHe3 = BIT(2),
+    kHe4 = BIT(3),
+    kHasTOF = BIT(4)
+  };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
 
@@ -123,6 +159,8 @@ struct NucleiSpectraTask {
   Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgNsigmaTOF{"cfgNsigmaTOF", {nuclei::nSigmaTOFdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TOF nsigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 4, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
+  Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 4, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
+  Configurable<LabeledArray<double>> cfgBinnedVariables{"cfgBinnedVariables", {nuclei::BinnedVariablesDefaultMax[0], 5, 1, nuclei::binnedVariableNames, nuclei::binnedLabelNames}, "Maximum value for the binned variables"};
 
   ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {300, -3.f, 3.f}, "DCAxy binning for Deuterons"};
   ConfigurableAxis cfgDCAxyBinsTritons{"cfgDCAxyBinsTritons", {300, -3.f, 3.f}, "DCAxy binning for Tritons"};
@@ -141,7 +179,7 @@ struct NucleiSpectraTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
@@ -199,7 +237,9 @@ struct NucleiSpectraTask {
       float nSigma[2][4]{
         {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
         {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
+      float beta{track.beta()};
       for (int iS{0}; iS < nuclei::species; ++iS) {
+        bool selectedTPC{false}, selectedTOF{false};
         if (std::abs(track.dcaZ()) > cfgDCAcut->get(iS, 1)) {
           continue;
         }
@@ -216,15 +256,35 @@ struct NucleiSpectraTask {
         }
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]) {
+            selectedTPC = true;
             if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
               continue;
+            } else if (iPID) {
+              selectedTOF = true;
             }
             nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), track.dcaXY());
             if (std::abs(track.dcaXY()) < cfgDCAcut->get(iS, 0u)) {
               nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
-              nucleiTable(fvector.pt(), track.dcaXY(), iPID, iS, iC, nSigma[0][iS], nSigma[1][iS], collision.globalIndex());
             }
           }
+        }
+        uint16_t flag{0u};
+        if (cfgTreeConfig->get(iS, 0u) && selectedTPC) {
+          int8_t massTOF{0u};
+          if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
+            continue;
+          }
+          if (track.hasTOF()) {
+            flag |= kHasTOF;
+            massTOF = getBinnedValue(beta > 1.e-6f ? track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS] : -999.f, cfgBinnedVariables->get(4u, 1u));
+          }
+          flag |= BIT(iS);
+          int8_t dcaxy = getBinnedValue(track.dcaXY(), cfgBinnedVariables->get(0u, 1u));
+          int8_t dcaz = getBinnedValue(track.dcaZ(), cfgBinnedVariables->get(1u, 1u));
+          int8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
+          int8_t nsigmaTOF = getBinnedValue(nSigma[1][iS], cfgBinnedVariables->get(3u, 1u));
+
+          nucleiTable(track.sign() * track.pt() * nuclei::charges[iS], track.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
         }
       }
     } // end loop over tracks
