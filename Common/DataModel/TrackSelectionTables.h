@@ -111,6 +111,30 @@ DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, TrackSelection
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
 } // namespace track
+
+namespace track2
+{
+// Single selection
+DECLARE_SOA_COLUMN(PassedTrackType, passedTrackType, bool);                           //! Passed the track cut: kTrackType
+DECLARE_SOA_COLUMN(PassedPtRange, passedPtRange, bool);                               //! Passed the track cut: kPtRange
+DECLARE_SOA_COLUMN(PassedEtaRange, passedEtaRange, bool);                             //! Passed the track cut: kEtaRange
+DECLARE_SOA_COLUMN(PassedTPCNCls, passedTPCNCls, bool);                               //! Passed the track cut: kTPCNCls
+DECLARE_SOA_COLUMN(PassedTPCCrossedRows, passedTPCCrossedRows, bool);                 //! Passed the track cut: kTPCCrossedRows
+DECLARE_SOA_COLUMN(PassedTPCCrossedRowsOverNCls, passedTPCCrossedRowsOverNCls, bool); //! Passed the track cut: kTPCCrossedRowsOverNCls
+DECLARE_SOA_COLUMN(PassedTPCChi2NDF, passedTPCChi2NDF, bool);                         //! Passed the track cut: kTPCChi2NDF
+DECLARE_SOA_COLUMN(PassedTPCRefit, passedTPCRefit, bool);                             //! Passed the track cut: kTPCRefit
+DECLARE_SOA_COLUMN(PassedITSNCls, passedITSNCls, bool);                               //! Passed the track cut: kITSNCls
+DECLARE_SOA_COLUMN(PassedITSChi2NDF, passedITSChi2NDF, bool);                         //! Passed the track cut: kITSChi2NDF
+DECLARE_SOA_COLUMN(PassedITSRefit, passedITSRefit, bool);                             //! Passed the track cut: kITSRefit
+DECLARE_SOA_COLUMN(PassedITSHits, passedITSHits, bool);                               //! Passed the track cut: kITSHits
+DECLARE_SOA_COLUMN(PassedGoldenChi2, passedGoldenChi2, bool);                         //! Passed the track cut: kGoldenChi2
+DECLARE_SOA_COLUMN(PassedDCAxy, passedDCAxy, bool);                                   //! Passed the track cut: kDCAxy
+DECLARE_SOA_COLUMN(PassedDCAz, passedDCAz, bool);                                     //! Passed the track cut: kDCAz
+// Combo selections
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrack, isQualityTrack, //! Passed the combined track cut: kQualityTracks
+                           [](bool tpc, bool its, bool tof) -> bool { return (tpc && its && tof); });
+} // namespace track2
+
 DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the track
                   track::DcaXY,
                   track::DcaZ);
