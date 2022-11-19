@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCorrelatorD0Hadrons.cxx
+/// \file correlatorD0Hadrons.cxx
 /// \brief D0-Hadron correlator task - data-like, MC-reco and MC-kine analyses.
 ///
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
@@ -28,7 +28,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_correlation_d0hadron;
+using namespace o2::aod::hf_correlation_d0_hadron;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 using namespace o2::constants::math;
 
