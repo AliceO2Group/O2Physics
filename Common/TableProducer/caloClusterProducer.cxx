@@ -79,8 +79,8 @@ struct caloClusterProducerTask {
       // Fill output table
 
       // calibration may be updated by CCDB fetcher
-      o2::phos::BadChannelsMap* badMap = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
-      o2::phos::CalibParams* calibParams = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
+      const o2::phos::BadChannelsMap* badMap = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
+      const o2::phos::CalibParams* calibParams = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
       if (badMap) {
         clusterizerPHOS->setBadMap(badMap);
       } else {
@@ -102,7 +102,7 @@ struct caloClusterProducerTask {
 
       o2::InteractionRecord ir;
       for (auto& c : cells) {
-        if (c.caloType() != 0) // PHOS
+        if (c.caloType() != kPHOS) // PHOS
           continue;
         if (phosCellTRs.size() == 0) { // first cell, first TrigRec
           ir.setFromLong(c.bc().globalBC());
