@@ -16,7 +16,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "TDatabasePDG.h"
-#include <cmath>
 #include "PWGDQ/Core/VarManager.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisDataModel.h"
