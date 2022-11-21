@@ -19,7 +19,6 @@
 #include <cmath>
 #include "PWGDQ/Core/VarManager.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -63,8 +62,6 @@ struct IterateFwdTracksMuons {
   }
   void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& muons)
   {
-    // LOGF(info, "Vertex = %f has %d muons", collision.posZ(), muons.size());
-
     auto pt = 0.;
     auto dcax = 0.;
     auto dcay = 0.;
@@ -89,8 +86,6 @@ struct IterateFwdTracksMuons {
           chi2 = muon.chi2();
           rAbs = muon.rAtAbsorberEnd();
           pDca = muon.pDca();
-
-          // LOGF(info, "  muon.fwdDcaX  = %.2f; dcaX = %.2f", muon.fwdDcaX(), dcax);
 
           spectra.fill(HIST("BasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2, chi2MatchMCHMID, rAbs, pDca);
           spectra.fill(HIST("hDCAxMuons_Type0"), dcax);
