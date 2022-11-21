@@ -438,7 +438,6 @@ struct TableMakerMC {
           }
           trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
 
-
           mcflags = 0;
           i = 0;     // runs over the MC signals
           int j = 0; // runs over the track cuts
