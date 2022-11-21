@@ -22,8 +22,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCMonteCarloCentralBarrelHelper.h"
-#include "PWGUD/Core/RomanPIDhelper.h"
+#include "PWGUD/Core/RLhelper.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
@@ -33,7 +32,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct RomanCentralBarrel {
+struct CentralBarrelAnalyzerRL {
 
 	// Global varialbes
 	int countCollisions;
@@ -53,6 +52,11 @@ struct RomanCentralBarrel {
 			{"hNprimaryTracks", ";Number of primary tracks in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,2.8,3.4} } } },
 			{"hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
+			{"hInvariantMassElEl", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
+			{"hInvariantMassMuMu", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
+			{"hInvariantMassPiPi", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
+			{"hInvariantMassKaKa", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
+			{"hInvariantMassPrPr", ";Invariant mass (GeV/c^{2});Number of events (-)", { HistType::kTH1D, { {1200,1.0,5.} } } },
 			{"hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,2.} } } },
 			{"hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,10.} } } },
 			{"hMotherPt", ";Mother #it{p_{#rm T}} (GeV/c);Number of events (-)", { HistType::kTH1D, { {500,0.,2.} } } },
@@ -100,7 +104,6 @@ struct RomanCentralBarrel {
 		if (verboseDebug) LOGF(info,"countCollisions = %d",countCollisions);
 
 	} // end run
-
 
 	// process
 	void processCentralBarrel(FullCollision const& collision,
@@ -190,6 +193,8 @@ struct RomanCentralBarrel {
 		float dedx[2][NPARTICLES] = {{-999.,-999.,-999.,-999.,-999.},{-999.,-999.,-999.,-999.,-999.}};
 		int countTrks = 0;
 		if (countContributorsToVertex == 2) {
+			int twinParticles = -1;
+			bool isTwinParticles = false;
 			for (auto& track : tracks){
 				if (!isUDprimaryTrack(track)) continue;
 				countTrks++;
@@ -202,8 +207,16 @@ struct RomanCentralBarrel {
 					else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
 					int typeParticle = testPIDhypothesis(track);
 					if (typeParticle >= 0 && typeParticle <= NPARTICLES){
-							if (countTrks == 1) dedx[0][typeParticle] = track.tpcSignal();
-							else if (countTrks == 2) dedx[1][typeParticle] = track.tpcSignal();
+							if (countTrks == 1) {
+								dedx[0][typeParticle] = track.tpcSignal();
+								twinParticles = typeParticle;
+							}
+							else if (countTrks == 2) {
+								dedx[1][typeParticle] = track.tpcSignal();
+								if (twinParticles == typeParticle){
+									isTwinParticles = true;
+								}
+							}
 							else LOGP(warning,"!!!Strange behaviour in the loop, check!!!");
 					}
 				}
@@ -222,12 +235,19 @@ struct RomanCentralBarrel {
 			registry.get<TH1>(HIST("hMotherPt"))->Fill(sumOfVertexTracks.Pt());
 			registry.get<TH1>(HIST("hMotherPhi"))->Fill(sumOfVertexTracks.Phi());
 			registry.get<TH1>(HIST("hMotherRapidity"))->Fill(sumOfVertexTracks.Rapidity());
+			if (isTwinParticles){
+				if (twinParticles == P_ELECTRON) registry.get<TH1>(HIST("hInvariantMassElEl"))->Fill(sumOfVertexTracks.M());
+				if (twinParticles == P_MUON) registry.get<TH1>(HIST("hInvariantMassMuMu"))->Fill(sumOfVertexTracks.M());
+				if (twinParticles == P_PION) registry.get<TH1>(HIST("hInvariantMassPiPi"))->Fill(sumOfVertexTracks.M());
+				if (twinParticles == P_KAON) registry.get<TH1>(HIST("hInvariantMassKaKa"))->Fill(sumOfVertexTracks.M());
+				if (twinParticles == P_PROTON) registry.get<TH1>(HIST("hInvariantMassPrPr"))->Fill(sumOfVertexTracks.M());
+			}
 		}
 
 	} // end processCentralBarrel
 
 
-	PROCESS_SWITCH(RomanCentralBarrel, processCentralBarrel, "Iterate central barrel data using UD tables", true);
+	PROCESS_SWITCH(CentralBarrelAnalyzerRL, processCentralBarrel, "Iterate central barrel data using UD tables", true);
 
 };
 
@@ -235,6 +255,6 @@ struct RomanCentralBarrel {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
 	return WorkflowSpec{
-		adaptAnalysisTask<RomanCentralBarrel>(cfgc, TaskName{"roman-central-barrel"})
+		adaptAnalysisTask<CentralBarrelAnalyzerRL>(cfgc, TaskName{"upc-central-barrel-rl"})
 	};
 }
