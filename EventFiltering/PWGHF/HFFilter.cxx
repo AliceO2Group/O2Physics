@@ -668,7 +668,9 @@ struct HfFilter { // Main struct for HF triggers
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksPID const& tracks)
   {
-    optimisationTreeCollisions(collision.globalIndex());
+    if (applyOptimisation) {
+      optimisationTreeCollisions(collision.globalIndex());
+    }
 
     if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && inputNamesML[kD0].size() == 0) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
