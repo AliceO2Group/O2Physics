@@ -35,6 +35,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "string"
+#include "vector"
 
 using namespace o2;
 using namespace o2::framework;
@@ -167,10 +168,10 @@ struct qaEventTrack {
 
     histos.add("Events/nTracks", "", kTH1D, {axisTrackMultiplicity});
 
-    if (doprocessMC) {
-      histos.add("Events/resoX", ";X_{Rec} - X_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
-      histos.add("Events/resoY", ";Y_{Rec} - Y_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
-      histos.add("Events/resoZ", ";Z_{Rec} - Z_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
+    if (doprocessMC || doprocessRun2ConvertedMC) {
+      histos.add<TH2>("Events/resoX", ";X_{Rec} - X_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
+      histos.add<TH2>("Events/resoY", ";Y_{Rec} - Y_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
+      histos.add<TH2>("Events/resoZ", ";Z_{Rec} - Z_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
     }
 
     auto trackRecoEffHist = histos.add<TH1>("Tracks/recoEff", "", kTH1D, {{2, 0.5, 2.5}});
@@ -185,8 +186,8 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/etavsphi", "#eta vs #varphi", kTH2F, {axisEta, axisPhi});
     histos.add("Tracks/Kine/etavspt", "#eta vs #it{p}_{T}", kTH2F, {axisPt, axisEta});
     histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
-    if (doprocessMC) {
-      histos.add("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
+    if (doprocessMC || doprocessRun2ConvertedMC) {
+      histos.add<TH2>("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
