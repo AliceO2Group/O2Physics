@@ -276,6 +276,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // LMEE single signals
+  if (!nameStr.compare("eFromPhoton")) {
+    MCProng prong(2, {11, 22}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from photon conversion", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromPi0")) {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from pi0 decays", {prong}, {-1});

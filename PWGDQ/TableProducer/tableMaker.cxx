@@ -60,6 +60,11 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
+using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                           aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                           aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::DalitzBits>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
@@ -79,6 +84,7 @@ constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | Va
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
+constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkMuonFillMapWithAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::AmbiMuon;
@@ -153,7 +159,8 @@ struct TableMaker {
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                                context.mOptions.get<bool>("processFullWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter"));
+                               context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits");
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
@@ -307,6 +314,7 @@ struct TableMaker {
             }
           }
         }
+
         trackFilteringTag = uint64_t(0);
         trackTempFilterMap = uint8_t(0);
         VarManager::FillTrack<TTrackFillMap>(track);
@@ -316,6 +324,7 @@ struct TableMaker {
             fHistMan->FillHistClass("Ambiguous_TrackBarrel_BeforeCuts", VarManager::fgValues);
           }
         }
+
         // apply track cuts and fill stats histogram
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
@@ -349,7 +358,11 @@ struct TableMaker {
             }
           }
         }
+
         trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
+          trackFilteringTag |= (uint64_t(track.dalitzBits()) << 15); // BIT15-...: Dalitz
+        }
 
         // create the track tables
         trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
@@ -585,6 +598,13 @@ struct TableMaker {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
+  // Produce barrel only tables, with DalitzBits ------------------------------------------------------------------------------------------------
+  void processBarrelOnlyWithDalitzBits(MyEvents::iterator const& collision, aod::BCs const& bcs,
+                                       soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
   // Produce barrel only tables, with event filtering ----------------------------------------------------------------------------------------
   void processBarrelOnlyWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
                                         soa::Filtered<MyBarrelTracks> const& tracksBarrel)
@@ -686,6 +706,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processFullWithCov, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables", false);
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithEventFilter, "Build full DQ skimmed data model, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCent, "Build barrel-only DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
