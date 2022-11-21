@@ -16,6 +16,7 @@
 #ifndef ALISW_UPCMONTECARLOCENTRALBARRELHELPER_H
 #define ALISW_UPCMONTECARLOCENTRALBARRELHELPER_H
 
+#include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,7 +65,7 @@ float rapidity(float mass, float px, float py, float pz)
 }
 
 template <typename E>
-int getElectronCharge(E generatedElectron)
+int getElectronCharge(E const& generatedElectron)
 // Check if particle is electron or positron and return charge accordingly. Return zero if particle is not electron/positron
 {
 	if (generatedElectron.pdgCode() == 11) return -1;
@@ -73,7 +74,7 @@ int getElectronCharge(E generatedElectron)
 }
 
 template <typename Es>
-int64_t getEvSelsIndexOfThisCollisionBC(Es infoEvSels, uint64_t globalBC)
+int64_t getEvSelsIndexOfThisCollisionBC(Es const& infoEvSels, uint64_t globalBC)
 // reads full event selection table end return global index corresponding to given global BC. Return -1 when fails.
 {
 	for (auto& infoEvSel : infoEvSels){
@@ -83,7 +84,7 @@ int64_t getEvSelsIndexOfThisCollisionBC(Es infoEvSels, uint64_t globalBC)
 }
 
 template <typename C>
-bool isEvSelFITempty(C collision)
+bool isEvSelFITempty(C const& collision)
 // Get FIT information from EventSelection task for each collision
 {
 	if (collision.has_foundFT0() || collision.has_foundFV0() || collision.has_foundFDD()) return false;
@@ -91,7 +92,7 @@ bool isEvSelFITempty(C collision)
 }
 
 template <typename T>
-bool isFITempty(T FITinfo)
+bool isFITempty(T const& FITinfo)
 // Return true if FIT had no signal
 {
 	// check FT0 signal
@@ -115,7 +116,7 @@ bool isFITempty(T FITinfo)
 }
 
 template <typename T>
-bool isUDprimaryTrack(T udtrack)
+bool isUDprimaryTrack(T const& udtrack)
 // TrackSelection::kPrimaryTracks = kGoldenChi2 | kDCAxy | kDCAz;
 {
 	// temporary hardcoded input
@@ -132,7 +133,7 @@ bool isUDprimaryTrack(T udtrack)
 }
 
 template <typename T>
-bool isUDinAcceptanceTrack(T udtrack)
+bool isUDinAcceptanceTrack(T const& udtrack)
 // TrackSelection::kInAcceptanceTracks = kPtRange | kEtaRange;
 {
 	// temporary hardcoded input
@@ -150,7 +151,7 @@ bool isUDinAcceptanceTrack(T udtrack)
 }
 
 template <typename T>
-bool isUDqualityTrack(T udtrack)
+bool isUDqualityTrack(T const& udtrack)
 // TrackSelection::kQualityTracks = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
 {
 	// temporary hardcoded input
@@ -161,9 +162,9 @@ bool isUDqualityTrack(T udtrack)
 	int16_t cutNtpcCrossedRows = 70;
 	float cutCrossedRowsOverNclusters = 0.8;
 	// track type
-	// ignoring for the moment (its either innermost update track (0) or propagated track (1), the rest is Run 2)
+	// TODO //ignoring for the moment (its either innermost update track (0) or propagated track (1), the rest is Run 2).
 	// ITS hits
-	// ignoring for the moment (some crazy function which I haven't found anywhere to be used)
+	// TODO //ignoring for the moment (some crazy function which I haven't found anywhere to be used)
 	// ITS refit
 	if (!udtrack.hasITS()) return false;
 	// ITS chi2/ndf
@@ -187,7 +188,7 @@ bool isUDqualityTrack(T udtrack)
 }
 
 template <typename T>
-bool isUDglobalTrack(T udtrack)
+bool isUDglobalTrack(T const& udtrack)
 // combine quality+primary+acceptance
 {
 	if (!isUDinAcceptanceTrack(udtrack)) return false;
@@ -197,27 +198,27 @@ bool isUDglobalTrack(T udtrack)
 }
 
 template <typename T>
-bool trackSelection(T udtrack, int selection)
+bool trackSelection(T const& udtrack, int selection)
 // Do selection of reconstructed track
 {
 
 	if (selection==0) return true;
 	// Is central barrel propagated track
-	// TODO //if (selection==1 && track.trackType()!=1) return false;
+	// TODO //if (selection==1 && udtrack.trackType()!=1) return false;
 	// Is central barrel vertex contributor
 	if (selection==2 && udtrack.isPVContributor()!=1) return false;
 	// Is central barrel track selection global track
- 	if (selection==3 && isUDqualityTrack(udtrack)!=1) return false;
+	if (selection==3 && isUDqualityTrack(udtrack)!=1) return false;
 	// Is central barrel track selection global track
- 	if (selection==4 && isUDprimaryTrack(udtrack)!=1) return false;
+	if (selection==4 && isUDprimaryTrack(udtrack)!=1) return false;
 	// Is central barrel track selection global track
- 	if (selection==5 && isUDglobalTrack(udtrack)!=1) return false;
+	if (selection==5 && isUDglobalTrack(udtrack)!=1) return false;
 
 	return true;
 }
 
 template <typename T>
-bool selectTrack(T track, int setOfCuts)
+bool selectTrack(T const& track, int setOfCuts)
 // Do selection of reconstructed track
 {
 	if (setOfCuts<1) return true;
@@ -230,7 +231,7 @@ bool selectTrack(T track, int setOfCuts)
 }
 
 template < typename C>
-void fillEventSelectionHistogram(HistogramRegistry &registry, C collision)
+void fillEventSelectionHistogram(HistogramRegistry &registry, C const& collision)
 // Fill into histogram information from EventSelection task for each collision
 {
 
@@ -272,7 +273,7 @@ void fillEventSelectionHistogram(HistogramRegistry &registry, C collision)
 }
 
 template <typename Ts, typename C>
-void fillTrackSelectionHistogram(HistogramRegistry &registry, Ts tracks, C collision)
+void fillTrackSelectionHistogram(HistogramRegistry &registry, Ts const& tracks, C const& collision)
 // Fill into histogram effect of track selection for all tracks
 {
 
@@ -320,41 +321,34 @@ void fillTrackSelectionHistogram(HistogramRegistry &registry, Ts tracks, C colli
 }
 
 template <typename T>
-void printTrackData(T track)
+void printTrackData(T const& track)
 // Function to print basic info on track
 {
-	// TODO return to this version once PVContributor is fixed
-	//		LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d;"
-	//							" Associated MC particle idx %d, primary %d, PDG code %d",
-	LOGF(info,"Track idx %d, hasITS %d, hasTPC %d, hasTOF %d",
-	     track.globalIndex(),track.hasITS(),track.hasTPC(),track.hasTOF());
+	LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d",
+	     track.globalIndex(),track.isPVContributor(),track.hasITS(),track.hasTPC(),track.hasTOF());
 }
 
 template <typename T>
-void printTrackParticleData(T track)
+void printTrackParticleData(T const& track)
 // Function to print basic info on track and its associated mc particle
 {
-	LOGF(info,"Track idx %d, hasITS %d, hasTPC %d, hasTOF %d",
-	     track.globalIndex(),track.hasITS(),track.hasTPC(),track.hasTOF());
+	printTrackData(track);
 	if (track.has_udMcParticle()) {
 		auto mcparticle = track.udMcParticle();
-		// TODO return to this version once PVContributor is fixed
-		//		LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d;"
-		//							" Associated MC particle idx %d, primary %d, PDG code %d",
 		LOGF(info," Associated MC particle idx %d, primary %d, PDG code %d",
 		     mcparticle.globalIndex(),mcparticle.isPhysicalPrimary(), mcparticle.pdgCode());
 	}
 }
 
 template <typename Ts>
-void printCollisionTracksData(Ts tracks, int setOfCuts)
+void printCollisionTracksData(Ts const& tracks, int setOfCuts)
 // Function to loop over tracks associated to a collision and print basic info
 {
 	int countNoMCparticle = 0;
 	for (auto& track : tracks){
 		if (!selectTrack(track,setOfCuts)) continue;
 		if (track.has_udMcParticle()) {
-			printTrackData(track);
+			printTrackParticleData(track);
 		}
 		else countNoMCparticle++;
 	}
@@ -362,7 +356,7 @@ void printCollisionTracksData(Ts tracks, int setOfCuts)
 }
 
 template <typename MPs, typename P, typename C>
-void printCollisionGeneratedParticles(MPs particles, P slice, C collision){
+void printCollisionGeneratedParticles(MPs const& particles, P const& slice, C const& collision){
 	auto slicedParticles = particles.sliceBy(slice, collision.mcCollision().globalIndex());
 	for (auto& slicedParticle : slicedParticles){
 		LOGF(info,"Particle idx %d, primary %d",slicedParticle.globalIndex(),slicedParticle.isPhysicalPrimary());

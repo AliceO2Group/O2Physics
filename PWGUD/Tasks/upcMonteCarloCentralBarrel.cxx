@@ -101,7 +101,7 @@ struct UpcMCCentralBarrel {
 //	Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
 
 	// declare shortcuts
-	using ReconstructedTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDMcTrackLabels>;
+	using ReconstructedTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDMcTrackLabels, aod::UDTracksFlags>;
 	using ReconstructedCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
 
 	// init
@@ -421,7 +421,7 @@ struct UpcMCCentralBarrel {
 	}// end processTest6
 
 
-	void processTestUDtable1(soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDMcTrackLabels>::iterator const& track,
+	void processTestUDtable1(soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDMcTrackLabels, aod::UDTracksFlags>::iterator const& track,
 													 aod::UDMcParticles const& particles){
 
 		LOGF(info,"IDX %d, mask %d",track.udMcParticleId(),track.mcMask());
