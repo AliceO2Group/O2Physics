@@ -312,7 +312,7 @@ struct femtoWorldProducerTask {
           return true;
         }
       } else if ((mom >= 0.45 && mom <= 0.5)) {
-        if (ConfKaonChangePID == true) {
+        if (ConfKaonChangePID == true) { // reducing contamination
           return false;
         } else {
           return true;
