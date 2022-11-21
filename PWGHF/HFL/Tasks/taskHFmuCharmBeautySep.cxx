@@ -19,7 +19,6 @@
 #include <cmath>
 #include "PWGDQ/Core/VarManager.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
