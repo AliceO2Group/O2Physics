@@ -165,6 +165,7 @@ struct femtoWorldProducerTask {
   Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
   Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
+  Configurable<bool> ConfKaonChangePID{"ConfKaonChangePID", true, "Rejecting if mom at (0.45, 0.5)"};
 
   // PHI Candidates
   FemtoWorldPhiSelection PhiCuts;
@@ -291,18 +292,22 @@ struct femtoWorldProducerTask {
           return true;
       }
     } else {
-
       if (mom < 0.4) {
         if (nsigmaTOFK < -999.) {
           if (TMath::Abs(nsigmaTPCK) < 2.0)
             return true;
         } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
           return true;
-      } else if (mom >= 0.4 && mom <= 0.6) {
+      } else if ((mom >= 0.4 && mom <= 0.45) || (mom >= 0.5 && mom <= 0.6)) { // to rozbić tak, żeby usunąć 450 - 500
         if (nsigmaTOFK < -999.) {
           if (TMath::Abs(nsigmaTPCK) < 2.0)
             return true;
         } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if ((mom >= 0.45 && mom <= 0.5)) {
+        if (ConfKaonChangePID == true) {
+          return false;
+        } else
           return true;
       } else if (nsigmaTOFK < -999.) {
         return false;
