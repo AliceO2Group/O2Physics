@@ -279,7 +279,7 @@ struct dalitzPairing {
     }
 
     for (auto& track : tracks) { // Fill dalitz bits
-      dalitzbits(static_cast<int>(dalitzmap[track.globalIndex()]));
+      dalitzbits(dalitzmap[track.globalIndex()]);
     }
   }
 

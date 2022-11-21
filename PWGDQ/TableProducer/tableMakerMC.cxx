@@ -433,10 +433,11 @@ struct TableMakerMC {
               }
             }
           }
-          trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-            trackFilteringTag |= (uint64_t(track.dalitzBits()) << 15); // BIT15-...: Dalitz
+            trackFilteringTag |= (uint64_t(track.dalitzBits()) << 7); // BIT7-14: Dalitz
           }
+          trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
+
 
           mcflags = 0;
           i = 0;     // runs over the MC signals

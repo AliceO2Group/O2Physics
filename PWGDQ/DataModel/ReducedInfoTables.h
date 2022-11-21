@@ -479,7 +479,7 @@ using V0Bit = V0Bits::iterator;
 
 namespace DalBits
 {
-DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, int); //!
+DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
 } // namespace DalBits
 
 // bit information for particle species.

@@ -686,7 +686,7 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
 
       for (int i = 0; i < 8; i++) {
-        values[kIsDalitzLeg + i] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << (15 + i)));
+        values[kIsDalitzLeg + i] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << (7 + i)));
       }
     }
   }
