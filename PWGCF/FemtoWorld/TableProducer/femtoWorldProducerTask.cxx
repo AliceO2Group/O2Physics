@@ -298,7 +298,7 @@ struct femtoWorldProducerTask {
             return true;
         } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
           return true;
-      } else if ((mom >= 0.4 && mom <= 0.45) || (mom >= 0.5 && mom <= 0.6)) { // to rozbić tak, żeby usunąć 450 - 500
+      } else if ((mom >= 0.4 && mom <= 0.45) || (mom >= 0.5 && mom <= 0.6)) {
         if (nsigmaTOFK < -999.) {
           if (TMath::Abs(nsigmaTPCK) < 2.0)
             return true;
