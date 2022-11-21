@@ -14,7 +14,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
 #include "CommonDataFormat/BunchFilling.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -77,14 +77,14 @@ struct EventSelectionQaTask {
     const AxisSpec axisTime{700, -35., 35., ""};
     const AxisSpec axisTimeDif{100, -5., 5., ""};
     const AxisSpec axisTimeSum{100, -5., 5., ""};
-    const AxisSpec axisGlobalBCs{nGlobalBCs, 0., double(nGlobalBCs), ""};
-    const AxisSpec axisBCs{nBCsPerOrbit, 0., double(nBCsPerOrbit), ""};
+    const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
+    const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
     const AxisSpec axisNcontrib{150, 0., isLowFlux ? 150. : 900., "n contributors"};
     const AxisSpec axisEta{100, -1., 1., "track #eta"};
     const AxisSpec axisColTimeRes{7000, 0., 7000., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
-    const AxisSpec axisAliases{kNaliases, 0., double(kNaliases), ""};
-    const AxisSpec axisSelections{kNsel, 0., double(kNsel), ""};
+    const AxisSpec axisAliases{kNaliases, 0., static_cast<double>(kNaliases), ""};
+    const AxisSpec axisSelections{kNsel, 0., static_cast<double>(kNsel), ""};
 
     histos.add("hTimeV0Aall", "All bcs;V0A time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeV0Call", "All bcs;V0C time (ns);Entries", kTH1F, {axisTime});
@@ -503,7 +503,7 @@ struct EventSelectionQaTask {
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{nOrbits / 128, 0., double(nOrbits), ""};
+      const AxisSpec axisOrbits{nOrbits / 128, 0., static_cast<double>(nOrbits), ""};
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
@@ -788,7 +788,7 @@ struct EventSelectionQaTask {
         }
       }
       const auto& nearestTVX = bcs.iteratorAt(indexNearestTVX);
-      int bcDiff = int(globalBC - nearestTVX.globalBC());
+      int bcDiff = static_cast<int>(globalBC - nearestTVX.globalBC());
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);

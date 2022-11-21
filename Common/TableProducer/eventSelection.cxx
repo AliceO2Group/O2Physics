@@ -19,7 +19,7 @@ using namespace o2::framework;
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
