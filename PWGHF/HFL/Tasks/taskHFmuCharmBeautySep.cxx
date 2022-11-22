@@ -41,22 +41,22 @@ struct IterateFwdTracksMuons {
   {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
-    AxisSpec dcaxAxis = {1000, -5.0, 5.0, "DCA {x or y} (cm)"};
+    AxisSpec dcaxAxis = {1000, -5.0, 5.0, "DCA{x or y} (cm)"};
     AxisSpec etaRecoAxis = {150, -5, -2, "#eta_{Reco}"};
     AxisSpec rAbsAxis = {100, 0, 100, "R_{abs}"};
     AxisSpec pdcaAxis = {450, 0, 450, "p_{DCA}"};
-    AxisSpec chi2GlobalAxis = {170, -1.5, 150.5, "#chi^{2} global"};
+    AxisSpec chi2Axis = {170, -1.5, 150.5, "#chi^{2} global"};
     AxisSpec chi2MCHMFTAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MFT"};
     AxisSpec chi2MCHMIDAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MID"};
 
-    HistogramConfigSpec HistVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, etaRecoAxis, chi2MCHMFTAxis, chi2GlobalAxis, chi2MCHMIDAxis, rAbsAxis, pdcaAxis}});
-    spectra.add("hBasicDist", "", HistVariable);
+    HistogramConfigSpec HistVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, etaRecoAxis, chi2MCHMFTAxis, chi2Axis, chi2MCHMIDAxis, rAbsAxis, pdcaAxis}});
+    spectra.add("BasicDist", "", HistVariable);
     HistogramConfigSpec HistTrackType({HistType::kTH1F, {trackTypeAxis}});
-    spectra.add("hTrackType", "", HistTrackType);
+    spectra.add("TrackType", "", HistTrackType);
 
-    spectra.add("hDCAxMuonType0", " dcax", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    spectra.add("hDCAyMuonType0", " dcay", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    spectra.add("hDCAxyMuonType0", " dcaxy", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
+    spectra.add("hDCAxMuons_Type0", " dca", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+    spectra.add("hDCAyMuons_Type0", " dca", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+    spectra.add("hDCAxyMuons_Type0", " dca", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
   }
   void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& muons)
   {
@@ -66,12 +66,12 @@ struct IterateFwdTracksMuons {
     auto eta = 0.;
     auto chi2MatchMCHMFT = 0.;
     auto chi2MatchMCHMID = 0.;
-    auto chi2Global = 0.;
+    auto chi2 = 0.;
     auto rAbs = 0.;
     auto pDca = 0.;
 
     for (auto& muon : muons) {
-      spectra.fill(HIST("hTrackType"), muon.trackType());
+      spectra.fill(HIST("TrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {
 
@@ -81,14 +81,14 @@ struct IterateFwdTracksMuons {
           eta = muon.eta();
           chi2MatchMCHMFT = muon.chi2MatchMCHMFT();
           chi2MatchMCHMID = muon.chi2MatchMCHMID();
-          chi2Global = muon.chi2();
+          chi2 = muon.chi2();
           rAbs = muon.rAtAbsorberEnd();
           pDca = muon.pDca();
 
-          spectra.fill(HIST("hBasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2Global, chi2MatchMCHMID, rAbs, pDca);
-          spectra.fill(HIST("hDCAxMuonType0"), dcax);
-          spectra.fill(HIST("hDCAyMuonType0"), dcay);
-          spectra.fill(HIST("hDCAxyMuonType0"), std::sqrt(dcax * dcax + dcay * dcay));
+          spectra.fill(HIST("BasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2, chi2MatchMCHMID, rAbs, pDca);
+          spectra.fill(HIST("hDCAxMuons_Type0"), dcax);
+          spectra.fill(HIST("hDCAyMuons_Type0"), dcay);
+          spectra.fill(HIST("hDCAxyMuons_Type0"), std::sqrt(dcax * dcax + dcay * dcay));
         }
       }
     }
