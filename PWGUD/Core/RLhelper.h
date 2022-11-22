@@ -93,8 +93,8 @@ int testPIDhypothesis(T trackPIDinfo)
     // do PID using TOF only
   } else if (trackPIDinfo.hasTOF()) {
     return enumChoiceTOF;
-  }
   // give warning and return non-sense
+  }
   else {
     LOGF(warning, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
     return -1;
@@ -278,7 +278,7 @@ bool isUDqualityTrack(T const& udtrack)
   if (udtrack.tpcNClsCrossedRows() < cutNtpcCrossedRows)
     return false;
   // TPC crossed rows over n clusters
-  float crossedRowsOverNclusters = (float)udtrack.tpcNClsCrossedRows() / nFoundClusters;
+  float crossedRowsOverNclusters = static_cast<float>(udtrack.tpcNClsCrossedRows()) / nFoundClusters;
   if (crossedRowsOverNclusters < cutCrossedRowsOverNclusters)
     return false;
   // passed all selections
@@ -487,8 +487,9 @@ void printCollisionTracksData(Ts const& tracks, int setOfCuts)
       continue;
     if (track.has_udMcParticle()) {
       printTrackParticleData(track);
-    } else
-      countNoMCparticle++;
+    } else {
+			countNoMCparticle++;
+		}
   }
   if (countNoMCparticle > 0)
     LOGF(warning, "This collision has %d tracks without associated mc particle", countNoMCparticle);
