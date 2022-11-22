@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_EVENTSELECTION_H_
-#define O2_ANALYSIS_EVENTSELECTION_H_
+#ifndef COMMON_DATAMODEL_EVENTSELECTION_H_
+#define COMMON_DATAMODEL_EVENTSELECTION_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -85,4 +85,4 @@ DECLARE_SOA_TABLE(BcSels, "AOD", "BCSEL", //!
 using BcSel = BcSels::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_EVENTSELECTION_H_
+#endif // COMMON_DATAMODEL_EVENTSELECTION_H_
