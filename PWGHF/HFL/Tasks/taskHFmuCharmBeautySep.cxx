@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \Task to estimate HF->mu in the forward direction and use DCA observable to separate b-> mu, c-> mu.
+/// \Task to estimate HF->mu in the forward direction and use the DCA observable to separate b-> mu, c-> mu.
 /// \Command to run on terminal : o2-analysis-hfmu-charm-beauty-separation | o2-analysis-fwdtrackextension --aod-file AO2D.root
 /// \Author : Shreyasi Acharya <shreyasi.acharya@cern.ch>, LPC, France
 
