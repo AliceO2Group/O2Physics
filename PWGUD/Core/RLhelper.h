@@ -1,6 +1,17 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
-// Created by Roman Lavička on 10.11.2022.
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+///
+/// \brief
+/// \author Roman Lavicka, roman.lavicka@cern.ch
+/// \since  10.11.2022
 
 #ifndef ALISW_RLHELPER_H
 #define ALISW_RLHELPER_H
@@ -371,7 +382,7 @@ void printTrackData(T const& track)
 // Function to print basic info on track
 {
 	LOGF(info,"Track idx %d, vtx contributor %d, hasITS %d, hasTPC %d, hasTOF %d",
-	     track.globalIndex(),track.isPVContributor(),track.hasITS(),track.hasTPC(),track.hasTOF());
+			 track.globalIndex(),track.isPVContributor(),track.hasITS(),track.hasTPC(),track.hasTOF());
 }
 
 template <typename T>
@@ -382,7 +393,7 @@ void printTrackParticleData(T const& track)
 	if (track.has_udMcParticle()) {
 		auto mcparticle = track.udMcParticle();
 		LOGF(info," Associated MC particle idx %d, primary %d, PDG code %d",
-		     mcparticle.globalIndex(),mcparticle.isPhysicalPrimary(), mcparticle.pdgCode());
+				 mcparticle.globalIndex(),mcparticle.isPhysicalPrimary(), mcparticle.pdgCode());
 	}
 }
 
