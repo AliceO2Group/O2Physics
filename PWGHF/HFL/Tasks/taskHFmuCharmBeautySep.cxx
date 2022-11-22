@@ -35,9 +35,9 @@ using namespace o2::framework::expressions;
 // using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 // Iterate on muon using the collision iterator in the dq-analysis style
 struct IterateFwdTracksMuons {
-
   HistogramRegistry spectra{"ForwardTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  void init(o2::framework::InitContext&)
+
+    void init(o2::framework::InitContext&)
   {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
