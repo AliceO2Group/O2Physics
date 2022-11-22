@@ -153,20 +153,17 @@ bool isFITempty(T const& FITinfo)
 // Return true if FIT had no signal
 {
   // check FT0 signal
-  bool hasNoFT0 = true;
   bool isBB = FITinfo.bbFT0A() || FITinfo.bbFT0C();
   bool isBG = FITinfo.bgFT0A() || FITinfo.bgFT0C();
-  hasNoFT0 = !isBB && !isBG;
+  bool hasNoFT0 = !isBB && !isBG;
   // check FV0 signal
-  bool hasNoFV0A = true;
   isBB = FITinfo.bbFV0A();
   isBG = FITinfo.bgFV0A();
-  hasNoFV0A = !isBB && !isBG;
+  bool hasNoFV0A = !isBB && !isBG;
   // check FDD signal
-  bool hasNoFDD = true;
   isBB = FITinfo.bbFDDA() || FITinfo.bbFDDC();
   isBG = FITinfo.bgFDDA() || FITinfo.bgFDDC();
-  hasNoFDD = !isBB && !isBG;
+  bool hasNoFDD = !isBB && !isBG;
 
   if (hasNoFT0 && hasNoFV0A && hasNoFDD) return true;
   else return false;
