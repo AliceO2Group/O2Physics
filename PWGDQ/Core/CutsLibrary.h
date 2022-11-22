@@ -62,6 +62,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsiO2MCdebugCuts2_Corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts3")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -75,6 +82,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
 
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2MCdebugCuts4_Corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug1"));
     return cut;
   }
 
@@ -98,6 +112,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
+
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2MCdebugCuts7_Corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5"));
 
     return cut;
   }
@@ -455,6 +477,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonQualityCutsMatchingOnly")) {
+    cut->AddCut(GetAnalysisCut("muonQualityCutsMatchingOnly"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
@@ -651,6 +678,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 999);
+    return cut;
+  }
+  if (!nameStr.compare("jpsi_TPCPID_debug5")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999);
     return cut;
   }
   if (!nameStr.compare("highPtHadron")) {

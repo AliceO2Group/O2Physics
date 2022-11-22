@@ -14,7 +14,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
 #include "CommonDataFormat/BunchFilling.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -60,14 +60,14 @@ struct EventSelectionQaTask {
     ccdb->setLocalObjectValidityChecking();
 
     const AxisSpec axisMultV0M{1000, 0., isLowFlux ? 40000. : 40000., "V0M multiplicity"};
-    const AxisSpec axisMultV0A{1000, 0., isLowFlux ? 40000. : 40000., "V0A multiplicity"};
+    const AxisSpec axisMultV0A{1000, 0., isLowFlux ? 40000. : 200000., "V0A multiplicity"};
     const AxisSpec axisMultV0C{1000, 0., isLowFlux ? 30000. : 30000., "V0C multiplicity"};
-    const AxisSpec axisMultT0A{1000, 0., isLowFlux ? 10000. : 100000., "T0A multiplicity"};
-    const AxisSpec axisMultT0C{1000, 0., isLowFlux ? 2000. : 100000., "T0C multiplicity"};
-    const AxisSpec axisMultFDA{1000, 0., isLowFlux ? 50000. : 10000., "FDA multiplicity"};
-    const AxisSpec axisMultFDC{1000, 0., isLowFlux ? 50000. : 10000., "FDC multiplicity"};
-    const AxisSpec axisMultZNA{1000, 0., isLowFlux ? 1000. : 200000., "ZNA multiplicity"};
-    const AxisSpec axisMultZNC{1000, 0., isLowFlux ? 1000. : 200000., "ZNC multiplicity"};
+    const AxisSpec axisMultT0A{1000, 0., isLowFlux ? 10000. : 200000., "T0A multiplicity"};
+    const AxisSpec axisMultT0C{1000, 0., isLowFlux ? 2000. : 70000., "T0C multiplicity"};
+    const AxisSpec axisMultFDA{1000, 0., isLowFlux ? 50000. : 40000., "FDA multiplicity"};
+    const AxisSpec axisMultFDC{1000, 0., isLowFlux ? 50000. : 40000., "FDC multiplicity"};
+    const AxisSpec axisMultZNA{1000, 0., isLowFlux ? 1000. : 10000., "ZNA multiplicity"};
+    const AxisSpec axisMultZNC{1000, 0., isLowFlux ? 1000. : 10000., "ZNC multiplicity"};
     const AxisSpec axisNtracklets{200, 0., isLowFlux ? 200. : 6000., "n tracklets"};
     const AxisSpec axisNclusters{200, 0., isLowFlux ? 1000. : 20000., "n clusters"};
     const AxisSpec axisMultOnlineV0M{400, 0., isLowFlux ? 8000. : 40000., "Online V0M"};
@@ -77,14 +77,14 @@ struct EventSelectionQaTask {
     const AxisSpec axisTime{700, -35., 35., ""};
     const AxisSpec axisTimeDif{100, -5., 5., ""};
     const AxisSpec axisTimeSum{100, -5., 5., ""};
-    const AxisSpec axisGlobalBCs{nGlobalBCs, 0., double(nGlobalBCs), ""};
-    const AxisSpec axisBCs{nBCsPerOrbit, 0., double(nBCsPerOrbit), ""};
-    const AxisSpec axisNcontrib{150, 0., 150., "n contributors"};
+    const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
+    const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
+    const AxisSpec axisNcontrib{150, 0., isLowFlux ? 150. : 900., "n contributors"};
     const AxisSpec axisEta{100, -1., 1., "track #eta"};
     const AxisSpec axisColTimeRes{7000, 0., 7000., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
-    const AxisSpec axisAliases{kNaliases, 0., double(kNaliases), ""};
-    const AxisSpec axisSelections{kNsel, 0., double(kNsel), ""};
+    const AxisSpec axisAliases{kNaliases, 0., static_cast<double>(kNaliases), ""};
+    const AxisSpec axisSelections{kNsel, 0., static_cast<double>(kNsel), ""};
 
     histos.add("hTimeV0Aall", "All bcs;V0A time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeV0Call", "All bcs;V0C time (ns);Entries", kTH1F, {axisTime});
@@ -160,13 +160,20 @@ struct EventSelectionQaTask {
     histos.add("hGlobalBcFT0", "", kTH1F, {axisGlobalBCs});
     histos.add("hGlobalBcFV0", "", kTH1F, {axisGlobalBCs});
     histos.add("hGlobalBcFDD", "", kTH1F, {axisGlobalBCs});
+    histos.add("hGlobalBcZDC", "", kTH1F, {axisGlobalBCs});
+
+    histos.add("hBcA", "", kTH1F, {axisBCs});
+    histos.add("hBcC", "", kTH1F, {axisBCs});
+    histos.add("hBcB", "", kTH1F, {axisBCs});
     histos.add("hBcAll", "", kTH1F, {axisBCs});
     histos.add("hBcCol", "", kTH1F, {axisBCs});
     histos.add("hBcTVX", "", kTH1F, {axisBCs});
     histos.add("hBcFT0", "", kTH1F, {axisBCs});
     histos.add("hBcFV0", "", kTH1F, {axisBCs});
     histos.add("hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("hBcZDC", "", kTH1F, {axisBCs});
     histos.add("hBcColTOF", "", kTH1F, {axisBCs});
+    histos.add("hBcColTRD", "", kTH1F, {axisBCs});
 
     histos.add("hMultV0Aall", "All bcs", kTH1F, {axisMultV0A});
     histos.add("hMultV0Call", "All bcs", kTH1F, {axisMultV0C});
@@ -217,6 +224,7 @@ struct EventSelectionQaTask {
     histos.add("hColBcDiffVsNcontribWithTOF", "", kTH2F, {axisNcontrib, axisBcDif});
     histos.add("hColBcDiffVsNcontribWithTRD", "", kTH2F, {axisNcontrib, axisBcDif});
 
+    histos.add("hITStrackBcDiff", "", kTH1F, {axisBcDif});
     histos.add("hTrackBcDiffVsEta", "", kTH2F, {axisEta, axisBcDif});
 
     histos.add("hNcontribCol", "", kTH1F, {axisNcontrib});
@@ -454,6 +462,18 @@ struct EventSelectionQaTask {
         bcPatternC = ~beamPatternA & beamPatternC;
         bcPatternB = beamPatternA & beamPatternC;
 
+        for (int i = 0; i < nBCsPerOrbit; i++) {
+          if (bcPatternA[i]) {
+            histos.fill(HIST("hBcA"), i);
+          }
+          if (bcPatternC[i]) {
+            histos.fill(HIST("hBcC"), i);
+          }
+          if (bcPatternB[i]) {
+            histos.fill(HIST("hBcB"), i);
+          }
+        }
+
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
@@ -483,7 +503,7 @@ struct EventSelectionQaTask {
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{nOrbits / 128, 0., double(nOrbits), ""};
+      const AxisSpec axisOrbits{nOrbits / 128, 0., static_cast<double>(nOrbits), ""};
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
@@ -491,6 +511,7 @@ struct EventSelectionQaTask {
       histos.add("hOrbitFT0", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFV0", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitZDC", "", kTH1F, {axisOrbits});
       histos.add("hOrbitColMC", "", kTH1F, {axisOrbits});
     }
 
@@ -549,6 +570,22 @@ struct EventSelectionQaTask {
     int nBCs = bcs.size();
     std::vector<bool> vIsTVX(nBCs, 0);
     std::vector<uint64_t> vGlobalBCs(nBCs, 0);
+
+    // debug of zdc orbit shifts
+    for (auto& bc : bcs) {
+      if (bc.has_zdc() && bc.zdc().timeZNA() < 2 && bc.zdc().timeZNA() > -2 && bc.zdc().timeZNC() < 2 && bc.zdc().timeZNC() > -2 && bc.zdc().energyCommonZNA() > 1000 && bc.zdc().energyCommonZNC() > 1000) {
+        if (bc.globalBC() % 3564 == 359) {
+          LOGP(debug, "zdc = {}", bc.globalBC() / 3564 - minOrbit);
+        }
+      }
+    }
+    for (auto& bc : bcs) {
+      if (bc.has_ft0() && bc.ft0().timeA() > -1 && bc.ft0().timeA() < 1 && bc.ft0().timeC() > -1 && bc.ft0().timeC() < 1) {
+        if (bc.globalBC() % 3564 == 360) {
+          LOGP(debug, "ft0 = {}", bc.globalBC() / 3564 - minOrbit);
+        }
+      }
+    }
 
     // bc-based event selection qa
     for (auto& bc : bcs) {
@@ -659,6 +696,9 @@ struct EventSelectionQaTask {
 
       // ZDC
       if (bc.has_zdc()) {
+        histos.fill(HIST("hGlobalBcZDC"), globalBC - minGlobalBC);
+        histos.fill(HIST("hOrbitZDC"), orbit - minOrbit);
+        histos.fill(HIST("hBcZDC"), localBC);
         float multZNA = bc.zdc().energyCommonZNA();
         float multZNC = bc.zdc().energyCommonZNC();
         histos.fill(HIST("hMultZNAall"), multZNA);
@@ -748,7 +788,7 @@ struct EventSelectionQaTask {
         }
       }
       const auto& nearestTVX = bcs.iteratorAt(indexNearestTVX);
-      int bcDiff = int(globalBC - nearestTVX.globalBC());
+      int bcDiff = static_cast<int>(globalBC - nearestTVX.globalBC());
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
@@ -770,6 +810,7 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hColBcDiffVsNcontribWithTRD"), nContributors, bcDiff);
         histos.fill(HIST("hColTimeResVsNcontribWithTRD"), nContributors, timeRes);
         histos.fill(HIST("hNcontribColTRD"), nContributors);
+        histos.fill(HIST("hBcColTRD"), localBC);
         if (col.sel8()) {
           histos.fill(HIST("hNcontribAccTRD"), nContributors);
         }
@@ -784,8 +825,12 @@ struct EventSelectionQaTask {
           continue;
         if (track.hasTRD())
           continue;
-        if (!track.hasTPC() || !track.hasITS())
+        if (!track.hasITS())
           continue;
+        if (!track.hasTPC()) {
+          histos.fill(HIST("hITStrackBcDiff"), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+          continue;
+        }
         if (track.pt() < 1)
           continue;
         histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
