@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
-AxisSpec MultAxis = {301, -0.5, 300.5};
+// AxisSpec MultAxis = {301, -0.5, 300.5}; now replaced by a ConfigurableAxis
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec PhiAxis = {600, 0, 2 * M_PI};
 AxisSpec EtaAxis = {18, -4.6, -1.};
@@ -48,6 +48,7 @@ struct PseudorapidityDensityMFT {
   Service<TDatabasePDG> pdg;
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
 
   Configurable<bool> useZDiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{"maxZDiff", 1.0f, "max allowed Z difference for reconstruced collisions (cm)"};
@@ -66,17 +67,18 @@ struct PseudorapidityDensityMFT {
   HistogramRegistry registry{
     "registry",
     {
-      {"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}}, //
-      {"TracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                //
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                         //
-      {"TracksPhiZvtx", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}},             //
-      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                            //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                                    //
-    }                                                                                                             //
+      //{"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}}, //
+      {"TracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},    //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},             //
+      {"TracksPhiZvtx", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
+      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                        //
+    }                                                                                                 //
   };
 
   void init(InitContext&)
   {
+    AxisSpec MultAxis = {multBinning, "N_{trk}"}; // for PbPb 3001,-0.5,3000.5
 
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
@@ -88,9 +90,11 @@ struct PseudorapidityDensityMFT {
     x->SetBinLabel(6, "BCs with collisions");
     x->SetBinLabel(7, "BCs with pile-up/splitting");
 
+    registry.add({"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+
     if (doprocessGen) {
-      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
-      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       registry.add({"TracksEtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksEtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});

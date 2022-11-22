@@ -32,7 +32,7 @@ AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec DCAAxis = {601, -3.01, 3.01};
 AxisSpec EtaAxis = {22, -2.2, 2.2};
-AxisSpec MultAxis = {301, -0.5, 300.5};
+// AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
@@ -57,11 +57,11 @@ struct MultiplicityCounter {
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
+  ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
 
   HistogramRegistry registry{
     "registry",
     {
-      {"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}},                           //
       {"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                                //
       {"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                            //
       {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                                    //
@@ -87,6 +87,9 @@ struct MultiplicityCounter {
 
   void init(InitContext&)
   {
+    AxisSpec MultAxis = {multBinning, "N_{trk}"};
+    registry.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+
     auto hstat = registry.get<TH1>(HIST("Events/Selection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
