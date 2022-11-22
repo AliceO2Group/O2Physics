@@ -54,54 +54,45 @@ int testPIDhypothesis(T trackPIDinfo)
   int enumChoiceTOF = std::distance(std::begin(nSigmaTOF), std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
 
   // do PID using TPC+TOF
-  if (trackPIDinfo.hasTPC() && trackPIDinfo.hasTOF()){
-    if (enumChoiceTPC == P_ELECTRON || enumChoiceTPC == P_MUON || enumChoiceTPC == P_PION){
-      if (enumChoiceTOF == P_KAON  ) {
-				return P_KAON; // probably kaon
-			}
-      else if (enumChoiceTOF == P_PROTON) {
-				return P_PROTON; // probably proton
-			}
-      else {
+  if (trackPIDinfo.hasTPC() && trackPIDinfo.hasTOF()) {
+    if (enumChoiceTPC == P_ELECTRON || enumChoiceTPC == P_MUON || enumChoiceTPC == P_PION) {
+      if (enumChoiceTOF == P_KAON) {
+        return P_KAON; // probably kaon
+      } else if (enumChoiceTOF == P_PROTON) {
+        return P_PROTON; // probably proton
+      } else {
         if (enumChoiceTPC == P_ELECTRON) {
-					return P_ELECTRON; // probably electron
-				}
-        else if (enumChoiceTPC == P_MUON) {
-					return P_MUON; // probably muon
-				}
-        else {
-					return P_PION; // probably pion
-				}
+          return P_ELECTRON; // probably electron
+        } else if (enumChoiceTPC == P_MUON) {
+          return P_MUON; // probably muon
+        } else {
+          return P_PION; // probably pion
+        }
       }
-    }
-    else {
-      if (enumChoiceTOF == P_KAON  ) {
-				return P_KAON; // probably kaon
-			}
-      else if (enumChoiceTOF == P_PROTON) {
-				return P_PROTON; // probably proton
-			}
-      else {
+    } else {
+      if (enumChoiceTOF == P_KAON) {
+        return P_KAON; // probably kaon
+      } else if (enumChoiceTOF == P_PROTON) {
+        return P_PROTON; // probably proton
+      } else {
         if (enumChoiceTPCpick == P_ELECTRON) {
-					return P_ELECTRON; // probably misidentified electron
-				}
-        else if (enumChoiceTPCpick == P_MUON) {
-					return P_MUON; // probably misidentified muon
-				}
-        else {
-					return P_PION; // probably misidentified pion
-				}
+          return P_ELECTRON; // probably misidentified electron
+        } else if (enumChoiceTPCpick == P_MUON) {
+          return P_MUON; // probably misidentified muon
+        } else {
+          return P_PION; // probably misidentified pion
+        }
       }
     }
   }
   // do PID using TPC only
   else if (trackPIDinfo.hasTPC()) {
-		return enumChoiceTPC;
-	}
+    return enumChoiceTPC;
+  }
   // do PID using TOF only
   else if (trackPIDinfo.hasTOF()) {
-		return enumChoiceTOF;
-	}
+    return enumChoiceTOF;
+  }
   // give warning and return non-sense
   else {
     LOGF(warning, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
