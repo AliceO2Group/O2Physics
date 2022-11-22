@@ -30,7 +30,6 @@
 #include "TDatabasePDG.h"
 #include "MathUtils/Utils.h"
 
-
 #include "bestCollisionTable.h"
 
 using namespace o2;
