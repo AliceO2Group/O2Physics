@@ -27,8 +27,8 @@
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
 
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include <cmath>
 #include <string>
@@ -57,10 +57,10 @@ struct AddCollisionId {
                aod::Tracks const&)
   {
     for (const auto& cand2Prong : cand2Prongs) {
-      colls2Prong(cand2Prong.index0_as<aod::Tracks>().collisionId());
+      colls2Prong(cand2Prong.prong0_as<aod::Tracks>().collisionId());
     }
     for (const auto& cand3Prong : cand3Prongs) {
-      colls3Prong(cand3Prong.index0_as<aod::Tracks>().collisionId());
+      colls3Prong(cand3Prong.prong0_as<aod::Tracks>().collisionId());
     }
   }
 };
@@ -77,6 +77,14 @@ struct HfFilter { // Main struct for HF triggers
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
+  // parameters for all triggers
+  Configurable<float> nsigmaTPCProtonLc{"nsigmaTPCProtonLc", 3., "Maximum value for TPC PID proton Nsigma for Lc candidates"};
+  Configurable<float> nsigmaTOFProtonLc{"nsigmaTOFProtonLc", 3., "Maximum value for TOF PID proton Nsigma for Lc candidates"};
+  Configurable<float> nsigmaTPCPionKaonDzero{"nsigmaTPCPionKaonDzero", 4., "Maximum value for TPC PID pion/kaon Nsigma for D0 candidates"};
+  Configurable<float> nsigmaTOFPionKaonDzero{"nsigmaTOFPionKaonDzero", 4., "Maximum value for TOF PID pion/kaon Nsigma for D0 candidates"};
+  Configurable<float> nsigmaTPCKaon3Prong{"nsigmaTPCKaon3Prong", 4., "Maximum value for TPC PID kaon Nsigma for all 3-prongs candidates"};
+  Configurable<float> nsigmaTOFKaon3Prong{"nsigmaTOFKaon3Prong", 4., "Maximum value for TOF PID kaon Nsigma for all 3-prongs candidates"};
+
   // parameters for high-pT triggers
   Configurable<float> pTThreshold2Prong{"pTThreshold2Prong", 8., "pT treshold for high pT 2-prong candidates for kHighPt triggers in GeV/c"};
   Configurable<float> pTThreshold3Prong{"pTThreshold3Prong", 8., "pT treshold for high pT 3-prong candidates for kHighPt triggers in GeV/c"};
@@ -91,20 +99,16 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> deltaMassDStar{"deltaMassDStar", 0.04, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
   Configurable<float> pTMinBeautyBachelor{"pTMinBeautyBachelor", 0.5, "minimum pT for bachelor pion track used to build b-hadron candidates"};
   Configurable<float> pTMinSoftPion{"pTMinSoftPion", 0.1, "minimum pT for soft pion track used to build D* mesons in the b-hadron decay chain"};
-  Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
-  Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::npTBinsTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::pTBinLabelsTrack, hf_cuts_single_track::cutVarLabelsTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
-  Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::npTBinsTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::pTBinLabelsTrack, hf_cuts_single_track::cutVarLabelsTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
-  Configurable<float> nsigmaTPCProtonLc{"nsigmaTPCProtonLc", 3., "Maximum value for TPC PID proton Nsigma for Lc"};
-  Configurable<float> nsigmaTOFProtonLc{"nsigmaTOFProtonLc", 3., "Maximum value for TOF PID proton Nsigma for Lc"};
+  Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut"};
+  Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
+  Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
+  std::array<LabeledArray<double>, 2> cutsSingleTrackBeauty;
 
   // parameters for femto triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
   Configurable<float> femtoMinProtonPt{"femtoMinProtonPt", 0.5, "Minimal required transverse momentum for proton in GeV/c"};
   Configurable<bool> femtoProtonOnlyTOF{"femtoProtonOnlyTOF", true, "Use only TOF information for proton identification if true"};
   Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum value for PID proton Nsigma for femto triggers"};
-
-  // array of single-track cuts for pion
-  std::array<LabeledArray<double>, 2> cutsSingleTrackBeauty;
 
   // parameters for production of training samples
   Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
@@ -114,22 +118,22 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for ML application with ONNX
   Configurable<bool> singleThreadInference{"singleThreadInference", true, "Run ML inference single thread"};
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
-  Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::pTBinsVec}, "track pT bin limits for BDT cut"};
+  Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "track pT bin limits for BDT cut"};
 
   Configurable<std::string> onnxFileD0ToKPiConf{"onnxFileD0ToKPiConf", "XGBoostModel.onnx", "ONNX file for ML model for D0 candidates"};
-  Configurable<LabeledArray<double>> thresholdBDTScoreD0ToKPi{"thresholdBDTScoreD0ToKPi", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of D0 candidates"};
+  Configurable<LabeledArray<double>> thresholdBDTScoreD0ToKPi{"thresholdBDTScoreD0ToKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D0 candidates"};
 
   Configurable<std::string> onnxFileDPlusToPiKPiConf{"onnxFileDPlusToPiKPiConf", "", "ONNX file for ML model for D+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDFScoreDPlusToPiKPi{"thresholdBDFScoreDPlusToPiKPi", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of D+ candidates"};
+  Configurable<LabeledArray<double>> thresholdBDFScoreDPlusToPiKPi{"thresholdBDFScoreDPlusToPiKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D+ candidates"};
 
   Configurable<std::string> onnxFileDSToPiKKConf{"onnxFileDSToPiKKConf", "", "ONNX file for ML model for Ds+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDFScoreDSToPiKK{"thresholdBDFScoreDSToPiKK", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of Ds+ candidates"};
+  Configurable<LabeledArray<double>> thresholdBDFScoreDSToPiKK{"thresholdBDFScoreDSToPiKK", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Ds+ candidates"};
 
   Configurable<std::string> onnxFileLcToPiKPConf{"onnxFileLcToPiKPConf", "", "ONNX file for ML model for Lc+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDFScoreLcToPiKP{"thresholdBDFScoreLcToPiKP", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of Lc+ candidates"};
+  Configurable<LabeledArray<double>> thresholdBDFScoreLcToPiKP{"thresholdBDFScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
 
   Configurable<std::string> onnxFileXicToPiKPConf{"onnxFileXicToPiKPConf", "", "ONNX file for ML model for Xic+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDFScoreXicToPiKP{"thresholdBDFScoreXicToPiKP", {hf_cuts_bdt_multiclass::cutsBDT[0], hf_cuts_bdt_multiclass::npTBins, hf_cuts_bdt_multiclass::nCutBDTScores, hf_cuts_bdt_multiclass::pTBinLabels, hf_cuts_bdt_multiclass::cutBDTLabels}, "Threshold values for BDT output scores of Xic+ candidates"};
+  Configurable<LabeledArray<double>> thresholdBDFScoreXicToPiKP{"thresholdBDFScoreXicToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Xic+ candidates"};
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -363,18 +367,91 @@ struct HfFilter { // Main struct for HF triggers
     return true;
   }
 
+  /// Basic selection of kaon candidates for charm candidates
+  /// \param track is a track
+  /// \return true if track passes all cuts
+  template <typename T>
+  bool isSelectedKaon4Charm3Prong(const T& track)
+  {
+    float NSigmaTPC = track.tpcNSigmaKa();
+    float NSigmaTOF = track.tofNSigmaKa();
+
+    if (std::abs(NSigmaTPC) > nsigmaTPCKaon3Prong) {
+      return false;
+    }
+    if (track.hasTOF() && std::abs(NSigmaTOF) > nsigmaTOFKaon3Prong) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Basic additional selection of D0 candidates
+  /// \param trackPos is the positive track
+  /// \param trackNeg is the negative track
+  /// \return BIT(0) for D0, BIT(1) for D0bar
+  template <typename T>
+  int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg)
+  {
+    int8_t retValue = 0;
+
+    float NSigmaPiTPCPos = trackPos.tpcNSigmaPi();
+    float NSigmaPiTOFPos = trackPos.tofNSigmaPi();
+    float NSigmaKaTPCPos = trackPos.tpcNSigmaKa();
+    float NSigmaKaTOFPos = trackPos.tofNSigmaKa();
+
+    float NSigmaPiTPCNeg = trackNeg.tpcNSigmaPi();
+    float NSigmaPiTOFNeg = trackNeg.tofNSigmaPi();
+    float NSigmaKaTPCNeg = trackNeg.tpcNSigmaKa();
+    float NSigmaKaTOFNeg = trackNeg.tofNSigmaKa();
+
+    if ((std::abs(NSigmaPiTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaPiTOFPos) <= nsigmaTPCPionKaonDzero)) && (std::abs(NSigmaKaTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaKaTOFNeg) <= nsigmaTPCPionKaonDzero))) {
+      retValue |= BIT(0);
+    }
+    if ((std::abs(NSigmaPiTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaPiTOFNeg) <= nsigmaTPCPionKaonDzero)) && (std::abs(NSigmaKaTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaKaTOFPos) <= nsigmaTPCPionKaonDzero))) {
+      retValue |= BIT(1);
+    }
+
+    return retValue;
+  }
+
+  /// Basic additional selection of D+ candidates
+  /// \param trackOppositeCharge is the opposite charge track momentum
+  /// \return BIT(0) for Kpipi
+  template <typename T>
+  int8_t isDplusPreselected(const T& trackOppositeCharge)
+  {
+    int8_t retValue = 0;
+
+    // check PID of opposite charge track
+    if (!isSelectedKaon4Charm3Prong(trackOppositeCharge)) {
+      return retValue;
+    }
+
+    retValue |= BIT(0);
+    return retValue;
+  }
+
   /// Basic additional selection of Ds candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
-  /// \param pTrackSameChargeFirst is the second same-charge track momentum
-  /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param pTrackSameChargeSecond is the second same-charge track momentum
+  /// \param pTrackOppositeCharge is the opposite charge track momentum
+  /// \param trackOppositeCharge is the opposite charge track
   /// \return BIT(0) for KKpi, BIT(1) for piKK
-  template <typename T>
-  int8_t isDsPreselected(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge)
+  template <typename P, typename T>
+  int8_t isDsPreselected(const P& pTrackSameChargeFirst, const P& pTrackSameChargeSecond, const P& pTrackOppositeCharge, const T& trackOppositeCharge)
   {
+    int8_t retValue = 0;
+
+    // check PID of opposite charge track
+    if (!isSelectedKaon4Charm3Prong(trackOppositeCharge)) {
+      return retValue;
+    }
+
+    // check delta-mass for phi resonance
     auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
     auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
 
-    int8_t retValue = 0;
     if (std::abs(invMassKKFirst - massPhi) < 0.02) {
       retValue |= BIT(0);
     }
@@ -386,17 +463,23 @@ struct HfFilter { // Main struct for HF triggers
   }
 
   /// Basic additional selection of Lc->pKpi and Xic->pKpi candidates
-  /// \param TrackSameChargeFirst is the first same-charge track
-  /// \param TrackSameChargeSecond is the second same-charge track
+  /// \param trackSameChargeFirst is the first same-charge track
+  /// \param trackSameChargeSecond is the second same-charge track
+  /// \param trackOppositeCharge is the opposite charge track
   /// \return BIT(0) for pKpi, BIT(1) for piKp
   template <typename T>
-  int8_t isCharmBaryonPreselected(const T& TrackSameChargeFirst, const T& TrackSameChargeSecond)
+  int8_t isCharmBaryonPreselected(const T& trackSameChargeFirst, const T& trackSameChargeSecond, const T& trackOppositeCharge)
   {
     int8_t retValue = 0;
-    if (isSelectedProton4CharmBaryons(TrackSameChargeFirst)) {
+    // check PID of opposite charge track
+    if (!isSelectedKaon4Charm3Prong(trackOppositeCharge)) {
+      return retValue;
+    }
+
+    if (isSelectedProton4CharmBaryons(trackSameChargeFirst)) {
       retValue |= BIT(0);
     }
-    if (isSelectedProton4CharmBaryons(TrackSameChargeSecond)) {
+    if (isSelectedProton4CharmBaryons(trackSameChargeSecond)) {
       retValue |= BIT(1);
     }
 
@@ -409,22 +492,26 @@ struct HfFilter { // Main struct for HF triggers
   /// \param ptD is the pt of the D0 meson candidate
   /// \return 1 for D0, 2 for D0bar, 3 for both
   template <typename T>
-  int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD)
+  int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, int8_t isSelected)
   {
-    auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
-    auto invMassD0bar = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
-
-    if (activateQA) {
-      hMassVsPtC[kD0]->Fill(ptD, invMassD0);
-      hMassVsPtC[kD0]->Fill(ptD, invMassD0bar);
-    }
-
     int8_t retValue = 0;
-    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty) {
-      retValue += 1;
+    if (TESTBIT(isSelected, 0)) {
+      auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
+      if (activateQA) {
+        hMassVsPtC[kD0]->Fill(ptD, invMassD0);
+      }
+      if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(0);
+      }
     }
-    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty) {
-      retValue += 2;
+    if (TESTBIT(isSelected, 1)) {
+      auto invMassD0bar = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
+      if (activateQA) {
+        hMassVsPtC[kD0]->Fill(ptD, invMassD0bar);
+      }
+      if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(1);
+      }
     }
 
     return retValue;
@@ -573,15 +660,17 @@ struct HfFilter { // Main struct for HF triggers
   using BigTracksMCPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::BigTracksMC>;
 
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
-  using BigTracksWithProtonPID = soa::Filtered<soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
+  using BigTracksPID = soa::Filtered<soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   void process(aod::Collision const& collision,
                aod::BCsWithTimestamps const&,
                HfTrackIndexProng2withColl const& cand2Prongs,
                HfTrackIndexProng3withColl const& cand3Prongs,
-               BigTracksWithProtonPID const& tracks)
+               BigTracksPID const& tracks)
   {
-    optimisationTreeCollisions(collision.globalIndex());
+    if (applyOptimisation) {
+      optimisationTreeCollisions(collision.globalIndex());
+    }
 
     if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && inputNamesML[kD0].size() == 0) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
@@ -622,12 +711,18 @@ struct HfFilter { // Main struct for HF triggers
     int n2Prongs{0}, n3Prongs{0};
 
     for (const auto& cand2Prong : cand2Prongs) {                                        // start loop over 2 prongs
-      if (!TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_prong2::DecayType::D0ToPiK)) { // check if it's a D0
+      if (!TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check if it's a D0
         continue;
       }
 
-      auto trackPos = cand2Prong.index0_as<BigTracksWithProtonPID>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<BigTracksWithProtonPID>(); // negative daughter
+      auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
+      auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
+
+      auto preselD0 = isDzeroPreselected(trackPos, trackNeg);
+      if (!preselD0) {
+        continue;
+      }
+
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
 
@@ -688,7 +783,7 @@ struct HfFilter { // Main struct for HF triggers
         optimisationTreeCharm(collision.globalIndex(), pdg::Code::kD0, pt2Prong, scores[0], scores[1], scores[2]);
       }
 
-      auto selD0 = isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong);
+      auto selD0 = isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong, preselD0);
 
       if (pt2Prong >= pTThreshold2Prong) {
         keepEvent[kHighPt2P] = true;
@@ -710,7 +805,7 @@ struct HfFilter { // Main struct for HF triggers
 
         if (!keepEvent[kBeauty3P] && isBeautyTagged) {
           int isTrackSelected = isSelectedTrackForBeauty(track, kBeauty3P);
-          if (isTrackSelected && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0))) {
+          if (isTrackSelected && ((TESTBIT(selD0, 0) && track.signed1Pt() < 0) || (TESTBIT(selD0, 1) && track.signed1Pt() > 0))) {
             auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
             auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
             auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
@@ -771,27 +866,30 @@ struct HfFilter { // Main struct for HF triggers
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
       std::array<int8_t, kNCharmParticles - 1> is3Prong = {
-        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi),
-        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi),
-        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi),
-        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::XicToPKPi)};
+        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi),
+        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi),
+        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::LcToPKPi),
+        TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::XicToPKPi)};
       if (!std::accumulate(is3Prong.begin(), is3Prong.end(), 0)) { // check if it's a D+, Ds+, Lc+ or Xic+
         continue;
       }
 
-      auto trackFirst = cand3Prong.index0_as<BigTracksWithProtonPID>();
-      auto trackSecond = cand3Prong.index1_as<BigTracksWithProtonPID>();
-      auto trackThird = cand3Prong.index2_as<BigTracksWithProtonPID>();
+      auto trackFirst = cand3Prong.prong0_as<BigTracksPID>();
+      auto trackSecond = cand3Prong.prong1_as<BigTracksPID>();
+      auto trackThird = cand3Prong.prong2_as<BigTracksPID>();
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
       std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
 
+      if (is3Prong[0]) { // D+ preselections
+        is3Prong[0] = isDplusPreselected(trackSecond);
+      }
       if (is3Prong[1]) { // Ds preselections
-        is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond);
+        is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond);
       }
       if (is3Prong[2] || is3Prong[3]) { // charm baryon preselections
-        auto presel = isCharmBaryonPreselected(trackFirst, trackThird);
+        auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond);
         if (is3Prong[2]) {
           is3Prong[2] = presel;
         }
@@ -879,7 +977,7 @@ struct HfFilter { // Main struct for HF triggers
       if (is3Prong[1]) {
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[1]);
         if (applyOptimisation) {
-          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kDs, pt3Prong, myscores[1][0], myscores[1][1], myscores[1][2]);
+          optimisationTreeCharm(collision.globalIndex(), pdg::Code::kDS, pt3Prong, myscores[1][0], myscores[1][1], myscores[1][2]);
         }
       }
       if (is3Prong[2]) {
@@ -914,7 +1012,7 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
 
-        int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDs, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
+        int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
 
         float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
@@ -995,8 +1093,8 @@ struct HfFilter { // Main struct for HF triggers
   {
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
 
-      auto trackPos = cand2Prong.index0_as<BigTracksMCPID>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<BigTracksMCPID>(); // negative daughter
+      auto trackPos = cand2Prong.prong0_as<BigTracksMCPID>(); // positive daughter
+      auto trackNeg = cand2Prong.prong1_as<BigTracksMCPID>(); // negative daughter
 
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
@@ -1029,9 +1127,9 @@ struct HfFilter { // Main struct for HF triggers
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
 
-      auto trackFirst = cand3Prong.index0_as<BigTracksMCPID>();  // first daughter
-      auto trackSecond = cand3Prong.index1_as<BigTracksMCPID>(); // second daughter
-      auto trackThird = cand3Prong.index2_as<BigTracksMCPID>();  // third daughter
+      auto trackFirst = cand3Prong.prong0_as<BigTracksMCPID>();  // first daughter
+      auto trackSecond = cand3Prong.prong1_as<BigTracksMCPID>(); // second daughter
+      auto trackThird = cand3Prong.prong2_as<BigTracksMCPID>();  // third daughter
       auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
@@ -1054,7 +1152,7 @@ struct HfFilter { // Main struct for HF triggers
 
       float deltaMassKKFirst = -1.f;
       float deltaMassKKSecond = -1.f;
-      if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToKKPi)) {
+      if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi)) {
         deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massK, massK}) - massPhi);
         deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massK, massK}) - massPhi);
       }

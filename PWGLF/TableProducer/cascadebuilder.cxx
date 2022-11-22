@@ -77,6 +77,11 @@ struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  HistogramRegistry registry{
+    "registry",
+    {{"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
+  };
+
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
   OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 20, 0, 20)};
 
@@ -364,9 +369,12 @@ struct cascadeBuilder {
         int nCand2 = 0;
         try {
           nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+          registry.fill(HIST("hCatchedExceptions"), 0.5f);
         } catch (...) {
+          registry.fill(HIST("hCatchedExceptions"), 1.5f);
           LOG(error) << "Exception caught in fitterCasc.process";
-        };
+        }
+
         if (nCand2 == 0) {
           continue;
         }
@@ -454,6 +462,7 @@ struct cascadeLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hXiMinus", "hXiMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hXiPlus", "hXiPlus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hOmegaMinus", "hOmegaMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},

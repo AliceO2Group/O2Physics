@@ -18,27 +18,27 @@
 // #include "DetectorsVertexing/DCAFitterN.h"
 // #include "Common/Core/trackUtilities.h"
 // #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
 // using namespace o2::aod::hf_cand;
-// using namespace o2::aod::hf_cand_prong2;
+// using namespace o2::aod::hf_cand_2prong;
 
 /// Reconstruction of D* decay candidates
 struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
+
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
 
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtPi{TH1F("hPtPi", "#pi candidates;#it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0Prong0{TH1F("hPtD0Prong0", "D^{0} candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0Prong1{TH1F("hPtD0Prong1", "D^{0} candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0{TH1F("hPtD0", "D^{0} candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
 
   void process(aod::Collisions const&,
                aod::HfDstars const& rowsTrackIndexDstar,
@@ -47,10 +47,10 @@ struct HfCandidateCreatorDstar {
   {
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
-      auto trackPi = rowTrackIndexDstar.index0_as<aod::BigTracks>();
-      auto prongD0 = rowTrackIndexDstar.indexD0_as<aod::Hf2Prongs>();
-      auto trackD0Prong0 = prongD0.index0_as<aod::BigTracks>();
-      auto trackD0Prong1 = prongD0.index1_as<aod::BigTracks>();
+      auto trackPi = rowTrackIndexDstar.prong0_as<aod::BigTracks>();
+      auto prongD0 = rowTrackIndexDstar.prongD0_as<aod::Hf2Prongs>();
+      auto trackD0Prong0 = prongD0.prong0_as<aod::BigTracks>();
+      auto trackD0Prong1 = prongD0.prong1_as<aod::BigTracks>();
       // auto collisionPiId = trackPi.collisionId();
       // auto collisionD0Id = trackD0Prong0.collisionId();
 

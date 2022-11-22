@@ -59,7 +59,7 @@
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
 #include "TDatabasePDG.h"
-#include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -119,6 +119,7 @@ struct lambdakzeroBuilder {
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
     },
   };
@@ -312,7 +313,15 @@ struct lambdakzeroBuilder {
 
       //---/---/---/
       // Move close to minima
-      int nCand = fitter.process(pTrackCopy, nTrackCopy);
+      int nCand = 0;
+      try {
+        nCand = fitter.process(pTrackCopy, nTrackCopy);
+        registry.fill(HIST("hCatchedExceptions"), 0.5f);
+      } catch (...) {
+        registry.fill(HIST("hCatchedExceptions"), 1.5f);
+        LOG(error) << "Exception caught in fitter.process";
+      }
+
       if (nCand == 0) {
         v0dataLink(-1);
         continue;
