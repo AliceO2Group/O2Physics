@@ -514,6 +514,12 @@ class TrackSelectorPID
     mPtBayesMax = ptMax;
   }
 
+  /// Set cut above which a track should be accepted.
+  void setCutBayes(float cut)
+  {
+    mCutBayes = cut;
+  }
+
   /// Checks if track is OK for Bayesian PID.
   /// \param track  track
   /// \return true if track is OK for Bayesian PID
@@ -532,6 +538,46 @@ class TrackSelectorPID
     return track.bayesID() == mSpecies;
   }
 
+  /// Bayesian probability for particle type.
+  template <typename T>
+  bool isSelectedTrackBayesProbPID(const T& track)
+  {
+    if (mCutBayes < 0.) { // switch off with negative values
+      return true;
+    }
+
+    // Get probability for a given particle hypothesis.
+    double prob = 0.;
+    switch (mPdg) {
+      case kElectron: {
+        prob = track.bayesEl();
+        break;
+      }
+      case kMuonMinus: {
+        prob = track.bayesMu();
+        break;
+      }
+      case kPiPlus: {
+        prob = track.bayesPi();
+        break;
+      }
+      case kKPlus: {
+        prob = track.bayesKa();
+        break;
+      }
+      case kProton: {
+        prob = track.bayesPr();
+        break;
+      }
+      default: {
+        LOGF(error, "ERROR: Bayes PID not implemented for PDG %d", mPdg);
+        assert(false);
+      }
+    }
+
+    return mCutBayes <= prob;
+  }
+
   /// Returns status of Bayesian PID selection for a given track.
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
@@ -540,6 +586,23 @@ class TrackSelectorPID
   {
     if (isValidTrackBayesPID(track)) {
       if (isSelectedTrackBayesPID(track)) {
+        return Status::PIDAccepted; // accepted
+      } else {
+        return Status::PIDRejected; // rejected
+      }
+    } else {
+      return Status::PIDNotApplicable; // PID not applicable
+    }
+  }
+
+  /// Returns status of Bayesian PID selection for a given track.
+  /// \param track  track
+  /// \return Bayesian selection status (see TrackSelectorPID::Status)
+  template <typename T>
+  int getStatusTrackBayesProbPID(const T& track)
+  {
+    if (isValidTrackBayesPID(track)) {
+      if (isSelectedTrackBayesProbPID(track)) {
         return Status::PIDAccepted; // accepted
       } else {
         return Status::PIDRejected; // rejected
@@ -580,6 +643,7 @@ class TrackSelectorPID
   // Bayesian
   float mPtBayesMin = 0.;   ///< minimum pT for Bayesian PID [GeV/c]
   float mPtBayesMax = 100.; ///< maximum pT for Bayesian PID [GeV/c]
+  float mCutBayes = -1.;    ///< minium value for Bayesian probabitly for given particle type [in %]
 };
 
 #endif // O2_ANALYSIS_TRACKSELECTORPID_H_
