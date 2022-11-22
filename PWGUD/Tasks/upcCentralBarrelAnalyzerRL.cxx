@@ -84,7 +84,7 @@ struct CentralBarrelAnalyzerRL {
   Configurable<int> applySingleTrackCut{"applySingleTrackCut", 0, {"Apply selection n on track, applyTrackCuts must be at maximum for full usage; default it no cut."}};
 
   // declare filters
-// Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
+  // Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
 
   // declare shortcuts
   using FullTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
