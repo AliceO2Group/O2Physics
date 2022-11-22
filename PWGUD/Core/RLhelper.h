@@ -93,9 +93,8 @@ int testPIDhypothesis(T trackPIDinfo)
     // do PID using TOF only
   } else if (trackPIDinfo.hasTOF()) {
     return enumChoiceTOF;
-  // give warning and return non-sense
-  }
-  else {
+    // give warning and return non-sense
+  } else {
     LOGF(warning, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
     return -1;
   }
@@ -488,8 +487,8 @@ void printCollisionTracksData(Ts const& tracks, int setOfCuts)
     if (track.has_udMcParticle()) {
       printTrackParticleData(track);
     } else {
-			countNoMCparticle++;
-		}
+      countNoMCparticle++;
+    }
   }
   if (countNoMCparticle > 0)
     LOGF(warning, "This collision has %d tracks without associated mc particle", countNoMCparticle);

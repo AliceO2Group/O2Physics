@@ -237,8 +237,8 @@ struct CentralBarrelAnalyzerRL {
                 isTwinParticles = true;
               }
             } else {
-							LOGP(warning, "!!!Strange behaviour in the loop, check!!!");
-						}
+              LOGP(warning, "!!!Strange behaviour in the loop, check!!!");
+            }
           }
         }
       }
