@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 // using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 // Iterate on muon using the collision iterator in the dq-analysis style
 struct hfmuFromCharmBeautySeparation {
-  HistogramRegistry spectra{"spectraForwardTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
   {
@@ -43,13 +43,13 @@ struct hfmuFromCharmBeautySeparation {
     AxisSpec chi2MCHMIDAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MID"};
 
     HistogramConfigSpec HistVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, etaRecoAxis, chi2MCHMFTAxis, chi2GlobalAxis, chi2MCHMIDAxis, rAbsAxis, pdcaAxis}});
-    spectra.add("hBasicDist", "", HistVariable);
+    registry.add("hBasicDist", "", HistVariable);
     HistogramConfigSpec HistTrackType({HistType::kTH1F, {trackTypeAxis}});
-    spectra.add("hTrackType", "", HistTrackType);
+    registry.add("hTrackType", "", HistTrackType);
 
-    spectra.add("hDcaXMuonType0", " dca x", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    spectra.add("hDcaYMuonType0", " dca y", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    spectra.add("hDcaXYMuonType0", " dca xy", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
+    registry.add("hDcaXMuonType0", " dca x", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+    registry.add("hDcaYMuonType0", " dca y", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+    registry.add("hDcaXYMuonType0", " dca xy", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
   }
 
   void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
@@ -65,7 +65,7 @@ struct hfmuFromCharmBeautySeparation {
     auto pDca = 0.;
 
     for (auto const& muon : tracks) {
-      spectra.fill(HIST("hTrackType"), muon.trackType());
+      registry.fill(HIST("hTrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {
 
@@ -79,10 +79,10 @@ struct hfmuFromCharmBeautySeparation {
           rAbs = muon.rAtAbsorberEnd();
           pDca = muon.pDca();
 
-          spectra.fill(HIST("hBasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2Global, chi2MatchMCHMID, rAbs, pDca);
-          spectra.fill(HIST("hDcaXMuonType0"), dcax);
-          spectra.fill(HIST("hDcaYMuonType0"), dcay);
-          spectra.fill(HIST("hDcaXYMuonType0"), std::sqrt(dcax * dcax + dcay * dcay));
+          registry.fill(HIST("hBasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2Global, chi2MatchMCHMID, rAbs, pDca);
+          registry.fill(HIST("hDcaXMuonType0"), dcax);
+          registry.fill(HIST("hDcaYMuonType0"), dcay);
+          registry.fill(HIST("hDcaXYMuonType0"), std::sqrt(dcax * dcax + dcay * dcay));
         }
       }
     }
