@@ -13,8 +13,11 @@
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  10.11.2022
 
-#ifndef ALISW_RLHELPER_H
-#define ALISW_RLHELPER_H
+#ifndef PWGUD_CORE_RLHELPER_H_
+#define PWGUD_CORE_RLHELPER_H_
+
+#include <algorithm>
+#include <string>
 
 #include "PWGUD/DataModel/UDTables.h"
 
@@ -51,47 +54,59 @@ int testPIDhypothesis(T trackPIDinfo)
   int enumChoiceTOF = std::distance(std::begin(nSigmaTOF), std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
 
   // do PID using TPC+TOF
-  if (trackPIDinfo.hasTPC() && trackPIDinfo.hasTOF()) {
-    if (enumChoiceTPC == P_ELECTRON || enumChoiceTPC == P_MUON || enumChoiceTPC == P_PION) {
-      if (enumChoiceTOF == P_KAON)
-        return P_KAON; // probably kaon
-      else if (enumChoiceTOF == P_PROTON)
-        return P_PROTON; // probably proton
+  if (trackPIDinfo.hasTPC() && trackPIDinfo.hasTOF()){
+    if (enumChoiceTPC == P_ELECTRON || enumChoiceTPC == P_MUON || enumChoiceTPC == P_PION){
+      if (enumChoiceTOF == P_KAON  ) {
+				return P_KAON; // probably kaon
+			}
+      else if (enumChoiceTOF == P_PROTON) {
+				return P_PROTON; // probably proton
+			}
       else {
-        if (enumChoiceTPC == P_ELECTRON)
-          return P_ELECTRON; // probably electron
-        else if (enumChoiceTPC == P_MUON)
-          return P_MUON; // probably muon
-        else
-          return P_PION; // probably pion
+        if (enumChoiceTPC == P_ELECTRON) {
+					return P_ELECTRON; // probably electron
+				}
+        else if (enumChoiceTPC == P_MUON) {
+					return P_MUON; // probably muon
+				}
+        else {
+					return P_PION; // probably pion
+				}
       }
-    } else {
-      if (enumChoiceTOF == P_KAON)
-        return P_KAON; // probably kaon
-      else if (enumChoiceTOF == P_PROTON)
-        return P_PROTON; // probably proton
+    }
+    else {
+      if (enumChoiceTOF == P_KAON  ) {
+				return P_KAON; // probably kaon
+			}
+      else if (enumChoiceTOF == P_PROTON) {
+				return P_PROTON; // probably proton
+			}
       else {
-        if (enumChoiceTPCpick == P_ELECTRON)
-          return P_ELECTRON; // probably misidentified electron
-        else if (enumChoiceTPCpick == P_MUON)
-          return P_MUON; // probably misidentified muon
-        else if (enumChoiceTPCpick == P_PION)
-          return P_PION; // probably misidentified pion
+        if (enumChoiceTPCpick == P_ELECTRON) {
+					return P_ELECTRON; // probably misidentified electron
+				}
+        else if (enumChoiceTPCpick == P_MUON) {
+					return P_MUON; // probably misidentified muon
+				}
+        else {
+					return P_PION; // probably misidentified pion
+				}
       }
     }
   }
   // do PID using TPC only
-  else if (trackPIDinfo.hasTPC())
-    return enumChoiceTPC;
+  else if (trackPIDinfo.hasTPC()) {
+		return enumChoiceTPC;
+	}
   // do PID using TOF only
-  else if (trackPIDinfo.hasTOF())
-    return enumChoiceTOF;
+  else if (trackPIDinfo.hasTOF()) {
+		return enumChoiceTOF;
+	}
   // give warning and return non-sense
   else {
     LOGF(warning, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
     return -1;
   }
-  return -1;
 }
 
 float momentum(float px, float py, float pz)
@@ -502,4 +517,4 @@ void printLargeMessage(std::string info)
   LOGF(info, "################################### %s ###################################", info);
 }
 
-#endif //ALISW_RLHELPER_H
+#endif //PWGUD_CORE_RLHELPER_H_
