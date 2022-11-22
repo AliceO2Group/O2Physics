@@ -37,10 +37,10 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
 // for comparison because of the NaN
-#include <math.h>
+#include "math.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
@@ -269,7 +269,8 @@ struct femtoWorldProducerTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // changed long to float because of the MegaLinter
+    float now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
