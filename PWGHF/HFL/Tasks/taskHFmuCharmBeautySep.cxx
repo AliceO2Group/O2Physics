@@ -9,22 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \Task to estimate HF->mu in the forward direction and use the DCA observable to separate b-> mu, c-> mu.
-/// \Command to run on terminal : o2-analysis-hfmu-charm-beauty-separation | o2-analysis-fwdtrackextension --aod-file AO2D.root
-/// \Author : Shreyasi Acharya <shreyasi.acharya@cern.ch>, LPC, France
+/// \file taskHFmuCharmBeautySep.cxx. This workflow requires o2-analysis-fwdtrackextension as a dependency.
+/// \brief Task to estimate HF->mu in the forward direction and use DCA observable to separate b-> mu, c-> mu.
+/// \author Shreyasi Acharya <shreyasi.acharya@cern.ch>, LPC, France
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "TDatabasePDG.h"
-#include "PWGDQ/Core/VarManager.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -34,10 +27,10 @@ using namespace o2::framework::expressions;
 
 // using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 // Iterate on muon using the collision iterator in the dq-analysis style
-struct IterateFwdTracksMuons {
-  HistogramRegistry spectra{"ForwardTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+struct hfmuFromCharmBeautySeparation {
+  HistogramRegistry spectra{"spectraForwardTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-    void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext&)
   {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
@@ -54,11 +47,12 @@ struct IterateFwdTracksMuons {
     HistogramConfigSpec HistTrackType({HistType::kTH1F, {trackTypeAxis}});
     spectra.add("hTrackType", "", HistTrackType);
 
-    spectra.add("hDCAxMuonType0", " dcax", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    spectra.add("hDCAyMuonType0", " dcay", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    spectra.add("hDCAxyMuonType0", " dcaxy", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
+    spectra.add("hDcaXMuonType0", " dca x", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+    spectra.add("hDcaYMuonType0", " dca y", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+    spectra.add("hDcaXYMuonType0", " dca xy", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
   }
-  void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& muons)
+
+  void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
   {
     auto pt = 0.;
     auto dcax = 0.;
@@ -70,7 +64,7 @@ struct IterateFwdTracksMuons {
     auto rAbs = 0.;
     auto pDca = 0.;
 
-    for (auto& muon : muons) {
+    for (auto const& muon : tracks) {
       spectra.fill(HIST("hTrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {
@@ -86,9 +80,9 @@ struct IterateFwdTracksMuons {
           pDca = muon.pDca();
 
           spectra.fill(HIST("hBasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2Global, chi2MatchMCHMID, rAbs, pDca);
-          spectra.fill(HIST("hDCAxMuonType0"), dcax);
-          spectra.fill(HIST("hDCAyMuonType0"), dcay);
-          spectra.fill(HIST("hDCAxyMuonType0"), std::sqrt(dcax * dcax + dcay * dcay));
+          spectra.fill(HIST("hDcaXMuonType0"), dcax);
+          spectra.fill(HIST("hDcaYMuonType0"), dcay);
+          spectra.fill(HIST("hDcaXYMuonType0"), std::sqrt(dcax * dcax + dcay * dcay));
         }
       }
     }
@@ -98,6 +92,6 @@ struct IterateFwdTracksMuons {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<IterateFwdTracksMuons>(cfgc),
+    adaptAnalysisTask<hfmuFromCharmBeautySeparation>(cfgc),
   };
 }
