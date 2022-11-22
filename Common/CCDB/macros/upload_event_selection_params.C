@@ -237,6 +237,7 @@ void upload_event_selection_params()
   runFirst[n] = 295581;
   runLast[n] = 297624;
 
+  n++;
   map<string, string> metadata, metadataRCT, headersFirst, headersLast;
   for (int i = 0; i < n; i++) {
     printf("%s ", period[i].c_str());

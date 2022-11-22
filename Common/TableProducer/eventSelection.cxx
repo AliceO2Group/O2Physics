@@ -19,7 +19,7 @@ using namespace o2::framework;
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
@@ -454,6 +454,12 @@ struct EventSelectionTask {
       maxBC += 100;
     }
 
+    // quick fix to account for reduction of TVX efficiency at high n contibutors in LHC22s
+    if (run >= 529397 && run <= 529418 && nTRDtracks == 0 && nTOFtracks > 0) {
+      minBC -= 100;
+      maxBC += 100;
+    }
+
     // temporary workaround for runs without proper TOF calibration
     if (run > 520297 && run < 523306 && nTOFtracks > 0) {
       minBC = meanBC - deltaBC - 2;
@@ -469,12 +475,48 @@ struct EventSelectionTask {
         minBC = meanBC - 15;
         maxBC = meanBC - 15;
       }
+      // collisions with TRD tracks shifted by -1 bc in LHC22s
+      if (run >= 529397 && run <= 529418) {
+        minBC = meanBC - 1;
+        maxBC = meanBC + 1;
+      }
     }
 
     int forwardMoveCount = 0, backwardMoveCount = 0;
+    int forwardMoveCountTvx = 0, backwardMoveCountTvx = 0;
     uint64_t backwardBC = minBC - 1;
     uint64_t forwardBC = maxBC + 1;
-    // search in forward direction starting from the current bc
+    uint64_t backwardTvxBC = minBC - 1;
+    uint64_t forwardTvxBC = maxBC + 1;
+
+    LOGP(debug, "meanBC={} minBC={} maxBC={} collisionTimeRes={}", meanBC, minBC, maxBC, col.collisionTimeRes());
+
+    // search TVX in forward direction starting from the current bc
+    while (bc != bcs.end() && bc.globalBC() <= maxBC && bc.globalBC() >= minBC) {
+      if (bc.selection()[kIsTriggerTVX]) {
+        forwardTvxBC = bc.globalBC();
+        break;
+      }
+      bc++;
+      forwardMoveCountTvx++;
+    }
+    bc.moveByIndex(-forwardMoveCountTvx);
+
+    // search TVX in backward direction
+    while (bc.globalIndex() > 0 && bc.globalBC() >= minBC) {
+      bc--;
+      backwardMoveCountTvx--;
+      if (bc.globalBC() > maxBC || bc.globalBC() < minBC) {
+        continue;
+      }
+      if (bc.selection()[kIsTriggerTVX]) {
+        backwardTvxBC = bc.globalBC();
+        break;
+      }
+    }
+    bc.moveByIndex(-backwardMoveCountTvx);
+
+    // search FT0-OR in forward direction starting from the current bc
     while (bc != bcs.end() && bc.globalBC() <= maxBC && bc.globalBC() >= minBC) {
       if (bc.selection()[kIsBBT0A] || bc.selection()[kIsBBT0C]) {
         forwardBC = bc.globalBC();
@@ -485,7 +527,7 @@ struct EventSelectionTask {
     }
     bc.moveByIndex(-forwardMoveCount);
 
-    // search in backward direction
+    // search FT0-OR in backward direction
     while (bc.globalIndex() > 0 && bc.globalBC() >= minBC) {
       bc--;
       backwardMoveCount--;
@@ -499,18 +541,32 @@ struct EventSelectionTask {
     }
     bc.moveByIndex(-backwardMoveCount);
 
-    if (forwardBC <= maxBC && backwardBC >= minBC) {
-      // if FT0 is found on both sides from meanBC, move to closest one
+    // first check for found TVX signal. If TVX is not found, search for FT0-OR
+    if (forwardTvxBC <= maxBC && backwardTvxBC >= minBC) {
+      // if TVX is found on both sides from meanBC, move to closest one
+      if (labs(int64_t(forwardTvxBC) - meanBC) < labs(int64_t(backwardTvxBC) - meanBC)) {
+        bc.moveByIndex(forwardMoveCountTvx);
+      } else {
+        bc.moveByIndex(backwardMoveCountTvx);
+      }
+    } else if (forwardTvxBC <= maxBC) {
+      // if TVX is found only in forward, move forward
+      bc.moveByIndex(forwardMoveCountTvx);
+    } else if (backwardTvxBC >= minBC) {
+      // if TVX is found only in backward, move backward
+      bc.moveByIndex(backwardMoveCountTvx);
+    } else if (forwardBC <= maxBC && backwardBC >= minBC) {
+      // if FT0-OR is found on both sides from meanBC, move to closest one
       if (labs(int64_t(forwardBC) - meanBC) < labs(int64_t(backwardBC) - meanBC)) {
         bc.moveByIndex(forwardMoveCount);
       } else {
         bc.moveByIndex(backwardMoveCount);
       }
     } else if (forwardBC <= maxBC) {
-      // if FT0 is found only in forward, move forward
+      // if FT0-OR is found only in forward, move forward
       bc.moveByIndex(forwardMoveCount);
     } else if (backwardBC >= minBC) {
-      // if FT0 is found only in backward, move backward
+      // if FT0-OR is found only in backward, move backward
       bc.moveByIndex(backwardMoveCount);
     }
 
@@ -519,7 +575,7 @@ struct EventSelectionTask {
     int32_t foundFV0 = bc.foundFV0Id();
     int32_t foundFDD = bc.foundFDDId();
 
-    LOGP(debug, "foundFT0 = {}", foundFT0);
+    LOGP(debug, "foundFT0 = {} globalBC = {}", foundFT0, bc.globalBC());
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
