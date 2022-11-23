@@ -18,8 +18,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
-#ifndef O2_ANALYSIS_LFNUCLEITABLES_H_
-#define O2_ANALYSIS_LFNUCLEITABLES_H_
+#ifndef PWGLF_DATAMODEL_LFNUCLEITABLES_H_
+#define PWGLF_DATAMODEL_LFNUCLEITABLES_H_
 
 using namespace o2;
 
