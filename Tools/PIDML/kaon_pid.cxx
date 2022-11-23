@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// This task produces invariant mass vs. momentum and dEdX in TPC vs. momentum 
+/// This task produces invariant mass vs. momentum and dEdX in TPC vs. momentum
 /// for Kaons using ML PID from the PID ML ONNX Model.
 
 #include "Framework/AnalysisTask.h"
@@ -36,13 +36,13 @@ using MyCollisions = soa::Join<aod::Collisions,
                                aod::EvSels,
                                aod::Mults>;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtra, aod::pidTOFbeta,
-                            aod::TOFSignal, aod::TracksDCA>;
+                           aod::TOFSignal, aod::TracksDCA>;
 using MyCollision = MyCollisions::iterator;
 using MyTrack = MyTracks::iterator;
-}
+} // namespace o2::aod
 
 struct kaon_pid {
-  PidONNXModel *pidModel; //creates a pointer to a new instance 'pidmodel'.  
+  PidONNXModel* pidModel; // creates a pointer to a new instance 'pidmodel'.
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> ConfZvtxCut{"ConfZvtxCut", 10, "Z vtx cut"};
@@ -60,7 +60,6 @@ struct kaon_pid {
   Configurable<uint32_t> cfgTimestamp{"timestamp", -8.0, "Fixed timestamp"};
   Configurable<bool> cfgUseCCDB{"useCCDB", false, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
 
-
   o2::ccdb::CcdbApi ccdbApi;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < ConfZvtxCut);
@@ -72,7 +71,6 @@ struct kaon_pid {
 
   Partition<o2::aod::MyTracks> positive = (nabs(aod::track::eta) < ConfEtaCut) && (aod::track::pt > ConfMinPtCut) && (aod::track::pt < ConfMaxPtCut) && (aod::track::signed1Pt > ConfChargeCut);
   Partition<o2::aod::MyTracks> negative = (nabs(aod::track::eta) < ConfEtaCut) && (aod::track::pt > ConfMinPtCut) && (aod::track::pt < ConfMaxPtCut) && (aod::track::signed1Pt < ConfChargeCut);
-  
 
   void init(o2::framework::InitContext&)
   {
@@ -81,9 +79,9 @@ struct kaon_pid {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     if (cfgUseCCDB) {
-	    ccdbApi.init(cfgCCDBURL); //Initializes ccdbApi when cfgUseCCDB is set to 'true'
+      ccdbApi.init(cfgCCDBURL); // Initializes ccdbApi when cfgUseCCDB is set to 'true'
     }
-   pidModel = new PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, cfgTimestamp.value, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+    pidModel = new PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, cfgTimestamp.value, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
 
     histos.add("hChargePos", ";z;", kTH1F, {{3, -1.5, 1.5}});
     histos.add("hChargeNeg", ";z;", kTH1F, {{3, -1.5, 1.5}});
@@ -99,34 +97,34 @@ struct kaon_pid {
 
     for (auto track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
-      if (pidModel->applyModelBoolean(track)){
-          histos.fill(HIST("hPvsdEdxKaon"), track.p(), track.tpcSignal());
-        }
+      if (pidModel->applyModelBoolean(track)) {
+        histos.fill(HIST("hPvsdEdxKaon"), track.p(), track.tpcSignal());
+      }
     }
 
     for (auto track : groupNegative) {
       histos.fill(HIST("hChargeNeg"), track.sign());
       if (pidModel->applyModelBoolean(track)) {
-          histos.fill(HIST("hPvsdEdxKaon"), track.p(), track.tpcSignal());
-        }
+        histos.fill(HIST("hPvsdEdxKaon"), track.p(), track.tpcSignal());
+      }
     }
 
     for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPositive, groupNegative))) {
-	 if (!(pidModel->applyModelBoolean(pos))) {
-         continue;
-       } else if (!(pidModel->applyModelBoolean(neg))) {
-         continue;
+      if (!(pidModel->applyModelBoolean(pos))) {
+        continue;
+      } else if (!(pidModel->applyModelBoolean(neg))) {
+        continue;
       }
-        TLorentzVector part1Vec;
-        TLorentzVector part2Vec;
-        float mMassOne = TDatabasePDG::Instance()->GetParticle(cfgPid.value)->Mass();
-        float mMassTwo = TDatabasePDG::Instance()->GetParticle(cfgPid.value)->Mass();
+      TLorentzVector part1Vec;
+      TLorentzVector part2Vec;
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(cfgPid.value)->Mass();
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(cfgPid.value)->Mass();
 
-        part1Vec.SetPtEtaPhiM(pos.pt(), pos.eta(), pos.phi(), mMassOne);
-        part2Vec.SetPtEtaPhiM(neg.pt(), neg.eta(), neg.phi(), mMassTwo);
+      part1Vec.SetPtEtaPhiM(pos.pt(), pos.eta(), pos.phi(), mMassOne);
+      part2Vec.SetPtEtaPhiM(neg.pt(), neg.eta(), neg.phi(), mMassTwo);
 
-        TLorentzVector sumVec(part1Vec);
-        sumVec += part2Vec;
+      TLorentzVector sumVec(part1Vec);
+      sumVec += part2Vec;
 
       histos.fill(HIST("hInvariantMass"), sumVec.M());
     }
