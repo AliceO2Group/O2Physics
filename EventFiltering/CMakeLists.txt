@@ -26,14 +26,6 @@ o2physics_add_dpl_workflow(nuclei-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_library(DGCutparHolder
-                      SOURCES PWGUD/DGCutparHolder.cxx
-                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
-
-o2physics_target_root_dictionary(DGCutparHolder
-                                 HEADERS PWGUD/DGCutparHolder.h
-                                 LINKDEF PWGUD/DGCutparHolderLinkDef.h)
-
 o2physics_add_dpl_workflow(diffraction-filter
                            SOURCES PWGUD/diffractionFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
