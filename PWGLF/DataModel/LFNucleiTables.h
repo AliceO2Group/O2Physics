@@ -130,4 +130,4 @@ DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   full::ProducedByGenerator);
 
 } // namespace o2::aod
-#endif
+#endif // PWGLF_DATAMODEL_LFNUCLEITABLES_H_
