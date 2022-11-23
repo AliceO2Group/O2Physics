@@ -15,13 +15,13 @@
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>, IIT Indore
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,20 +37,20 @@ using namespace o2::constants::math;
 ///
 double getDeltaPhi(double phiD, double phiDbar)
 {
-  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PI / 2.);
+  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
+const int nPtBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::nBinsPt;
+const double efficiencyDmesonDefault[nPtBinsMassAndEfficiency] = {};
+auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nPtBinsMassAndEfficiency};
 
 // histogram binning definition
-const int massAxisBins = 120;
+const int massAxisNBins = 120;
 const double massAxisMin = 1.5848;
 const double massAxisMax = 2.1848;
-const int phiAxisBins = 32;
+const int phiAxisNBins = 32;
 const double phiAxisMin = 0.;
-const double phiAxisMax = 2. * o2::constants::math::PI;
+const double phiAxisMax = o2::constants::math::TwoPI;
 const int yAxisBins = 100;
 const double yAxisMin = -5.;
 const double yAxisMax = 5.;
@@ -66,6 +66,25 @@ struct HfCorrelatorD0Hadrons {
   Produces<aod::DHadronPair> entryD0HadronPair;
   Produces<aod::DHadronRecoInfo> entryD0HadronRecoInfo;
 
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> etaTrackMax{"etaTrackMax", 4., "max. eta of tracks"};
+  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", 0.0025, "max. DCAxy of tracks"};
+  Configurable<double> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz of tracks"};
+  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT"};
+  Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
+  Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D0 meson"};
+  Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<double> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
+
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMC = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+
   HistogramRegistry registry{
     "registry",
     // NOTE: use hMassD0 for trigger normalisation (S*0.955), and hMass2DCorrelationPairs (in final task) for 2D-sideband-subtraction purposes
@@ -74,7 +93,7 @@ struct HfCorrelatorD0Hadrons {
      {"hPtProng1", "D0,D0bar candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hSelectionStatus", "D0,D0bar candidates;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
      {"hEta", "D0,D0bar candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
+     {"hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
      {"hY", "D0,D0bar candidates;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
@@ -83,66 +102,54 @@ struct HfCorrelatorD0Hadrons {
      {"hPtProng1Rec", "D0,D0bar candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hSelectionStatusRec", "D0,D0bar candidates - MC reco;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
      {"hEtaRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhiRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
+     {"hPhiRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
      {"hYRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hEvtCountGen", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
      {"hPtCandGen", "D0,D0bar particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hEtaGen", "D0,D0bar particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhiGen", "D0,D0bar particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
+     {"hPhiGen", "D0,D0bar particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
      {"hYGen", "D0,D0bar candidates - MC gen;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hTrackCounter", "soft pion counter -  Data", {HistType::kTH1F, {{5, 0., 5.}}}},
      {"hTrackCounterRec", "soft pion counter - MC rec", {HistType::kTH1F, {{5, 0., 5.}}}},
      {"hTrackCounterGen", "soft pion counter - MC gen", {HistType::kTH1F, {{5, 0., 5.}}}}}};
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> cutTrackEtaMax{"cutTrackEtaMax", 4., "max. eta of tracks"};
-  Configurable<double> cutDCAxyMax{"cutDCAxyMax", 0.0025, "max. DCAxy of tracks"};
-  Configurable<double> cutDCAzMax{"cutDCAzMax", 0.0025, "max. DCAz of tracks"};
-  Configurable<double> cutPtCandMin{"cutPtCandMin", -1., "min. cand. pT"};
-  Configurable<double> cutPtTrackMin{"cutPtTrackMin", -1., "min. track pT"};
-  Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
-  Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
-  Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-  Configurable<double> softPionCut{"softPionCut", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
-
+  
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)bins;
-    registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMass1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
-    registry.add("hMassD01D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
-    registry.add("hMassD0bar1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
-
-    registry.add("hMassD0RecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-
-    registry.add("hMassD0RecRef", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0RecBg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0barRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0barRecRef", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCountD0triggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});
+    registry.add("hMassD01D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});
+    registry.add("hMassD0bar1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});
+// mass histogram for D0 signal only
+    registry.add("hMassD0RecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+// mass histogram for D0 Reflection candidates only
+    registry.add("hMassD0RecRef", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+// mass histogram for D0 background candidates only
+    registry.add("hMassD0RecBg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+// mass histogram for D0bar signal only
+    registry.add("hMassD0barRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+// mass histogram for D0bar Reflection candidates only
+    registry.add("hMassD0barRecRef", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+// mass histogram for D0bar background candidates only
+    registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // =============================================================================  Process starts for Data ==================================================================================
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (std::abs(track.dcaXY()) > cutDCAxyMax || std::abs(track.dcaZ()) > cutDCAzMax) {
+        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
         }
         nTracks++;
@@ -157,10 +164,10 @@ struct HfCorrelatorD0Hadrons {
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
 
     for (auto const& candidate1 : selectedD0CandidatesGrouped) {
-      if (cutYCandMax >= 0. && std::abs(yD0(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
       // check decay channel flag for candidate1
@@ -174,7 +181,7 @@ struct HfCorrelatorD0Hadrons {
 
       // ========================== trigger efficiency ================================
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
+      if (applyEfficiency) {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
       }
       // ========================== Fill mass histo  ================================
@@ -220,14 +227,14 @@ struct HfCorrelatorD0Hadrons {
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
 
         if (candidate1.isSelD0() >= selectionFlagD0) {
-          if ((std::abs(invMassDstar1 - invMassD0ToPiK(candidate1)) - softPiMass) < softPionCut) {
+          if ((std::abs(invMassDstar1 - invMassD0ToPiK(candidate1)) - softPiMass) < ptSoftPionMax) {
             isSoftpiD0 = true;
             continue;
           }
         }
 
         if (candidate1.isSelD0bar() >= selectionFlagD0bar) {
-          if ((std::abs(invMassDstar2 - invMassD0barToKPi(candidate1)) - softPiMass) < softPionCut) {
+          if ((std::abs(invMassDstar2 - invMassD0barToKPi(candidate1)) - softPiMass) < ptSoftPionMax) {
             isSoftpiD0bar = true;
             continue;
           }
@@ -258,17 +265,16 @@ struct HfCorrelatorD0Hadrons {
   // =============================================================================  Process starts for MCRec ==================================================================================
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMC = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
   {
 
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (std::abs(track.dcaXY()) > cutDCAxyMax || std::abs(track.dcaZ()) > cutDCAzMax) {
+        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
         }
         nTracks++;
@@ -290,15 +296,15 @@ struct HfCorrelatorD0Hadrons {
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(yD0(candidate1)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && candidate1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
 
       double efficiencyWeight = 1.;
-      if (flagApplyEfficiency) {
+      if (applyEfficiency) {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
       }
 
@@ -345,10 +351,10 @@ struct HfCorrelatorD0Hadrons {
 
       for (const auto& track : tracks) {
         registry.fill(HIST("hTrackCounterRec"), 1); // fill total no. of tracks
-        if (std::abs(track.eta()) > cutTrackEtaMax) {
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (track.pt() < cutPtTrackMin) {
+        if (track.pt() < ptTrackMin) {
           continue;
         }
         // Removing D0 daughters by checking track indices
@@ -369,14 +375,14 @@ struct HfCorrelatorD0Hadrons {
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
 
         if (candidate1.isSelD0() >= selectionFlagD0) {
-          if ((std::abs(invMassDstar1 - invMassD0ToPiK(candidate1)) - softPiMass) < softPionCut) {
+          if ((std::abs(invMassDstar1 - invMassD0ToPiK(candidate1)) - softPiMass) < ptSoftPionMax) {
             isSoftpiD0 = true;
             continue;
           }
         }
 
         if (candidate1.isSelD0bar() >= selectionFlagD0bar) {
-          if ((std::abs(invMassDstar2 - invMassD0barToKPi(candidate1)) - softPiMass) < softPionCut) {
+          if ((std::abs(invMassDstar2 - invMassD0barToKPi(candidate1)) - softPiMass) < ptSoftPionMax) {
             isSoftpiD0bar = true;
             continue;
           }
@@ -385,23 +391,23 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounterRec"), 3); // fill no. of tracks after soft pion removal
 
         int signalStatus = 0;
-        if ((flagD0 = true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((flagD0 == true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
           signalStatus += 1;
         } // signal case D0
-        if ((flagD0bar = true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((flagD0bar == true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
           signalStatus += 2;
         } // reflection case D0
-        if ((flagD0 = false) && (flagD0bar = false) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((flagD0 == false) && (flagD0bar == false) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
           signalStatus += 4;
         } // background case D0
 
-        if ((flagD0bar = true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((flagD0bar == true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
           signalStatus += 8;
         } // signal case D0bar
-        if ((flagD0 = true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((flagD0 == true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
           signalStatus += 16;
         } // reflection case D0bar
-        if ((flagD0 = false) && (flagD0bar = false) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((flagD0 == false) && (flagD0bar = false) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
           signalStatus += 32;
         } // background case D0bar
 
@@ -432,10 +438,10 @@ struct HfCorrelatorD0Hadrons {
         continue;
       }
       double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (cutYCandMax >= 0. && std::abs(yD) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
-      if (cutPtCandMin >= 0. && particle1.pt() < cutPtCandMin) {
+      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hPtCandGen"), particle1.pt());
@@ -445,21 +451,23 @@ struct HfCorrelatorD0Hadrons {
 
       // D-h correlation dedicated section
 
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
         continue;
-      registry.fill(HIST("hCountD0triggersGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
+      }
+      registry.fill(HIST("hCountD0TriggersGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
 
       for (auto const& particle2 : particlesMC) {
         registry.fill(HIST("hTrackCounterGen"), 1); // total no. of tracks
-        if (std::abs(particle2.eta()) > cutTrackEtaMax)
+        if (std::abs(particle2.eta()) > etaTrackMax) {
           continue;
-
-        if (particle2.pt() < cutPtTrackMin)
+        }
+        if (particle2.pt() < ptTrackMin) {
           continue;
-
-        if ((std::abs(particle2.pdgCode()) != kElectron) && (std::abs(particle2.pdgCode()) != kMuonMinus) && (std::abs(particle2.pdgCode()) != kPiPlus) && (std::abs(particle2.pdgCode()) != kKPlus) && (std::abs(particle2.pdgCode()) != kProton))
+	}
+        if ((std::abs(particle2.pdgCode()) != kElectron) && (std::abs(particle2.pdgCode()) != kMuonMinus) && (std::abs(particle2.pdgCode()) != kPiPlus) && (std::abs(particle2.pdgCode()) != kKPlus) && (std::abs(particle2.pdgCode()) != kProton)) {
           continue;
-
+	}
+        
         // ==============================soft pion removal================================
         registry.fill(HIST("hTrackCounterGen"), 2); // fill before soft pi removal
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
