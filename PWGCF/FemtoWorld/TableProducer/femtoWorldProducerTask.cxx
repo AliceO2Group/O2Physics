@@ -275,6 +275,7 @@ struct femtoWorldProducerTask {
   }
 
   // PID
+  /*
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     bool fNsigmaTPCTOF = true;
@@ -325,8 +326,31 @@ struct femtoWorldProducerTask {
       }
     }
     return false;
+  }*/
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    //|nsigma_TPC| < 5 for p < 0.4 GeV/c
+    //|nsigma_combined| < 5 for p > 0.4
+    bool fNsigmaTPCTOF = true;
+    double fNsigma = 3;
+    double fNsigma2 = 3;
+    if (fNsigmaTPCTOF) {
+      if (mom < 0.4) {
+        if (TMath::Abs(nsigmaTPCK) < 5.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.4) {
+        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < 5.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+      return false;
+    }
   }
-
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
   float getMagneticFieldTesla(uint64_t timestamp)
   {
