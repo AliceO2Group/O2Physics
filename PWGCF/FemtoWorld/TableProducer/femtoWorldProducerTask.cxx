@@ -351,8 +351,8 @@ struct femtoWorldProducerTask {
           return false;
         }
       }
-      return false;
     }
+    return false;
   }
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
   float getMagneticFieldTesla(uint64_t timestamp)
