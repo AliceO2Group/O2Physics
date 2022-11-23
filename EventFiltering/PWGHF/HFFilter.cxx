@@ -646,8 +646,7 @@ struct HfFilter { // Main struct for HF triggers
     bool keepEvent[kNtriggersHF]{false};
     //
 
-    int n2Prongs{0}, n3Prongs{0};
-
+    std::vector<std::vector<long>> indicesDau2Prong{};
     for (const auto& cand2Prong : cand2Prongs) {                                        // start loop over 2 prongs
       if (!TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check if it's a D0
         continue;
@@ -724,7 +723,7 @@ struct HfFilter { // Main struct for HF triggers
       } // end high-pT selection
 
       if (isCharmTagged) {
-        n2Prongs++;
+        indicesDau2Prong.push_back(std::vector<long>{trackPos.globalIndex(), trackNeg.globalIndex()});
       } // end multi-charm selection
 
       for (const auto& track : tracks) { // start loop over tracks
@@ -795,6 +794,7 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
     }   // end loop over 2-prong candidates
 
+    std::vector<std::vector<long>> indicesDau3Prong{};
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
       std::array<int8_t, kNCharmParticles - 1> is3Prong = {
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi),
@@ -882,7 +882,7 @@ struct HfFilter { // Main struct for HF triggers
       }
 
       if (std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
-        n3Prongs++;
+        indicesDau3Prong.push_back(std::vector<long>{trackFirst.globalIndex(), trackSecond.globalIndex(), trackThird.globalIndex()});
       } // end multiple 3-prong selection
 
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
@@ -979,6 +979,11 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 
+    auto n2Prongs = computeNumberOfCandidates(indicesDau2Prong);
+    auto n3Prongs = computeNumberOfCandidates(indicesDau3Prong);
+    indicesDau2Prong.insert(indicesDau2Prong.end(), indicesDau3Prong.begin(), indicesDau3Prong.end());
+    auto n23Prongs = computeNumberOfCandidates(indicesDau2Prong);
+
     if (activateQA) {
       hN2ProngCharmCand->Fill(n2Prongs);
       hN3ProngCharmCand->Fill(n3Prongs);
@@ -990,7 +995,7 @@ struct HfFilter { // Main struct for HF triggers
     if (n3Prongs > 1) {
       keepEvent[kDoubleCharm3P] = true;
     }
-    if (n2Prongs > 0 && n3Prongs > 0) {
+    if (n23Prongs > 1) {
       keepEvent[kDoubleCharmMix] = true;
     }
 

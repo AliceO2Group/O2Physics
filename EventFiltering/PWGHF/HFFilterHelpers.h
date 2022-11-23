@@ -131,6 +131,38 @@ float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmC
   return kStar;
 } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
+/// Computation of the number of candidates in an event that do not share daughter tracks
+/// \return number of candidates in an event that do not share daughter tracks
+template <typename T>
+int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
+{
+  std::vector<int> numIndependentCand{};
+  for (auto iCand{0u}; iCand < indices.size(); ++iCand) {
+    int nIndependent = 0;
+    for (auto iCandSecond{0u}; iCandSecond < indices.size(); ++iCandSecond) {
+      if (iCand == iCandSecond) {
+        continue;
+      } else {
+        bool hasOverlap = false;
+        for (auto idxFirst{0u}; idxFirst < indices[iCand].size(); ++idxFirst) {
+          for (auto idxSecond{0u}; idxSecond < indices[iCandSecond].size(); ++idxSecond) {
+            if (indices[iCand][idxFirst] == indices[iCandSecond][idxSecond]) {
+              hasOverlap = true;
+              break;
+            }
+          }
+        }
+        if (!hasOverlap) {
+          nIndependent++;
+        }
+      }
+    }
+    numIndependentCand.push_back(nIndependent);
+  }
+  std::sort(numIndependentCand.begin(), numIndependentCand.end());
+  return numIndependentCand.back() + 1;
+}
+
 /// ML helper methods
 
 /// Iinitialisation of ONNX session
@@ -180,16 +212,11 @@ std::shared_ptr<Ort::Experimental::Session> InitONNXSession(std::string& onnxFil
 };
 
 /// Iinitialisation of ONNX session
-/// \param onnxFile is the onnx file name
-/// \param partName is the particle name
+/// \param inputFeatures is the vector with input features
+/// \param session is the ONNX Ort::Experimental::Session
 /// \param inputNames is a vector of input names
 /// \param inputShapes is a vector of input shapes
 /// \param outputNames is a vector of output names
-/// \param dataType is the data type (1=float, 11=double)
-/// \param loadModelsFromCCDB is the flag to decide whether the ONNX file is read from CCDB or not
-/// \param ccdbApi is the CCDB API
-/// \param mlModelPathCCDB is the model path in CCDB
-/// \param timestampCCDB is the CCDB timestamp
 /// \return the array with the three output scores
 template <typename T>
 std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::string>& inputNames, std::vector<std::vector<int64_t>>& inputShapes, std::vector<std::string>& outputNames)
