@@ -9,7 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
 o2physics_add_dpl_workflow(central-event-filter-task
                            SOURCES cefpTask.cxx
                            COMPONENT_NAME Analysis
@@ -31,9 +30,17 @@ o2physics_add_dpl_workflow(diffraction-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
+o2physics_add_header_only_library(HFFilterHelpers
+                                  HEADERS PWGHF/HFFilterHelpers.h)
+
 o2physics_add_dpl_workflow(hf-filter
                            SOURCES PWGHF/HFFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ONNXRuntime::ONNXRuntime
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hf-filter-qc
+                           SOURCES PWGHF/HFFilterQC.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-twobodyfemto-filter
@@ -59,9 +66,4 @@ o2physics_add_dpl_workflow(lf-strangeness-filter
 o2physics_add_dpl_workflow(mult-filter
                            SOURCES PWGMM/multFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(hf-filter-qc
-                           SOURCES PWGHF/HFFilterQC.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                            COMPONENT_NAME Analysis)
