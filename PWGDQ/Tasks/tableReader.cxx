@@ -98,7 +98,7 @@ constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
 // Global function used to define needed histogram classes
-void DefineHistograms(HistogramManager* histMan, TString histClasses); // defines histograms for all tasks
+void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
 
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
@@ -108,6 +108,7 @@ struct AnalysisEventSelection {
   Configurable<string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   Configurable<string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
@@ -125,8 +126,8 @@ struct AnalysisEventSelection {
       fHistMan = new HistogramManager("analysisHistos", "", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
+      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;", fConfigAddEventHistogram); // define all histograms
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
@@ -190,6 +191,7 @@ struct AnalysisTrackSelection {
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
   Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
@@ -217,8 +219,8 @@ struct AnalysisTrackSelection {
         histDirNames += Form("TrackBarrel_%s;", cut.GetName());
       }
 
-      DefineHistograms(fHistMan, histDirNames.Data()); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddTrackHistogram); // define all histograms
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -272,6 +274,7 @@ struct AnalysisMuonSelection {
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fMuonCuts;
@@ -299,8 +302,8 @@ struct AnalysisMuonSelection {
         histDirNames += Form("TrackMuon_%s;", cut.GetName());
       }
 
-      DefineHistograms(fHistMan, histDirNames.Data()); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddMuonHistogram); // define all histograms
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -357,6 +360,7 @@ struct AnalysisEventMixing {
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
+  Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -432,8 +436,8 @@ struct AnalysisEventMixing {
       }
     }
 
-    DefineHistograms(fHistMan, histNames.Data());    // define all histograms
-    VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+    DefineHistograms(fHistMan, histNames.Data(), fConfigAddEventMixingHistogram); // define all histograms
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                              // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -608,6 +612,7 @@ struct AnalysisSameEventPairing {
   Configurable<string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
@@ -691,8 +696,8 @@ struct AnalysisSameEventPairing {
     // ccdb->setLocalObjectValidityChecking();
     // ccdb->setCreatedNotAfter(nolaterthan.value);
 
-    DefineHistograms(fHistMan, histNames.Data());    // define all histograms
-    VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+    DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
@@ -855,6 +860,8 @@ struct AnalysisDileptonHadron {
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
+
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
   Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
 
@@ -882,7 +889,7 @@ struct AnalysisDileptonHadron {
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
-      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation"); // define all histograms
+      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -948,7 +955,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisDileptonHadron>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
+void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.
@@ -960,47 +967,31 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     TString classStr = objArray->At(iclass)->GetName();
     histMan->AddHistClass(classStr.Data());
 
+    TString histName = configVar.value;
     // NOTE: The level of detail for histogramming can be controlled via configurables
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent,muon");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid");
-        if (classStr.Contains("PIDCalibElectron")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
-        }
-        if (classStr.Contains("PIDCalibPion")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
-        }
-        if (classStr.Contains("PIDCalibProton")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
-        }
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
       }
-      if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      if (classStr.Contains("Muons")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
       }
     }
 
     if (classStr.Contains("Pairs")) {
-      if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel,flow-barrel");
-      }
-      if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward,flow-dimuon");
-      }
-      if (classStr.Contains("EleMu")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_electronmuon");
-      }
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
 
     if (classStr.Contains("DileptonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel");
     }
 
     if (classStr.Contains("HadronsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "kine");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
     }
 
     if (classStr.Contains("DileptonHadronInvMass")) {
