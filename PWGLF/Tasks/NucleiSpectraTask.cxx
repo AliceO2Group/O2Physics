@@ -104,6 +104,7 @@ static const std::vector<std::string> binnedLabelNames{"Maximum value of binned 
 
 float pidCuts[2][4][2];
 std::shared_ptr<TH3> hNsigma[2][4][2];
+std::shared_ptr<TH3> hTOFmass[4][2];
 std::shared_ptr<TH3> hDCAxy[2][4][2];
 } // namespace nuclei
 
@@ -175,6 +176,7 @@ struct NucleiSpectraTask {
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {100, 0., 100.}, "Centrality binning"};
   ConfigurableAxis cfgNsigmaTPCbins{"cfgNsigmaTPCbins", {100, -5., 5.}, "nsigma_TPC binning"};
   ConfigurableAxis cfgNsigmaTOFbins{"cfgNsigmaTOFbins", {100, -5., 5.}, "nsigma_TOF binning"};
+  ConfigurableAxis cfgTOFmassBins{"cfgTOFmassBins", {200, -5., 5.}, "TOF mass binning"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
@@ -187,6 +189,7 @@ struct NucleiSpectraTask {
 
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
+    const AxisSpec tofMassAxis{cfgTOFmassBins, "TOF mass - PDG mass"};
 
     const AxisSpec ptAxes[4]{
       {cfgPtBinsDeuterons, "#it{p}_{T} (GeV/#it{c})"},
@@ -207,6 +210,7 @@ struct NucleiSpectraTask {
           nuclei::hNsigma[iPID][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[iPID]});
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaAxes[iS]});
         }
+        nuclei::hTOFmass[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmass{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], tofMassAxis});
       }
     }
 
@@ -265,6 +269,10 @@ struct NucleiSpectraTask {
             nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), track.dcaXY());
             if (std::abs(track.dcaXY()) < cfgDCAcut->get(iS, 0u)) {
               nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+              if (iPID) {
+                float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
+                nuclei::hTOFmass[iS][iC]->Fill(1., fvector.pt(), mass);
+              }
             }
           }
         }
