@@ -683,9 +683,7 @@ struct femtoWorldProducerTask {
           continue;
         } else if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) { // eta for part2
           continue;
-        }
-        // PID for Kaons
-        else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+        } else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) { // PID for Kaons
           continue;
         } else if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
           continue;
