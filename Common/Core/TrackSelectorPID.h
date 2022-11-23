@@ -515,9 +515,9 @@ class TrackSelectorPID
   }
 
   /// Set cut above which a track should be accepted.
-  void setCutBayes(float cut)
+  void setProbBayesMin(float cut)
   {
-    mCutBayes = cut;
+    mProbBayesMin = cut;
   }
 
   /// Checks if track is OK for Bayesian PID.
@@ -542,7 +542,7 @@ class TrackSelectorPID
   template <typename T>
   bool isSelectedTrackBayesProbPID(const T& track)
   {
-    if (mCutBayes < 0.) { // switch off with negative values
+    if (mProbBayesMin < 0.) { // switch off with negative values
       return true;
     }
 
@@ -575,10 +575,10 @@ class TrackSelectorPID
       }
     }
 
-    return mCutBayes <= prob;
+    return mProbBayesMin <= prob;
   }
 
-  /// Returns status of Bayesian PID selection for a given track.
+  /// Returns status of Bayesian PID selection for a given track, based on the most probable particle species.
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
@@ -595,7 +595,7 @@ class TrackSelectorPID
     }
   }
 
-  /// Returns status of Bayesian PID selection for a given track.
+  /// Returns status of Bayesian PID selection for a given track, based on the probability for a given particle species.
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
@@ -641,9 +641,9 @@ class TrackSelectorPID
   float mNSigmaRICHMaxCondTOF = 1000.;  ///< maximum number of RICH σ if combined with TOF
 
   // Bayesian
-  float mPtBayesMin = 0.;   ///< minimum pT for Bayesian PID [GeV/c]
-  float mPtBayesMax = 100.; ///< maximum pT for Bayesian PID [GeV/c]
-  float mCutBayes = -1.;    ///< minium value for Bayesian probabitly for given particle type [in %]
+  float mPtBayesMin = 0.;    ///< minimum pT for Bayesian PID [GeV/c]
+  float mPtBayesMax = 100.;  ///< maximum pT for Bayesian PID [GeV/c]
+  float mProbBayesMin = -1.; ///< minium Bayesian probability [%]
 };
 
 #endif // O2_ANALYSIS_TRACKSELECTORPID_H_

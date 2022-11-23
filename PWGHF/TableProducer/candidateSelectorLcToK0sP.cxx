@@ -46,16 +46,16 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // PID
-  Configurable<bool> doBachPid{"doBachPid", true, "Use PID on bachelor track"};
+  Configurable<bool> usePidBach{"usePidBach", true, "Use PID on bachelor track"};
   Configurable<double> pPidThreshold{"pPidThreshold", 1.0, "Threshold to switch between low and high p TrackSelectors"};
-  Configurable<double> nSigmaTpcMaxLowP{"nSigmaTpcMaxLowP", 2.0, "Max nSigam in TPC for bachelor for low p"};
-  Configurable<double> nSigmaTpcMaxHighP{"nSigmaTpcMaxHighP", 9999., "Max nSigam in TPC for bachelor for high p"};
-  Configurable<double> nSigmaTofMaxLowP{"nSigmaTofMaxLowP", 9999., "Max nSigam in TOF for bachelor for low p"};
-  Configurable<double> nSigmaTofMaxHighP{"nSigmaTofMaxHighP", 3.0, "Max nSigam in TOF for bachelor for high p"};
-  Configurable<bool> requireTofLowP{"requireTofLowP", false, "require TOF information for bachelor for low p"};
-  Configurable<bool> requireTofHighP{"requireTofHighP", true, "require TOF information for bachelor for high p"};
-  Configurable<double> BayesProbLowP{"BayesProbLowP", -1., "threshold for Bayes prob. for bachelor for low p [in %]"};
-  Configurable<double> BayesProbHighP{"BayesProbHighP", -1., "threshold for Bayes prob. for bachelor for high p [in %]"};
+  Configurable<double> nSigmaTpcMaxLowP{"nSigmaTpcMaxLowP", 2.0, "Max nSigam in TPC for bachelor at low p"};
+  Configurable<double> nSigmaTpcMaxHighP{"nSigmaTpcMaxHighP", 9999., "Max nSigam in TPC for bachelor at high p"};
+  Configurable<double> nSigmaTofMaxLowP{"nSigmaTofMaxLowP", 9999., "Max nSigam in TOF for bachelor at low p"};
+  Configurable<double> nSigmaTofMaxHighP{"nSigmaTofMaxHighP", 3.0, "Max nSigam in TOF for bachelor at high p"};
+  Configurable<bool> requireTofLowP{"requireTofLowP", false, "require TOF information for bachelor at low p"};
+  Configurable<bool> requireTofHighP{"requireTofHighP", true, "require TOF information for bachelor at high p"};
+  Configurable<double> probBayesMinLowP{"probBayesMinLowP", -1., "min. Bayes probability for bachelor at low p [%]"};
+  Configurable<double> probBayesMinHighP{"probBayesMinHighP", -1., "min. Bayes probability for bachelor at high p [%]"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
@@ -158,8 +158,8 @@ struct HfCandidateSelectorLcToK0sP {
     selectorProton[1].setRangeNSigmaTPC(-nSigmaTpcMaxHighP, nSigmaTpcMaxHighP);
     selectorProton[0].setRangeNSigmaTOF(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
     selectorProton[1].setRangeNSigmaTOF(-nSigmaTofMaxHighP, nSigmaTofMaxHighP);
-    selectorProton[0].setCutBayes(BayesProbLowP);
-    selectorProton[1].setCutBayes(BayesProbHighP);
+    selectorProton[0].setProbBayesMin(probBayesMinLowP);
+    selectorProton[1].setProbBayesMin(probBayesMinHighP);
     bool requireTof[2] = {requireTofLowP, requireTofHighP};
 
     int whichSelector;
@@ -218,7 +218,7 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      if (doBachPid) {
+      if (usePidBach) {
         LOG(debug) << "selectionPID(bach) = " << selectionPID(bach);
         if (!selectionPID(bach)) {
           MY_DEBUG_MSG(isLc, LOG(info) << "In selector: Lc rejected due to PID selection on bachelor");
