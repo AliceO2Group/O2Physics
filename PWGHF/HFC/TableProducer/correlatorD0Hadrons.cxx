@@ -74,7 +74,6 @@ struct HfCorrelatorD0Hadrons {
   Configurable<double> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz of tracks"};
   Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT"};
-  Configurable<double> cutPtCandMax{"cutPtCandMax", -1., "max. cand. pT"};
   Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D0 meson"};
   Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
