@@ -165,8 +165,9 @@ struct femtoWorldProducerTask {
   Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
   Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
-  Configurable<bool> ConfKaonChangePID{"ConfKaonChangePID", true, "Rejecting if mom at (0.45, 0.5)"};
-
+  Configurable<bool> ConfNsigmaTPCTOFKaon{"ConfNsigmaTPCTOFKaon", true, "Use TPC and TOF for PID of Kaons"};
+  Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 5.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
+  Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 5.0, "TPC Kaon Sigma for momentum < 0.4"};
   // PHI Candidates
   FemtoWorldPhiSelection PhiCuts;
   Configurable<std::vector<float>> ConfPhiSign{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kPhiSign, "Phi selection: ")};
@@ -331,18 +332,20 @@ struct femtoWorldProducerTask {
   {
     //|nsigma_TPC| < 5 for p < 0.4 GeV/c
     //|nsigma_combined| < 5 for p > 0.4
-    bool fNsigmaTPCTOF = true;
-    double fNsigma = 3;
-    double fNsigma2 = 3;
-    if (fNsigmaTPCTOF) {
+
+    // using configurables:
+    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
+    // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
+    // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
+    if (ConfNsigmaTPCTOFKaon) {
       if (mom < 0.4) {
-        if (TMath::Abs(nsigmaTPCK) < 5.0) {
+        if (TMath::Abs(nsigmaTPCK) < ConfNsigmaTPCKaon) {
           return true;
         } else {
           return false;
         }
       } else if (mom > 0.4) {
-        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < 5.0) {
+        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfNsigmaCombinedKaon) {
           return true;
         } else {
           return false;
