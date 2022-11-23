@@ -11,6 +11,14 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <cstring>
+#include <TH1F.h>
+#include <TH2I.h>
+#include <THashList.h>
+#include <TString.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -30,14 +38,6 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <TH1F.h>
-#include <TH2I.h>
-#include <THashList.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
-#include <memory>
-#include <cstring>
 
 using std::cout;
 using std::endl;
@@ -613,7 +613,7 @@ struct DQFilterPPTask {
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNreqObjs[i]) {
         filter |= (uint64_t(1) << i);
-        fStats->Fill(float(i));
+        fStats->Fill(static_cast<float>(i));
         if (i < kNTriggersDQ) {
           decisions[i] = true;
         }
@@ -622,7 +622,7 @@ struct DQFilterPPTask {
     for (int i = 0; i < fNMuonCuts; i++) {
       if (objCountersMuon[i] >= fMuonNreqObjs[i]) {
         filter |= (uint64_t(1) << (i + fNBarrelCuts));
-        fStats->Fill(float(i + fNBarrelCuts));
+        fStats->Fill(static_cast<float>(i + fNBarrelCuts));
         if (i + fNBarrelCuts < kNTriggersDQ) {
           decisions[i + fNBarrelCuts] = true;
         }

@@ -13,6 +13,12 @@
 //
 // Analysis task for processing O2::DQ MC skimmed AODs
 //
+#include <iostream>
+#include <vector>
+#include <TMath.h>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TString.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,12 +32,6 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
-#include <TMath.h>
-#include <TH1F.h>
-#include <THashList.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
 
 using std::cout;
 using std::endl;

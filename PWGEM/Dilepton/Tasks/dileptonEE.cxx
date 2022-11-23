@@ -11,6 +11,12 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TString.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -25,12 +31,6 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MixingLibrary.h"
-#include <TH1F.h>
-#include <THashList.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
-#include <algorithm>
 
 using std::cout;
 using std::endl;
@@ -407,7 +407,7 @@ struct AnalysisSameEventPairing {
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
@@ -562,7 +562,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent");
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !(classStr.Contains("Pairs"))) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid");
       }
