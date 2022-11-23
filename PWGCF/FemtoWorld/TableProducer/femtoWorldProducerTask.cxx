@@ -39,9 +39,6 @@
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
 
-// for comparison because of the NaN
-#include <cmath.h>
-
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
 using namespace o2::framework;
