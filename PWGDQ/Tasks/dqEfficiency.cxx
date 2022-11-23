@@ -782,8 +782,8 @@ struct AnalysisSameEventPairing {
   Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
-                              soa::Filtered<MyBarrelTracksSelected> const& tracks,
-                              ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                               soa::Filtered<MyBarrelTracksSelected> const& tracks,
+                               ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -797,8 +797,8 @@ struct AnalysisSameEventPairing {
   }
 
   void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
-                                       soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
-                                       ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                                        soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
+                                        ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -812,8 +812,8 @@ struct AnalysisSameEventPairing {
   }
 
   void processDecayToMuMuSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
-                                soa::Filtered<MyMuonTracksSelected> const& muons,
-                                ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                                 soa::Filtered<MyMuonTracksSelected> const& muons,
+                                 ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -827,8 +827,8 @@ struct AnalysisSameEventPairing {
   }
 
   void processDecayToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
-                                         soa::Filtered<MyMuonTracksSelectedWithCov> const& muons,
-                                         ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                                          soa::Filtered<MyMuonTracksSelectedWithCov> const& muons,
+                                          ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
