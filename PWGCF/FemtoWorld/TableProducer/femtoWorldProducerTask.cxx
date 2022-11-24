@@ -14,6 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
+#include "CCDB/BasicCCDBManager.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldV0Selection.h"
@@ -37,7 +38,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
