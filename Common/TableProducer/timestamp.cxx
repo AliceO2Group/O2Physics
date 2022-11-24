@@ -16,14 +16,13 @@
 /// \brief  A task to fill the timestamp table from run number.
 ///         Uses headers from CCDB
 ///
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include <CCDB/BasicCCDBManager.h>
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DetectorsRaw/HBFUtils.h"
 #include <vector>
 #include <map>
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DetectorsRaw/HBFUtils.h"
 
 using namespace o2::framework;
 using namespace o2::header;
@@ -66,14 +65,19 @@ struct TimestampTask {
       LOGF(debug, "Getting orbit-reset timestamp from cache");
       orbitResetTimestamp = mapRunToOrbitReset[runNumber];
     } else { // The run was not requested before: need to acccess CCDB!
-      LOGF(debug, "Getting start-of-run timestamp from CCDB");
+      LOGF(debug, "Getting start-of-run and end-of-run timestamps from CCDB");
       std::map<std::string, std::string> metadata, headers;
       const std::string run_path = Form("%s/%i", rct_path.value.data(), runNumber);
       headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
       if (headers.count("SOR") == 0) {
         LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
       }
+      if (headers.count("EOR") == 0) {
+        LOGF(fatal, "Cannot find end-of-run timestamp for run number in path '%s'.", run_path.data());
+      }
+
       int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
+      int64_t eorTimestamp = atol(headers["EOR"].c_str()); // timestamp of the EOR in ms
 
       bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
       if (isRun2MC || isUnanchoredRun3MC) {
@@ -82,8 +86,9 @@ struct TimestampTask {
         // Setting orbit-reset timestamp to start-of-run timestamp
         orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
       } else {
-        LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
-        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), sorTimestamp);
+        // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
+        LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp);
         orbitResetTimestamp = (*ctp)[0];
       }
 
