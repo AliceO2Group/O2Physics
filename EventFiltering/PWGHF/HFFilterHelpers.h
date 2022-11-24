@@ -132,10 +132,14 @@ float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmC
 } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
 /// Computation of the number of candidates in an event that do not share daughter tracks
-/// \return number of candidates in an event that do not share daughter tracks
+/// \return 0 or 1 in case of less than 2 independent candidates in a single event, 2 otherwise
 template <typename T>
 int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
 {
+  if (indices.size() < 2) {
+    return indices.size();
+  }
+
   std::vector<int> numIndependentCand{};
   for (auto iCand{0u}; iCand < indices.size(); ++iCand) {
     int nIndependent = 0;
@@ -160,7 +164,12 @@ int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
     numIndependentCand.push_back(nIndependent);
   }
   std::sort(numIndependentCand.begin(), numIndependentCand.end());
-  return numIndependentCand.back() + 1;
+  
+  if (numIndependentCand.back() == 0) {
+    return numIndependentCand.back();
+  }
+
+  return 2;
 }
 
 /// ML helper methods
