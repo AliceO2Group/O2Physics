@@ -12,6 +12,13 @@
 //
 // Analysis task for calculating single electron and dielectron efficiency
 //
+#include <iostream>
+#include <vector>
+#include <TMath.h>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TLorentzVector.h>
+#include <TString.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -33,13 +40,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include <TMath.h>
-#include <TH1F.h>
-#include <THashList.h>
-#include <TLorentzVector.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
 
 using std::cout;
 using std::endl;
@@ -1183,9 +1183,9 @@ struct AnalysisSameEventPairing {
 
           // not smeared after fiducial cuts
           if (genfidcut) {
-            if (!fConfigFillLS)
+            if (!fConfigFillLS) {
               dynamic_cast<TH2D*>(fHistGenPair.at(isig))->Fill(mass, pairpt);
-            else {
+            } else {
               if (t1.pdgCode() * t2.pdgCode() < 0) {
                 dynamic_cast<TH2D*>(fHistGenPair.at(isig * 2))->Fill(mass, pairpt);
               } else {
