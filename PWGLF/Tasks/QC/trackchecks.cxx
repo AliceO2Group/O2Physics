@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <cmath>
+#include <array>
+#include <utility>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -15,10 +19,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
-#include <cmath>
-#include <array>
-#include <utility>
+#include "Common/DataModel/PIDResponse.h"
 
 #include <TF1.h>
 
@@ -76,8 +77,7 @@ int getparticleint(int pdgcode)
   }
 }
 
-// No track selection --> only event selection here
-struct TrackCheckTaskEvSel {
+struct TrackChecks {
 
   Configurable<float> cfgCutVZ{"cfgCutVZ", 10.f, "option to configure z-vertex cut"};
   Configurable<bool> cfgIsRun3{"cfgIsRun3", true, "option to set Run 3 format"};
@@ -89,163 +89,56 @@ struct TrackCheckTaskEvSel {
     AxisSpec dcaAxis = {800, -4., 4.};
     AxisSpec yAxis = {40, -2., 2.};
 
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel", "Gen Prim tracks AftEvSel (charged); #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_el", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_pi", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_ka", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_pr", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_de", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_he", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_tr", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_al", "Gen Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH2F, {{ptBins}, yAxis}});
+    if (doprocessMC) {
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel", "Gen Prim tracks AftTrkSel (charged); #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_el", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_pi", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_ka", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_pr", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_de", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_he", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_tr", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
+      histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_al", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
 
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel", "Reco Prim tracks AftEvSel (charged); #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_el", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_pi", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_ka", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_pr", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_de", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_he", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_tr", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_al", "Reco Prim tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-  }
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel", "Reco Prim tracks AftTrkSel (charged); #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_el", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_pi", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_ka", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_pr", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_de", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_he", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_tr", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_al", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
 
-  // Filters
-  Filter collfilter = nabs(aod::collision::posZ) < cfgCutVZ;
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
-               soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>& tracks, aod::McParticles const& mcParticles)
-  {
-
-    // event selection
-    if (cfgIsRun3) {
-      if (!col.sel8()) {
-        return;
-      }
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel", "Reco Sec tracks AftEvSel (charged); #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_el", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_pi", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_ka", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_pr", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_de", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_he", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_tr", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_al", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
     } else {
-      if (!col.sel7()) {
-        return;
-      }
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_el", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_pi", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_ka", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_pr", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_de", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_he", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_tr", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_al", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
     }
-
-    // Loop on tracks
-    for (auto& track : tracks) {
-
-      if (!track.has_mcParticle()) {
-        continue;
-      }
-      const auto particle = track.mcParticle_as<aod::McParticles>();
-      int pdgcode = fabs(particle.pdgCode());
-
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-
-      // calculate rapidity
-      int pint = getparticleint(pdgcode);
-
-      if (pint == kNull) {
-        continue;
-      }
-
-      double y_gen = eta2y(particle.pt(), mass[pint], particle.eta());
-      double y_rec = eta2y(track.pt(), mass[pint], track.eta());
-
-      // generated
-      if (pdgcode == 11) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_el"), particle.pt(), y_gen);
-      } else if (pdgcode == 211) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_pi"), particle.pt(), y_gen);
-      } else if (pdgcode == 321) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_ka"), particle.pt(), y_gen);
-      } else if (pdgcode == 2212) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_pr"), particle.pt(), y_gen);
-      } else if (pdgcode == 1000010020) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_de"), particle.pt(), y_gen);
-      } else if (pdgcode == 1000020030) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_he"), particle.pt(), y_gen);
-      } else if (pdgcode == 1000010030) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_tr"), particle.pt(), y_gen);
-      } else if (pdgcode == 1000020040) {
-        histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel_truepid_al"), particle.pt(), y_gen);
-      }
-
-      histograms.fill(HIST("GenAftEvSel/hGenTrkPrimAftEvSel"), particle.pt(), y_gen);
-
-      // reconstructed
-      if (pdgcode == 11) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_el"), track.pt(), y_rec);
-      } else if (pdgcode == 211) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_pi"), track.pt(), y_rec);
-      } else if (pdgcode == 321) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_ka"), track.pt(), y_rec);
-      } else if (pdgcode == 2212) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_pr"), track.pt(), y_rec);
-      } else if (pdgcode == 1000010020) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_de"), track.pt(), y_rec);
-      } else if (pdgcode == 1000020030) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_he"), track.pt(), y_rec);
-      } else if (pdgcode == 1000010030) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_tr"), track.pt(), y_rec);
-      } else if (pdgcode == 1000020040) {
-        histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel_truepid_al"), track.pt(), y_rec);
-      }
-
-      histograms.fill(HIST("RecAftEvSel/hRecTrkPrimAftEvSel"), track.pt(), y_rec);
-    }
-  }
-};
-
-// event selection + track selection here
-struct TrackCheckTaskEvSelTrackSel {
-
-  Configurable<float> cfgCutVZ{"cfgCutVZ", 10.f, "option to configure z-vertex cut"};
-  Configurable<bool> cfgIsRun3{"cfgIsRun3", true, "option to set Run 3 format"};
-
-  HistogramRegistry histograms{"histograms"};
-
-  void init(InitContext&)
-  {
-    AxisSpec dcaAxis = {800, -4., 4.};
-    AxisSpec yAxis = {40, -2., 2.};
-
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel", "Gen Prim tracks AftTrkSel (charged); #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_el", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_pi", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_ka", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_pr", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_de", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_he", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_tr", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-    histograms.add("GenAftTrkSel/hGenTrkPrimAftTrkSel_truepid_al", "Gen Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y", {kTH2F, {{ptBins}, yAxis}});
-
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel", "Reco Prim tracks AftTrkSel (charged); #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_el", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_pi", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_ka", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_pr", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_de", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_he", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_tr", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkPrimAftTrkSel_truepid_al", "Reco Prim tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel", "Reco Sec tracks AftEvSel (charged); #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_el", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_pi", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_ka", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_pr", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_de", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_he", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_tr", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_al", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
   }
 
   // Filters
   Filter collfilter = nabs(aod::collision::posZ) < cfgCutVZ;
   Filter trackfilter = requireGlobalTrackInFilter();
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
-               soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                       aod::TrackSelection, aod::McTrackLabels>>& tracks,
-               aod::McParticles& mcParticles)
+
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                                         aod::TrackSelection, aod::McTrackLabels>>& tracks,
+                 aod::McParticles& mcParticles)
   {
 
     // event selection
@@ -340,11 +233,59 @@ struct TrackCheckTaskEvSelTrackSel {
       }
     }
   }
+
+  PROCESS_SWITCH(TrackChecks, processMC, "Provide relevant distributions for identified particles in MC", true);
+
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
+                   soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>& tracks)
+  {
+
+    // event selection
+    if (cfgIsRun3) {
+      if (!col.sel8()) {
+        return;
+      }
+    } else {
+      if (!col.sel7()) {
+        return;
+      }
+    }
+
+    // Loop on tracks
+    for (auto& track : tracks) {
+      // reconstructed
+      if (fabs(track.tpcNSigmaEl()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_el"), track.pt(), eta2y(track.pt(), mass[getparticleint(11)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaPi()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_pi"), track.pt(), eta2y(track.pt(), mass[getparticleint(211)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaKa()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_ka"), track.pt(), eta2y(track.pt(), mass[getparticleint(321)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaPr()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_pr"), track.pt(), eta2y(track.pt(), mass[getparticleint(2212)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaDe()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_de"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000010020)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaHe()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_he"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000020030)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaTr()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_tr"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000010030)], track.eta()), track.dcaXY());
+      }
+      if (fabs(track.tpcNSigmaAl()) < 2) {
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_al"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000020040)], track.eta()), track.dcaXY());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(TrackChecks, processData, "Provide relevant distributions for identified particles in data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TrackCheckTaskEvSel>(cfgc, TaskName{"track-histos-evsel"}),
-    adaptAnalysisTask<TrackCheckTaskEvSelTrackSel>(cfgc, TaskName{"track-histos-evsel-trksel"})};
+    adaptAnalysisTask<TrackChecks>(cfgc)};
 }
