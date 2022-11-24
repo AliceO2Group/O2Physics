@@ -37,7 +37,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
