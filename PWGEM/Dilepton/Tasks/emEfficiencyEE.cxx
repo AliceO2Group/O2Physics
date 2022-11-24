@@ -12,11 +12,19 @@
 //
 // Analysis task for calculating single electron and dielectron efficiency
 //
+#include <iostream>
+#include <vector>
+#include <TMath.h>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TLorentzVector.h>
+#include <TString.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "Framework/ASoA.h"
+#include "Framework/DataTypes.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/AnalysisCut.h"
@@ -25,13 +33,13 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
-#include <TMath.h>
-#include <TH1F.h>
-#include <THashList.h>
-#include <TLorentzVector.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/TriggerAliases.h"
 
 using std::cout;
 using std::endl;
@@ -56,7 +64,28 @@ DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", emanalysisflags::IsEventSelecte
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::IsBarrelSelected);
 } // namespace o2::aod
 
-//
+// No skimming: works for events and single tracks
+using MyEventsNoSkimmed = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+using MyEventsSelectedNoSkimmed = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::EventCuts>;
+using MyBarrelTracksNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                          aod::McTrackLabels>;
+using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                                  aod::BarrelTrackCuts, aod::McTrackLabels>;
+
+constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
+constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkParticleMCFillMapNoSkimmed = VarManager::ObjTypes::ParticleMC;
+
+// Skimmed data: works up to dielectron efficiency
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
@@ -107,15 +136,23 @@ struct AnalysisEventSelection {
   {
     // Reset the values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    bool pass = true;
 
     VarManager::FillEvent<TEventFillMap>(event);
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+      if (!event.has_mcCollision()) {
+        pass = false;
+      } else {
+        VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
+      }
+    }
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
+    if (fEventCut->IsSelected(VarManager::fgValues) && pass) {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       }
@@ -129,13 +166,26 @@ struct AnalysisEventSelection {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap>(event, mcEvents);
   }
+
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
+  void processNoSkimmed(MyEventsNoSkimmed::iterator const& event, aod::McCollisions const& mcEvents)
+  {
+    runSelection<gkEventFillMapNoSkimmed, gkMCEventFillMapNoSkimmed>(event, mcEvents);
+  }
+
+  void processDummyNoSkimmed(MyEventsNoSkimmed&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisEventSelection, processNoSkimmed, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDummyNoSkimmed, "Dummy process function", false);
 };
 struct AnalysisEventQa {
 
@@ -168,6 +218,7 @@ struct AnalysisEventQa {
   }
 
   Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TEventsMC, typename TTracksMC>
   void runSelection(TEvents const& events, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
@@ -201,6 +252,17 @@ struct AnalysisEventQa {
         midrap = dNdetach(groupedMCTracks);
 
         auto mcEvent = event.reducedMCevent();
+        globalindexmc = mcEvent.globalIndex();
+      }
+      // Not skimmed data
+      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+        if (!event.has_mcCollision()) {
+          continue;
+        }
+        auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
+        midrap = dNdetach(groupedMCTracks);
+
+        auto mcEvent = event.mcCollision();
         globalindexmc = mcEvent.globalIndex();
       }
 
@@ -242,13 +304,26 @@ struct AnalysisEventQa {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap, gkParticleMCFillMap>(events, eventsMC, tracksMC);
   }
+
+  void processNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed> const& events, aod::McCollisions const& eventsMC, aod::McParticles_001 const& tracksMC)
+  {
+    runSelection<gkEventFillMapNoSkimmed, gkMCEventFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(events, eventsMC, tracksMC);
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
+  void processDummyNoSkimmed(MyEventsNoSkimmed&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisEventQa, processNoSkimmed, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventQa, processSkimmed, "Run event selection on DQ skimmed events", false);
   PROCESS_SWITCH(AnalysisEventQa, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisEventQa, processDummyNoSkimmed, "Dummy process function", false);
 };
 
 struct AnalysisTrackSelection {
@@ -568,6 +643,9 @@ struct AnalysisTrackSelection {
   Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<MyBarrelTracks> perReducedEventTracks = aod::reducedtrack::reducedeventId;
 
+  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
+
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
   void runSelection(TEvents const& events, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
@@ -588,11 +666,18 @@ struct AnalysisTrackSelection {
       if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
         VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
       }
+      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+        VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
+      }
 
       // Look if we did not already saw the collision and fill the denominator of the single electron efficiency
       Int_t globalindexmc = -1;
       if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
         auto mcEvent = event.reducedMCevent();
+        globalindexmc = mcEvent.globalIndex();
+      }
+      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+        auto mcEvent = event.mcCollision();
         globalindexmc = mcEvent.globalIndex();
       }
       if (!(fMCEventLabels.find(globalindexmc) != fMCEventLabels.end())) {
@@ -604,12 +689,22 @@ struct AnalysisTrackSelection {
           groupedMCTracks.bindInternalIndicesTo(&tracksMC);
           runMCGenTrack(groupedMCTracks);
         }
+        // Not skimmed data
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+          auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
+          groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+          runMCGenTrack(groupedMCTracks);
+        }
       }
 
       // Loop over reconstructed tracks belonging to the event and fill the numerator of the efficiency as well as the resolution map
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
         auto groupedTracks = tracks.sliceBy(perReducedEventTracks, event.globalIndex());
         runRecTrack<gkTrackFillMap>(groupedTracks, tracksMC);
+      }
+      if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+        auto groupedTracks = tracks.sliceBy(perCollisionTracks, event.globalIndex());
+        runRecTrack<gkTrackFillMapNoSkimmed>(groupedTracks, tracksMC);
       }
     } // end loop over events
   }
@@ -656,6 +751,13 @@ struct AnalysisTrackSelection {
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
         VarManager::FillTrack<gkParticleMCFillMap>(track.reducedMCTrack());
       }
+      if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+        // If no MC particle is found, skip the track
+        if (track.has_mcParticle()) {
+          auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+          VarManager::FillTrack<gkParticleMCFillMapNoSkimmed>(mctrack);
+        }
+      }
 
       // compute track selection and publish the bit map
       int i = 0;
@@ -680,6 +782,14 @@ struct AnalysisTrackSelection {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           if ((*sig).CheckSignal(true, tracksMC, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
+          }
+        }
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+          if (track.has_mcParticle()) {
+            auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+            if ((*sig).CheckSignal(true, tracksMC, mctrack)) {
+              mcDecision |= (uint32_t(1) << isig);
+            }
           }
         }
       }
@@ -709,6 +819,14 @@ struct AnalysisTrackSelection {
                 mceta = mctrack.eta();
                 mcphi = mctrack.phi();
               }
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+                if (track.has_mcParticle()) {
+                  auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+                  mcpt = mctrack.pt();
+                  mceta = mctrack.eta();
+                  mcphi = mctrack.phi();
+                }
+              }
 
               if (track.sign() < 0) {
                 dynamic_cast<TH3D*>(fHistRecNegPartMC.at(j * fMCSignals.size() + i))->Fill(mcpt, mceta, mcphi);
@@ -731,6 +849,15 @@ struct AnalysisTrackSelection {
                 mcphi = mctrack.phi();
                 mcpdg = mctrack.pdgCode();
               }
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+                if (track.has_mcParticle()) {
+                  auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+                  mcpt = mctrack.pt();
+                  mceta = mctrack.eta();
+                  mcphi = mctrack.phi();
+                  mcpdg = mctrack.pdgCode();
+                }
+              }
               Double_t deltaptoverpt = -1000.;
               if (mcpt > 0.)
                 deltaptoverpt = (mcpt - track.pt()) / mcpt;
@@ -751,17 +878,31 @@ struct AnalysisTrackSelection {
       }   // end loop over MC signals
     }     // end loop over reconstructed track belonging to the events
   }
+
   void processSkimmed(soa::Filtered<MyEventsSelected> const& events, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(events, tracks, eventsMC, tracksMC);
   }
+
+  void processNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed> const& events, MyBarrelTracksNoSkimmed const& tracks, aod::McCollisions const& eventsMC, aod::McParticles_001 const& tracksMC)
+  {
+    runSelection<gkEventFillMapNoSkimmed, gkMCEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(events, tracks, eventsMC, tracksMC);
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
+  void processDummyNoSkimmed(MyEventsNoSkimmed&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisTrackSelection, processNoSkimmed, "Run barrel track selection without skimming", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDummyNoSkimmed, "Dummy process function", false);
 };
 
 struct AnalysisSameEventPairing {
@@ -1042,9 +1183,9 @@ struct AnalysisSameEventPairing {
 
           // not smeared after fiducial cuts
           if (genfidcut) {
-            if (!fConfigFillLS)
+            if (!fConfigFillLS) {
               dynamic_cast<TH2D*>(fHistGenPair.at(isig))->Fill(mass, pairpt);
-            else {
+            } else {
               if (t1.pdgCode() * t2.pdgCode() < 0) {
                 dynamic_cast<TH2D*>(fHistGenPair.at(isig * 2))->Fill(mass, pairpt);
               } else {
@@ -1181,8 +1322,14 @@ struct AnalysisSameEventPairing {
     // do nothing
   }
 
+  void processDummyNoSkimmed(MyEventsNoSkimmed&)
+  {
+    // do nothing
+  }
+
   PROCESS_SWITCH(AnalysisSameEventPairing, processToEESkimmed, "Run barrel barrel pairing on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDummyNoSkimmed, "Dummy process function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
