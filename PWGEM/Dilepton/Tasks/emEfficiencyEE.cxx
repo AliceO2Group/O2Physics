@@ -68,17 +68,17 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::Is
 using MyEventsNoSkimmed = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsSelectedNoSkimmed = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::EventCuts>;
 using MyBarrelTracksNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
-                                 aod::McTrackLabels>;
+                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                          aod::McTrackLabels>;
 using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
-                                 aod::BarrelTrackCuts, aod::McTrackLabels>;
+                                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                                  aod::BarrelTrackCuts, aod::McTrackLabels>;
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
@@ -143,7 +143,7 @@ struct AnalysisEventSelection {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
-      if(!event.has_mcCollision()) {
+      if (!event.has_mcCollision()) {
         pass = false;
       } else {
         VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
@@ -186,7 +186,6 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummyNoSkimmed, "Dummy process function", false);
-
 };
 struct AnalysisEventQa {
 
@@ -257,7 +256,7 @@ struct AnalysisEventQa {
       }
       // Not skimmed data
       if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
-        if(!event.has_mcCollision()) {
+        if (!event.has_mcCollision()) {
           continue;
         }
         auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
