@@ -164,7 +164,7 @@ int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
     numIndependentCand.push_back(nIndependent);
   }
   std::sort(numIndependentCand.begin(), numIndependentCand.end());
-  
+
   if (numIndependentCand.back() == 0) {
     return numIndependentCand.back();
   }
