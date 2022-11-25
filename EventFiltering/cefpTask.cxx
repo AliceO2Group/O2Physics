@@ -244,7 +244,7 @@ struct centralEventFilterTask {
     //   for (auto& lab : filterOpt.labels_cols) {
     //     std::cout << lab << "\t";
     //   }
-    //   std::cout << std::endl;
+    //    std::cout << std::endl;
     // }
 
     for (auto& table : mDownscaling) {
