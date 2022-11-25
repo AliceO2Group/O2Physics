@@ -76,11 +76,13 @@ struct LfTreeCreatorNuclei {
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
-                                    aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                    aod::pidTPCFullPr, aod::pidTOFFullPr,
-                                    aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                    aod::pidTPCFullHe, aod::pidTOFFullHe>;
+                                    aod::pidTPCFullPi, aod::pidTOFFullPi, 
+                                    aod::pidTPCFullKa, aod::pidTOFFullKa, 
+                                    aod::pidTPCFullPr, aod::pidTOFFullPr, 
+                                    aod::pidTPCFullDe, aod::pidTOFFullDe,  
+                                    aod::pidTPCFullTr, aod::pidTOFFullTr, 
+                                    aod::pidTPCFullHe, aod::pidTOFFullHe, 
+                                    aod::pidTPCFullAl, aod::pidTOFFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
@@ -106,12 +108,12 @@ struct LfTreeCreatorNuclei {
         tableEvents.lastIndex(),
         track.dcaXY(),
         track.dcaZ(),
-        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-        track.tpcNSigmaDe(), track.tpcNSigmaHe(),
-        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-        track.tofNSigmaDe(), track.tofNSigmaHe(),
-        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(),
-        track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(),
+        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), 
+        track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl(), 
+        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), 
+        track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl(), 
+        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(), 
+        track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(), 
         track.isEvTimeTOF(),
         track.isEvTimeT0AC(),
         track.hasTOF(),
