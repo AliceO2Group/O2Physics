@@ -11,6 +11,12 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TString.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -25,12 +31,6 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MixingLibrary.h"
-#include <TH1F.h>
-#include <THashList.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
-#include <algorithm>
 
 using std::cout;
 using std::endl;
@@ -83,7 +83,7 @@ constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::R
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 // constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 
-constexpr static int pairTypeEE = VarManager::kJpsiToEE;
+constexpr static int pairTypeEE = VarManager::kDecayToEE;
 
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses); // defines histograms for all tasks
@@ -313,7 +313,7 @@ struct AnalysisEventMixing {
     uint32_t twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
-        if constexpr (TPairType == VarManager::kJpsiToEE) {
+        if constexpr (TPairType == VarManager::kDecayToEE) {
           twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isBarrelSelected()) & fTwoTrackFilterMask;
         }
 
@@ -407,7 +407,7 @@ struct AnalysisSameEventPairing {
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
@@ -430,7 +430,7 @@ struct AnalysisSameEventPairing {
 
     // Keep track of all the histogram class names to avoid composing strings in the event mixing pairing
     TString histNames = "";
-    if (context.mOptions.get<bool>("processJpsiToEESkimmed") || context.mOptions.get<bool>("processVnJpsiToEESkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -445,15 +445,6 @@ struct AnalysisSameEventPairing {
         }
       }
     }
-
-    // ccdb->setURL(url.value);
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-    // ccdb->setCreatedNotAfter(nolaterthan.value);
-    // auto histCCDB = ccdb->get<TH1F>(ccdbPath.value);
-    // if (!histCCDB) {
-    //   LOGF(fatal, "CCDB histogram not found");
-    // }
 
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
@@ -477,7 +468,7 @@ struct AnalysisSameEventPairing {
     dileptonList.reserve(1);
     dileptonExtraList.reserve(1);
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
-      if constexpr (TPairType == VarManager::kJpsiToEE) {
+      if constexpr (TPairType == VarManager::kDecayToEE) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
       }
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
@@ -512,26 +503,26 @@ struct AnalysisSameEventPairing {
     }     // end loop over pairs
   }
 
-  void processJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  void processDecayToEESkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
   }
-  void processVnJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  void processVnDecayToEESkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kDecayToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks);
   }
   void processAllSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
   }
   // TODO: dummy function for the case when no process function is enabled
   void processDummy(MyEvents&)
@@ -539,8 +530,8 @@ struct AnalysisSameEventPairing {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, processVnJpsiToEESkimmed, "Run electron-electron pairing, with skimmed tracks for vn", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processVnDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks for vn", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
@@ -571,7 +562,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent");
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !(classStr.Contains("Pairs"))) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid");
       }
