@@ -85,6 +85,10 @@ struct TimestampTask {
         // isUnanchoredRun3MC: assuming orbit-reset is done in the beginning of each run
         // Setting orbit-reset timestamp to start-of-run timestamp
         orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
+      } else if (runNumber < 300000) {             // Run 2
+        LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), sorTimestamp);
+        orbitResetTimestamp = (*ctp)[0];
       } else {
         // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
         LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
