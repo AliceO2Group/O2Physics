@@ -224,9 +224,7 @@ struct NucleiSpectraTask {
       }
     }
 
-    std::cout << "CONFIGURATION" << std::endl;
     for (int iS{0}; iS < 4; ++iS) {
-      std::cout << cfgTreeConfig->get(iS, 0u) << std::endl;
       for (int iMax{0}; iMax < 2; ++iMax) {
         nuclei::pidCuts[0][iS][iMax] = cfgNsigmaTPC->get(iS, iMax);
         nuclei::pidCuts[1][iS][iMax] = cfgNsigmaTOF->get(iS, iMax);
