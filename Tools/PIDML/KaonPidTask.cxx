@@ -43,7 +43,7 @@ using MyTrack = MyTracks::iterator;
 } // namespace o2::aod
 
 struct KaonPidTask {
-  std::shared_ptr<PidONNXModel>pidModel; // creates a shared pointer to a new instance 'pidmodel'.
+  std::shared_ptr<PidONNXModel> pidModel; // creates a shared pointer to a new instance 'pidmodel'.
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgZvtxCut{"cfgZvtxCut", 10, "Z vtx cut"};
