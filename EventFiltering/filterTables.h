@@ -88,8 +88,8 @@ namespace decision
 {
 
 DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
-DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t);  //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);    //! CEFP decision
+DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t); //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);   //! CEFP decision
 
 } // namespace decision
 
