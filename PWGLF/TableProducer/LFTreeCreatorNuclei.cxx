@@ -80,7 +80,9 @@ struct LfTreeCreatorNuclei {
                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                     aod::pidTPCFullPr, aod::pidTOFFullPr,
                                     aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                    aod::pidTPCFullHe, aod::pidTOFFullHe>;
+                                    aod::pidTPCFullTr, aod::pidTOFFullTr,
+                                    aod::pidTPCFullHe, aod::pidTOFFullHe,
+                                    aod::pidTPCFullAl, aod::pidTOFFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
@@ -107,9 +109,9 @@ struct LfTreeCreatorNuclei {
         track.dcaXY(),
         track.dcaZ(),
         track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-        track.tpcNSigmaDe(), track.tpcNSigmaHe(),
+        track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl(),
         track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-        track.tofNSigmaDe(), track.tofNSigmaHe(),
+        track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl(),
         track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(),
         track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(),
         track.isEvTimeTOF(),
