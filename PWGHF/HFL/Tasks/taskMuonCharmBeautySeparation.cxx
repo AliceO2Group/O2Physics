@@ -9,25 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file taskHFmuCharmBeautySep.cxx. This workflow requires o2-analysis-fwdtrackextension as a dependency.
+/// \file taskHFmuCharmBeautySep.cxx. 
+/// \note This workflow requires o2-analysis-fwdtrackextension as a dependency.
 /// \brief Task to estimate HF->mu in the forward direction and use DCA observable to separate b-> mu, c-> mu.
 /// \author Shreyasi Acharya <shreyasi.acharya@cern.ch>, LPC, France
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "TDatabasePDG.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
-// Iterate on muon using the collision iterator in the dq-analysis style
-struct hfmuFromCharmBeautySeparation {
+struct HfTaskMuonCharmBeautySeparation{
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
@@ -92,6 +90,6 @@ struct hfmuFromCharmBeautySeparation {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hfmuFromCharmBeautySeparation>(cfgc),
+    adaptAnalysisTask<HfTaskMuonCharmBeautySeparation>(cfgc),
   };
 }
