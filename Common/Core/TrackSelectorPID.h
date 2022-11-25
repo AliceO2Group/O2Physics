@@ -514,7 +514,7 @@ class TrackSelectorPID
     mPtBayesMax = ptMax;
   }
 
-  /// Set cut above which a track should be accepted.
+  /// Set minimum Bayesian probability above which a track should be accepted.
   void setProbBayesMin(float cut)
   {
     mProbBayesMin = cut;
@@ -531,6 +531,8 @@ class TrackSelectorPID
   }
 
   /// Bayesian maximum probability algorithm.
+  /// \param track  track
+  /// \return true if selected species has the highest Bayesian probability
   template <typename T>
   bool isSelectedTrackBayesPID(const T& track)
   {
@@ -538,7 +540,9 @@ class TrackSelectorPID
     return track.bayesID() == mSpecies;
   }
 
-  /// Bayesian probability for particle type.
+  /// Checks if track is compatible with given particle species hypothesis within given Bayesian probability range.
+  /// \param track  track
+  /// \return true if track satisfies PID hypothesis for given Bayesian probability range
   template <typename T>
   bool isSelectedTrackBayesProbPID(const T& track)
   {
