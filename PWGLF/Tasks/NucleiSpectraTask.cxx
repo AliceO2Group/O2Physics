@@ -54,7 +54,8 @@ uint8_t getBinnedValue(double val, double max)
   }
 }
 
-float getBinCenter(uint8_t bin, double max) {
+float getBinCenter(uint8_t bin, double max)
+{
   if (bin == 0u) {
     return -max;
   } else if (bin == 255u) {
