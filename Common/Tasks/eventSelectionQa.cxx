@@ -64,6 +64,7 @@ struct EventSelectionQaTask {
     const AxisSpec axisMultV0C{1000, 0., isLowFlux ? 30000. : 30000., "V0C multiplicity"};
     const AxisSpec axisMultT0A{1000, 0., isLowFlux ? 10000. : 200000., "T0A multiplicity"};
     const AxisSpec axisMultT0C{1000, 0., isLowFlux ? 2000. : 70000., "T0C multiplicity"};
+    const AxisSpec axisMultT0M{1000, 0., isLowFlux ? 12000. : 270000., "T0M multiplicity"};
     const AxisSpec axisMultFDA{1000, 0., isLowFlux ? 50000. : 40000., "FDA multiplicity"};
     const AxisSpec axisMultFDC{1000, 0., isLowFlux ? 50000. : 40000., "FDC multiplicity"};
     const AxisSpec axisMultZNA{1000, 0., isLowFlux ? 1000. : 10000., "ZNA multiplicity"};
@@ -75,8 +76,8 @@ struct EventSelectionQaTask {
     const AxisSpec axisMultOflineFOR{300, 0., isLowFlux ? 300. : 1200., "Ofline FOR"};
 
     const AxisSpec axisTime{700, -35., 35., ""};
-    const AxisSpec axisTimeDif{100, -5., 5., ""};
-    const AxisSpec axisTimeSum{100, -5., 5., ""};
+    const AxisSpec axisTimeDif{100, -10., 10., ""};
+    const AxisSpec axisTimeSum{100, -10., 10., ""};
     const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
     const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
     const AxisSpec axisNcontrib{150, 0., isLowFlux ? 150. : 900., "n contributors"};
@@ -214,6 +215,12 @@ struct EventSelectionQaTask {
     histos.add("hMultT0Abgc", "C-side beam-gas events", kTH1F, {axisMultT0A});
     histos.add("hMultT0Cbga", "A-side beam-gas events", kTH1F, {axisMultT0C});
     histos.add("hMultT0Cbgc", "C-side beam-gas events", kTH1F, {axisMultT0C});
+
+    histos.add("hMultT0Mall", "BCs with collisions", kTH1F, {axisMultT0M});
+    histos.add("hMultT0Mref", "", kTH1F, {axisMultT0M});
+    histos.add("hMultT0Mtvx", "", kTH1F, {axisMultT0M});
+    histos.add("hMultT0Mzac", "", kTH1F, {axisMultT0M});
+    histos.add("hMultT0Mpup", "BCs with pileup", kTH1F, {axisMultT0M});
 
     histos.add("hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribITSonly", "", kTH2F, {axisNcontrib, axisColTimeRes});
@@ -571,20 +578,25 @@ struct EventSelectionQaTask {
     std::vector<bool> vIsTVX(nBCs, 0);
     std::vector<uint64_t> vGlobalBCs(nBCs, 0);
 
-    // debug of zdc orbit shifts
+    // bc-based event selection qa
     for (auto& bc : bcs) {
-      if (bc.has_zdc() && bc.zdc().timeZNA() < 2 && bc.zdc().timeZNA() > -2 && bc.zdc().timeZNC() < 2 && bc.zdc().timeZNC() > -2 && bc.zdc().energyCommonZNA() > 1000 && bc.zdc().energyCommonZNC() > 1000) {
-        if (bc.globalBC() % 3564 == 359) {
-          LOGP(debug, "zdc = {}", bc.globalBC() / 3564 - minOrbit);
-        }
+      if (bc.foundFT0Id() < 0)
+        continue;
+      float multT0A = 0;
+      for (auto amplitude : bc.ft0().amplitudeA()) {
+        multT0A += amplitude;
       }
-    }
-    for (auto& bc : bcs) {
-      if (bc.has_ft0() && bc.ft0().timeA() > -1 && bc.ft0().timeA() < 1 && bc.ft0().timeC() > -1 && bc.ft0().timeC() < 1) {
-        if (bc.globalBC() % 3564 == 360) {
-          LOGP(debug, "ft0 = {}", bc.globalBC() / 3564 - minOrbit);
-        }
+      float multT0C = 0;
+      for (auto amplitude : bc.ft0().amplitudeC()) {
+        multT0C += amplitude;
       }
+      histos.fill(HIST("hMultT0Mref"), multT0A + multT0C);
+      if (!bc.selection()[kIsTriggerTVX])
+        continue;
+      histos.fill(HIST("hMultT0Mtvx"), multT0A + multT0C);
+      if (!bc.selection()[kIsBBZAC])
+        continue;
+      histos.fill(HIST("hMultT0Mzac"), multT0A + multT0C);
     }
 
     // bc-based event selection qa
@@ -595,8 +607,10 @@ struct EventSelectionQaTask {
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
       int localBC = globalBC % nBCsPerOrbit;
-      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
-      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
+      // float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;  // TODO: temporary fix for LHC22s
+      // float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;  // TODO: temporary fix for LHC22s
+      float timeZNA = bc.foundZDCId() >= 0 ? bc.foundZDC().timeZNA() : -999.f; // TODO: temporary fix for LHC22s
+      float timeZNC = bc.foundZDCId() >= 0 ? bc.foundZDC().timeZNC() : -999.f; // TODO: temporary fix for LHC22s
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
       float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
       float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
@@ -714,6 +728,8 @@ struct EventSelectionQaTask {
       vIsTVX[indexBc] = bc.selection()[kIsTriggerTVX];
       vGlobalBCs[indexBc] = globalBC;
     }
+
+    // std::map<int32_t, std::vector<int32_t>> mapBcsToCollisions;
 
     // collision-based event selection qa
     for (auto& col : cols) {
@@ -840,8 +856,10 @@ struct EventSelectionQaTask {
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();
 
-      float timeZNA = foundBC.has_zdc() ? foundBC.zdc().timeZNA() : -999.f;
-      float timeZNC = foundBC.has_zdc() ? foundBC.zdc().timeZNC() : -999.f;
+      // float timeZNA = foundBC.has_zdc() ? foundBC.zdc().timeZNA() : -999.f; // TODO: temporary fix for LHC22s
+      // float timeZNC = foundBC.has_zdc() ? foundBC.zdc().timeZNC() : -999.f; // TODO: temporary fix for LHC22s
+      float timeZNA = col.foundZDCId() >= 0 ? col.foundZDC().timeZNA() : -999.f; // TODO: temporary fix for LHC22s
+      float timeZNC = col.foundZDCId() >= 0 ? col.foundZDC().timeZNC() : -999.f; // TODO: temporary fix for LHC22s
       float timeV0A = foundBC.has_fv0a() ? foundBC.fv0a().time() : -999.f;
       float timeT0A = foundBC.has_ft0() ? foundBC.ft0().timeA() : -999.f;
       float timeT0C = foundBC.has_ft0() ? foundBC.ft0().timeC() : -999.f;
@@ -888,11 +906,21 @@ struct EventSelectionQaTask {
           multFDC += amplitude;
         }
       }
+
+      // ZDC
+      float multZNA = col.foundZDCId() >= 0 ? col.foundZDC().energyCommonZNA() : -999.f;
+      float multZNC = col.foundZDCId() >= 0 ? col.foundZDC().energyCommonZNC() : -999.f;
+
       histos.fill(HIST("hMultT0Acol"), multT0A);
       histos.fill(HIST("hMultT0Ccol"), multT0C);
       histos.fill(HIST("hMultV0Acol"), multV0A);
       histos.fill(HIST("hMultFDAcol"), multFDA);
       histos.fill(HIST("hMultFDCcol"), multFDC);
+      histos.fill(HIST("hMultZNAcol"), multZNA);
+      histos.fill(HIST("hMultZNCcol"), multZNC);
+
+      // map from BCs to Collisions for pileup checks
+      // mapBcsToCollisions[foundBC.globalIndex()].push_back(col.globalIndex());
 
       // filling plots for accepted events
       if (!col.sel8()) {
@@ -912,8 +940,30 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultV0Aacc"), multV0A);
       histos.fill(HIST("hMultFDAacc"), multFDA);
       histos.fill(HIST("hMultFDCacc"), multFDC);
+      histos.fill(HIST("hMultZNAacc"), multZNA);
+      histos.fill(HIST("hMultZNCacc"), multZNC);
       histos.fill(HIST("hNcontribAcc"), nContributors);
-    }
+    } // collisions
+
+    // pileup checks
+
+    // for(const auto &entry : mapBcsToCollisions) {
+    //   int32_t bcIndex = entry.first;
+    //   const auto &foundBC = bcs.iteratorAt(bcIndex);
+    //   float multT0M = 0;
+    //   if (foundBC.has_ft0()) {
+    //     for (auto amplitude : foundBC.ft0().amplitudeA()) {
+    //       multT0M += amplitude;
+    //     }
+    //     for (auto amplitude : foundBC.ft0().amplitudeC()) {
+    //       multT0M += amplitude;
+    //     }
+    //   }
+    //   histos.fill(HIST("hMultT0Mall"), multT0M);
+    //   if (entry.second.size()>1) {
+    //     histos.fill(HIST("hMultT0Mpup"), multT0M);
+    //   }
+    // }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 

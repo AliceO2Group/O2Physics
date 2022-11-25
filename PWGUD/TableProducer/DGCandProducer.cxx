@@ -50,11 +50,9 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-
-#include "EventFiltering/PWGUD/DGHelpers.h"
-#include "PWGUD/Core/DGMCHelpers.h"
-#include "PWGUD/Core/UDHelperFunctions.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/UPCHelpers.h"
+#include "PWGUD/Core/DGSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,9 +74,13 @@ struct DGCandProducer {
 
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
+  Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDTracks> outputTracks;
+  // Produces<aod::UDTracksCov> outputTracksCov;
+  Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
+  Produces<aod::UDTracksFlags> outputTracksFlag;
 
   // MC tables
   Produces<aod::UDMcCollisions> outputMcCollisions;
@@ -90,7 +92,7 @@ struct DGCandProducer {
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                         aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
@@ -98,18 +100,121 @@ struct DGCandProducer {
   // MC inputs
   using MCCCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using MCCC = MCCCs::iterator;
-  using MCTCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels, aod::TOFSignal,
+  using MCTCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                          aod::McTrackLabels,
                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-
-                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                          aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using MCTC = MCTCs::iterator;
 
-  // function to update UDTracks, UDTracksPID, and UDTracksExtra
-  template <typename TTrack, typename TBC>
-  void updateUDTrackTables(TTrack const& track, TBC const& bc)
+  // extract FIT information
+  upchelpers::FITInfo getFITinfo(uint64_t const& bcnum, BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  {
+    // FITinfo
+    upchelpers::FITInfo info{};
+
+    // find bc with globalBC = bcnum
+    Partition<BCs> selbc = aod::bc::globalBC == bcnum;
+    selbc.bindTable(bcs);
+
+    // if BC exists then update FIT information for this BC
+    if (selbc.size() > 0) {
+      auto bc = selbc.begin();
+
+      // FT0
+      if (bc.has_foundFT0()) {
+        auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
+        info.timeFT0A = ft0.timeA();
+        info.timeFT0C = ft0.timeC();
+        const auto& ampsA = ft0.amplitudeA();
+        const auto& ampsC = ft0.amplitudeC();
+        info.ampFT0A = 0.;
+        for (auto amp : ampsA) {
+          info.ampFT0A += amp;
+        }
+        info.ampFT0C = 0.;
+        for (auto amp : ampsC) {
+          info.ampFT0C += amp;
+        }
+        info.triggerMaskFT0 = ft0.triggerMask();
+      }
+
+      // FV0A
+      if (bc.has_foundFV0()) {
+        auto fv0a = fv0as.iteratorAt(bc.foundFV0Id());
+        info.timeFV0A = fv0a.time();
+        const auto& amps = fv0a.amplitude();
+        info.ampFV0A = 0.;
+        for (auto amp : amps) {
+          info.ampFV0A += amp;
+        }
+        info.triggerMaskFV0A = fv0a.triggerMask();
+      }
+
+      // FDD
+      if (bc.has_foundFDD()) {
+        auto fdd = fdds.iteratorAt(bc.foundFDDId());
+        info.timeFDDA = fdd.timeA();
+        info.timeFDDC = fdd.timeC();
+        const auto& ampsA = fdd.chargeA();
+        const auto& ampsC = fdd.chargeC();
+        info.ampFDDA = 0.;
+        for (auto amp : ampsA) {
+          info.ampFDDA += amp;
+        }
+        info.ampFDDC = 0.;
+        for (auto amp : ampsC) {
+          info.ampFDDC += amp;
+        }
+        info.triggerMaskFDD = fdd.triggerMask();
+      }
+    }
+
+    // fill BG and BB flags in adjacent BCs [-15, 15]
+    // compute range to check
+    auto minbc = bcnum - 15;
+    auto maxbc = bcnum + 15;
+    Partition<BCs> bcrange = aod::bc::globalBC >= minbc && aod::bc::globalBC <= maxbc;
+    bcrange.bindTable(bcs);
+
+    // loop over bcrange and check
+    for (auto const& bc2u : bcrange) {
+
+      // 0 <= bit <= 31
+      auto bit = bc2u.globalBC() - minbc;
+      if (!bc2u.selection()[evsel::kNoBGT0A])
+        SETBIT(info.BGFT0Apf, bit);
+      if (!bc2u.selection()[evsel::kNoBGT0C])
+        SETBIT(info.BGFT0Cpf, bit);
+      if (bc2u.selection()[evsel::kIsBBT0A])
+        SETBIT(info.BBFT0Apf, bit);
+      if (bc2u.selection()[evsel::kIsBBT0C])
+        SETBIT(info.BBFT0Cpf, bit);
+      if (!bc2u.selection()[evsel::kNoBGV0A])
+        SETBIT(info.BGFV0Apf, bit);
+      if (bc2u.selection()[evsel::kIsBBV0A])
+        SETBIT(info.BBFV0Apf, bit);
+      if (!bc2u.selection()[evsel::kNoBGFDA])
+        SETBIT(info.BGFDDApf, bit);
+      if (!bc2u.selection()[evsel::kNoBGFDC])
+        SETBIT(info.BGFDDCpf, bit);
+      if (bc2u.selection()[evsel::kIsBBFDA])
+        SETBIT(info.BBFDDApf, bit);
+      if (bc2u.selection()[evsel::kIsBBFDC])
+        SETBIT(info.BBFDDCpf, bit);
+    }
+
+    return info;
+  }
+
+  // function to update UDTracks, UDTracksCov, UDTracksDCA, UDTracksPID, UDTracksExtra, UDTracksFlag,
+  // and UDTrackCollisionIDs
+  template <typename TTrack>
+  void updateUDTrackTables(TTrack const& track, uint64_t const& bcnum)
   {
     outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
-                 bc.globalBC(), track.trackTime(), track.trackTimeRes());
+                 bcnum, track.trackTime(), track.trackTimeRes());
+    // outputTracksCov(track.x(), track.y(), track.z(), track.sigmaY(), track.sigmaZ());
+    outputTracksDCA(track.dcaZ(), track.dcaXY());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
                     track.tpcNSigmaPi(),
@@ -136,6 +241,8 @@ struct DGCandProducer {
                       track.length(),
                       track.tofExpMom(),
                       track.detectorMap());
+    outputTracksFlag(track.has_collision(),
+                     track.isPVContributor());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value
@@ -212,29 +319,42 @@ struct DGCandProducer {
                    aod::FV0As& fv0as,
                    aod::FDDs& fdds)
   {
+
     // nominal BC
     auto bc = collision.bc_as<BCs>();
 
     // obtain slice of compatible BCs
-    auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+    auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
     if (isDGEvent == 0) {
-      LOGF(info, "  Data: good collision!");
+      LOGF(debug, "  Data: good collision!");
+
+      // fill FITInfo
+      upchelpers::FITInfo fitInfo = getFITinfo(bc.globalBC(), bcs, ft0s, fv0as, fdds);
 
       // update DG candidates tables
+      auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
-                       collision.numContrib(), netCharge(tracks),
-                       rPVtrwTOF<true>(tracks, collision.numContrib()));
+                       collision.numContrib(), udhelpers::netCharge<true>(tracks),
+                       rtrwTOF);
+      outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
+                           fitInfo.triggerMaskFT0,
+                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
+                           fitInfo.triggerMaskFDD,
+                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
+                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
+                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
+                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
 
       // update DGTracks tables
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
-          updateUDTrackTables(track, bc);
+          updateUDTrackTables(track, bc.globalBC());
         }
       }
     }
@@ -263,9 +383,18 @@ struct DGCandProducer {
 
     // is this a central diffractive event?
     // by default it is assumed to be a MB event
-    bool isPythiaDiff = isPythiaCDE(McParts);
-    bool isGraniittiDiff = isGraniittiCDE(McParts);
+    bool isPythiaDiff = udhelpers::isPythiaCDE(McParts);
+    bool isGraniittiDiff = udhelpers::isGraniittiCDE(McParts);
     LOGF(debug, "mcCol %i type %i / %i / %i", (int)McCol.globalIndex(), !isPythiaDiff && !isGraniittiDiff, isPythiaDiff, isGraniittiDiff);
+    /*
+    // mctruth
+    int mctruth = -1;
+    if (isPythiaDiff) {
+      mctruth = 1;
+    } else if (isGraniittiDiff) {
+      mctruth = 2;
+    }
+    */
 
     // MC BC
     auto mcbc = McCol.bc_as<BCs>();
@@ -292,7 +421,7 @@ struct DGCandProducer {
 
       // is this a collision to be saved?
       // obtain slice of compatible BCs
-      auto bcRange = MCcompatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+      auto bcRange = udhelpers::MCcompatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
 
       // apply DG selection
       auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, collisionTracks, collisionFwdTracks);
@@ -309,16 +438,17 @@ struct DGCandProducer {
         }
 
         // UDCollisions
+        auto rtrwTOF = udhelpers::rPVtrwTOF<true>(collisionTracks, collision.numContrib());
         outputCollisions(bc.globalBC(), bc.runNumber(),
                          collision.posX(), collision.posY(), collision.posZ(),
-                         collision.numContrib(), netCharge(tracks),
-                         rPVtrwTOF<true>(collisionTracks, collision.numContrib()));
+                         collision.numContrib(), udhelpers::netCharge<true>(tracks),
+                         rtrwTOF);
 
         // UDTracks, UDTrackCollisionID, UDTracksExtras, UDMcTrackLabels
         for (auto& track : collisionTracks) {
           // but save only the Primary Vertex tracks
           if (track.isPVContributor()) {
-            updateUDTrackTables(track, bc);
+            updateUDTrackTables(track, bc.globalBC());
 
             // properly correct the index into the UDMcParticles tables with deltaIndex
             auto newval = track.mcParticleId() < 0 ? track.mcParticleId() : track.mcParticleId() + deltaIndex;

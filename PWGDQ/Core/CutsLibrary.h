@@ -720,6 +720,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
     cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
+    cut->AddCut(VarManager::kTPCncls, 60.0, 170.);
     cut->AddCut(VarManager::kITSncls, 3.5, 7.5);
     return cut;
   }

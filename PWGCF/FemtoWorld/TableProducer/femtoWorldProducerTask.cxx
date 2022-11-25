@@ -14,6 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
+#include "CCDB/BasicCCDBManager.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldV0Selection.h"
@@ -37,10 +38,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
-
-// for comparison because of the NaN
-#include <math.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
@@ -165,7 +162,9 @@ struct femtoWorldProducerTask {
   Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
   Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
-
+  Configurable<bool> ConfNsigmaTPCTOFKaon{"ConfNsigmaTPCTOFKaon", true, "Use TPC and TOF for PID of Kaons"};
+  Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 5.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
+  Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 5.0, "TPC Kaon Sigma for momentum < 0.4"};
   // PHI Candidates
   FemtoWorldPhiSelection PhiCuts;
   Configurable<std::vector<float>> ConfPhiSign{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kPhiSign, "Phi selection: ")};
@@ -268,11 +267,13 @@ struct femtoWorldProducerTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // changed long to float because of the MegaLinter
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
   // PID
+  /*
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     bool fNsigmaTPCTOF = true;
@@ -282,36 +283,74 @@ struct femtoWorldProducerTask {
       if (mom > 0.5) {
         //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
         if (mom < 2.0) {
-          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma)
+          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma) {
             return true;
-        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2)
+          }
+        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2) {
           return true;
+        }
       } else {
-        if (TMath::Abs(nsigmaTPCK) < fNsigma)
+        if (TMath::Abs(nsigmaTPCK) < fNsigma) {
           return true;
+        }
       }
     } else {
-
       if (mom < 0.4) {
         if (nsigmaTOFK < -999.) {
-          if (TMath::Abs(nsigmaTPCK) < 2.0)
+          if (TMath::Abs(nsigmaTPCK) < 2.0) {
             return true;
-        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          }
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
           return true;
-      } else if (mom >= 0.4 && mom <= 0.6) {
+        }
+      } else if ((mom >= 0.4 && mom <= 0.45) || (mom >= 0.5 && mom <= 0.6)) {
         if (nsigmaTOFK < -999.) {
-          if (TMath::Abs(nsigmaTPCK) < 2.0)
+          if (TMath::Abs(nsigmaTPCK) < 2.0) {
             return true;
-        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          }
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
           return true;
+        }
+      } else if ((mom >= 0.45 && mom <= 0.5)) {
+        if (ConfKaonChangePID == true) { // reducing contamination
+          return false;
+        } else {
+          return true;
+        }
       } else if (nsigmaTOFK < -999.) {
         return false;
-      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
         return true;
+      }
+    }
+    return false;
+  }*/
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    //|nsigma_TPC| < 5 for p < 0.4 GeV/c
+    //|nsigma_combined| < 5 for p > 0.4
+
+    // using configurables:
+    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
+    // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
+    // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
+    if (ConfNsigmaTPCTOFKaon) {
+      if (mom < 0.4) {
+        if (TMath::Abs(nsigmaTPCK) < ConfNsigmaTPCKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.4) {
+        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfNsigmaCombinedKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      }
     }
     return false;
   }
-
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
   float getMagneticFieldTesla(uint64_t timestamp)
   {
@@ -641,9 +680,7 @@ struct femtoWorldProducerTask {
           continue;
         } else if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) { // eta for part2
           continue;
-        }
-        // PID for Kaons
-        else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+        } else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) { // PID for Kaons
           continue;
         } else if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
           continue;

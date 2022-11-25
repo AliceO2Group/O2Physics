@@ -94,11 +94,11 @@ class VarManager : public TObject
 
   enum PairCandidateType {
     // TODO: need to agree on a scheme to incorporate all various hypotheses (e.g. e - mu, jpsi - K+, Jpsi - pipi,...)
-    kJpsiToEE = 0,   // J/psi        -> e+ e-
-    kJpsiToMuMu,     // J/psi        -> mu+ mu-
-    kElectronMuon,   // Electron - muon correlations
-    kBcToThreeMuons, // Bc         -> mu+ mu- mu+
-    kBtoJpsiEEK,     // B+             -> e+ e- K+
+    kDecayToEE = 0,  // e.g. J/psi        -> e+ e-
+    kDecayToMuMu,    // e.g. J/psi        -> mu+ mu-
+    kElectronMuon,   // e.g. Electron - muon correlations
+    kBcToThreeMuons, // e.g. Bc           -> mu+ mu- mu+
+    kBtoJpsiEEK,     // e.g. B+           -> e+ e- K+
     kNMaxCandidateTypes
   };
 
@@ -410,7 +410,7 @@ class VarManager : public TObject
   template <int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2>
-  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kJpsiToEE);
+  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
   template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
@@ -884,7 +884,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   float m1 = fgkElectronMass;
   float m2 = fgkElectronMass;
-  if constexpr (pairType == kJpsiToMuMu) {
+  if constexpr (pairType == kDecayToMuMu) {
     m1 = fgkMuonMass;
     m2 = fgkMuonMass;
   }
@@ -911,7 +911,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values[kCosThetaHE] = (t1.sign() > 0 ? zaxis.Dot(v1_CM) : zaxis.Dot(v2_CM));
   }
 
-  if constexpr ((pairType == kJpsiToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
+  if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
     if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY]) {
       // Quantities based on the barrel tables
@@ -1002,7 +1002,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 
   float m1 = fgkElectronMass;
   float m2 = fgkElectronMass;
-  if constexpr (pairType == kJpsiToMuMu) {
+  if constexpr (pairType == kDecayToMuMu) {
     m1 = fgkMuonMass;
     m2 = fgkMuonMass;
   }
@@ -1030,7 +1030,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
 
   float m1 = fgkElectronMass;
   float m2 = fgkElectronMass;
-  if (pairType == kJpsiToMuMu) {
+  if (pairType == kDecayToMuMu) {
     m1 = fgkMuonMass;
     m2 = fgkMuonMass;
   }
@@ -1068,7 +1068,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   // auto pars1 = getTrackParCov(t1);
   // auto pars2 = getTrackParCov(t2);
   // We need to hide the cov data members from the cases when no cov table is provided
-  if constexpr ((pairType == kJpsiToEE) && trackHasCov) {
+  if constexpr ((pairType == kDecayToEE) && trackHasCov) {
     std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
     std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
                                     t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
@@ -1080,7 +1080,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
                                     t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
     o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
     procCode = fgFitterTwoProngBarrel.process(pars1, pars2);
-  } else if constexpr ((pairType == kJpsiToMuMu) && muonHasCov) {
+  } else if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
     // Initialize track parameters for forward
     double chi21 = t1.chi2();
     double chi22 = t2.chi2();
@@ -1138,7 +1138,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     // auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
 
-    if constexpr (pairType == kJpsiToEE && trackHasCov) {
+    if constexpr (pairType == kDecayToEE && trackHasCov) {
       secondaryVertex = fgFitterTwoProngBarrel.getPCACandidate();
       bz = fgFitterTwoProngBarrel.getBz();
       covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrixFlat();
@@ -1150,7 +1150,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       trackParVar1.getPxPyPzGlo(pvec1);
       trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
-    } else if constexpr (pairType == kJpsiToMuMu && muonHasCov) {
+    } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
       // Get pca candidate from forward DCA fitter
       m1 = fgkMuonMass;
       m2 = fgkMuonMass;
@@ -1405,7 +1405,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
   float m1 = fgkElectronMass;
   float m2 = fgkElectronMass;
-  if constexpr (pairType == kJpsiToMuMu) {
+  if constexpr (pairType == kDecayToMuMu) {
     m1 = fgkMuonMass;
     m2 = fgkMuonMass;
   }
