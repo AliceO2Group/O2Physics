@@ -89,14 +89,12 @@ struct TimestampTask {
         LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
         auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), sorTimestamp);
         orbitResetTimestamp = (*ctp)[0];
+      } else {
+        // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
+        LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp);
+        orbitResetTimestamp = (*ctp)[0];
       }
-    }
-    else
-    {
-      // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
-      LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
-      auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp);
-      orbitResetTimestamp = (*ctp)[0];
     }
 
     // Adding the timestamp to the cache map
