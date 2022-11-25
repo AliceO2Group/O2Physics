@@ -85,29 +85,37 @@ struct TimestampTask {
         // isUnanchoredRun3MC: assuming orbit-reset is done in the beginning of each run
         // Setting orbit-reset timestamp to start-of-run timestamp
         orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
-      } else {
-        // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
-        LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
-        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp);
+      } else if (runNumber < 300000) {             // Run 2
+        LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), sorTimestamp);
         orbitResetTimestamp = (*ctp)[0];
       }
-
-      // Adding the timestamp to the cache map
-      std::pair<std::map<int, int64_t>::iterator, bool> check;
-      check = mapRunToOrbitReset.insert(std::pair<int, int64_t>(runNumber, orbitResetTimestamp));
-      if (!check.second) {
-        LOGF(fatal, "Run number %i already existed with a orbit-reset timestamp of %llu", runNumber, check.first->second);
-      }
-      LOGF(info, "Add new run number %i with orbit-reset timestamp %llu to cache", runNumber, orbitResetTimestamp);
+    }
+    else
+    {
+      // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
+      LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
+      auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp);
+      orbitResetTimestamp = (*ctp)[0];
     }
 
-    if (verbose.value) {
-      LOGF(info, "Orbit-reset timestamp for run number %i found: %llu us", runNumber, orbitResetTimestamp);
+    // Adding the timestamp to the cache map
+    std::pair<std::map<int, int64_t>::iterator, bool> check;
+    check = mapRunToOrbitReset.insert(std::pair<int, int64_t>(runNumber, orbitResetTimestamp));
+    if (!check.second) {
+      LOGF(fatal, "Run number %i already existed with a orbit-reset timestamp of %llu", runNumber, check.first->second);
     }
-
-    timestampTable((orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000); // us -> ms
+    LOGF(info, "Add new run number %i with orbit-reset timestamp %llu to cache", runNumber, orbitResetTimestamp);
   }
-};
+
+  if (verbose.value) {
+    LOGF(info, "Orbit-reset timestamp for run number %i found: %llu us", runNumber, orbitResetTimestamp);
+  }
+
+  timestampTable((orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000); // us -> ms
+}
+}
+;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
