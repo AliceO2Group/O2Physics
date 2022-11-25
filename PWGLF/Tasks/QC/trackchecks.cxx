@@ -120,14 +120,14 @@ struct TrackChecks {
       histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_tr", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
       histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_al", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
     } else {
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_el", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_pi", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_ka", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_pr", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_de", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_he", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_tr", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_truepid_al", "Reco  tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_el", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_pi", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_ka", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_pr", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_de", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_he", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_tr", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
+      histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_al", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
     }
   }
 
@@ -255,28 +255,28 @@ struct TrackChecks {
     for (auto& track : tracks) {
       // reconstructed
       if (fabs(track.tpcNSigmaEl()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_el"), track.pt(), eta2y(track.pt(), mass[getparticleint(11)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_el"), track.pt(), eta2y(track.pt(), mass[getparticleint(11)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaPi()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_pi"), track.pt(), eta2y(track.pt(), mass[getparticleint(211)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pi"), track.pt(), eta2y(track.pt(), mass[getparticleint(211)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaKa()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_ka"), track.pt(), eta2y(track.pt(), mass[getparticleint(321)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_ka"), track.pt(), eta2y(track.pt(), mass[getparticleint(321)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaPr()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_pr"), track.pt(), eta2y(track.pt(), mass[getparticleint(2212)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pr"), track.pt(), eta2y(track.pt(), mass[getparticleint(2212)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaDe()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_de"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000010020)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_de"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000010020)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaHe()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_he"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000020030)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_he"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000020030)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaTr()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_tr"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000010030)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_tr"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000010030)], track.eta()), track.dcaXY());
       }
       if (fabs(track.tpcNSigmaAl()) < 2) {
-        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_pid_al"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000020040)], track.eta()), track.dcaXY());
+        histograms.fill(HIST("RecAftTrkSel/hRecTrkAftTrkSel_al"), track.pt(), eta2y(track.pt(), mass[getparticleint(1000020040)], track.eta()), track.dcaXY());
       }
     }
   }
