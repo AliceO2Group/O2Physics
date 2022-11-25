@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file taskMuonCharmBeautySeparation.cxx.
+/// \file taskHFmuCharmBeautySep.cxx.
 /// \note This workflow requires o2-analysis-fwdtrackextension as a dependency.
 /// \brief Task to estimate HF->mu in the forward direction and use DCA observable to separate b-> mu, c-> mu.
 /// \author Shreyasi Acharya <shreyasi.acharya@cern.ch>, LPC, France
@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct HfTaskMuonCharmBeautySeparation{
+struct HfTaskMuonCharmBeautySeparation {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
