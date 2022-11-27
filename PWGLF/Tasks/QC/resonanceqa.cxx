@@ -15,12 +15,12 @@
 // (4) particle = 1 --> kstar
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
-#include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/PIDResponse.h"
@@ -31,10 +31,9 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
 #include "DataFormatsParameters/GRPObject.h"
+
 #include <TH1F.h>
-#include <cmath>
 #include <TDirectory.h>
 #include <THn.h>
 #include <TLorentzVector.h>
@@ -51,6 +50,8 @@
 #include <array>
 #include <cstdlib>
 #include <utility>
+#include "Framework/ASoAHelpers.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
