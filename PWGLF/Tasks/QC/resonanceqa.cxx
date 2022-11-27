@@ -31,6 +31,10 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include <TH1F.h>
 #include <TDirectory.h>
 #include <THn.h>
@@ -43,9 +47,6 @@
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
 #include "Framework/ASoAHelpers.h"
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
