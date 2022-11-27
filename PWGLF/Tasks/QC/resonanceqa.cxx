@@ -15,28 +15,23 @@
 //////(4) particle = 1 --> kstar/////////////////
 //////(5) particle = 2 --> lambdastar/////////////////
 //////(6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed/////////////////
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
 #include "Framework/ASoAHelpers.h"
-
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
-
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
-
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/RecoDecay.h"
-
 #include "DataFormatsParameters/GRPObject.h"
 #include <TH1F.h>
 #include <cmath>
@@ -56,16 +51,13 @@
 #include <array>
 #include <cstdlib>
 #include <utility>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-
 struct resonanceqa {
   framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
   //events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   //track
@@ -80,7 +72,6 @@ struct resonanceqa {
   Configurable<int> cfgparticletype{"cfgparticletype", 0, "Resonance particle type: 0(kstar), 1(phi), 2(Lambdastar)"};
   //MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
-
   void init(o2::framework::InitContext&)
   {
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{500, 0.0, 500.0}});
@@ -95,7 +86,6 @@ struct resonanceqa {
     histos.add("hNsigmaPionTOF", "NsigmaPion TOF distribution", kTH1F, {{100, -10.0f, 10.0f}});
     histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH1F, {{100, -10.0f, 10.0f}});
     histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH1F, {{100, -10.0f, 10.0f}});
-
     if (cfgparticletype == 1 && !isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
       histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
@@ -128,7 +118,6 @@ struct resonanceqa {
       histos.add("h1LambdastarRec", "Lambdastar meson Rec", kTH1F, {{100, 0.0f, 10.0f}});
     }
   }
-
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massKa = RecoDecay::getMassPDG(kKPlus);
   double massPr = 0.938272088f;
@@ -141,17 +130,14 @@ struct resonanceqa {
   array<float, 3> pvec0;
   array<float, 3> pvec1;
   array<float, 3> pvec1_roat;
-
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
     if (!candidate.isGlobalTrack()) {
       return false;
     }
-
     return true;
   }
-
   template <typename T>
   bool selectionPID(const T& candidate, int PID)
   {
@@ -174,7 +160,6 @@ struct resonanceqa {
     }
     return false;
   }
-
   template <typename T1, typename T2>
   void FillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool rotational, bool likesign, float massd1, float massd2)
   {
@@ -201,7 +186,6 @@ struct resonanceqa {
           histos.fill(HIST("h3LambdastarInvMassUnlikeSign"), multiplicity, pT, mass);
         }
       }
-
       if (track1Sign * track2Sign < 0 && mix) ///mix
       {
         if (cfgparticletype == 0) {
@@ -244,30 +228,25 @@ struct resonanceqa {
       }
     }
   }
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                   aod::pidTPCFullPr, aod::pidTOFFullPr>>;
-
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                     aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                     aod::pidTPCFullPr, aod::pidTOFFullPr,
                                                     aod::McTrackLabels>>;
-
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, "multiplicity axis for histograms"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1};
-
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
@@ -310,13 +289,11 @@ struct resonanceqa {
             FillinvMass(track1, track2, multiplicity, unlike, mix, rotational, likesign, massKa, massPi);
           }
         }
-
         else if (cfgparticletype == 1) {
           if (selectionPID(track1, 1) && selectionPID(track2, 1)) {
             FillinvMass(track1, track2, multiplicity, unlike, mix, rotational, likesign, massKa, massKa);
           }
         }
-
         else if (cfgparticletype == 2) {
           if (selectionPID(track1, 1) && selectionPID(track2, 2)) {
             FillinvMass(track1, track2, multiplicity, unlike, mix, rotational, likesign, massKa, massPr);
@@ -328,7 +305,6 @@ struct resonanceqa {
     }
   }
   PROCESS_SWITCH(resonanceqa, processSameEvent, "Process Same event", false);
-
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
@@ -357,13 +333,11 @@ struct resonanceqa {
             FillinvMass(t1, t2, multiplicity, unlike, mix, rotational, likesign, massKa, massPi);
           }
         }
-
         else if (cfgparticletype == 1) {
           if (selectionPID(t1, 1) && selectionPID(t2, 1)) {
             FillinvMass(t1, t2, multiplicity, unlike, mix, rotational, likesign, massKa, massKa);
           }
         }
-
         else if (cfgparticletype == 2) {
           if (selectionPID(t1, 1) && selectionPID(t2, 2)) {
             FillinvMass(t1, t2, multiplicity, unlike, mix, rotational, likesign, massKa, massPr);
@@ -375,7 +349,6 @@ struct resonanceqa {
     }
   }
   PROCESS_SWITCH(resonanceqa, processMixedEvent, "Process Mixed event", false);
-
   void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
   {
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
@@ -394,7 +367,6 @@ struct resonanceqa {
         if (cfgparticletype == 2 && std::abs(mcParticle.pdgCode()) != 3124) {
           continue;
         }
-
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
         if (kDaughters.size() != 2) {
           continue;
@@ -405,26 +377,22 @@ struct resonanceqa {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
-
           if (kCurrentDaughter.pdgCode() == +321 && cfgparticletype == 1) {
             daughtp = true;
           } else if (kCurrentDaughter.pdgCode() == -321 && cfgparticletype == 1) {
             daughtm = true;
           }
-
           else if ((kCurrentDaughter.pdgCode() == 321 || kCurrentDaughter.pdgCode() == 211) && cfgparticletype == 0) {
             daughtp = true;
           } else if ((kCurrentDaughter.pdgCode() == -321 || kCurrentDaughter.pdgCode() == -211) && cfgparticletype == 0) {
             daughtm = true;
           }
-
           else if ((kCurrentDaughter.pdgCode() == 321 || kCurrentDaughter.pdgCode() == 2212) && cfgparticletype == 2) {
             daughtp = true;
           } else if ((kCurrentDaughter.pdgCode() == -321 || kCurrentDaughter.pdgCode() == -2212) && cfgparticletype == 2) {
             daughtm = true;
           }
         }
-
         if (daughtp && daughtm) {
           if (cfgparticletype == 1) {
             histos.fill(HIST("h1PhiGen"), mcParticle.pt());
@@ -438,7 +406,6 @@ struct resonanceqa {
     }
   }
   PROCESS_SWITCH(resonanceqa, processGen, "Process Generated", false);
-
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
@@ -467,20 +434,16 @@ struct resonanceqa {
         if (track1.sign() * track2.sign() > 0) {
           continue;
         }
-
         const auto mctrack1 = track1.mcParticle();
         const auto mctrack2 = track2.mcParticle();
-
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
-
         if (!mctrack1.isPhysicalPrimary()) {
           continue;
         }
         if (!mctrack2.isPhysicalPrimary()) {
           continue;
         }
-
         if (cfgparticletype == 0 && !((track1PDG == 321 && track2PDG == 211) || (track1PDG == 211 && track2PDG == 321))) {
           continue;
         }
@@ -490,7 +453,6 @@ struct resonanceqa {
         if (cfgparticletype == 2 && !((track1PDG == 321 && track2PDG == 2212) || (track1PDG == 2212 && track2PDG == 321))) {
           continue;
         }
-
         for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
           for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
             if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
@@ -502,9 +464,7 @@ struct resonanceqa {
             if (std::abs(mothertrack1.y()) > 0.5) {
               continue;
             }
-
             if (cfgparticletype == 0) {
-
               if ((selectionPID(track1, 0) && selectionPID(track2, 1)) || (selectionPID(track1, 1) && selectionPID(track2, 0))) {
                 if (std::abs(mothertrack1.pdgCode()) != 313) {
                   continue;
@@ -512,7 +472,6 @@ struct resonanceqa {
                 histos.fill(HIST("h1KstarRec"), mothertrack1.pt());
               }
             }
-
             else if (cfgparticletype == 2) {
               if ((selectionPID(track1, 1) && selectionPID(track2, 2)) || (selectionPID(track1, 2) && selectionPID(track2, 1))) {
                 if (std::abs(mothertrack1.pdgCode()) != 3124) {
@@ -521,7 +480,6 @@ struct resonanceqa {
                 histos.fill(HIST("h1LambdastarRec"), mothertrack1.pt());
               }
             }
-
             else if (cfgparticletype == 1) {
               if (selectionPID(track1, 1) && selectionPID(track2, 1)) {
                 if (std::abs(mothertrack1.pdgCode()) != 333) {
@@ -541,7 +499,6 @@ struct resonanceqa {
   }
   PROCESS_SWITCH(resonanceqa, processRec, "Process Reconstructed", false);
 };
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
