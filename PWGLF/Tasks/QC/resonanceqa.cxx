@@ -16,6 +16,22 @@
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
 
+#include <TH1F.h>
+#include <TDirectory.h>
+#include <THn.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TDatabasePDG.h>
+
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,22 +46,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-
-#include <cmath>
-#include <array>
-#include <cstdlib>
-
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
 #include "Framework/ASoAHelpers.h"
 
 using namespace o2;
