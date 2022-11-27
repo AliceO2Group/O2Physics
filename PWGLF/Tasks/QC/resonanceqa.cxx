@@ -156,19 +156,21 @@ struct resonanceqa {
   bool selectionPID(const T& candidate, int PID)
   {
     if (candidate.hasTOF()) {
-      if (PID == 0 && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined))
+      if (PID == 0 && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
-      else if (PID == 1 && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined))
+      } else if (PID == 1 && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
-      else if (PID == 2 && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined))
+      } else if (PID == 2 && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
+      }
     } else {
-      if (PID == 0 && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC)
+      if (PID == 0 && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
         return true;
-      else if (PID == 1 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC)
+      } else if (PID == 1 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
         return true;
-      else if (PID == 2 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC)
+      } else if (PID == 2 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
         return true;
+      }
     }
     return false;
   }
@@ -191,48 +193,53 @@ struct resonanceqa {
     if (std::abs(rapidity) < 0.5) {
       if (track1Sign * track2Sign < 0 && unlike) ///unlike sign
       {
-        if (cfgparticletype == 0)
+        if (cfgparticletype == 0) {
           histos.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, pT, mass);
-        else if (cfgparticletype == 1)
+        } else if (cfgparticletype == 1) {
           histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
-        else if (cfgparticletype == 2)
+        } else if (cfgparticletype == 2) {
           histos.fill(HIST("h3LambdastarInvMassUnlikeSign"), multiplicity, pT, mass);
+        }
       }
 
       if (track1Sign * track2Sign < 0 && mix) ///mix
       {
-        if (cfgparticletype == 0)
+        if (cfgparticletype == 0) {
           histos.fill(HIST("h3KstarInvMassMixed"), multiplicity, pT, mass);
-        else if (cfgparticletype == 1)
+        } else if (cfgparticletype == 1) {
           histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
-        else if (cfgparticletype == 2)
+        } else if (cfgparticletype == 2) {
           histos.fill(HIST("h3LambdastarInvMassMixed"), multiplicity, pT, mass);
+        }
       }
       if (track1Sign * track2Sign < 0 && rotational) //rotational
       {
-        if (cfgparticletype == 0)
+        if (cfgparticletype == 0) {
           histos.fill(HIST("h3KstarInvMassRotational"), multiplicity, pT, mass_roat);
-        else if (cfgparticletype == 1)
+        } else if (cfgparticletype == 1) {
           histos.fill(HIST("h3PhiInvMassRotational"), multiplicity, pT, mass_roat);
-        else if (cfgparticletype == 2)
+        } else if (cfgparticletype == 2) {
           histos.fill(HIST("h3LambdastarInvMassRotational"), multiplicity, pT, mass_roat);
+        }
       }
       if (track1Sign * track2Sign > 0 && likesign) ///like sign
       {
         if (track1Sign > 0 && track2Sign > 0) {
-          if (cfgparticletype == 0)
+          if (cfgparticletype == 0) {
             histos.fill(HIST("h3KstarInvMassLikeSignPP"), multiplicity, pT, mass);
-          else if (cfgparticletype == 1)
+          } else if (cfgparticletype == 1) {
             histos.fill(HIST("h3PhiInvMassLikeSignPP"), multiplicity, pT, mass);
-          else if (cfgparticletype == 2)
+          } else if (cfgparticletype == 2) {
             histos.fill(HIST("h3LambdastarInvMassLikeSignPP"), multiplicity, pT, mass);
+          }
         } else {
-          if (cfgparticletype == 0)
+          if (cfgparticletype == 0) {
             histos.fill(HIST("h3KstarInvMassLikeSignMM"), multiplicity, pT, mass);
-          else if (cfgparticletype == 1)
+          } else if (cfgparticletype == 1) {
             histos.fill(HIST("h3PhiInvMassLikeSignMM"), multiplicity, pT, mass);
-          else if (cfgparticletype == 2)
+          } else if (cfgparticletype == 2) {
             histos.fill(HIST("h3LambdastarInvMassLikeSignMM"), multiplicity, pT, mass);
+          }
         }
       }
     }
@@ -271,8 +278,9 @@ struct resonanceqa {
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
     for (auto track1 : tracks) {
-      if (!selectionTrack(track1))
+      if (!selectionTrack(track1)) {
         continue;
+      }
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
@@ -284,11 +292,13 @@ struct resonanceqa {
       histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr());
       auto track1ID = track1.globalIndex();
       for (auto track2 : tracks) {
-        if (!selectionTrack(track2))
+        if (!selectionTrack(track2)) {
           continue;
+        }
         auto track2ID = track2.globalIndex();
-        if (track2ID <= track1ID)
+        if (track2ID <= track1ID) {
           continue;
+        }
         bool unlike = true;
         bool mix = false;
         bool rotational = true;
@@ -334,10 +344,12 @@ struct resonanceqa {
         bool mix = true;
         bool rotational = false;
         bool likesign = false;
-        if (!selectionTrack(t1))
+        if (!selectionTrack(t1)) {
           continue;
-        if (!selectionTrack(t2))
+        }
+        if (!selectionTrack(t2)) {
           continue;
+        }
         if (cfgparticletype == 0) {
           if (selectionPID(t1, 0) && selectionPID(t2, 1)) {
             FillinvMass(t1, t2, multiplicity, unlike, mix, rotational, likesign, massPi, massKa);
@@ -370,47 +382,57 @@ struct resonanceqa {
       histos.fill(HIST("hMC"), 0.5);
       for (auto& mcParticle : mcParticles) {
 
-        if (std::abs(mcParticle.y()) > 0.5)
+        if (std::abs(mcParticle.y()) > 0.5) {
           continue;
-        if (cfgparticletype == 0 && std::abs(mcParticle.pdgCode()) != 313)
+        }
+        if (cfgparticletype == 0 && std::abs(mcParticle.pdgCode()) != 313) {
           continue;
-        if (cfgparticletype == 1 && mcParticle.pdgCode() != 333)
+        }
+        if (cfgparticletype == 1 && mcParticle.pdgCode() != 333) {
           continue;
-        if (cfgparticletype == 2 && std::abs(mcParticle.pdgCode()) != 3124)
+        }
+        if (cfgparticletype == 2 && std::abs(mcParticle.pdgCode()) != 3124) {
           continue;
+        }
 
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2)
+        if (kDaughters.size() != 2) {
           continue;
+        }
         auto daughtp = false;
         auto daughtm = false;
         for (auto kCurrentDaughter : kDaughters) {
-          if (!kCurrentDaughter.isPhysicalPrimary())
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
+          }
 
-          if (kCurrentDaughter.pdgCode() == +321 && cfgparticletype == 1)
+          if (kCurrentDaughter.pdgCode() == +321 && cfgparticletype == 1) {
             daughtp = true;
-          else if (kCurrentDaughter.pdgCode() == -321 && cfgparticletype == 1)
+          } else if (kCurrentDaughter.pdgCode() == -321 && cfgparticletype == 1) {
             daughtm = true;
+          }
 
-          else if ((kCurrentDaughter.pdgCode() == 321 || kCurrentDaughter.pdgCode() == 211) && cfgparticletype == 0)
+          else if ((kCurrentDaughter.pdgCode() == 321 || kCurrentDaughter.pdgCode() == 211) && cfgparticletype == 0) {
             daughtp = true;
-          else if ((kCurrentDaughter.pdgCode() == -321 || kCurrentDaughter.pdgCode() == -211) && cfgparticletype == 0)
+          } else if ((kCurrentDaughter.pdgCode() == -321 || kCurrentDaughter.pdgCode() == -211) && cfgparticletype == 0) {
             daughtm = true;
+          }
 
-          else if ((kCurrentDaughter.pdgCode() == 321 || kCurrentDaughter.pdgCode() == 2212) && cfgparticletype == 2)
+          else if ((kCurrentDaughter.pdgCode() == 321 || kCurrentDaughter.pdgCode() == 2212) && cfgparticletype == 2) {
             daughtp = true;
-          else if ((kCurrentDaughter.pdgCode() == -321 || kCurrentDaughter.pdgCode() == -2212) && cfgparticletype == 2)
+          } else if ((kCurrentDaughter.pdgCode() == -321 || kCurrentDaughter.pdgCode() == -2212) && cfgparticletype == 2) {
             daughtm = true;
+          }
         }
 
         if (daughtp && daughtm) {
-          if (cfgparticletype == 1)
+          if (cfgparticletype == 1) {
             histos.fill(HIST("h1PhiGen"), mcParticle.pt());
-          else if (cfgparticletype == 0)
+          } else if (cfgparticletype == 0) {
             histos.fill(HIST("h1KstarGen"), mcParticle.pt());
-          else if (cfgparticletype == 2)
+          } else if (cfgparticletype == 2) {
             histos.fill(HIST("h1LambdastarGen"), mcParticle.pt());
+          }
         }
       }
     }
@@ -424,21 +446,27 @@ struct resonanceqa {
     }
     histos.fill(HIST("hMC"), 1.5);
     for (auto track1 : tracks) {
-      if (!selectionTrack(track1))
+      if (!selectionTrack(track1)) {
         continue;
-      if (!track1.has_mcParticle())
+      }
+      if (!track1.has_mcParticle()) {
         continue;
+      }
       auto track1ID = track1.globalIndex();
       for (auto track2 : tracks) {
-        if (!track2.has_mcParticle())
+        if (!track2.has_mcParticle()) {
           continue;
-        if (!selectionTrack(track2))
+        }
+        if (!selectionTrack(track2)) {
           continue;
+        }
         auto track2ID = track2.globalIndex();
-        if (track2ID <= track1ID)
+        if (track2ID <= track1ID) {
           continue;
-        if (track1.sign() * track2.sign() > 0)
+        }
+        if (track1.sign() * track2.sign() > 0) {
           continue;
+        }
 
         const auto mctrack1 = track1.mcParticle();
         const auto mctrack2 = track2.mcParticle();
@@ -446,48 +474,59 @@ struct resonanceqa {
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (!mctrack1.isPhysicalPrimary())
+        if (!mctrack1.isPhysicalPrimary()) {
           continue;
-        if (!mctrack2.isPhysicalPrimary())
+        }
+        if (!mctrack2.isPhysicalPrimary()) {
           continue;
+        }
 
-        if (cfgparticletype == 0 && !((track1PDG == 321 && track2PDG == 211) || (track1PDG == 211 && track2PDG == 321)))
+        if (cfgparticletype == 0 && !((track1PDG == 321 && track2PDG == 211) || (track1PDG == 211 && track2PDG == 321))) {
           continue;
-        if (cfgparticletype == 1 && !(track1PDG == 321 && track2PDG == 321))
+        }
+        if (cfgparticletype == 1 && !(track1PDG == 321 && track2PDG == 321)) {
           continue;
-        if (cfgparticletype == 2 && !((track1PDG == 321 && track2PDG == 2212) || (track1PDG == 2212 && track2PDG == 321)))
+        }
+        if (cfgparticletype == 2 && !((track1PDG == 321 && track2PDG == 2212) || (track1PDG == 2212 && track2PDG == 321))) {
           continue;
+        }
 
         for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
           for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
-            if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
+            if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
               continue;
-            if (mothertrack1 != mothertrack2)
+            }
+            if (mothertrack1 != mothertrack2) {
               continue;
-            if (std::abs(mothertrack1.y()) > 0.5)
+            }
+            if (std::abs(mothertrack1.y()) > 0.5) {
               continue;
+            }
 
             if (cfgparticletype == 0) {
 
               if ((selectionPID(track1, 0) && selectionPID(track2, 1)) || (selectionPID(track1, 1) && selectionPID(track2, 0))) {
-                if (std::abs(mothertrack1.pdgCode()) != 313)
+                if (std::abs(mothertrack1.pdgCode()) != 313) {
                   continue;
+                }
                 histos.fill(HIST("h1KstarRec"), mothertrack1.pt());
               }
             }
 
             else if (cfgparticletype == 2) {
               if ((selectionPID(track1, 1) && selectionPID(track2, 2)) || (selectionPID(track1, 2) && selectionPID(track2, 1))) {
-                if (std::abs(mothertrack1.pdgCode()) != 3124)
+                if (std::abs(mothertrack1.pdgCode()) != 3124) {
                   continue;
+                }
                 histos.fill(HIST("h1LambdastarRec"), mothertrack1.pt());
               }
             }
 
             else if (cfgparticletype == 1) {
               if (selectionPID(track1, 1) && selectionPID(track2, 1)) {
-                if (std::abs(mothertrack1.pdgCode()) != 333)
+                if (std::abs(mothertrack1.pdgCode()) != 333) {
                   continue;
+                }
                 pvec0 = array{track1.px(), track1.py(), track1.pz()};
                 pvec1 = array{track2.px(), track2.py(), track2.pz()};
                 auto arrMomrec = array{pvec0, pvec1};
