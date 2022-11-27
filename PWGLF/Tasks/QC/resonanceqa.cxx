@@ -30,10 +30,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <TH1F.h>
 #include <TDirectory.h>
 #include <THn.h>
@@ -42,23 +39,19 @@
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TProfile.h>
 #include <TLorentzVector.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include <utility>
+#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 struct resonanceqa {
-  framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
