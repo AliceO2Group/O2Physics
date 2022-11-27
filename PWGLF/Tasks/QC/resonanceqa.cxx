@@ -22,7 +22,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
 #include "ReconstructionDataFormats/Track.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -32,7 +31,9 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <TH1F.h>
 #include <TDirectory.h>
 #include <THn.h>
@@ -46,11 +47,11 @@
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
+
 #include <cmath>
 #include <array>
 #include <cstdlib>
 #include <utility>
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
