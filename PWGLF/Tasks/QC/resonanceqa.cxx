@@ -42,10 +42,10 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
+#include "Framework/ASoAHelpers.h"
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
