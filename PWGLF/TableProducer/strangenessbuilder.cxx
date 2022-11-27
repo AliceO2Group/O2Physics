@@ -93,11 +93,11 @@ using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using V0WithCascadeRefs = soa::Join<aod::V0s, aod::V0ToCascMap>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//Task to create array of bachelor track indices for single-for-loop processing
+// Task to create array of bachelor track indices for single-for-loop processing
 struct produceV0ToCascMap {
   Produces<aod::V0ToCascMap> v0toCascMap;
   std::vector<int> lCascadeArray;
-  
+
   void process(aod::Collision const& collision, aod::Tracks const&, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
     std::multimap<int, int> stdV0ToCascMap;
@@ -108,10 +108,10 @@ struct produceV0ToCascMap {
     for (auto& v0 : V0s) {
       std::pair<stdV0ToCascMapIter, stdV0ToCascMapIter> result = stdV0ToCascMap.equal_range(v0.globalIndex());
       lCascadeArray.clear();
-      for (stdV0ToCascMapIter it = result.first; it != result.second; it++){
+      for (stdV0ToCascMapIter it = result.first; it != result.second; it++) {
         lCascadeArray.push_back(it->second);
       }
-      //Populate with the std::vector, please
+      // Populate with the std::vector, please
       v0toCascMap(lCascadeArray);
     }
   }
@@ -124,16 +124,16 @@ struct produceV0ToCascMap {
 struct strangenessBuilder {
   Produces<aod::StoredV0Datas> v0data;
   Produces<aod::CascData> cascdata;
-  Produces<aod::V0Covs> v0covs; //MC labels for cascades
-  Produces<aod::CascCovs> casccovs; //MC labels for cascades
+  Produces<aod::V0Covs> v0covs;     // MC labels for cascades
+  Produces<aod::CascCovs> casccovs; // MC labels for cascades
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  
-  //Configurables related to table creation
+
+  // Configurables related to table creation
   Configurable<int> createCascades{"createCascades", -1, {"Produces cascade data. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
-  //Topological selection criteria
+  // Topological selection criteria
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
@@ -141,45 +141,45 @@ struct strangenessBuilder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"};
-  
-  //Configurables related to cascade building
+
+  // Configurables related to cascade building
   Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
   Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
   Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
   Configurable<float> lambdaMassWindow{"lambdaMassWindow", .01, "Distance from Lambda mass"};
-  
-  //Operation and minimisation criteria
+
+  // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
-  
-  //CCDB options
+
+  // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
-  
+
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
-  
-  //define positive and negative tracks in active memory (no need to reallocate)
+
+  // define positive and negative tracks in active memory (no need to reallocate)
   o2::track::TrackParCov lPositiveTrack;
   o2::track::TrackParCov lNegativeTrack;
   o2::track::TrackParCov lBachelorTrack;
   o2::track::TrackParCov lV0Track;
   o2::track::TrackParCov lCascadeTrack;
-  
-  //Helper struct to pass V0 information
-  struct{
+
+  // Helper struct to pass V0 information
+  struct {
     int posTrackId;
     int negTrackId;
     int collisionId;
@@ -197,11 +197,11 @@ struct strangenessBuilder {
     float lambdaMass;
     float antilambdaMass;
   } v0candidate;
-  
-  //Helper struct to pass cascade information
-  //N.B.: the V0 properties aren't needed
-  //Processing will take place sequentially
-  struct{
+
+  // Helper struct to pass cascade information
+  // N.B.: the V0 properties aren't needed
+  // Processing will take place sequentially
+  struct {
     int v0Id;
     int bachelorId;
     int collisionId;
@@ -212,18 +212,14 @@ struct strangenessBuilder {
     float bachDCAxy;
     float cascradius;
   } cascadecandidate;
-  
+
   HistogramRegistry registry{
     "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
-      {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}}
-    }
-  };
-  
-  
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+     {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}}}};
+
   void init(InitContext& context)
   {
     // using namespace analysis::lambdakzerobuilder;
@@ -231,24 +227,24 @@ struct strangenessBuilder {
     d_bz = 0;
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
-    
+
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    
+
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(geoPath);
     }
-    
+
     if (doprocessRun2 == false && doprocessRun3 == false) {
       LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
-    
+
     // Checking for subscriptions to:
     // - cascades
     // - covariance matrices
@@ -274,17 +270,27 @@ struct strangenessBuilder {
         enable("CascCovs", createCascCovMats);
       }
     }
-    
+
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
     LOGF(info, "Strangeness builder configuration:");
-    if (doprocessRun2 == true) {LOGF(info, "Run 2 processing enabled. Will subscribe to Tracks table.");};
-    if (doprocessRun3 == true) {LOGF(info, "Run 3 processing enabled. Will subscribe to TracksIU table.");};
-    if (createCascades > 0) {LOGF(info, "-> Will produce cascade data table");};
-    if (createV0CovMats > 0) {LOGF(info, "-> Will produce V0 cov mat table");};
-    if (createCascCovMats > 0) {LOGF(info, "-> Will produce cascade cov mat table");};
+    if (doprocessRun2 == true) {
+      LOGF(info, "Run 2 processing enabled. Will subscribe to Tracks table.");
+    };
+    if (doprocessRun3 == true) {
+      LOGF(info, "Run 3 processing enabled. Will subscribe to TracksIU table.");
+    };
+    if (createCascades > 0) {
+      LOGF(info, "-> Will produce cascade data table");
+    };
+    if (createV0CovMats > 0) {
+      LOGF(info, "-> Will produce V0 cov mat table");
+    };
+    if (createCascCovMats > 0) {
+      LOGF(info, "-> Will produce cascade cov mat table");
+    };
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-    
-    //initialize O2 2-prong fitter (only once)
+
+    // initialize O2 2-prong fitter (only once)
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
@@ -293,8 +299,8 @@ struct strangenessBuilder {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
-    
-    //Material correction in the DCA fitter
+
+    // Material correction in the DCA fitter
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
@@ -302,14 +308,14 @@ struct strangenessBuilder {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     fitter.setMatCorrType(matCorr);
   }
-  
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
     auto run3grp_timestamp = bc.timestamp();
-    
+
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
@@ -337,10 +343,10 @@ struct strangenessBuilder {
     }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
-    //Set magnetic field value once known
+    // Set magnetic field value once known
     fitter.setBz(d_bz);
   }
-  
+
   template <class TTracksTo>
   bool buildV0Candidate(aod::Collision const& collision, TTracksTo const& posTrack, TTracksTo const& negTrack, Bool_t lRun3 = kTRUE)
   {
@@ -366,11 +372,11 @@ struct strangenessBuilder {
     }
     // passes DCAxy
     registry.fill(HIST("hV0Criteria"), 3.5);
-    
-    //Change strangenessBuilder tracks
+
+    // Change strangenessBuilder tracks
     lPositiveTrack = getTrackParCov(posTrack);
     lNegativeTrack = getTrackParCov(negTrack);
-  
+
     //---/---/---/
     // Move close to minima
     int nCand = 0;
@@ -383,126 +389,133 @@ struct strangenessBuilder {
     if (nCand == 0) {
       return false;
     }
-    
+
     lPositiveTrack.getPxPyPzGlo(v0candidate.posP);
     lNegativeTrack.getPxPyPzGlo(v0candidate.negP);
-    
-    //get decay vertex coordinates
+
+    // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
     for (int i = 0; i < 3; i++) {
       v0candidate.pos[i] = vtx[i];
     }
-    
+
     v0candidate.dcaV0dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    
+
     // Apply selections so a skimmed table is created only
     if (v0candidate.dcaV0dau > dcav0dau) {
       return false;
     }
-    
+
     // Passes DCA between daughters check
     registry.fill(HIST("hV0Criteria"), 4.5);
-    
+
     v0candidate.cosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2]}, array{v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1], v0candidate.posP[2] + v0candidate.negP[2]});
     if (v0candidate.cosPA < v0cospa) {
       return false;
     }
-    
+
     // Passes CosPA check
     registry.fill(HIST("hV0Criteria"), 5.5);
-    
+
     v0candidate.V0radius = RecoDecay::sqrtSumOfSquares(v0candidate.pos[0], v0candidate.pos[1]);
     if (v0candidate.V0radius < v0radius) {
       return false;
     }
-    
+
     // Passes radius check
     registry.fill(HIST("hV0Criteria"), 6.5);
-    
-    //store V0 track for a) cascade minimization and b) exporting for decay chains
+
+    // store V0 track for a) cascade minimization and b) exporting for decay chains
     lV0Track = fitter.createParentTrackParCov();
-    lV0Track.setAbsCharge(0); //just in case
-    
-    //Fill in lambda masses (necessary for cascades)
+    lV0Track.setAbsCharge(0); // just in case
+
+    // Fill in lambda masses (necessary for cascades)
     v0candidate.lambdaMass = RecoDecay::m(array{v0candidate.posP, v0candidate.negP}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
     v0candidate.antilambdaMass = RecoDecay::m(array{v0candidate.posP, v0candidate.negP}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
-    
+
     // Return OK: passed all v0 candidate selecton criteria
     return true;
   }
-  
+
   template <class TTracksTo>
   bool buildCascadeCandidate(aod::Collision const& collision, TTracksTo const& bachTrack, Bool_t lRun3 = kTRUE)
   {
     // value 0.5: any considered cascade
     registry.fill(HIST("hCascadeCriteria"), 0.5);
-    
-    //bachelor DCA track to PV
+
+    // bachelor DCA track to PV
     cascadecandidate.bachDCAxy = bachTrack.dcaXY();
-    if( cascadecandidate.bachDCAxy < dcabachtopv ) return false;
+    if (cascadecandidate.bachDCAxy < dcabachtopv)
+      return false;
     registry.fill(HIST("hCascadeCriteria"), 1.5);
-    
-    //Overall cascade charge
-    cascadecandidate.charge = bachTrack.signed1Pt()>0?+1:-1;
-    
-    //Better check than before: check also against charge
-    //Should reduce unnecessary combinations
-    if( cascadecandidate.charge<0 && TMath::Abs(v0candidate.lambdaMass-1.116)>lambdaMassWindow ) return false;
-    if( cascadecandidate.charge>0 && TMath::Abs(v0candidate.antilambdaMass-1.116)>lambdaMassWindow ) return false;
+
+    // Overall cascade charge
+    cascadecandidate.charge = bachTrack.signed1Pt() > 0 ? +1 : -1;
+
+    // Better check than before: check also against charge
+    // Should reduce unnecessary combinations
+    if (cascadecandidate.charge < 0 && TMath::Abs(v0candidate.lambdaMass - 1.116) > lambdaMassWindow)
+      return false;
+    if (cascadecandidate.charge > 0 && TMath::Abs(v0candidate.antilambdaMass - 1.116) > lambdaMassWindow)
+      return false;
     registry.fill(HIST("hCascadeCriteria"), 2.5);
-    
-    //Do actual minimization
+
+    // Do actual minimization
     lBachelorTrack = getTrackParCov(bachTrack);
     auto nCand = fitter.process(lV0Track, lBachelorTrack);
-    if (nCand == 0) return false;
+    if (nCand == 0)
+      return false;
     registry.fill(HIST("hCascadeCriteria"), 3.5);
-    
+
     fitter.getTrack(1).getPxPyPzGlo(cascadecandidate.bachP);
-    
-    //get decay vertex coordinates
+
+    // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
     for (int i = 0; i < 3; i++) {
       cascadecandidate.pos[i] = vtx[i];
     }
-    
-    //Cascade radius
+
+    // Cascade radius
     cascadecandidate.cascradius = RecoDecay::sqrtSumOfSquares(cascadecandidate.pos[0], cascadecandidate.pos[1]);
-    if( cascadecandidate.cascradius < cascradius ) return false;
+    if (cascadecandidate.cascradius < cascradius)
+      return false;
     registry.fill(HIST("hCascadeCriteria"), 4.5);
-    
-    //DCA between cascade daughters
+
+    // DCA between cascade daughters
     cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if( cascadecandidate.cascradius < dcacascdau ) return false;
+    if (cascadecandidate.cascradius < dcacascdau)
+      return false;
     registry.fill(HIST("hCascadeCriteria"), 5.5);
-    
-    //store V0 track for a) cascade minimization and b) exporting for decay chains
+
+    // store V0 track for a) cascade minimization and b) exporting for decay chains
     lCascadeTrack = fitter.createParentTrackParCov();
-    lCascadeTrack.setAbsCharge(cascadecandidate.charge); //just in case
-    
+    lCascadeTrack.setAbsCharge(cascadecandidate.charge); // just in case
+
     return true;
   }
-  
+
   template <class TTracksTo, typename TV0Objects>
   void buildStrangenessTables(aod::Collision const& collision, TV0Objects const& V0s, aod::Cascades const& cascades, TTracksTo const& tracks, Bool_t lRun3 = kTRUE)
   {
     registry.fill(HIST("hEventCounter"), 0.5);
-    
+
     float V0CovMatrix[21];
     float CascCovMatrix[21];
     std::array<float, 21> stdCovV0 = {0.};
     std::array<float, 21> stdCovCasc = {0.};
-    
+
     for (auto& V0 : V0s) {
       // Track preselection part
       auto posTrackCast = V0.template posTrack_as<TTracksTo>();
       auto negTrackCast = V0.template negTrack_as<TTracksTo>();
-      
-      //populates v0candidate struct declared inside strangenessbuilder
+
+      // populates v0candidate struct declared inside strangenessbuilder
       bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast, lRun3);
-      
-      if( !validCandidate ) continue; //doesn't pass selections
-      
-      //populates table for V0 analysis
+
+      if (!validCandidate)
+        continue; // doesn't pass selections
+
+      // populates table for V0 analysis
       v0data(v0candidate.posTrackId,
              v0candidate.negTrackId,
              v0candidate.collisionId,
@@ -514,23 +527,25 @@ struct strangenessBuilder {
              v0candidate.dcaV0dau,
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
-      
-      //populate V0 covariance matrices if required by any other task (experimental)
-      if( createV0CovMats ){
+
+      // populate V0 covariance matrices if required by any other task (experimental)
+      if (createV0CovMats) {
         lV0Track.getCovXYZPxPyPzGlo(stdCovV0);
-        for(Int_t iEl = 0; iEl<21; iEl++){
+        for (Int_t iEl = 0; iEl < 21; iEl++) {
           V0CovMatrix[iEl] = stdCovV0[iEl];
         }
         v0covs(V0CovMatrix);
       }
-      
-      if( createCascades==0 ) continue;
+
+      if (createCascades == 0)
+        continue;
       auto lCascadeRefs = V0.cascadeCandidate();
       for (auto& cascade : lCascadeRefs) {
         auto bachTrackCast = cascade.template bachelor_as<TTracksTo>();
         bool validCascadeCandidate = buildCascadeCandidate(collision, bachTrackCast, lRun3);
-        if( !validCascadeCandidate ) continue; //doesn't pass cascade selections
-        
+        if (!validCascadeCandidate)
+          continue; // doesn't pass cascade selections
+
         cascdata(V0.globalIndex(),
                  bachTrackCast.globalIndex(),
                  cascade.collisionId(),
@@ -544,10 +559,10 @@ struct strangenessBuilder {
                  v0candidate.posDCAxy,
                  v0candidate.negDCAxy,
                  cascadecandidate.bachDCAxy);
-        //populate casc covariance matrices if required by any other task (experimental)
-        if( createCascCovMats ){
+        // populate casc covariance matrices if required by any other task (experimental)
+        if (createCascCovMats) {
           lCascadeTrack.getCovXYZPxPyPzGlo(stdCovCasc);
-          for(Int_t iEl = 0; iEl<21; iEl++){
+          for (Int_t iEl = 0; iEl < 21; iEl++) {
             CascCovMatrix[iEl] = stdCovCasc[iEl];
           }
           casccovs(CascCovMatrix);
@@ -555,24 +570,24 @@ struct strangenessBuilder {
       }
     }
   }
-  
+
   void processRun2(aod::Collision const& collision, V0WithCascadeRefs const& V0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    
+
     // do v0s, typecase correctly into tracks (Run 2 use case)
     buildStrangenessTables<FullTracksExt>(collision, V0s, cascades, tracks, kFALSE);
   }
   PROCESS_SWITCH(strangenessBuilder, processRun2, "Produce Run 2 V0 tables", true);
-  
+
   void processRun3(aod::Collision const& collision, V0WithCascadeRefs const& V0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    
+
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
     buildStrangenessTables<FullTracksExtIU>(collision, V0s, cascades, tracks, kTRUE);
   }
@@ -581,35 +596,35 @@ struct strangenessBuilder {
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct strangenessLabelBuilder {
-  Produces<aod::McV0Labels> v0labels; //MC labels for V0s
-  Produces<aod::McCascLabels> casclabels; //MC labels for cascades
+  Produces<aod::McV0Labels> v0labels;     // MC labels for V0s
+  Produces<aod::McCascLabels> casclabels; // MC labels for cascades
   // for bookkeeping purposes: how many V0s come from same mother etc
-  
+
   void init(InitContext const&) {}
-  
+
   void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(strangenessLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
-  
+
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 labels if requested to do so
   void processBuildV0Labels(aod::Collision const& collision, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
       int lLabel = -1;
-      
+
       auto lNegTrack = v0.negTrack_as<LabeledTracks>();
       auto lPosTrack = v0.posTrack_as<LabeledTracks>();
-      
+
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          
+
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
@@ -621,12 +636,12 @@ struct strangenessLabelBuilder {
       } // end association check
       // Construct label table (note: this will be joinable with V0Datas)
       v0labels(
-               lLabel);
+        lLabel);
     }
   }
   PROCESS_SWITCH(strangenessLabelBuilder, processBuildV0Labels, "Produce V0 MC label tables", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  
+
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build cascade labels if requested to do so
   void processBuildCascadeLabels(aod::Collision const& collision, aod::CascDataExt const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
@@ -639,19 +654,19 @@ struct strangenessLabelBuilder {
       }
       auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
       int lLabel = -1;
-      
+
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<LabeledTracks>();
       auto lNegTrack = v0data.negTrack_as<LabeledTracks>();
       auto lPosTrack = v0data.posTrack_as<LabeledTracks>();
-      
+
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle() && lBachTrack.has_mcParticle()) {
         auto lMCBachTrack = lBachTrack.mcParticle_as<aod::McParticles>();
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
-        
+
         // Step 1: check if the mother is the same, go up a level
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
@@ -673,7 +688,7 @@ struct strangenessLabelBuilder {
       }     // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(
-                 lLabel);
+        lLabel);
     } // end casctable loop
   }
   PROCESS_SWITCH(strangenessLabelBuilder, processBuildCascadeLabels, "Produce cascade MC label tables", false);
@@ -698,6 +713,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<strangenessBuilder>(cfgc),
     adaptAnalysisTask<strangenessLabelBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroInitializer>(cfgc),
-    adaptAnalysisTask<cascadeInitializer>(cfgc)
-  };
+    adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }
