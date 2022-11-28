@@ -152,8 +152,6 @@ struct HfTaskCorrelationD0Hadrons {
 
     }};
 
-
-
   void init(o2::framework::InitContext&)
   {
     int nBinsPtAxis = binsCorrelations->size() - 1;
