@@ -244,7 +244,7 @@ struct centralEventFilterTask {
     //   for (auto& lab : filterOpt.labels_cols) {
     //     std::cout << lab << "\t";
     //   }
-    //   std::cout << std::endl;
+    //    std::cout << std::endl;
     // }
 
     for (auto& table : mDownscaling) {
@@ -270,7 +270,8 @@ struct centralEventFilterTask {
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
 
     int64_t nEvents{-1};
-    std::vector<bool> outDecision;
+    std::vector<uint64_t> outTrigger, outDecision;
+
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -283,13 +284,16 @@ struct centralEventFilterTask {
         LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
-      if (outDecision.size() == 0)
-        outDecision.resize(nEvents, false);
+      if (outDecision.size() == 0) {
+        outDecision.resize(nEvents, 0u);
+        outTrigger.resize(nEvents, 0u);
+      }
 
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
         int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
         double binCenter{mScalers->GetXaxis()->GetBinCenter(bin)};
+        uint64_t triggerBit{BIT(bin - 2)};
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
@@ -300,9 +304,10 @@ struct centralEventFilterTask {
             for (int64_t iS{0}; iS < chunk->length(); ++iS) {
               if (boolArray->Value(iS)) {
                 mScalers->Fill(binCenter);
+                outTrigger[entry] |= triggerBit;
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
-                  outDecision[entry] = true;
+                  outDecision[entry] |= triggerBit;
                 }
               }
               entry++;
@@ -324,7 +329,7 @@ struct centralEventFilterTask {
     auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
     auto columnCollTimeRes{collTabPtr->GetColumnByName("fCollisionTimeRes")};
 
-    std::unordered_map<int32_t, int64_t> decisions;
+    std::unordered_map<int32_t, int64_t> triggers, decisions;
 
     for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
       auto chunkBC{columnBCId->chunk(iC)};
@@ -341,8 +346,10 @@ struct centralEventFilterTask {
         int32_t endBC{BCArray->Value(iD) + static_cast<int>(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
         for (int32_t iB{startBC}; iB < endBC; ++iB) {
           if (decisions.find(iB) == decisions.end()) {
+            triggers[iB] = static_cast<int64_t>(outTrigger[iD]);
             decisions[iB] = static_cast<int64_t>(outDecision[iD]);
           } else {
+            triggers[iB] |= static_cast<int64_t>(outTrigger[iD]);
             decisions[iB] |= static_cast<int64_t>(outDecision[iD]);
           }
         }
@@ -350,7 +357,7 @@ struct centralEventFilterTask {
     }
 
     for (auto& decision : decisions) {
-      tags(decision.first, decision.second);
+      tags(decision.first, triggers[decision.first], decision.second);
     }
   }
 
