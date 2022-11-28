@@ -97,6 +97,13 @@ using V0WithCascadeRefs = soa::Join<aod::V0s, aod::V0ToCascMap>;
 struct produceV0ToCascMap {
   Produces<aod::V0ToCascMap> v0toCascMap;
   std::vector<int> lCascadeArray;
+  
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hCascadesPerV0", "hCascadesPerV0", {HistType::kTH1F, {{100, -0.5f, 99.5f}}}}
+    }
+  };
 
   void process(aod::Collision const& collision, aod::Tracks const&, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
@@ -112,6 +119,7 @@ struct produceV0ToCascMap {
         lCascadeArray.push_back(it->second);
       }
       // Populate with the std::vector, please
+      registry.fill(HIST("hCascadesPerV0"), lCascadeArray.size());
       v0toCascMap(lCascadeArray);
     }
   }
@@ -250,6 +258,7 @@ struct strangenessBuilder {
     // - covariance matrices
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
+      if( device.name.compare("cascade-initializer")==0 ) continue; //don't listen to the initializer
       for (auto const& input : device.inputs) {
         auto enable = [&input](const std::string tablename, Configurable<int>& flag) {
           const std::string table = tablename;
