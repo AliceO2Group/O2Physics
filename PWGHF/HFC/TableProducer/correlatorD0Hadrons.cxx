@@ -51,14 +51,14 @@ const double massAxisMax = 2.1848;
 const int phiAxisNBins = 32;
 const double phiAxisMin = 0.;
 const double phiAxisMax = o2::constants::math::TwoPI;
-const int yAxisBins = 100;
+const int yAxisNBins = 100;
 const double yAxisMin = -5.;
 const double yAxisMax = 5.;
-const int ptDAxisBins = 180;
+const int ptDAxisNBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 const double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-const double softPiMass = 0.14543; //pion mass + Q-value of the D*->D0pi decay
+const double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
 auto massPi = RecoDecay::getMassPDG(kPiPlus);
 auto massK = RecoDecay::getMassPDG(kKPlus);
 
@@ -87,27 +87,27 @@ struct HfCorrelatorD0Hadrons {
   HistogramRegistry registry{
     "registry",
     // NOTE: use hMassD0 for trigger normalisation (S*0.955), and hMass2DCorrelationPairs (in final task) for 2D-sideband-subtraction purposes
-    {{"hPtCand", "D0,D0bar candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng0", "D0,D0bar candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng1", "D0,D0bar candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
+    {{"hPtCand", "D0,D0bar candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng0", "D0,D0bar candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng1", "D0,D0bar candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
      {"hSelectionStatus", "D0,D0bar candidates;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
-     {"hEta", "D0,D0bar candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEta", "D0,D0bar candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
      {"hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
-     {"hY", "D0,D0bar candidates;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hY", "D0,D0bar candidates;candidate #it{y};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
      {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
-     {"hPtCandRec", "D0,D0bar candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng0Rec", "D0,D0bar candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng1Rec", "D0,D0bar candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtCandRec", "D0,D0bar candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng0Rec", "D0,D0bar candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng1Rec", "D0,D0bar candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
      {"hSelectionStatusRec", "D0,D0bar candidates - MC reco;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
-     {"hEtaRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEtaRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
      {"hPhiRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
-     {"hYRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hYRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
      {"hEvtCountGen", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
-     {"hPtCandGen", "D0,D0bar particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hEtaGen", "D0,D0bar particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hPtCandGen", "D0,D0bar particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hEtaGen", "D0,D0bar particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
      {"hPhiGen", "D0,D0bar particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
-     {"hYGen", "D0,D0bar candidates - MC gen;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hYGen", "D0,D0bar candidates - MC gen;candidate #it{y};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
      {"hTrackCounter", "soft pion counter -  Data", {HistType::kTH1F, {{5, 0., 5.}}}},
      {"hTrackCounterRec", "soft pion counter - MC rec", {HistType::kTH1F, {{5, 0., 5.}}}},
      {"hTrackCounterGen", "soft pion counter - MC gen", {HistType::kTH1F, {{5, 0., 5.}}}}}};
@@ -241,10 +241,10 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounter"), 3); // fill no. of tracks after soft pion removal
 
         int signalStatus = 0;
-        if ((candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 == false)) {
           signalStatus += 1;
         }
-        if ((candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar == false)) {
           signalStatus += 2;
         }
 
@@ -390,23 +390,23 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounterRec"), 3); // fill no. of tracks after soft pion removal
 
         int signalStatus = 0;
-        if ((flagD0 == true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((flagD0 == true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 == false)) {
           signalStatus += 1;
         } // signal case D0
-        if ((flagD0bar == true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((flagD0bar == true) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 == false)) {
           signalStatus += 2;
         } // reflection case D0
-        if ((flagD0 == false) && (flagD0bar == false) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 = false)) {
+        if ((flagD0 == false) && (flagD0bar == false) && (candidate1.isSelD0() >= selectionFlagD0) && (isSoftpiD0 == false)) {
           signalStatus += 4;
         } // background case D0
 
-        if ((flagD0bar == true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((flagD0bar == true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar == false)) {
           signalStatus += 8;
         } // signal case D0bar
-        if ((flagD0 == true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((flagD0 == true) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar == false)) {
           signalStatus += 16;
         } // reflection case D0bar
-        if ((flagD0 == false) && (flagD0bar = false) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar = false)) {
+        if ((flagD0 == false) && (flagD0bar == false) && (candidate1.isSelD0bar() >= selectionFlagD0bar) && (isSoftpiD0bar == false)) {
           signalStatus += 32;
         } // background case D0bar
 
