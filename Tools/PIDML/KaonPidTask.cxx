@@ -111,11 +111,10 @@ struct KaonPidTask {
     }
 
     for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPositive, groupNegative))) {
-      if (!(pidModel.get()->applyModelBoolean(pos))) {
-        continue;
-      } else if (!(pidModel.get()->applyModelBoolean(neg))) {
+      if (!(pidModel.get()->applyModelBoolean(pos)) || !(pidModel.get()->applyModelBoolean(neg))) {
         continue;
       }
+
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
       float mMassOne = TDatabasePDG::Instance()->GetParticle(cfgPid.value)->Mass();
