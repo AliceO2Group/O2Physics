@@ -601,6 +601,9 @@ struct HfFilter { // Main struct for HF triggers
   int8_t isBDTSelected(const T& scores, const int candType)
   {
     int8_t retValue = 0;
+    if (scores.size() < 3) {
+      return retValue;
+    }
 
     if (scores[0] > thresholdBDTScores[candType].get(0u, "BDTbkg")) {
       return retValue;

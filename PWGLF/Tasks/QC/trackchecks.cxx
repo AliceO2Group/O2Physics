@@ -119,7 +119,8 @@ struct TrackChecks {
       histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_he", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
       histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_tr", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
       histograms.add("RecAftTrkSel/hRecTrkSecAftTrkSel_truepid_al", "Reco Sec tracks AftEvSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
-    } else {
+    }
+    if (doprocessData) {
       histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_el", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
       histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_pi", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
       histograms.add("RecAftTrkSel/hRecTrkAftTrkSel_ka", "Reco tracks AftTrkSel; #it{p}_{T} (GeV/#it{c}); y; DCA_{xy} (cm)", {kTH3F, {{ptBins}, yAxis, dcaAxis}});
