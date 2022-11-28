@@ -230,7 +230,7 @@ std::shared_ptr<Ort::Experimental::Session> InitONNXSession(std::string& onnxFil
 template <typename T>
 std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::string>& inputNames, std::vector<std::vector<int64_t>>& inputShapes, std::vector<std::string>& outputNames)
 {
-  std::array<T, 3> scores{};
+  std::array<T, 3> scores{-1., 2., 2.};
   std::vector<Ort::Value> inputTensor;
   inputTensor.push_back(Ort::Experimental::Value::CreateTensor<T>(inputFeatures.data(), inputFeatures.size(), inputShapes[0]));
 
@@ -247,9 +247,6 @@ std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort:
     scores[1] = outputTensor[1].GetTensorMutableData<T>()[1];
     scores[2] = outputTensor[1].GetTensorMutableData<T>()[2];
   } catch (const Ort::Exception& exception) {
-    scores[0] = -1.;
-    scores[1] = -1.;
-    scores[2] = -1.;
     // LOG(error) << "Error running model inference: " << exception.what();
   }
 
