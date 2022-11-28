@@ -243,6 +243,7 @@ struct ProducePCMPhoton {
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<float> v0maxeta{"v0maxeta", 0.9, "eta acceptance for v0"};
+  Configurable<float> v0max_mee{"v0max_mee", 0.02, "maximum mee for photon conversion in GeV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 5.0, "max. TPC n sigma for electron"};
@@ -507,9 +508,6 @@ struct ProducePCMPhoton {
         if (!checkAP(alpha, qtarm)) {
           continue;
         }
-        if (psipair > maxpsipair) {
-          continue;
-        }
 
         float mGamma = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
 
@@ -553,6 +551,13 @@ struct ProducePCMPhoton {
           registry.fill(HIST("hAmbV0APplot"), alpha, qtarm);
           registry.fill(HIST("hAmbMassGamma"), v0radius, mGamma);
           registry.fill(HIST("hAmbGammaPsiPair"), psipair, mGamma);
+        }
+
+        if (psipair > maxpsipair) {
+          continue;
+        }
+        if (mGamma > v0max_mee) {
+          continue;
         }
 
         v0gamma(collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0pt, v0eta, v0phi, mGamma);
