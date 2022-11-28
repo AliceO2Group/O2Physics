@@ -189,20 +189,6 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
-    std::map<int64_t, int32_t> mapBcToZDCindex;
-    int run = bcs.iteratorAt(0).runNumber();
-    if (run == 529403 || run == 529418) {
-      int64_t orbitShift = 0;
-      if (run == 523403)
-        orbitShift = 59839744;
-      if (run == 529418)
-        orbitShift = 28756480;
-      int64_t shift = (orbitShift - 1) * 3564 + 1;
-      for (const auto& zdc : zdcs) {
-        mapBcToZDCindex[zdc.bc_as<BCsWithRun3Matchings>().globalBC() + shift] = zdc.globalIndex();
-      }
-    }
-
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
 
@@ -210,22 +196,9 @@ struct BcSelectionTask {
       int32_t alias[kNaliases] = {0};
       alias[kALL] = 1;
 
-      // temporary fix for LHC22s: search for ZDC
-      int32_t foundZDCId = -1;
-      aod::Zdcs::iterator foundZDC;
-      if (zdcs.size() > 0) {
-        foundZDC = zdcs.iteratorAt(0);
-        auto it = mapBcToZDCindex.find(bc.globalBC());
-        if (it != mapBcToZDCindex.end()) {
-          foundZDCId = it->second;
-          foundZDC = zdcs.iteratorAt(foundZDCId);
-        }
-      }
       // get timing info from ZDC, FV0, FT0 and FDD
-      // float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f; // TODO: temporary fix for LHC22s
-      // float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f; // TODO: temporary fix for LHC22s
-      float timeZNA = foundZDCId >= 0 ? foundZDC.timeZNA() : -999.f; // TODO: temporary fix for LHC22s
-      float timeZNC = foundZDCId >= 0 ? foundZDC.timeZNC() : -999.f; // TODO: temporary fix for LHC22s
+      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
+      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
       float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
       float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
@@ -311,6 +284,7 @@ struct BcSelectionTask {
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
+      int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
       LOGP(debug, "foundFT0={}\n", foundFT0);
 
       // Fill TVX (T0 vertex) counters
@@ -322,7 +296,7 @@ struct BcSelectionTask {
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD, foundZDCId);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
