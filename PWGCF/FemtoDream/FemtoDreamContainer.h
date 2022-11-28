@@ -70,7 +70,7 @@ class FemtoDreamContainer
       femtoObs = "#it{k*} (GeV/#it{c})";
     }
     std::vector<double> tmpVecMult = multBins;
-    framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
+    framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity PV"};
     framework::AxisSpec femtoObsAxis = {kstarBins, femtoObs.c_str()};
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};

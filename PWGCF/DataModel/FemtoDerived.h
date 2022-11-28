@@ -28,6 +28,7 @@ namespace o2::aod
 namespace femtodreamcollision
 {
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
+DECLARE_SOA_COLUMN(MultNtrPV, multNtrPV, float);   //! multiplicity of charged tracks contributing to the primary vertex
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Sphericity of the event
 
@@ -37,6 +38,7 @@ DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
+                  femtodreamcollision::MultNtrPV,
                   femtodreamcollision::Sphericity,
                   femtodreamcollision::MagField);
 using FemtoDreamCollision = FemtoDreamCollisions::iterator;
