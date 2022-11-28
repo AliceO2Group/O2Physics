@@ -227,7 +227,6 @@ struct EventSelectionQaTask {
     histos.add("hMultT0Azac", "", kTH1F, {axisMultT0A});
     histos.add("hMultT0Czac", "", kTH1F, {axisMultT0C});
 
-
     histos.add("hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribITSonly", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribWithTOF", "", kTH2F, {axisNcontrib, axisColTimeRes});
