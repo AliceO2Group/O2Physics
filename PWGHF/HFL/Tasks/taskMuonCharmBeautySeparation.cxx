@@ -25,7 +25,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfTaskMuonCharmBeautySeparation {
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry"};
 
   void init(o2::framework::InitContext&)
   {
