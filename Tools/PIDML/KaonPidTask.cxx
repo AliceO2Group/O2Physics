@@ -24,7 +24,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "TMath.h"
-#include <math.h>
+#include <cmath.h>
 #include <memory>
 
 using namespace o2;
