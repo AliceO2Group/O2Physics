@@ -15,6 +15,9 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
+#include <CCDB/BasicCCDBManager.h>
+#include <TLorentzVector.h>
+
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -23,10 +26,6 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "DataFormatsParameters/GRPObject.h"
-
-#include <CCDB/BasicCCDBManager.h>
-
-#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;

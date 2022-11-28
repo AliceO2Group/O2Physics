@@ -16,8 +16,8 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#ifndef O2_ANALYSIS_LFRESONANCETABLES_H_
-#define O2_ANALYSIS_LFRESONANCETABLES_H_
+#ifndef PWGLF_DATAMODEL_LFRESONANCETABLES_H_
+#define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 
 #include <cmath>
 
@@ -183,4 +183,4 @@ using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, 
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA>; // Without Extra
 
 } // namespace o2::aod
-#endif // O2_ANALYSIS_LFRESONANCETABLES_H_
+#endif // PWGLF_DATAMODEL_LFRESONANCETABLES_H_

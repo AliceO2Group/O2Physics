@@ -320,7 +320,7 @@ struct reso2initializer {
                     // &daughterPDGs[0],
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
-    } else
+    } else {
       // No MC particle associated
       reso2mctracks(0,
                     mothers[0],
@@ -331,6 +331,7 @@ struct reso2initializer {
                     // &daughterPDGs[0],
                     0,
                     0);
+    }
   }
 
   void init(InitContext&)

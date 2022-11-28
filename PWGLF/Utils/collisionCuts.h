@@ -17,8 +17,8 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#ifndef ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_
-#define ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_
+#ifndef PWGLF_UTILS_COLLISIONCUTS_H_
+#define PWGLF_UTILS_COLLISIONCUTS_H_
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
@@ -151,4 +151,4 @@ class CollisonCuts
 };
 } // namespace o2::analysis
 
-#endif /* ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_ */
+#endif // PWGLF_UTILS_COLLISIONCUTS_H_

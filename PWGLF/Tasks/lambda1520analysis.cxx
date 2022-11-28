@@ -16,6 +16,9 @@
 ///
 /// \author Hirak Kumar Koley <hirak.kumar.koley@cern.ch>
 
+#include <CCDB/BasicCCDBManager.h>
+#include <math.h>
+
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -23,9 +26,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "DataFormatsParameters/GRPObject.h"
-#include <math.h>
 #include "TMath.h"
 
 using namespace o2;
@@ -81,7 +82,7 @@ struct lambda1520analysis {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
     AxisSpec vtxZAxis = {100, -20, 20};
