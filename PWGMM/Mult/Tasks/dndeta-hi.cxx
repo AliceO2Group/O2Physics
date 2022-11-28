@@ -86,17 +86,17 @@ struct MultiplicityCounter
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry registry{
-      "registry",
-      {
-          {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                                                          //
-          {"hrecdndeta", "evntclass; triggerclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis, EtaAxis}}}, //
-          {"hgendndeta", "evntclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis, EtaAxis}}},                              //
-          {"hreczvtx", "evntclass; triggerclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis}}},                 //
-          {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}}                                               //
-      }
+    "registry",
+    {
+      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                                                          //
+      {"hrecdndeta", "evntclass; triggerclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis, EtaAxis}}}, //
+      {"hgendndeta", "evntclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis, EtaAxis}}},                              //
+      {"hreczvtx", "evntclass; triggerclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis}}},                 //
+      {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}}                                               //
+    }
 
   };
 
@@ -136,8 +136,7 @@ struct MultiplicityCounter
             {
               cols.emplace_back(collision);
             }
-          }
-          else if (collision.bcId() == bc.globalIndex())
+          } else if (collision.bcId() == bc.globalIndex())
           {
             cols.emplace_back(collision);
           }
@@ -269,8 +268,7 @@ struct MultiplicityCounter
         if (ttrack.has_mcParticle())
         {
           registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
-        }
-        else
+        } else
         {
           // when secondary
         }
@@ -284,8 +282,7 @@ struct MultiplicityCounter
         if (track.has_mcParticle())
         {
           registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
-        }
-        else
+        } else
         {
           // when secondary
         }
@@ -329,7 +326,7 @@ struct MultiplicityCounter
   {
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto genz = mcCollision.posZ();
-    registry.fill(HIST("hgenzvtx"), double(kINEL), 50., genz);
+    registry.fill(HIST("hgenzvtx"), Double_t(kINEL), 50., genz);
     for (auto &particle : perCollisionMCSample)
     {
       auto p = pdg->GetParticle(particle.pdgCode());
@@ -337,7 +334,7 @@ struct MultiplicityCounter
       {
         if (std::abs(p->Charge()) >= 3)
         {
-          registry.fill(HIST("hgendndeta"), double(kINEL), 50., genz, particle.eta());
+          registry.fill(HIST("hgendndeta"), Double_t(kINEL), 50., genz, particle.eta());
         }
       }
     }
