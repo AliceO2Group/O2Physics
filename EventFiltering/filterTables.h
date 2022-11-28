@@ -88,7 +88,8 @@ namespace decision
 {
 
 DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
+DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t); //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);   //! CEFP decision
 
 } // namespace decision
 
@@ -143,7 +144,7 @@ using MultFilter = MultFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::CefpSelected);
+                  decision::BCId, decision::CefpTriggered, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks

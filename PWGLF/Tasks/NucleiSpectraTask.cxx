@@ -43,14 +43,25 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-int8_t getBinnedValue(double val, double max)
+uint8_t getBinnedValue(double val, double max)
 {
-  if (val > max) {
-    return 127;
+  if (val >= max) {
+    return 255u;
   } else if (val < -max) {
-    return -127;
+    return 0u;
   } else {
-    return std::round(val / 254);
+    return 1u + static_cast<uint8_t>(254 * (val - max) / (2 * max));
+  }
+}
+
+float getBinCenter(uint8_t bin, double max)
+{
+  if (bin == 0u) {
+    return -max;
+  } else if (bin == 255u) {
+    return max;
+  } else {
+    return -max + (bin + 0.5) / (2 * max);
   }
 }
 
@@ -119,9 +130,9 @@ DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
 DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
 DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
-DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, int8_t);
-DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, int8_t);
-DECLARE_SOA_COLUMN(TOFmass, tofmass, int8_t);
+DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
+DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, uint8_t);
+DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
 } // namespace NucleiTableNS
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
