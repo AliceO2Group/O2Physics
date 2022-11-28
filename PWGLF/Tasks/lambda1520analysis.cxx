@@ -64,13 +64,13 @@ struct lambda1520analysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
 
   /// Partition for first Track selecting as Kaon
-  Partition<aod::ResoDaughters> parts1 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter() && (nabs(aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(aod::track::dcaXY) < static_cast<float_t>((cMaxDCArToPVcut))); // Basic DCA cuts
+  Partition<aod::ResoTracks> parts1 = requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter() && (nabs(aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(aod::track::dcaXY) < static_cast<float_t>((cMaxDCArToPVcut))); // Basic DCA cuts
   // && (nabs(aod::track::dcaXY) <= (0.0105f + 0.0350f / npow(aod::track::pt, 1.1f))) // strict DCAz cut
   // && (nabs(aod::track::eta) < static_cast<float_t>(cfgCutEta))
   // && (aod::track::pt < static_cast<float_t>(cfgCutPtmax))
   // && (aod::track::pt > static_cast<float_t>(cfgCutPtmin));
   /// Partition for second Track selecting as proton
-  Partition<aod::ResoDaughters> parts2 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDProtonCutInFilter() && requireTOFPIDProtonCutInFilter() && (nabs(aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(aod::track::dcaXY) < static_cast<float_t>((cMaxDCArToPVcut))); // Basic DCA cuts
+  Partition<aod::ResoTracks> parts2 = requireTPCPIDProtonCutInFilter() && requireTOFPIDProtonCutInFilter() && (nabs(aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(aod::track::dcaXY) < static_cast<float_t>((cMaxDCArToPVcut))); // Basic DCA cuts
   // && (nabs(aod::track::dcaXY) <= (0.0105f + 0.0350f / npow(aod::track::pt, 1.1f))) // strict DCAz cut
   // && (nabs(aod::track::eta) < static_cast<float_t>(cfgCutEta))
   // && (aod::track::pt < static_cast<float_t>(cfgCutPtmax))
@@ -164,7 +164,7 @@ struct lambda1520analysis {
 
   //  template <typename aod::ResoCollision>
   void process(aod::ResoCollision& collision,
-               aod::ResoDaughters const&, aod::Reso2TracksPIDExt const&)
+               aod::ResoTracks const&, aod::Reso2TracksPIDExt const&)
   {
     //  Collision QA
     histos.fill(HIST("QA/Event/EnumEvents"), EventSelection::kNoSelection);
@@ -223,7 +223,7 @@ struct lambda1520analysis {
 
   // Processing Event Mixing
   void processME(o2::aod::ResoCollisions& collision,
-                 o2::aod::BCsWithTimestamps const&, aod::ResoDaughters const&, aod::Reso2TracksPIDExt const&)
+                 o2::aod::BCsWithTimestamps const&, aod::ResoTracks const&, aod::Reso2TracksPIDExt const&)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
