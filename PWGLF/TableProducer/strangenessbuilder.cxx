@@ -102,7 +102,7 @@ struct produceV0ToCascMap {
     "registry",
     {{"hCascadesPerV0", "hCascadesPerV0", {HistType::kTH1F, {{100, -0.5f, 99.5f}}}}}};
 
-  void process(aod::Collision const& collision, aod::Tracks const&, aod::V0s const& V0s, aod::Cascades const& cascades)
+  void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
     std::multimap<int, int> stdV0ToCascMap;
     typedef std::multimap<int, int>::iterator stdV0ToCascMapIter;
