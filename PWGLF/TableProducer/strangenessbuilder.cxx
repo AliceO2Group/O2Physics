@@ -473,7 +473,7 @@ struct strangenessBuilder {
 
     // Do actual minimization
     lBachelorTrack = getTrackParCov(bachTrack);
-    
+
     //---/---/---/
     // Move close to minima
     int nCand = 0;
@@ -534,7 +534,7 @@ struct strangenessBuilder {
       // populates v0candidate struct declared inside strangenessbuilder
       bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast, lRun3);
 
-      if (!validCandidate){
+      if (!validCandidate) {
         v0dataLink(-1);
         continue; // doesn't pass selections
       }
