@@ -320,6 +320,7 @@ struct lambdakzeroBuilder {
       } catch (...) {
         registry.fill(HIST("hCatchedExceptions"), 1.5f);
         LOG(error) << "Exception caught in fitter.process";
+        continue;
       }
 
       if (nCand == 0) {
