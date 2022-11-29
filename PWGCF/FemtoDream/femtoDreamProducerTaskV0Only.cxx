@@ -13,6 +13,7 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include <CCDB/BasicCCDBManager.h>
 #include "FemtoDreamCollisionSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
@@ -33,7 +34,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -178,7 +178,7 @@ struct femtoDreamProducerTaskV0Only {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
@@ -245,7 +245,7 @@ struct femtoDreamProducerTaskV0Only {
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
-      mult = col.multFV0M(); 
+      mult = col.multFV0M();
     } else {
       mult = 0.5 * (col.multFV0M());
     }
