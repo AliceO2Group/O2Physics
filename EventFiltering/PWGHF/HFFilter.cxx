@@ -686,7 +686,7 @@ struct HfFilter { // Main struct for HF triggers
             scoresToFill[iScore] = scores[iScore];
           }
         } else if (dataTypeML[kD0] == 11) {
-          auto scores = PredictONNX(inputFeaturesD0, sessionML[kD0], inputNamesML[kD0], inputShapesML[kD0], outputNamesML[kD0]);
+          auto scores = PredictONNX(inputFeaturesDoD0, sessionML[kD0], inputNamesML[kD0], inputShapesML[kD0], outputNamesML[kD0]);
           tagBDT = isBDTSelected(scores, kD0);
           for (int iScore{0}; iScore < 3; ++iScore) {
             scoresToFill[iScore] = scores[iScore];
