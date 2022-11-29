@@ -130,6 +130,7 @@ struct produceV0ToCascMap {
 // CPU is saved in case there are specific selections that are to be done
 struct strangenessBuilder {
   Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0DataLink> v0dataLink;
   Produces<aod::CascData> cascdata;
   Produces<aod::V0Covs> v0covs;     // MC labels for cascades
   Produces<aod::CascCovs> casccovs; // MC labels for cascades
@@ -394,6 +395,7 @@ struct strangenessBuilder {
     } catch (...) {
       registry.fill(HIST("hCaughtExceptions"), 0.5f);
       LOG(error) << "Exception caught in DCA fitter process call!";
+      return false;
     }
     if (nCand == 0) {
       return false;
@@ -471,9 +473,20 @@ struct strangenessBuilder {
 
     // Do actual minimization
     lBachelorTrack = getTrackParCov(bachTrack);
-    auto nCand = fitter.process(lV0Track, lBachelorTrack);
+
+    //---/---/---/
+    // Move close to minima
+    int nCand = 0;
+    try {
+      nCand = fitter.process(lV0Track, lBachelorTrack);
+    } catch (...) {
+      registry.fill(HIST("hCaughtExceptions"), 0.5f);
+      LOG(error) << "Exception caught in DCA fitter process call!";
+      return false;
+    }
     if (nCand == 0)
       return false;
+
     registry.fill(HIST("hCascadeCriteria"), 3.5);
 
     fitter.getTrack(1).getPxPyPzGlo(cascadecandidate.bachP);
@@ -521,8 +534,10 @@ struct strangenessBuilder {
       // populates v0candidate struct declared inside strangenessbuilder
       bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast, lRun3);
 
-      if (!validCandidate)
+      if (!validCandidate) {
+        v0dataLink(-1);
         continue; // doesn't pass selections
+      }
 
       // populates table for V0 analysis
       v0data(v0candidate.posTrackId,
@@ -536,6 +551,7 @@ struct strangenessBuilder {
              v0candidate.dcaV0dau,
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
+      v0dataLink(v0data.lastIndex());
 
       // populate V0 covariance matrices if required by any other task (experimental)
       if (createV0CovMats) {
