@@ -98,10 +98,16 @@ struct produceV0ToCascMap {
   Produces<aod::V0ToCascMap> v0toCascMap;
   std::vector<int> lCascadeArray;
 
-  void process(aod::Collision const& collision, aod::Tracks const&, aod::V0s const& V0s, aod::Cascades const& cascades)
+  HistogramRegistry registry{
+    "registry",
+    {{"hCascadeCount", "hCascadeCount", {HistType::kTH1F, {{1, -0.5f, 0.5f}}}},
+     {"hCascadesPerV0", "hCascadesPerV0", {HistType::kTH1F, {{100, -0.5f, 99.5f}}}}}};
+
+  void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
     std::multimap<int, int> stdV0ToCascMap;
     typedef std::multimap<int, int>::iterator stdV0ToCascMapIter;
+    registry.fill(HIST("hCascadeCount"), 0.f, cascades.size());
     for (auto& cascade : cascades) {
       stdV0ToCascMap.insert(std::pair<int, int>(cascade.v0().globalIndex(), cascade.globalIndex()));
     }
@@ -112,6 +118,7 @@ struct produceV0ToCascMap {
         lCascadeArray.push_back(it->second);
       }
       // Populate with the std::vector, please
+      registry.fill(HIST("hCascadesPerV0"), lCascadeArray.size());
       v0toCascMap(lCascadeArray);
     }
   }
@@ -250,6 +257,8 @@ struct strangenessBuilder {
     // - covariance matrices
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
+      if (device.name.compare("cascade-initializer") == 0)
+        continue; // don't listen to the initializer
       for (auto const& input : device.inputs) {
         auto enable = [&input](const std::string tablename, Configurable<int>& flag) {
           const std::string table = tablename;
