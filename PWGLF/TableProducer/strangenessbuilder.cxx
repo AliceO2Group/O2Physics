@@ -101,13 +101,13 @@ struct produceV0ToCascMap {
   HistogramRegistry registry{
     "registry",
     {{"hCascadeCount", "hCascadeCount", {HistType::kTH1F, {{1, -0.5f, 0.5f}}}},
-    {"hCascadesPerV0", "hCascadesPerV0", {HistType::kTH1F, {{100, -0.5f, 99.5f}}}}}};
+     {"hCascadesPerV0", "hCascadesPerV0", {HistType::kTH1F, {{100, -0.5f, 99.5f}}}}}};
 
   void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
     std::multimap<int, int> stdV0ToCascMap;
     typedef std::multimap<int, int>::iterator stdV0ToCascMapIter;
-    registry.fill(HIST("hCascadeCount"), 0.f, cascades.size() );
+    registry.fill(HIST("hCascadeCount"), 0.f, cascades.size());
     for (auto& cascade : cascades) {
       stdV0ToCascMap.insert(std::pair<int, int>(cascade.v0().globalIndex(), cascade.globalIndex()));
     }
