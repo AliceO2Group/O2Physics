@@ -13,15 +13,14 @@
 /// \brief FemtoDreamCollisionSelection - event selection within the o2femtodream framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
-
-#include "Common/CCDB/TriggerAliases.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
 
 #include <string>
 #include <iostream>
+#include "Common/CCDB/TriggerAliases.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
 
 using namespace o2::framework;
 
@@ -110,8 +109,8 @@ class FemtoDreamCollisionSelection
       mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
       if (mCheckIsRun3) {
         mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
-      }else{
-        mHistogramRegistry->fill(HIST("Event/MultV0M"), 0.5*(col.multFV0M())); //in AliPhysics, the VOM was defined by (V0A + V0C)/2.
+      } else {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), 0.5 * (col.multFV0M())); // in AliPhysics, the VOM was defined by (V0A + V0C)/2.
       }
     }
   }
@@ -142,4 +141,4 @@ class FemtoDreamCollisionSelection
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_

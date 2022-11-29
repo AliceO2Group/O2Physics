@@ -358,7 +358,7 @@ struct femtoDreamProducerTask {
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
-      mult = col.multFV0M(); 
+      mult = col.multFV0M();
     } else {
       mult = 0.5 * (col.multFV0M());
     }
