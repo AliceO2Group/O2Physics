@@ -1784,14 +1784,14 @@ DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
 namespace hf_cand_sc
 {
   DECLARE_SOA_COLUMN(Charge, charge, int); //! // Σc charge(either 0 or ++)
-  DECLARE_SOA_COLUMN(StatusSpreadLcMinvpKpiFromPDG, statusSpreadLcMinvpKpiFromPDG, int); //! // Λc Minv(pKpi) spread from PDG Λc mass
-  DECLARE_SOA_COLUMN(StatusSpreadLcMinvpiKpFromPDG, statusSpreadLcMinvpiKpFromPDG, int); //! // Λc Minv(piKp) spread from PDG Λc mass
+  DECLARE_SOA_COLUMN(StatusSpreadLcMinvPKPiFromPDG, statusSpreadLcMinvPKPiFromPDG, int); //! // Λc Minv(pKpi) spread from PDG Λc mass
+  DECLARE_SOA_COLUMN(StatusSpreadLcMinvPiKPFromPDG, statusSpreadLcMinvPiKPFromPDG, int); //! // Λc Minv(piKp) spread from PDG Λc mass
   DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0"); // Λc index
   // MC matching result:
-  DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMCMatchRec, int8_t); //! reconstruction level
-  DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMCMatchGen, int8_t); //! generator level
-  DECLARE_SOA_COLUMN(OriginMcRec, originMCRec, int8_t);       //! particle origin, reconstruction level
-  DECLARE_SOA_COLUMN(OriginMcGen, originMCGen, int8_t);       //! particle origin, generator level
+  DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
+  DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+  DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
+  DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
   // mapping of decay types
   enum DecayType { SigmaC0ToPKPiPi=0, SigmaCplusplusToPKPiPi };
@@ -1850,7 +1850,7 @@ DECLARE_SOA_TABLE(HfCandSigmaC, "AOD", "HFCANDSIGMAC",
                   hf_track_index::HFflag,
                   /* Σc0,++ specific columns */
                   hf_cand_sc::Charge,
-                  hf_cand_sc::StatusSpreadLcMinvpKpiFromPDG, hf_cand_sc::StatusSpreadLcMinvpiKpFromPDG,
+                  hf_cand_sc::StatusSpreadLcMinvPKPiFromPDG, hf_cand_sc::StatusSpreadLcMinvPiKPFromPDG,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,

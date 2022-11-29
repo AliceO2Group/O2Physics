@@ -100,15 +100,15 @@ struct candidateCreatorSigmaC0plusplus {
         }
 
         /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
-        auto statusSpreadMinvpKpiFromPDG = 0;
-        auto statusSpreadMinvpiKpFromPDG = 0;
+        auto statusSpreadMinvPKPiFromPDG = 0;
+        auto statusSpreadMinvPiKPFromPDG = 0;
         if(candLc.isSelLcToPKPi() >= 1 && std::abs( invMassLcToPKPi(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus) ) <= cutMinvpKpiCandLcMax) {
-          statusSpreadMinvpKpiFromPDG = 1;
+          statusSpreadMinvPKPiFromPDG = 1;
         }
         if(candLc.isSelLcToPiKP() >= 1 && std::abs( invMassLcToPiKP(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus) ) <= cutMinvpiKpCandLcMax) {
-          statusSpreadMinvpiKpFromPDG = 1;
+          statusSpreadMinvPiKPFromPDG = 1;
         }
-        if (statusSpreadMinvpKpiFromPDG == 0 && statusSpreadMinvpiKpFromPDG == 0){
+        if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0){
           /// none of the two possibilities are satisfied, therefore this candidate Lc can be skipped
           continue;
         }
@@ -156,7 +156,7 @@ struct candidateCreatorSigmaC0plusplus {
                           candLc.hfflag(),
                           /* Σc0,++ specific columns */
                           chargeSc,
-                          statusSpreadMinvpKpiFromPDG, statusSpreadMinvpiKpFromPDG);
+                          statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG);
 
         } /// end loop over tracks
 

@@ -25,7 +25,17 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_sc;
 
-struct TaskSigmaC{
+struct HfTaskSigmaC{
+
+    /// One value of rapidity only
+    /// Remember that in Run2 the distinction among GenLimAcc, GenAccMother, GenAcc was done, where:
+    ///  - GenLimAcc: Sc in |y|<0.5
+    ///  - GenAccMother: Sc in the y-range of the reconstruction ("fiducial acceptance")
+    ///  - GenAcc: Sc and Lc in fiducial acceptance, L daughters in acceptance
+    /// Properly normalize your results to provide a cross section
+    /// OR
+    /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
+    Configurable<float> yCandMax{"yCandMax", -1, "SigmaC rapidity"};
 
     /// analysis histograms
     HistogramRegistry registry{
@@ -57,6 +67,21 @@ struct TaskSigmaC{
         /// [...]
     }; /// end init
 
+    template <typename L, typename S>
+    int isDecayToPKPiToPiKP(L& candLambdaC, S& candSigmaC){
+        int channel = 0;
+        if( (candLambdaC.isSelLcToPKPi() >= 1) && candSigmaC.statusSpreadLcMinvPKPiFromPDG() ){
+            // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+            channel += 1;
+        }
+        if( (candLambdaC.isSelLcToPiKP() >= 1) && candSigmaC.statusSpreadLcMinvPiKPFromPDG() ){
+            // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+            channel += 2;
+        }
+        return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
+    }
+
+
     /// @brief process function to fill the histograms needed in analysis (data)
     /// @param candidatesSigmaC are the reconstructed candidate Σc0,++
     /// @param 
@@ -71,11 +96,12 @@ struct TaskSigmaC{
             /// get the candidate Λc+ used to build the candidate Σc0,++
             /// and understand which mass hypotheses are possible
             const auto& candLambdaC = candSigmaC.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-            const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmaC.statusSpreadLcMinvpKpiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-            const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmaC.statusSpreadLcMinvpiKpFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+            //const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmaC.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+            //const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmaC.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+            const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmaC);
             double massSigmaC(-1.), massLambdaC(-1.), deltaMass(-1.), ptSigmaC(candSigmaC.pt()), ptLambdaC(candLambdaC.pt());
-            if(isCandLambdaCpKpi) {
-                /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
+            /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
+            if(isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
                 massSigmaC = invMassScRecoLcToPKPi(candSigmaC);
                 massLambdaC = invMassLcToPKPi(candLambdaC);
                 deltaMass = massSigmaC - massLambdaC;
@@ -100,8 +126,8 @@ struct TaskSigmaC{
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc0,++
                 }
             } /// end candidate Λc+ → pK-π+ (and charge conjugate)
-            if(isCandLambdaCpiKp) {
-                /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
+            /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
+            if(isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
                 massSigmaC = invMassScRecoLcToPiKP(candSigmaC);
                 massLambdaC = invMassLcToPiKP(candLambdaC);
                 deltaMass = massSigmaC - massLambdaC;
@@ -129,39 +155,139 @@ struct TaskSigmaC{
         } /// end loop over the candidate Σc0,++
     };  /// end process
 
-
-
     /// @brief process function to fill the histograms needed in analysis (MC)
     /// @param candidatesSigmaC are the reconstructed candidate Σc0,++ with MC info
     /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
     /// @param 
-    void processMC(const soa::Join<aod::HfCandSigmaC, aod::HfCandSigmaCMcRec>& candidatesSigmaC,
+    void processMc(const soa::Join<aod::HfCandSigmaC, aod::HfCandSigmaCMcRec>& candidatesSigmaC,
     soa::Join<aod::McParticles, aod::HfCandSigmaCMcGen> const& particlesMc,
-    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const soa::Join<aod::Tracks, aod::TracksDCA>&) {
+    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const aod::BigTracksMC&) {
 
         /// MC generated particles
         for(auto& particle : particlesMc) {
 
-            /// look for the generated Σc0,++
-            /// reject immediately different particles
-            bool isSigmaCZeroGen = (std::abs(particle.flagMCMatchGen()) == (1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi));
-            bool isSigmaCPlusPlusGen = (std::abs(particle.flagMCMatchGen()) == (1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi));
+            /// reject immediately particles different from Σc0,++
+            bool isSigmaCZeroGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi));
+            bool isSigmaCPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi));
             if(!isSigmaCZeroGen && !isSigmaCPlusPlusGen)
                 continue;
 
-            /// check for generated particles in GenLimAcc, GenAccMother, GenAcc ....
-            /// [...]
+            /// look for generated particles in acceptance
+            /* 
+               One value of rapidity only
+               Remember that in Run2 the distinction among GenLimAcc, GenAccMother, GenAcc was done, where:
+                - GenLimAcc: Sc in |y|<0.5
+                - GenAccMother: Sc in the y-range of the reconstruction ("fiducial acceptance")
+                - GenAcc: Sc and Lc in fiducial acceptance, L daughters in acceptance
+               Properly normalize your results to provide a cross section
+               OR
+               consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
+            */
+            if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+                continue;
+            }
 
+            /// Fill histograms
+            /// TODO [...]
 
         } /// end loop over generated particles
 
-        /// TODO: loop over reconstructed Σc0,++ matched to MC
-        /// [...]
-    };
+        /// reconstructed Σc0,++ matched to MC
+        for(auto& candSigmaC : candidatesSigmaC) {
+
+            /// Candidate selected as Σc0 and/or Σc++
+            if (!(candSigmaC.hfflag() & 1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi) && !(candSigmaC.hfflag() & 1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi)) {
+              continue;
+            }
+            /// rapidity selection on Σc0,++
+            if (yCandMax >= 0. && std::abs(ySc0(candSigmaC)) > yCandMax && std::abs(yScPlusPlus(candSigmaC)) > yCandMax) {
+              continue;
+            }
+
+            /// electric charge
+            const int chargeSigmaC = candSigmaC.charge();   // either Σc0 or Σc++
+
+            /// get the candidate Λc+ used to build the Σc0
+            /// and understand which mass hypotheses are possible
+            const auto& candLambdaC = candSigmaC.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+            const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmaC);
+
+            /// Reconstructed Σc0 signal
+            if(std::abs(candSigmaC.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi && (chargeSigmaC == 0)) {
+                // Get the corresponding MC particle, found as the mother of the soft pion
+                auto indexMother = RecoDecay::getMother(particlesMc, candSigmaC.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandSigmaCMcGen>>(), pdg::Code::kSigmaC0, true);
+                auto particleMother = particlesMc.rawIteratorAt(indexMother);
+                //registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
+                
+                //const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmaC.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+                //const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmaC.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+                double massSigmaC(-1.), massLambdaC(-1.), deltaMass(-1.), ptSigmaC(candSigmaC.pt()), ptLambdaC(candLambdaC.pt());
+                auto ptSc = candSigmaC.pt();
+                auto ptLc = candLambdaC.pt();
+                /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
+                if(isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
+                    massSigmaC = invMassScRecoLcToPKPi(candSigmaC);
+                    massLambdaC = invMassLcToPKPi(candLambdaC);
+                    deltaMass = massSigmaC - massLambdaC;
+
+                    /// Fill the histograms for Σc0 and Σc0,++
+                    /// TODO [...]
+
+                } /// end candidate Λc+ → pK-π+ (and charge conjugate)
+                /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
+                if(isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
+                    massSigmaC = invMassScRecoLcToPiKP(candSigmaC);
+                    massLambdaC = invMassLcToPiKP(candLambdaC);
+                    deltaMass = massSigmaC - massLambdaC;
+                    
+                    /// Fill the histograms for Σc0 and Σc0,++
+                    /// TODO [...]
+
+                } /// end candidate Λc+ → π+K-p (and charge conjugate)
+            } /// end reconstructed Σc0 signal
+
+            /// Reconstructed Σc++ signal
+            else if(std::abs(candSigmaC.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi && (std::abs(chargeSigmaC) == 2)) {
+                // Get the corresponding MC particle, found as the mother of the soft pion
+                auto indexMother = RecoDecay::getMother(particlesMc, candSigmaC.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandSigmaCMcGen>>(), pdg::Code::kSigmaCPlusPlus, true);
+                auto particleMother = particlesMc.rawIteratorAt(indexMother);
+                //registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
+
+                //const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmaC.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+                //const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmaC.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+                double massSigmaC(-1.), massLambdaC(-1.), deltaMass(-1.), ptSigmaC(candSigmaC.pt()), ptLambdaC(candLambdaC.pt());
+                auto ptSc = candSigmaC.pt();
+                auto ptLc = candLambdaC.pt();
+                /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
+                if(isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
+                    massSigmaC = invMassScRecoLcToPKPi(candSigmaC);
+                    massLambdaC = invMassLcToPKPi(candLambdaC);
+                    deltaMass = massSigmaC - massLambdaC;
+
+                    /// Fill the histograms for Σc0 and Σc0,++
+                    /// TODO [...]
+
+                } /// end candidate Λc+ → pK-π+ (and charge conjugate)
+                /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
+                if(isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
+                    massSigmaC = invMassScRecoLcToPiKP(candSigmaC);
+                    massLambdaC = invMassLcToPiKP(candLambdaC);
+                    deltaMass = massSigmaC - massLambdaC;
+                    
+                    /// Fill the histograms for Σc0 and Σc0,++
+                    /// TODO [...]
+
+                } /// end candidate Λc+ → π+K-p (and charge conjugate)
+            } /// end reconstructed Σc++ signal
+
+        } /// end loop on reconstructed Σc0,++
+
+    }; /// end processMc
+    PROCESS_SWITCH(HfTaskSigmaC, processMc, "Process MC", false);
 
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskSigmaC>(cfgc, TaskName{"hf-task-sigmac"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSigmaC>(cfgc, TaskName{"hf-task-sigmac"})};
 }
