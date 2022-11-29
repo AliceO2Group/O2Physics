@@ -98,7 +98,7 @@ struct tpcPid {
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
 
   // Thread configuration
-  int activeThreads = networkSetNumThreads.value;
+  int activeThreads = 0;
 
   // Paramatrization configuration
   bool useCCDBParam = false;
@@ -163,6 +163,7 @@ struct tpcPid {
       } else {
         if (networkSetNumThreads > 0) {
           LOGP(info, "Not running on Hyperloop. Threads for neural network inference are fixed: {} threads", std::to_string(networkSetNumThreads));
+          activeThreads = networkSetNumThreads.value;
         }
       }
 
