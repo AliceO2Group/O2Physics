@@ -28,7 +28,7 @@
 
 // *****revision history*****:
 //
-// adding accesing to ccdb objects for 2022 data taking on 30.11.22 by A. Marin (a.marin@gsi.de) 
+// adding accesing to ccdb objects for 2022 data taking on 30.11.22 by A. Marin (a.marin@gsi.de)
 //
 // **************************
 
@@ -151,15 +151,14 @@ struct skimmerGammaConversions {
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(path.value, bc.timestamp());
     o2::parameters::GRPMagField* grpmag = 0x0;
 
-    if (grpo) { 
-       o2::base::Propagator::initFieldFromGRP(grpo);
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
       if (!grpmag) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << path << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
- 
     }
     //o2::base::Propagator::Instance()->setMatLUT(lut);
     runNumber = bc.runNumber();
