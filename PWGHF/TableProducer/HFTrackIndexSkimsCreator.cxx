@@ -36,6 +36,7 @@
 #include "DetectorsBase/GeometryManager.h"     // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "Common/Core/TrackSelectorPID.h"
 
 #include <algorithm>
 
@@ -2221,7 +2222,8 @@ struct HfTrackIndexSkimsCreatorCascades {
     {{"hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
-     {"hMass2", "2-prong candidates;cascade inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
+     {"hMass2", "2-prong candidates;cascade inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 1.26, 1.38}}}}
+     }};
 
   // using MyTracks = aod::BigTracksMC;
   // Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
@@ -2283,6 +2285,7 @@ struct HfTrackIndexSkimsCreatorCascades {
     // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
     fitter.setUseAbsDCA(UseAbsDCA);
 
+
     // fist we loop over the bachelor candidate
 
     // for (const auto& bach : selectedTracks) {
@@ -2313,6 +2316,7 @@ struct HfTrackIndexSkimsCreatorCascades {
       MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "KEPT! proton from Lc with daughters " << indexBach);
 
       auto trackBach = getTrackParCov(bach);
+
       // now we loop over the V0s
       for (const auto& v0 : V0s) {
 
@@ -2438,6 +2442,16 @@ struct HfTrackIndexSkimsCreatorCascades {
         // re-calculate invariant masses with updated momenta, to fill the histogram
         mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
         massLambdaPi = RecoDecay::m(array{pVecBach, pVecV0}, array{massPi, massLambda});
+        if (studyOmegac && (cutInvMassXi >= 0.) && (std::abs(massLambdaPi - massXi) > cutInvMassXi)) {
+          continue;
+        }
+        double massCascade = 0;
+        if(studyOmegac){
+          massCascade = massLambdaPi;
+        } else {
+          massCascade = mass2K0sP;
+        }
+        
 
         std::array<float, 3> posCasc = {0., 0., 0.};
         const auto& cascVtx = fitter.getPCACandidate();
@@ -2447,7 +2461,8 @@ struct HfTrackIndexSkimsCreatorCascades {
 
         // fill table row
         rowTrackIndexCasc(bach.globalIndex(),
-                          v0.globalIndex());
+                          v0.globalIndex(),
+                          massCascade);
         // fill histograms
         if (doValPlots) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
@@ -2459,12 +2474,11 @@ struct HfTrackIndexSkimsCreatorCascades {
           } else {
             registry.fill(HIST("hMass2"), mass2K0sP);
           }
-          
         }
 
       } // loop over V0s
-
     } // loop over tracks
+    
   }   // process
 };
 

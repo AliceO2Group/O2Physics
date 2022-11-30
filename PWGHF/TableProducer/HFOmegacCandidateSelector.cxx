@@ -19,12 +19,11 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/TrackSelection.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_casc;
 using namespace o2::aod::hf_cand_omegac;
 using namespace o2::aod::hf_sel_omegac;
 
@@ -32,149 +31,61 @@ using namespace o2::aod::hf_sel_omegac;
 /// Struct for applying Omegac selection cuts
 struct HFOmegacCandidateSelector {
   Produces<aod::HFSelOmegacCandidate> hfSelOmegacCandidate;
-  
+
+  //limit charm baryon invariant mass spectrum
+  Configurable<double> LowerLimitSpectrum{"EtLowerLimitSpectrumaMax", 2.4, "Lower limit invariant mass spectrum charm baryon"};
+  Configurable<double> UpperLimitSpectrum{"UpperLimitSpectrumaMax", 3.0, "Upper limit invariant mass spectrum charm baryon"};
+
+  //kinematic selections
+  Configurable<double> EtaMax{"EtaMax", 0.8, "Max absolute value of eta"};
+  Configurable<double> pTMinPiFromCasc{"pTMinPiFromCasc", 0.15, "Min pT pi <- casc"};
+  Configurable<double> pTMinPiFromOme{"pTMinPiFromOme", 0.2, "Min pT pi <- omegac"};
+
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> d_pTCandMax{"d_pTCandMax", 50., "Upper bound of candidate pT"};
-  // TPC
+
+  //PID options
+  Configurable<bool> PIDTPCOnly{"PIDTPCOnly", true, "PID with TPC only"};
+  Configurable<bool> PIDTPCTOFCombined{"PIDTPCTOFCombined", false, "PID with TPC & TOF"};
+
+  // PID - TPC selections
   Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 5., "Upper bound of track pT for TPC PID"};
   Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
   Configurable<double> d_nSigmaTPCCombined{"d_nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
-  // TOF
+  // PID - TOF selections
   Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 5., "Upper bound of track pT for TOF PID"};
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
   Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
-  // topological cuts (see PWGHF/Core/HFSelectorCuts.h))
-  //Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_d0_topik::pTBins_v}, "pT bin limits"};
-  //Configurable<LabeledArray<double>> cuts{"D0_to_pi_K_cuts", {hf_cuts_d0_topik::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "D0 candidate selection per pT bin"};
+
   //invariant mass cuts
   Configurable<double> cutinvmasslambda{"cutinvmasslambda", 0.0025, "Invariant mass cut for lambda (sigma)"};
   Configurable<double> cutinvmasscascade{"cutinvmasscascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
   Configurable<int> nsigmainvmasscut{"nsigmainvmasscut", 4, "Number of sigma for invariant mass cut"};
   Configurable<double> rangeinvmassomegac{"rangeinvmassomegac", 0.3, "Invariant mass range for omegac (sigma)"};
 
+  //detector clusters selections
+  Configurable<int> tpcClusters{"tpcClusters", 50, "Minimum number of TPC clusters requirement"};
+  Configurable<int> tpcCrossedRows{"tpcCrossedRows", 70, "Minimum number of TPC crossed rows requirement"};
+  Configurable<double> tpcCrossedRowsOverFindableClustersRatio{"tpcCrossedRowsOverFindableClustersRatio", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
+  Configurable<int> itsClusters{"itsClusters", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
+  Configurable<int> itsClustersInnBarr{"itsClustersInnBarr", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
+  //NOTA: MinNumberOfTPCCrossedRows=70 and MinTPCCrossedRows/FindableClustersRatio=0.8 already implemented in GlobalTrack selections (it's also required to have at least 1 hit in any SPD layer)
+
   OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
-  OutputObj<TH1F> hInvMassLambda{TH1F("hInvMassLambda", "Lambda invariant mass;inv mass;entries", 1000, 1.10, 1.14)};
-  OutputObj<TH1F> hInvMassCascade{TH1F("hInvMassCascade", "Cascade invariant mass;inv mass;entries", 1000, 1.295, 1.345)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
+  OutputObj<TH1F> hInvMassOmegacNotFixed{TH1F("hInvMassOmegacNotFixed", "Omegac invariant mass (not fixed);inv mass;entries", 500, 2.2, 3.1)};
 
   OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
   OutputObj<TH1F> hTest2{TH1F("hTest2", "Test status consecutive;status;entries", 12, 0., 12.)};
 
-
-
-  /*
-  /// Conjugate-independent topological cuts
-  /// \param candidate is candidate
-  /// \return true if candidate passes all cuts
-  template <typename T>
-  bool selectionTopol(const T& candidate)
-  {
-    auto candpT = candidate.pt();
-    auto pTBin = findBin(pTBins, candpT);
-    if (pTBin == -1) {
-      return false;
-    }
-
-    // check that the candidate pT is within the analysis range
-    if (candpT < d_pTCandMin || candpT >= d_pTCandMax) {
-      return false;
-    }
-    // product of daughter impact parameters
-    if (candidate.impactParameterProduct() > cuts->get(pTBin, "d0d0")) {
-      return false;
-    }
-    // cosine of pointing angle
-    if (candidate.cpa() < cuts->get(pTBin, "cos pointing angle")) {
-      return false;
-    }
-    // cosine of pointing angle XY
-    if (candidate.cpaXY() < cuts->get(pTBin, "cos pointing angle xy")) {
-      return false;
-    }
-    // normalised decay length in XY plane
-    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normalized decay length XY")) {
-      return false;
-    }
-    // candidate DCA
-    //if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
-
-    // decay exponentail law, with tau = beta*gamma*ctau
-    // decay length > ctau retains (1-1/e)
-    if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
-      return false;
-    }
-    double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, cuts->get(pTBin, "minimum decay length"));
-    if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
-      return false;
-    }
-    if (candidate.decayLength() > cuts->get(pTBin, "decay length")) {
-      return false;
-    }
-    if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
-      return false;
-    }
-    if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
-      //return false; // add back when getter fixed
-    }
-    return true;
-  }
-
-  /// Conjugate-dependent topological cuts
-  /// \param candidate is candidate
-  /// \param trackPion is the track with the pion hypothesis
-  /// \param trackKaon is the track with the kaon hypothesis
-  /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
-  /// \return true if candidate passes all cuts for the given Conjugate
-  template <typename T1, typename T2>
-  bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
-  {
-    auto candpT = candidate.pt();
-    auto pTBin = findBin(pTBins, candpT);
-    if (pTBin == -1) {
-      return false;
-    }
-
-    // invariant-mass cut
-    if (trackPion.sign() > 0) {
-      if (std::abs(InvMassD0(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
-        return false;
-      }
-    } else {
-      if (std::abs(InvMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
-        return false;
-      }
-    }
-
-    // cut on daughter pT
-    if (trackPion.pt() < cuts->get(pTBin, "pT Pi") || trackKaon.pt() < cuts->get(pTBin, "pT K")) {
-      return false;
-    }
-
-    // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaXY()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaXY()) > cuts->get(pTBin, "d0K")) {
-      return false;
-    }
-
-    // cut on cos(theta*)
-    if (trackPion.sign() > 0) {
-      if (std::abs(CosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
-        return false;
-      }
-    } else {
-      if (std::abs(CosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  */
+  using MyTrackInfo = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
   
-  void process(aod::HfCandOmegacBase const& candidates, aod::BigTracksPIDExtended const&)
+  void process(aod::HfCandOmegacBase const& candidates, MyTrackInfo const&)
+  //aod::BigTracksPIDExtended const&)
   {
     TrackSelectorPID selectorPionFromOme(kPiPlus);
     selectorPionFromOme.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -211,66 +122,115 @@ struct HFOmegacCandidateSelector {
     // looping over omegac candidates
     for (auto& candidate : candidates) {
 
-      // final selection flag: -1 - rejected, 1 - accepted
-
-   
-
-      /*if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
-        continue;
-      }
-      statusHFFlag = 1; */
-
-      auto trackV0PosDau = candidate.posTrack_as<aod::BigTracksPIDExtended>(); // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<aod::BigTracksPIDExtended>(); // negative V0 daughter
-      auto trackPiFromCasc = candidate.index2_as<aod::BigTracksPIDExtended>(); // pion <- cascade
-      auto trackPiFromOmeg =  candidate.index1_as<aod::BigTracksPIDExtended>(); //pion <- omegac
+      auto trackV0PosDau = candidate.posTrack_as<MyTrackInfo>(); // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<MyTrackInfo>(); // negative V0 daughter
+      auto trackPiFromCasc = candidate.index2_as<MyTrackInfo>(); // pion <- cascade
+      auto trackPiFromOmeg =  candidate.index1_as<MyTrackInfo>(); //pion <- omegac
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int signdecay = candidate.signdecay();
+      int signdecay = candidate.signdecay(); //sign of pi <- cascade
 
-      if(signdecay < 0){
+      if(signdecay > 0){
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
       } else if (signdecay == 0){
         continue;
       }
 
-      /*
-      if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
-        hfSelD0Candidate(statusD0, statusD0bar);
+      //eta selection
+      double etav0posdau = candidate.etav0posdau();
+      double etav0negdau = candidate.etav0negdau();
+      double etapifromcasc = candidate.etapifromcasc();
+      double etapifromome = candidate.etapifromome();
+      if(abs(etav0posdau)>EtaMax){
         continue;
       }
-      */
-
-      // conjugate-independent topological selection
-      /*if (!selectionTopol(candidate)) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+      if(abs(etav0negdau)>EtaMax){
         continue;
       }
-      statusTopol = 1; */
-
-      // implement filter bit 4 cut - should be done before this task at the track selection level
-      // need to add special cuts (additional cuts on decay length and d0 norm)
-
-      // conjugate-dependent topological selection for D0
-      //bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
-      // conjugate-dependent topological selection for D0bar
-      //bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
-
-      /*if (!topolD0 && !topolD0bar) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+      if(abs(etapifromcasc)>EtaMax){
         continue;
       }
-      statusCand = 1;*/
+      if(abs(etapifromome)>EtaMax){
+        continue;
+      }
+
+      //pT selections
+      double ptpifromcasc = sqrt((candidate.pxpifromcascatprod()*candidate.pxpifromcascatprod())+(candidate.pypifromcascatprod()*candidate.pypifromcascatprod()));
+      double ptpifromome = sqrt((candidate.pxprimarypiatprod()*candidate.pxprimarypiatprod())+(candidate.pyprimarypiatprod()*candidate.pyprimarypiatprod()));
+      if(abs(ptpifromcasc)>pTMinPiFromCasc){
+        continue;
+      }
+      if(abs(ptpifromome)>pTMinPiFromOme){
+        continue;
+      }
+
+      //TPC clusters selections (see O2Physics/DPG/Tasks/AOTTrack/qaEventTrack.h)
+      if(trackPiFromOmeg.tpcNClsFound() < tpcClusters){  //Clusters found in TPC
+        continue;
+      }
+      /*if(trackPiFromLam.tpcNClsFound() < tpcClusters){
+        continue;
+      }
+      if(trackPrFromLam.tpcNClsFound() < tpcClusters){
+        continue;
+      }
+      if(trackPiFromCasc.tpcNClsFound() < tpcClusters){
+        continue;
+      }*/
+
+      if(trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows){ //Crossed rows found in TPC
+        continue;
+      }
+      /*if(trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRows){
+        continue;
+      }
+      if(trackPrFromLam.tpcNClsCrossedRows() < tpcCrossedRows){
+        continue;
+      }
+      if(trackPiFromCasc.tpcNClsCrossedRows() < tpcCrossedRows){
+        continue;
+      }*/
+
+      if(trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){ //Crossed rows over findable clusters in TPC
+        continue;
+      }
+      /*if(trackPiFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){
+        continue;
+      }
+      if(trackPrFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){
+        continue;
+      }
+      if(trackPiFromCasc.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){
+        continue;
+      }*/
+
+      //ITS clusters selection for primary pi (see O2Physics/DPG/Tasks/AOTTrack/qaEventTrack.h)
+      if(trackPiFromOmeg.itsNCls() < itsClusters){  //Clusters found in ITS
+        continue;
+      }
+      if(trackPiFromOmeg.itsNClsInnerBarrel() < itsClustersInnBarr){  //Clusters found in the inner barrel of the ITS
+        continue;
+      }
 
       // track-level PID selection
-      int pidProton = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
-      int pidPiFromLam = selectorPionFromV0.getStatusTrackPIDTPC(trackPiFromLam);
-      int pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDTPC(trackPiFromCasc);
-      int pidPiFromOme = selectorPionFromOme.getStatusTrackPIDTPC(trackPiFromOmeg);
+      int pidProton = -999;
+      int pidPiFromLam = -999;
+      int pidPiFromCasc = -999;
+      int pidPiFromOme = -999;
+      if(PIDTPCOnly){
+        pidProton = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
+        pidPiFromLam = selectorPionFromV0.getStatusTrackPIDTPC(trackPiFromLam);
+        pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDTPC(trackPiFromCasc);
+        pidPiFromOme = selectorPionFromOme.getStatusTrackPIDTPC(trackPiFromOmeg);
+      } else if(PIDTPCTOFCombined){
+        pidProton = selectorProton.getStatusTrackPIDAll(trackPrFromLam);
+        pidPiFromLam = selectorPionFromV0.getStatusTrackPIDAll(trackPiFromLam);
+        pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDAll(trackPiFromCasc);
+        pidPiFromOme = selectorPionFromOme.getStatusTrackPIDAll(trackPiFromOmeg);
+      }
 
       int statuspidLambda = -1;
       int statuspidCascade = -1;
@@ -297,9 +257,9 @@ struct HFOmegacCandidateSelector {
       int statusinvmassOmegac = -1;
 
       double invmasslambda = 0; 
-      if(signdecay > 0){
+      if(signdecay < 0){
         invmasslambda = candidate.invmasslambda();
-      } else if(signdecay < 0){
+      } else if(signdecay > 0){
         invmasslambda = candidate.invmassantilambda();
       }
       double invmasscascade = candidate.invmasscascade();
@@ -319,7 +279,8 @@ struct HFOmegacCandidateSelector {
         }
       }
 
-      if (abs(invmassomegac-2.6952) < rangeinvmassomegac){
+      //if (abs(invmassomegac-2.6952) < rangeinvmassomegac){
+        if ((invmassomegac >= LowerLimitSpectrum) && (invmassomegac <= UpperLimitSpectrum)){
         statusinvmassOmegac = 1;
         if(statuspidLambda ==1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1 && statusinvmassCascade == 1){
           hTest2->Fill(5.5);
@@ -372,10 +333,10 @@ struct HFOmegacCandidateSelector {
       //if(statuspidLambda == 1 && statuspidCascade== 1 && statuspidOmegac == 1  && statusinvmassOmegac == 1){
         hPtPrimaryPi->Fill(ptprimarypi);
         hxVertexOmegac->Fill(candidate.xdecayvtxomegac());
-        hInvMassLambda->Fill(invmasslambda);
-        hInvMassCascade->Fill(invmasscascade);
         hInvMassOmegac->Fill(invmassomegac);
         hCTauOmegac->Fill(candidate.ctauomegac());
+        hInvMassOmegacNotFixed->Fill(candidate.massomegacnotfixed());
+
       }
     }
   }

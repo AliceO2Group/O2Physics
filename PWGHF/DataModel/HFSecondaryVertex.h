@@ -115,10 +115,17 @@ DECLARE_SOA_TABLE(Hf2Prongs, "AOD", "HF2PRONG", //! Table for HF 2 prong candida
                   hf_track_index::HFflag);
 using Hf2Prong = Hf2Prongs::iterator;
 
+namespace hf_casc
+{
+  DECLARE_SOA_COLUMN(MassCascade, mCascade, double);
+}
+
 DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
-                  hf_track_index::V0Id);
+                  //hf_track_index::V0Id,
+                  v0data::V0Id,
+                  hf_casc::MassCascade);
 using HfCascade = HfCascades::iterator;
 
 DECLARE_SOA_TABLE(Hf3Prongs, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
@@ -1229,6 +1236,13 @@ namespace hf_cand_omegac
   DECLARE_SOA_COLUMN(EtaOmegac, etaomegac, double);
   DECLARE_SOA_COLUMN(EtaCascade, etacascade, double);
   DECLARE_SOA_COLUMN(EtaV0, etav0, double);
+  DECLARE_SOA_COLUMN(MyMassLambda, mymasslambda, double);
+  DECLARE_SOA_COLUMN(MassCascadeNotFixed, masscascadenotfixed, double);
+  DECLARE_SOA_COLUMN(MassOmegacNotFixed, massomegacnotfixed, double);
+  DECLARE_SOA_COLUMN(xVtxCascLF, xvtxcasclf, double);
+  DECLARE_SOA_COLUMN(yVtxCascLF, yvtxcasclf, double);
+  DECLARE_SOA_COLUMN(zVtxCascLF, zvtxcasclf, double);
+  DECLARE_SOA_COLUMN(MassCascLF, masscasclf, double);
 
   // MC matching result:
   DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
@@ -1269,8 +1283,9 @@ namespace hf_cand_omegac
                       hf_cand_omegac::CosPAV0, hf_cand_omegac::CosPAOmegac, hf_cand_omegac::CosPAXYV0, hf_cand_omegac::CosPAXYOmegac,
                       hf_cand_omegac::CTauOmegac, hf_cand_omegac::CTauCascade, hf_cand_omegac::CTauV0,
                       hf_cand_omegac::EtaV0PosDau, hf_cand_omegac::EtaV0NegDau, hf_cand_omegac::EtaPiFromCasc, hf_cand_omegac::EtaPiFromOme,
-                      hf_cand_omegac::EtaOmegac, hf_cand_omegac::EtaCascade, hf_cand_omegac::EtaV0
-                      );
+                      hf_cand_omegac::EtaOmegac, hf_cand_omegac::EtaCascade, hf_cand_omegac::EtaV0,
+                      hf_cand_omegac::MyMassLambda, hf_cand_omegac::MassCascadeNotFixed, hf_cand_omegac::MassOmegacNotFixed,
+                      hf_cand_omegac::xVtxCascLF, hf_cand_omegac::yVtxCascLF,hf_cand_omegac::zVtxCascLF, hf_cand_omegac::MassCascLF);
 
  // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandOmegacMCRec, "AOD", "HFCANDOMECMCREC", //!
@@ -1280,6 +1295,25 @@ DECLARE_SOA_TABLE(HfCandOmegacMCRec, "AOD", "HFCANDOMECMCREC", //!
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandOmegacMCGen, "AOD", "HFCANDOMECMCGEN", //!
                   hf_cand_omegac::FlagMCMatchGen);
+                  
+// specific Lambda from Omegac candidate properties
+namespace hf_lambdaoc
+{
+  DECLARE_SOA_COLUMN(StatusPidLambda, statuspidlambda, int);
+  DECLARE_SOA_COLUMN(StatusPidAntiLambda, statuspidantilambda, int);
+  DECLARE_SOA_COLUMN(StatusInvMassLambda, statusinvmasslambda, int);
+}
+DECLARE_SOA_TABLE(HFSelLambdaOC, "AOD", "HFSELLAMBDAOC",
+                  v0data::V0Id, hf_lambdaoc::StatusPidLambda, hf_lambdaoc::StatusPidAntiLambda, hf_lambdaoc::StatusInvMassLambda);
+
+// specific Xi from Omegac candidate properties
+namespace hf_xioc
+{
+  DECLARE_SOA_COLUMN(StatusPidXi, statuspidxi, int);
+  DECLARE_SOA_COLUMN(StatusInvMassXi, statusinvmassxi, int);
+}
+DECLARE_SOA_TABLE(HFSelXiOC, "AOD", "HFSELXIOC",
+                  hf_xioc::StatusPidXi, hf_xioc::StatusInvMassXi);
 
 // specific chic candidate properties
 namespace hf_cand_chic

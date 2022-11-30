@@ -11,7 +11,6 @@
 
 /// \file HFCandidateCreatorOmegac.cxx
 /// \brief Reconstruction of Omegac0 candidates
-/// \note Extended from HFTrackIndexSkimsCreator.cxx and lambdakzerobuilder.cxx
 /// \author Federica Zanone <federica.zanone@cern.ch>, HEIDELBERG UNIVERSITY & GSI
 
 #include "Framework/AnalysisTask.h"
@@ -26,6 +25,7 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/EventSelection.h"
 #include "CCDB/BasicCCDBManager.h"            
 #include "DataFormatsParameters/GRPObject.h"  
 #include "DetectorsBase/Propagator.h"         
@@ -38,9 +38,12 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
+using namespace o2::aod::cascdata;
+using namespace o2::aod::cascdataext;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::aod::hf_cand_omegac;
 using namespace o2::framework::expressions;
+//using namespace o2::aod::hf_omegacevsel;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -49,12 +52,24 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 }
 
 #include "Framework/runDataProcessing.h"
+using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
 
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorOmegac {
   Produces<aod::HfCandOmegacBase> rowCandidateBase; //produced table
 
   // - - - - - - - - - - CONFIGURABLES - - - - - - - - - -
+  //event selection
+  Configurable<bool> EventSel8Selection{"EventSel8Selection", true, "Select good events Run3"};
+  Configurable<double> zMaxPV{"zMaxPV", 100., "Abs value of max z PV"}; //cm
+  Configurable<int> nContribMin{"nContribMin", 0, "Min number of contributors to primary-vertex reconstruction"};
+  Configurable<double> chi2Max{"chi2Max", -1, "Max chi^2 of primary-vertex reconstruction"}; 
+
+  //pi <- Omegac track selection
+  Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", true, "Apply GlobalTrack selections for pi <- Omegac"}; //seeO2Physics/Common/Core/TrackSelectionDefaults.cxx, mincrossedrowsTPC = 70 already implemented here
+  Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", false, "Apply GlobalTrack selections except for DCA upper limit cut for pi <- Omegac"};
+  Configurable<double> ptMinBachelorPion{"ptMinBachelorPion", 0.1, "Min pt track pion <- Omegac"};
+
   //Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", false, "create tracks version propagated to PCA"};
   /*NOT: it's better to call fitter.process() with setPropagateToPCA(false) beforehand and call propagateTracksToVertex() only if I am sure I will use the vertex. 
@@ -96,19 +111,15 @@ struct HfCandidateCreatorOmegac {
   //These istograms will be added to the file AnalysisResults.root
   OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
-  OutputObj<TH1F> hEtaCascade{TH1F("hEtaCascade", "Cascade pseudorapidity;eta;entries", 200, -1., 1.)};
-  OutputObj<TH1F> hInvMassCascade{TH1F("hInvMassCascade", "Cascade invariant mass;inv mass;entries", 500, 0.9, 1.7)};
-  OutputObj<TH1F> hCosPAV0{TH1F("hCosPAV0", "CosPA V0;cosPA;entries", 200, -1., 1.)};
-  OutputObj<TH1F> hCTauCascade{TH1F("hCTauCascade", "Cascade ctau;ctau;entries", 500, 0., 10.)};
+  OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
+  OutputObj<TH1F> hMassOmegacNotFixed{TH1F("hMassOmegacNotFixed", "hMassOmegacNotFixed;invmass;entries", 500, 2.2, 3.1)};
 
-  OutputObj<TH1F> hMassLambdaLF{TH1F("hMassLambdaLF", "LF Lambda mass;invmass;entries", 1000, 0.8, 1.3)};
 
+   // - - - - - - - - - - FLAGS - - - - - - - - - -
   /*Using flags in filters (for example d_selectionFlagXic): first define the filter with the flag, then specify in the tables taken as arguments in process: process(soa::Filtered<nometabella>), 
   by doing so I will automatically take from the table <nometabella> only the elements that satisfy the condition specified in the filter. Example:
   Configurable<int> d_selectionFlagXic{"d_selectionFlagXic", 1, "Selection Flag for Xic"}; --> set flag value in a configurable
   Filter filterSelectCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);  --> define the filter */
-
-  //Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
   void init(InitContext const&)
   {
@@ -123,19 +134,37 @@ struct HfCandidateCreatorOmegac {
   }
 
 
+  //using CollSelIter = soa::Join<aod::Collision, aod::EvSel>; //iterators
+  using CollSel = soa::Join<aod::Collisions, aod::EvSels>; //tables
+
   // - - - - - - - - - - PROCESS - - - - - - - - - -
-  void process(aod::Collision const& collision,
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+               //aod::Collision const& collision,
                aod::BCsWithTimestamps const& bcWithTimeStamps,
-               aod::HfCascades const& cascades,
-               aod::BigTracks const& tracks,
-               aod::V0Datas const&,
-               aod::V0sLinked const&)
+               aod::CascDataExt const& cascades,
+               MyTracks const& tracks,
+               aod::V0Datas const&, 
+               aod::V0sLinked const&)      //since I giveas input the iterator over collisions, the process function will be called per collision (and so will loop over the cascade of each collision)
                
-  {
+  { 
+
+    //event selection
+    if(abs(collision.posZ()) > zMaxPV){
+      return;
+    }
+    if(collision.numContrib() < nContribMin){
+      return;
+    }
+    if(chi2Max > 0. && collision.chi2() > chi2Max){
+      return;
+    }
+    if(EventSel8Selection && !collision.sel8()){    
+      return;
+    } 
+
     //set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-
     auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); //z component
   
     // 2-prong vertex fitter to build the omegac vertex
@@ -170,17 +199,15 @@ struct HfCandidateCreatorOmegac {
     dfv.setMinRelChi2Change(d_minrelchi2change);
     dfv.setUseAbsDCA(useabsdca);
     dfv.setRefitWithMatCorr(b_refitwithmatcorr);
-
     //INFO aboout DCA fitter: AliceO2/Detectors/Vertexing/include/DetectorsVertexing/DCAFitterN.h 
 
-    //loop over cascades reconstructed by HFTrackIndexSkimsCreator.cxx (struct HfTrackIndexSkimsCreatorCascades)
+    //loop over cascades reconstructed by cascadebuilder.cxx
     for (auto& casc : cascades) {
 
 //--------------------------accessing particles in the decay chain------------
-
       //cascade daughter - charged particle
-      int index_trackxidaucharged = casc.index0Id();                 //pion <- xi index from cascade table (not used)
-      auto trackxidaucharged = casc.index0_as<aod::BigTracks>();     //pion <- xi track from BigTracks table
+      int index_trackxidaucharged = casc.bachelorId();                 //pion <- xi index from cascade table (not used)
+      auto trackxidaucharged = casc.bachelor_as<MyTracks>();           //pion <- xi track from MyTracks table
       //cascade daughter - V0
       int indexv0 = casc.v0Id();                                     //VO index from cascades table
       if (!casc.v0_as<aod::V0sLinked>().has_v0Data()){               //check that V0 data are stored 
@@ -188,15 +215,16 @@ struct HfCandidateCreatorOmegac {
       }
       auto v0element = casc.v0_as<aod::V0sLinked>().v0Data();  //V0 element from LF table containing V0 info
       //V0 positive daughter
-      auto trackv0dau0 = v0element.posTrack_as<aod::BigTracks>();    //p <- V0 track (positive track) from BigTracks table
+      auto trackv0dau0 = v0element.posTrack_as<MyTracks>();    //p <- V0 track (positive track) from MyTracks table
       //V0 negative daughter
-      auto trackv0dau1 = v0element.negTrack_as<aod::BigTracks>();    //pion <- V0 track (negative track) from BigTracks table
+      auto trackv0dau1 = v0element.negTrack_as<MyTracks>();    //pion <- V0 track (negative track) from MyTracks table
 
       /*
       LOGF(info, "- - - - - - -   Particles processed   - - - - - - -");
       LOGF(info, "Process cascade %d with V0 daughter %d and charged daughter %d ", casc.globalIndex(), casc.v0Id(), casc.index0Id());
       LOGF(info, "Process V0 (V0Id %d) daughters %d (pos) and %d (neg) ", casc.v0Id(), trackv0dau0.globalIndex(), trackv0dau1.globalIndex());
       */
+
 //--------------------------reconstruct V0--------------------------------------
 
       //pseudorapidity
@@ -253,6 +281,9 @@ struct HfCandidateCreatorOmegac {
       //pseudorapidity
       double pseudorap_pifromcas = trackxidaucharged.eta();
 
+      //info from LF table
+      array<float, 3> vertexCascLFtable = {casc.x(), casc.y(), casc.z()};
+
       //pion <- casc track to be processed with DCAfitter
       auto trackParVar_xidaucharged = getTrackParCov(trackxidaucharged);
 
@@ -293,10 +324,21 @@ struct HfCandidateCreatorOmegac {
 
       for (auto& trackpion : tracks) {
 
-        /*cut on primary pion pT
-        if (trackpion.pt() < cutPtPionMin) {  //primary pion pT cut
+        //cut on primary pion pT
+        if (trackpion.pt() < ptMinBachelorPion) { 
           continue;
-        }*/
+        }
+
+        //check on global track
+        if (useIsGlobalTrack) {
+          if (trackpion.isGlobalTrack() != (uint8_t) true) {
+            continue;
+          }
+        } else if (useIsGlobalTrackWoDCA) {
+          if (trackpion.isGlobalTrackWoDCA() != (uint8_t) true) {
+            continue;
+          }
+        }
 
         //ask for opposite sign daughters (omegac daughters)
         if (trackpion.sign() * trackxidaucharged.sign() >= 0) {
@@ -380,8 +422,19 @@ struct HfCandidateCreatorOmegac {
         double m_lambda = v0element.mLambda(); //from LF table, V0 mass under lambda hypothesis
         double m_antilambda = v0element.mAntiLambda(); //from LF table, V0 mass under anti-lambda hypothesis
 
+        double my_mlambda = 0.;
+        const std::array<float, 2> arrMas_lambda = {0.93827, 0.13957};
+        const std::array<float, 2> arrMas_antilambda = {0.13957, 0.93827};
+        if(trackxidaucharged.sign()>0){
+          my_mlambda = RecoDecay::m(array{pvecV0Dau0, pvecV0Dau1}, arrMas_antilambda);
+        } else if (trackxidaucharged.sign()<0){
+          my_mlambda = RecoDecay::m(array{pvecV0Dau0, pvecV0Dau1}, arrMas_lambda);
+        }
+
         const std::array<float, 2> arrMas_cascade = {1.11568, 0.13957};
         double m_cascade = RecoDecay::m(array{pvecV0_d, pvecpionfromcasc}, arrMas_cascade);
+        double m_cascade_notfixed = RecoDecay::m(array{pvecV0_d, pvecpionfromcasc}, array{my_mlambda, 0.13957});
+        double m_casclf = casc.mXi();
         /*double m_cascade = 0.;
         if(m2_cascade > 0){
           m_cascade = sqrt(m2_cascade);
@@ -389,6 +442,7 @@ struct HfCandidateCreatorOmegac {
 
         const std::array<float, 2> arrMas_omegac = {1.32171, 0.13957};
         double m_omegac = RecoDecay::m(array{pveccasc_d, pvecpionfromomegac}, arrMas_omegac);
+        double m_omegac_notfixed = RecoDecay::m(array{pveccasc_d, pvecpionfromomegac}, array{m_cascade_notfixed, 0.13957});
         /*double m_omegac = 0.;
         if(m2_omegac > 0){
           m_omegac = sqrt(m2_omegac);
@@ -414,16 +468,9 @@ struct HfCandidateCreatorOmegac {
         double pseudorap_v0 = RecoDecay::eta(pvecV0_m);
 
         //fill test histograms
-        hEtaCascade->Fill(pseudorap_cascade);
-        hInvMassCascade->Fill(m_cascade);
-        hCosPAV0->Fill(cpa_V0);
-        hCTauCascade->Fill(ct_cascade);
-        if(trackxidaucharged.sign()>0){
-            hMassLambdaLF->Fill(m_antilambda);
-        } else if(trackxidaucharged.sign()<0){
-            hMassLambdaLF->Fill(m_lambda);
-        }
         
+        hInvMassOmegac->Fill(m_omegac);
+        hMassOmegacNotFixed->Fill(m_omegac_notfixed);
 
         //fill the table
         rowCandidateBase(collision.globalIndex(),
@@ -455,9 +502,11 @@ struct HfCandidateCreatorOmegac {
                          cpa_V0, cpa_omegac, cpaxy_V0, cpaxy_omegac,
                          ct_omegac, ct_cascade, ct_V0,
                          pseudorap_v0posdau, pseudorap_v0negdau, pseudorap_pifromcas, pseudorap_pifromome,
-                         pseudorap_omegac, pseudorap_cascade, pseudorap_v0
+                         pseudorap_omegac, pseudorap_cascade, pseudorap_v0,
+                         my_mlambda, m_cascade_notfixed, m_omegac_notfixed,
+                         vertexCascLFtable[0], vertexCascLFtable[0], vertexCascLFtable[0], m_casclf
                          ); 
-
+                         
       } // loop over pions
     }   // loop over candidates
   }     // end of process
@@ -574,12 +623,15 @@ struct HfCandidateCreatorOmegacMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
-    adaptAnalysisTask<HfCandidateCreatorOmegac>(cfgc)};
+  WorkflowSpec workflow {};
+
+    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorOmegac>(cfgc));
+  
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
     workflow.push_back(adaptAnalysisTask<HfCandidateCreatorOmegacMc>(cfgc));
   }
+
   return workflow;
 }
 
