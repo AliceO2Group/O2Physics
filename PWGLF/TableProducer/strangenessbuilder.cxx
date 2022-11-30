@@ -98,17 +98,65 @@ struct produceV0ToCascMap {
   Produces<aod::V0ToCascMap> v0toCascMap;
   std::vector<int> lCascadeArray;
 
+  Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
+  Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  
   HistogramRegistry registry{
     "registry",
-    {{"hCascadeCount", "hCascadeCount", {HistType::kTH1F, {{1, -0.5f, 0.5f}}}},
-     {"hCascadesPerV0", "hCascadesPerV0", {HistType::kTH1F, {{100, -0.5f, 99.5f}}}}}};
+    {
+      {"hCascadeCount", "hCascadeCount", {HistType::kTH1F, {{1, -0.5f, 0.5f}}}},
+      {"hBachCriteria", "hBachCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}
+    }
+  };
 
-  void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades)
+  enum bachstep { kBachAll=0, kBachTPCrefit, kBachCrossedRows, kBachDCAxy, kNBachSteps };
+  // Helper struct to do bookkeeping of building parameters
+  struct { //possibility to do more
+    long cascadeCounter;
+    std::array<long, kNBachSteps> bachstats;
+  } statisticsRegistry;
+  
+  void resetHistos(){ 
+    statisticsRegistry.cascadeCounter = 0;
+    for(Int_t ii=0; ii<kNBachSteps; ii++) statisticsRegistry.bachstats[ii] = 0;
+  }
+
+  void fillHistos(){ 
+    registry.fill(HIST("hCascadeCount"), 0.0, statisticsRegistry.cascadeCounter);
+    for(Int_t ii=0; ii<kNBachSteps; ii++)
+      registry.fill(HIST("hBachCriteria"), ii, statisticsRegistry.bachstats[ii]);
+  }
+  
+  void init(InitContext& context)
+  {
+    resetHistos();
+  }
+  
+  template <class TTracksTo>
+  bool buildMap(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
     std::multimap<int, int> stdV0ToCascMap;
     typedef std::multimap<int, int>::iterator stdV0ToCascMapIter;
-    registry.fill(HIST("hCascadeCount"), 0.f, cascades.size());
+    statisticsRegistry.cascadeCounter += cascades.size();
     for (auto& cascade : cascades) {
+      auto bachTrack = cascade.bachelor_as<TTracksTo>();
+      if (tpcrefit) {
+        if (!(bachTrack.trackType() & o2::aod::track::TPCrefit)) {
+          return false;
+        }
+      }
+      statisticsRegistry.bachstats[kBachTPCrefit]++;
+      if (bachTrack.tpcNClsCrossedRows() < mincrossedrows) {
+        return false;
+      }
+      statisticsRegistry.bachstats[kBachCrossedRows]++;
+
+      // bachelor DCA track to PV
+      if (bachTrack.dcaXY() < dcabachtopv)
+        return false;
+      statisticsRegistry.bachstats[kBachDCAxy]++;
+      //Fill map
       stdV0ToCascMap.insert(std::pair<int, int>(cascade.v0().globalIndex(), cascade.globalIndex()));
     }
     for (auto& v0 : V0s) {
@@ -117,11 +165,29 @@ struct produceV0ToCascMap {
       for (stdV0ToCascMapIter it = result.first; it != result.second; it++) {
         lCascadeArray.push_back(it->second);
       }
-      // Populate with the std::vector, please
-      registry.fill(HIST("hCascadesPerV0"), lCascadeArray.size());
       v0toCascMap(lCascadeArray);
     }
   }
+
+  void processRun2(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, FullTracksExt const& tracks)
+  {
+    // do v0s, typecase correctly into tracks (Run 2 use case)
+    buildMap<FullTracksExt>(collision, V0s, cascades);
+    
+    fillHistos();
+    resetHistos();
+  }
+  PROCESS_SWITCH(produceV0ToCascMap, processRun2, "Run 2 mode", true);
+
+  void processRun3(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks)
+  {
+    // do v0s, typecase correctly into tracksIU (Run 3 use case)
+    buildMap<FullTracksExtIU>(collision, V0s, cascades);
+    
+    fillHistos();
+    resetHistos();
+  }
+  PROCESS_SWITCH(produceV0ToCascMap, processRun3, "Run 3 mode", false);
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -145,14 +211,15 @@ struct strangenessBuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
-  Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"};
-
+  Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
+  Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
+  
   // Configurables related to cascade building
-  Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
   Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
+  Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
   Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
   Configurable<float> lambdaMassWindow{"lambdaMassWindow", .01, "Distance from Lambda mass"};
 
@@ -186,6 +253,9 @@ struct strangenessBuilder {
   o2::track::TrackParCov lV0Track;
   o2::track::TrackParCov lCascadeTrack;
 
+  enum v0step { kV0All=0, kV0TPCrefit, kV0CrossedRows, kV0DCAxy, kV0DCADau, kV0CosPA, kV0Radius, kNV0Steps };
+  enum cascstep { kCascAll=0, kCascLambdaMass, kCascDCADau, kCascCosPA, kCascRadius, kNCascSteps };
+
   // Helper struct to pass V0 information
   struct {
     int posTrackId;
@@ -218,18 +288,45 @@ struct strangenessBuilder {
     std::array<float, 3> bachP;
     float dcacascdau;
     float bachDCAxy;
+    float cosPA;
     float cascradius;
   } cascadecandidate;
+  
+  // Helper struct to do bookkeeping of building parameters
+  struct {
+    std::array<long, kNV0Steps> v0stats;
+    std::array<long, kNCascSteps> cascstats;
+    long exceptions;
+    long eventCounter;
+  } statisticsRegistry;
 
   HistogramRegistry registry{
     "registry",
     {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
-     {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}}}};
+     {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
+     {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
+
+  void resetHistos(){ 
+    statisticsRegistry.exceptions = 0;
+    statisticsRegistry.eventCounter = 0;
+    for(Int_t ii=0; ii<kNV0Steps; ii++) statisticsRegistry.v0stats[ii] = 0; 
+    for(Int_t ii=0; ii<kNCascSteps; ii++) statisticsRegistry.cascstats[ii] = 0; 
+  }
+
+  void fillHistos(){ 
+    registry.fill(HIST("hEventCounter"), 0.0, statisticsRegistry.eventCounter);
+    registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
+    for(Int_t ii=0; ii<kNV0Steps; ii++) 
+      registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
+    for(Int_t ii=0; ii<kNCascSteps; ii++) 
+    registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
+  }
 
   void init(InitContext& context)
   {
+    resetHistos();
+    
     // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
@@ -358,30 +455,30 @@ struct strangenessBuilder {
   }
 
   template <class TTracksTo>
-  bool buildV0Candidate(aod::Collision const& collision, TTracksTo const& posTrack, TTracksTo const& negTrack, Bool_t lRun3 = kTRUE)
+  bool buildV0Candidate(aod::Collision const& collision, TTracksTo const& posTrack, TTracksTo const& negTrack)
   {
     // value 0.5: any considered V0
-    registry.fill(HIST("hV0Criteria"), 0.5);
-    if (isRun2) {
-      if (!(posTrack.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
+    statisticsRegistry.v0stats[kV0All]++;
+    if (tpcrefit) {
+      if (!(posTrack.trackType() & o2::aod::track::TPCrefit)) {
         return false;
       }
-      if (!(negTrack.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
+      if (!(negTrack.trackType() & o2::aod::track::TPCrefit)) {
         return false;
       }
     }
     // Passes TPC refit
-    registry.fill(HIST("hV0Criteria"), 1.5);
+    statisticsRegistry.v0stats[kV0TPCrefit]++;
     if (posTrack.tpcNClsCrossedRows() < mincrossedrows || negTrack.tpcNClsCrossedRows() < mincrossedrows) {
       return false;
     }
     // passes crossed rows
-    registry.fill(HIST("hV0Criteria"), 2.5);
+    statisticsRegistry.v0stats[kV0CrossedRows]++;
     if (fabs(posTrack.dcaXY()) < dcapostopv || fabs(negTrack.dcaXY()) < dcanegtopv) {
       return false;
     }
     // passes DCAxy
-    registry.fill(HIST("hV0Criteria"), 3.5);
+    statisticsRegistry.v0stats[kV0DCAxy]++;
 
     // Change strangenessBuilder tracks
     lPositiveTrack = getTrackParCov(posTrack);
@@ -393,7 +490,7 @@ struct strangenessBuilder {
     try {
       nCand = fitter.process(lPositiveTrack, lNegativeTrack);
     } catch (...) {
-      registry.fill(HIST("hCaughtExceptions"), 0.5f);
+      statisticsRegistry.exceptions++;
       LOG(error) << "Exception caught in DCA fitter process call!";
       return false;
     }
@@ -418,7 +515,7 @@ struct strangenessBuilder {
     }
 
     // Passes DCA between daughters check
-    registry.fill(HIST("hV0Criteria"), 4.5);
+    statisticsRegistry.v0stats[kV0DCADau]++;
 
     v0candidate.cosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2]}, array{v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1], v0candidate.posP[2] + v0candidate.negP[2]});
     if (v0candidate.cosPA < v0cospa) {
@@ -426,7 +523,7 @@ struct strangenessBuilder {
     }
 
     // Passes CosPA check
-    registry.fill(HIST("hV0Criteria"), 5.5);
+    statisticsRegistry.v0stats[kV0CosPA]++;
 
     v0candidate.V0radius = RecoDecay::sqrtSumOfSquares(v0candidate.pos[0], v0candidate.pos[1]);
     if (v0candidate.V0radius < v0radius) {
@@ -434,7 +531,7 @@ struct strangenessBuilder {
     }
 
     // Passes radius check
-    registry.fill(HIST("hV0Criteria"), 6.5);
+    statisticsRegistry.v0stats[kV0Radius]++;
 
     // store V0 track for a) cascade minimization and b) exporting for decay chains
     lV0Track = fitter.createParentTrackParCov();
@@ -449,27 +546,21 @@ struct strangenessBuilder {
   }
 
   template <class TTracksTo>
-  bool buildCascadeCandidate(aod::Collision const& collision, TTracksTo const& bachTrack, Bool_t lRun3 = kTRUE)
+  bool buildCascadeCandidate(aod::Collision const& collision, TTracksTo const& bachTrack)
   {
     // value 0.5: any considered cascade
-    registry.fill(HIST("hCascadeCriteria"), 0.5);
-
-    // bachelor DCA track to PV
-    cascadecandidate.bachDCAxy = bachTrack.dcaXY();
-    if (cascadecandidate.bachDCAxy < dcabachtopv)
-      return false;
-    registry.fill(HIST("hCascadeCriteria"), 1.5);
+    statisticsRegistry.cascstats[kCascAll]++;
 
     // Overall cascade charge
     cascadecandidate.charge = bachTrack.signed1Pt() > 0 ? +1 : -1;
+    cascadecandidate.bachDCAxy = bachTrack.dcaXY();
 
-    // Better check than before: check also against charge
-    // Should reduce unnecessary combinations
+    // check also against charge
     if (cascadecandidate.charge < 0 && TMath::Abs(v0candidate.lambdaMass - 1.116) > lambdaMassWindow)
       return false;
     if (cascadecandidate.charge > 0 && TMath::Abs(v0candidate.antilambdaMass - 1.116) > lambdaMassWindow)
       return false;
-    registry.fill(HIST("hCascadeCriteria"), 2.5);
+    statisticsRegistry.cascstats[kCascLambdaMass]++;
 
     // Do actual minimization
     lBachelorTrack = getTrackParCov(bachTrack);
@@ -487,27 +578,33 @@ struct strangenessBuilder {
     if (nCand == 0)
       return false;
 
-    registry.fill(HIST("hCascadeCriteria"), 3.5);
+    // DCA between cascade daughters
+    cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    if (cascadecandidate.cascradius < dcacascdau)
+      return false;
+    statisticsRegistry.cascstats[kCascDCADau]++;
 
     fitter.getTrack(1).getPxPyPzGlo(cascadecandidate.bachP);
-
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
     for (int i = 0; i < 3; i++) {
       cascadecandidate.pos[i] = vtx[i];
     }
 
+    cascadecandidate.cosPA = RecoDecay::cpa(
+      array{collision.posX(), collision.posY(), collision.posZ()}, 
+      array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]}, 
+      array{v0candidate.posP[0] + v0candidate.negP[0] + cascadecandidate.bachP[0], v0candidate.posP[1] + v0candidate.negP[1] + cascadecandidate.bachP[1], v0candidate.posP[2] + v0candidate.negP[2] + cascadecandidate.bachP[2]});
+    if (cascadecandidate.cosPA < casccospa) {
+      return false;
+    }
+    statisticsRegistry.cascstats[kCascCosPA]++;
+
     // Cascade radius
     cascadecandidate.cascradius = RecoDecay::sqrtSumOfSquares(cascadecandidate.pos[0], cascadecandidate.pos[1]);
     if (cascadecandidate.cascradius < cascradius)
       return false;
-    registry.fill(HIST("hCascadeCriteria"), 4.5);
-
-    // DCA between cascade daughters
-    cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if (cascadecandidate.cascradius < dcacascdau)
-      return false;
-    registry.fill(HIST("hCascadeCriteria"), 5.5);
+    statisticsRegistry.cascstats[kCascRadius]++;
 
     // store V0 track for a) cascade minimization and b) exporting for decay chains
     lCascadeTrack = fitter.createParentTrackParCov();
@@ -517,9 +614,9 @@ struct strangenessBuilder {
   }
 
   template <class TTracksTo, typename TV0Objects>
-  void buildStrangenessTables(aod::Collision const& collision, TV0Objects const& V0s, aod::Cascades const& cascades, TTracksTo const& tracks, Bool_t lRun3 = kTRUE)
+  void buildStrangenessTables(aod::Collision const& collision, TV0Objects const& V0s, aod::Cascades const& cascades, TTracksTo const& tracks)
   {
-    registry.fill(HIST("hEventCounter"), 0.5);
+    statisticsRegistry.eventCounter++;
 
     float V0CovMatrix[21];
     float CascCovMatrix[21];
@@ -532,7 +629,7 @@ struct strangenessBuilder {
       auto negTrackCast = V0.template negTrack_as<TTracksTo>();
 
       // populates v0candidate struct declared inside strangenessbuilder
-      bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast, lRun3);
+      bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast);
 
       if (!validCandidate) {
         v0dataLink(-1);
@@ -564,10 +661,16 @@ struct strangenessBuilder {
 
       if (createCascades == 0)
         continue;
+      // check also against charge
+      if (TMath::Abs(v0candidate.lambdaMass - 1.116) > lambdaMassWindow)
+        continue;
+      if (TMath::Abs(v0candidate.antilambdaMass - 1.116) > lambdaMassWindow)
+        continue;
+      
       auto lCascadeRefs = V0.cascadeCandidate();
       for (auto& cascade : lCascadeRefs) {
         auto bachTrackCast = cascade.template bachelor_as<TTracksTo>();
-        bool validCascadeCandidate = buildCascadeCandidate(collision, bachTrackCast, lRun3);
+        bool validCascadeCandidate = buildCascadeCandidate(collision, bachTrackCast);
         if (!validCascadeCandidate)
           continue; // doesn't pass cascade selections
 
@@ -594,6 +697,9 @@ struct strangenessBuilder {
         }
       }
     }
+    //En masse filling
+    fillHistos(); 
+    resetHistos();
   }
 
   void processRun2(aod::Collision const& collision, V0WithCascadeRefs const& V0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
@@ -603,7 +709,7 @@ struct strangenessBuilder {
     initCCDB(bc);
 
     // do v0s, typecase correctly into tracks (Run 2 use case)
-    buildStrangenessTables<FullTracksExt>(collision, V0s, cascades, tracks, kFALSE);
+    buildStrangenessTables<FullTracksExt>(collision, V0s, cascades, tracks);
   }
   PROCESS_SWITCH(strangenessBuilder, processRun2, "Produce Run 2 V0 tables", true);
 
@@ -614,7 +720,7 @@ struct strangenessBuilder {
     initCCDB(bc);
 
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildStrangenessTables<FullTracksExtIU>(collision, V0s, cascades, tracks, kTRUE);
+    buildStrangenessTables<FullTracksExtIU>(collision, V0s, cascades, tracks);
   }
   PROCESS_SWITCH(strangenessBuilder, processRun3, "Produce Run 3 V0 tables", false);
 };
