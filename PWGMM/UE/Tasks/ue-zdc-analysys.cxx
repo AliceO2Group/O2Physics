@@ -15,6 +15,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 #include "Common/DataModel/EventSelection.h"
 //#include "Common/CCDB/EventSelectionParams.h"
@@ -31,23 +32,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  std::vector<ConfigParamSpec> options{
-    {"zdc-trig", VariantType::Int, 1, {"ZDC triggered events"}},
-    {"zdc-bc", VariantType::Int, 1, {"ZDC in BC association"}},
-    {"zdc-coll", VariantType::Int, 1, {"ZDC in collision association"}},
-    {"zdc-correl", VariantType::Int, 1, {"ZDC correlated with other det.s"}}};
-  std::swap(workflowOptions, options);
-}
-
-#include "Framework/runDataProcessing.h"
-
 // using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 // using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-struct ZDCTriggeredEvents {
+struct ZDCAnalysis{
 
   // Configurable for number of bins
   Configurable<int> nBins1{"nBins1", 400, "Nbins 1d ZDC histos"};
@@ -55,25 +44,62 @@ struct ZDCTriggeredEvents {
   // CInfigurable maximum limit
   Configurable<float> MaxZN{"MaxZN", 8000, "Max ZN signal"};
   Configurable<float> MaxZP{"MaxZP", 6000, "Max ZP signal"};
+  Configurable<float> MaxMultFV0{"MaxMultFV0", 20000, "Max FV0 signal"};
+  Configurable<float> MaxMultFT0{"MaxMultFT0", 10000, "Max FT0 signal"};
+  Configurable<float> MaxMultFDD{"MaxMultFDD", 10000, "Max FDD signal"};
+  Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
 
-  HistogramRegistry registry{
-    "registry",
-    {
-      //{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{100, -15., 15.}}}},
-      {"ZNApmc", "ZNApmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}}},
-      {"ZPApmc", "ZPApmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}}},
-      {"ZNCpmc", "ZNCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZPCpmc", "ZPCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZEM1", "ZEM1", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZEM2", "ZEM2", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZNvsZEM", "ZNvsZEM", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}}},
-      {"ZNAvsZNC", "ZNAvsZNC", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}}},
-      {"ZPAvsZPC", "ZPAvsZPC", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}}},
-      {"ZNAvsZPA", "ZNAvsZPA", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}}},
-      {"ZNCvsZPC", "ZNCvsZPC", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}}},
-    }};
+  HistogramRegistry registry;
 
-  void process(aod::Zdc const& zdc)
+  void init(InitContext const&)
+  {
+    if (doprocessZdcAuto) { // Check if the process function for ZDCAuto is enabled
+      registry.add("ZNApmc", "ZNApmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
+      registry.add("ZPApmc", "ZPApmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
+      registry.add("ZNCpmc", "ZNCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZPCpmc", "ZPCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZEM1", "ZEM1", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZEM2", "ZEM2", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZNvsZEM", "ZNvsZEM", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}});
+      registry.add("ZNAvsZNC", "ZNAvsZNC", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}});
+      registry.add("ZPAvsZPC", "ZPAvsZPC", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
+      registry.add("ZNAvsZPA", "ZNAvsZPA", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
+      registry.add("ZNCvsZPC", "ZNCvsZPC", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
+    }
+    if (doprocessZdcBcAss) { // Check if the process function for ZDCBcAss is enabled
+      registry.add("ZNAbc", "ZNAbc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
+      registry.add("ZPAbc", "ZPAbc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
+      registry.add("ZNCbc", "ZNCbc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZPCbc", "ZPCbc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZEM1bc", "ZEM1bc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZEM2bc", "ZEM2bc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZNvsZEMbc", "ZNvsZEMbc", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}});
+      registry.add("ZNAvsZNCbc", "ZNAvsZNCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}});
+      registry.add("ZPAvsZPCbc", "ZPAvsZPCbc", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
+      registry.add("ZNAvsZPAbc", "ZNAvsZPAbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
+      registry.add("ZNCvsZPCbc", "ZNCvsZPCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
+    }
+    if (doprocessZdcCollAss) { // Check if the process function for ZDCCollAss is enabled
+      registry.add("ZNAcoll", "ZNAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
+      registry.add("ZPAcoll", "ZPAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
+      registry.add("ZNCcoll", "ZNCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZPCcoll", "ZPCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZEM1coll", "ZEM1coll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZEM2coll", "ZEM2coll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZNvsZEMcoll", "ZNvsZEMcoll", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}});
+      registry.add("ZNAvsZNCcoll", "ZNAvsZNCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}});
+      registry.add("ZPAvsZPCcoll", "ZPAvsZPCcoll", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
+      registry.add("ZNAvsZPAcoll", "ZNAvsZPAcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
+      registry.add("ZNCvsZPCcoll", "ZNCvsZPCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
+    }
+    if (doprocessZdcCorrela) { // Check if the process function for ZDCCollCorrela is enabled
+      registry.add("ZNvsFV0Acorrel", "ZNvsFV0Acorrel", {HistType::kTH2F, {{{nBins2, 0., MaxMultFV0}, {nBins2, -10., 2. * MaxZN}}}});
+      registry.add("ZNvsFT0correl", "ZNvsFT0correl", {HistType::kTH2F, {{{nBins2, 0., MaxMultFT0}, {nBins2, -10., 2. * MaxZN}}}});
+      registry.add("ZNvsFDDcorrel", "ZNvsFDDcorrel", {HistType::kTH2F, {{{nBins2, 0., MaxMultFDD}, {nBins2, -10., 2. * MaxZN}}}});
+    }
+  }
+
+  void processZdcAuto(aod::Zdc const& zdc)
   {
     registry.get<TH1>(HIST("ZNApmc"))->Fill(zdc.energyCommonZNA());
     registry.get<TH1>(HIST("ZNCpmc"))->Fill(zdc.energyCommonZNC());
@@ -87,34 +113,11 @@ struct ZDCTriggeredEvents {
     registry.get<TH2>(HIST("ZNAvsZPA"))->Fill(zdc.energyCommonZPA(), zdc.energyCommonZNA());
     registry.get<TH2>(HIST("ZNCvsZPC"))->Fill(zdc.energyCommonZPC(), zdc.energyCommonZNC());
   }
-};
+  /// name, description, function pointer, default value
+  /// note that it has to be declared after the function, so that the pointer is known
+  PROCESS_SWITCH(ZDCAnalysis, processZdcAuto, "Processing ZDC autotriggered events", true);
 
-struct ZDCBCEvents {
-
-  // Configurable for number of bins
-  Configurable<int> nBins1{"nBins1", 400, "Nbins 1d ZDC histos"};
-  Configurable<int> nBins2{"nBins2", 800, "Nbins 2d ZDC histos"};
-  // CInfigurable maximum limit
-  Configurable<float> MaxZN{"MaxZN", 8000, "Max ZN signal"};
-  Configurable<float> MaxZP{"MaxZP", 6000, "Max ZP signal"};
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"ZNAbc", "ZNAbc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}}},
-      {"ZPAbc", "ZPAbc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}}},
-      {"ZNCbc", "ZNCbc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZPCbc", "ZPCbc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZEM1bc", "ZEM1bc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZEM2bc", "ZEM2bc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZNvsZEMbc", "ZNvsZEMbc", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}}},
-      {"ZNAvsZNCbc", "ZNAvsZNCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}}},
-      {"ZPAvsZPCbc", "ZPAvsZPCbc", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}}},
-      {"ZNAvsZPAbc", "ZNAvsZPAbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}}},
-      {"ZNCvsZPCbc", "ZNCvsZPCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}}},
-    }};
-
-  void process(
+  void processZdcBcAss(
     // soa::Join<aod::BCs, aod::Timestamps> const& bcs,
     BCsRun3 const& bcs,
     // BCsWithBcSels const& bcs,
@@ -138,34 +141,9 @@ struct ZDCBCEvents {
       }
     }
   }
-};
+  PROCESS_SWITCH(ZDCAnalysis, processZdcBcAss, "Processing ZDC w. BC association", true);
 
-struct ZDCCollEvents {
-
-  // Configurable for number of bins
-  Configurable<int> nBins1{"nBins1", 400, "Nbins 1d ZDC histos"};
-  Configurable<int> nBins2{"nBins2", 800, "Nbins 2d ZDC histos"};
-  // CInfigurable maximum limit
-  Configurable<float> MaxZN{"MaxZN", 8000, "Max ZN signal"};
-  Configurable<float> MaxZP{"MaxZP", 6000, "Max ZP signal"};
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"ZNAcoll", "ZNAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}}},
-      {"ZPAcoll", "ZPAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}}},
-      {"ZNCcoll", "ZNCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZPCcoll", "ZPCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZEM1coll", "ZEM1coll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZEM2coll", "ZEM2coll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}}},
-      {"ZNvsZEMcoll", "ZNvsZEMcoll", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}}},
-      {"ZNAvsZNCcoll", "ZNAvsZNCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}}},
-      {"ZPAvsZPCcoll", "ZPAvsZPCcoll", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}}},
-      {"ZNAvsZPAcoll", "ZNAvsZPAcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}}},
-      {"ZNCvsZPCcoll", "ZNCvsZPCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}}},
-    }};
-
-  void process(
+ void processZdcCollAss(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     aod::Zdcs const& zdcs)
   {
@@ -183,30 +161,10 @@ struct ZDCCollEvents {
       registry.get<TH2>(HIST("ZNCvsZPCcoll"))->Fill(collision.foundZDC().energyCommonZPC(), collision.foundZDC().energyCommonZNC());
     }
   }
-};
+  PROCESS_SWITCH(ZDCAnalysis, processZdcCollAss, "Processing ZDC w. collision association", true);
 
-struct ZDCCorrelate {
 
-  // Configurable for number of bins
-  Configurable<int> nBins1{"nBins1", 400, "Nbins 1d ZDC histos"};
-  Configurable<int> nBins2{"nBins2", 800, "Nbins 2d ZDC histos"};
-  // CInfigurable maximum limit
-  Configurable<float> MaxZN{"MaxZN", 8000, "Max ZN signal"};
-  Configurable<float> MaxZP{"MaxZP", 6000, "Max ZP signal"};
-  Configurable<float> MaxMultFV0{"MaxMultFV0", 20000, "Max FV0 signal"};
-  Configurable<float> MaxMultFT0{"MaxMultFT0", 10000, "Max FT0 signal"};
-  Configurable<float> MaxMultFDD{"MaxMultFDD", 10000, "Max FDD signal"};
-  Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"ZNvsFV0Acorrel", "ZNvsFV0Acorrel", {HistType::kTH2F, {{{nBins2, 0., MaxMultFV0}, {nBins2, -10., 2. * MaxZN}}}}},
-      {"ZNvsFT0correl", "ZNvsFT0correl", {HistType::kTH2F, {{{nBins2, 0., MaxMultFT0}, {nBins2, -10., 2. * MaxZN}}}}},
-      {"ZNvsFDDcorrel", "ZNvsFDDcorrel", {HistType::kTH2F, {{{nBins2, 0., MaxMultFDD}, {nBins2, -10., 2. * MaxZN}}}}},
-    }};
-
-  void process(
+  void processZdcCorrela(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& coll,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,
@@ -258,29 +216,12 @@ struct ZDCCorrelate {
       registry.get<TH2>(HIST("ZNvsFDDcorrel"))->Fill(multFDC + multFDA, foundBC.zdc().energyCommonZNC() + foundBC.zdc().energyCommonZNA());
     }
   }
-};
+  PROCESS_SWITCH(ZDCAnalysis, processZdcCorrela, "Processing ZDC vs. mult. w. association", true);
+}; 
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  const bool nosel = cfgc.options().get<int>("zdc-trig");
-  const bool bcsel = cfgc.options().get<int>("zdc-bc");
-  const bool colsel = cfgc.options().get<int>("zdc-coll");
-  const bool correla = cfgc.options().get<int>("zdc-correl");
-
-  WorkflowSpec workflow{};
-
-  if (nosel) {
-    workflow.push_back(adaptAnalysisTask<ZDCTriggeredEvents>(cfgc, TaskName{"zdc-analysis-triggered"}));
-  }
-  if (bcsel) {
-    workflow.push_back(adaptAnalysisTask<ZDCBCEvents>(cfgc, TaskName{"zdc-analysis-bc"}));
-  }
-  if (colsel) {
-    workflow.push_back(adaptAnalysisTask<ZDCCollEvents>(cfgc, TaskName{"zdc-analysis-coll"}));
-  }
-  if (correla) {
-    workflow.push_back(adaptAnalysisTask<ZDCCorrelate>(cfgc, TaskName{"zdc-analysis-corr"}));
-  }
-  //
-  return workflow;
+   return WorkflowSpec{
+    adaptAnalysisTask<ZDCAnalysis>(cfgc) //
+  };
 }
