@@ -31,6 +31,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -46,21 +50,16 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
-#include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "TFile.h"
+#include "TH2F.h"
+#include "TProfile.h"
+#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
+#include "TPDGCode.h"
+#include "TDatabasePDG.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -120,6 +119,7 @@ struct lambdakzeroBuilder {
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
     },
   };
@@ -127,6 +127,9 @@ struct lambdakzeroBuilder {
   // Configurables
   // Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", 1, "Use Abs DCAs"}; uncomment this once we want to use the weighted DCA
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+
+  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", true, "Vertices use cov matrices"};
 
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -180,12 +183,6 @@ struct lambdakzeroBuilder {
 
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!grpo) {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-    }
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       if (d_bz_input < -990) {
@@ -196,7 +193,18 @@ struct lambdakzeroBuilder {
         d_bz = d_bz_input;
       }
     } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
       o2::base::Propagator::initFieldFromGRP(grpmag);
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      } else {
+        d_bz = d_bz_input;
+      }
     }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
@@ -214,7 +222,8 @@ struct lambdakzeroBuilder {
     fitter.setMinRelChi2Change(0.9);
     fitter.setMaxDZIni(1e9);
     fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
+    fitter.setUseAbsDCA(d_UseAbsDCA);
+    fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
     registry.fill(HIST("hEventCounter"), 0.5);
 
@@ -304,7 +313,16 @@ struct lambdakzeroBuilder {
 
       //---/---/---/
       // Move close to minima
-      int nCand = fitter.process(pTrackCopy, nTrackCopy);
+      int nCand = 0;
+      try {
+        nCand = fitter.process(pTrackCopy, nTrackCopy);
+        registry.fill(HIST("hCatchedExceptions"), 0.5f);
+      } catch (...) {
+        registry.fill(HIST("hCatchedExceptions"), 1.5f);
+        LOG(error) << "Exception caught in fitter.process";
+        continue;
+      }
+
       if (nCand == 0) {
         v0dataLink(-1);
         continue;

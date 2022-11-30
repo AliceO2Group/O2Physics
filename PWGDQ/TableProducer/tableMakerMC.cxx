@@ -54,6 +54,12 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, 
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                  aod::McTrackLabels>;
+using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                               aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                               aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                               aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                               aod::McTrackLabels, aod::DalitzBits>;
 using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -62,6 +68,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::McTrackLabels>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsWithCents = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::McCollisionLabels>;
 
@@ -70,6 +77,7 @@ constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | Va
 constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
@@ -172,7 +180,7 @@ struct TableMakerMC {
     }
 
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
-                               context.mOptions.get<bool>("processBarrelOnly") ||
+                               context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCov"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCent") || context.mOptions.get<bool>("processMuonOnlyWithCov"));
@@ -214,11 +222,13 @@ struct TableMakerMC {
         }
         if (fDoDetailedQA) {
           if (enableBarrelHistos) {
+            histClasses += Form("TrackBarrel_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fTrackCuts) {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
           }
           if (enableMuonHistos) {
+            histClasses += Form("Muons_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fMuonCuts) {
               histClasses += Form("Muons_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
@@ -263,6 +273,10 @@ struct TableMakerMC {
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
     for (auto& collision : collisions) {
+      //TODO: investigate the collisions without corresponding mcCollision
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
       // get the trigger aliases
       uint32_t triggerAliases = 0;
       for (int i = 0; i < kNaliases; i++) {
@@ -419,7 +433,10 @@ struct TableMakerMC {
               }
             }
           }
-          trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
+          if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
+            trackFilteringTag |= (uint64_t(track.dalitzBits()) << 7); // BIT7-14: Dalitz
+          }
+          trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
 
           mcflags = 0;
           i = 0;     // runs over the MC signals
@@ -430,6 +447,7 @@ struct TableMakerMC {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
+                fHistMan->FillHistClass(Form("TrackBarrel_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -566,6 +584,7 @@ struct TableMakerMC {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
+                fHistMan->FillHistClass(Form("Muons_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -804,6 +823,14 @@ struct TableMakerMC {
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
   }
+  // Produce barrel only tables, with cov matrix and dalitz bits-----------------------------------------------------------------------
+  void processBarrelOnlyWithDalitzBits(MyEvents const& collisions, aod::BCs const& bcs,
+                                       soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel,
+                                       aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
+  }
+
   // Produce muon only tables ------------------------------------------------------------------------------------
   /*void processMuonOnly(MyEvents const& collisions, aod::BCs const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon,
@@ -841,6 +868,7 @@ struct TableMakerMC {
   PROCESS_SWITCH(TableMakerMC, processBarrelOnly, "Produce barrel skims", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCent, "Produce barrel skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCov, "Produce barrel skims, with track covariance matrix", false);
+  PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithDalitzBits, "Produce barrel skims, and dalitz bits", false);
   // PROCESS_SWITCH(TableMakerMC, processMuonOnly, "Produce muon skims", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCov, "Produce muon skims, with muon covariance matrix", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCent, "Produce muon skims, w/ centrality", false);

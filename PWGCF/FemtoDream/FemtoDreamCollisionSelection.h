@@ -13,15 +13,14 @@
 /// \brief FemtoDreamCollisionSelection - event selection within the o2femtodream framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
-
-#include "Common/CCDB/TriggerAliases.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
 
 #include <string>
 #include <iostream>
+#include "Common/CCDB/TriggerAliases.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
 
 using namespace o2::framework;
 
@@ -60,8 +59,10 @@ class FemtoDreamCollisionSelection
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
+    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{4096, 0, 8192}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
   }
 
   /// Print some debug information
@@ -103,8 +104,14 @@ class FemtoDreamCollisionSelection
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
       mHistogramRegistry->fill(HIST("Event/MultT0M"), col.multFT0M());
+      mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNTracksPV());
+      mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
+      if (mCheckIsRun3) {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
+      } else {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), 0.5 * (col.multFV0M())); // in AliPhysics, the VOM was defined by (V0A + V0C)/2.
+      }
     }
   }
 
@@ -134,4 +141,4 @@ class FemtoDreamCollisionSelection
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_

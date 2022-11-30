@@ -11,6 +11,11 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+#ifndef PWGDQ_CORE_MCSIGNALLIBRARY_H_
+#define PWGDQ_CORE_MCSIGNALLIBRARY_H_
+
+#include <string>
 #include "PWGDQ/Core/MCProng.h"
 #include "PWGDQ/Core/MCSignal.h"
 
@@ -46,9 +51,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("pionPrimary")) {
-    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false});     // define 1-generation prong using the full constructor
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                // set source to be ALICE primary particles
-    signal = new MCSignal(name, "Primary electrons", {prong}, {-1}); // define the signal using the full constructor
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);            // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary pions", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
   if (!nameStr.compare("photon")) {
@@ -56,9 +61,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Photon", {prong}, {-1});       // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("muonPrimary")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});  // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);            // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary Muons", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
   if (!nameStr.compare("kaonFromPhi")) {
     MCProng prong(2, {321, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // define 2-generation prong using the full constructor
     signal = new MCSignal(name, "Kaons from phi-mesons", {prong}, {-1});                        // define the signal using the full constructor
+    return signal;
+  }
+  if (!nameStr.compare("kaonPrimary")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);            // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary Kaons", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
+  if (!nameStr.compare("protonPrimary")) {
+    MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);             // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary Proton", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
   if (!nameStr.compare("phiMeson")) {
@@ -253,6 +276,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // LMEE single signals
+  if (!nameStr.compare("eFromPhoton")) {
+    MCProng prong(2, {11, 22}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from photon conversion", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromPi0")) {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from pi0 decays", {prong}, {-1});
@@ -310,6 +338,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from LF meson + quarkonia decays", {prong}, {-1}); // pi0,eta,eta',rho,omega,phi,jpsi,psi2s mesons
     return signal;
   }
+  if (!nameStr.compare("ePrimaryFromLMeeLFQ")) {
+    MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);                                  // set source to be ALICE primary particles
+    prong.SetSignalInTime(false);                                                             // set direction to check generation in time (true) or back in time (false)
+    signal = new MCSignal(name, "Electrons from LF meson + quarkonia decays", {prong}, {-1}); // pi0,eta,eta',rho,omega,phi,jpsi,psi2s mesons
+    return signal;
+  }
   if (!nameStr.compare("LFQdecayToE")) {
     MCProng prong(2, {900, 11}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     // prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
@@ -320,6 +355,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromLMeeLF")) {
     MCProng prong(2, {11, 901}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     // prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Electrons from LF meson decays", {prong}, {-1}); // pi0,eta,eta',rho,omega,phi mesons
+    return signal;
+  }
+  if (!nameStr.compare("ePrimaryFromLMeeLF")) {
+    MCProng prong(2, {11, 901}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);                      // set source to be ALICE primary particles
     signal = new MCSignal(name, "Electrons from LF meson decays", {prong}, {-1}); // pi0,eta,eta',rho,omega,phi mesons
     return signal;
   }
@@ -439,6 +480,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
+  if (!nameStr.compare("eePrimaryFromLMeeLFQ")) {
+    MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                                                           // set source to be ALICE primary particles
+    signal = new MCSignal(name, "ee pairs from light flavor meson + quarkonia decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("eePrimaryFromLMeeLF")) {
+    MCProng prong(2, {11, 901}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                                               // set source to be ALICE primary particles
+    signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
 
   // LMEE pair signals for HF
   // c->e and c->e (no check)
@@ -510,3 +563,4 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   return nullptr;
 }
+#endif // PWGDQ_CORE_MCSIGNALLIBRARY_H_

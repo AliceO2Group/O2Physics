@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODERIVED_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODERIVED_H_
+#ifndef PWGCF_DATAMODEL_FEMTODERIVED_H_
+#define PWGCF_DATAMODEL_FEMTODERIVED_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
@@ -20,7 +21,6 @@
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -28,6 +28,7 @@ namespace o2::aod
 namespace femtodreamcollision
 {
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
+DECLARE_SOA_COLUMN(MultNtrPV, multNtrPV, float);   //! multiplicity of charged tracks contributing to the primary vertex
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Sphericity of the event
 
@@ -37,6 +38,7 @@ DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
+                  femtodreamcollision::MultNtrPV,
                   femtodreamcollision::Sphericity,
                   femtodreamcollision::MagField);
 using FemtoDreamCollision = FemtoDreamCollisions::iterator;
@@ -218,4 +220,4 @@ using Hash = Hashes::iterator;
 
 } // namespace o2::aod
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODERIVED_H_ */
+#endif // PWGCF_DATAMODEL_FEMTODERIVED_H_

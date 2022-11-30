@@ -18,6 +18,8 @@
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch> and Francesca Bellini <fbellini@cern.ch>
 ///
 
+#include "PWGLF/DataModel/LFNucleiTables.h"
+
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -32,12 +34,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFNucleiTables.h"
 
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-
 #include <cmath>
 
 using namespace o2;
@@ -70,7 +70,8 @@ struct LfTreeCreatorNuclei {
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
+  // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackWoDCAInFilter());
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -79,7 +80,9 @@ struct LfTreeCreatorNuclei {
                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                     aod::pidTPCFullPr, aod::pidTOFFullPr,
                                     aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                    aod::pidTPCFullHe, aod::pidTOFFullHe>;
+                                    aod::pidTPCFullTr, aod::pidTOFFullTr,
+                                    aod::pidTPCFullHe, aod::pidTOFFullHe,
+                                    aod::pidTPCFullAl, aod::pidTOFFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
@@ -106,9 +109,9 @@ struct LfTreeCreatorNuclei {
         track.dcaXY(),
         track.dcaZ(),
         track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-        track.tpcNSigmaDe(), track.tpcNSigmaHe(),
+        track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl(),
         track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-        track.tofNSigmaDe(), track.tofNSigmaHe(),
+        track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl(),
         track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(),
         track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(),
         track.isEvTimeTOF(),

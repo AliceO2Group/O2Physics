@@ -31,6 +31,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -46,19 +50,15 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
+#include "TFile.h"
+#include "TH2F.h"
+#include "TProfile.h"
+#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
+#include "TPDGCode.h"
+#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,13 +77,21 @@ struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  HistogramRegistry registry{
+    "registry",
+    {{"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
+  };
+
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
   OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 20, 0, 20)};
 
   // Configurables
   Configurable<double> d_bz_input{"d_bz", -999, "bz field"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", true, "Vertices use cov matrices"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
+  // Selections
   Configurable<int> mincrossedrows{"mincrossedrows", -1, "min crossed rows"};
   Configurable<float> dcav0topv{"dcav0topv", .01, "DCA V0 To PV"};
   Configurable<double> cospaV0{"cospaV0", .9, "CosPA V0"};
@@ -136,12 +144,6 @@ struct cascadeBuilder {
 
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!grpo) {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-    }
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       if (d_bz_input < -990) {
@@ -152,7 +154,18 @@ struct cascadeBuilder {
         d_bz = d_bz_input;
       }
     } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
       o2::base::Propagator::initFieldFromGRP(grpmag);
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      } else {
+        d_bz = d_bz_input;
+      }
     }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
@@ -172,6 +185,7 @@ struct cascadeBuilder {
     fitterV0.setMaxDZIni(1e9);
     fitterV0.setMaxChi2(1e9);
     fitterV0.setUseAbsDCA(d_UseAbsDCA);
+    fitterV0.setWeightedFinalPCA(d_UseWeightedPCA);
 
     fitterCasc.setBz(d_bz);
     fitterCasc.setPropagateToPCA(true);
@@ -181,6 +195,7 @@ struct cascadeBuilder {
     fitterCasc.setMaxDZIni(1e9);
     fitterCasc.setMaxChi2(1e9);
     fitterCasc.setUseAbsDCA(d_UseAbsDCA);
+    fitterCasc.setWeightedFinalPCA(d_UseWeightedPCA);
 
     for (auto& casc : cascades) {
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
@@ -285,9 +300,35 @@ struct cascadeBuilder {
       if (bachTrackCast.signed1Pt() > 0) {
         charge = +1;
       }
+      // Act on copies for minimization
+      auto pTrackCopy = o2::track::TrackParCov(pTrack);
+      auto nTrackCopy = o2::track::TrackParCov(nTrack);
 
-      int nCand = fitterV0.process(pTrack, nTrack);
+      int nCand = fitterV0.process(pTrackCopy, nTrackCopy);
       if (nCand != 0) {
+        fitterV0.propagateTracksToVertex();
+        double finalXpos = fitterV0.getTrack(0).getX();
+        double finalXneg = fitterV0.getTrack(1).getX();
+
+        // Rotate to desired alpha
+        pTrack.rotateParam(fitterV0.getTrack(0).getAlpha());
+        nTrack.rotateParam(fitterV0.getTrack(1).getAlpha());
+
+        // Retry closer to minimum with material corrections
+        o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+        if (useMatCorrType == 1)
+          matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+        if (useMatCorrType == 2)
+          matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
+        o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
+        o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
+
+        nCand = fitterV0.process(pTrack, nTrack);
+        if (nCand == 0) {
+          continue;
+        }
+
         fitterV0.propagateTracksToVertex();
         const auto& v0vtx = fitterV0.getPCACandidate();
         for (int i = 0; i < 3; i++) {
@@ -316,12 +357,40 @@ struct cascadeBuilder {
         covV0[4] = covVtxV0(2, 1);
         covV0[5] = covVtxV0(2, 2);
 
-        const std::array<float, 3> vertex = {(float)v0vtx[0], (float)v0vtx[1], (float)v0vtx[2]};
+        const std::array<float, 3> vertex = {static_cast<float>(v0vtx[0]), static_cast<float>(v0vtx[1]), static_cast<float>(v0vtx[2])};
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
         tV0.setQ2Pt(0); // No bending, please
-        int nCand2 = fitterCasc.process(tV0, bTrack);
+
+        // Act on copies for minimization
+        auto tV0Copy = o2::track::TrackParCov(tV0);
+        auto bTrackCopy = o2::track::TrackParCov(bTrack);
+        int nCand2 = 0;
+        try {
+          nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+          registry.fill(HIST("hCatchedExceptions"), 0.5f);
+        } catch (...) {
+          registry.fill(HIST("hCatchedExceptions"), 1.5f);
+          LOG(error) << "Exception caught in fitterCasc.process";
+          continue;
+        }
+
+        if (nCand2 == 0) {
+          continue;
+        }
+        double finalXv0 = fitterCasc.getTrack(0).getX();
+        double finalXbach = fitterCasc.getTrack(1).getX();
+
+        // Rotate to desired alpha
+        tV0.rotateParam(fitterCasc.getTrack(0).getAlpha());
+        bTrack.rotateParam(fitterCasc.getTrack(1).getAlpha());
+
+        o2::base::Propagator::Instance()->propagateToX(tV0, finalXv0, d_bz, maxSnp, maxStep, matCorr);
+        // No material correction in V0 backpropagation to minimum
+        o2::base::Propagator::Instance()->propagateToX(bTrack, finalXbach, d_bz, maxSnp, maxStep, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
+
+        nCand2 = fitterCasc.process(tV0, bTrack);
         if (nCand2 != 0) {
           fitterCasc.propagateTracksToVertex();
           hCascCandidate->Fill(2.5);
@@ -335,6 +404,7 @@ struct cascadeBuilder {
         // cascdataLink(-1);
         continue;
       }
+
       // Fill table, please
       hCascCandidate->Fill(16.5); // this is the master fill: if this is filled, viable candidate
 
@@ -393,6 +463,7 @@ struct cascadeLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hXiMinus", "hXiMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hXiPlus", "hXiPlus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hOmegaMinus", "hOmegaMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},

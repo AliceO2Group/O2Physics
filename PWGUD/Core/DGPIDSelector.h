@@ -9,17 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DGPID_SELECTOR_
-#define O2_ANALYSIS_DGPID_SELECTOR_
+#ifndef PWGUD_CORE_DGPIDSELECTOR_H_
+#define PWGUD_CORE_DGPIDSELECTOR_H_
 
 #include <gandiva/projector.h>
+#include <string>
+#include <vector>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2;
 
-using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksDCA>;
+using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
 using UDTrackFull = UDTracksFull::iterator;
 
 const int numDGPIDCutParameters = 9;
@@ -45,7 +47,7 @@ struct DGPIDCut {
   DGPIDCut();
   DGPIDCut(float numPart, float cutPID, float cutDetector, float cutType, float cutApply,
            float ptMin, float ptMax, float nSigmamin, float nSigmamax);
-  DGPIDCut(float* cutValues);
+  explicit DGPIDCut(float* cutValues);
   ~DGPIDCut();
 
   // setters
@@ -82,7 +84,7 @@ struct DGPIDCuts {
  public:
   // constructor
   DGPIDCuts();
-  DGPIDCuts(std::vector<float> PIDCutValues);
+  explicit DGPIDCuts(std::vector<float> PIDCutValues);
   ~DGPIDCuts();
 
   // setter
@@ -107,13 +109,21 @@ struct DGPIDCuts {
 struct DGAnaparHolder {
  public:
   // constructor
-  DGAnaparHolder();
-  DGAnaparHolder(int nCombine, std::vector<float> DGPIDs, std::vector<float> DGPIDCutValues);
+  DGAnaparHolder(int nCombine = 2, float maxDCAxy = 100., float maxDCAz = 100,
+                 std::vector<int> netCharges = {-2, -1, 0, 1, 2},
+                 std::vector<float> DGPIDs = {211, 211},
+                 std::vector<float> DGPIDCutValues = {}) : mNCombine{nCombine}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+  {
+    makeUniquePermutations();
+  }
   ~DGAnaparHolder();
 
   // getter
   void Print();
   int nCombine() const { return mNCombine; }
+  float maxDCAxy() { return mMaxDCAxy; }
+  float maxDCAz() { return mMaxDCAz; }
+  std::vector<int> netCharges() { return mNetCharges; }
   std::vector<float> PIDs() { return mDGPIDs; }
   DGPIDCuts PIDCuts();
   std::vector<int> uniquePermutations();
@@ -126,6 +136,13 @@ struct DGAnaparHolder {
 
   // number of tracks to combine
   int mNCombine;
+
+  // dca of tracks
+  float mMaxDCAxy;
+  float mMaxDCAz;
+
+  // net charge of all tracks
+  std::vector<int> mNetCharges;
 
   // PID information
   std::vector<float> mDGPIDs;
@@ -173,6 +190,7 @@ struct DGPIDSelector {
 
   // getters
   void Print();
+  bool isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks);
   bool isGoodTrack(UDTrackFull track, int cnt);
   int computeIVMs(UDTracksFull const& tracks);
 
@@ -203,4 +221,4 @@ struct DGPIDSelector {
 };
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_DGPID_SELECTOR_
+#endif // PWGUD_CORE_DGPIDSELECTOR_H_

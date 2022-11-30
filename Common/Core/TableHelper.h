@@ -15,12 +15,13 @@
 /// \brief  Base of utilities to build advanced tasks
 ///
 
-#ifndef O2PHYSICS_COMMON_CORE_TABLEHELPER_H_
-#define O2PHYSICS_COMMON_CORE_TABLEHELPER_H_
+#ifndef COMMON_CORE_TABLEHELPER_H_
+#define COMMON_CORE_TABLEHELPER_H_
+
+#include <string>
 
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include <string>
 
 /// Function to check if a table is required in a workflow
 /// @param initContext initContext of the init function
@@ -28,8 +29,8 @@
 bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string& table)
 {
   auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
-  for (auto device : workflows.devices) {
-    for (auto input : device.inputs) {
+  for (auto const& device : workflows.devices) {
+    for (auto const& input : device.inputs) {
       if (input.matcher.binding == table) {
         return true;
       }
@@ -58,4 +59,4 @@ void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const st
   }
 }
 
-#endif
+#endif // COMMON_CORE_TABLEHELPER_H_

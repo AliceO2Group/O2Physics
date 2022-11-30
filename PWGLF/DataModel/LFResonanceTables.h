@@ -16,8 +16,8 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#ifndef O2_ANALYSIS_LFRESONANCETABLES_H_
-#define O2_ANALYSIS_LFRESONANCETABLES_H_
+#ifndef PWGLF_DATAMODEL_LFRESONANCETABLES_H_
+#define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 
 #include <cmath>
 
@@ -37,9 +37,9 @@ DECLARE_SOA_COLUMN(Sphericity, sphericity, float);   //! Sphericity of the event
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   o2::soa::Index<>,
-                  o2::aod::collision::PosX,
-                  o2::aod::collision::PosY,
-                  o2::aod::collision::PosZ,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
                   resocollision::MultV0M,
                   resocollision::MultTPCtemp,
                   resocollision::Sphericity,
@@ -90,6 +90,7 @@ DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);   //! Numbe
 DECLARE_SOA_COLUMN(TPCPIDselectionFlag, tpcPIDselectionFlag, uint8_t); //! TPC PID selection
 DECLARE_SOA_COLUMN(TOFPIDselectionFlag, tofPIDselectionFlag, uint8_t); //! TOF PID selection
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                         //! DCA between daughters
+DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                           //! V0 Cosine of Pointing Angle
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                           //! The invariant mass of V0 candidate, assuming lambda
 DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                   //! The invariant mass of V0 candidate, assuming antilambda
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                   //! Transverse radius of the decay vertex
@@ -99,10 +100,10 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                       //! Z pos
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
-DECLARE_SOA_COLUMN(MothersIds, motherIds, int[2]);              //!
-DECLARE_SOA_COLUMN(DaughtersIdSlice, daughtersIdSlice, int[2]); //!
+DECLARE_SOA_COLUMN(MothersId, motherId, int);  //! Id of the mother particle
+DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! PDG code of the mother particle
 } // namespace resodaughter
-DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
+DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
                   resodaughter::Pt,
@@ -111,9 +112,6 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::Pz,
                   resodaughter::Eta,
                   resodaughter::Phi,
-                  resodaughter::PartType,
-                  resodaughter::TempFitVar,
-                  resodaughter::Indices,
                   resodaughter::Sign,
                   resodaughter::TPCNClsCrossedRows,
                   o2::aod::track::DcaXY,
@@ -127,7 +125,20 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   o2::aod::pidtpc::TPCNSigmaPr,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
-                  o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaPr);
+using ResoTrack = ResoTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resodaughter::Pt,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodaughter::Eta,
+                  resodaughter::Phi,
+                  resodaughter::Indices,
+                  resodaughter::V0CosPA,
                   resodaughter::DaughDCA,
                   resodaughter::MLambda,
                   resodaughter::MAntiLambda,
@@ -135,15 +146,36 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
                   resodaughter::DecayVtxZ);
-using ResoDaughter = ResoDaughters::iterator;
+using ResoV0 = ResoV0s::iterator;
 
-DECLARE_SOA_TABLE(ResoDaughtersMC, "AOD", "RESODAUGHTERSMC",
-                  o2::soa::Index<>,
+DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACKS",
                   mcparticle::PdgCode,
-                  resodaughter::MothersIds,
-                  resodaughter::DaughtersIdSlice,
+                  resodaughter::MothersId,
+                  resodaughter::MotherPDG,
                   resodaughter::IsPhysicalPrimary,
                   resodaughter::ProducedByGenerator);
+using ResoMCTrack = ResoMCTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoMCV0s, "AOD", "RESOMCV0S",
+                  o2::soa::Index<>,
+                  mcparticle::PdgCode,
+                  resodaughter::MothersId,
+                  resodaughter::IsPhysicalPrimary,
+                  resodaughter::ProducedByGenerator);
+using ResoMCV0 = ResoMCV0s::iterator;
+
+DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENTS",
+                  o2::soa::Index<>,
+                  mcparticle::PdgCode,
+                  resodaughter::IsPhysicalPrimary,
+                  resodaughter::ProducedByGenerator,
+                  resodaughter::Pt,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodaughter::Eta,
+                  resodaughter::Phi);
+using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
@@ -151,4 +183,4 @@ using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, 
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA>; // Without Extra
 
 } // namespace o2::aod
-#endif // O2_ANALYSIS_LFRESONANCETABLES_H_
+#endif // PWGLF_DATAMODEL_LFRESONANCETABLES_H_

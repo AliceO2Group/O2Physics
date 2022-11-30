@@ -11,14 +11,30 @@
 
 # PID QA
 
+## Combined
+o2physics_add_dpl_workflow(pid-with-v0s-qa
+                           SOURCES qaPIDWithV0s.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 ## TOF
 o2physics_add_dpl_workflow(pid-tof-qa
                            SOURCES qaPIDTOF.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-tof-qa-beta
+                           SOURCES qaPIDTOFBeta.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tof-qa-mc
                            SOURCES qaPIDTOFMC.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pid-tof-qa-evtime
+                           SOURCES qaPIDTOFEvTime.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 

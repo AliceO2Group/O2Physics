@@ -52,7 +52,10 @@ struct qaMatchEff {
   // ITS
   Configurable<float> itsChi2Max{"itsChi2Max", 36.0f, "Maximum chi2 in ITS"};
   Configurable<int> customITShitmap{"customITShitmap", 3, "ITS hitmap (think to the binary representation)"};
-  Configurable<int> customMinITShits{"customMinITShits", 1, "Minimum number of layers crossed by a track among those in \"customITShitmap\""}; //
+  Configurable<int> customMinITShits{"customMinITShits", 1, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
+  // Other track settings
+  //  TRD presence
+  Configurable<int> isTRDThere{"isTRDThere", 2, "Integer to turn the presence of TRD off, on, don't care (0,1,anything else)"};
   //
   Configurable<bool> isitMC{"isitMC", false, "Reading MC files, data if false"};
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
@@ -403,7 +406,20 @@ struct qaMatchEff {
     //
     //
     for (auto& jT : jTracks) {
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
 
+      if (!jT.has_mcParticle()) {
+        countNoMC++;
+        if (doDebug)
+          LOGF(warning, " N.%d track without MC particle, skipping...", countNoMC);
+        continue;
+      }
+      //
+      // pt from full tracking or from TPCinnerWallPt
       float trackPt = jT.pt();
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
@@ -415,12 +431,6 @@ struct qaMatchEff {
       if (!isTrackSelectedKineCuts(jT))
         continue;
 
-      if (!jT.has_mcParticle()) {
-        countNoMC++;
-        if (doDebug)
-          LOGF(warning, " N.%d track without MC particle, skipping...", countNoMC);
-        continue;
-      }
       auto mcpart = jT.mcParticle();
       tpPDGCode = TMath::Abs(mcpart.pdgCode());
       if (mcpart.isPhysicalPrimary()) {
@@ -679,6 +689,20 @@ struct qaMatchEff {
     //
     for (auto& jT : jTracks) {
 
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
+
+      if (!jT.has_mcParticle()) {
+        countNoMC++;
+        if (doDebug)
+          LOGF(warning, " N.%d track without MC particle, skipping...", countNoMC);
+        continue;
+      }
+      //
+      // pt from full tracking or from TPCinnerWallPt
       float trackPt = jT.pt();
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
@@ -954,6 +978,12 @@ struct qaMatchEff {
     //
     for (auto& jT : jTracks) {
 
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
+
       float trackPt = jT.pt();
       if (b_useTPCinnerWallPt) {
         /// Using pt calculated at the inner wall of TPC
@@ -1037,6 +1067,12 @@ struct qaMatchEff {
     //
     //
     for (auto& jT : jTracks) {
+
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
 
       float trackPt = jT.pt();
       if (b_useTPCinnerWallPt) {

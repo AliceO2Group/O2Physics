@@ -83,7 +83,7 @@ DECLARE_SOA_TABLE(ReducedEventsQvector, "AOD", "REQVECTOR", //!    Event Q-vecto
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
 //           can be constructed and the same data model could be used
-DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REMC", //!   Event level MC truth information
+DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC truth information
                   o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
@@ -176,8 +176,8 @@ DECLARE_SOA_INDEX_COLUMN(ReducedMCEvent, reducedMCevent);                       
 DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);                               //! Flags to hold compressed MC selection information
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "ReducedMCTracks_Mother0");       //! Track index of the first mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "ReducedMCTracks_Mother1");       //! Track index of the last mother
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReducedMCTracks_Daughter0"); //! Track index of the first daugther
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "ReducedMCTracks_Daughter1"); //! Track index of the last daugther
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReducedMCTracks_Daughter0"); //! Track index of the first daughter
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "ReducedMCTracks_Daughter1"); //! Track index of the last daughter
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                      //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                  //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                          //!
@@ -204,7 +204,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 } // namespace reducedtrackMC
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
 //       This table contains all MC truth tracks (both barrel and muon)
-DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "RTMC", //!  MC track information (on disk)
+DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "REDUCEDMCTRACK", //!  MC track information (on disk)
                        o2::soa::Index<>, reducedtrackMC::ReducedMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                        reducedtrackMC::MothersIds, reducedtrackMC::DaughtersIdSlice,
@@ -268,7 +268,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 16) & 0xFF); });
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "Muons_MatchMCHTrack");
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchMCHTrack");
 } // namespace reducedmuon
 
 // Muon track kinematics
@@ -477,6 +477,13 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 // iterators
 using V0Bit = V0Bits::iterator;
 
+namespace DalBits
+{
+DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
+} // namespace DalBits
+
+// bit information for particle species.
+DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
 } // namespace o2::aod
 
 #endif // O2_Analysis_ReducedInfoTables_H_

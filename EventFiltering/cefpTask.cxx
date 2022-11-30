@@ -10,21 +10,24 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "filterTables.h"
-
-#include "Framework/HistogramRegistry.h"
-
 #include <iostream>
 #include <cstdio>
 #include <random>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include <fmt/format.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+
+#include "filterTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -202,6 +205,7 @@ struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
+  Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "nsigma timing cut associating BC and collisions"};
 
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -240,7 +244,7 @@ struct centralEventFilterTask {
     //   for (auto& lab : filterOpt.labels_cols) {
     //     std::cout << lab << "\t";
     //   }
-    //   std::cout << std::endl;
+    //    std::cout << std::endl;
     // }
 
     for (auto& table : mDownscaling) {
@@ -266,7 +270,8 @@ struct centralEventFilterTask {
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
 
     int64_t nEvents{-1};
-    std::vector<bool> outDecision;
+    std::vector<uint64_t> outTrigger, outDecision;
+
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -279,13 +284,16 @@ struct centralEventFilterTask {
         LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
-      if (outDecision.size() == 0)
-        outDecision.resize(nEvents, false);
+      if (outDecision.size() == 0) {
+        outDecision.resize(nEvents, 0u);
+        outTrigger.resize(nEvents, 0u);
+      }
 
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
         int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
         double binCenter{mScalers->GetXaxis()->GetBinCenter(bin)};
+        uint64_t triggerBit{BIT(bin - 2)};
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
@@ -296,9 +304,10 @@ struct centralEventFilterTask {
             for (int64_t iS{0}; iS < chunk->length(); ++iS) {
               if (boolArray->Value(iS)) {
                 mScalers->Fill(binCenter);
+                outTrigger[entry] |= triggerBit;
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
-                  outDecision[entry] = true;
+                  outDecision[entry] |= triggerBit;
                 }
               }
               entry++;
@@ -318,19 +327,37 @@ struct centralEventFilterTask {
     }
     auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
     auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
+    auto columnCollTimeRes{collTabPtr->GetColumnByName("fCollisionTimeRes")};
 
-    int entryD = 0;
+    std::unordered_map<int32_t, int64_t> triggers, decisions;
 
     for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
       auto chunkBC{columnBCId->chunk(iC)};
       auto chunkCollTime{columnCollTime->chunk(iC)};
+      auto chunkCollTimeRes{columnCollTimeRes->chunk(iC)};
 
       auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
       auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
+      auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTimeRes);
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
-        tags(BCArray->Value(iD), CollTimeArray->Value(iD), outDecision[iD]);
-        entryD++;
+        auto collTime = CollTimeArray->Value(iD);
+        auto collTimeRes = CollTimeResArray->Value(iD);
+        int32_t startBC{BCArray->Value(iD) - static_cast<int>(std::floor(collTime - cfgTimingCut * collTimeRes))};
+        int32_t endBC{BCArray->Value(iD) + static_cast<int>(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
+        for (int32_t iB{startBC}; iB < endBC; ++iB) {
+          if (decisions.find(iB) == decisions.end()) {
+            triggers[iB] = static_cast<int64_t>(outTrigger[iD]);
+            decisions[iB] = static_cast<int64_t>(outDecision[iD]);
+          } else {
+            triggers[iB] |= static_cast<int64_t>(outTrigger[iD]);
+            decisions[iB] |= static_cast<int64_t>(outDecision[iD]);
+          }
+        }
       }
+    }
+
+    for (auto& decision : decisions) {
+      tags(decision.first, triggers[decision.first], decision.second);
     }
   }
 

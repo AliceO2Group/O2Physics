@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "Framework/AnalysisDataModel.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -281,8 +281,8 @@ int main(int, char**)
 
   displayEntities<MFTTracks, FwdTracks, FwdTracksCov>();
 
-  displayEntities<Hf2Prongs, HfCandProng2>();
-  displayEntities<Hf3Prongs, HfCandProng3>();
+  displayEntities<Hf2Prongs, HfCand2Prong>();
+  displayEntities<Hf3Prongs, HfCand3Prong>();
 
   graphFooter();
   return 0;

@@ -32,7 +32,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"

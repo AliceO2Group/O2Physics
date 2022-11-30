@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 
   printf("AOD merger started with:\n");
   printf("  Input file: %s\n", inputCollection.c_str());
-  printf("  Ouput file name: %s\n", outputFileName.c_str());
+  printf("  Output file name: %s\n", outputFileName.c_str());
   printf("  Maximal folder size (uncompressed): %ld\n", maxDirSize);
   if (skipNonExistingFiles) {
     printf("  WARNING: Skipping non-existing files.\n");
