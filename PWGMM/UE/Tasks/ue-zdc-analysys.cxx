@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 // using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-struct ZDCAnalysis{
+struct ZDCAnalysis {
 
   // Configurable for number of bins
   Configurable<int> nBins1{"nBins1", 400, "Nbins 1d ZDC histos"};
@@ -143,7 +143,7 @@ struct ZDCAnalysis{
   }
   PROCESS_SWITCH(ZDCAnalysis, processZdcBcAss, "Processing ZDC w. BC association", true);
 
- void processZdcCollAss(
+  void processZdcCollAss(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     aod::Zdcs const& zdcs)
   {
@@ -162,7 +162,6 @@ struct ZDCAnalysis{
     }
   }
   PROCESS_SWITCH(ZDCAnalysis, processZdcCollAss, "Processing ZDC w. collision association", true);
-
 
   void processZdcCorrela(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& coll,
@@ -217,11 +216,11 @@ struct ZDCAnalysis{
     }
   }
   PROCESS_SWITCH(ZDCAnalysis, processZdcCorrela, "Processing ZDC vs. mult. w. association", true);
-}; 
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-   return WorkflowSpec{
+  return WorkflowSpec{
     adaptAnalysisTask<ZDCAnalysis>(cfgc) //
   };
 }
