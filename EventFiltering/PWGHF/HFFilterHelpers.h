@@ -185,15 +185,15 @@ int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
 /// \param ccdbApi is the CCDB API
 /// \param mlModelPathCCDB is the model path in CCDB
 /// \param timestampCCDB is the CCDB timestamp
-/// \return the ONNX Ort::Experimental::Session
-std::shared_ptr<Ort::Experimental::Session> InitONNXSession(std::string& onnxFile, std::string partName, std::vector<std::string>& inputNames, std::vector<std::vector<int64_t>>& inputShapes, std::vector<std::string>& outputNames, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, long timestampCCDB)
+/// \return the pointer to the ONNX Ort::Experimental::Session
+Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string partName, std::vector<std::string>& inputNames, std::vector<std::vector<int64_t>>& inputShapes, std::vector<std::string>& outputNames, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, long timestampCCDB)
 {
   // hard coded, we do not let the user change this
   Ort::Env env{ORT_LOGGING_LEVEL_ERROR, Form("ml-model-%s-triggers", partName.data())};
   Ort::SessionOptions sessionOpt{Ort::SessionOptions()};
-  std::shared_ptr<Ort::Experimental::Session> session = nullptr;
   sessionOpt.SetIntraOpNumThreads(1);
   sessionOpt.SetInterOpNumThreads(1);
+  Ort::Experimental::Session* session = nullptr;
 
   std::map<std::string, std::string> metadata;
   bool retrieveSuccess = true;
@@ -201,7 +201,8 @@ std::shared_ptr<Ort::Experimental::Session> InitONNXSession(std::string& onnxFil
     retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB + partName, ".", metadata, timestampCCDB, false, onnxFile);
   }
   if (retrieveSuccess) {
-    session.reset(new Ort::Experimental::Session{env, onnxFile, sessionOpt});
+    LOGP(info, "Retrieve is good");
+    session = new Ort::Experimental::Session{env, onnxFile, sessionOpt};
     inputNames = session->GetInputNames();
     inputShapes = session->GetInputShapes();
     if (inputShapes[0][0] < 0) {
@@ -209,6 +210,17 @@ std::shared_ptr<Ort::Experimental::Session> InitONNXSession(std::string& onnxFil
       inputShapes[0][0] = 1;
     }
     outputNames = session->GetOutputNames();
+    for (auto i{0u}; i<inputNames.size(); ++i) {
+      LOGP(info, "input names {} {}", i, inputNames[i].data());
+    }
+    for (auto i{0u}; i<inputShapes.size(); ++i) {
+      for (auto j{0u}; j<inputShapes[i].size(); ++j) {
+        LOGP(info, "input shapes {}{} {}", i, j, inputShapes[i][j]);
+      }
+    }
+    for (auto i{0u}; i<outputNames.size(); ++i) {
+      LOGP(info, "output names {} {}", i, outputNames[i].data());
+    }
 
     Ort::TypeInfo typeInfo = session->GetInputTypeInfo(0);
     auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
@@ -228,26 +240,32 @@ std::shared_ptr<Ort::Experimental::Session> InitONNXSession(std::string& onnxFil
 /// \param outputNames is a vector of output names
 /// \return the array with the three output scores
 template <typename T>
-std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::string>& inputNames, std::vector<std::vector<int64_t>>& inputShapes, std::vector<std::string>& outputNames)
+std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, Ort::Experimental::Session* session, std::vector<std::string>& inputNames, std::vector<std::vector<int64_t>>& inputShapes, std::vector<std::string>& outputNames)
 {
   std::array<T, 3> scores{-1., 2., 2.};
-  std::vector<Ort::Value> inputTensor;
+  std::vector<Ort::Value> inputTensor{};
   inputTensor.push_back(Ort::Experimental::Value::CreateTensor<T>(inputFeatures.data(), inputFeatures.size(), inputShapes[0]));
 
   // double-check the dimensions of the input tensor
   if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
+    LOGP(info, "GOOD 0");
     assert(inputTensor[0].IsTensor() && inputTensor[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapes[0]);
   }
   try {
+    LOGP(info, "GOOD 1");
     auto outputTensor = session->Run(inputNames, inputTensor, outputNames);
+    LOGP(info, "GOOD 2");
     assert(outputTensor.size() == outputNames.size() && outputTensor[1].IsTensor());
+    LOGP(info, "GOOD 3");
     auto typeInfo = outputTensor[1].GetTensorTypeAndShapeInfo();
     assert(typeInfo.GetElementCount() == 3); // we need multiclass
+    LOGP(info, "GOOD 4");
     scores[0] = outputTensor[1].GetTensorMutableData<T>()[0];
     scores[1] = outputTensor[1].GetTensorMutableData<T>()[1];
     scores[2] = outputTensor[1].GetTensorMutableData<T>()[2];
+    LOGP(info, "QUIIIIIIII {} {} {}", scores[0], scores[2], scores[1]);
   } catch (const Ort::Exception& exception) {
-    // LOG(error) << "Error running model inference: " << exception.what();
+    LOG(error) << "Error running model inference: " << exception.what();
   }
 
   return scores;

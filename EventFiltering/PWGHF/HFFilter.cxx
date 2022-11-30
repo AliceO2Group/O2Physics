@@ -219,7 +219,8 @@ struct HfFilter { // Main struct for HF triggers
     if (applyML && (!loadModelsFromCCDB || timestampCCDB != 0)) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
-          sessionML[iCharmPart] = InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], inputNamesML[iCharmPart], inputShapesML[iCharmPart], outputNamesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB);
+          sessionML[iCharmPart].reset(InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], inputNamesML[iCharmPart], inputShapesML[iCharmPart], outputNamesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB));
+          LOGP(info, "QUAAAAAAA charm part {} datatype {}", iCharmPart, dataTypeML[iCharmPart]);
         }
       }
     }
@@ -638,7 +639,7 @@ struct HfFilter { // Main struct for HF triggers
     if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && inputNamesML[kD0].size() == 0) {
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
-          sessionML[iCharmPart] = InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], inputNamesML[iCharmPart], inputShapesML[iCharmPart], outputNamesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB);
+          sessionML[iCharmPart].reset(InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], inputNamesML[iCharmPart], inputShapesML[iCharmPart], outputNamesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB));
         }
       }
     }
@@ -680,13 +681,13 @@ struct HfFilter { // Main struct for HF triggers
         std::vector<double> inputFeaturesDoD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
 
         if (dataTypeML[kD0] == 1) {
-          auto scores = PredictONNX(inputFeaturesD0, sessionML[kD0], inputNamesML[kD0], inputShapesML[kD0], outputNamesML[kD0]);
+          auto scores = PredictONNX(inputFeaturesD0, sessionML[kD0].get(), inputNamesML[kD0], inputShapesML[kD0], outputNamesML[kD0]);
           tagBDT = isBDTSelected(scores, kD0);
           for (int iScore{0}; iScore < 3; ++iScore) {
             scoresToFill[iScore] = scores[iScore];
           }
         } else if (dataTypeML[kD0] == 11) {
-          auto scores = PredictONNX(inputFeaturesDoD0, sessionML[kD0], inputNamesML[kD0], inputShapesML[kD0], outputNamesML[kD0]);
+          auto scores = PredictONNX(inputFeaturesDoD0, sessionML[kD0].get(), inputNamesML[kD0], inputShapesML[kD0], outputNamesML[kD0]);
           tagBDT = isBDTSelected(scores, kD0);
           for (int iScore{0}; iScore < 3; ++iScore) {
             scoresToFill[iScore] = scores[iScore];
@@ -854,13 +855,13 @@ struct HfFilter { // Main struct for HF triggers
 
           int tagBDT = 0;
           if (dataTypeML[iCharmPart + 1] == 1) {
-            auto scores = PredictONNX(inputFeatures, sessionML[iCharmPart + 1], inputNamesML[iCharmPart + 1], inputShapesML[iCharmPart + 1], outputNamesML[iCharmPart + 1]);
+            auto scores = PredictONNX(inputFeatures, sessionML[iCharmPart + 1].get(), inputNamesML[iCharmPart + 1], inputShapesML[iCharmPart + 1], outputNamesML[iCharmPart + 1]);
             tagBDT = isBDTSelected(scores, iCharmPart + 1);
             for (int iScore{0}; iScore < 3; ++iScore) {
               scoresToFill[iCharmPart][iScore] = scores[iScore];
             }
           } else if (dataTypeML[iCharmPart + 1] == 11) {
-            auto scores = PredictONNX(inputFeaturesD, sessionML[iCharmPart + 1], inputNamesML[iCharmPart + 1], inputShapesML[iCharmPart + 1], outputNamesML[iCharmPart + 1]);
+            auto scores = PredictONNX(inputFeaturesD, sessionML[iCharmPart + 1].get(), inputNamesML[iCharmPart + 1], inputShapesML[iCharmPart + 1], outputNamesML[iCharmPart + 1]);
             tagBDT = isBDTSelected(scores, iCharmPart + 1);
             for (int iScore{0}; iScore < 3; ++iScore) {
               scoresToFill[iCharmPart][iScore] = scores[iScore];
