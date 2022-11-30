@@ -177,13 +177,16 @@ int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
 /// Iinitialisation of ONNX session
 /// \param onnxFile is the onnx file name
 /// \param partName is the particle name
+/// \param env is the ONNX environment
+/// \param sessionOpt is the ONNX session options
+/// \param inputShapes is the input shape
 /// \param dataType is the data type (1=float, 11=double)
 /// \param loadModelsFromCCDB is the flag to decide whether the ONNX file is read from CCDB or not
 /// \param ccdbApi is the CCDB API
 /// \param mlModelPathCCDB is the model path in CCDB
 /// \param timestampCCDB is the CCDB timestamp
 /// \return the pointer to the ONNX Ort::Experimental::Session
-Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, long timestampCCDB)
+Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, long timestampCCDB)
 {
   // hard coded, we do not let the user change this
   sessionOpt.SetIntraOpNumThreads(1);
@@ -197,7 +200,7 @@ Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string p
   }
   if (retrieveSuccess) {
     session = new Ort::Experimental::Session{env, onnxFile, sessionOpt};
-    std::vector<std::vector<int64_t>> inputShapes = session->GetInputShapes();
+    inputShapes = session->GetInputShapes();
     if (inputShapes[0][0] < 0) {
       LOGF(warning, Form("Model for %s with negative input shape likely because converted with hummingbird, setting it to 1.", partName.data()));
       inputShapes[0][0] = 1;
@@ -207,7 +210,7 @@ Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string p
     auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
     dataType = tensorInfo.GetElementType();
   } else {
-    LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+    LOG(fatal) << "Error encountered while fetching/loading the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
   }
 
   return session;
@@ -216,17 +219,18 @@ Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string p
 /// Iinitialisation of ONNX session
 /// \param inputFeatures is the vector with input features
 /// \param session is the ONNX Ort::Experimental::Session
+/// \param inputShapes is the input shape
 /// \return the array with the three output scores
 template <typename T>
-std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session)
+std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::vector<int64_t>>& inputShapes)
 {
   std::array<T, 3> scores{-1., 2., 2.};
   std::vector<Ort::Value> inputTensor{};
-  inputTensor.push_back(Ort::Experimental::Value::CreateTensor<T>(inputFeatures.data(), inputFeatures.size(), session->GetInputShapes()[0]));
+  inputTensor.push_back(Ort::Experimental::Value::CreateTensor<T>(inputFeatures.data(), inputFeatures.size(), inputShapes[0]));
 
   // double-check the dimensions of the input tensor
   if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
-    assert(inputTensor[0].IsTensor() && inputTensor[0].GetTensorTypeAndShapeInfo().GetShape() == session->GetInputShapes()[0]);
+    assert(inputTensor[0].IsTensor() && inputTensor[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapes[0]);
   }
   try {
     auto outputTensor = session->Run(session->GetInputNames(), inputTensor, session->GetOutputNames());
