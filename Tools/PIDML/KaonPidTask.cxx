@@ -58,7 +58,7 @@ struct KaonPidTask {
   Configurable<int> cfgPid{"pid", 321, "PID to predict"};
   Configurable<double> cfgCertainty{"certainty", 0.5, "Minimum certainty above which the model accepts a particular type of particle"};
   Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
-  Configurable<uint32_t> cfgTimestamp{"timestamp", -1, "Fixed timestamp"};
+  Configurable<uint64_t> cfgTimestamp{"timestamp", 0, "Fixed timestamp"};
   Configurable<bool> cfgUseCCDB{"useCCDB", false, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
 
   o2::ccdb::CcdbApi ccdbApi;
