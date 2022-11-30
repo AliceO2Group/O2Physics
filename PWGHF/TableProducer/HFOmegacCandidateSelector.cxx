@@ -33,8 +33,8 @@ struct HFOmegacCandidateSelector {
   Produces<aod::HFSelOmegacCandidate> hfSelOmegacCandidate;
 
   //limit charm baryon invariant mass spectrum
-  Configurable<double> LowerLimitSpectrum{"EtLowerLimitSpectrumaMax", 2.4, "Lower limit invariant mass spectrum charm baryon"};
-  Configurable<double> UpperLimitSpectrum{"UpperLimitSpectrumaMax", 3.0, "Upper limit invariant mass spectrum charm baryon"};
+  Configurable<double> LowerLimitSpectrum{"LowerLimitSpectrum", 2.4, "Lower limit invariant mass spectrum charm baryon"};
+  Configurable<double> UpperLimitSpectrum{"UpperLimitSpectrum", 3.0, "Upper limit invariant mass spectrum charm baryon"};
 
   //kinematic selections
   Configurable<double> EtaMax{"EtaMax", 0.8, "Max absolute value of eta"};
