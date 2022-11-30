@@ -47,7 +47,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
 #include "DetectorsVertexing/HelixHelper.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
@@ -70,7 +70,7 @@ struct skimmerGammaConversions {
   Configurable<std::string> path{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<uint64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -293,7 +293,7 @@ struct skimmerGammaConversions {
         LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
         lMothersIndeces.push_back(lMother.globalIndex());
       }
-      fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
+      fMotherSizesHisto->Fill(0.5 + static_cast<float>(lMothersIndeces.size()));
       return lMothersIndeces;
     };
 
