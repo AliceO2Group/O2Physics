@@ -16,5 +16,5 @@ o2physics_add_dpl_workflow(ue-charged
 
 o2physics_add_dpl_workflow(ue-zdc-analysis
                     SOURCES ue-zdc-analysys.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
