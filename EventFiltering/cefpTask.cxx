@@ -284,11 +284,10 @@ struct centralEventFilterTask {
         LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
-      if (outDecision.size() == 0){
+      if (outDecision.size() == 0) {
         outDecision.resize(nEvents, 0u);
         outTrigger.resize(nEvents, 0u);
       }
-
 
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
@@ -346,17 +345,18 @@ struct centralEventFilterTask {
       auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
       auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTimeRes);
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
-        for(int64_t iB{0}; iB < columnGloBCId->num_chunks(); ++iB){
+        for (int64_t iB{0}; iB < columnGloBCId->num_chunks(); ++iB) {
           auto chunkGloBC{columnGloBCId->chunk(iB)};
           auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkGloBC);
-          if(GloBCArray->Value(BCArray->Value(iD))) GloBCId = GloBCArray->Value(BCArray->Value(iD));
+          if (GloBCArray->Value(BCArray->Value(iD)))
+            GloBCId = GloBCArray->Value(BCArray->Value(iD));
         }
         tags(BCArray->Value(iD), GloBCId, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
       }
     }
 
     //for (auto& decision : decisions) {
-      //tags(decision.first, triggers[decision.first], decision.second);
+    //tags(decision.first, triggers[decision.first], decision.second);
     //}
   }
 
