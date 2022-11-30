@@ -101,38 +101,42 @@ struct produceV0ToCascMap {
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
   Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  
+
   HistogramRegistry registry{
     "registry",
-    {
-      {"hCascadeCount", "hCascadeCount", {HistType::kTH1F, {{1, -0.5f, 0.5f}}}},
-      {"hBachCriteria", "hBachCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}
-    }
-  };
+    {{"hCascadeCount", "hCascadeCount", {HistType::kTH1F, {{1, -0.5f, 0.5f}}}},
+     {"hBachCriteria", "hBachCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
-  enum bachstep { kBachAll=0, kBachTPCrefit, kBachCrossedRows, kBachDCAxy, kNBachSteps };
+  enum bachstep { kBachAll = 0,
+                  kBachTPCrefit,
+                  kBachCrossedRows,
+                  kBachDCAxy,
+                  kNBachSteps };
   // Helper struct to do bookkeeping of building parameters
-  struct { //possibility to do more
+  struct { // possibility to do more
     long cascadeCounter;
     std::array<long, kNBachSteps> bachstats;
   } statisticsRegistry;
-  
-  void resetHistos(){ 
+
+  void resetHistos()
+  {
     statisticsRegistry.cascadeCounter = 0;
-    for(Int_t ii=0; ii<kNBachSteps; ii++) statisticsRegistry.bachstats[ii] = 0;
+    for (Int_t ii = 0; ii < kNBachSteps; ii++)
+      statisticsRegistry.bachstats[ii] = 0;
   }
 
-  void fillHistos(){ 
+  void fillHistos()
+  {
     registry.fill(HIST("hCascadeCount"), 0.0, statisticsRegistry.cascadeCounter);
-    for(Int_t ii=0; ii<kNBachSteps; ii++)
+    for (Int_t ii = 0; ii < kNBachSteps; ii++)
       registry.fill(HIST("hBachCriteria"), ii, statisticsRegistry.bachstats[ii]);
   }
-  
+
   void init(InitContext& context)
   {
     resetHistos();
   }
-  
+
   template <class TTracksTo>
   bool buildMap(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades)
   {
@@ -156,7 +160,7 @@ struct produceV0ToCascMap {
       if (bachTrack.dcaXY() < dcabachtopv)
         return false;
       statisticsRegistry.bachstats[kBachDCAxy]++;
-      //Fill map
+      // Fill map
       stdV0ToCascMap.insert(std::pair<int, int>(cascade.v0().globalIndex(), cascade.globalIndex()));
     }
     for (auto& v0 : V0s) {
@@ -173,7 +177,7 @@ struct produceV0ToCascMap {
   {
     // do v0s, typecase correctly into tracks (Run 2 use case)
     buildMap<FullTracksExt>(collision, V0s, cascades);
-    
+
     fillHistos();
     resetHistos();
   }
@@ -183,7 +187,7 @@ struct produceV0ToCascMap {
   {
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
     buildMap<FullTracksExtIU>(collision, V0s, cascades);
-    
+
     fillHistos();
     resetHistos();
   }
@@ -216,7 +220,7 @@ struct strangenessBuilder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
-  
+
   // Configurables related to cascade building
   Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
   Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
@@ -253,8 +257,20 @@ struct strangenessBuilder {
   o2::track::TrackParCov lV0Track;
   o2::track::TrackParCov lCascadeTrack;
 
-  enum v0step { kV0All=0, kV0TPCrefit, kV0CrossedRows, kV0DCAxy, kV0DCADau, kV0CosPA, kV0Radius, kNV0Steps };
-  enum cascstep { kCascAll=0, kCascLambdaMass, kCascDCADau, kCascCosPA, kCascRadius, kNCascSteps };
+  enum v0step { kV0All = 0,
+                kV0TPCrefit,
+                kV0CrossedRows,
+                kV0DCAxy,
+                kV0DCADau,
+                kV0CosPA,
+                kV0Radius,
+                kNV0Steps };
+  enum cascstep { kCascAll = 0,
+                  kCascLambdaMass,
+                  kCascDCADau,
+                  kCascCosPA,
+                  kCascRadius,
+                  kNCascSteps };
 
   // Helper struct to pass V0 information
   struct {
@@ -291,7 +307,7 @@ struct strangenessBuilder {
     float cosPA;
     float cascradius;
   } cascadecandidate;
-  
+
   // Helper struct to do bookkeeping of building parameters
   struct {
     std::array<long, kNV0Steps> v0stats;
@@ -307,26 +323,30 @@ struct strangenessBuilder {
      {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
      {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
-  void resetHistos(){ 
+  void resetHistos()
+  {
     statisticsRegistry.exceptions = 0;
     statisticsRegistry.eventCounter = 0;
-    for(Int_t ii=0; ii<kNV0Steps; ii++) statisticsRegistry.v0stats[ii] = 0; 
-    for(Int_t ii=0; ii<kNCascSteps; ii++) statisticsRegistry.cascstats[ii] = 0; 
+    for (Int_t ii = 0; ii < kNV0Steps; ii++)
+      statisticsRegistry.v0stats[ii] = 0;
+    for (Int_t ii = 0; ii < kNCascSteps; ii++)
+      statisticsRegistry.cascstats[ii] = 0;
   }
 
-  void fillHistos(){ 
+  void fillHistos()
+  {
     registry.fill(HIST("hEventCounter"), 0.0, statisticsRegistry.eventCounter);
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
-    for(Int_t ii=0; ii<kNV0Steps; ii++) 
+    for (Int_t ii = 0; ii < kNV0Steps; ii++)
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
-    for(Int_t ii=0; ii<kNCascSteps; ii++) 
-    registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
+    for (Int_t ii = 0; ii < kNCascSteps; ii++)
+      registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
   }
 
   void init(InitContext& context)
   {
     resetHistos();
-    
+
     // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
@@ -592,8 +612,8 @@ struct strangenessBuilder {
     }
 
     cascadecandidate.cosPA = RecoDecay::cpa(
-      array{collision.posX(), collision.posY(), collision.posZ()}, 
-      array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]}, 
+      array{collision.posX(), collision.posY(), collision.posZ()},
+      array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]},
       array{v0candidate.posP[0] + v0candidate.negP[0] + cascadecandidate.bachP[0], v0candidate.posP[1] + v0candidate.negP[1] + cascadecandidate.bachP[1], v0candidate.posP[2] + v0candidate.negP[2] + cascadecandidate.bachP[2]});
     if (cascadecandidate.cosPA < casccospa) {
       return false;
@@ -666,7 +686,7 @@ struct strangenessBuilder {
         continue;
       if (TMath::Abs(v0candidate.antilambdaMass - 1.116) > lambdaMassWindow)
         continue;
-      
+
       auto lCascadeRefs = V0.cascadeCandidate();
       for (auto& cascade : lCascadeRefs) {
         auto bachTrackCast = cascade.template bachelor_as<TTracksTo>();
@@ -697,8 +717,8 @@ struct strangenessBuilder {
         }
       }
     }
-    //En masse filling
-    fillHistos(); 
+    // En masse filling
+    fillHistos();
     resetHistos();
   }
 
