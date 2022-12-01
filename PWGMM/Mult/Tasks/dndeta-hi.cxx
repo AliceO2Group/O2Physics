@@ -83,7 +83,7 @@ struct MultiplicityCounter {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<float> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry registry{
     "registry",
@@ -166,13 +166,13 @@ struct MultiplicityCounter {
   {
 
     registry.fill(HIST("Events/Selection"), 1.);
-    Bool_t IsMB0 = false;
+    //Bool_t IsMB0 = false;
     if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
       registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), 50., z);
       usedTracksIds.clear();
-      auto Ntrks = 0;
+      //auto Ntrks = 0;
       /*
       for (auto& track : atracks) {
         usedTracksIds.emplace_back(track.trackId());
