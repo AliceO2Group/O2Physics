@@ -13,11 +13,110 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
 #include <TMath.h>
 
 // todo: declare more columns in this file dynamic or expression, atm I save a lot of redundant information
 namespace o2::aod
 {
+
+namespace emreducedevent
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_COLUMN(Tag, tag, uint64_t);         //!  Bit-field for storing event information (e.g. high level info, cut decisions)
+} // namespace emreducedevent
+DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
+                  o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, evsel::Sel8,
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
+using EMReducedEvent = EMReducedEvents::iterator;
+
+namespace v0leg
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);           //!
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent); //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);                   //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
+DECLARE_SOA_COLUMN(IsAmbTrack, isAmbTrack, bool);         //!
+// DECLARE_SOA_COLUMN(NumBC, numBC, unsigned int);                                            //!
+// DECLARE_SOA_COLUMN(NumColl, numColl, unsigned int);                                            //!
+
+} // namespace v0leg
+// reconstructed v0 information
+DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
+                  o2::soa::Index<>, v0leg::CollisionId, v0leg::EMReducedEventId,
+                  v0leg::TrackId, v0leg::Sign, v0leg::IsAmbTrack,
+                  // v0leg::NumBC, v0leg::NumColl,
+                  track::Pt, track::Eta, track::Phi,
+                  track::DcaXY, track::DcaZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCChi2NCl, track::TPCInnerParam,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
+
+                  // dynamic column
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::ITSNCls<track::ITSClusterMap>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
+                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
+
+// iterators
+using V0Leg = V0Legs::iterator;
+
+namespace v0photon
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);               //!
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
+DECLARE_SOA_COLUMN(Vx, vx, float);                                      //!
+DECLARE_SOA_COLUMN(Vy, vy, float);                                      //!
+DECLARE_SOA_COLUMN(Vz, vz, float);                                      //!
+DECLARE_SOA_COLUMN(PxPosAtSV, pxposatsv, float);                        //!
+DECLARE_SOA_COLUMN(PyPosAtSV, pyposatsv, float);                        //!
+DECLARE_SOA_COLUMN(PzPosAtSV, pzposatsv, float);                        //!
+DECLARE_SOA_COLUMN(PxNegAtSV, pxnegatsv, float);                        //!
+DECLARE_SOA_COLUMN(PyNegAtSV, pynegatsv, float);                        //!
+DECLARE_SOA_COLUMN(PzNegAtSV, pznegatsv, float);                        //!
+DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
+DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
+
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pxpos, float pxneg) -> float { return pxpos + pxneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pypos, float pyneg) -> float { return pypos + pyneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pzpos, float pzneg) -> float { return pzpos + pzneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::eta(array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::phi(pxpos + pxneg, pypos + pyneg); });
+
+} // namespace v0photon
+// reconstructed v0 information
+DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
+                  o2::soa::Index<>, v0photon::CollisionId, v0photon::EMReducedEventId, v0photon::PosTrackId, v0photon::NegTrackId,
+                  v0photon::Vx, v0photon::Vy, v0photon::Vz,
+                  v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV,
+                  v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV,
+                  v0photon::CosPA, v0photon::PCA,
+
+                  // dynamic column
+                  v0photon::Px<v0photon::PxPosAtSV, v0photon::PxNegAtSV>,
+                  v0photon::Py<v0photon::PyPosAtSV, v0photon::PyNegAtSV>,
+                  v0photon::Pz<v0photon::PzPosAtSV, v0photon::PzNegAtSV>,
+                  v0photon::Pt<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
+                  v0photon::Eta<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+                  v0photon::Phi<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
+                  v0data::V0Radius<v0photon::Vx, v0photon::Vy>,
+                  v0data::Alpha<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+                  v0data::QtArm<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+                  v0data::PsiPair<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+
+                  // invariant mass mee
+                  v0data::MGamma<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>);
+// iterators
+using V0Photon = V0Photons::iterator;
+
 namespace gammatrackreco
 {
 DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity
@@ -66,7 +165,7 @@ namespace MCParticleTrueIndex
 DECLARE_SOA_INDEX_COLUMN(V0DaughterMcParticle, v0DaughterMcParticle);
 } // namespace MCParticleTrueIndex
 
-//DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
+// DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
 DECLARE_SOA_TABLE(MCParticleIndex, "AOD", "MCPARTICLEINDEX", MCParticleTrueIndex::V0DaughterMcParticleId);
 
 namespace gammarecalculated
@@ -104,7 +203,7 @@ DECLARE_SOA_COLUMN(ConversionX, conversionX, float); //! x of conversion point i
 DECLARE_SOA_COLUMN(ConversionY, conversionY, float); //! y of conversion point in cm
 DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float); //! z of conversion point in cm
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);       //! 2d radius of conversion point
-//DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue);
+// DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue);
 DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueOne, mcDaughterTrueOne, int, McDaughterTrue, "_One"); // this is a reference that points to the entry in the McDaughterTrues table
 DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueTwo, mcDaughterTrueTwo, int, McDaughterTrue, "_Two"); // this is a reference that points to the entry in the McDaughterTrues table
 } // namespace gammamctrue
