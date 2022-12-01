@@ -87,7 +87,7 @@ using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 struct singlestrangeBuilder {
   Produces<aod::StoredV0Datas> v0data;
   Produces<aod::V0DataLink> v0dataLink;
-  Produces<aod::V0Covs> v0covs;     // covariances
+  Produces<aod::V0Covs> v0covs; // covariances
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables related to table creation
@@ -102,7 +102,7 @@ struct singlestrangeBuilder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
-  
+
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
@@ -126,7 +126,14 @@ struct singlestrangeBuilder {
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
 
-  enum v0step { kV0All=0, kV0TPCrefit, kV0CrossedRows, kV0DCAxy, kV0DCADau, kV0CosPA, kV0Radius, kNV0Steps };
+  enum v0step { kV0All = 0,
+                kV0TPCrefit,
+                kV0CrossedRows,
+                kV0DCAxy,
+                kV0DCADau,
+                kV0CosPA,
+                kV0Radius,
+                kNV0Steps };
 
   // Helper struct to pass V0 information
   struct {
@@ -147,7 +154,7 @@ struct singlestrangeBuilder {
     float lambdaMass;
     float antilambdaMass;
   } v0candidate;
-  
+
   // Helper struct to do bookkeeping of building parameters
   struct {
     std::array<long, kNV0Steps> v0stats;
@@ -161,16 +168,19 @@ struct singlestrangeBuilder {
      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
      {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
-  void resetHistos(){ 
+  void resetHistos()
+  {
     statisticsRegistry.exceptions = 0;
     statisticsRegistry.eventCounter = 0;
-    for(Int_t ii=0; ii<kNV0Steps; ii++) statisticsRegistry.v0stats[ii] = 0; 
+    for (Int_t ii = 0; ii < kNV0Steps; ii++)
+      statisticsRegistry.v0stats[ii] = 0;
   }
 
-  void fillHistos(){ 
+  void fillHistos()
+  {
     registry.fill(HIST("hEventCounter"), 0.0, statisticsRegistry.eventCounter);
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
-    for(Int_t ii=0; ii<kNV0Steps; ii++) 
+    for (Int_t ii = 0; ii < kNV0Steps; ii++)
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
   }
 
@@ -180,7 +190,7 @@ struct singlestrangeBuilder {
   void init(InitContext& context)
   {
     resetHistos();
-    
+
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  // could be changed later
@@ -416,9 +426,9 @@ struct singlestrangeBuilder {
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
-        //Calculate position covariance matrix
+        // Calculate position covariance matrix
         auto covVtxV = fitter.calcPCACovMatrix(0);
-        //std::array<float, 6> positionCovariance;
+        // std::array<float, 6> positionCovariance;
         float positionCovariance[6];
         positionCovariance[0] = covVtxV(0, 0);
         positionCovariance[1] = covVtxV(1, 0);
@@ -426,22 +436,22 @@ struct singlestrangeBuilder {
         positionCovariance[3] = covVtxV(2, 0);
         positionCovariance[4] = covVtxV(2, 1);
         positionCovariance[5] = covVtxV(2, 2);
-        //store momentum covariance matrix
+        // store momentum covariance matrix
         std::array<float, 21> covTpositive = {0.};
         std::array<float, 21> covTnegative = {0.};
-        //std::array<float, 6> momentumCovariance;
+        // std::array<float, 6> momentumCovariance;
         float momentumCovariance[6];
-        lPositiveTrack .getCovXYZPxPyPzGlo(covTpositive);
-        lNegativeTrack .getCovXYZPxPyPzGlo(covTnegative);
+        lPositiveTrack.getCovXYZPxPyPzGlo(covTpositive);
+        lNegativeTrack.getCovXYZPxPyPzGlo(covTnegative);
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
           momentumCovariance[i] = covTpositive[MomInd[i]] + covTnegative[MomInd[i]];
         }
-        v0covs( positionCovariance, momentumCovariance );
+        v0covs(positionCovariance, momentumCovariance);
       }
     }
-    //En masse histo filling at end of process call
-    fillHistos(); 
+    // En masse histo filling at end of process call
+    fillHistos();
     resetHistos();
   }
 
@@ -509,7 +519,15 @@ struct multistrangeBuilder {
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
-  enum cascstep { kCascAll=0, kBachTPCrefit, kBachCrossedRows, kBachDCAxy, kCascLambdaMass, kCascDCADau, kCascCosPA, kCascRadius, kNCascSteps };
+  enum cascstep { kCascAll = 0,
+                  kBachTPCrefit,
+                  kBachCrossedRows,
+                  kBachDCAxy,
+                  kCascLambdaMass,
+                  kCascDCADau,
+                  kCascCosPA,
+                  kCascRadius,
+                  kNCascSteps };
 
   // Helper struct to pass cascade information
   struct {
@@ -527,7 +545,7 @@ struct multistrangeBuilder {
 
   o2::track::TrackParCov lBachelorTrack;
   o2::track::TrackParCov lV0Track;
-  
+
   // Helper struct to do bookkeeping of building parameters
   struct {
     std::array<long, kNCascSteps> cascstats;
@@ -541,23 +559,26 @@ struct multistrangeBuilder {
      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
      {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
-  void resetHistos(){ 
+  void resetHistos()
+  {
     statisticsRegistry.exceptions = 0;
     statisticsRegistry.eventCounter = 0;
-    for(Int_t ii=0; ii<kNCascSteps; ii++) statisticsRegistry.cascstats[ii] = 0; 
+    for (Int_t ii = 0; ii < kNCascSteps; ii++)
+      statisticsRegistry.cascstats[ii] = 0;
   }
 
-  void fillHistos(){ 
+  void fillHistos()
+  {
     registry.fill(HIST("hEventCounter"), 0.0, statisticsRegistry.eventCounter);
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
-    for(Int_t ii=0; ii<kNCascSteps; ii++) 
-    registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
+    for (Int_t ii = 0; ii < kNCascSteps; ii++)
+      registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
   }
 
   void init(InitContext& context)
   {
     resetHistos();
-    
+
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  // could be changed later
@@ -692,9 +713,9 @@ struct multistrangeBuilder {
     statisticsRegistry.cascstats[kCascLambdaMass]++;
 
     if (tpcrefit) {
-        if (!(bachTrack.trackType() & o2::aod::track::TPCrefit)) {
-          return false;
-        }
+      if (!(bachTrack.trackType() & o2::aod::track::TPCrefit)) {
+        return false;
+      }
     }
     statisticsRegistry.cascstats[kBachTPCrefit]++;
     if (bachTrack.tpcNClsCrossedRows() < mincrossedrows) {
@@ -710,7 +731,7 @@ struct multistrangeBuilder {
     // Do actual minimization
     lBachelorTrack = getTrackParCov(bachTrack);
 
-    //Set up covariance matrices (should in fact be optional)
+    // Set up covariance matrices (should in fact be optional)
     std::array<float, 21> covV = {0.};
     constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
     for (int i = 0; i < 6; i++) {
@@ -718,10 +739,9 @@ struct multistrangeBuilder {
       covV[i] = v0.positionCovMat()[i];
     }
     lV0Track = o2::track::TrackParCov(
-      {v0.x(), v0.y(), v0.z()}, 
+      {v0.x(), v0.y(), v0.z()},
       {v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()},
-      covV, cascadecandidate.charge, true
-    );
+      covV, cascadecandidate.charge, true);
 
     //---/---/---/
     // Move close to minima
@@ -750,8 +770,8 @@ struct multistrangeBuilder {
     }
 
     cascadecandidate.cosPA = RecoDecay::cpa(
-      array{collision.posX(), collision.posY(), collision.posZ()}, 
-      array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]}, 
+      array{collision.posX(), collision.posY(), collision.posZ()},
+      array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]},
       array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzpos() + cascadecandidate.bachP[2]});
     if (cascadecandidate.cosPA < casccospa) {
       return false;
@@ -781,26 +801,26 @@ struct multistrangeBuilder {
         continue; // skip those cascades for which V0 doesn't exist
       }
       auto v0 = v0index.v0Data_as<V0full>(); // de-reference index to correct v0data in case it exists
-      // 
+      //
       bool validCascadeCandidate = buildCascadeCandidate(collision, bachTrackCast, v0);
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
-      
+
       cascdata(v0.globalIndex(),
-              bachTrackCast.globalIndex(),
-              cascade.collisionId(),
-              cascadecandidate.charge,
-              cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
-              v0.x(), v0.y(), v0.z(),
-              v0.pxpos(), v0.pypos(), v0.pzpos(),
-              v0.pxneg(), v0.pyneg(), v0.pzneg(), 
-              cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-              v0.dcaV0daughters(), cascadecandidate.dcacascdau,
-              v0.dcapostopv(), v0.dcanegtopv(),
-              cascadecandidate.bachDCAxy);
+               bachTrackCast.globalIndex(),
+               cascade.collisionId(),
+               cascadecandidate.charge,
+               cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
+               v0.x(), v0.y(), v0.z(),
+               v0.pxpos(), v0.pypos(), v0.pzpos(),
+               v0.pxneg(), v0.pyneg(), v0.pzneg(),
+               cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+               v0.dcaV0daughters(), cascadecandidate.dcacascdau,
+               v0.dcapostopv(), v0.dcanegtopv(),
+               cascadecandidate.bachDCAxy);
     }
-    //En masse filling at end of process call
-    fillHistos(); 
+    // En masse filling at end of process call
+    fillHistos();
     resetHistos();
   }
 
