@@ -35,8 +35,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 
-enum
-{
+enum {
   kECbegin = 0,
   kDATA = 1,
   kINEL,
@@ -167,13 +166,13 @@ struct MultiplicityCounter {
   {
 
     registry.fill(HIST("Events/Selection"), 1.);
-    //Bool_t IsMB0 = false;
+    // Bool_t IsMB0 = false;
     if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
       registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), 50., z);
       usedTracksIds.clear();
-      //auto Ntrks = 0;
+      // auto Ntrks = 0;
       /*
       for (auto& track : atracks) {
         usedTracksIds.emplace_back(track.trackId());
