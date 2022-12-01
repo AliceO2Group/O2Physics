@@ -15,9 +15,17 @@
 /// \brief  Tasks of the TOF PID quantities for the event times
 ///
 
+#include "TEfficiency.h"
+#include "THashList.h"
+
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
 #include "Framework/AnalysisTask.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "qaPIDTOF.h"
 #include "Framework/runDataProcessing.h"
 
 struct tofPidCollisionTimeQa {
@@ -32,6 +40,8 @@ struct tofPidCollisionTimeQa {
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
   Configurable<float> minPReso{"minPReso", 1.4f, "Minimum momentum in range for the resolution plot"};
   Configurable<float> maxPReso{"maxPReso", 1.5f, "Maximum momentum in range for the resolution plot"};
+
+  OutputObj<THashList> listEfficiency{"Efficiency"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext& initContext)
@@ -152,6 +162,17 @@ struct tofPidCollisionTimeQa {
     histos.add("withqualitycuts/pt", "pt", kTH1F, {ptAxis});
     histos.add("withqualitycuts/length", "length", kTH1F, {lengthAxis});
     histos.add("withqualitycuts/mass", "mass", kTH1F, {massAxis});
+
+    listEfficiency.setObject(new THashList);
+    auto makeEfficiency = [&](TString effname, TString efftitle) {
+      listEfficiency->Add(new TEfficiency(effname, efftitle + ";TOF multiplicity;Efficiency", nBinsMultiplicity, 0, rangeMultiplicity));
+    };
+
+    makeEfficiency("effTOFEvTime", "Efficiency of the TOF Event Time");
+    makeEfficiency("effT0ACEvTime", "Efficiency of the T0AC Event Time");
+    makeEfficiency("effTOFT0ACEvTime", "Efficiency of the TOF+T0AC Event Time");
+    makeEfficiency("effT0AEvTime", "Efficiency of the T0A Event Time");
+    makeEfficiency("effT0CEvTime", "Efficiency of the T0C Event Time");
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::EvTimeTOFOnly, aod::TrackSelection>;
@@ -225,7 +246,7 @@ struct tofPidCollisionTimeQa {
       ncolls++;
 
       const auto tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
-
+      int nTracksWithTOF = 0;
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         histos.fill(HIST("trackSelection"), 0.5f);
 
@@ -256,6 +277,7 @@ struct tofPidCollisionTimeQa {
         if (!trk.hasTOF()) {
           continue;
         }
+        nTracksWithTOF++;
         histos.fill(HIST("trackSelection"), 4.5f);
 
         const float beta = o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, trk.tofEvTime());
@@ -316,6 +338,11 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("goodforevtime/mass"), mass);
         histos.fill(HIST("goodforevtime/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
       }
+      static_cast<TEfficiency*>(listEfficiency->FindObject("effTOFEvTime"))->Fill(t.isEvTimeTOF(), nTracksWithTOF);
+      static_cast<TEfficiency*>(listEfficiency->FindObject("effT0AEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
+      static_cast<TEfficiency*>(listEfficiency->FindObject("effT0CEvTime"))->Fill(collision.has_foundFT0() && collision.t0CCorrectedValid(), nTracksWithTOF);
+      static_cast<TEfficiency*>(listEfficiency->FindObject("effT0ACEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACValid(), nTracksWithTOF);
+      static_cast<TEfficiency*>(listEfficiency->FindObject("effTOFT0ACEvTime"))->Fill(t.isEvTimeTOF() && collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
     }
   }
 };
