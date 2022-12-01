@@ -35,7 +35,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 
-enum {
+enum
+{
   kECbegin = 0,
   kDATA = 1,
   kINEL,
