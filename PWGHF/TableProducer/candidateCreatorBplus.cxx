@@ -42,7 +42,7 @@ struct HfCandidateCreatorBplus {
   Produces<aod::HfCandBplusBase> rowCandidateBase;
 
   // vertexing parameters
-  //Configurable<double> bz{"bz", 5., "magnetic field"};
+  // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 5., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 999, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -54,12 +54,20 @@ struct HfCandidateCreatorBplus {
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> etaTrackMax{"etaTrackMax", -1, "max. bach track. pseudorapidity"};
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
+
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH1F> hNEvents{TH1F("hNEvents", "Number of events;Nevents;entries", 1, 0., 1)};
   OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
+  OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
+
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  double massD0 = RecoDecay::getMassPDG(pdg::Code::kDMinus);
+  double massD0Pi = 0.;
+
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -96,7 +104,7 @@ struct HfCandidateCreatorBplus {
 
     // Initialise fitter for B vertex
     o2::vertexing::DCAFitterN<2> bfitter;
-    //bfitter.setBz(bz);
+    // bfitter.setBz(bz);
     bfitter.setPropagateToPCA(propagateToPCA);
     bfitter.setMaxR(maxR);
     bfitter.setMinParamChange(minParamChange);
@@ -136,13 +144,12 @@ struct HfCandidateCreatorBplus {
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
       auto bc = prong0.collision().bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
-      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-      bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        bz = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       }
       df.setBz(bz);
-
 
       // LOGF(info, "All track: %d (prong0); %d (prong1)", candidate.prong0().globalIndex(), candidate.prong1().globalIndex());
       // LOGF(info, "All track pT: %f (prong0); %f (prong1)", prong0.pt(), prong1.pt());
@@ -223,6 +230,15 @@ struct HfCandidateCreatorBplus {
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
         int hfFlag = 1 << hf_cand_bplus::DecayType::BplusToD0Pi;
+
+        // calculate invariant mass and fill the Invariant Mass control plot
+        auto arrayMomenta = array{pVecD0, pVecBach};
+        massD0Pi = RecoDecay::m(std::move(arrayMomenta), array{massD0, massPi});
+        hMassBplusToD0Pi->Fill(massD0Pi);
+        // B+ candidate invariant mass selction window
+        if (massD0Pi < 4.5 || massD0Pi > 6.) {
+          continue;
+        }
 
         // fill candidate table rows
         rowCandidateBase(collision.globalIndex(),
@@ -311,7 +327,7 @@ struct HfCandidateCreatorBplusMc {
     } // B candidate
   }   // process
   PROCESS_SWITCH(HfCandidateCreatorBplusMc, processMc, "Process MC", false);
-};    // struct
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

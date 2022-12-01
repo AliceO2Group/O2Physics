@@ -64,7 +64,7 @@ struct HfTaskBplus {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec axisMass{300, 4.0, 7.0};
+    const AxisSpec axisMass{150, 4.5, 6.0};
     const AxisSpec axisCPA{110, -1.1, 1.1};
     const AxisSpec axisPtProng{100, 0., 10.};
     const AxisSpec axisD0Prong{200, -0.05, 0.05};
