@@ -16,8 +16,8 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDPHISELECTION_H_
-#define FEMTOWORLDPHISELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
 
 #include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
@@ -27,6 +27,8 @@
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
 #include "TLorentzVector.h"
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -400,7 +402,7 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
   const float invMassPhi = v0.mPhi();
   const float invMassAntiPhi = v0.mAntiPhi();
 
-  if ((invMassPhi < fInvMassLowLimit or invMassPhi > fInvMassUpLimit) and (invMassAntiPhi < fInvMassLowLimit or invMassAntiPhi > fInvMassUpLimit)) {
+  if ((invMassPhi < fInvMassLowLimit || invMassPhi > fInvMassUpLimit) && (invMassAntiPhi < fInvMassLowLimit || invMassAntiPhi > fInvMassUpLimit)) {
     return false;
   }
   if (fRejectKaon) {
@@ -681,4 +683,4 @@ void FemtoWorldPhiSelection::fillQAPhi(C const& col, V const& v0, T const& posTr
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDPHISELECTION_H_ */
+#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_ */

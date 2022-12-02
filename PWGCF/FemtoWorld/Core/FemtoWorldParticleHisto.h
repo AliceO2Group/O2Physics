@@ -14,11 +14,12 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDPARTICLEHISTO_H_
-#define FEMTOWORLDPARTICLEHISTO_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
 
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
+#include <string>
 
 using namespace o2::framework;
 // using namespace o2::aod::o2::aod;
@@ -121,4 +122,4 @@ class FemtoWorldParticleHisto
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDPARTICLEHISTO_H_ */
+#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_ */
