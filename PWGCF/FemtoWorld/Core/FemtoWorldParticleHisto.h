@@ -122,4 +122,4 @@ class FemtoWorldParticleHisto
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
