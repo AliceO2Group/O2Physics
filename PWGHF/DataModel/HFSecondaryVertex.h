@@ -1311,25 +1311,6 @@ DECLARE_SOA_TABLE(HfCandOmegacMCRec, "AOD", "HFCANDOMECMCREC", //!
 DECLARE_SOA_TABLE(HfCandOmegacMCGen, "AOD", "HFCANDOMECMCGEN", //!
                   hf_cand_omegac::FlagMCMatchGen);
                   
-// specific Lambda from Omegac candidate properties
-namespace hf_lambdaoc
-{
-  DECLARE_SOA_COLUMN(StatusPidLambda, statuspidlambda, int);
-  DECLARE_SOA_COLUMN(StatusPidAntiLambda, statuspidantilambda, int);
-  DECLARE_SOA_COLUMN(StatusInvMassLambda, statusinvmasslambda, int);
-}
-DECLARE_SOA_TABLE(HFSelLambdaOC, "AOD", "HFSELLAMBDAOC",
-                  v0data::V0Id, hf_lambdaoc::StatusPidLambda, hf_lambdaoc::StatusPidAntiLambda, hf_lambdaoc::StatusInvMassLambda);
-
-// specific Xi from Omegac candidate properties
-namespace hf_xioc
-{
-  DECLARE_SOA_COLUMN(StatusPidXi, statuspidxi, int);
-  DECLARE_SOA_COLUMN(StatusInvMassXi, statusinvmassxi, int);
-}
-DECLARE_SOA_TABLE(HFSelXiOC, "AOD", "HFSELXIOC",
-                  hf_xioc::StatusPidXi, hf_xioc::StatusInvMassXi);
-
 // specific chic candidate properties
 namespace hf_cand_chic
 {
