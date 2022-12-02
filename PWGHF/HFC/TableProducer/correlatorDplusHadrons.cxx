@@ -283,7 +283,7 @@ struct HfCorrelatorDplusHadrons {
                                track.eta() - candidate1.eta(),
                                candidate1.pt(),
                                track.pt());
-          entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), (int)flagDplusSignal);
+          entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), static_cast<int>(flagDplusSignal));
         } // end inner loop (Tracks)
 
       } // end outer Dplus loop
