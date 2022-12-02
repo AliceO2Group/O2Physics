@@ -40,88 +40,81 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
+static constexpr int nSpecies = 9;
+static constexpr int nParameters = 11;
+static const std::vector<std::string> particleNames{"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
+static const std::vector<std::string> parameterNames{"Use default tiny",
+                                                     "Use default full",
+                                                     "Set parameters",
+                                                     "bb1", "bb2", "bb3", "bb4", "bb5",
+                                                     "MIP value", "Charge exponent", "Resolution"};
+static constexpr float defaultParameters[nSpecies][nParameters]{};
+
 /// Task to produce the response table
 struct lfTpcPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  using Trks = soa::Join<aod::TracksIU, aod::TracksExtra>;
   using Coll = aod::Collisions;
 
   // Tables to produce
-  Produces<o2::aod::pidTPCEl> tablePIDEl;
-  Produces<o2::aod::pidTPCMu> tablePIDMu;
-  Produces<o2::aod::pidTPCPi> tablePIDPi;
-  Produces<o2::aod::pidTPCKa> tablePIDKa;
-  Produces<o2::aod::pidTPCPr> tablePIDPr;
-  Produces<o2::aod::pidTPCDe> tablePIDDe;
-  Produces<o2::aod::pidTPCTr> tablePIDTr;
-  Produces<o2::aod::pidTPCHe> tablePIDHe;
-  Produces<o2::aod::pidTPCAl> tablePIDAl;
+  Produces<o2::aod::pidTPCLfEl> tablePIDEl;
+  Produces<o2::aod::pidTPCLfMu> tablePIDMu;
+  Produces<o2::aod::pidTPCLfPi> tablePIDPi;
+  Produces<o2::aod::pidTPCLfKa> tablePIDKa;
+  Produces<o2::aod::pidTPCLfPr> tablePIDPr;
+  Produces<o2::aod::pidTPCLfDe> tablePIDDe;
+  Produces<o2::aod::pidTPCLfTr> tablePIDTr;
+  Produces<o2::aod::pidTPCLfHe> tablePIDHe;
+  Produces<o2::aod::pidTPCLfAl> tablePIDAl;
 
-  Produces<o2::aod::pidTPCFullEl> tablePIDFullEl;
-  Produces<o2::aod::pidTPCFullMu> tablePIDFullMu;
-  Produces<o2::aod::pidTPCFullPi> tablePIDFullPi;
-  Produces<o2::aod::pidTPCFullKa> tablePIDFullKa;
-  Produces<o2::aod::pidTPCFullPr> tablePIDFullPr;
-  Produces<o2::aod::pidTPCFullDe> tablePIDFullDe;
-  Produces<o2::aod::pidTPCFullTr> tablePIDFullTr;
-  Produces<o2::aod::pidTPCFullHe> tablePIDFullHe;
-  Produces<o2::aod::pidTPCFullAl> tablePIDFullAl;
-  // TPC PID Response
-  o2::ccdb::CcdbApi ccdbApi;
+  Produces<o2::aod::pidTPCLfFullEl> tablePIDFullEl;
+  Produces<o2::aod::pidTPCLfFullMu> tablePIDFullMu;
+  Produces<o2::aod::pidTPCLfFullPi> tablePIDFullPi;
+  Produces<o2::aod::pidTPCLfFullKa> tablePIDFullKa;
+  Produces<o2::aod::pidTPCLfFullPr> tablePIDFullPr;
+  Produces<o2::aod::pidTPCLfFullDe> tablePIDFullDe;
+  Produces<o2::aod::pidTPCLfFullTr> tablePIDFullTr;
+  Produces<o2::aod::pidTPCLfFullHe> tablePIDFullHe;
+  Produces<o2::aod::pidTPCLfFullAl> tablePIDFullAl;
 
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::vector<float>> paramBbEl{"paramBbEl",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for electrons. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbMu{"paramBbMu",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for muons. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbPi{"paramBbPi",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for pions. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbKa{"paramBbKa",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for kaons. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbPr{"paramBbPr",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for protons. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbDe{"paramBbDe",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for deuterons. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbTr{"paramBbTr",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for tritons. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbHe{"paramBbHe",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for helium3. Dimension 8, if empty using the default vaules."};
-  Configurable<std::vector<float>> paramBbAl{"paramBbAl",
-                                             std::vector<float>{0},
-                                             "Parameters for the Bethe-Bloch parametrization for helium4. Dimension 8, if empty using the default vaules."};
 
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
+  // Parameters setting from json
+  Configurable<LabeledArray<float>> bbParameters{"bbParameters",
+                                                 {defaultParameters[0], nSpecies, nParameters, particleNames, parameterNames},
+                                                 "Bethe Bloch parameters"};
+  // Parameter setting from input file (including the ccdb)
+  Configurable<std::string> fileParamBbEl{"filePparamBbEl",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for electrons. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbMu{"filePparamBbMu",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for muons. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbPi{"filePparamBbPi",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for pions. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbKa{"filePparamBbKa",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for kaons. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbPr{"filePparamBbPr",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for protons. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbDe{"filePparamBbDe",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for deuterons. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbTr{"filePparamBbTr",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for tritons. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbHe{"filePparamBbHe",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for helium3. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+  Configurable<std::string> fileParamBbAl{"filePparamBbAl",
+                                          "",
+                                          "Parameters for the Bethe-Bloch parametrization for helium4. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
+
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<uint64_t> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
-  // Configuration flags to include and exclude particle hypotheses
-  Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidPi{"pid-pi", -1, {"Produce PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidKa{"pid-ka", -1, {"Produce PID information for the Kaon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidPr{"pid-pr", -1, {"Produce PID information for the Proton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidDe{"pid-de", -1, {"Produce PID information for the Deuterons mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-
-  Configurable<int> pidFullEl{"pid-full-el", -1, {"Produce the FULL PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullMu{"pid-full-mu", -1, {"Produce the FULL PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullPi{"pid-full-pi", -1, {"Produce the FULL PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullKa{"pid-full-ka", -1, {"Produce the FULL PID information for the Kaon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullPr{"pid-full-pr", -1, {"Produce the FULL PID information for the Proton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullDe{"pid-full-de", -1, {"Produce the FULL PID information for the Deuterons mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullTr{"pid-full-tr", -1, {"Produce the FULL PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullHe{"pid-full-he", -1, {"Produce the FULL PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidFullAl{"pid-full-al", -1, {"Produce the FULL PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", -1, "timestamp of the object used to query in CCDB the detector response"};
 
   struct bbParams {
     float bb1 = 0.03209809958934784f;    // Aleph Bethel Bloch parameter 1
@@ -133,13 +126,13 @@ struct lfTpcPid {
     float exp = 2.299999952316284f;      // Exponent of the charge factor
     float res = 0.002f;                  // Resolution
 
-    bool setValues(Configurable<std::vector<float>> cV)
+    bool setValues(std::vector<float> v)
     {
-      std::vector<float> v = static_cast<std::vector<float>>(cV);
-      if (v.size() != 7) {
-        LOG(info) << "Using default for " << cV.name;
+      if (v.size() != 8) {
+        LOG(error) << "The vector of Bethe-Bloch parameters has the wrong size";
         return false;
       }
+      LOG(info) << "Before: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
       bb1 = v[0];
       bb2 = v[1];
       bb3 = v[2];
@@ -148,28 +141,130 @@ struct lfTpcPid {
       mip = v[5];
       exp = v[6];
       res = v[7];
-      LOG(info) << "Setting custom Bethe-Bloch parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res << " for mass hypothesis " << cV.name;
+      LOG(info) << "After: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
       return true;
     }
+
+    bool setValues(const char* particle, const Configurable<LabeledArray<float>>& p)
+    {
+      if (p->get(particle, "Set parameters") < 1.5f) {
+        LOG(info) << "Using default for " << particle << " input vector size " << p->get(particle, "Set parameters") << " < 1.5";
+        return false;
+      }
+      std::vector<float> v{p->get(particle, "bb1"),
+                           p->get(particle, "bb2"),
+                           p->get(particle, "bb3"),
+                           p->get(particle, "bb4"),
+                           p->get(particle, "bb5"),
+                           p->get(particle, "MIP value"),
+                           p->get(particle, "Charge exponent"),
+                           p->get(particle, "Resolution")};
+      LOG(info) << "Setting custom Bethe-Bloch parameters for mass hypothesis " << particle;
+      return setValues(v);
+    }
+
+    bool setValues(TH1F* h)
+    {
+      const int n = h->GetNbinsX();
+      TAxis* axis = h->GetXaxis();
+      std::vector<float> v{static_cast<float>(h->GetBinContent(axis->FindBin("bb1"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("bb2"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("bb3"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("bb4"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("bb5"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("MIP value"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("Charge exponent"))),
+                           static_cast<float>(h->GetBinContent(axis->FindBin("Resolution")))};
+      if (h->GetNbinsX() != n) {
+        LOG(error) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
+        return false;
+      }
+      LOG(info) << "Setting custom Bethe-Bloch parameters from histogram " << h->GetName();
+      return setValues(v);
+    }
+
+    bool setValues(TFile* f)
+    {
+      TH1F* h = nullptr;
+      f->GetObject("hpar", h);
+      if (!h) {
+        LOG(error) << "The input file does not contain the histogram hpar";
+        return false;
+      }
+      LOG(info) << "Setting parameters from file " << f->GetName();
+      return setValues(h);
+    }
+
+    bool setValues(const Configurable<std::string>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdbObj)
+    {
+      if (cfg.value.size() <= 1) {
+        return false;
+      }
+      LOG(info) << "Loading parameters " << cfg.name << " from file " << cfg.value;
+      std::string s = cfg.value;
+      if (s.rfind("ccdb://", 0) == 0) {
+        s.replace(0, 7, "");
+        TH1F* h = ccdbObj->get<TH1F>(s);
+        return setValues(h);
+      }
+      return setValues(TFile::Open(cfg.value.c_str(), "READ"));
+    }
+
   } bbEl, bbMu, bbPi, bbKa, bbPr, bbDe, bbTr, bbHe, bbAl;
 
   template <o2::track::PID::ID id, typename T>
   float BetheBlochLf(const T& track, const bbParams& params)
   {
-    static constexpr float invmass = 1.f / o2::track::pid_constants::sMasses[id];
+    static constexpr float invmass = 1.f / o2::track::pid_constants::sMasses2Z[id];
     static constexpr float charge = o2::track::pid_constants::sCharges[id];
     return params.mip * o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp);
   }
 
-  float BetheBlochEl(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Electron>(track, bbEl); }
-  float BetheBlochMu(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Muon>(track, bbMu); }
-  float BetheBlochPi(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Pion>(track, bbPi); }
-  float BetheBlochKa(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Kaon>(track, bbKa); }
-  float BetheBlochPr(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Proton>(track, bbPr); }
-  float BetheBlochDe(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Deuteron>(track, bbDe); }
-  float BetheBlochTr(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Triton>(track, bbTr); }
-  float BetheBlochHe(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Helium3>(track, bbHe); }
-  float BetheBlochAl(const Trks::iterator& track) { return BetheBlochLf<o2::track::PID::Alpha>(track, bbAl); }
+  template <typename T>
+  float BetheBlochEl(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Electron>(track, bbEl);
+  }
+  template <typename T>
+  float BetheBlochMu(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Muon>(track, bbMu);
+  }
+  template <typename T>
+  float BetheBlochPi(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Pion>(track, bbPi);
+  }
+  template <typename T>
+  float BetheBlochKa(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Kaon>(track, bbKa);
+  }
+  template <typename T>
+  float BetheBlochPr(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Proton>(track, bbPr);
+  }
+  template <typename T>
+  float BetheBlochDe(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Deuteron>(track, bbDe);
+  }
+  template <typename T>
+  float BetheBlochTr(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Triton>(track, bbTr);
+  }
+  template <typename T>
+  float BetheBlochHe(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Helium3>(track, bbHe);
+  }
+  template <typename T>
+  float BetheBlochAl(const T& track)
+  {
+    return BetheBlochLf<o2::track::PID::Alpha>(track, bbAl);
+  }
 
   template <o2::track::PID::ID id, typename T>
   float BetheBlochResolutionLf(const T& track, const bbParams& params)
@@ -181,152 +276,232 @@ struct lfTpcPid {
     const float deltaP = params.res * std::sqrt(dEdx);
     const float bgDelta = track.tpcInnerParam() * (1.f + deltaP) * invmass;
     const float dEdx2 = params.mip * o2::tpc::BetheBlochAleph(bgDelta, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp);
-    return std::abs(dEdx2 - dEdx) / dEdx;
+    return std::abs(dEdx2 - dEdx);
   }
 
-  float BetheBlochResEl(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Electron>(track, bbEl); }
-  float BetheBlochResMu(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Muon>(track, bbMu); }
-  float BetheBlochResPi(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Pion>(track, bbPi); }
-  float BetheBlochResKa(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Kaon>(track, bbKa); }
-  float BetheBlochResPr(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Proton>(track, bbPr); }
-  float BetheBlochResDe(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Deuteron>(track, bbDe); }
-  float BetheBlochResTr(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Triton>(track, bbTr); }
-  float BetheBlochResHe(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Helium3>(track, bbHe); }
-  float BetheBlochResAl(const Trks::iterator& track) { return BetheBlochResolutionLf<o2::track::PID::Alpha>(track, bbAl); }
+  template <typename T>
+  float BetheBlochResEl(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Electron>(track, bbEl);
+  }
+  template <typename T>
+  float BetheBlochResMu(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Muon>(track, bbMu);
+  }
+  template <typename T>
+  float BetheBlochResPi(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Pion>(track, bbPi);
+  }
+  template <typename T>
+  float BetheBlochResKa(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Kaon>(track, bbKa);
+  }
+  template <typename T>
+  float BetheBlochResPr(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Proton>(track, bbPr);
+  }
+  template <typename T>
+  float BetheBlochResDe(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Deuteron>(track, bbDe);
+  }
+  template <typename T>
+  float BetheBlochResTr(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Triton>(track, bbTr);
+  }
+  template <typename T>
+  float BetheBlochResHe(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Helium3>(track, bbHe);
+  }
+  template <typename T>
+  float BetheBlochResAl(const T& track)
+  {
+    return BetheBlochResolutionLf<o2::track::PID::Alpha>(track, bbAl);
+  }
 
   void init(o2::framework::InitContext& initContext)
   {
+    if (doprocessEl || doprocessFullEl) {
+      LOG(info) << "Enabling Electron";
+      bbEl.setValues("El", bbParameters);
+      bbEl.setValues(fileParamBbEl, ccdb);
+    } else {
+      LOG(info) << "Skipping Electron";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfEl") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullEl")) {
+        LOG(fatal) << "Requested Electron table but not enabled in configuration";
+      }
+    }
 
-    bbEl.setValues(paramBbEl);
-    bbMu.setValues(paramBbMu);
-    bbPi.setValues(paramBbPi);
-    bbKa.setValues(paramBbKa);
-    bbPr.setValues(paramBbPr);
-    bbDe.setValues(paramBbDe);
-    bbTr.setValues(paramBbTr);
-    bbHe.setValues(paramBbHe);
-    bbAl.setValues(paramBbAl);
+    if (doprocessMu || doprocessFullMu) {
+      LOG(info) << "Enabling Muon";
+      bbMu.setValues("Mu", bbParameters);
+      bbMu.setValues(fileParamBbMu, ccdb);
+    } else {
+      LOG(info) << "Skipping Muon";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfMu") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullMu")) {
+        LOG(fatal) << "Requested Muon table but not enabled in configuration";
+      }
+    }
 
-    // Checking the tables are requested in the workflow and enabling them
-    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
-      enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
-    };
-    enableFlag("El", pidEl);
-    enableFlag("Mu", pidMu);
-    enableFlag("Pi", pidPi);
-    enableFlag("Ka", pidKa);
-    enableFlag("Pr", pidPr);
-    enableFlag("De", pidDe);
-    enableFlag("Tr", pidTr);
-    enableFlag("He", pidHe);
-    enableFlag("Al", pidAl);
+    if (doprocessPi || doprocessFullPi) {
+      LOG(info) << "Enabling Pion";
+      bbPi.setValues("Pi", bbParameters);
+      bbPi.setValues(fileParamBbPi, ccdb);
+    } else {
+      LOG(info) << "Skipping Pion";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfPi") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullPi")) {
+        LOG(fatal) << "Requested Pion table but not enabled in configuration";
+      }
+    }
 
-    enableFlag("FullEl", pidFullEl);
-    enableFlag("FullMu", pidFullMu);
-    enableFlag("FullPi", pidFullPi);
-    enableFlag("FullKa", pidFullKa);
-    enableFlag("FullPr", pidFullPr);
-    enableFlag("FullDe", pidFullDe);
-    enableFlag("FullTr", pidFullTr);
-    enableFlag("FullHe", pidFullHe);
-    enableFlag("FullAl", pidFullAl);
+    if (doprocessKa || doprocessFullKa) {
+      LOG(info) << "Enabling Kaon";
+      bbKa.setValues("Ka", bbParameters);
+      bbKa.setValues(fileParamBbKa, ccdb);
+    } else {
+      LOG(info) << "Skipping Kaon";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfKa") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullKa")) {
+        LOG(fatal) << "Requested Kaon table but not enabled in configuration";
+      }
+    }
+
+    if (doprocessPr || doprocessFullPr) {
+      LOG(info) << "Enabling Proton";
+      bbPr.setValues("Pr", bbParameters);
+      bbPr.setValues(fileParamBbPr, ccdb);
+    } else {
+      LOG(info) << "Skipping Proton";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfPr") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullPr")) {
+        LOG(fatal) << "Requested Proton table but not enabled in configuration";
+      }
+    }
+
+    if (doprocessDe || doprocessFullDe) {
+      LOG(info) << "Enabling Deuteron";
+      bbDe.setValues("De", bbParameters);
+      bbDe.setValues(fileParamBbDe, ccdb);
+    } else {
+      LOG(info) << "Skipping Deuteron";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfDe") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullDe")) {
+        LOG(fatal) << "Requested Deuteron table but not enabled in configuration";
+      }
+    }
+
+    if (doprocessTr || doprocessFullTr) {
+      LOG(info) << "Enabling Triton";
+      bbTr.setValues("Tr", bbParameters);
+      bbTr.setValues(fileParamBbTr, ccdb);
+    } else {
+      LOG(info) << "Skipping Triton";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfTr") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullTr")) {
+        LOG(fatal) << "Requested Triton table but not enabled in configuration";
+      }
+    }
+
+    if (doprocessHe || doprocessFullHe) {
+      LOG(info) << "Enabling Helium3";
+      bbHe.setValues("He", bbParameters);
+      bbHe.setValues(fileParamBbHe, ccdb);
+    } else {
+      LOG(info) << "Skipping Helium3";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfHe") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullHe")) {
+        LOG(fatal) << "Requested Helium3 table but not enabled in configuration";
+      }
+    }
+
+    if (doprocessAl || doprocessFullAl) {
+      bbAl.setValues("Al", bbParameters);
+      bbAl.setValues(fileParamBbAl, ccdb);
+    } else {
+      LOG(info) << "Skipping Alpha";
+      if (isTableRequiredInWorkflow(initContext, "pidTPCLfAl") || isTableRequiredInWorkflow(initContext, "pidTPCLfFullAl")) {
+        LOG(fatal) << "Requested Alpha table but not enabled in configuration";
+      }
+    }
 
     // Get the parameters
     const std::string path = ccdbPath.value;
-    const auto time = ccdbTimestamp.value;
+    const auto ts = ccdbTimestamp.value;
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    if (time != 0) {
-      LOGP(info, "Initialising TPC PID response for fixed timestamp {}:", time);
-      ccdb->setTimestamp(time);
-    } else {
-      LOGP(info, "Initialising default TPC PID response:");
+    if (ts != 0) {
+      LOGP(info, "Initialising LF TPC PID response for fixed timestamp {}:", ts);
+      ccdb->setTimestamp(ts);
     }
   }
 
-  void process(Coll const& collisions,
-               Trks const& tracks,
-               aod::BCsWithTimestamps const&)
-  {
+#define makeProcess(Particle)                                                                                                               \
+  void process##Particle(Coll const& collisions,                                                                                            \
+                         soa::Join<Trks, aod::pidTPC##Particle> const& tracks,                                                              \
+                         aod::BCsWithTimestamps const&)                                                                                     \
+  {                                                                                                                                         \
+    LOG(debug) << "Filling table for particle: " << #Particle;                                                                              \
+    tablePID##Particle.reserve(tracks.size());                                                                                              \
+    if (bbParameters->get(#Particle, "Use default tiny") >= 1.5f) {                                                                         \
+      for (auto const& trk : tracks) {                                                                                                      \
+        tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                                                 \
+      }                                                                                                                                     \
+    } else {                                                                                                                                \
+      for (auto const& trk : tracks) {                                                                                                      \
+        aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk), \
+                                                              tablePID##Particle);                                                          \
+      }                                                                                                                                     \
+    }                                                                                                                                       \
+  }                                                                                                                                         \
+  PROCESS_SWITCH(lfTpcPid, process##Particle, "Produce a table for the " #Particle " hypothesis", false);
 
-    const uint64_t tracks_size = tracks.size();
+  makeProcess(El);
+  makeProcess(Mu);
+  makeProcess(Pi);
+  makeProcess(Ka);
+  makeProcess(Pr);
+  makeProcess(De);
+  makeProcess(Tr);
+  makeProcess(He);
+  makeProcess(Al);
 
-    auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
-      if (flag.value != 1) {
-        return;
-      }
-      table.reserve(tracks_size);
-    };
-    // Prepare memory for enabled tables
-    reserveTable(pidEl, tablePIDEl);
-    reserveTable(pidMu, tablePIDMu);
-    reserveTable(pidPi, tablePIDPi);
-    reserveTable(pidKa, tablePIDKa);
-    reserveTable(pidPr, tablePIDPr);
-    reserveTable(pidDe, tablePIDDe);
-    reserveTable(pidTr, tablePIDTr);
-    reserveTable(pidHe, tablePIDHe);
-    reserveTable(pidAl, tablePIDAl);
-
-    reserveTable(pidFullEl, tablePIDFullEl);
-    reserveTable(pidFullMu, tablePIDFullMu);
-    reserveTable(pidFullPi, tablePIDFullPi);
-    reserveTable(pidFullKa, tablePIDFullKa);
-    reserveTable(pidFullPr, tablePIDFullPr);
-    reserveTable(pidFullDe, tablePIDFullDe);
-    reserveTable(pidFullTr, tablePIDFullTr);
-    reserveTable(pidFullHe, tablePIDFullHe);
-    reserveTable(pidFullAl, tablePIDFullAl);
-
-    // int lastCollisionId = -1; // Last collision ID analysed
-
-    for (auto const& trk : tracks) {
-      // Loop on Tracks
-      // if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
-      //   lastCollisionId = trk.collisionId();
-      //   const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
-      // }
-      // Check and fill enabled tables
-
-// Tiny tables
-#define doFillTable(Particle)                                                                                                                                \
-  if (pid##Particle.value == 1) {                                                                                                                            \
-    aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk), tablePID##Particle); \
-  }
-
-      doFillTable(El);
-      doFillTable(Mu);
-      doFillTable(Pi);
-      doFillTable(Ka);
-      doFillTable(Pr);
-      doFillTable(De);
-      doFillTable(Tr);
-      doFillTable(He);
-      doFillTable(Al);
-
-#undef doFillTable
+#undef makeProcess
 
 // Full tables
-#define doFillTable(Particle)                                                                                                           \
-  if (pidFull##Particle.value == 1) {                                                                                                   \
-    tablePIDFull##Particle(BetheBlochRes##Particle(trk), (trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk)); \
-  }
+#define makeProcess(Particle)                                                                                 \
+  void processFull##Particle(Coll const& collisions,                                                          \
+                             soa::Join<Trks, aod::pidTPCFull##Particle> const& tracks,                        \
+                             aod::BCsWithTimestamps const&)                                                   \
+  {                                                                                                           \
+    LOG(debug) << "Filling table for particle: " << #Particle;                                                \
+    tablePIDFull##Particle.reserve(tracks.size());                                                            \
+    if (bbParameters->get(#Particle, "Use default full") >= 1.5f) {                                           \
+      for (auto const& trk : tracks) {                                                                        \
+        tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());                       \
+      }                                                                                                       \
+    } else {                                                                                                  \
+      for (auto const& trk : tracks) {                                                                        \
+        tablePIDFull##Particle(BetheBlochRes##Particle(trk),                                                  \
+                               (trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk)); \
+      }                                                                                                       \
+    }                                                                                                         \
+  }                                                                                                           \
+  PROCESS_SWITCH(lfTpcPid, processFull##Particle, "Produce a full table for the " #Particle " hypothesis", false);
 
-      doFillTable(El);
-      doFillTable(Mu);
-      doFillTable(Pi);
-      doFillTable(Ka);
-      doFillTable(Pr);
-      doFillTable(De);
-      doFillTable(Tr);
-      doFillTable(He);
-      doFillTable(Al);
+  makeProcess(El);
+  makeProcess(Mu);
+  makeProcess(Pi);
+  makeProcess(Ka);
+  makeProcess(Pr);
+  makeProcess(De);
+  makeProcess(Tr);
+  makeProcess(He);
+  makeProcess(Al);
 
-#undef doFillTable
-    }
-  }
+#undef makeProcess
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
