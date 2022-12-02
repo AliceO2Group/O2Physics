@@ -19,6 +19,9 @@
 #ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
 #define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
 
+#include <string>
+#include <vector>
+
 #include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
@@ -27,8 +30,6 @@
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
 #include "TLorentzVector.h"
-#include <string>
-#include <vector>
 
 using namespace o2::framework;
 
@@ -475,7 +476,7 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
 
   mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiNoCuts"), v0.mPhi());
 
-  if (invMassPhi > fInvMassLowLimit and invMassPhi < fInvMassUpLimit) {
+  if (invMassPhi > fInvMassLowLimit && invMassPhi < fInvMassUpLimit) {
     mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiInvMassCut"), v0.mPhi());
   }
 
@@ -515,15 +516,7 @@ void FemtoWorldPhiSelection::fillPhiQAMass(C const& col, V const& MassPhi, T con
     LOGF(error, "-Something wrong in isSelectedMinimal--\n");
     LOGF(error, "ERROR - Wrong sign for Phi daughters\n");
   }
-
-  // const float invMassPhi = v0.mPhi();
-
   mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiNoCuts"), MassPhi);
-
-  /*
-  if (MassPhi > ConfInvMassLowLimit and MassPhi < ConfInvMassUpLimit) {
-    mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiInvMassCut"), MassPhi);
-  */
 }
 
 /// the CosPA of Phi needs as argument the posXYZ of collisions vertex so we need to pass the collsion as well
