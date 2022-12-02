@@ -2503,8 +2503,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
   }
 
-  //workflow.push_back(adaptAnalysisTask<HfTagSelTracks>(cfgc));
-  //workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTagSelTracks>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc));
 
   const bool doCascades = cfgc.options().get<bool>("doCascades");
   if (doCascades) {
