@@ -94,6 +94,9 @@ class FemtoWorldPhiSelection : public FemtoWorldObjectSelection<float, femtoWorl
   template <typename C, typename V, typename T>
   void fillPhiQA(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
+  template <typename C, typename V, typename T, typename P>
+  void fillPhiQAMass(C const& col, V const& v0, T const& posTrack, T const& negTrack, P const& ConfInvMassLowLimit, P const& ConfInvMassUpLimit);
+
   /// \todo for the moment the PID of the tracks is factored out into a separate field, hence 5 values in total \\ASK: what does it mean?
   template <typename cutContainerType, typename C, typename T>
   std::array<cutContainerType, 5> getCutContainer(C const& col, T const& posTrack, T const& negTrack);
@@ -499,6 +502,26 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
   if (write) {
     mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiDecVtxMax"), v0.mPhi());
   }
+}
+
+template <typename C, typename V, typename T, typename P>
+void FemtoWorldPhiSelection::fillPhiQAMass(C const& col, V const& MassPhi, T const& posTrack, T const& negTrack, P const& ConfInvMassLowLimit, P const& ConfInvMassUpLimit)
+{
+  const auto signPos = posTrack.sign();
+  const auto signNeg = negTrack.sign();
+  if (signPos < 0 || signNeg > 0) {
+    LOGF(error, "-Something wrong in isSelectedMinimal--\n");
+    LOGF(error, "ERROR - Wrong sign for Phi daughters\n");
+  }
+
+  // const float invMassPhi = v0.mPhi();
+
+  mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiNoCuts"), MassPhi);
+
+  /*
+  if (MassPhi > ConfInvMassLowLimit and MassPhi < ConfInvMassUpLimit) {
+    mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiInvMassCut"), MassPhi);
+  */
 }
 
 /// the CosPA of Phi needs as argument the posXYZ of collisions vertex so we need to pass the collsion as well
