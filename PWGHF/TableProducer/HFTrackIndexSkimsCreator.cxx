@@ -841,6 +841,8 @@ struct HfTrackIndexSkimsCreator {
   Produces<aod::HfCutStatusProng3> rowProng3CutStatus;
   Produces<aod::HfPvRefitProng3> rowProng3PVrefit;
 
+  Configurable<bool> OnlySelTables{"OnlySelTables", false, "Perform only event and track selection in this taks"};
+
   // Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
   Configurable<bool> debug{"debug", false, "debug mode"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
@@ -1438,8 +1440,10 @@ struct HfTrackIndexSkimsCreator {
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     SelectedTracks const& tracks,
     BigTracks const& tracksUnfiltered)
-  {
-
+  {  
+    if(OnlySelTables){
+      return;
+    }
     // can be added to run over limited collisions per file - for tesing purposes
     /*
     if (nCollsMax > -1){
@@ -2146,6 +2150,8 @@ struct HfTrackIndexSkimsCreator {
 struct HfTrackIndexSkimsCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
+  Configurable<bool> OnlySelTables{"OnlySelTables", false, "Perform only event and track selection in this taks"};
+
   // whether to do or not validation plots
   Configurable<bool> doValPlots{"doValPlots", true, "fill histograms"};
 
@@ -2269,6 +2275,9 @@ struct HfTrackIndexSkimsCreatorCascades {
 #endif
                ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
+    if(OnlySelTables){
+      return;
+    }
 
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -2494,8 +2503,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
   }
 
-  workflow.push_back(adaptAnalysisTask<HfTagSelTracks>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc));
+  //workflow.push_back(adaptAnalysisTask<HfTagSelTracks>(cfgc));
+  //workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc));
 
   const bool doCascades = cfgc.options().get<bool>("doCascades");
   if (doCascades) {

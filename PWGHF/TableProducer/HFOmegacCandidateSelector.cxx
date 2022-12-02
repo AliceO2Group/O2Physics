@@ -32,6 +32,17 @@ using namespace o2::aod::hf_sel_omegac;
 struct HFOmegacCandidateSelector {
   Produces<aod::HFSelOmegacCandidate> hfSelOmegacCandidate;
 
+  //LF analysis selections
+  //zPV -> can be already set in HFeventselection -> 10 cm
+  //sel8 -> can be already set in HFeventselection -> true
+  Configurable<double> CascRadius{"CascRadius", 0.5, "Min cascade radius"};
+  Configurable<double> V0Radius{"V0Radius", 2, "Min V0 radius"};
+  Configurable<double> V0CosPA{"V0CosPA", 0.95, "Cos PA V0"};
+  Configurable<double> CascCosPA{"CascCosPA", 0.95, "Cos PA cascade"};
+  Configurable<double> dcaCascDau{"dcaCascDau", 5.0, "Max DCA cascade daughters"};
+  Configurable<double> dcaV0Dau{"dcaV0Dau", 5.0, "Max DCA V0 daughters"};
+  Configurable<double> dcaOmegacDau{"dcaOmegacDau", 5.0, "Max DCA omegac daughters"};
+
   //limit charm baryon invariant mass spectrum
   Configurable<double> LowerLimitSpectrum{"LowerLimitSpectrum", 2.4, "Lower limit invariant mass spectrum charm baryon"};
   Configurable<double> UpperLimitSpectrum{"UpperLimitSpectrum", 3.0, "Upper limit invariant mass spectrum charm baryon"};
@@ -40,6 +51,8 @@ struct HFOmegacCandidateSelector {
   Configurable<double> EtaMax{"EtaMax", 0.8, "Max absolute value of eta"};
   Configurable<double> pTMinPiFromCasc{"pTMinPiFromCasc", 0.15, "Min pT pi <- casc"};
   Configurable<double> pTMinPiFromOme{"pTMinPiFromOme", 0.2, "Min pT pi <- omegac"};
+  Configurable<double> PrimPiMindcaxyMin{"PrimPiMindcaxyMin", 0., "Min dcaxy primary pi track to PV"};
+  Configurable<double> PrimPiMindcaxyMax{"PrimPiMindcaxyMax", 10., "Max dcaxy primary pi track to PV"};
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> d_pTCandMax{"d_pTCandMax", 50., "Upper bound of candidate pT"};
@@ -66,7 +79,7 @@ struct HFOmegacCandidateSelector {
   Configurable<double> rangeinvmassomegac{"rangeinvmassomegac", 0.3, "Invariant mass range for omegac (sigma)"};
 
   //detector clusters selections
-  Configurable<int> tpcClusters{"tpcClusters", 50, "Minimum number of TPC clusters requirement"};
+  Configurable<int> tpcClusters{"tpcClusters", 70, "Minimum number of TPC clusters requirement"};
   Configurable<int> tpcCrossedRows{"tpcCrossedRows", 70, "Minimum number of TPC crossed rows requirement"};
   Configurable<double> tpcCrossedRowsOverFindableClustersRatio{"tpcCrossedRowsOverFindableClustersRatio", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
   Configurable<int> itsClusters{"itsClusters", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
@@ -157,6 +170,38 @@ struct HFOmegacCandidateSelector {
         continue;
       }
 
+      //minimum radius cut (LFcut)
+      if(RecoDecay::sqrtSumOfSquares(candidate.xdecayvtxcascade(), candidate.ydecayvtxcascade())<CascRadius){
+        continue;
+      }
+      if(RecoDecay::sqrtSumOfSquares(candidate.xdecayvtxv0(), candidate.ydecayvtxv0())<V0Radius){
+        continue;
+      }
+      //cosPA (LFcut)
+      if(candidate.cospacasc() < CascCosPA){
+        continue;
+      }
+      if(candidate.cospav0() < V0CosPA){
+        continue;
+      }
+      //cascade and v0 daughters dca cut (LF cut)
+      if(candidate.dcacascdau() > dcaCascDau){
+        continue;
+      }
+      if(candidate.dcav0dau() > dcaV0Dau){
+        continue;
+      }
+
+      //dca omegac daughters cut
+      if(candidate.dcaomegacdau() > dcaOmegacDau){
+        continue;
+      }
+
+      //cut on primary pion dcaXY
+      if((candidate.dcaxytopvprimarypi() < PrimPiMindcaxyMin) || (candidate.dcaxytopvprimarypi() > PrimPiMindcaxyMax)){
+        continue;
+      }
+
       //pT selections
       double ptpifromcasc = sqrt((candidate.pxpifromcascatprod()*candidate.pxpifromcascatprod())+(candidate.pypifromcascatprod()*candidate.pypifromcascatprod()));
       double ptpifromome = sqrt((candidate.pxprimarypiatprod()*candidate.pxprimarypiatprod())+(candidate.pyprimarypiatprod()*candidate.pyprimarypiatprod()));
@@ -171,20 +216,20 @@ struct HFOmegacCandidateSelector {
       if(trackPiFromOmeg.tpcNClsFound() < tpcClusters){  //Clusters found in TPC
         continue;
       }
-      /*if(trackPiFromLam.tpcNClsFound() < tpcClusters){
+      if(trackPiFromLam.tpcNClsFound() < tpcClusters){ //LF cut in cascadeanalysis.cxx
         continue;
       }
-      if(trackPrFromLam.tpcNClsFound() < tpcClusters){
+      if(trackPrFromLam.tpcNClsFound() < tpcClusters){ //LF cut in cascadeanalysis.cxx
         continue;
       }
-      if(trackPiFromCasc.tpcNClsFound() < tpcClusters){
+      if(trackPiFromCasc.tpcNClsFound() < tpcClusters){ //LF cut in cascadeanalysis.cxx
         continue;
-      }*/
+      }
 
       if(trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows){ //Crossed rows found in TPC
         continue;
       }
-      /*if(trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRows){
+      if(trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRows){
         continue;
       }
       if(trackPrFromLam.tpcNClsCrossedRows() < tpcCrossedRows){
@@ -192,7 +237,7 @@ struct HFOmegacCandidateSelector {
       }
       if(trackPiFromCasc.tpcNClsCrossedRows() < tpcCrossedRows){
         continue;
-      }*/
+      }
 
       if(trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){ //Crossed rows over findable clusters in TPC
         continue;
@@ -207,11 +252,14 @@ struct HFOmegacCandidateSelector {
         continue;
       }*/
 
-      //ITS clusters selection for primary pi (see O2Physics/DPG/Tasks/AOTTrack/qaEventTrack.h)
+      //ITS clusters selection (see O2Physics/DPG/Tasks/AOTTrack/qaEventTrack.h)
       if(trackPiFromOmeg.itsNCls() < itsClusters){  //Clusters found in ITS
         continue;
       }
       if(trackPiFromOmeg.itsNClsInnerBarrel() < itsClustersInnBarr){  //Clusters found in the inner barrel of the ITS
+        continue;
+      }
+      if(trackPiFromCasc.itsNCls() < itsClusters){ 
         continue;
       }
 

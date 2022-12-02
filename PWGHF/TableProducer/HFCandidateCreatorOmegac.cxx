@@ -52,23 +52,12 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 }
 
 #include "Framework/runDataProcessing.h"
-using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
 
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorOmegac {
   Produces<aod::HfCandOmegacBase> rowCandidateBase; //produced table
 
   // - - - - - - - - - - CONFIGURABLES - - - - - - - - - -
-  //event selection
-  Configurable<bool> EventSel8Selection{"EventSel8Selection", true, "Select good events Run3"};
-  Configurable<double> zMaxPV{"zMaxPV", 100., "Abs value of max z PV"}; //cm
-  Configurable<int> nContribMin{"nContribMin", 0, "Min number of contributors to primary-vertex reconstruction"};
-  Configurable<double> chi2Max{"chi2Max", -1, "Max chi^2 of primary-vertex reconstruction"}; 
-
-  //pi <- Omegac track selection
-  Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", true, "Apply GlobalTrack selections for pi <- Omegac"}; //seeO2Physics/Common/Core/TrackSelectionDefaults.cxx, mincrossedrowsTPC = 70 already implemented here
-  Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", false, "Apply GlobalTrack selections except for DCA upper limit cut for pi <- Omegac"};
-  Configurable<double> ptMinBachelorPion{"ptMinBachelorPion", 0.1, "Min pt track pion <- Omegac"};
 
   //Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", false, "create tracks version propagated to PCA"};
@@ -82,12 +71,14 @@ struct HfCandidateCreatorOmegac {
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
   Configurable<bool> useabsdca{"useabsdca", true, "use absolute DCA for vertexing"};
+  Configurable<bool> useweightedpca{"useweightedpca", false, "vertices use cov matrices"};
   Configurable<bool> b_refitwithmatcorr{"b_refitwithmatcorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   /*
   UseAbsDCA:
   TRUE -> simple average of tracks position propagated to respective X_dca parameters and rotated to the lab. frame
   FALSE -> weighted (by tracks covariances) average of tracks position propagated to respective X_dca parameters and rotated to the lab. frame
   */
+  Configurable<bool> RejDiffCollTrack{"RejDiffCollTrack", true, "Reject tracks coming from different collisions"};
 
   //magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -114,7 +105,6 @@ struct HfCandidateCreatorOmegac {
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hMassOmegacNotFixed{TH1F("hMassOmegacNotFixed", "hMassOmegacNotFixed;invmass;entries", 500, 2.2, 3.1)};
 
-
    // - - - - - - - - - - FLAGS - - - - - - - - - -
   /*Using flags in filters (for example d_selectionFlagXic): first define the filter with the flag, then specify in the tables taken as arguments in process: process(soa::Filtered<nometabella>), 
   by doing so I will automatically take from the table <nometabella> only the elements that satisfy the condition specified in the filter. Example:
@@ -133,12 +123,15 @@ struct HfCandidateCreatorOmegac {
     runNumber = 0;
   }
 
+  //filter to use only HF selected collisions
+  Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0); 
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
 
-  //using CollSelIter = soa::Join<aod::Collision, aod::EvSel>; //iterators
-  using CollSel = soa::Join<aod::Collisions, aod::EvSels>; //tables
+  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>; //TrackSelection contains info about Nclusters in detectors
 
   // - - - - - - - - - - PROCESS - - - - - - - - - -
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  void process(SelectedCollisions::iterator const& collision,
+               //soa::Join<aod::Collisions, aod::HFSelCollision>::iterator const& collision,
                //aod::Collision const& collision,
                aod::BCsWithTimestamps const& bcWithTimeStamps,
                aod::CascDataExt const& cascades,
@@ -147,20 +140,6 @@ struct HfCandidateCreatorOmegac {
                aod::V0sLinked const&)      //since I giveas input the iterator over collisions, the process function will be called per collision (and so will loop over the cascade of each collision)
                
   { 
-
-    //event selection
-    if(abs(collision.posZ()) > zMaxPV){
-      return;
-    }
-    if(collision.numContrib() < nContribMin){
-      return;
-    }
-    if(chi2Max > 0. && collision.chi2() > chi2Max){
-      return;
-    }
-    if(EventSel8Selection && !collision.sel8()){    
-      return;
-    } 
 
     //set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -176,6 +155,7 @@ struct HfCandidateCreatorOmegac {
     df.setMinParamChange(d_minparamchange);
     df.setMinRelChi2Change(d_minrelchi2change);
     df.setUseAbsDCA(useabsdca);
+    df.setWeightedFinalPCA(useweightedpca);
     df.setRefitWithMatCorr(b_refitwithmatcorr);
 
     // 2-prong vertex fitter to build the cascade vertex
@@ -187,6 +167,7 @@ struct HfCandidateCreatorOmegac {
     dfc.setMinParamChange(d_minparamchange);
     dfc.setMinRelChi2Change(d_minrelchi2change);
     dfc.setUseAbsDCA(useabsdca);
+    dfc.setWeightedFinalPCA(useweightedpca);
     dfc.setRefitWithMatCorr(b_refitwithmatcorr);
 
     // 2-prong vertex fitter to build the V0 vertex
@@ -198,6 +179,7 @@ struct HfCandidateCreatorOmegac {
     dfv.setMinParamChange(d_minparamchange);
     dfv.setMinRelChi2Change(d_minrelchi2change);
     dfv.setUseAbsDCA(useabsdca);
+    dfv.setWeightedFinalPCA(useweightedpca);
     dfv.setRefitWithMatCorr(b_refitwithmatcorr);
     //INFO aboout DCA fitter: AliceO2/Detectors/Vertexing/include/DetectorsVertexing/DCAFitterN.h 
 
@@ -224,6 +206,16 @@ struct HfCandidateCreatorOmegac {
       LOGF(info, "Process cascade %d with V0 daughter %d and charged daughter %d ", casc.globalIndex(), casc.v0Id(), casc.index0Id());
       LOGF(info, "Process V0 (V0Id %d) daughters %d (pos) and %d (neg) ", casc.v0Id(), trackv0dau0.globalIndex(), trackv0dau1.globalIndex());
       */
+     
+     //check that particles come from the same collision
+    if(RejDiffCollTrack){
+     if(trackv0dau0.collisionId() != trackv0dau1.collisionId()){
+      continue;
+     } 
+     if(trackxidaucharged.collisionId() != trackv0dau0.collisionId()) {
+      continue;
+     }
+    }
 
 //--------------------------reconstruct V0--------------------------------------
 
@@ -275,6 +267,7 @@ struct HfCandidateCreatorOmegac {
       //create V0 track
       auto trackV0 = o2::dataformats::V0(dfv.getPCACandidatePos(), pvecV0_m, dfv.calcPCACovMatrixFlat(), trackParCovV0Dau0, trackParCovV0Dau1, {0, 0}, {0, 0});
       //see  AliceO2/DataFormats/Reconstruction/include/ReconstructionDataFormats/V0.h 
+      auto trackV0_copy = trackV0;
 
 //-----------------------------reconstruct cascade------------------------------
 
@@ -324,20 +317,8 @@ struct HfCandidateCreatorOmegac {
 
       for (auto& trackpion : tracks) {
 
-        //cut on primary pion pT
-        if (trackpion.pt() < ptMinBachelorPion) { 
+        if((RejDiffCollTrack) && (trackxidaucharged.collisionId() != trackpion.collisionId())) {
           continue;
-        }
-
-        //check on global track
-        if (useIsGlobalTrack) {
-          if (trackpion.isGlobalTrack() != (uint8_t) true) {
-            continue;
-          }
-        } else if (useIsGlobalTrackWoDCA) {
-          if (trackpion.isGlobalTrackWoDCA() != (uint8_t) true) {
-            continue;
-          }
         }
 
         //ask for opposite sign daughters (omegac daughters)
@@ -396,12 +377,20 @@ struct HfCandidateCreatorOmegac {
         auto primaryVertex = getPrimaryVertex(collision);
         trackomegac.propagateToDCA(primaryVertex, magneticField, &impactParameterOmegac);
 
-        //impact parameter omegac daughters
+        //impact parameter
         auto covMatrixPV = primaryVertex.getCov();
         o2::dataformats::DCA impactParameterCasc; //impact parameter cascade
         o2::dataformats::DCA impactParameterPrimaryPi; //impact parameter pion
+        o2::dataformats::DCA impactParameterV0; //inpact parameter V0
         trackcasc_copy.propagateToDCA(primaryVertex, magneticField, &impactParameterCasc);
         trackParVarPi_copy.propagateToDCA(primaryVertex, magneticField, &impactParameterPrimaryPi);
+        trackV0_copy.propagateToDCA(primaryVertex, magneticField, &impactParameterV0);
+
+        //DCAxy
+        double dcaxyprimarypi = trackpion.dcaXY();
+        double dcaxyv0dau0 = trackv0dau0.dcaXY();
+        double dcaxyv0dau1 = trackv0dau1.dcaXY();
+        double dcaxycascdau = trackxidaucharged.dcaXY();
 
         //get uncertainty of the decay length
         double phi, theta;
@@ -448,11 +437,16 @@ struct HfCandidateCreatorOmegac {
           m_omegac = sqrt(m2_omegac);
         }*/
 
-        //computing cosPA for neutral particles
+        //computing cosPA
         double cpa_V0 = RecoDecay::cpa(coordvtx_casc, coordvtx_v0, pvecV0_m);
         double cpa_omegac = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, coordvtx_omegac, pvecomegac);
         double cpaxy_V0 = RecoDecay::cpaXY(coordvtx_casc, coordvtx_v0, pvecV0_m);
         double cpaxy_omegac = RecoDecay::cpaXY(array{collision.posX(), collision.posY(), collision.posZ()}, coordvtx_omegac, pvecomegac);
+        double cpa_casc = RecoDecay::cpa(coordvtx_omegac, coordvtx_casc, pveccasc_d); 
+        double cpaxy_casc = RecoDecay::cpaXY(coordvtx_omegac, coordvtx_casc, pveccasc_d);
+        //NOTE COSPACASC:
+        //calcolato rispetto al PV o al decay vtxcasc: non vedro' mai (per motivi di risoluzione) il vertice della omegac,quindi puntare la xi all'omegac o al PV non fa molta differenza
+        //posso considerare la traccia della xi come una retta anziche' una curva (approssimazione), quindi usare momento alla produzione o al decadimento non dovrebbe fare grossa differenza
 
         //computing decay length and ctau
         double declen_omegac = RecoDecay::distance(array{collision.posX(), collision.posY(), collision.posZ()}, coordvtx_omegac);
@@ -466,6 +460,11 @@ struct HfCandidateCreatorOmegac {
         double pseudorap_omegac = RecoDecay::eta(pvecomegac);
         double pseudorap_cascade = RecoDecay::eta(pveccasc_d);
         double pseudorap_v0 = RecoDecay::eta(pvecV0_m);
+
+        //DCA between cascade daughters (from LF table)
+        double cascdaudca = dfc.getChi2AtPCACandidate();
+        double v0daudca = dfv.getChi2AtPCACandidate();
+        double omegacdaudca = df.getChi2AtPCACandidate();
 
         //fill test histograms
         
@@ -490,7 +489,8 @@ struct HfCandidateCreatorOmegac {
                          pvecV0Dau1[0], pvecV0Dau1[1], pvecV0Dau1[2],
                          impactParameterCasc.getY(), impactParameterPrimaryPi.getY(),  //questo dovrebbe essere nel piano (x,y), non solo nella direzione y, vero? si
                          impactParameterCasc.getZ(), impactParameterPrimaryPi.getZ(),
-                         std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPrimaryPi.getSigmaY2()),
+                         impactParameterV0.getY(), impactParameterV0.getZ(),
+                         std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPrimaryPi.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                          v0element.globalIndex(),
                          v0element.posTrackId(), v0element.negTrackId(),
                          casc.globalIndex(), 
@@ -499,12 +499,13 @@ struct HfCandidateCreatorOmegac {
                          impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
                          hfFlag, ptprimarypi,
                          m_lambda, m_antilambda, m_cascade, m_omegac,
-                         cpa_V0, cpa_omegac, cpaxy_V0, cpaxy_omegac,
+                         cpa_V0, cpa_omegac, cpa_casc, cpaxy_V0, cpaxy_omegac, cpaxy_casc,
                          ct_omegac, ct_cascade, ct_V0,
                          pseudorap_v0posdau, pseudorap_v0negdau, pseudorap_pifromcas, pseudorap_pifromome,
                          pseudorap_omegac, pseudorap_cascade, pseudorap_v0,
                          my_mlambda, m_cascade_notfixed, m_omegac_notfixed,
-                         vertexCascLFtable[0], vertexCascLFtable[0], vertexCascLFtable[0], m_casclf
+                         vertexCascLFtable[0], vertexCascLFtable[0], vertexCascLFtable[0], m_casclf, dcaxyprimarypi, dcaxyv0dau0, dcaxyv0dau1, dcaxycascdau,
+                         cascdaudca, v0daudca, omegacdaudca
                          ); 
                          
       } // loop over pions
@@ -647,7 +648,3 @@ NOTE:
 
 - for function computing momentum, cos(PA), ctau... see O2Physics/Common/Core/RecoDecay.h & trackUtilities.h
 */
-
-//TO CHECK:
-//- getPCACandidatePos restituisce coordinate cilindriche o cartesiane?
-//- quale momento usare per calcolare ctau della cascade (e' carica!)
