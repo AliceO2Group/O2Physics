@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -32,9 +34,7 @@
 #include <TH3.h>
 #include <TProfile3D.h>
 
-#include <cmath>
-
-#include "dptdptfilter.h"
+#include "PWGCF/TableProducer/dptdptfilter.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,7 +72,6 @@ const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"}
 //============================================================================================
 // The DptDptFilter output objects
 //============================================================================================
-std::string fTaskConfigurationString = "PendingToConfigure";
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
@@ -226,7 +225,7 @@ struct DptDptFilter {
 
     float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                               (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-    if (traceDCAOutliers.mDoIt and (traceDCAOutliers.mLowValue < dcaxy) and (dcaxy < traceDCAOutliers.mUpValue)) {
+    if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
       fhTrueDCAxyBid->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
     }
 
@@ -246,7 +245,7 @@ struct DptDptFilter {
       fhTruePhiA->Fill(particle.phi());
       float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-      if (traceDCAOutliers.mDoIt and (traceDCAOutliers.mLowValue < dcaxy) and (dcaxy < traceDCAOutliers.mUpValue)) {
+      if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
         LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
              particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
         LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
@@ -306,7 +305,7 @@ struct DptDptFilter {
     }
     bool doublematch = false;
     if (min_nsigma < 3.0) {
-      for (int sp = 0; (sp < kDptDptNoOfSpecies) and not doublematch; ++sp) {
+      for (int sp = 0; (sp < kDptDptNoOfSpecies) && !doublematch; ++sp) {
         if (sp != sp_min_nsigma) {
           if (nsigmas[sp] < 3.0) {
             doublematch = true;
@@ -449,7 +448,7 @@ struct DptDptFilter {
     fOutputList->Add(new TParameter<Int_t>("TrackOneCharge", trackonecharge, 'f'));
     fOutputList->Add(new TParameter<Int_t>("TrackTwoCharge", tracktwocharge, 'f'));
 
-    if ((fDataType == kData) or (fDataType == kDataNoEvtSel) or (fDataType == kMC)) {
+    if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       if (fSystem > kPbp) {
@@ -536,7 +535,7 @@ struct DptDptFilter {
       }
     }
 
-    if ((fDataType != kData) and (fDataType != kDataNoEvtSel)) {
+    if ((fDataType != kData) && (fDataType != kDataNoEvtSel)) {
       /* create the true data histograms */
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       if (fSystem > kPbp) {
@@ -706,7 +705,7 @@ bool DptDptFilter::selectTrack(TrackObject const& track, int64_t colix)
   /* tricky because the boolean columns issue */
   uint8_t asone, astwo;
   AcceptTrack(track, asone, astwo);
-  if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
+  if ((asone == uint8_t(true)) || (astwo == uint8_t(true))) {
     /* the track has been accepted */
     /* let's identify it */
     /* TODO: probably this needs to go inside AcceptTrack */
@@ -762,7 +761,7 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
       /* track selection */
       /* tricky because the boolean columns issue */
       AcceptParticle(particle, mccollision, asone, astwo);
-      if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
+      if ((asone == uint8_t(true)) || (astwo == uint8_t(true))) {
         /* the particle has been accepted */
         /* let's identify the particle */
         MatchRecoGenSpecies sp = IdentifyParticle(particle);
@@ -792,7 +791,7 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
         }
       }
     } else {
-      if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      if ((particle.mcCollisionId() == 0) && traceCollId0) {
         LOGF(info, "Particle %d with fractional charge or equal to zero", particle.globalIndex());
       }
     }
@@ -830,7 +829,7 @@ void DptDptFilter::filterTracks<DptDptFullTracksDetLevel>(DptDptFullTracksDetLev
   int acceptedtracks = 0;
 
   for (auto& track : ftracks) {
-    if (not(track.mcParticleId() < 0)) {
+    if (!(track.mcParticleId() < 0)) {
       /* before track selection */
       if (selectTrack(track, colix)) {
         acceptedtracks++;
@@ -864,7 +863,7 @@ void DptDptFilter::filterTracks<DptDptFullTracksPIDDetLevel>(DptDptFullTracksPID
   int acceptedtracks = 0;
 
   for (auto& track : ftracks) {
-    if (not(track.mcParticleId() < 0)) {
+    if (!(track.mcParticleId() < 0)) {
       /* before track selection */
       if (selectTrack(track, colix)) {
         acceptedtracks++;

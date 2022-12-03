@@ -8,8 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_DPTDPTFILTER_H
-#define O2_ANALYSIS_DPTDPTFILTER_H
+#ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
+#define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
+
+#include <vector>
+#include <string>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -178,7 +181,7 @@ TDatabasePDG* fPDG = nullptr;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
-  if (triggstr.empty() or triggstr == "MB") {
+  if (triggstr.empty() || triggstr == "MB") {
     return kMB;
   } else if (triggstr == "None") {
     return kNONE;
@@ -191,7 +194,7 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 inline SystemType getSystemType(std::string const& sysstr)
 {
   /* we have to figure out how extract the system type */
-  if (sysstr.empty() or (sysstr == "PbPb")) {
+  if (sysstr.empty() || (sysstr == "PbPb")) {
     return kPbPb;
   } else if (sysstr == "pp") {
     return kpp;
@@ -219,7 +222,7 @@ inline SystemType getSystemType(std::string const& sysstr)
 inline DataType getDataType(std::string const& datastr)
 {
   /* we have to figure out how extract the type of data*/
-  if (datastr.empty() or (datastr == "data")) {
+  if (datastr.empty() || (datastr == "data")) {
     return kData;
   } else if (datastr == "datanoevsel") {
     return kDataNoEvtSel;
@@ -393,7 +396,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
   bool centmultsel = false;
   switch (fCentMultEstimator) {
     case kV0M:
-      if (collision.centRun2V0M() < 100 and 0 < collision.centRun2V0M()) {
+      if (collision.centRun2V0M() < 100 && 0 < collision.centRun2V0M()) {
         centmult = collision.centRun2V0M();
         centmultsel = true;
       }
@@ -460,7 +463,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McColli
 template <>
 inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
-  if (centmult < 100 and 0 < centmult) {
+  if (centmult < 100 && 0 < centmult) {
     return true;
   } else {
     return false;
@@ -478,13 +481,13 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
-  if (zvtxlow < collision.posZ() and collision.posZ() < zvtxup) {
+  if (zvtxlow < collision.posZ() && collision.posZ() < zvtxup) {
     zvtxsel = true;
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  return trigsel and zvtxsel and centmultsel;
+  return trigsel && zvtxsel && centmultsel;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -522,11 +525,11 @@ inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if (matchTrackType(track)) {
-    if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
-      if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
+    if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+      if (((track.sign() > 0) && (trackonecharge > 0)) || ((track.sign() < 0) && (trackonecharge < 0))) {
         asone = uint8_t(true);
       }
-      if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
+      if (((track.sign() > 0) && (tracktwocharge > 0)) || ((track.sign() < 0) && (tracktwocharge < 0))) {
         astwo = uint8_t(true);
       }
     }
@@ -556,15 +559,15 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
   if (particle.isPhysicalPrimary()) {
-    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
     if (useOwnParticleSelection) {
       float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
       float dcaz = TMath::Abs(particle.vz() - collision.posZ());
-      if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
-        if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      if (!((dcaxy < particleMaxDCAxy) && (dcaz < particleMaxDCAZ))) {
+        if ((particle.mcCollisionId() == 0) && traceCollId0) {
           LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
           LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
           LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
@@ -576,16 +579,16 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
         return;
       }
     }
-    if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
-      if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
+    if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
+      if (((charge > 0) && (trackonecharge > 0)) || ((charge < 0) && (trackonecharge < 0))) {
         asone = uint8_t(true);
       }
-      if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
+      if (((charge > 0) && (tracktwocharge > 0)) || ((charge < 0) && (tracktwocharge < 0))) {
         astwo = uint8_t(true);
       }
     }
   } else {
-    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
     }
   }
@@ -595,4 +598,4 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
 } // namespace analysis
 } // namespace o2
 
-#endif // O2_ANALYSIS_DPTDPTFILTER_H
+#endif // PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
