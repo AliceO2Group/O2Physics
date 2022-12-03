@@ -143,9 +143,9 @@ int partMultNeg[kDptDptNoOfSpecies]; // multiplicity of negative particles
 using namespace dptdptfilter;
 
 struct DptDptFilter {
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96, 3 = Run3 tracks. Default 1"};
+  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 1"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
-  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
+  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
@@ -451,6 +451,7 @@ struct DptDptFilter {
 
     if ((fDataType == kData) or (fDataType == kDataNoEvtSel) or (fDataType == kMC)) {
       /* create the reconstructed data histograms */
+      /* TODO: proper axes and axes titles according to the system; still incomplete */
       if (fSystem > kPbp) {
         fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", 100, 0, 100);
         fhCentMultA = new TH1F("CentralityA", "Centrality; centrality (%)", 100, 0, 100);
@@ -537,6 +538,7 @@ struct DptDptFilter {
 
     if ((fDataType != kData) and (fDataType != kDataNoEvtSel)) {
       /* create the true data histograms */
+      /* TODO: proper axes and axes titles according to the system; still incomplete */
       if (fSystem > kPbp) {
         fhTrueCentMultB = new TH1F("TrueCentralityB", "Centrality before (truth); centrality (%)", 100, 0, 100);
         fhTrueCentMultA = new TH1F("TrueCentralityA", "Centrality (truth); centrality (%)", 100, 0, 100);

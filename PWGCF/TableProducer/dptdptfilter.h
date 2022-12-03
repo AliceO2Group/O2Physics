@@ -45,8 +45,9 @@ enum SystemType {
   kPbp,          ///< **Pb-p** system
   kPbPb,         ///< **Pb-Pb** system
   kXeXe,         ///< **Xe-Xe** system
-  kppRun3,
-  knSystems ///< number of handled systems
+  kppRun3,       ///< **p-p Run 3** system
+  kPbPbRun3,     ///< **Pb-Pb Run 3** system
+  knSystems      ///< number of handled systems
 };
 
 /// \enum DataType
@@ -97,23 +98,61 @@ int tracktype = 1;
 int trackonecharge = 1;
 int tracktwocharge = -1;
 
-TrackSelection* globalRun3 = nullptr;
-TrackSelection* globalSDDRun3 = nullptr;
+std::vector<TrackSelection*> trackFilters = {};
+bool dca2Dcut = false;
+float maxDCAz = 1e6f;
+float maxDCAxy = 1e6f;
 
 inline void initializeTrackSelection()
 {
   switch (tracktype) {
-    case 3: /* Run3 track */
-      globalRun3 = new TrackSelection(getGlobalTrackSelection());
+    case 1: { /* Run2 global track */
+      TrackSelection* globalRun2 = new TrackSelection(getGlobalTrackSelection());
+      globalRun2->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+      globalRun2->SetMaxChi2PerClusterTPC(2.5f);
+      TrackSelection* globalSDDRun2 = new TrackSelection(getGlobalTrackSelectionSDD());
+      globalSDDRun2->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+      globalSDDRun2->SetMaxChi2PerClusterTPC(2.5f);
+      trackFilters.push_back(globalRun2);
+      trackFilters.push_back(globalSDDRun2);
+    } break;
+    case 3: { /* Run3 track */
+      TrackSelection* globalRun3 = new TrackSelection(getGlobalTrackSelection());
       globalRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
       globalRun3->ResetITSRequirements();
       globalRun3->SetRequireHitsInITSLayers(1, {0, 1, 2});
-      globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
+      TrackSelection* globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
       globalSDDRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
       globalSDDRun3->ResetITSRequirements();
       globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
       globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
-      break;
+      trackFilters.push_back(globalRun3);
+      trackFilters.push_back(globalSDDRun3);
+    } break;
+    case 5: { /* Run2 TPC only track */
+      TrackSelection* tpcOnly = new TrackSelection;
+      tpcOnly->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+      tpcOnly->SetMinNClustersTPC(50);
+      tpcOnly->SetMaxChi2PerClusterTPC(4);
+      tpcOnly->SetMaxDcaZ(3.2f);
+      maxDCAz = 3.2;
+      tpcOnly->SetMaxDcaXY(2.4f);
+      maxDCAxy = 2.4;
+      dca2Dcut = true;
+      trackFilters.push_back(tpcOnly);
+    } break;
+    case 7: { /* Run3 TPC only track */
+      TrackSelection* tpcOnly = new TrackSelection;
+      tpcOnly->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      tpcOnly->SetMinNClustersTPC(50);
+      tpcOnly->SetMaxChi2PerClusterTPC(4);
+      tpcOnly->SetMaxDcaZ(3.2f);
+      maxDCAz = 3.2;
+      tpcOnly->SetMaxDcaXY(2.4f);
+      maxDCAxy = 2.4;
+      dca2Dcut = true;
+      trackFilters.push_back(tpcOnly);
+    } break;
     default:
       break;
   }
@@ -166,6 +205,8 @@ inline SystemType getSystemType(std::string const& sysstr)
     return kXeXe;
   } else if (sysstr == "ppRun3") {
     return kppRun3;
+  } else if (sysstr == "PbPbRun3") {
+    return kPbPbRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
   }
@@ -249,6 +290,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
       }
       break;
     case kppRun3:
+    case kPbPbRun3:
       switch (fTriggerSelection) {
         case kMB:
           if (collision.sel8()) {
@@ -330,6 +372,7 @@ inline float extractMultiplicity(CollisionObject const& collision)
       mult = collision.multFV0M();
       break;
     case kppRun3:
+    case kPbPbRun3:
       /* for the time being let's extract T0M */
       mult = collision.multFT0M();
       break;
@@ -454,24 +497,20 @@ inline bool matchTrackType(TrackObject const& track)
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
   } else {
-    switch (tracktype) {
-      case 1:
-        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-          return true;
+    for (auto filter : trackFilters) {
+      if (filter->IsSelected(track)) {
+        if (dca2Dcut) {
+          if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
+            return false;
+          } else {
+            return true;
+          }
         } else {
-          return false;
-        }
-        break;
-      case 3: /* Run3 track */
-        if (globalRun3->IsSelected(track) || globalSDDRun3->IsSelected(track)) {
           return true;
-        } else {
-          return false;
         }
-        break;
-      default:
-        return false;
+      }
     }
+    return false;
   }
 }
 
