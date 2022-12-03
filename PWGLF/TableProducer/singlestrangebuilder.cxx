@@ -92,14 +92,18 @@ struct singlestrangeBuilder {
   // Configurables related to table creation
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
+  // use auto-detect configuration
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
+  
   // Topological selection criteria
-  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
 
+  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
+  
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 
   // Operation and minimisation criteria
@@ -115,7 +119,7 @@ struct singlestrangeBuilder {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-
+  
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -212,42 +216,97 @@ struct singlestrangeBuilder {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
 
-    // Checking for subscriptions to:
-    // - cascades
-    // - covariance matrices
-    auto& workflows = context.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      if (device.name.compare("cascade-initializer") == 0)
-        continue; // don't listen to the initializer
-      for (auto const& input : device.inputs) {
-        auto enable = [&input](const std::string tablename, Configurable<int>& flag) {
-          const std::string table = tablename;
-          if (input.matcher.binding == table) {
-            if (flag < 0) {
-              flag.value = 1;
-              LOGF(info, "Auto-enabling table: %s (requested by task %s)", table.c_str(), device.name);
-            } else if (flag > 0) {
-              flag.value = 1;
-              LOGF(info, "Table %s already enabled (requested by task %s)", table.c_str(), device.name);
-            } else {
-              LOGF(info, "Table %s disabled", table.c_str());
+    if( d_UseAutodetectMode ){
+      // Checking for subscriptions to:
+      double loosest_v0cospa=100;
+      float loosest_dcav0dau=-100;
+      float loosest_dcapostopv=100;
+      float loosest_dcanegtopv=100;
+      float loosest_radius=100;
+      
+      double detected_v0cospa=-100;
+      float detected_dcav0dau=-100;
+      float detected_dcapostopv=100;
+      float detected_dcanegtopv=100;
+      float detected_radius=100;
+      
+      LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+      LOGF(info, " Single-strange builder self-configuration");
+      LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+      auto& workflows = context.services().get<RunningWorkflowInfo const>();
+      for (DeviceSpec const& device : workflows.devices) {
+        //Step 1: check if this device subscribed to the V0data table
+        for (auto const& input : device.inputs) {
+          if (device.name.compare("lambdakzero-initializer") == 0)
+            continue; // don't listen to the initializer, it's just to extend stuff
+          const std::string v0DataName = "V0Datas";
+          if (input.matcher.binding == v0DataName && device.name.compare("multistrange-builder") != 0){
+            LOGF(info, "Device named %s has subscribed to V0datas table! Will now scan for desired settings...", device.name);
+            for (auto const& option : device.options) {
+              //5 V0 topological selections
+              if(option.name.compare("v0setting_cospa") == 0) {
+                detected_v0cospa = option.defaultValue.get<double>();
+                LOGF(info, "%s requested V0 cospa = %f", device.name, detected_v0cospa);
+                if(detected_v0cospa<loosest_v0cospa)
+                  loosest_v0cospa = detected_v0cospa;
+              }
+              if(option.name.compare("v0setting_dcav0dau") == 0) {
+                detected_dcav0dau = option.defaultValue.get<float>();
+                LOGF(info, "%s requested DCA V0 daughters = %f", device.name, detected_dcav0dau);
+                if(detected_dcav0dau>loosest_dcav0dau)
+                  loosest_dcav0dau = detected_dcav0dau;
+              }
+              if(option.name.compare("v0setting_dcapostopv") == 0) {
+                detected_dcapostopv = option.defaultValue.get<float>();
+                LOGF(info, "%s requested DCA positive daughter to PV = %f", device.name, detected_dcapostopv);
+                if(detected_dcapostopv<loosest_dcapostopv)
+                  loosest_dcapostopv = detected_dcapostopv;
+              }
+              if(option.name.compare("v0setting_dcanegtopv") == 0) {
+                detected_dcanegtopv = option.defaultValue.get<float>();
+                LOGF(info, "%s requested DCA negative daughter to PV = %f", device.name, detected_dcanegtopv);
+                if(detected_dcanegtopv<loosest_dcanegtopv)
+                  loosest_dcanegtopv = detected_dcanegtopv;
+              }
+              if(option.name.compare("v0setting_radius") == 0) {
+                detected_radius = option.defaultValue.get<float>();
+                LOGF(info, "%s requested minimum V0 radius = %f", device.name, detected_radius);
+                if(detected_radius<loosest_radius)
+                  loosest_radius = detected_radius;
+              }
             }
           }
-        };
-        enable("V0Covs", createV0CovMats);
+          const std::string V0CovsName = "V0Covs";
+          if (input.matcher.binding == V0CovsName){
+            LOGF(info, "Device named %s has subscribed to V0Covs table! Enabling.", device.name);
+            createV0CovMats.value = 1;
+          }
+        }
       }
+      LOGF(info, "Self-configuration finished! Decided on selections:");
+      LOGF(info, " -+*> V0 cospa ..............: %.6f", loosest_v0cospa);
+      LOGF(info, " -+*> DCA V0 daughters ......: %.6f", loosest_dcav0dau);
+      LOGF(info, " -+*> DCA positive daughter .: %.6f", loosest_dcapostopv);
+      LOGF(info, " -+*> DCA negative daughter .: %.6f", loosest_dcanegtopv);
+      LOGF(info, " -+*> Minimum V0 radius .....: %.6f", loosest_radius);
+      
+      dcanegtopv.value = loosest_dcanegtopv;
+      dcapostopv.value = loosest_dcapostopv;
+      v0cospa.value = loosest_v0cospa;
+      dcav0dau.value = loosest_dcav0dau;
+      v0radius.value = loosest_radius;
     }
-
+    
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-    LOGF(info, "Strangeness builder configuration:");
+    LOGF(info, " -+*> process call configuration:");
     if (doprocessRun2 == true) {
-      LOGF(info, "Run 2 processing enabled. Will subscribe to Tracks table.");
+      LOGF(info, " ---+*> Run 2 processing enabled. Will subscribe to Tracks table.");
     };
     if (doprocessRun3 == true) {
-      LOGF(info, "Run 3 processing enabled. Will subscribe to TracksIU table.");
+      LOGF(info, " ---+*> Run 3 processing enabled. Will subscribe to TracksIU table.");
     };
     if (createV0CovMats > 0) {
-      LOGF(info, "-> Will produce V0 cov mat table");
+      LOGF(info, " ---+*> Will produce V0 cov mat table");
     };
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 

@@ -87,6 +87,8 @@ struct multistrangeBuilder {
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
+  
   // Configurables related to table creation
   Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
@@ -203,28 +205,98 @@ struct multistrangeBuilder {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
 
-    // Checking for subscriptions
-    auto& workflows = context.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      if (device.name.compare("cascade-initializer") == 0)
-        continue; // don't listen to the initializer
-      for (auto const& input : device.inputs) {
-        auto enable = [&input](const std::string tablename, Configurable<int>& flag) {
-          const std::string table = tablename;
-          if (input.matcher.binding == table) {
-            if (flag < 0) {
-              flag.value = 1;
-              LOGF(info, "Auto-enabling table: %s (requested by task %s)", table.c_str(), device.name);
-            } else if (flag > 0) {
-              flag.value = 1;
-              LOGF(info, "Table %s already enabled (requested by task %s)", table.c_str(), device.name);
-            } else {
-              LOGF(info, "Table %s disabled", table.c_str());
+    if( d_UseAutodetectMode ){
+      // Checking for subscriptions to:
+      double loosest_casccospa=100;
+      float loosest_dcacascdau=-100;
+      float loosest_dcabachtopv=100;
+      float loosest_dcav0topv=100;
+      float loosest_radius=100;
+      float loosest_v0masswindow=-100;
+      
+      double detected_casccospa=100;
+      float detected_dcacascdau=-100;
+      float detected_dcabachtopv=100;
+      float detected_dcav0topv=100;
+      float detected_radius=100;
+      float detected_v0masswindow=-100;
+      
+      LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+      LOGF(info, " Multi-strange builder self-configuration");
+      LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+      auto& workflows = context.services().get<RunningWorkflowInfo const>();
+      for (DeviceSpec const& device : workflows.devices) {
+        //Step 1: check if this device subscribed to the V0data table
+        for (auto const& input : device.inputs) {
+          if (device.name.compare("cascade-initializer") == 0)
+            continue; // don't listen to the initializer, it's just to extend stuff
+          const std::string CascDataName = "CascData";
+          const std::string CascDataExtName = "CascDataExt";
+          if (input.matcher.binding == CascDataName || input.matcher.binding == CascDataExtName){
+            LOGF(info, "Device named %s has subscribed to CascData table! Will now scan for desired settings...", device.name);
+            for (auto const& option : device.options) {
+
+              //5 V0 topological selections + 1 mass
+              if(option.name.compare("cascadesetting_cospa") == 0) {
+                detected_casccospa = option.defaultValue.get<double>();
+                LOGF(info, "%s requested cascade cospa = %f", device.name, detected_casccospa);
+                if(detected_casccospa<loosest_casccospa)
+                  loosest_casccospa = detected_casccospa;
+              }
+              if(option.name.compare("cascadesetting_dcacascdau") == 0) {
+                detected_dcacascdau = option.defaultValue.get<float>();
+                LOGF(info, "%s requested DCA V0 daughters = %f", device.name, detected_dcacascdau);
+                if(detected_dcacascdau>loosest_dcacascdau)
+                  loosest_dcacascdau = detected_dcacascdau;
+              }
+              if(option.name.compare("cascadesetting_dcabachtopv") == 0) {
+                detected_dcabachtopv = option.defaultValue.get<float>();
+                LOGF(info, "%s requested DCA positive daughter to PV = %f", device.name, detected_dcabachtopv);
+                if(detected_dcabachtopv<loosest_dcabachtopv)
+                  loosest_dcabachtopv = detected_dcabachtopv;
+              }
+              if(option.name.compare("cascadesetting_cascradius") == 0) {
+                detected_radius = option.defaultValue.get<float>();
+                LOGF(info, "%s requested DCA negative daughter to PV = %f", device.name, detected_radius);
+                if(detected_radius<loosest_radius)
+                  loosest_radius = detected_radius;
+              }
+              if(option.name.compare("cascadesetting_mindcav0topv") == 0) {
+                detected_dcav0topv = option.defaultValue.get<float>();
+                LOGF(info, "%s requested minimum V0 DCA to PV = %f", device.name, detected_dcav0topv);
+                if(detected_dcav0topv<loosest_dcav0topv)
+                  loosest_dcav0topv = detected_dcav0topv;
+              }
+              if(option.name.compare("cascadesetting_v0masswindow") == 0) {
+                detected_v0masswindow = option.defaultValue.get<float>();
+                LOGF(info, "%s requested minimum V0 mass window (GeV/c^2) = %f", device.name, detected_v0masswindow);
+                if(detected_v0masswindow>loosest_v0masswindow)
+                  loosest_v0masswindow = detected_v0masswindow;
+              }
             }
           }
-        };
-        enable("CascCovs", createCascCovMats);
+          const std::string CascCovsName = "CascCovs";
+          if (input.matcher.binding == CascCovsName){
+            LOGF(info, "Device named %s has subscribed to CascCovs table! Enabling.", device.name);
+            createCascCovMats.value = 1;
+          }
+        }
       }
+      
+      LOGF(info, "Self-configuration finished! Decided on selections:");
+      LOGF(info, " -+*> Cascade cospa ............: %.6f", loosest_casccospa);
+      LOGF(info, " -+*> DCA cascade daughters ....: %.6f", loosest_dcacascdau);
+      LOGF(info, " -+*> DCA bachelor daughter ....: %.6f", loosest_dcabachtopv);
+      LOGF(info, " -+*> Min DCA V0 to PV .........: %.6f", loosest_dcav0topv);
+      LOGF(info, " -+*> Min cascade decay radius .: %.6f", loosest_radius);
+      LOGF(info, " -+*> V0 mass window ...........: %.6f", loosest_v0masswindow);
+      
+      casccospa.value = loosest_casccospa;
+      dcacascdau.value = loosest_dcacascdau;
+      dcabachtopv.value = loosest_dcabachtopv;
+      //dcav0dau.value = loosest_dcav0topv;
+      cascradius.value = loosest_radius;
+      lambdaMassWindow.value = loosest_v0masswindow;
     }
 
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
