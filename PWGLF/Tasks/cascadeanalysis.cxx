@@ -160,7 +160,7 @@ struct cascadeAnalysis {
   Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
   Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  
+
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   //Track quality and type selections
@@ -284,7 +284,7 @@ struct cascadeAnalysis {
     //assign TPC PID compatibility booleans
     bool lCompatiblePID_Xi = (lPIDvalue >> 0 & 1);
     bool lCompatiblePID_Om = (lPIDvalue >> 1 & 1);
-    
+
     if (casc.v0radius() > v0setting_radius &&
         casc.cascradius() > cascadesetting_cascradius &&
         casc.v0cosPA(pvx, pvy, pvz) > v0setting_cospa &&
