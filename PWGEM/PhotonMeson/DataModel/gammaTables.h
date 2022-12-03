@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#ifndef PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
+#define PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
+
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -233,3 +236,5 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 } // namespace o2::aod
+
+#endif
