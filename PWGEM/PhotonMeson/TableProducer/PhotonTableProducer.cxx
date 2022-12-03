@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code loops over a ambiguous track table and produces some standard analysis output.
+// This code produces photon data tables.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include <array>

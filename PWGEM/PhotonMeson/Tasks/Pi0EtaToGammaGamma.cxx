@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code loops over a ambiguous track table and produces some standard analysis output.
+// This code loops over v0 photons and makes pairs for neutral mesons analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include <array>
