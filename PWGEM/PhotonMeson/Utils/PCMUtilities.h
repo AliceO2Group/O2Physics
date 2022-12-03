@@ -12,7 +12,6 @@
 /// \brief commonly used for PCM analyses.
 /// \author daiki.sekihata@cern.ch
 
-
 #ifndef PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 
