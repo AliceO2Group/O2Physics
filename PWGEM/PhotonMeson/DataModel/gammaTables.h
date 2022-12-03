@@ -237,4 +237,4 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 } // namespace o2::aod
 
-#endif  // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
+#endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
