@@ -30,6 +30,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Framework/StaticFor.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 
 #include "TPDGCode.h"
 
@@ -37,6 +38,8 @@ using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+// #define ADDRUN2
 
 // Spectra task
 struct tofSpectra {
@@ -51,7 +54,42 @@ struct tofSpectra {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
-  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, ""};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
+  ConfigurableAxis binsnsigmaTPC{"binsnsigmaTPC", {200, -10, 10}, "Binning of the nsigmaTPC axis"};
+  ConfigurableAxis binsnsigmaTOF{"binsnsigmaTOF", {200, -10, 10}, "Binning of the nsigmaTOF axis"};
+  ConfigurableAxis binsdeltaTPC{"binsdeltaTPC", {500, -1000, 1000}, "Binning of the nsigmaTPC axis"};
+  ConfigurableAxis binsdeltaTOF{"binsdeltaTOF", {500, -1000, 1000}, "Binning of the nsigmaTOF axis"};
+#ifndef ADDRUN2
+  Configurable<bool> doprocessLfTinyEl{"doprocessLfTinyEl", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyMu{"doprocessLfTinyMu", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyPi{"doprocessLfTinyPi", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyKa{"doprocessLfTinyKa", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyPr{"doprocessLfTinyPr", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyDe{"doprocessLfTinyDe", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyTr{"doprocessLfTinyTr", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyHe{"doprocessLfTinyHe", false, "Dummy flag to process tiny with LF tables"};
+  Configurable<bool> doprocessLfTinyAl{"doprocessLfTinyAl", false, "Dummy flag to process tiny with LF tables"};
+
+  Configurable<bool> doprocessTinyRun2El{"doprocessTinyRun2El", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2Mu{"doprocessTinyRun2Mu", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2Pi{"doprocessTinyRun2Pi", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2Ka{"doprocessTinyRun2Ka", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2Pr{"doprocessTinyRun2Pr", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2De{"doprocessTinyRun2De", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2Tr{"doprocessTinyRun2Tr", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2He{"doprocessTinyRun2He", false, "Dummy flag to process tiny Run2"};
+  Configurable<bool> doprocessTinyRun2Al{"doprocessTinyRun2Al", false, "Dummy flag to process tiny Run2"};
+
+  Configurable<bool> doprocessFullRun2El{"doprocessFullRun2El", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2Mu{"doprocessFullRun2Mu", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2Pi{"doprocessFullRun2Pi", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2Ka{"doprocessFullRun2Ka", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2Pr{"doprocessFullRun2Pr", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2De{"doprocessFullRun2De", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2Tr{"doprocessFullRun2Tr", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2He{"doprocessFullRun2He", false, "Dummy flag to process full Run2"};
+  Configurable<bool> doprocessFullRun2Al{"doprocessFullRun2Al", false, "Dummy flag to process full Run2"};
+#endif
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Multiplicity"};
   ConfigurableAxis binsMultPercentile{"binsMultPercentile", {100, 0, 100}, "Multiplicity percentile"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1"};
@@ -76,6 +114,18 @@ struct tofSpectra {
                                                             "nsigmatpc/neg/el", "nsigmatpc/neg/mu", "nsigmatpc/neg/pi",
                                                             "nsigmatpc/neg/ka", "nsigmatpc/neg/pr", "nsigmatpc/neg/de",
                                                             "nsigmatpc/neg/tr", "nsigmatpc/neg/he", "nsigmatpc/neg/al"};
+  static constexpr std::string_view hdeltatof[NpCharge] = {"deltatof/pos/el", "deltatof/pos/mu", "deltatof/pos/pi",
+                                                           "deltatof/pos/ka", "deltatof/pos/pr", "deltatof/pos/de",
+                                                           "deltatof/pos/tr", "deltatof/pos/he", "deltatof/pos/al",
+                                                           "deltatof/neg/el", "deltatof/neg/mu", "deltatof/neg/pi",
+                                                           "deltatof/neg/ka", "deltatof/neg/pr", "deltatof/neg/de",
+                                                           "deltatof/neg/tr", "deltatof/neg/he", "deltatof/neg/al"};
+  static constexpr std::string_view hdeltatpc[NpCharge] = {"deltatpc/pos/el", "deltatpc/pos/mu", "deltatpc/pos/pi",
+                                                           "deltatpc/pos/ka", "deltatpc/pos/pr", "deltatpc/pos/de",
+                                                           "deltatpc/pos/tr", "deltatpc/pos/he", "deltatpc/pos/al",
+                                                           "deltatpc/neg/el", "deltatpc/neg/mu", "deltatpc/neg/pi",
+                                                           "deltatpc/neg/ka", "deltatpc/neg/pr", "deltatpc/neg/de",
+                                                           "deltatpc/neg/tr", "deltatpc/neg/he", "deltatpc/neg/al"};
   static constexpr std::string_view hdcaxy[NpCharge] = {"dcaxy/pos/el", "dcaxy/pos/mu", "dcaxy/pos/pi",
                                                         "dcaxy/pos/ka", "dcaxy/pos/pr", "dcaxy/pos/de",
                                                         "dcaxy/pos/tr", "dcaxy/pos/he", "dcaxy/pos/al",
@@ -211,6 +261,34 @@ struct tofSpectra {
     if (doprocessFullAl) {
       LOG(info) << "Enabling process function processFullAl";
     }
+    // LF Full
+    if (doprocessLfFullEl) {
+      LOG(info) << "Enabling process function processLfFullEl";
+    }
+    if (doprocessLfFullMu) {
+      LOG(info) << "Enabling process function processLfFullMu";
+    }
+    if (doprocessLfFullPi) {
+      LOG(info) << "Enabling process function processLfFullPi";
+    }
+    if (doprocessLfFullKa) {
+      LOG(info) << "Enabling process function processLfFullKa";
+    }
+    if (doprocessLfFullPr) {
+      LOG(info) << "Enabling process function processLfFullPr";
+    }
+    if (doprocessLfFullDe) {
+      LOG(info) << "Enabling process function processLfFullDe";
+    }
+    if (doprocessLfFullTr) {
+      LOG(info) << "Enabling process function processLfFullTr";
+    }
+    if (doprocessLfFullHe) {
+      LOG(info) << "Enabling process function processLfFullHe";
+    }
+    if (doprocessLfFullAl) {
+      LOG(info) << "Enabling process function processLfFullAl";
+    }
     // Tiny
     if (doprocessTinyEl) {
       LOG(info) << "Enabling process function processTinyEl";
@@ -238,6 +316,34 @@ struct tofSpectra {
     }
     if (doprocessTinyAl) {
       LOG(info) << "Enabling process function processTinyAl";
+    }
+    // LF Tiny
+    if (doprocessLfTinyEl) {
+      LOG(info) << "Enabling process function processLfTinyEl";
+    }
+    if (doprocessLfTinyMu) {
+      LOG(info) << "Enabling process function processLfTinyMu";
+    }
+    if (doprocessLfTinyPi) {
+      LOG(info) << "Enabling process function processLfTinyPi";
+    }
+    if (doprocessLfTinyKa) {
+      LOG(info) << "Enabling process function processLfTinyKa";
+    }
+    if (doprocessLfTinyPr) {
+      LOG(info) << "Enabling process function processLfTinyPr";
+    }
+    if (doprocessLfTinyDe) {
+      LOG(info) << "Enabling process function processLfTinyDe";
+    }
+    if (doprocessLfTinyTr) {
+      LOG(info) << "Enabling process function processLfTinyTr";
+    }
+    if (doprocessLfTinyHe) {
+      LOG(info) << "Enabling process function processLfTinyHe";
+    }
+    if (doprocessLfTinyAl) {
+      LOG(info) << "Enabling process function processLfTinyAl";
     }
     // Full Run 2
     if (doprocessFullRun2El) {
@@ -444,96 +550,115 @@ struct tofSpectra {
       switch (i) {
         case 0:
         case Np:
-          if (doprocessFullEl == false && doprocessTinyEl == false) {
+          if (doprocessFullEl == false && doprocessLfFullEl == false && doprocessTinyEl == false && doprocessLfTinyEl == false) {
             continue;
           }
           break;
         case 1:
         case Np + 1:
-          if (doprocessFullMu == false && doprocessTinyMu == false) {
+          if (doprocessFullMu == false && doprocessLfFullMu == false && doprocessTinyMu == false && doprocessLfTinyMu == false) {
             continue;
           }
           break;
         case 2:
         case Np + 2:
-          if (doprocessFullPi == false && doprocessTinyPi == false) {
+          if (doprocessFullPi == false && doprocessLfFullPi == false && doprocessTinyPi == false && doprocessLfTinyPi == false) {
             continue;
           }
           break;
         case 3:
         case Np + 3:
-          if (doprocessFullKa == false && doprocessTinyKa == false) {
+          if (doprocessFullKa == false && doprocessLfFullKa == false && doprocessTinyKa == false && doprocessLfTinyKa == false) {
             continue;
           }
           break;
         case 4:
         case Np + 4:
-          if (doprocessFullPr == false && doprocessTinyPr == false) {
+          if (doprocessFullPr == false && doprocessLfFullPr == false && doprocessTinyPr == false && doprocessLfTinyPr == false) {
             continue;
           }
           break;
         case 5:
         case Np + 5:
-          if (doprocessFullDe == false && doprocessTinyDe == false) {
+          if (doprocessFullDe == false && doprocessLfFullDe == false && doprocessTinyDe == false && doprocessLfTinyDe == false) {
             continue;
           }
           break;
         case 6:
         case Np + 6:
-          if (doprocessFullTr == false && doprocessTinyTr == false) {
+          if (doprocessFullTr == false && doprocessLfFullTr == false && doprocessTinyTr == false && doprocessLfTinyTr == false) {
             continue;
           }
           break;
         case 7:
         case Np + 7:
-          if (doprocessFullHe == false && doprocessTinyHe == false) {
+          if (doprocessFullHe == false && doprocessLfFullHe == false && doprocessTinyHe == false && doprocessLfTinyHe == false) {
             continue;
           }
           break;
         case 8:
         case Np + 8:
-          if (doprocessFullAl == false && doprocessTinyAl == false) {
+          if (doprocessFullAl == false && doprocessLfFullAl == false && doprocessTinyAl == false && doprocessLfTinyAl == false) {
             continue;
           }
           break;
       }
 
-      const AxisSpec nsigmaTPCAxis{200, -10, 10, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
-      const AxisSpec nsigmaTOFAxis{200, -10, 10, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
+      const AxisSpec nsigmaTPCAxis{binsnsigmaTPC, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
+      const AxisSpec nsigmaTOFAxis{binsnsigmaTOF, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
+      const AxisSpec deltaTPCAxis{binsdeltaTPC, Form("#Delta^{TPC}(%s)", pTCharge[i])};
+      const AxisSpec deltaTOFAxis{binsdeltaTOF, Form("#Delta^{TOF}(%s)", pTCharge[i])};
+
       histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
 
       switch (multiplicityEstimator) {
         case 0:
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH2F, {ptAxis, nsigmaTOFAxis});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH2F, {ptAxis, nsigmaTPCAxis});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH2F, {ptAxis, deltaTOFAxis});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2F, {ptAxis, deltaTPCAxis});
           break;
         case 1: // MultFV0M
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultPercentile, "MultFV0M"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultPercentile, "MultFV0M"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultPercentile, "MultFV0M"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultPercentile, "MultFV0M"}});
           break;
         case 2: // MultFT0M
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultPercentile, "MultFT0M"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultPercentile, "MultFT0M"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultPercentile, "MultFT0M"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultPercentile, "MultFT0M"}});
           break;
         case 3: // MultFDDM
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultPercentile, "MultFDDM"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultPercentile, "MultFDDM"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultPercentile, "MultFDDM"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultPercentile, "MultFDDM"}});
           break;
         case 4: // MultTracklets
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultTracklets"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultTracklets"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultTracklets"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultTracklets"}});
           break;
         case 5: // MultTPC
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultTPC"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultTPC"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultTPC"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultTPC"}});
           break;
         case 6: // MultNTracksPV
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultNTracksPV"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultNTracksPV"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultNTracksPV"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultNTracksPV"}});
           break;
         case 7: // MultNTracksPVeta1
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
           break;
         default:
           LOG(fatal) << "Unrecognized option for multiplicity " << multiplicityEstimator;
@@ -617,6 +742,23 @@ struct tofSpectra {
       }
     }
 
+    if constexpr (fillFullInfo) {
+      const auto& deltaTPC = o2::aod::pidutils::tpcExpSignalDiff<id>(track);
+      if (multiplicityEstimator == 0) {
+        if (track.sign() > 0) {
+          histos.fill(HIST(hdeltatpc[id]), track.pt(), deltaTPC);
+        } else {
+          histos.fill(HIST(hdeltatpc[id + Np]), track.pt(), deltaTPC);
+        }
+      } else {
+        if (track.sign() > 0) {
+          histos.fill(HIST(hdeltatpc[id]), track.pt(), deltaTPC, multiplicity);
+        } else {
+          histos.fill(HIST(hdeltatpc[id + Np]), track.pt(), deltaTPC, multiplicity);
+        }
+      }
+    }
+
     if (!track.hasTOF()) {
       return;
     }
@@ -639,6 +781,23 @@ struct tofSpectra {
       histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF);
     } else {
       histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF);
+    }
+
+    if constexpr (fillFullInfo) {
+      const auto& deltaTOF = o2::aod::pidutils::tofExpSignalDiff<id>(track);
+      if (multiplicityEstimator == 0) {
+        if (track.sign() > 0) {
+          histos.fill(HIST(hdeltatof[id]), track.pt(), deltaTOF);
+        } else {
+          histos.fill(HIST(hdeltatof[id + Np]), track.pt(), deltaTOF);
+        }
+      } else {
+        if (track.sign() > 0) {
+          histos.fill(HIST(hdeltatof[id]), track.pt(), deltaTOF, multiplicity);
+        } else {
+          histos.fill(HIST(hdeltatof[id + Np]), track.pt(), deltaTOF, multiplicity);
+        }
+      }
     }
 
     // Filling DCA info with the TPC+TOF PID
@@ -813,26 +972,26 @@ struct tofSpectra {
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processRun2, "Standard process function for the Run2 data", false);
 
-#define makeProcessFunction(processorName, inputPid, particleId, isFull, isRun3)            \
-  void process##processorName##inputPid(CollisionCandidate::iterator const& collision,      \
-                                        soa::Join<TrackCandidates,                          \
-                                                  aod::pidTOFFull##inputPid,                \
-                                                  aod::pidTPCFull##inputPid> const& tracks) \
-  {                                                                                         \
-    if (!isEventSelected<false, false>(collision)) {                                        \
-      return;                                                                               \
-    }                                                                                       \
-    for (const auto& track : tracks) {                                                      \
-      if (!isTrackSelected<false>(track)) {                                                 \
-        continue;                                                                           \
-      }                                                                                     \
-      fillParticleHistos<isFull, isRun3, PID::particleId>(track, collision);                \
-    }                                                                                       \
-  }                                                                                         \
+#define makeProcessFunction(processorName, inputPid, particleId, isFull, isRun3, tofTable, tpcTable) \
+  void process##processorName##inputPid(CollisionCandidate::iterator const& collision,               \
+                                        soa::Join<TrackCandidates,                                   \
+                                                  aod::pid##tofTable##inputPid,                      \
+                                                  aod::pid##tpcTable##inputPid> const& tracks)       \
+  {                                                                                                  \
+    if (!isEventSelected<false, false>(collision)) {                                                 \
+      return;                                                                                        \
+    }                                                                                                \
+    for (const auto& track : tracks) {                                                               \
+      if (!isTrackSelected<false>(track)) {                                                          \
+        continue;                                                                                    \
+      }                                                                                              \
+      fillParticleHistos<isFull, isRun3, PID::particleId>(track, collision);                         \
+    }                                                                                                \
+  }                                                                                                  \
   PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
-#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, true)
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, true, TOFFull, TPCFull)
 
   makeProcessFunctionFull(El, Electron);
   makeProcessFunctionFull(Mu, Muon);
@@ -846,7 +1005,7 @@ struct tofSpectra {
 #undef makeProcessFunctionFull
 
 // Tiny tables
-#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, true)
+#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, true, TOF, TPC)
 
   makeProcessFunctionTiny(El, Electron);
   makeProcessFunctionTiny(Mu, Muon);
@@ -859,9 +1018,40 @@ struct tofSpectra {
   makeProcessFunctionTiny(Al, Alpha);
 #undef makeProcessFunctionTiny
 
-// Full tables (Run2)
-#define makeProcessFunctionFullRun2(inputPid, particleId) makeProcessFunction(FullRun2, inputPid, particleId, true, false)
+// Full LF tables
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, true, TOFFull, TPCLfFull)
 
+  makeProcessFunctionFull(El, Electron);
+  makeProcessFunctionFull(Mu, Muon);
+  makeProcessFunctionFull(Pi, Pion);
+  makeProcessFunctionFull(Ka, Kaon);
+  makeProcessFunctionFull(Pr, Proton);
+  makeProcessFunctionFull(De, Deuteron);
+  makeProcessFunctionFull(Tr, Triton);
+  makeProcessFunctionFull(He, Helium3);
+  makeProcessFunctionFull(Al, Alpha);
+#undef makeProcessFunctionFull
+
+// Tiny tables
+#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(LfTiny, inputPid, particleId, false, true, TOF, TPCLf)
+
+#ifdef ADDRUN2
+  makeProcessFunctionTiny(El, Electron);
+  makeProcessFunctionTiny(Mu, Muon);
+  makeProcessFunctionTiny(Pi, Pion);
+  makeProcessFunctionTiny(Ka, Kaon);
+  makeProcessFunctionTiny(Pr, Proton);
+  makeProcessFunctionTiny(De, Deuteron);
+  makeProcessFunctionTiny(Tr, Triton);
+  makeProcessFunctionTiny(He, Helium3);
+  makeProcessFunctionTiny(Al, Alpha);
+#endif
+#undef makeProcessFunctionTiny
+
+// Full tables (Run2)
+#define makeProcessFunctionFullRun2(inputPid, particleId) makeProcessFunction(FullRun2, inputPid, particleId, true, false, TOFFull, TPCFull)
+
+#ifdef ADDRUN2
   makeProcessFunctionFullRun2(El, Electron);
   makeProcessFunctionFullRun2(Mu, Muon);
   makeProcessFunctionFullRun2(Pi, Pion);
@@ -871,11 +1061,13 @@ struct tofSpectra {
   makeProcessFunctionFullRun2(Tr, Triton);
   makeProcessFunctionFullRun2(He, Helium3);
   makeProcessFunctionFullRun2(Al, Alpha);
+#endif
 #undef makeProcessFunctionFullRun2
 
 // Tiny tables (Run2)
-#define makeProcessFunctionTinyRun2(inputPid, particleId) makeProcessFunction(TinyRun2, inputPid, particleId, false, false)
+#define makeProcessFunctionTinyRun2(inputPid, particleId) makeProcessFunction(TinyRun2, inputPid, particleId, false, false, TOF, TPC)
 
+#ifdef ADDRUN2
   makeProcessFunctionTinyRun2(El, Electron);
   makeProcessFunctionTinyRun2(Mu, Muon);
   makeProcessFunctionTinyRun2(Pi, Pion);
@@ -885,6 +1077,7 @@ struct tofSpectra {
   makeProcessFunctionTinyRun2(Tr, Triton);
   makeProcessFunctionTinyRun2(He, Helium3);
   makeProcessFunctionTinyRun2(Al, Alpha);
+#endif
 #undef makeProcessFunctionTinyRun2
 
   template <std::size_t i, typename T1, typename T2>
