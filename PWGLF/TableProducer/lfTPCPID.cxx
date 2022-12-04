@@ -58,10 +58,143 @@ static constexpr float defaultParameters[nSpecies][nParameters]{{2.f, 2.f, 0.f, 
                                                                 {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
                                                                 {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}};
 
+// Structure to hold the parameters
+struct bbParams {
+  const std::string name;
+  bbParams(const std::string& n) : name(n){};
+  // Parameters for the Bethe-Bloch parametrization
+  float bb1 = 0.03209809958934784f;    // Aleph Bethe Bloch parameter 1
+  float bb2 = 19.9768009185791f;       // Aleph Bethe Bloch parameter 2
+  float bb3 = 2.5266601063857674e-16f; // Aleph Bethe Bloch parameter 3
+  float bb4 = 2.7212300300598145f;     // Aleph Bethe Bloch parameter 4
+  float bb5 = 6.080920219421387f;      // Aleph Bethe Bloch parameter 5
+  float mip = 50.f;                    // MIP value
+  float exp = 2.299999952316284f;      // Exponent of the charge factor
+  float res = 0.1f;                    // Resolution
+
+  // Utility parameters for the usage
+  bool takeFromCcdb = false;
+  std::string ccdbPath = "";
+  int lastRunNumber = 0;
+
+  bool setValues(std::vector<float> v)
+  {
+    if (v.size() != 8) {
+      LOG(error) << "The vector of Bethe-Bloch parameters has the wrong size";
+      return false;
+    }
+    LOG(info) << "Before: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
+    bb1 = v[0];
+    bb2 = v[1];
+    bb3 = v[2];
+    bb4 = v[3];
+    bb5 = v[4];
+    mip = v[5];
+    exp = v[6];
+    res = v[7];
+    LOG(info) << "After: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
+    return true;
+  }
+
+  bool setValues(const char* particle, const Configurable<LabeledArray<float>>& p)
+  {
+    if (p->get(particle, "Set parameters") < 1.5f) {
+      LOG(info) << "Using default for " << particle << " input vector size " << p->get(particle, "Set parameters") << " < 1.5";
+      return false;
+    }
+    std::vector<float> v{p->get(particle, "bb1"),
+                         p->get(particle, "bb2"),
+                         p->get(particle, "bb3"),
+                         p->get(particle, "bb4"),
+                         p->get(particle, "bb5"),
+                         p->get(particle, "MIP value"),
+                         p->get(particle, "Charge exponent"),
+                         p->get(particle, "Resolution")};
+    LOG(info) << "Setting custom Bethe-Bloch parameters for mass hypothesis " << particle;
+    return setValues(v);
+  }
+
+  bool setValues(TH1F* h)
+  {
+    const int n = h->GetNbinsX();
+    TAxis* axis = h->GetXaxis();
+    std::vector<float> v{static_cast<float>(h->GetBinContent(axis->FindBin("bb1"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("bb2"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("bb3"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("bb4"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("bb5"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("MIP value"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("Charge exponent"))),
+                         static_cast<float>(h->GetBinContent(axis->FindBin("Resolution")))};
+    if (h->GetNbinsX() != n) {
+      LOG(error) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
+      return false;
+    }
+    LOG(info) << "Setting custom Bethe-Bloch parameters from histogram " << h->GetName();
+    return setValues(v);
+  }
+
+  bool setValues(TFile* f)
+  {
+    if (!f) {
+      LOG(fatal) << "The input file is not valid";
+    }
+    if (!f->IsOpen()) {
+      LOG(fatal) << "The input file " << f->GetName() << " is not open";
+    }
+    TH1F* h = nullptr;
+    f->GetObject("hpar", h);
+    if (!h) {
+      LOG(error) << "The input file does not contain the histogram hpar";
+      return false;
+    }
+    LOG(info) << "Setting parameters from TH1F " << h->GetName() << " in file " << f->GetName();
+    return setValues(h);
+  }
+
+  bool setValues(const Configurable<std::string>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
+  {
+    if (cfg.value.size() <= 1) {
+      return false;
+    }
+    LOG(info) << "Loading parameters from configurable '" << cfg.name << "' with value '" << cfg.value << "'";
+    std::string s = cfg.value;
+    if (s.rfind("ccdb://", 0) == 0) {
+      s.replace(0, 7, "");
+      ccdbPath = s;
+      if (ccdbObj->getTimestamp() == 0) { // If the timestamp is 0 we expect to get the timestamp from the run number
+        takeFromCcdb = true;
+        LOG(info) << "Asked to query the parameters from the CCDB and got timestamp " << ccdbObj->getTimestamp() << " -> will take the object corresponding to the run number";
+        return false;
+      }
+      TH1F* h = ccdbObj->get<TH1F>(s);
+      return setValues(h);
+    }
+    return setValues(TFile::Open(cfg.value.c_str(), "READ"));
+  }
+
+  /// @brief Function to update the values of the parameters from the CCDB
+  /// @param ccdbObj Managare of the CCDB
+  /// @param timestamp Timestamp to ask the new parameters
+  /// @return false if not succesfull
+  bool updateValues(aod::BCsWithTimestamps::iterator const& bunchCrossing, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
+  {
+    if (!takeFromCcdb) {
+      return false;
+    }
+    if (lastRunNumber == bunchCrossing.runNumber()) {
+      return false;
+    }
+    LOG(info) << "Updating parameters of " << name << " from run number " << lastRunNumber << " to " << bunchCrossing.runNumber() << ". Taking them from CCDB path '" << ccdbPath << "' with timestamp " << bunchCrossing.timestamp();
+    lastRunNumber = bunchCrossing.runNumber();
+    return setValues(ccdbObj->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()));
+  }
+};
+
 /// Task to produce the response table
 struct lfTpcPid {
   using Trks = soa::Join<aod::TracksIU, aod::TracksExtra>;
-  using Coll = aod::Collisions;
+  using Colls = aod::Collisions;
 
   // Tables to produce
   Produces<o2::aod::pidTPCLfEl> tablePIDEl;
@@ -121,110 +254,17 @@ struct lfTpcPid {
                                           "Parameters for the Bethe-Bloch parametrization for helium4. Input file, if empty using the default values, priority over the json configuration. Can be a CCDB path if the string starts with ccdb://"};
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", -1, "timestamp of the object used to query in CCDB the detector response"};
+  Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", -1, "timestamp of the object used to query in CCDB the detector response. If 0 the object corresponding to the run number is used, if < 0 the latest object is used"};
 
-  struct bbParams {
-    float bb1 = 0.03209809958934784f;    // Aleph Bethel Bloch parameter 1
-    float bb2 = 19.9768009185791f;       // Aleph Bethe Bloch parameter 2
-    float bb3 = 2.5266601063857674e-16f; // Aleph Bethe Bloch parameter 3
-    float bb4 = 2.7212300300598145f;     // Aleph Bethe Bloch parameter 4
-    float bb5 = 6.080920219421387f;      // Aleph Bethe Bloch parameter 5
-    float mip = 50.f;                    // MIP value
-    float exp = 2.299999952316284f;      // Exponent of the charge factor
-    float res = 0.002f;                  // Resolution
-
-    bool setValues(std::vector<float> v)
-    {
-      if (v.size() != 8) {
-        LOG(error) << "The vector of Bethe-Bloch parameters has the wrong size";
-        return false;
-      }
-      LOG(info) << "Before: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
-      bb1 = v[0];
-      bb2 = v[1];
-      bb3 = v[2];
-      bb4 = v[3];
-      bb5 = v[4];
-      mip = v[5];
-      exp = v[6];
-      res = v[7];
-      LOG(info) << "After: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
-      return true;
-    }
-
-    bool setValues(const char* particle, const Configurable<LabeledArray<float>>& p)
-    {
-      if (p->get(particle, "Set parameters") < 1.5f) {
-        LOG(info) << "Using default for " << particle << " input vector size " << p->get(particle, "Set parameters") << " < 1.5";
-        return false;
-      }
-      std::vector<float> v{p->get(particle, "bb1"),
-                           p->get(particle, "bb2"),
-                           p->get(particle, "bb3"),
-                           p->get(particle, "bb4"),
-                           p->get(particle, "bb5"),
-                           p->get(particle, "MIP value"),
-                           p->get(particle, "Charge exponent"),
-                           p->get(particle, "Resolution")};
-      LOG(info) << "Setting custom Bethe-Bloch parameters for mass hypothesis " << particle;
-      return setValues(v);
-    }
-
-    bool setValues(TH1F* h)
-    {
-      const int n = h->GetNbinsX();
-      TAxis* axis = h->GetXaxis();
-      std::vector<float> v{static_cast<float>(h->GetBinContent(axis->FindBin("bb1"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("bb2"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("bb3"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("bb4"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("bb5"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("MIP value"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("Charge exponent"))),
-                           static_cast<float>(h->GetBinContent(axis->FindBin("Resolution")))};
-      if (h->GetNbinsX() != n) {
-        LOG(error) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
-        return false;
-      }
-      LOG(info) << "Setting custom Bethe-Bloch parameters from histogram " << h->GetName();
-      return setValues(v);
-    }
-
-    bool setValues(TFile* f)
-    {
-      if (!f) {
-        LOG(fatal) << "The input file is not valid";
-      }
-      if (!f->IsOpen()) {
-        LOG(fatal) << "The input file " << f->GetName() << " is not open";
-      }
-      TH1F* h = nullptr;
-      f->GetObject("hpar", h);
-      if (!h) {
-        LOG(error) << "The input file does not contain the histogram hpar";
-        return false;
-      }
-      LOG(info) << "Setting parameters from TH1F " << h->GetName() << " in file " << f->GetName();
-      return setValues(h);
-    }
-
-    bool setValues(const Configurable<std::string>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdbObj)
-    {
-      if (cfg.value.size() <= 1) {
-        return false;
-      }
-      LOG(info) << "Loading parameters from configurable '" << cfg.name << "' with value '" << cfg.value << "'";
-      std::string s = cfg.value;
-      if (s.rfind("ccdb://", 0) == 0) {
-        s.replace(0, 7, "");
-        TH1F* h = ccdbObj->get<TH1F>(s);
-        return setValues(h);
-      }
-      return setValues(TFile::Open(cfg.value.c_str(), "READ"));
-    }
-
-  } bbEl, bbMu, bbPi, bbKa, bbPr, bbDe, bbTr, bbHe, bbAl;
+  bbParams bbEl{"El"};
+  bbParams bbMu{"Mu"};
+  bbParams bbPi{"Pi"};
+  bbParams bbKa{"Ka"};
+  bbParams bbPr{"Pr"};
+  bbParams bbDe{"De"};
+  bbParams bbTr{"Tr"};
+  bbParams bbHe{"He"};
+  bbParams bbAl{"Al"};
 
   template <o2::track::PID::ID id, typename T>
   float BetheBlochLf(const T& track, const bbParams& params)
@@ -341,6 +381,17 @@ struct lfTpcPid {
   void init(o2::framework::InitContext& initContext)
   {
 
+    // Set up the CCDB
+    const auto ts = ccdbTimestamp.value;
+    ccdb->setURL(url.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    if (ts != 0) {
+      LOGP(info, "Initialising LF TPC PID response for fixed timestamp {}:", ts);
+      ccdb->setTimestamp(ts);
+    }
+
 #define InitPerParticle(Particle)                                                                          \
   if (doprocess##Particle || doprocessFull##Particle) {                                                    \
     LOG(info) << "Enabling " << #Particle;                                                                 \
@@ -369,22 +420,10 @@ struct lfTpcPid {
     InitPerParticle(Al);
 
 #undef InitPerParticle
-
-    // Get the parameters
-    const std::string path = ccdbPath.value;
-    const auto ts = ccdbTimestamp.value;
-    ccdb->setURL(url.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    if (ts != 0) {
-      LOGP(info, "Initialising LF TPC PID response for fixed timestamp {}:", ts);
-      ccdb->setTimestamp(ts);
-    }
   }
 
 #define makeProcess(Particle)                                                                                                               \
-  void process##Particle(Coll const& collisions,                                                                                            \
+  void process##Particle(Colls const& collisions,                                                                                           \
                          soa::Join<Trks, aod::pidTPC##Particle> const& tracks,                                                              \
                          aod::BCsWithTimestamps const&)                                                                                     \
   {                                                                                                                                         \
@@ -395,6 +434,9 @@ struct lfTpcPid {
         tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                                                 \
       }                                                                                                                                     \
     } else {                                                                                                                                \
+      if (bb##Particle.takeFromCcdb) {                                                                                                      \
+        bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                                          \
+      }                                                                                                                                     \
       for (auto const& trk : tracks) {                                                                                                      \
         aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk), \
                                                               tablePID##Particle);                                                          \
@@ -416,26 +458,29 @@ struct lfTpcPid {
 #undef makeProcess
 
 // Full tables
-#define makeProcess(Particle)                                                             \
-  void processFull##Particle(Coll const& collisions,                                      \
-                             soa::Join<Trks, aod::pidTPCFull##Particle> const& tracks,    \
-                             aod::BCsWithTimestamps const&)                               \
-  {                                                                                       \
-    LOG(debug) << "Filling full table for particle: " << #Particle;                       \
-    tablePIDFull##Particle.reserve(tracks.size());                                        \
-    if (bbParameters->get(#Particle, "Use default full") >= 1.5f) {                       \
-      for (auto const& trk : tracks) {                                                    \
-        tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());   \
-      }                                                                                   \
-    } else {                                                                              \
-      float expSigma = 1.f;                                                               \
-      for (auto const& trk : tracks) {                                                    \
-        expSigma = BetheBlochRes##Particle(trk);                                          \
-        tablePIDFull##Particle(expSigma,                                                  \
-                               (trk.tpcSignal() - BetheBloch##Particle(trk)) / expSigma); \
-      }                                                                                   \
-    }                                                                                     \
-  }                                                                                       \
+#define makeProcess(Particle)                                                                      \
+  void processFull##Particle(Colls const& collisions,                                              \
+                             soa::Join<Trks, aod::pidTPCFull##Particle> const& tracks,             \
+                             aod::BCsWithTimestamps const&)                                        \
+  {                                                                                                \
+    LOG(debug) << "Filling full table for particle: " << #Particle;                                \
+    tablePIDFull##Particle.reserve(tracks.size());                                                 \
+    if (bbParameters->get(#Particle, "Use default full") >= 1.5f) {                                \
+      for (auto const& trk : tracks) {                                                             \
+        tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());            \
+      }                                                                                            \
+    } else {                                                                                       \
+      if (bb##Particle.takeFromCcdb) {                                                             \
+        bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
+      }                                                                                            \
+      float expSigma = 1.f;                                                                        \
+      for (auto const& trk : tracks) {                                                             \
+        expSigma = BetheBlochRes##Particle(trk);                                                   \
+        tablePIDFull##Particle(expSigma,                                                           \
+                               (trk.tpcSignal() - BetheBloch##Particle(trk)) / expSigma);          \
+      }                                                                                            \
+    }                                                                                              \
+  }                                                                                                \
   PROCESS_SWITCH(lfTpcPid, processFull##Particle, "Produce a full table for the " #Particle " hypothesis", false);
 
   makeProcess(El);
