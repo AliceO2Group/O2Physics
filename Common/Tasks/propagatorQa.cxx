@@ -37,7 +37,7 @@ struct propagatorQa {
   OutputObj<TH1F> hPt{TH1F("hPt", "hPt", Nbins, 0, 10)};
   OutputObj<TH1F> hPtusedInSVertexer{TH1F("hPtusedInSVertexer", "hPtusedInSVertexer", Nbins, 0, 10)};
 
-  // IU radii
+  // IU radii, also from svertexer
   OutputObj<TH1F> hUpdateRadii{TH1F("hUpdateRadii", "hUpdateRadii", 5000, 0, 100)};
   OutputObj<TH1F> hUpdateRadiiusedInSVertexer{TH1F("hUpdateRadiiusedInSVertexer", "hUpdateRadii", 5000, 0, 100)};
 
