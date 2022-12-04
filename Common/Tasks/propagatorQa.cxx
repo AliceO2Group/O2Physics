@@ -70,18 +70,26 @@ struct propagatorQa {
 
       hdcaXYall->Fill(lDCA);
 
-      // determine if track was used in svertexer
+      //determine if track was used in svertexer
       bool usedInSVertexer = false;
-      bool lPosUsed, lNegUsed, lBachUsed;
+      bool lUsedByV0 = false, lUsedByCascade = false;
       for (auto& V0 : V0s) {
-        lPosUsed = (V0.posTrackId() == track.globalIndex());
-        lNegUsed = (V0.negTrackId() == track.globalIndex());
+        if( V0.posTrackId() == track.globalIndex() ){
+          lUsedByV0 = true;
+          break;
+        }
+        if( V0.negTrackId() == track.globalIndex() ){
+          lUsedByV0 = true;
+          break;
+        }
       }
       for (auto& cascade : cascades) {
-        lBachUsed = (cascade.bachelorId() == track.globalIndex());
+        if( cascade.bachelorId() == track.globalIndex() ){
+          lUsedByCascade = true;
+          break;
+        }
       }
-      if (lPosUsed || lNegUsed || lBachUsed)
-        usedInSVertexer = true;
+      if( lUsedByV0 || lUsedByCascade ) usedInSVertexer = true;
 
       if (usedInSVertexer)
         hUpdateRadiiusedInSVertexer->Fill(lRadiusOfLastUpdate);
