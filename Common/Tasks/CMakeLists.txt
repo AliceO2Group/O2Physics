@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(trackqa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(propagatorqa
+                    SOURCES propagatorQa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(validation
                     SOURCES validation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase
