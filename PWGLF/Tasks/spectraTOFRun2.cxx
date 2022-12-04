@@ -41,7 +41,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Spectra task
-struct tofSpectra {
+struct tofSpectraRun2 {
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -89,34 +89,6 @@ struct tofSpectra {
     if (doprocessFullAl) {
       LOG(info) << "Enabling process function processFullAl";
     }
-    // LF Full
-    if (doprocessLfFullEl) {
-      LOG(info) << "Enabling process function processLfFullEl";
-    }
-    if (doprocessLfFullMu) {
-      LOG(info) << "Enabling process function processLfFullMu";
-    }
-    if (doprocessLfFullPi) {
-      LOG(info) << "Enabling process function processLfFullPi";
-    }
-    if (doprocessLfFullKa) {
-      LOG(info) << "Enabling process function processLfFullKa";
-    }
-    if (doprocessLfFullPr) {
-      LOG(info) << "Enabling process function processLfFullPr";
-    }
-    if (doprocessLfFullDe) {
-      LOG(info) << "Enabling process function processLfFullDe";
-    }
-    if (doprocessLfFullTr) {
-      LOG(info) << "Enabling process function processLfFullTr";
-    }
-    if (doprocessLfFullHe) {
-      LOG(info) << "Enabling process function processLfFullHe";
-    }
-    if (doprocessLfFullAl) {
-      LOG(info) << "Enabling process function processLfFullAl";
-    }
     // Tiny
     if (doprocessTinyEl) {
       LOG(info) << "Enabling process function processTinyEl";
@@ -144,34 +116,6 @@ struct tofSpectra {
     }
     if (doprocessTinyAl) {
       LOG(info) << "Enabling process function processTinyAl";
-    }
-    // LF Tiny
-    if (doprocessLfTinyEl) {
-      LOG(info) << "Enabling process function processLfTinyEl";
-    }
-    if (doprocessLfTinyMu) {
-      LOG(info) << "Enabling process function processLfTinyMu";
-    }
-    if (doprocessLfTinyPi) {
-      LOG(info) << "Enabling process function processLfTinyPi";
-    }
-    if (doprocessLfTinyKa) {
-      LOG(info) << "Enabling process function processLfTinyKa";
-    }
-    if (doprocessLfTinyPr) {
-      LOG(info) << "Enabling process function processLfTinyPr";
-    }
-    if (doprocessLfTinyDe) {
-      LOG(info) << "Enabling process function processLfTinyDe";
-    }
-    if (doprocessLfTinyTr) {
-      LOG(info) << "Enabling process function processLfTinyTr";
-    }
-    if (doprocessLfTinyHe) {
-      LOG(info) << "Enabling process function processLfTinyHe";
-    }
-    if (doprocessLfTinyAl) {
-      LOG(info) << "Enabling process function processLfTinyAl";
     }
     // Checking consistency
     if (doprocessFullEl == true && doprocessTinyEl == true) {
@@ -265,55 +209,55 @@ struct tofSpectra {
       switch (i) {
         case 0:
         case Np:
-          if (doprocessFullEl == false && doprocessLfFullEl == false && doprocessTinyEl == false && doprocessLfTinyEl == false) {
+          if (doprocessFullEl == false && doprocessTinyEl == false) {
             continue;
           }
           break;
         case 1:
         case Np + 1:
-          if (doprocessFullMu == false && doprocessLfFullMu == false && doprocessTinyMu == false && doprocessLfTinyMu == false) {
+          if (doprocessFullMu == false && doprocessTinyMu == false) {
             continue;
           }
           break;
         case 2:
         case Np + 2:
-          if (doprocessFullPi == false && doprocessLfFullPi == false && doprocessTinyPi == false && doprocessLfTinyPi == false) {
+          if (doprocessFullPi == false && doprocessTinyPi == false) {
             continue;
           }
           break;
         case 3:
         case Np + 3:
-          if (doprocessFullKa == false && doprocessLfFullKa == false && doprocessTinyKa == false && doprocessLfTinyKa == false) {
+          if (doprocessFullKa == false && doprocessTinyKa == false) {
             continue;
           }
           break;
         case 4:
         case Np + 4:
-          if (doprocessFullPr == false && doprocessLfFullPr == false && doprocessTinyPr == false && doprocessLfTinyPr == false) {
+          if (doprocessFullPr == false && doprocessTinyPr == false) {
             continue;
           }
           break;
         case 5:
         case Np + 5:
-          if (doprocessFullDe == false && doprocessLfFullDe == false && doprocessTinyDe == false && doprocessLfTinyDe == false) {
+          if (doprocessFullDe == false && doprocessTinyDe == false) {
             continue;
           }
           break;
         case 6:
         case Np + 6:
-          if (doprocessFullTr == false && doprocessLfFullTr == false && doprocessTinyTr == false && doprocessLfTinyTr == false) {
+          if (doprocessFullTr == false && doprocessTinyTr == false) {
             continue;
           }
           break;
         case 7:
         case Np + 7:
-          if (doprocessFullHe == false && doprocessLfFullHe == false && doprocessTinyHe == false && doprocessLfTinyHe == false) {
+          if (doprocessFullHe == false && doprocessTinyHe == false) {
             continue;
           }
           break;
         case 8:
         case Np + 8:
-          if (doprocessFullAl == false && doprocessLfFullAl == false && doprocessTinyAl == false && doprocessLfTinyAl == false) {
+          if (doprocessFullAl == false && doprocessTinyAl == false) {
             continue;
           }
           break;
@@ -411,35 +355,6 @@ struct tofSpectra {
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     // const auto id = track.sign() > 0 ? id : id + Np;
     float multiplicity = 0.f;
-
-    switch (multiplicityEstimator) {
-      case 1: // MultFV0M
-        // multiplicity = collision.multFV0M();
-        // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
-        multiplicity = collision.multZeqFV0A();
-        break;
-      case 2: // MultFT0M
-        // multiplicity = collision.multFT0M();
-        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-        break;
-      case 3: // MultFDDM
-        // multiplicity = collision.multFDDM();
-        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
-        break;
-      case 4: // MultTracklets
-        multiplicity = collision.multTracklets();
-        break;
-      case 5: // MultTPC
-        multiplicity = collision.multTPC();
-        break;
-      case 6: // MultNTracksPV
-        // multiplicity = collision.multNTracksPV();
-        multiplicity = collision.multZeqNTracksPV();
-        break;
-      case 7: // MultNTracksPVeta1
-        multiplicity = collision.multNTracksPVeta1();
-        break;
-    }
 
     if (multiplicityEstimator == 0) {
       if (track.sign() > 0) {
@@ -547,7 +462,7 @@ struct tofSpectra {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1);
     }
-    if (!collision.sel8()) {
+    if (!collision.sel7()) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -639,14 +554,14 @@ struct tofSpectra {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
   void process(CollisionCandidate::iterator const& collision,
                TrackCandidates const& tracks)
   {
-    if (!isEventSelected<true, true>(collision)) {
+    if (!isEventSelected<true, false>(collision)) {
       return;
     }
     for (const auto& track : tracks) {
@@ -682,7 +597,7 @@ struct tofSpectra {
       fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
     }                                                                                          \
   }                                                                                            \
-  PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
+  PROCESS_SWITCH(tofSpectraRun2, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
 #define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, TOFFull, TPCFull)
@@ -700,34 +615,6 @@ struct tofSpectra {
 
 // Tiny tables
 #define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, TOF, TPC)
-
-  makeProcessFunctionTiny(El, Electron);
-  makeProcessFunctionTiny(Mu, Muon);
-  makeProcessFunctionTiny(Pi, Pion);
-  makeProcessFunctionTiny(Ka, Kaon);
-  makeProcessFunctionTiny(Pr, Proton);
-  makeProcessFunctionTiny(De, Deuteron);
-  makeProcessFunctionTiny(Tr, Triton);
-  makeProcessFunctionTiny(He, Helium3);
-  makeProcessFunctionTiny(Al, Alpha);
-#undef makeProcessFunctionTiny
-
-// Full LF tables
-#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, TOFFull, TPCLfFull)
-
-  makeProcessFunctionFull(El, Electron);
-  makeProcessFunctionFull(Mu, Muon);
-  makeProcessFunctionFull(Pi, Pion);
-  makeProcessFunctionFull(Ka, Kaon);
-  makeProcessFunctionFull(Pr, Proton);
-  makeProcessFunctionFull(De, Deuteron);
-  makeProcessFunctionFull(Tr, Triton);
-  makeProcessFunctionFull(He, Helium3);
-  makeProcessFunctionFull(Al, Alpha);
-#undef makeProcessFunctionFull
-
-// Tiny tables
-#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(LfTiny, inputPid, particleId, false, TOF, TPCLf)
 
   makeProcessFunctionTiny(El, Electron);
   makeProcessFunctionTiny(Mu, Muon);
@@ -892,11 +779,11 @@ struct tofSpectra {
       fillHistograms_MC<i>(tracks, mcParticles);
     });
   }
-  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
+  PROCESS_SWITCH(tofSpectraRun2, processMC, "Process MC", false);
 
 }; // end of spectra task
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<tofSpectraRun2>(cfgc)};
 }
