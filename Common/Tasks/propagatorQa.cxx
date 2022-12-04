@@ -31,59 +31,64 @@ using namespace o2::framework::expressions;
 struct propagatorQa {
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> Nbins{"Nbins", 10000, "Nbins"};
-  
-  //Momentum distribution
+
+  // Momentum distribution
   OutputObj<TH1F> hPtBeforeXcut{TH1F("hPtBeforeXcut", "hPtBeforeXcut", Nbins, 0, 10)};
   OutputObj<TH1F> hPt{TH1F("hPt", "hPt", Nbins, 0, 10)};
   OutputObj<TH1F> hPtusedInSVertexer{TH1F("hPtusedInSVertexer", "hPtusedInSVertexer", Nbins, 0, 10)};
-  
-  //IU radii
+
+  // IU radii
   OutputObj<TH1F> hUpdateRadii{TH1F("hUpdateRadii", "hUpdateRadii", 5000, 0, 100)};
   OutputObj<TH1F> hUpdateRadiiusedInSVertexer{TH1F("hUpdateRadiiusedInSVertexer", "hUpdateRadii", 5000, 0, 100)};
-  
-  //DCA
+
+  // DCA
   OutputObj<TH1F> hdcaXYall{TH1F("hdcaXYall", "hdcaXYall", Nbins, -windowDCA, windowDCA)};
   OutputObj<TH1F> hdcaXYusedInSVertexer{TH1F("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", Nbins, -windowDCA, windowDCA)};
-  
+
   o2::track::TrackPar lTrackParametrization;
-  
+
   void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
     for (auto& track : tracks) {
       hPtBeforeXcut->Fill(track.pt());
-      
+
       float maxXtoConsider = o2::constants::geom::XTPCInnerRef + 0.1;
-      if ( track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider ) continue;
-      
+      if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
+        continue;
+
       std::array<float, 3> pos;
       lTrackParametrization = getTrackPar(track);
       lTrackParametrization.getXYZGlo(pos);
-      float lRadiusOfLastUpdate = TMath::Sqrt(pos[0]*pos[0]+pos[1]*pos[1]);
-      
+      float lRadiusOfLastUpdate = TMath::Sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
+
       hUpdateRadii->Fill(lRadiusOfLastUpdate);
-      
+
       // fill kinematic variables
       hPt->Fill(track.pt());
-      
+
       float lDCA = track.dcaXY();
-      
+
       hdcaXYall->Fill(lDCA);
-      
-      //determine if track was used in svertexer
+
+      // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lPosUsed, lNegUsed, lBachUsed;
       for (auto& V0 : V0s) {
-        lPosUsed = ( V0.posTrackId() == track.globalIndex() );
-        lNegUsed = ( V0.negTrackId() == track.globalIndex() );
+        lPosUsed = (V0.posTrackId() == track.globalIndex());
+        lNegUsed = (V0.negTrackId() == track.globalIndex());
       }
       for (auto& cascade : cascades) {
-        lBachUsed = ( cascade.bachelorId() == track.globalIndex() );
+        lBachUsed = (cascade.bachelorId() == track.globalIndex());
       }
-      if( lPosUsed || lNegUsed || lBachUsed ) usedInSVertexer = true;
-      
-      if( usedInSVertexer ) hUpdateRadiiusedInSVertexer->Fill(lRadiusOfLastUpdate);
-      if( usedInSVertexer ) hdcaXYusedInSVertexer->Fill(lDCA);
-      if( usedInSVertexer ) hPtusedInSVertexer->Fill(track.pt());
+      if (lPosUsed || lNegUsed || lBachUsed)
+        usedInSVertexer = true;
+
+      if (usedInSVertexer)
+        hUpdateRadiiusedInSVertexer->Fill(lRadiusOfLastUpdate);
+      if (usedInSVertexer)
+        hdcaXYusedInSVertexer->Fill(lDCA);
+      if (usedInSVertexer)
+        hPtusedInSVertexer->Fill(track.pt());
     }
   }
 };
