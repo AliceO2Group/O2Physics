@@ -33,7 +33,7 @@ namespace
 {
 static const int nCharmHadrons = 7;
 static const std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, pdg::Code::kDStar, pdg::Code::kD0, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJPsi};
-static const std::array<int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
+static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
 static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
 static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}", "J/#psi"};
 static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
@@ -206,7 +206,7 @@ struct HfTaskMcValidationGen {
   void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
   {
     if (!selectVertex(mccollision)) {
-        return;
+      return;
     }
 
     int cPerCollision = 0;
@@ -217,10 +217,11 @@ struct HfTaskMcValidationGen {
     bool hasSignal = false;
 
     for (auto& particle : particlesMC) {
-      int particlePdgCode = particle.pdgCode();
       if (!particle.has_mothers()) {
         continue;
       }
+
+      int particlePdgCode = particle.pdgCode();
       auto mother = particle.mothers_as<aod::McParticles>().front();
       if (particlePdgCode != mother.pdgCode()) {
         switch (particlePdgCode) {
@@ -249,19 +250,14 @@ struct HfTaskMcValidationGen {
           continue;
         }
 
-        int origin = -1;
+        // Check that the number of daughters match what we expect
         std::vector<int> listDaughters{};
-        RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);        
-        if (listDaughters.size() == nDaughters[iD]) {
-          hasSignal = true;
-          origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            counterPrompt[iD]++;
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            counterNonPrompt[iD]++;
-          }
+        RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
+        if (listDaughters.size() != nDaughters[iD]) {
+          continue;
         }
 
+        // Check momentum conservation
         double sumPxDau = 0.;
         double sumPyDau = 0.;
         double sumPzDau = 0.;
@@ -278,14 +274,8 @@ struct HfTaskMcValidationGen {
         if (std::abs(pxDiff) > 0.001 || std::abs(pyDiff) > 0.001 || std::abs(pzDiff) > 0.001) {
           momentumCheck = false;
         }
-
         double pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
         double ptDiff = RecoDecay::pt(pxDiff, pyDiff);
-        auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
-        double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
-        auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
-        // Filling histograms with per-component momentum conservation
         registry.fill(HIST("hMomentumCheck"), static_cast<float>(momentumCheck));
         registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
         registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
@@ -293,6 +283,22 @@ struct HfTaskMcValidationGen {
         registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
         registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
 
+        if (!momentumCheck) {
+          continue;
+        }
+
+        hasSignal = true;
+        int origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::Prompt) {
+          counterPrompt[iD]++;
+        } else if (origin == RecoDecay::OriginType::NonPrompt) {
+          counterNonPrompt[iD]++;
+        }
+
+        auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
+        double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+        double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+        auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
         if (origin == RecoDecay::OriginType::Prompt) {
           if (std::abs(particle.y()) < 0.5) {
             registry.fill(HIST("hPromptCharmHadronsPtDistr"), iD, particle.pt());
