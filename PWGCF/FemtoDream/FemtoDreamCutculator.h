@@ -14,18 +14,18 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <bitset>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
-
-#include <bitset>
-
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <iostream>
 
 namespace o2::analysis::femtoDream
 {
@@ -47,7 +47,16 @@ class FemtoDreamCutculator
     } catch (const boost::property_tree::ptree_error& e) {
       LOG(fatal) << "Failed to read JSON config file " << configFile << " (" << e.what() << ")";
     }
-    mConfigTree = root.get_child("femto-dream-producer-task");
+
+    // check the config file for all known producer task
+    std::vector<const char*> ProducerTasks = {"femto-dream-producer-task", "femto-dream-producer-reduced-task"};
+    for (auto& Producer : ProducerTasks) {
+      if (root.count(Producer) > 0) {
+        mConfigTree = root.get_child(Producer);
+        std::cout << "Found " << Producer << " in " << configFile << std::endl;
+        break;
+      }
+    }
   };
 
   /// Generic function that retrieves a given selection from the boost ptree and returns an std::vector in the proper format
@@ -108,7 +117,7 @@ class FemtoDreamCutculator
   /// \param prefix Prefix which is added to the name of the Configurable
   void setPIDSelectionFromFile(const char* prefix)
   {
-    std::string PIDnodeName = std::string(prefix) + "TPIDspecies";
+    std::string PIDnodeName = std::string(prefix) + "species";
     try {
       boost::property_tree::ptree& pidNode = mConfigTree.get_child(PIDnodeName);
       boost::property_tree::ptree& pidValues = pidNode.get_child("values");
@@ -271,4 +280,4 @@ class FemtoDreamCutculator
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
