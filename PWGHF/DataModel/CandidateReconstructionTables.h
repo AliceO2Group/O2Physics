@@ -40,18 +40,18 @@ DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
 
 namespace hf_amb_tracks
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-DECLARE_SOA_INDEX_COLUMN(Track, track);         //!
+enum eTrackType { Ambiguous = 0,
+                  PVContributor };
 
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);            //!
 DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t); //!
-enum eTrackType {Ambiguous=0, PVContributor};
-
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);        //!
-DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);          //!
-DECLARE_SOA_COLUMN(P, p, float);                //!
-DECLARE_SOA_COLUMN(Pt, pt, float);              //!
-DECLARE_SOA_COLUMN(Eta, eta, float);            //!
-DECLARE_SOA_COLUMN(Phi, phi, float);            //!
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);           //!
+DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);             //!
+DECLARE_SOA_COLUMN(P, p, float);                   //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                 //!
+DECLARE_SOA_COLUMN(Eta, eta, float);               //!
+DECLARE_SOA_COLUMN(Phi, phi, float);               //!
 
 DECLARE_SOA_COLUMN(CYY, cYY, float);             //!
 DECLARE_SOA_COLUMN(CZY, cZY, float);             //!
@@ -71,20 +71,20 @@ DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //!
 
 } // namespace hf_amb_tracks
 
-DECLARE_SOA_TABLE(HfAmbTrack, "AOD", "HFAMBTRACK",                              //!
-                  o2::soa::Index<>, hf_amb_tracks::TrackId,                     //!
-                  hf_amb_tracks::CollisionId, hf_amb_tracks::TrackType,         //!
-                  track::X, track::Alpha, track::Y,                             //!
-                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,           //!
-                  hf_amb_tracks::Pt, hf_amb_tracks::P,                          //!
-                  hf_amb_tracks::Eta, hf_amb_tracks::Phi,                       //!
-                  hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,                    //!
-                  track::Px<track::Signed1Pt, track::Snp, track::Alpha>,        //!
-                  track::Py<track::Signed1Pt, track::Snp, track::Alpha>,        //!
-                  track::Pz<track::Signed1Pt, track::Tgl>,                      //!
-                  track::Energy<track::Signed1Pt, track::Tgl>,                  //!
-                  track::Rapidity<track::Signed1Pt, track::Tgl>,                //!
-                  track::Sign<track::Signed1Pt>);                               //!
+DECLARE_SOA_TABLE(HfAmbTrack, "AOD", "HFAMBTRACK",                       //!
+                  o2::soa::Index<>, hf_amb_tracks::TrackId,              //!
+                  hf_amb_tracks::CollisionId, hf_amb_tracks::TrackType,  //!
+                  track::X, track::Alpha, track::Y,                      //!
+                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,    //!
+                  hf_amb_tracks::Pt, hf_amb_tracks::P,                   //!
+                  hf_amb_tracks::Eta, hf_amb_tracks::Phi,                //!
+                  hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,             //!
+                  track::Px<track::Signed1Pt, track::Snp, track::Alpha>, //!
+                  track::Py<track::Signed1Pt, track::Snp, track::Alpha>, //!
+                  track::Pz<track::Signed1Pt, track::Tgl>,               //!
+                  track::Energy<track::Signed1Pt, track::Tgl>,           //!
+                  track::Rapidity<track::Signed1Pt, track::Tgl>,         //!
+                  track::Sign<track::Signed1Pt>);                        //!
 
 DECLARE_SOA_TABLE(HfAmbTrackCov, "AOD", "HFAMBTRACKCOV",                                                      //!
                   track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,            //!
