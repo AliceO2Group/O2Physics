@@ -83,7 +83,7 @@ struct bbParams {
       LOG(error) << "The vector of Bethe-Bloch parameters has the wrong size";
       return false;
     }
-    LOG(info) << "Before: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
+    LOG(info) << "Before: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", resolution " << res;
     bb1 = v[0];
     bb2 = v[1];
     bb3 = v[2];
@@ -92,7 +92,7 @@ struct bbParams {
     mip = v[5];
     exp = v[6];
     res = v[7];
-    LOG(info) << "After: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", " << res;
+    LOG(info) << "After: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", resolution " << res;
     return true;
   }
 
@@ -167,6 +167,7 @@ struct bbParams {
         LOG(info) << "Asked to query the parameters from the CCDB and got timestamp " << ccdbObj->getTimestamp() << " -> will take the object corresponding to the run number";
         return false;
       }
+      LOG(info) << "Fetching parameters from CCDB (only once) using timestamp " << ccdbObj->getTimestamp() << " and path " << s;
       TH1F* h = ccdbObj->get<TH1F>(s);
       return setValues(h);
     }
