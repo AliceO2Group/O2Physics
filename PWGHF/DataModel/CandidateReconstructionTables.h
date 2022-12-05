@@ -38,6 +38,58 @@ DECLARE_SOA_COLUMN(WhyRejectColl, whyRejectColl, int); //!
 DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
                   hf_sel_collision::WhyRejectColl);
 
+namespace hf_amb_tracks
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);         //!
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);        //!
+DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);          //!
+DECLARE_SOA_COLUMN(P, p, float);                //!
+DECLARE_SOA_COLUMN(Pt, pt, float);              //!
+DECLARE_SOA_COLUMN(Eta, eta, float);            //!
+DECLARE_SOA_COLUMN(Phi, phi, float);            //!
+
+DECLARE_SOA_COLUMN(CYY, cYY, float);             //!
+DECLARE_SOA_COLUMN(CZY, cZY, float);             //!
+DECLARE_SOA_COLUMN(CZZ, cZZ, float);             //!
+DECLARE_SOA_COLUMN(CSnpY, cSnpY, float);         //!
+DECLARE_SOA_COLUMN(CSnpZ, cSnpZ, float);         //!
+DECLARE_SOA_COLUMN(CSnpSnp, cSnpSnp, float);     //!
+DECLARE_SOA_COLUMN(CTglY, cTglY, float);         //!
+DECLARE_SOA_COLUMN(CTglZ, cTglZ, float);         //!
+DECLARE_SOA_COLUMN(CTglSnp, cTglSnp, float);     //!
+DECLARE_SOA_COLUMN(CTglTgl, cTglTgl, float);     //!
+DECLARE_SOA_COLUMN(C1PtY, c1PtY, float);         //!
+DECLARE_SOA_COLUMN(C1PtZ, c1PtZ, float);         //!
+DECLARE_SOA_COLUMN(C1PtSnp, c1PtSnp, float);     //!
+DECLARE_SOA_COLUMN(C1PtTgl, c1PtTgl, float);     //!
+DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //!
+
+} // namespace hf_amb_tracks
+
+DECLARE_SOA_TABLE(HfAmbTrack, "AOD", "HFAMBTRACK",                              //!
+                  o2::soa::Index<>, hf_amb_tracks::TrackId,                     //!
+                  hf_amb_tracks::CollisionId, track::X, track::Alpha, track::Y, //!
+                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,           //!
+                  hf_amb_tracks::Pt, hf_amb_tracks::P,                          //!
+                  hf_amb_tracks::Eta, hf_amb_tracks::Phi,                       //!
+                  hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,                    //!
+                  track::Px<track::Signed1Pt, track::Snp, track::Alpha>,        //!
+                  track::Py<track::Signed1Pt, track::Snp, track::Alpha>,        //!
+                  track::Pz<track::Signed1Pt, track::Tgl>,                      //!
+                  track::Energy<track::Signed1Pt, track::Tgl>,                  //!
+                  track::Rapidity<track::Signed1Pt, track::Tgl>,                //!
+                  track::Sign<track::Signed1Pt>);                               //!
+
+DECLARE_SOA_TABLE(HfAmbTrackCov, "AOD", "HFAMBTRACKCOV",                                                      //!
+                  track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,            //!
+                  track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,               //!
+                  track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl,       //!
+                  hf_amb_tracks::CYY, hf_amb_tracks::CZY, hf_amb_tracks::CZZ, hf_amb_tracks::CSnpY,           //!
+                  hf_amb_tracks::CSnpZ, hf_amb_tracks::CSnpSnp, hf_amb_tracks::CTglY, hf_amb_tracks::CTglZ,   //!
+                  hf_amb_tracks::CTglSnp, hf_amb_tracks::CTglTgl, hf_amb_tracks::C1PtY, hf_amb_tracks::C1PtZ, //!
+                  hf_amb_tracks::C1PtSnp, hf_amb_tracks::C1PtTgl, hf_amb_tracks::C1Pt21Pt2);                  //!
+
 namespace hf_sel_track
 {
 DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!

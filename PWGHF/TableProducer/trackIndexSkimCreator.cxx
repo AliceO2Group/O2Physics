@@ -252,6 +252,90 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", false);
 };
 
+// Produce table with ambiguous tracks
+struct HfTrackIndexSkimCreatorProduceAmbTracks {
+  Produces<aod::HfAmbTrack> ambTrack;
+  Produces<aod::HfAmbTrackCov> ambTrackCov;
+
+  Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for tracks, for Run3 studies"};
+
+  // CCDB
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  // Needed for propagation to PV
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  }
+
+  using TracksWithSel = soa::Join<aod::BigTracks, aod::TrackSelection>;
+
+  void process(aod::Collisions const& collisions,
+               aod::AmbiguousTracks const& ambitracks,
+               TracksWithSel const& tracks,
+               aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+
+    o2::dataformats::DCA dcaInfoCov;
+    o2::dataformats::VertexBase vtx;
+
+    for (auto& ambitrack : ambitracks) {
+      auto track = ambitrack.track_as<TracksWithSel>(); // Obtain the corresponding track
+
+      if (!useIsGlobalTrackWoDCA || (useIsGlobalTrackWoDCA && track.isGlobalTrackWoDCA())) { // add info only for global tracks
+        dcaInfoCov.set(999, 999, 999, 999, 999);
+        auto trackParCov = getTrackParCov(track);
+
+        for (auto& collision : collisions) {
+          if (collision.globalIndex() == track.collisionId()) {
+            continue;
+          }
+          uint64_t mostProbableBC = collision.bc().globalBC();         // BC of the current collision
+          for (auto& bc : ambitrack.bc_as<aod::BCsWithTimestamps>()) { // loop over BC compatible in time with the ambiguous track
+            if (bc.globalBC() == mostProbableBC) {
+              initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+
+              // let's propagate track to collision
+              vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+              vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+              o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
+
+              // fill tables
+              ambTrack(track.globalIndex(), collision.globalIndex(), trackParCov.getX(), trackParCov.getAlpha(),
+                       trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
+                       trackParCov.getQ2Pt(), trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(),
+                       trackParCov.getPhi(), dcaInfoCov.getY(), dcaInfoCov.getZ());
+
+              ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
+                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
+                          trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
+                          trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
+                          trackParCov.getSigma1Pt2());
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
 /// Track selection
 struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HfSelTrack> rowSelectedTrack;
