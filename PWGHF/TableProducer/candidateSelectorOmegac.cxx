@@ -210,20 +210,20 @@ struct HFOmegacCandidateSelector {
       }
 
       //  TPC clusters selections
-      if  (trackPiFromOmeg.tpcNClsFound() < tpcClusters)  {
+      if (trackPiFromOmeg.tpcNClsFound() < tpcClusters) {
         continue;
       }
-      if (trackPiFromLam.tpcNClsFound() < tpcClusters) { 
+      if (trackPiFromLam.tpcNClsFound() < tpcClusters) {
         continue;
       }
-      if (trackPrFromLam.tpcNClsFound() < tpcClusters) { 
+      if (trackPrFromLam.tpcNClsFound() < tpcClusters) {
         continue;
       }
-      if (trackPiFromCasc.tpcNClsFound() < tpcClusters) { 
+      if (trackPiFromCasc.tpcNClsFound() < tpcClusters) {
         continue;
       }
 
-      if (trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows) { 
+      if (trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows) {
         continue;
       }
       if (trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRows) {
@@ -241,7 +241,7 @@ struct HFOmegacCandidateSelector {
       }
 
       //  ITS clusters selection
-      if  (trackPiFromOmeg.itsNCls() < itsClusters)  {
+      if (trackPiFromOmeg.itsNCls() < itsClusters) {
         continue;
       }
       if (trackPiFromOmeg.itsNClsInnerBarrel() < itsClustersInnBarr) {
