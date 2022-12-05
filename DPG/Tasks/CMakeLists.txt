@@ -11,4 +11,5 @@
 
 add_subdirectory(AOTTrack)
 add_subdirectory(TPC)
+add_subdirectory(TOF)
 add_subdirectory(FDD)

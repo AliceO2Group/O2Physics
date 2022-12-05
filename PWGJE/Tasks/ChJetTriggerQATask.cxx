@@ -49,66 +49,7 @@ using namespace o2::framework::expressions;
 // b) from events selected by EPN
 // It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
 
-namespace o2::aod
-{
-namespace mytracktable
-{
-DECLARE_SOA_COLUMN(Pt, pt, float);              //!
-DECLARE_SOA_COLUMN(Eta, eta, float);            //!
-DECLARE_SOA_COLUMN(Phi, phi, float);            //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-} // namespace mytracktable
-
-DECLARE_SOA_TABLE(MyTrackTable, "AOD", "MYTRACKTABLE", //!
-                  mytracktable::Pt,
-                  mytracktable::Eta,
-                  mytracktable::Phi,
-                  mytracktable::CollisionId)
-} // namespace o2::aod
-
-namespace o2::aod
-{
-namespace myjetconsttab
-{
-DECLARE_SOA_COLUMN(Pt, pt, float);              //!
-DECLARE_SOA_COLUMN(Eta, eta, float);            //!
-DECLARE_SOA_COLUMN(Phi, phi, float);            //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-} // namespace myjetconsttab
-
-DECLARE_SOA_TABLE(MyJetConstTable, "AOD", "MYJETCONSTTAB", //!
-                  myjetconsttab::Pt,
-                  myjetconsttab::Eta,
-                  myjetconsttab::Phi,
-                  myjetconsttab::CollisionId)
-
-} // namespace o2::aod
-
-namespace o2::aod
-{
-namespace myjettable
-{
-DECLARE_SOA_COLUMN(Pt, pt, float);              //!
-DECLARE_SOA_COLUMN(Eta, eta, float);            //!
-DECLARE_SOA_COLUMN(Phi, phi, float);            //!
-DECLARE_SOA_COLUMN(Area, area, float);          //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-} // namespace myjettable
-
-DECLARE_SOA_TABLE(MyJetTable, "AOD", "MYJETTABLE", //!
-                  myjettable::Pt,
-                  myjettable::Eta,
-                  myjettable::Phi,
-                  myjettable::Area,
-                  myjettable::CollisionId)
-
-} // namespace o2::aod
-
 struct ChJetTriggerQATask {
-
-  Produces<aod::MyJetConstTable> tableWithConstituentsFromPathologicalEvents;
-  Produces<aod::MyTrackTable> tableWithTracksFromPathologicalEvents;
-  Produces<aod::MyJetTable> tableWithJetsFromPathologicalEvents;
 
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
                                    "Accepted z-vertex range"};
@@ -126,7 +67,6 @@ struct ChJetTriggerQATask {
   float fiducialVolume;                        // 0.9 - jetR
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
-  std::vector<fastjet::PseudoJet> leadingJetConstituents;
   JetFinder jetReclusterer;
 
   HistogramRegistry spectra{
@@ -221,7 +161,6 @@ struct ChJetTriggerQATask {
     if (collision.hasJetChHighPt() >= bTriggerDecision) {
       jetConstituents.clear();
       jetReclustered.clear();
-      leadingJetConstituents.clear();
 
       float leadingJetPt = -1.0;
       float leadingJetEta = -2.0;
@@ -287,8 +226,6 @@ struct ChJetTriggerQATask {
             leadingJetPt = jet.perp();
             leadingJetEta = jet.eta();
             leadingJetPhi = jet.phi();
-            leadingJetConstituents.clear();
-            leadingJetConstituents = jet.constituents();
           }
         }
       }
@@ -305,29 +242,11 @@ struct ChJetTriggerQATask {
         //deta = fabs(leadingTrackEta - leadingJetEta);
         //dphi = fabs(TVector2::Phi_mpi_pi(leadingTrackPhi - leadingJetPhi));
 
-        if ((leadingTrackPt - leadingJetPt) > 1.) { // pathological case
+        if ((leadingTrackPt - leadingJetPt) > 1e-4) { // pathological case
           spectra.fill(HIST("fLeadJetEtaVsLeadingTrackEtaPathologicalAll"),
                        leadingTrackEta, leadingJetEta);
           spectra.fill(HIST("fLeadJetPhiVsLeadingTrackPhiPathologicalAll"),
                        leadingTrackPhi, leadingJetPhi);
-
-          int CollisionId = -1;
-          for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
-            if (trk.isQualityTrack()) {
-              CollisionId = trk.collisionId();
-              tableWithTracksFromPathologicalEvents(trk.pt(), trk.eta(), trk.phi(), trk.collisionId());
-            }
-          }
-
-          for (UInt_t ic = 0; ic < jetConstituents.size(); ic++) {
-            tableWithConstituentsFromPathologicalEvents(jetConstituents[ic].perp(), jetConstituents[ic].eta(), jetConstituents[ic].phi(), CollisionId);
-          }
-
-          for (auto& jet : jetReclustered) {
-            if (fabs(jet.eta()) < 2 * cfgTPCVolume) {
-              tableWithJetsFromPathologicalEvents(jet.perp(), jet.eta(), jet.phi(), jet.area(), CollisionId);
-            }
-          }
         }
       }
 

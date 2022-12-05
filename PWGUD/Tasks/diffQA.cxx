@@ -48,7 +48,7 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -200,10 +200,10 @@ struct DiffQA {
 
     // test influence of BCrange width
     for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
-      auto bcSlice = compatibleBCs(collision, NDtcoll, bct0s, 0);
+      auto bcSlice = udhelpers::compatibleBCs(collision, NDtcoll, bct0s, 0);
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
-        isDGcandidate &= cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
       }
       registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
     }
@@ -252,18 +252,18 @@ struct DiffQA {
     isDGcandidate = true;
 
     // get BCrange to test for FIT signals
-    auto bcSlice = compatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
+    auto bcSlice = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
 
     // no FIT signal in bcSlice / collision
     if (doCleanFITBC) {
       for (auto const& bc : bcSlice) {
-        if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+        if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
           isDGcandidate = false;
           break;
         }
       }
     } else {
-      if (!cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
       }
     }
@@ -272,7 +272,7 @@ struct DiffQA {
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
-      if (!cleanZDC(bc, zdcs, lims)) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
         isDGcandidate = false;
         break;
       }
@@ -281,7 +281,7 @@ struct DiffQA {
 
     // no Calo signal in bcSlice
     for (auto const& bc : bcSlice) {
-      if (!cleanCalo(bc, calos, lims)) {
+      if (!udhelpers::cleanCalo(bc, calos, lims)) {
         isDGcandidate = false;
         break;
       }

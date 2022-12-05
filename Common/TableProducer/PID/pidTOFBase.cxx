@@ -41,7 +41,7 @@ using namespace o2::track;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Produce TOF PID QA histograms for TOF event time"}},
+  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}},
                                        {"evtime", VariantType::Int, 1, {"Produce the table for the Event Time"}}};
   std::swap(workflowOptions, options);
 }
@@ -415,8 +415,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     return workflow;
   }
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
-  if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tofPidCollisionTimeQa>(cfgc));
-  }
   return workflow;
 }

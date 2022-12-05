@@ -13,6 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing (tracks only)
 /// \author Luca Barioglio, TU München, andreas.mathis@ph.tum.de
 
+#include "TMath.h"
+#include <CCDB/BasicCCDBManager.h>
 #include "FemtoDreamCollisionSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
@@ -31,8 +33,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
-#include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -127,7 +127,7 @@ struct femtoDreamProducerReducedTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
@@ -177,10 +177,11 @@ struct femtoDreamProducerReducedTask {
     }
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto multNtr = col.multNTracksPV();
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
-      mult = col.multFT0M(); /// Mult based on T0, temporary storing to be fixed and checked
+      mult = col.multFV0M();
     } else {
       mult = 0.5 * (col.multFV0M());
     }
@@ -190,14 +191,14 @@ struct femtoDreamProducerReducedTask {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), mult, colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(col.posZ(), mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
       }
       return;
     }
 
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision(vtxZ, mult, spher, mMagField);
+    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
     int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     for (auto& track : tracks) {

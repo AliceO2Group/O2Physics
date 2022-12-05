@@ -14,7 +14,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/CaloClusters.h"
-#include <CCDB/BasicCCDBManager.h>
 
 #include "CommonUtils/NameConf.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -79,8 +78,8 @@ struct caloClusterProducerTask {
       // Fill output table
 
       // calibration may be updated by CCDB fetcher
-      o2::phos::BadChannelsMap* badMap = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
-      o2::phos::CalibParams* calibParams = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
+      const o2::phos::BadChannelsMap* badMap = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
+      const o2::phos::CalibParams* calibParams = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
       if (badMap) {
         clusterizerPHOS->setBadMap(badMap);
       } else {
@@ -102,13 +101,13 @@ struct caloClusterProducerTask {
 
       o2::InteractionRecord ir;
       for (auto& c : cells) {
-        if (c.caloType() != 0) // PHOS
+        if (c.caloType() != kPHOS) // PHOS
           continue;
         if (phosCellTRs.size() == 0) { // first cell, first TrigRec
           ir.setFromLong(c.bc().globalBC());
           phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells
         }
-        if (static_cast<long unsigned int>(phosCellTRs.back().getBCData().toLong()) != c.bc().globalBC()) { // switch to new BC
+        if (static_cast<uint64_t>(phosCellTRs.back().getBCData().toLong()) != c.bc().globalBC()) { // switch to new BC
           // switch to another BC: set size and create next TriRec
           phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
           // Next event/trig rec.
@@ -152,20 +151,33 @@ struct caloClusterProducerTask {
           if (e == 0) {
             continue;
           }
-          float x, z;
-          clu.getLocalPosition(x, z);
+          float posX, posZ;
+          clu.getLocalPosition(posX, posZ);
+
+          // Correction for the depth of the shower starting point (TDR p 127)
+          const float para = 0.925;
+          const float parb = 6.52;
+          float depth = para * TMath::Log(e) + parb;
+          posX -= posX * depth / 460.;
+          posZ -= (posZ - vtx.Z()) * depth / 460.;
+
           int mod = clu.module();
           TVector3 globaPos;
-          geomPHOS->local2Global(mod, x, z, globaPos);
-          // TODO: correction for depth and non-perpendicular insideence
+          geomPHOS->local2Global(mod, posX, posZ, globaPos);
+
           TVector3 mom = globaPos - vtx;
           if (mom.Mag() == 0) { // should not happpen
             continue;
           }
+
+          e = Nonlinearity(e);
+
           mom.SetMag(e);
+
           // Track/CPV match will be done in independent task
           float trackdist = 999.;
           int trackindex = -1;
+
           float lambdaShort = 0., lambdaLong = 0.;
           clu.getElipsAxis(lambdaShort, lambdaLong);
 
@@ -176,6 +188,24 @@ struct caloClusterProducerTask {
         }
       }
     } // end isPHOS
+  }
+
+  float Nonlinearity(float en)
+  {
+    // Correct for non-linearity
+    // Parameters to be read from ccdb
+    const double a = 9.34913e-01;
+    const double b = 2.33e-03;
+    const double c = -8.10e-05;
+    const double d = 3.2e-02;
+    const double f = -8.0e-03;
+    const double g = 1.e-01;
+    const double h = 2.e-01;
+    const double k = -1.48e-04;
+    const double l = 0.194;
+    const double m = 0.0025;
+
+    return en * (a + b * en + c * en * en + d / en + f / ((en - g) * (en - g) + h) + k / ((en - l) * (en - l) + m));
   }
 };
 

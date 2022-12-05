@@ -17,7 +17,7 @@
 #include "CommonDataFormat/IRFrame.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "filterTables.h"
-#include "PWGUD/DGHelpers.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -75,7 +75,7 @@ struct BCRangeSelector {
       if (filt.hasCefpSelected()) {
 
         // get range of compatible BCs
-        auto bcRange = compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
+        auto bcRange = udhelpers::compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
 
         // update list of ranges
         auto bcfirst = bcRange.rawIteratorAt(0);

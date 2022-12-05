@@ -23,9 +23,12 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+// needed for HFFilterHelpers, to be fixed
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::aod;

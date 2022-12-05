@@ -17,19 +17,31 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_prong2;
-using namespace o2::analysis::hf_cuts_d0_topik;
+using namespace o2::aod::hf_cand_2prong;
+using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 #include "Framework/runDataProcessing.h"
 
 /// D0 analysis task
-struct TaskD0 {
+struct HfTaskD0 {
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
+  Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
+  Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
+  Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
+
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> recoFlag2Prong = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -100,18 +112,9 @@ struct TaskD0 {
      {"hMassReflBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}},
      {"hMassSigBkgD0bar", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}}}};
 
-  Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  Configurable<int> d_selectionHFFlag{"d_selectionHFFlag", 1, "Selection Flag for HF flagged candidates"};
-  Configurable<int> d_selectionTopol{"d_selectionTopol", 1, "Selection Flag for topologically selected candidates"};
-  Configurable<int> d_selectionCand{"d_selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
-  Configurable<int> d_selectionPID{"d_selectionPID", 1, "Selection Flag for reco PID candidates"};
-  Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_d0_topik::pTBins_v}, "pT bin limits"};
-
   void init(o2::framework::InitContext&)
   {
-    auto vbins = (std::vector<double>)bins;
+    auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -140,25 +143,23 @@ struct TaskD0 {
     registry.add("hCPAFinerBinning", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
-
-  void process(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>& candidates)
+  void process(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates)
   {
     for (auto& candidate : selectedD0Candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
         continue;
       }
 
-      if (candidate.isSelD0() >= d_selectionFlagD0) {
-        registry.fill(HIST("hMass"), InvMassD0(candidate), candidate.pt());
-        registry.fill(HIST("hMassFinerBinning"), InvMassD0(candidate), candidate.pt());
+      if (candidate.isSelD0() >= selectionFlagD0) {
+        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMassFinerBinning"), invMassD0ToPiK(candidate), candidate.pt());
       }
-      if (candidate.isSelD0bar() >= d_selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), InvMassD0bar(candidate), candidate.pt());
-        registry.fill(HIST("hMassFinerBinning"), InvMassD0bar(candidate), candidate.pt());
+      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassFinerBinning"), invMassD0barToKPi(candidate), candidate.pt());
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -174,8 +175,8 @@ struct TaskD0 {
       registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), candidate.pt());
       registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), CosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), CtD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
@@ -184,16 +185,14 @@ struct TaskD0 {
       registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTSFinerBinning"), CosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCtFinerBinning"), CtD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTSFinerBinning"), cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCtFinerBinning"), ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), candidate.pt());
     }
   }
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> recoFlag2Prong = aod::hf_selcandidate_d0::isRecoHFFlag >= d_selectionHFFlag;
-
-  void processMC(soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void processMc(soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>& candidates,
+                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
@@ -201,56 +200,56 @@ struct TaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (cutYCandMax >= 0. && std::abs(YD0(candidate)) > cutYCandMax) {
+      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>>(), pdg::Code::kD0, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
-        auto yRec = YD0(candidate);
+        auto yRec = yD0(candidate);
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        if (candidate.isRecoHFFlag() >= d_selectionHFFlag) {
+        if (candidate.isRecoHfFlag() >= selectionFlagHf) {
           registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
         }
-        if (candidate.isRecoTopol() >= d_selectionTopol) {
+        if (candidate.isRecoTopol() >= selectionTopol) {
           registry.fill(HIST("hPtVsYRecSigRecoTopol"), ptRec, yRec);
         }
-        if (candidate.isRecoCand() >= d_selectionCand) {
+        if (candidate.isRecoCand() >= selectionCand) {
           registry.fill(HIST("hPtVsYRecSigRecoCand"), ptRec, yRec);
         }
-        if (candidate.isRecoPID() >= d_selectionPID) {
+        if (candidate.isRecoPid() >= selectionPid) {
           registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
         }
 
-        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-          if (candidate.isRecoHFFlag() >= d_selectionHFFlag) {
+          if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoHFFlag"), ptRec, yRec);
           }
-          if (candidate.isRecoTopol() >= d_selectionTopol) {
+          if (candidate.isRecoTopol() >= selectionTopol) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), ptRec, yRec);
           }
-          if (candidate.isRecoCand() >= d_selectionCand) {
+          if (candidate.isRecoCand() >= selectionCand) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoCand"), ptRec, yRec);
           }
-          if (candidate.isRecoPID() >= d_selectionPID) {
+          if (candidate.isRecoPid() >= selectionPid) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
           }
         } else {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
-          if (candidate.isRecoHFFlag() >= d_selectionHFFlag) {
+          if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoHFFlag"), ptRec, yRec);
           }
-          if (candidate.isRecoTopol() >= d_selectionTopol) {
+          if (candidate.isRecoTopol() >= selectionTopol) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoTopol"), ptRec, yRec);
           }
-          if (candidate.isRecoCand() >= d_selectionCand) {
+          if (candidate.isRecoCand() >= selectionCand) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoCand"), ptRec, yRec);
           }
-          if (candidate.isRecoPID() >= d_selectionPID) {
+          if (candidate.isRecoPid() >= selectionPid) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
           }
         }
@@ -261,12 +260,12 @@ struct TaskD0 {
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
-      auto massD0 = InvMassD0(candidate);
-      auto massD0bar = InvMassD0bar(candidate);
+      auto massD0 = invMassD0ToPiK(candidate);
+      auto massD0bar = invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
-      auto rapidityCandidate = YD0(candidate);
+      auto rapidityCandidate = yD0(candidate);
       auto declengthCandidate = candidate.decayLength();
       auto declengthxyCandidate = candidate.decayLengthXY();
       auto normaliseddeclengthCandidate = candidate.decayLengthNormalised();
@@ -274,13 +273,13 @@ struct TaskD0 {
       auto d0Prong0 = candidate.impactParameter0();
       auto d0Prong1 = candidate.impactParameter1();
       auto d0d0Candidate = candidate.impactParameterProduct();
-      auto ctsCandidate = CosThetaStarD0(candidate);
-      auto ctCandidate = CtD0(candidate);
+      auto ctsCandidate = cosThetaStarD0(candidate);
+      auto ctCandidate = ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
-      if (candidate.isSelD0() >= d_selectionFlagD0) {
+      if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hPtProng0Sig"), ptProng0, rapidityCandidate);
           registry.fill(HIST("hPtProng1Sig"), ptProng1, rapidityCandidate);
           registry.fill(HIST("hDecLengthSig"), declengthCandidate, rapidityCandidate);
@@ -310,18 +309,18 @@ struct TaskD0 {
           registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
           registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
           registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
-          if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
           }
         }
       }
-      if (candidate.isSelD0bar() >= d_selectionFlagD0) {
+      if (candidate.isSelD0bar() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-        if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-          if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           }
         }
@@ -330,15 +329,15 @@ struct TaskD0 {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
-        if (cutYCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > cutYCandMax) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
-        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
@@ -352,10 +351,10 @@ struct TaskD0 {
     }
   }
 
-  PROCESS_SWITCH(TaskD0, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskD0, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskD0>(cfgc, TaskName{"hf-task-d0"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskD0>(cfgc)};
 }

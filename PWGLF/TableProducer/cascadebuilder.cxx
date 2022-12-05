@@ -77,13 +77,18 @@ struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  HistogramRegistry registry{
+    "registry",
+    {{"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
+  };
+
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
   OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 20, 0, 20)};
 
   // Configurables
   Configurable<double> d_bz_input{"d_bz", -999, "bz field"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", true, "Vertices use cov matrices"};
+  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   // Selections
@@ -364,9 +369,13 @@ struct cascadeBuilder {
         int nCand2 = 0;
         try {
           nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+          registry.fill(HIST("hCatchedExceptions"), 0.5f);
         } catch (...) {
+          registry.fill(HIST("hCatchedExceptions"), 1.5f);
           LOG(error) << "Exception caught in fitterCasc.process";
-        };
+          continue;
+        }
+
         if (nCand2 == 0) {
           continue;
         }
@@ -454,6 +463,7 @@ struct cascadeLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hXiMinus", "hXiMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hXiPlus", "hXiPlus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hOmegaMinus", "hOmegaMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},

@@ -15,7 +15,12 @@ o2physics_add_dpl_workflow(twopartcorr-register-skim
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(twopartcorr-skim
-                           SOURCES twoParticleCorrelationsSkimming.cxx
+                           SOURCES twoParticleCorrelationsFullSkimming.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(twopartcorr-notstored-skim
+                           SOURCES twoParticleCorrelationsNotStoredSkimming.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
 
