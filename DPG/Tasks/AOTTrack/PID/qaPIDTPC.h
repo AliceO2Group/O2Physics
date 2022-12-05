@@ -15,6 +15,9 @@
 /// \brief  Header file for QA tasks of the TPC PID quantities
 ///
 
+#ifndef DPG_TASKS_AOTTRACK_PID_QAPIDTPC_H_
+#define DPG_TASKS_AOTTRACK_PID_QAPIDTPC_H_
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -465,3 +468,5 @@ struct tpcPidQa {
   makeProcessFunction(aod::pidTPCFullAl, aod::pidTOFFullAl, Alpha);
 #undef makeProcessFunction
 };
+
+#endif // DPG_TASKS_AOTTRACK_PID_QAPIDTPC_H_
