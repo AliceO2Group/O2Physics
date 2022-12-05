@@ -42,6 +42,10 @@ namespace hf_amb_tracks
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
 DECLARE_SOA_INDEX_COLUMN(Track, track);         //!
+
+DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t); //!
+enum eTrackType {Ambiguous=0, PVContributor};
+
 DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);        //!
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);          //!
 DECLARE_SOA_COLUMN(P, p, float);                //!
@@ -69,7 +73,8 @@ DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //!
 
 DECLARE_SOA_TABLE(HfAmbTrack, "AOD", "HFAMBTRACK",                              //!
                   o2::soa::Index<>, hf_amb_tracks::TrackId,                     //!
-                  hf_amb_tracks::CollisionId, track::X, track::Alpha, track::Y, //!
+                  hf_amb_tracks::CollisionId, hf_amb_tracks::TrackType,         //!
+                  track::X, track::Alpha, track::Y,                             //!
                   track::Z, track::Snp, track::Tgl, track::Signed1Pt,           //!
                   hf_amb_tracks::Pt, hf_amb_tracks::P,                          //!
                   hf_amb_tracks::Eta, hf_amb_tracks::Phi,                       //!
