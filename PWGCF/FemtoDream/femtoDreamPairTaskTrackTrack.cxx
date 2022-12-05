@@ -43,9 +43,6 @@ static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "
 static const float cutsTable[nPart][nCuts]{
   {4.05f, 1.f, 3.f, 3.f, 100.f},
   {4.05f, 1.f, 3.f, 3.f, 100.f}};
-
-static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
-
 } // namespace
 
 struct femtoDreamPairTaskTrackTrack {
@@ -55,6 +52,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
+  Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
 
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
@@ -153,7 +151,14 @@ struct femtoDreamPairTaskTrackTrack {
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
+      if (!isFullPIDSelected(part.pidcut(),
+                             part.p(),
+                             cfgCutTable->get("PartOne", "PIDthr"),
+                             vPIDPartOne,
+                             cfgNspecies,
+                             ConfPIDnSigmaMax.value,
+                             cfgCutTable->get("PartOne", "nSigmaTPC"),
+                             cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
@@ -163,7 +168,14 @@ struct femtoDreamPairTaskTrackTrack {
         if (part.p() > cfgCutTable->get("PartTwo", "MaxP") || part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
           continue;
         }
-        if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgNspecies, kNsigma, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        if (!isFullPIDSelected(part.pidcut(),
+                               part.p(),
+                               cfgCutTable->get("PartTwo", "PIDthr"),
+                               vPIDPartTwo,
+                               cfgNspecies,
+                               ConfPIDnSigmaMax.value,
+                               cfgCutTable->get("PartTwo", "nSigmaTPC"),
+                               cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
         trackHistoPartTwo.fillQA(part);
@@ -174,7 +186,22 @@ struct femtoDreamPairTaskTrackTrack {
       if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgNspecies, kNsigma, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+      if (!isFullPIDSelected(p1.pidcut(),
+                             p1.p(),
+                             cfgCutTable->get("PartOne", "PIDthr"),
+                             vPIDPartOne,
+                             cfgNspecies,
+                             ConfPIDnSigmaMax.value,
+                             cfgCutTable->get("PartOne", "nSigmaTPC"),
+                             cfgCutTable->get("PartOne", "nSigmaTPCTOF")) ||
+          !isFullPIDSelected(p2.pidcut(),
+                             p2.p(),
+                             cfgCutTable->get("PartTwo", "PIDthr"),
+                             vPIDPartTwo,
+                             cfgNspecies,
+                             ConfPIDnSigmaMax.value,
+                             cfgCutTable->get("PartTwo", "nSigmaTPC"),
+                             cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
         continue;
       }
 
@@ -221,7 +248,22 @@ struct femtoDreamPairTaskTrackTrack {
         if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
           continue;
         }
-        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgNspecies, kNsigma, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        if (!isFullPIDSelected(p1.pidcut(),
+                               p1.p(),
+                               cfgCutTable->get("PartOne", "PIDthr"),
+                               vPIDPartOne,
+                               cfgNspecies,
+                               ConfPIDnSigmaMax.value,
+                               cfgCutTable->get("PartOne", "nSigmaTPC"),
+                               cfgCutTable->get("PartOne", "nSigmaTPCTOF")) ||
+            !isFullPIDSelected(p2.pidcut(),
+                               p2.p(),
+                               cfgCutTable->get("PartTwo", "PIDthr"),
+                               vPIDPartTwo,
+                               cfgNspecies,
+                               ConfPIDnSigmaMax.value,
+                               cfgCutTable->get("PartTwo", "nSigmaTPC"),
+                               cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
 
