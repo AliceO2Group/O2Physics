@@ -102,7 +102,7 @@ struct HfCandidateCreatorOmegac {
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
 
-  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>; // TrackSelection contains info about Nclusters in detectors
+  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
 
   // - - - - - - - - - - PROCESS - - - - - - - - - -
   void process(SelectedCollisions::iterator const& collision,
@@ -172,12 +172,12 @@ struct HfCandidateCreatorOmegac {
         continue;
       }
       auto v0 = casc.v0_as<aod::V0sLinked>();
-      auto v0element = v0.v0Data(); // V0 element from LF table containing V0 info
+      auto v0element = v0.v0Data();                     // V0 element from LF table containing V0 info
       // V0 positive daughter
       auto trackv0dau0 = v0element.posTrack_as<MyTracks>(); // p <- V0 track (positive track) from MyTracks table
       // V0 negative daughter
       auto trackv0dau1 = v0element.negTrack_as<MyTracks>(); // pion <- V0 track (negative track) from MyTracks table
-
+      
       // check that particles come from the same collision
       if (RejDiffCollTrack) {
         if (trackv0dau0.collisionId() != trackv0dau1.collisionId()) {
@@ -215,8 +215,8 @@ struct HfCandidateCreatorOmegac {
       if (!dfv.isPropagateTracksToVertexDone()) {
         continue;
       }
-      dfv.getTrack(0).getPxPyPzGlo(pvecV0Dau0);
-      dfv.getTrack(1).getPxPyPzGlo(pvecV0Dau1);
+      dfv.getTrack(0).getPxPyPzGlo(pvecV0Dau0); 
+      dfv.getTrack(1).getPxPyPzGlo(pvecV0Dau1); 
       array<float, 3> pvecV0_m = {pvecV0Dau0[0] + pvecV0Dau1[0], pvecV0Dau0[1] + pvecV0Dau1[1], pvecV0Dau0[2] + pvecV0Dau1[2]};
 
       std::array<float, 3> coordvtx_v0 = dfv.getPCACandidatePos();
@@ -243,7 +243,7 @@ struct HfCandidateCreatorOmegac {
       if (nfc == 0) {
         continue;
       }
-      auto vertexcascFromFitter = dfc.getPCACandidate();
+      auto vertexcascFromFitter = dfc.getPCACandidate(); 
       auto chi2PCA_cascade = dfc.getChi2AtPCACandidate();
       array<float, 3> pvecV0_d;
       array<float, 3> pvecpionfromcasc;
@@ -251,8 +251,8 @@ struct HfCandidateCreatorOmegac {
       if (!dfc.isPropagateTracksToVertexDone()) {
         continue;
       }
-      dfc.getTrack(0).getPxPyPzGlo(pvecV0_d);
-      dfc.getTrack(1).getPxPyPzGlo(pvecpionfromcasc);
+      dfc.getTrack(0).getPxPyPzGlo(pvecV0_d);         
+      dfc.getTrack(1).getPxPyPzGlo(pvecpionfromcasc); 
       array<float, 3> pveccasc_m = {pvecV0_d[0] + pvecpionfromcasc[0], pvecV0_d[1] + pvecpionfromcasc[1], pvecV0_d[2] + pvecpionfromcasc[2]};
 
       std::array<float, 3> coordvtx_casc = dfc.getPCACandidatePos();
@@ -302,8 +302,8 @@ struct HfCandidateCreatorOmegac {
         if (!df.isPropagateTracksToVertexDone()) {
           continue;
         }
-        df.getTrack(0).getPxPyPzGlo(pveccasc_d);
-        df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac);
+        df.getTrack(0).getPxPyPzGlo(pveccasc_d);                                                                                                            // update cascade momentum at omegac decay vertex
+        df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac);                                                                                                    // update pi <- omegac momentum at omegac decay vertex
         array<float, 3> pvecomegac = {pveccasc_d[0] + pvecpionfromomegac[0], pveccasc_d[1] + pvecpionfromomegac[1], pveccasc_d[2] + pvecpionfromomegac[2]}; // omegac momentum
 
         std::array<float, 3> coordvtx_omegac = df.getPCACandidatePos();
@@ -320,9 +320,9 @@ struct HfCandidateCreatorOmegac {
 
         // impact parameter
         auto covMatrixPV = primaryVertex.getCov();
-        o2::dataformats::DCA impactParameterCasc;
-        o2::dataformats::DCA impactParameterPrimaryPi;
-        o2::dataformats::DCA impactParameterV0;
+        o2::dataformats::DCA impactParameterCasc;      
+        o2::dataformats::DCA impactParameterPrimaryPi; 
+        o2::dataformats::DCA impactParameterV0;        
         trackcasc_copy.propagateToDCA(primaryVertex, magneticField, &impactParameterCasc);
         trackParVarPi_copy.propagateToDCA(primaryVertex, magneticField, &impactParameterPrimaryPi);
         trackV0_copy.propagateToDCA(primaryVertex, magneticField, &impactParameterV0);
@@ -417,7 +417,7 @@ struct HfCandidateCreatorOmegac {
                          pvecpionfromcasc[0], pvecpionfromcasc[1], pvecpionfromcasc[2],
                          pvecV0Dau0[0], pvecV0Dau0[1], pvecV0Dau0[2],
                          pvecV0Dau1[0], pvecV0Dau1[1], pvecV0Dau1[2],
-                         impactParameterCasc.getY(), impactParameterPrimaryPi.getY(),
+                         impactParameterCasc.getY(), impactParameterPrimaryPi.getY(), 
                          impactParameterCasc.getZ(), impactParameterPrimaryPi.getZ(),
                          impactParameterV0.getY(), impactParameterV0.getZ(),
                          std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPrimaryPi.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
@@ -442,6 +442,7 @@ struct HfCandidateCreatorOmegac {
   }     // end of process
 };      // end of struct
 
+
 /// Performs MC matching.
 struct HfCandidateCreatorOmegacMc {
   Produces<aod::HfCandOmegacMCRec> rowMCMatchRec;
@@ -449,7 +450,7 @@ struct HfCandidateCreatorOmegacMc {
 
   void process(aod::HfCandOmegacBase const& candidates,
                aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles const& particlesMC) 
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -463,7 +464,7 @@ struct HfCandidateCreatorOmegacMc {
       flag = 0;
       // origin = 0;
       debug = 0;
-      auto arrayDaughters = array{candidate.primarypi_as<aod::BigTracksMC>(), // pi <- omegac
+      auto arrayDaughters = array{candidate.primarypi_as<aod::BigTracksMC>(), // pi <- omegac 
                                   candidate.bachelor_as<aod::BigTracksMC>(),  // pi <- cascade
                                   candidate.posTrack_as<aod::BigTracksMC>(),  // p <- lambda
                                   candidate.negTrack_as<aod::BigTracksMC>()}; // pi <- lambda

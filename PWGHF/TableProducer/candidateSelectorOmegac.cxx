@@ -209,21 +209,21 @@ struct HFOmegacCandidateSelector {
         continue;
       }
 
-      // TPC clusters selections
-      if (trackPiFromOmeg.tpcNClsFound() < tpcClusters) { // Clusters found in TPC
+      //  TPC clusters selections
+      if  (trackPiFromOmeg.tpcNClsFound() < tpcClusters)  {
         continue;
       }
-      if (trackPiFromLam.tpcNClsFound() < tpcClusters) { // LF cut in cascadeanalysis.cxx
+      if (trackPiFromLam.tpcNClsFound() < tpcClusters) { 
         continue;
       }
-      if (trackPrFromLam.tpcNClsFound() < tpcClusters) { // LF cut in cascadeanalysis.cxx
+      if (trackPrFromLam.tpcNClsFound() < tpcClusters) { 
         continue;
       }
-      if (trackPiFromCasc.tpcNClsFound() < tpcClusters) { // LF cut in cascadeanalysis.cxx
+      if (trackPiFromCasc.tpcNClsFound() < tpcClusters) { 
         continue;
       }
 
-      if (trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows) { // Crossed rows found in TPC
+      if (trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows) { 
         continue;
       }
       if (trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRows) {
@@ -236,24 +236,15 @@ struct HFOmegacCandidateSelector {
         continue;
       }
 
-      if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio) { // Crossed rows over findable clusters in TPC
+      if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio) {
         continue;
       }
-      /*if(trackPiFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){
-        continue;
-      }
-      if(trackPrFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){
-        continue;
-      }
-      if(trackPiFromCasc.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio){
-        continue;
-      }*/
 
-      // ITS clusters selection
-      if (trackPiFromOmeg.itsNCls() < itsClusters) { // Clusters found in ITS
+      //  ITS clusters selection
+      if  (trackPiFromOmeg.itsNCls() < itsClusters)  {
         continue;
       }
-      if (trackPiFromOmeg.itsNClsInnerBarrel() < itsClustersInnBarr) { // Clusters found in the ITS inner barrel
+      if (trackPiFromOmeg.itsNClsInnerBarrel() < itsClustersInnBarr) {
         continue;
       }
       if (trackPiFromCasc.itsNCls() < itsClusters) {
@@ -328,7 +319,7 @@ struct HFOmegacCandidateSelector {
         statusinvmassOmegac = 1;
         if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1 && statusinvmassCascade == 1) {
           hTest2->Fill(5.5);
-        }
+        };
       }
 
       hfSelOmegacCandidate(statuspidLambda, statuspidCascade, statuspidOmegac, statusinvmassLambda, statusinvmassCascade, statusinvmassOmegac);
