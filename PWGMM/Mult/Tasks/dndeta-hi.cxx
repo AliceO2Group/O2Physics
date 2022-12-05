@@ -55,7 +55,7 @@ AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "eventclass"};
-AxisSpec TrigClassAxis = {kTrigbegin - 1, kTrigbegin + 0.5, kTrigend - 0.5, "triggclass"};
+AxisSpec TrigClassAxis = {kTrigend - 1, kTrigend + 0.5, kTrigend - 0.5, "triggclass"};
 std::vector<double> centBinning = {0., 20, 60., 90., 100};
 AxisSpec CentAxis = {centBinning, "centrality"};
 
@@ -246,7 +246,7 @@ struct MultiplicityCounter {
         usedTracksIds.emplace_back(ttrack.globalIndex());
         if (ttrack.has_mcParticle()) {
           // registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), 50., z, ttrack.mcParticle_as<Particles>().eta());
+          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
         } else {
           // when secondary
         }
@@ -257,7 +257,7 @@ struct MultiplicityCounter {
         }
         if (track.has_mcParticle()) {
           // registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), 50., z, track.mcParticle_as<Particles>().eta());
+          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
           // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 2);
         } else {
           // when secondary
