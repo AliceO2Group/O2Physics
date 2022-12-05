@@ -187,7 +187,7 @@ struct HfCorrelatorDplusHadrons {
           if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex()) || (candidate1.prong2Id() == track.globalIndex())) {
             continue;
           }
-          entryDplusHadronPair(RecoDecay::constrainAngle(getDeltaPhi(track.phi(), candidate1.phi()), -o2::constants::math::PI / 2.),
+          entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
                                track.eta() - candidate1.eta(),
                                candidate1.pt(),
                                track.pt());
@@ -279,7 +279,7 @@ struct HfCorrelatorDplusHadrons {
           if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
             continue; // Remove secondary tracks
           }
-          entryDplusHadronPair(RecoDecay::constrainAngle(getDeltaPhi(track.phi(), candidate1.phi()), -o2::constants::math::PI / 2.),
+          entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
                                track.eta() - candidate1.eta(),
                                candidate1.pt(),
                                track.pt());
@@ -331,7 +331,7 @@ struct HfCorrelatorDplusHadrons {
         if ((std::abs(particle2.pdgCode()) != 11) && (std::abs(particle2.pdgCode()) != 13) && (std::abs(particle2.pdgCode()) != 211) && (std::abs(particle2.pdgCode()) != 321) && (std::abs(particle2.pdgCode()) != 2212)) {
           continue;
         }
-        entryDplusHadronPair(RecoDecay::constrainAngle(getDeltaPhi(particle2.phi(), particle1.phi()), -o2::constants::math::PI / 2.),
+        entryDplusHadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                              particle2.eta() - particle1.eta(),
                              particle1.pt(),
                              particle2.pt());
