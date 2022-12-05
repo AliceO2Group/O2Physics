@@ -540,6 +540,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   if (doMC) {
     workflow.push_back(adaptAnalysisTask<HfCandidateCreatorOmegacMc>(cfgc));
   }
-
   return workflow;
 }

@@ -319,7 +319,7 @@ struct HFOmegacCandidateSelector {
         statusinvmassOmegac = 1;
         if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1 && statusinvmassCascade == 1) {
           hTest2->Fill(5.5);
-        };
+        }
       }
 
       hfSelOmegacCandidate(statuspidLambda, statuspidCascade, statuspidOmegac, statusinvmassLambda, statusinvmassCascade, statusinvmassOmegac);
