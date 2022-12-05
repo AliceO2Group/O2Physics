@@ -96,9 +96,9 @@ struct femtoDreamProducerReducedTask {
   Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   // off set the center of the nsigma distribution to deal with bad TPC/TOF calibration
-  Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
-  Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
-  Configurable<std::vector<int>> ConfTrkTPIDspecies{"ConfTrkTPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
+  Configurable<float> ConfPIDnSigmaOffsetTPC{"ConfPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
+  Configurable<float> ConfPIDnSigmaOffsetTOF{"ConfPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
+  Configurable<std::vector<int>> ConfPIDspecies{"ConfPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
@@ -124,8 +124,8 @@ struct femtoDreamProducerReducedTask {
     trackCuts.setSelection(ConfTrkDCAxyMax, femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkDCAzMax, femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-    trackCuts.setPIDSpecies(ConfTrkTPIDspecies);
-    trackCuts.setnSigmaPIDOffset(ConfTrkPIDnSigmaOffsetTPC, ConfTrkPIDnSigmaOffsetTOF);
+    trackCuts.setPIDSpecies(ConfPIDspecies);
+    trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack,
                    aod::femtodreamparticle::TrackType::kNoChild,
                    aod::femtodreamparticle::cutContainerType>(&qaRegistry);
