@@ -387,7 +387,7 @@ struct lfTpcPid {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    if (ts != 0) {
+    if (ts >= 0) {
       LOGP(info, "Initialising LF TPC PID response for fixed timestamp {}:", ts);
       ccdb->setTimestamp(ts);
     }
