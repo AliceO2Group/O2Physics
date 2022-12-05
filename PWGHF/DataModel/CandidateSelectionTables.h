@@ -12,8 +12,8 @@
 /// \file CandidateSelectionTables.h
 /// \brief Definitions of tables produced by candidate selectors
 
-#ifndef O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
-#define O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
+#ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
+#define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
 namespace o2::aod
 {
@@ -247,4 +247,5 @@ DECLARE_SOA_TABLE(HFSelOmegacCandidate, "AOD", "HFSELOMECCAND",
                  );
 
 } // namespace o2::aod
-#endif // O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
+
+#endif  // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_

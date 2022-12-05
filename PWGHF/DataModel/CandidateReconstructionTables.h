@@ -15,8 +15,8 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
-#define O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
+#define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
 #include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
@@ -1166,7 +1166,7 @@ DECLARE_SOA_TABLE(HfCandXiccMcGen, "AOD", "HFCANDXICCMCGEN", //!
 namespace hf_cand_omegac
 {  
   //Data processing results: 
-  DECLARE_SOA_INDEX_COLUMN(Collision, collision); //same syntax as in HFCAND_COLUMNS
+  DECLARE_SOA_INDEX_COLUMN(Collision, collision);
   DECLARE_SOA_COLUMN(xDeacayVtxOmegac, xdecayvtxomegac, float);
   DECLARE_SOA_COLUMN(yDeacayVtxOmegac, ydecayvtxomegac, float);
   DECLARE_SOA_COLUMN(zDeacayVtxOmegac, zdecayvtxomegac, float);
@@ -1212,11 +1212,9 @@ namespace hf_cand_omegac
   DECLARE_SOA_COLUMN(ErrImpactParCascXY, errimpactparcascxy, float);
   DECLARE_SOA_COLUMN(ErrImpactParPrimaryPiXY, errimpactparprimarypixy, float);
   DECLARE_SOA_COLUMN(ErrImpactParV0XY, errimpactparv0xy, float);
-  //DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCascades,"_0"); //cascade index
   DECLARE_SOA_INDEX_COLUMN(Cascade, cascade); //cascade index
   DECLARE_SOA_INDEX_COLUMN(V0, v0); //cascade index
   DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primarypi, int, Tracks, "_primarypi");
-  //DECLARE_SOA_INDEX_COLUMN_FULL(XiDau, xidau, int, Tracks, "_xidau");
   DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactparomegacxy, float);
   DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactparomegacz, float);
   DECLARE_SOA_COLUMN(PtPrimaryPi, ptprimarypi, double);
@@ -1273,10 +1271,10 @@ namespace hf_cand_omegac
                       hf_cand_omegac::xDeacayVtxCascade, hf_cand_omegac::yDeacayVtxCascade, hf_cand_omegac::zDeacayVtxCascade,
                       hf_cand_omegac::xDeacayVtxV0, hf_cand_omegac::yDeacayVtxV0, hf_cand_omegac::zDeacayVtxV0,
                       //hf_cand_omegac::ErrDlOmegac, hf_cand_omegac::ErrDlOmegacXY,
-                      hf_cand_omegac::SignDecay, //carica del pi<-cascade (neg -> omegac, pos -> antiomegac)
+                      hf_cand_omegac::SignDecay, //charge pi<-cascade (neg -> omegac, pos -> antiomegac)
                       hf_cand_omegac::Chi2PCAOmegac, hf_cand_omegac::Chi2PCAV0, hf_cand_omegac::Chi2PCACascade,
-                      hf_cand_omegac::PxOmegac, hf_cand_omegac::PyOmegac, hf_cand_omegac::PzOmegac, //omegac momentum at decay point
-                      hf_cand_omegac::PxCascAtProd, hf_cand_omegac::PyCascAtProd, hf_cand_omegac::PzCascAtProd, //atprod=momento della particellla nel punto in cui viene prodotta (nel decay vertex della madre)
+                      hf_cand_omegac::PxOmegac, hf_cand_omegac::PyOmegac, hf_cand_omegac::PzOmegac,
+                      hf_cand_omegac::PxCascAtProd, hf_cand_omegac::PyCascAtProd, hf_cand_omegac::PzCascAtProd,
                       hf_cand_omegac::PxPrimaryPiAtProd, hf_cand_omegac::PyPrimaryPiAtProd, hf_cand_omegac::PzPrimaryPiAtProd,
                       hf_cand_omegac::PxLambdaAtProd, hf_cand_omegac::PyLambdaAtProd, hf_cand_omegac::PzLambdaAtProd,
                       hf_cand_omegac::PxPiFromCascAtProd, hf_cand_omegac::PyPiFromCascAtProd, hf_cand_omegac::PzPiFromCascAtProd,
@@ -1285,11 +1283,11 @@ namespace hf_cand_omegac
                       hf_cand_omegac::ImpactParCascXY, hf_cand_omegac::ImpactParPrimaryPiXY, hf_cand_omegac::ImpactParCascZ, hf_cand_omegac::ImpactParPrimaryPiZ,
                       hf_cand_omegac::ImpactParV0XY, hf_cand_omegac::ImpactParV0Z,
                       hf_cand_omegac::ErrImpactParCascXY, hf_cand_omegac::ErrImpactParPrimaryPiXY, hf_cand_omegac::ErrImpactParV0XY,
-                      hf_cand_omegac::V0Id, //same syntax as cascadebuilder.cxx and table CascData
-                      v0data::PosTrackId, v0data::NegTrackId, // indices of V0 tracks in FullTracks table - da lambdakzerobuilder.cxx in PWGLF e vedi header file LFStrangenessTable.h@line151
+                      hf_cand_omegac::V0Id, 
+                      v0data::PosTrackId, v0data::NegTrackId,
                       hf_cand_omegac::CascadeId, //cascade index 
-                      hf_cand_omegac::PrimaryPiId, //index of pi <- omegac (sintassi presa da candidate creator lambda_b)
-                      cascdata::BachelorId, //index of pi <- casc see LF table CascData DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "");
+                      hf_cand_omegac::PrimaryPiId, //index of pi <- omegac 
+                      cascdata::BachelorId, //index of pi <- casc
                       hf_cand_omegac::ImpactParOmegacXY, hf_cand_omegac::ImpactParOmegacZ,
                       hf_cand_omegac::PtPrimaryPi,
                       hf_cand_omegac::InvMassLambda, hf_cand_omegac::InvMassAntiLambda, hf_cand_omegac::InvMassCascade, hf_cand_omegac::InvMassOmegac,
@@ -1592,4 +1590,5 @@ DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::OriginMcGen);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#endif  // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
+
