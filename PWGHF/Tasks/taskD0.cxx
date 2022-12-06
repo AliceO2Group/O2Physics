@@ -262,7 +262,7 @@ struct HfTaskD0 {
           }
           if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
             registry.fill(HIST("hPtVsYRecSigNonPromptReco"), ptRec, yRec); // rec. level pT, non-prompt
-            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec)
+            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec);
           }
         }
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
