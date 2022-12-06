@@ -51,6 +51,11 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
+// Account for rigidity in case of hypertriton
+DECLARE_SOA_DYNAMIC_COLUMN(PtHypertriton, ptHypertriton, //! V0 pT
+                           [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(2.0f*pxpos + pxneg, 2.0f*pypos + pyneg); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtAntiHypertriton, ptAntiHypertriton, //! V0 pT
+                           [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + 2.0f*pxneg, pypos + 2.0f*pyneg); });
 
 // Length quantities
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //! V0 decay radius (2D, centered at zero)
@@ -121,11 +126,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(MK0Short, mK0Short, //! mass under K0short hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)}); });
 DECLARE_SOA_DYNAMIC_COLUMN(MGamma, mGamma, //! mass under gamma hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)}); });
+// Account for rigidity in case of hypertriton
+DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under hypertriton  hypothesis
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{2.0f*pxpos, 2.0f*pypos, 2.0f*pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)}); });
+DECLARE_SOA_DYNAMIC_COLUMN(MAntiHypertriton, mAntiHypertriton, //! mass under antihypertriton hypothesis
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{2.0f*pxneg, 2.0f*pyneg, 2.0f*pzneg}}, array{RecoDecay::getMassPDG(kPiPlus), 2.80923}); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(YK0Short, yK0Short, //! V0 y with K0short hypothesis
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, RecoDecay::getMassPDG(kK0)); });
 DECLARE_SOA_DYNAMIC_COLUMN(YLambda, yLambda, //! V0 y with lambda or antilambda hypothesis
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, RecoDecay::getMassPDG(kLambda0)); });
+DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton, //! V0 y with hypertriton hypothesis
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::y(array{2.0f*pxpos+pxneg, 2.0f*pypos+pyneg, 2.0f*pzpos+pzneg}, 2.99131); });
+DECLARE_SOA_DYNAMIC_COLUMN(YAntiHypertriton, yAntiHypertriton, //! V0 y with antihypertriton hypothesis
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::y(array{pxpos+2.0f*pxneg, pypos+2.0f*pyneg, pzpos+2.0f*pzneg}, 2.99131); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! V0 eta
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! V0 phi
