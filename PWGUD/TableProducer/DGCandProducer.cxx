@@ -169,9 +169,9 @@ struct DGCandProducer {
       }
     }
 
-    // fill BG and BB flags in adjacent BCs [-15, 15]
+    // fill BG and BB flags in adjacent BCs [-16, 15]
     // compute range to check
-    auto minbc = bcnum - 15;
+    auto minbc = bcnum - 16;
     auto maxbc = bcnum + 15;
     Partition<BCs> bcrange = aod::bc::globalBC >= minbc && aod::bc::globalBC <= maxbc;
     bcrange.bindTable(bcs);

@@ -66,6 +66,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all tracks and fill tracksInBCList
+    LOGF(debug, "Number of barrel tracks: %d", tracks.size());
     for (auto const& track : tracks) {
       registry.get<TH1>(HIST("barrelTracks"))->Fill(0., 1.);
       auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
@@ -135,6 +136,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all forward tracks and fill fwdTracksWGTInBCList
+    LOGF(debug, "Number of forward tracks: %d", fwdTracks.size());
     for (auto const& fwdTrack : fwdTracks) {
       registry.get<TH1>(HIST("forwardTracks"))->Fill(0., 1.);
       auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
@@ -272,7 +274,7 @@ struct DGBCCandProducer {
   {
     // FITinfo
     upchelpers::FITInfo info{};
-    uint64_t minbc = bcnum > 15 ? bcnum - 15 : 0;
+    uint64_t minbc = bcnum > 16 ? bcnum - 16 : 0;
 
     // find bc with globalBC = bcnum
     Partition<BCs> selbc = aod::bc::globalBC == bcnum;
@@ -330,10 +332,10 @@ struct DGBCCandProducer {
         info.triggerMaskFDD = fdd.triggerMask();
       }
 
-      auto bcrange = udhelpers::compatibleBCs(bc, bcnum, 15, bcs);
+      auto bcrange = udhelpers::compatibleBCs(bc, bcnum, 16, bcs);
       fillBGBBFlags(info, minbc, bcrange);
     } else {
-      auto bcrange = udhelpers::compatibleBCs(bcnum, 15, bcs);
+      auto bcrange = udhelpers::compatibleBCs(bcnum, 16, bcs);
       fillBGBBFlags(info, minbc, bcrange);
     }
     return info;
