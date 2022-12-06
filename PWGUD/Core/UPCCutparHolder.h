@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_UPCCUT_HOLDER_H_
-#define O2_ANALYSIS_UPCCUT_HOLDER_H_
+#ifndef PWGUD_CORE_UPCCUTPARHOLDER_H_
+#define PWGUD_CORE_UPCCUTPARHOLDER_H_
 
 #include <Rtypes.h>
 
@@ -206,4 +206,4 @@ class UPCCutparHolder
   ClassDefNV(UPCCutparHolder, 1);
 };
 
-#endif // O2_ANALYSIS_UPCCUT_HOLDER_H_
+#endif  // PWGUD_CORE_UPCCUTPARHOLDER_H_
