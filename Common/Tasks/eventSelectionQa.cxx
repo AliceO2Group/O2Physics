@@ -227,10 +227,6 @@ struct EventSelectionQaTask {
     histos.add("hMultT0Azac", "", kTH1F, {axisMultT0A});
     histos.add("hMultT0Czac", "", kTH1F, {axisMultT0C});
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Remove temporary fixes for ZDC in apass1/2
     histos.add("hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribITSonly", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribWithTOF", "", kTH2F, {axisNcontrib, axisColTimeRes});
@@ -500,13 +496,13 @@ struct EventSelectionQaTask {
         metadata["runNumber"] = Form("%d", runNumber);
         auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
         uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
-        int64_t tsSOR = grpecs->getTimeStart() * 1000;  // ms -> us
-        int64_t tsEOR = grpecs->getTimeEnd() * 1000;    // ms -> us
-        LOGP(info, "nOrbitsPerTF={} tsSOR={} us tsEOR={} us", nOrbitsPerTF, tsSOR, tsEOR);
+        int64_t tsSOR = grpecs->getTimeStart();  // ms
+        int64_t tsEOR = grpecs->getTimeEnd();    // ms
+        LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits
-        int64_t orbitSOR = (tsSOR - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        int64_t orbitEOR = (tsEOR - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+        int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+        int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
 
         // adjust to the nearest TF edge
         orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF - 1;
@@ -529,6 +525,12 @@ struct EventSelectionQaTask {
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
       histos.add("hOrbitZDC", "", kTH1F, {axisOrbits});
       histos.add("hOrbitColMC", "", kTH1F, {axisOrbits});
+      
+      double minSec = floor(tsSOR / 1000.);
+      double maxSec = ceil(tsEOR / 1000.);
+      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
+      const AxisSpec axisBcDif{200, -100., 100., "collision bc difference"};
+      histos.add("hSecondsTVXvsBcDif", "", kTH2F, {axisSeconds, axisBcDif});
     }
 
     // background studies
@@ -861,6 +863,9 @@ struct EventSelectionQaTask {
         if (track.pt() < 1)
           continue;
         histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+        if (track.eta() < -0.2 || track.eta()> 0.2) 
+          continue;
+        histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       }
 
       histos.fill(HIST("hNcontribCol"), nContributors);
