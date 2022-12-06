@@ -31,6 +31,7 @@ enum Code {
   kD0Bar = -421,
   kDPlus = 411,
   kDMinus = -411,
+  kDStar = 413,
   kDS = 431,
   kLambdaCPlus = 4122,
   kXiCPlus = 4232,
