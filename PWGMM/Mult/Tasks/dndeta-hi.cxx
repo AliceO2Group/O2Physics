@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <chrono>
+#include <cmath>
+#include <iostream>
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -26,9 +29,6 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TDatabasePDG.h"
 #include "bestCollisionTable.h"
-#include <chrono>
-#include <cmath>
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
