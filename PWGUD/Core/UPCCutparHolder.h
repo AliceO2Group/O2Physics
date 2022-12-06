@@ -116,6 +116,7 @@ class UPCCutparHolder
   void setDcaZHigh(float dcaZHigh);
   void setRequireTOF(bool requireTOF);
   void setRequireITSTPC(bool requireITSTPC);
+  void setProduceITSITS(bool produceITSITS);
   void setMaxNContrib(int maxNContrib);
   void setAmbigSwitch(int ambigSwitch);
 
@@ -150,6 +151,7 @@ class UPCCutparHolder
   float getDcaZHigh() const;
   bool getRequireTOF() const;
   bool getRequireITSTPC() const;
+  bool getProduceITSITS() const;
   int getMaxNContrib() const;
   int getAmbigSwitch() const;
 
@@ -195,6 +197,7 @@ class UPCCutparHolder
   // quality: matching
   bool fRequireTOF{false};    // Require all tracks in event candidates to have TOF matches
   bool fRequireITSTPC{false}; // Require all tracks in event candidates to have ITS-TPC matches
+  bool fProduceITSITS{false}; // Produce candidates using only ITS-TPC tracks as well
 
   // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
   int fMaxNContrib{2}; // Central barrel: consider tracks from collisions with N contributors <= maxNContrib
