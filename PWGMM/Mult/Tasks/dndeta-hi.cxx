@@ -371,3 +371,4 @@ struct MultiplicityCounter {
 WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
   return WorkflowSpec{adaptAnalysisTask<MultiplicityCounter>(cfgc)};
 }
+
