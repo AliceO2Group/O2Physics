@@ -229,7 +229,6 @@ struct HfTaskD0 {
           registry.fill(HIST("hPtVsYRecSigReco"), ptRec, yRec); // rec. level pT
           registry.fill(HIST("hPtRecSig"), ptRec);
         }
-
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoHFFlag"), ptRec, yRec);
