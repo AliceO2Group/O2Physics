@@ -213,9 +213,6 @@ struct HfTaskD0 {
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = yD0(candidate);
-        if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
-          registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        }
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
           registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
         }
@@ -230,12 +227,10 @@ struct HfTaskD0 {
         }
         if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
           registry.fill(HIST("hPtVsYRecSigReco"), ptRec, yRec); // rec. level pT
+          registry.fill(HIST("hPtRecSig"), ptRec);
         }
 
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
-            registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-          }
           if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoHFFlag"), ptRec, yRec);
           }
@@ -250,11 +245,9 @@ struct HfTaskD0 {
           }
           if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
             registry.fill(HIST("hPtVsYRecSigPromptReco"), ptRec, yRec); // rec. level pT, prompt
+            registry.fill(HIST("hPtRecSigPrompt"), ptRec);
           }
         } else {
-          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
-            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
-          }
           if (candidate.isRecoHfFlag() >= selectionFlagHf) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoHFFlag"), ptRec, yRec);
           }
@@ -269,6 +262,7 @@ struct HfTaskD0 {
           }
           if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
             registry.fill(HIST("hPtVsYRecSigNonPromptReco"), ptRec, yRec); // rec. level pT, non-prompt
+            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec)
           }
         }
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
