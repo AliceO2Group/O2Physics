@@ -16,7 +16,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <math.h>
+#include <cmath>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -51,7 +51,7 @@
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
+using collisionEvSelIt = o2::aod::Collision;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
@@ -94,9 +94,33 @@ struct Meson {
   Photon pgamma2;
   TLorentzVector pMeson;
 
-  float getMass() const { return pMeson.M(); };
-  float getPt() const { return pMeson.Pt(); };
-  float getOpeningAngle() const { return pgamma1.photon.Angle(pgamma2.photon.Vect()); };
+  float getMass() const { return pMeson.M(); }
+  float getPt() const { return pMeson.Pt(); }
+  float getOpeningAngle() const { return pgamma1.photon.Angle(pgamma2.photon.Vect()); }
+};
+
+struct EventMixVec {
+
+  void AddEvent(std::vector<Photon> vecGamma)
+  {
+    if (vecEvtMix.size() < nEVtMixSize) {
+      vecEvtMix.push_back(vecGamma);
+    } else {
+      vecEvtMix.erase(vecEvtMix.begin() + nEVtMixSize - 1);
+      vecEvtMix.push_back(vecGamma);
+    }
+  }
+  Photon* getPhoton(unsigned int iEvt, unsigned int iGamma)
+  {
+    if (vecEvtMix.size() >= iEvt)
+      return nullptr;
+    if (vecEvtMix[iEvt].size() >= iGamma)
+      return nullptr;
+    return &vecEvtMix[iEvt][iGamma];
+  }
+
+  std::vector<std::vector<Photon>> vecEvtMix;
+  unsigned int nEVtMixSize = 20;
 };
 
 struct Pi0QCTask {
@@ -115,6 +139,7 @@ struct Pi0QCTask {
   Configurable<float> mClusterMaxM02Cut{"MaxM02Cut", 0.7, "apply max M02 cut"};
   Configurable<float> mMinEnergyCut{"MinEnergyCut", 0.7, "apply min cluster energy cut"};
   Configurable<int> mMinNCellsCut{"MinNCellsCut", 1, "apply min cluster number of cell cut"};
+  Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -127,6 +152,11 @@ struct Pi0QCTask {
 
   // define container for photons
   std::vector<Photon> mPhotons;
+  // define container for photons for each collision
+  std::map<int, std::vector<Photon>> mapPhotons;
+
+  // event mixing class
+  EventMixVec evtMix;
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -145,6 +175,7 @@ struct Pi0QCTask {
 
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("eventsEMCTrigg", "Number of EMC triggered events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
@@ -154,6 +185,7 @@ struct Pi0QCTask {
     // cluster properties
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100}});
+    mHistManager.add("clusterTime", "Time of cluster", o2HistType::kTH1F, {{500, -250, 250}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
     mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
     mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5}});
@@ -164,6 +196,7 @@ struct Pi0QCTask {
     // meson related histograms
     mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
     mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
+    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -187,36 +220,38 @@ struct Pi0QCTask {
     }
   }
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::BCs const& bcs)
-  {
-    mHistManager.fill(HIST("eventsAll"), 1);
 
+  // void processCollisions(collisionEvSelIt const& collision, selectedClusters const& clusters)
+  void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision, selectedClusters const& clusters)
+  {
+    // for(const auto & collision : theCollisions){
+    mHistManager.fill(HIST("eventsAll"), 1);
+    LOG(debug) << "processCollisions";
     // do event selection if mDoEventSel is specified
     // currently the event selection is hard coded to kINT7
     // but other selections are possible that are defined in TriggerAliases.h
-    if (mDoEventSel && (!theCollision.alias()[kINT7])) {
+    if (mDoEventSel && (!collision.alias()[kINT7])) {
       LOG(debug) << "Event not selected becaus it is not kINT7, skipping";
       return;
     }
-    mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
-    if (mVertexCut > 0 && TMath::Abs(theCollision.posZ()) > mVertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
+    mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
+    if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
+      LOG(debug) << "Event not selected because of z-vertex cut z= " << collision.posZ() << " > " << mVertexCut << " cm, skipping";
       return;
     }
     mHistManager.fill(HIST("eventsSelected"), 1);
-    mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
+    mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
 
-    ProcessClusters(theCollision, clusters, bcs);
-    ProcessMesons(theCollision, clusters, bcs);
+    ProcessClusters(clusters);
+    ProcessMesons(clusters);
   }
   PROCESS_SWITCH(Pi0QCTask, processCollisions, "Process clusters from collision", false);
 
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
-  void processAmbiguous(o2::aod::BC const& bc, selectedAmbiguousClusters const& clusters)
+  void processAmbiguous(o2::aod::BCs::iterator const& bc, selectedAmbiguousClusters const& clusters)
   {
-    // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
-    // this can be used as alternative to event selection (e.g. for pilot beam data)
+    LOG(debug) << "processAmbiguous";
     // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
     o2::InteractionRecord eventIR;
     eventIR.setFromLong(bc.globalBC());
@@ -230,22 +265,35 @@ struct Pi0QCTask {
     }
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
 
-    // ToDo: Add mode if collision is not found
-    // ProcessClusters(theCollision, clusters, bcs);
-    // ProcessMesons(theCollision, clusters, bcs);
+    ProcessAmbigousClusters(clusters);
+    ProcessMesons(clusters);
   }
   PROCESS_SWITCH(Pi0QCTask, processAmbiguous, "Process Ambiguous clusters", false);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
   template <typename Clusters>
-  void ProcessClusters(collisionEvSelIt const& theCollision, Clusters const& clusters, o2::aod::BCs const& bcs)
+  void ProcessClusters(Clusters const& clusters)
   {
+    LOG(debug) << "ProcessClusters";
     // clear photon vector
     mPhotons.clear();
+    mapPhotons.clear();
+
+    int globalCollID = -1000;
 
     // loop over all clusters from accepted collision
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
     for (const auto& cluster : clusters) {
+
+      // o2::InteractionRecord eventIR;
+      auto collID = cluster.collisionId();
+      if (globalCollID == -1000)
+        globalCollID = collID;
+
+      if (globalCollID != collID) {
+        LOG(info) << "Something went wrong with the collision ID";
+      }
+
       // fill histograms of cluster properties
       // in this implementation the cluster properties are directly
       // loaded from the flat table, in the future one should
@@ -255,6 +303,7 @@ struct Pi0QCTask {
       LOG(debug) << "Cluster time: " << cluster.time();
       LOG(debug) << "Cluster M02: " << cluster.m02();
       mHistManager.fill(HIST("clusterE"), cluster.energy());
+      mHistManager.fill(HIST("clusterTime"), cluster.time());
       mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
       mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
       mHistManager.fill(HIST("clusterM02"), cluster.m02());
@@ -282,19 +331,73 @@ struct Pi0QCTask {
       }
 
       // put clusters in photon vector
-      // ToDo: At the moment, the eta and phi values are not corrected for a shift of the primary vertex! Should only be a small effect but has to be corrected
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
+    }
+  }
+
+  /// \brief Process EMCAL clusters that are matched to a collisions
+  template <typename Clusters>
+  void ProcessAmbigousClusters(Clusters const& clusters)
+  {
+    LOG(debug) << "ProcessClusters";
+    // clear photon vector
+    mPhotons.clear();
+
+    // loop over all clusters from accepted collision
+    for (const auto& cluster : clusters) {
+
+      // fill histograms of cluster properties
+      // in this implementation the cluster properties are directly
+      // loaded from the flat table, in the future one should
+      // consider using the AnalysisCluster object to work with
+      // after loading.
+      LOG(debug) << "Cluster energy: " << cluster.energy();
+      LOG(debug) << "Cluster time: " << cluster.time();
+      LOG(debug) << "Cluster M02: " << cluster.m02();
+      mHistManager.fill(HIST("clusterE"), cluster.energy());
+      mHistManager.fill(HIST("clusterTime"), cluster.time());
+      mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
+      mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
+      mHistManager.fill(HIST("clusterM02"), cluster.m02());
+      mHistManager.fill(HIST("clusterM20"), cluster.m20());
+      mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
+      mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
+      mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+
+      // apply basic cluster cuts
+      if (cluster.energy() < mMinEnergyCut) {
+        LOG(debug) << "Cluster rejected because of energy cut";
+        continue;
+      }
+      if (cluster.nCells() <= mMinNCellsCut) {
+        LOG(debug) << "Cluster rejected because of nCells cut";
+        continue;
+      }
+      if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
+        LOG(debug) << "Cluster rejected because of m02 cut";
+        continue;
+      }
+      if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
+        LOG(debug) << "Cluster rejected because of time cut";
+        continue;
+      }
+
+      // put clusters in photon vector
       mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
     }
   }
 
   /// \brief Process meson candidates, calculate invariant mass and pT and fill histograms
   template <typename Clusters>
-  void ProcessMesons(collisionEvSelIt const& theCollision, Clusters const& clusters, o2::aod::BCs const& bcs)
+  void ProcessMesons(Clusters const& clusters)
   {
+    LOG(debug) << "ProcessMesons " << mPhotons.size();
+
+    mHistManager.fill(HIST("eventsEMCTrigg"), 1);
+
     // if less then 2 clusters are found, skip event
-    if (mPhotons.size() < 2) {
+    if (mPhotons.size() < 2)
       return;
-    }
 
     // loop over all photon combinations and build meson candidates
     for (unsigned int ig1 = 0; ig1 < mPhotons.size(); ++ig1) {
@@ -302,12 +405,17 @@ struct Pi0QCTask {
 
         // build meson from photons
         Meson meson(mPhotons[ig1], mPhotons[ig2]);
-        mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
+        if (meson.getOpeningAngle() > mMinOpenAngleCut) {
+          mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
+        }
 
         // calculate background candidates (rotation background)
         CalculateBackground(meson, ig1, ig2);
       }
+      CalculateMixedBack(mPhotons[ig1]);
     }
+
+    evtMix.AddEvent(mPhotons);
   }
 
   /// \brief Calculate background (using rotation background method)
@@ -347,8 +455,24 @@ struct Pi0QCTask {
       Meson mesonRotated2(rotPhoton2, mPhotons[ig3]);
 
       // Fill histograms
-      mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
-      mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
+      if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
+        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
+      }
+      if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
+        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
+      }
+    }
+  }
+
+  void CalculateMixedBack(Photon gamma)
+  {
+    for (unsigned int i = 0; i < evtMix.vecEvtMix.size(); ++i) {
+      for (unsigned int ig1 = 0; ig1 < evtMix.vecEvtMix[i].size(); ++ig1) {
+        Meson meson(gamma, evtMix.vecEvtMix[i][ig1]);
+        if (meson.getOpeningAngle() > mMinOpenAngleCut) {
+          mHistManager.fill(HIST("invMassVsPtMixedBackground"), meson.getMass(), meson.getPt());
+        }
+      }
     }
   }
 
