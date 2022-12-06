@@ -81,19 +81,14 @@ struct MultiplicityCounter {
   // Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
   Configurable<bool> isMC{"isMC", false, "check if MC"};
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                                                          
-      {"hrecdndeta", "evntclass; triggerclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis, EtaAxis}}}, 
-      {"hgendndeta", "evntclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis, EtaAxis}}},                              
-      {"hreczvtx", "evntclass; triggerclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis}}},                 
-      {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}}                                               
-    }
+    {{"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},
+     {"hrecdndeta", "evntclass; triggerclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis, EtaAxis}}},
+     {"hgendndeta", "evntclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis, EtaAxis}}},
+     {"hreczvtx", "evntclass; triggerclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis}}},
+     {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}}}
 
   };
 
@@ -162,23 +157,19 @@ struct MultiplicityCounter {
   void processCounting(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     FiTracks const& tracks,
-  //  soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks) // 
-   soa::SmallGroups<aod::ReassignedTracksCore> const &atracks) // soa::Join<aod::AmbiguousTracks, aod::BestCollisions>
+    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
 
     registry.fill(HIST("Events/Selection"), 1.);
-    // Bool_t IsMB0 = false;
     if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
       registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), 50., z);
       usedTracksIds.clear();
-      // auto Ntrks = 0;
 
       tracketas.clear();
       for (auto& track : atracks) {
         auto otrack = track.track_as<FiTracks>();
-        //tracketas.push_back(track.etas());
         tracketas.push_back(otrack.eta());
       }
       for (auto& track : tracks) {
@@ -190,7 +181,6 @@ struct MultiplicityCounter {
 
       for (auto eta : tracketas) {
         registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, eta);
-        // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 1);
       }
     }
   }
@@ -233,7 +223,6 @@ struct MultiplicityCounter {
         auto ttrack = track.track_as<soa::Filtered<LabeledTracksEx>>();
         usedTracksIds.emplace_back(ttrack.globalIndex());
         if (ttrack.has_mcParticle()) {
-          // registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
           registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
         } else {
           // when secondary
@@ -244,16 +233,14 @@ struct MultiplicityCounter {
           continue;
         }
         if (track.has_mcParticle()) {
-          // registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND),50., z, track.mcParticle_as<Particles>().eta());
-          // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 2);
+          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
         } else {
           // when secondary
         }
       }
     }
   }
-  
+
   PROCESS_SWITCH(MultiplicityCounter, processMCCounting, "MC Count tracks", false);
 
   void processGen(
