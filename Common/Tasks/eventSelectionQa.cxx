@@ -863,7 +863,7 @@ struct EventSelectionQaTask {
         if (track.pt() < 1)
           continue;
         histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-        if (track.eta() < -0.2 || track.eta() > 0.2) 
+        if (track.eta() < -0.2 || track.eta() > 0.2)
           continue;
         histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       }
