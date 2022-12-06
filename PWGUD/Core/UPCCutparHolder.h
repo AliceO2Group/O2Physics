@@ -206,4 +206,4 @@ class UPCCutparHolder
   ClassDefNV(UPCCutparHolder, 1);
 };
 
-#endif  // PWGUD_CORE_UPCCUTPARHOLDER_H_
+#endif // PWGUD_CORE_UPCCUTPARHOLDER_H_
