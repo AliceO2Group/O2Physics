@@ -955,13 +955,6 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
     float bz = fgFitterTwoProngBarrel.getBz();
 
-    // ordering of tracks, so v1 has larger momentum
-    if (v1.P() < v2.P()) {
-      ROOT::Math::PtEtaPhiMVector v3 = v1;
-      v1 = v2;
-      v2 = v3;
-    }
-
     // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
     // vector product of pep X pem
     float vpx = 0, vpy = 0, vpz = 0;
