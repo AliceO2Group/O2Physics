@@ -149,7 +149,7 @@ struct DGCandAnalyzer {
 
     registry.add("2TrackAngle", "#2TrackAngle", {HistType::kTH1F, {{140, -0.2, 3.3}}});
     registry.add("2TrackAngleIVM", "#2TrackAngleIVM", {HistType::kTH2F, {axisIVM, {140, -0.2, 3.3}}});
-    
+
     registry.add("BBT0A", "#BBT0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
     registry.add("BBT0C", "#BBT0C", {HistType::kTH1F, {{32, -16.5, 15.5}}});
     registry.add("BBV0A", "#BBV0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
@@ -159,7 +159,7 @@ struct DGCandAnalyzer {
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
-  
+
   void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
   {
     // accept only selected run numbers
@@ -204,20 +204,20 @@ struct DGCandAnalyzer {
     }
 
     // check FIT information
-    for (auto bit = 16; bit<=16; bit++) {
-      //if (TESTBIT(dgcand.bbFT0Apf(), bit) || TESTBIT(dgcand.bbFT0Cpf(), bit)) {
+    for (auto bit = 16; bit <= 16; bit++) {
+      // if (TESTBIT(dgcand.bbFT0Apf(), bit) || TESTBIT(dgcand.bbFT0Cpf(), bit)) {
       if (TESTBIT(dgcand.bbFT0Apf(), bit)) {
         return;
       }
     }
 
     // full BBFlag histograms
-    for (auto bit = 0; bit<33; bit++) {
-      registry.get<TH1>(HIST("BBT0A"))->Fill(bit-16, TESTBIT(dgcand.bbFT0Apf(), bit));
-      registry.get<TH1>(HIST("BBT0C"))->Fill(bit-16, TESTBIT(dgcand.bbFT0Cpf(), bit));
-      registry.get<TH1>(HIST("BBV0A"))->Fill(bit-16, TESTBIT(dgcand.bbFV0Apf(), bit));
-      registry.get<TH1>(HIST("BBFDDA"))->Fill(bit-16, TESTBIT(dgcand.bbFDDApf(), bit));
-      registry.get<TH1>(HIST("BBFDDC"))->Fill(bit-16, TESTBIT(dgcand.bbFDDCpf(), bit));
+    for (auto bit = 0; bit < 33; bit++) {
+      registry.get<TH1>(HIST("BBT0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Apf(), bit));
+      registry.get<TH1>(HIST("BBT0C"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Cpf(), bit));
+      registry.get<TH1>(HIST("BBV0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFV0Apf(), bit));
+      registry.get<TH1>(HIST("BBFDDA"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
+      registry.get<TH1>(HIST("BBFDDC"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
 
     // find track combinations which are compatible with PID cuts
@@ -242,12 +242,12 @@ struct DGCandAnalyzer {
     // update histograms
     registry.get<TH1>(HIST("nIVMs"))->Fill(nIVMs, 1.);
     for (auto ivm : pidsel.IVMs()) {
-      
+
       // cut on pt-system
       if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
         continue;
       }
-      
+
       // applicable to 2-track events - cut on angle between two tracks
       bool goodEvent = true;
       if (dgcand.numContrib() == 2) {
@@ -257,10 +257,10 @@ struct DGCandAnalyzer {
         auto ind2 = ivm.trkinds()[1];
         auto trk2 = dgtracks.rawIteratorAt(ind2);
         auto v2 = TVector3(trk2.px(), trk2.py(), trk2.pz());
-        
+
         auto angle = v1.Angle(v2);
         LOGF(debug, "angle %f", angle);
-        
+
         // cut on angle
         if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
           continue;
@@ -269,7 +269,7 @@ struct DGCandAnalyzer {
           registry.get<TH2>(HIST("2TrackAngleIVM"))->Fill(ivm.M(), angle, 1.);
         }
       }
-      
+
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = dgtracks.rawIteratorAt(ind);
@@ -277,10 +277,10 @@ struct DGCandAnalyzer {
         registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasTPC() * 1.);
         registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTRD() * 1.);
         registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTOF() * 1.);
-        //registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
-        //registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
-        //registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
-        //registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
+        // registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
+        // registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
+        // registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
+        // registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
 
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 

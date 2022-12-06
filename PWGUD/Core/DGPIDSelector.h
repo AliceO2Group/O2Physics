@@ -21,7 +21,7 @@
 
 using namespace o2;
 
-//using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
+// using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
 using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra>;
 using UDTrackFull = UDTracksFull::iterator;
 
@@ -116,7 +116,7 @@ struct DGAnaparHolder {
                  float minalpha = 0.0, float maxalpha = 3.2,
                  std::vector<int> netCharges = {-2, -1, 0, 1, 2},
                  std::vector<float> DGPIDs = {211, 211},
-                 std::vector<float> DGPIDCutValues = {}) : mNCombine{nCombine}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mMinpt{minpt}, mMaxpt{maxpt},  mMinptsys{minptsys}, mMaxptsys{maxptsys},  mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+                 std::vector<float> DGPIDCutValues = {}) : mNCombine{nCombine}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mMinpt{minpt}, mMaxpt{maxpt}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
   {
     makeUniquePermutations();
   }
