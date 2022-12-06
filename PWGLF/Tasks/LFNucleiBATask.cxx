@@ -1423,7 +1423,7 @@ struct LFNucleiBATask {
 
   // Process function that runs on the original AO2D
   void processDataLfPid(EventCandidates::iterator const& event,
-                        TrackCandidates const& tracks)
+                        TrackCandidatesLfPid const& tracks)
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
   } // CLOSING PROCESS DATA
