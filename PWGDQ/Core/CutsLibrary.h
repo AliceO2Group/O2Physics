@@ -313,6 +313,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug4"));
     return cut;
   }
+  if (!nameStr.compare("LMee_TPCPost_calib_debug1")) {
+    cut->AddCut(GetAnalysisCut("lmee_trackCut_debug"));
+    cut->AddCut(GetAnalysisCut("lmee_TPCPID_debug1"));
+    return cut;
+  }
   //---------------------------------------------------------------------------------------
   // NOTE: Below there are several TPC pid cuts used for studies of the dE/dx degradation
   //    and its impact on the high lumi pp quarkonia triggers
@@ -742,6 +747,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kITSncls, 2.5, 7.5);
     return cut;
   }
+  if (!nameStr.compare("lmee_trackCut_debug")) {
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 80., 159);
+    cut->AddCut(VarManager::kITSncls, 0.0, 7.5);
+    return cut;
+  }
   if (!nameStr.compare("jpsi_TPCPID_debug1")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999);
@@ -770,6 +782,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4.0, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999);
+    return cut;
+  }
+  if (!nameStr.compare("lmee_TPCPID_debug1")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -5.0, 5.0);
     return cut;
   }
   if (!nameStr.compare("highPtHadron")) {
