@@ -486,7 +486,7 @@ struct HfTaskMcValidationRec {
           nGoodContributors++;
         }
       }
-      float frac = (nContributors > 0) ? float(nGoodContributors) / nContributors : 1.;
+      float frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
       registry.fill(HIST("histFracGoodContributors"), frac);
       uint64_t mostProbableBC = collision.bc().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
