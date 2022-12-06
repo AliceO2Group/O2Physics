@@ -800,7 +800,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the dalitz selections
   if constexpr ((fillMap & DalitzBits) > 0) {
     for (int i = 0; i < 8; i++) {
-      values[kIsDalitzLeg + i] = bool(track.dalitzBits() & (uint8_t(1) << i));
+      values[kIsDalitzLeg + i] = static_cast<bool>(track.dalitzBits() & (uint8_t(1) << i));
     }
   }
 
