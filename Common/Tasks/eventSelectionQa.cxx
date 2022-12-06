@@ -227,6 +227,10 @@ struct EventSelectionQaTask {
     histos.add("hMultT0Azac", "", kTH1F, {axisMultT0A});
     histos.add("hMultT0Czac", "", kTH1F, {axisMultT0C});
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> Remove temporary fixes for ZDC in apass1/2
     histos.add("hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribITSonly", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("hColTimeResVsNcontribWithTOF", "", kTH2F, {axisNcontrib, axisColTimeRes});
