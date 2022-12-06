@@ -496,8 +496,8 @@ struct EventSelectionQaTask {
         metadata["runNumber"] = Form("%d", runNumber);
         auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
         uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
-        int64_t tsSOR = grpecs->getTimeStart();  // ms
-        int64_t tsEOR = grpecs->getTimeEnd();    // ms
+        int64_t tsSOR = grpecs->getTimeStart();         // ms
+        int64_t tsEOR = grpecs->getTimeEnd();           // ms
         LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits
@@ -525,7 +525,7 @@ struct EventSelectionQaTask {
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
       histos.add("hOrbitZDC", "", kTH1F, {axisOrbits});
       histos.add("hOrbitColMC", "", kTH1F, {axisOrbits});
-      
+
       double minSec = floor(tsSOR / 1000.);
       double maxSec = ceil(tsEOR / 1000.);
       const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
@@ -863,7 +863,7 @@ struct EventSelectionQaTask {
         if (track.pt() < 1)
           continue;
         histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-        if (track.eta() < -0.2 || track.eta()> 0.2) 
+        if (track.eta() < -0.2 || track.eta() > 0.2) 
           continue;
         histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       }
