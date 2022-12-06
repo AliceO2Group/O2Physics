@@ -61,7 +61,7 @@ struct v0cascadesQA {
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0CosPA{"binV0CosPA", {200, 0.8f, 1.0f}, ""};
-  ConfigurableAxis binV0ACosPA{"binV0ACosPA", {1000, 0.f, 1.0f}, ""};
+  ConfigurableAxis binV0PA{"binV0PA", {1000, 0.f, 1.0f}, ""};
   ConfigurableAxis binV0Radius{"binV0Radius", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0DecayLength{"binV0DecayLength", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0DCANegToPV{"binV0DCANegToPV", {100, -1.0f, 1.0f}, ""};
@@ -86,6 +86,7 @@ struct v0cascadesQA {
   ConfigurableAxis binRadius{"binRadius", {100, 0.0f, 50.0f}, ""};
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
+  ConfigurableAxis binInvMassCasc{"binInvMassCasc", {1000, 0.f, 1.0f}, ""};
 
   HistogramRegistry histos_eve{
     "histos-eve",
@@ -136,10 +137,6 @@ struct v0cascadesQA {
       {"InvMassXiMinus_Radius", "InvMassXiMinus_Radius", {HistType::kTH2F, {{100, 0.f, 50.f}, {80, 1.28f, 1.36f}}}},
       {"InvMassOmegaPlus", "InvMassOmegaPlus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
       {"InvMassOmegaMinus", "InvMassOmegaMinus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
-      {"InvMassXiPlusVsPtVsCosPA", "InvMassXiPlusVsPtVsCosPA", {HistType::kTH3F, {{100, 0.f, 10.f}, {1000, 0.f, 1.0f}, {80, 1.28f, 1.36f}}}},
-      {"InvMassXiMinusVsPtVsCosPA", "InvMassXiMinusVsPtVsCosPA", {HistType::kTH3F, {{100, 0.f, 10.f}, {1000, 0.f, 1.0f}, {80, 1.28f, 1.36f}}}},
-      {"InvMassOmegaPlusVsPtVsCosPA", "InvMassOmegaPlusVsPtVsCosPA", {HistType::kTH3F, {{100, 0.f, 10.f}, {1000, 0.f, 1.0f}, {80, 1.63f, 1.71f}}}},
-      {"InvMassOmegaMinusVsPtVsCosPA", "InvMassOmegaMinusVsPtVsCosPA", {HistType::kTH3F, {{100, 0.f, 10.f}, {1000, 0.f, 1.0f}, {80, 1.63f, 1.71f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -150,6 +147,7 @@ struct v0cascadesQA {
     const AxisSpec axisPt{binPt, "p_{T} (GeV/c)"};
     const AxisSpec axisPtsmall{binPtsmall, "p_{T} (GeV/c)"};
     const AxisSpec axisV0CosPA{binV0CosPA, "V0 Cos(PA)"};
+    const AxisSpec axisV0PA{binV0PA, "Pointing Angle"};
     const AxisSpec axisV0Radius{binV0Radius, "V0 Radius (cm)"};
     const AxisSpec axisV0DecayLength{binV0DecayLength, "V0 Decay Length (cm)"};
     const AxisSpec axisV0DCANegToPV{binV0DCANegToPV, "V0 DCA Neg To PV (cm)"};
@@ -167,6 +165,7 @@ struct v0cascadesQA {
     const AxisSpec axisInvMassK0S{binInvMassK0S, "InvMass K0s"};
     const AxisSpec axisInvMassLambda{binInvMassLambda, "InvMass Lambda"};
     const AxisSpec axisInvMassAntiLambda{binInvMassAntiLambda, "InvMass AntiLambda"};
+    const AxisSpec axisInvMassCasc{binInvMassCasc, "InvMass Cascades"};
     const AxisSpec axisResponsePionFromLambda{binResponsePionFromLambda, "Response Pion From Lambda"};
     const AxisSpec axisResponseProtonFromLambda{binResponseProtonFromLambda, "Response Proton From Lambda"};
     const AxisSpec axisEta{binEta, "Eta"};
@@ -213,9 +212,9 @@ struct v0cascadesQA {
     histos_V0.add("InvMassK0S_PtRadius", "InvMassK0S_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassK0S});
     histos_V0.add("InvMassLambda_PtRadius", "InvMassLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassLambda});
     histos_V0.add("InvMassAntiLambda_PtRadius", "InvMassAntiLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassAntiLambda});
-    histos_V0.add("InvMassK0SVsPtVsCosPA", "InvMassK0SVsPtVsCosPA", kTH3F, {axisPt, binV0ACosPA, axisInvMassK0S});
-    histos_V0.add("InvMassLambdaVsPtVsCosPA", "InvMassLambdaVsPtVsCosPA", kTH3F, {axisPt, binV0ACosPA, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambdaVsPtVsCosPA", "InvMassAntiLambdaVsPtVsCosPA", kTH3F, {axisPt, binV0ACosPA, axisInvMassAntiLambda});
+    histos_V0.add("InvMassK0SVsPtVsPA", "InvMassK0SVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassK0S});
+    histos_V0.add("InvMassLambdaVsPtVsPA", "InvMassLambdaVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassLambda});
+    histos_V0.add("InvMassAntiLambdaVsPtVsPA", "InvMassAntiLambdaVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassAntiLambda});
 
     if (isMC) {
       histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100, 0, 10}, {100, 0.f, 50.f}}});
@@ -229,6 +228,11 @@ struct v0cascadesQA {
       histos_Casc.add("InvMassOmegaPlusTrue", "InvMassOmegaPlusTrue", {HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0.f, 50.f}, {80, 1.63f, 1.71f}}});
       histos_Casc.add("InvMassOmegaMinusTrue", "InvMassOmegaMinusTrue", {HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0.f, 50.f}, {80, 1.63f, 1.71f}}});
     }
+
+    histos_Casc.add("InvMassXiMinusVsPtVsPA", "InvMassXiMinusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
+    histos_Casc.add("InvMassXiPlusVsPtVsPA", "InvMassXiPlusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
+    histos_Casc.add("InvMassOmegaMinusVsPtVsPA", "InvMassOmegaMinusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
+    histos_Casc.add("InvMassOmegaPlusVsPtVsPA", "InvMassOmegaPlusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
   }
 
   ///////////////////////////////////////////////////
@@ -355,7 +359,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("CtauK0s"), CtauK0s);
             histos_V0.fill(HIST("DecayLengthK0s"), decayLength);
             histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
-            histos_V0.fill(HIST("InvMassK0SVsPtVsCosPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mK0Short());
+            histos_V0.fill(HIST("InvMassK0SVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_Radius"), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_PtRadius"), v0.pt(), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
@@ -368,7 +372,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("DecayLengthLambda"), decayLength);
             histos_V0.fill(HIST("CtauLambda"), CtauLambda);
             histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda());
-            histos_V0.fill(HIST("InvMassLambdaVsPtVsCosPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mLambda());
+            histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Ctau"), CtauLambda, v0.mLambda());
@@ -386,7 +390,7 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("DecayLengthAntiLambda"), decayLength);
             histos_V0.fill(HIST("CtauAntiLambda"), CtauLambda);
             histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda());
-            histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsCosPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mAntiLambda());
+            histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Radius"), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Ctau"), CtauLambda, v0.mAntiLambda());
@@ -581,11 +585,11 @@ struct v0cascadesQA {
             if (TMath::Abs(casc.yXi()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < NSigmaCascPion) {
               histos_Casc.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi());
               histos_Casc.fill(HIST("InvMassXiMinus_Radius"), casc.cascradius(), casc.mXi());
-              histos_Casc.fill(HIST("InvMassXiMinusVsPtVsCosPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mXi());
+              histos_Casc.fill(HIST("InvMassXiMinusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mXi());
             }
             if (TMath::Abs(casc.yOmega()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < NSigmaCascKaon) {
               histos_Casc.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega());
-              histos_Casc.fill(HIST("InvMassOmegaMinusVsPtVsCosPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mOmega());
+              histos_Casc.fill(HIST("InvMassOmegaMinusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mOmega());
             }
           }
         } else {
@@ -593,11 +597,11 @@ struct v0cascadesQA {
             if (TMath::Abs(casc.yXi()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < NSigmaCascPion) {
               histos_Casc.fill(HIST("InvMassXiPlus"), casc.pt(), casc.mXi());
               histos_Casc.fill(HIST("InvMassXiPlus_Radius"), casc.cascradius(), casc.mXi());
-              histos_Casc.fill(HIST("InvMassXiPlusVsPtVsCosPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mXi());
+              histos_Casc.fill(HIST("InvMassXiPlusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mXi());
             }
             if (TMath::Abs(casc.yOmega()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < NSigmaCascKaon) {
               histos_Casc.fill(HIST("InvMassOmegaPlus"), casc.pt(), casc.mOmega());
-              histos_Casc.fill(HIST("InvMassOmegaPlusVsPtVsCosPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mOmega());
+              histos_Casc.fill(HIST("InvMassOmegaPlusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mOmega());
             }
           }
         }
