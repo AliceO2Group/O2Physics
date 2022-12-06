@@ -498,8 +498,8 @@ struct EventSelectionQaTask {
         metadata["runNumber"] = Form("%d", runNumber);
         auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
         uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
-        tsSOR = grpecs->getTimeStart();         // ms
-        tsEOR = grpecs->getTimeEnd();           // ms
+        tsSOR = grpecs->getTimeStart();                 // ms
+        tsEOR = grpecs->getTimeEnd();                   // ms
         LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits
