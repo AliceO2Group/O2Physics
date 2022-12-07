@@ -14,6 +14,9 @@
 /// \author Christian Sonnabend <christian.sonnabend@cern.ch>
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
+#ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
+#define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -82,3 +85,4 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   tpcskims::NSigTOF,
                   tpcskims::RunNumber);
 } // namespace o2::aod
+#endif

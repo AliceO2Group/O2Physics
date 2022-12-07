@@ -15,6 +15,9 @@
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>
 /// \author Christian Sonnabend <christian.sonnabend@cern.ch>
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
+
+#include "tpcTreeCreatorLight.h"
+#include <cmath>
 /// O2
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
@@ -26,11 +29,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
-
-#include "tpcTreeCreatorLight.h"
 /// ROOT
 #include "TRandom3.h"
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -84,7 +84,7 @@ struct TreeWriterTPCTOF {
     const double p = track.tpcInnerParam();
     const int multTPC = collision.multTPC();
 
-    const double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
                     p,
