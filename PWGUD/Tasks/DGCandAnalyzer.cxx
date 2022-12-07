@@ -209,7 +209,7 @@ struct DGCandAnalyzer {
           TESTBIT(dgcand.bbFT0Cpf(), bit) ||
           TESTBIT(dgcand.bbFV0Apf(), bit) ||
           TESTBIT(dgcand.bbFDDApf(), bit) ||
-          TESTBIT(dgcand.bbFDDCpf(), bit) ) {
+          TESTBIT(dgcand.bbFDDCpf(), bit)) {
         return;
       }
     }
