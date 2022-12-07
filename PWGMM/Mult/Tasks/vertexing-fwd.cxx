@@ -131,7 +131,6 @@ struct vertexingfwd {
     // initCCDB(bcs.begin()); if Bz is needed
     ambTrackIds.clear();
 
-    // Only on DCAxy
     float dcaXY;
     float bestDCA, bestDCAX, bestDCAY;
     o2::track::TrackParCovFwd bestTrackPar;
@@ -191,10 +190,6 @@ struct vertexingfwd {
       }
 
       // other option for the truth : collision.mcCollision().posZ();
-
-      const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
-      const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
-      auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth); // this is DCA_xy truth
 
       registry.fill(HIST("Ambiguous/TracksDCAXYBest"), bestDCA);
       registry.fill(HIST("Ambiguous/TracksDCAXBest"), bestDCAX);
@@ -289,7 +284,7 @@ struct vertexingfwd {
 
       const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
       const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
-      auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth); // this is DCA_xy truth
+      // auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth); // this is DCA_xy truth
 
       registry.fill(HIST("Truth/DCAxTruth"), dcaXtruth);
       registry.fill(HIST("Truth/DCAyTruth"), dcaYtruth);
