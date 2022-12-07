@@ -14,7 +14,7 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef COMMON_CORE_TRACKSELECTORPID_H__
+#ifndef COMMON_CORE_TRACKSELECTORPID_H_
 #define COMMON_CORE_TRACKSELECTORPID_H_
 
 #include <TPDGCode.h>

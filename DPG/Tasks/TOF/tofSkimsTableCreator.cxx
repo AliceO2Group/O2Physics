@@ -56,7 +56,7 @@ struct tofSimsTableCreator {
 
   void process(Coll::iterator const& collision, Trks const& tracks)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r()) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
     }
 

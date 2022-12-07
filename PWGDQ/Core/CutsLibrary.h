@@ -639,10 +639,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("pairPtLow2"));
     return cut;
   }
-
   delete cut;
-  return nullptr;
-}
+  return nullptr;}
 
 AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 {
@@ -1224,7 +1222,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTrackDCAsigXY, 0.0, 5.);
     return cut;
   }
-
   delete cut;
   return nullptr;
 }
