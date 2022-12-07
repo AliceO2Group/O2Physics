@@ -25,6 +25,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
 
 #include "tofSkimsTableCreator.h"
 
@@ -36,11 +37,11 @@ using namespace o2::dataformats;
 
 struct tofSimsTableCreator {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TOFSignal,
+                         aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TOFSignal, aod::pidEvTimeFlags,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                          aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
                          aod::TrackSelection>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
+  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::FT0sCorrected>;
 
   // Tables to be produced
   Produces<o2::aod::SkimmedTOF> tableRow;
@@ -50,11 +51,10 @@ struct tofSimsTableCreator {
   Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
 
-  void init(o2::framework::InitContext& initContext)
-  {
-  }
+  void init(o2::framework::InitContext& initContext) {}
 
-  void process(Coll::iterator const& collision, Trks const& tracks)
+  void process(Coll::iterator const& collision,
+               Trks const& tracks)
   {
     if (fractionOfEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
@@ -78,8 +78,16 @@ struct tofSimsTableCreator {
         break;
     }
     tableRow.reserve(tracks.size());
+    float evTimeT0AC = 0.f;
+    float evTimeT0ACErr = 0.f;
+    if (collision.t0ACValid()) {
+      evTimeT0AC = collision.t0AC() * 1000.f;
+      evTimeT0ACErr = collision.t0resolution() * 1000.f;
+    }
+
     for (auto const& trk : tracks) {
-      tableRow(trk.p(),
+      tableRow(trk.collisionId(),
+               trk.p(),
                trk.pt(),
                trk.eta(),
                trk.phi(),
@@ -87,7 +95,12 @@ struct tofSimsTableCreator {
                trk.tofExpMom(),
                trk.length(),
                trk.tofChi2(),
-               trk.tofSignal());
+               trk.tofSignal(),
+               trk.evTimeTOF(),
+               trk.evTimeTOFErr(),
+               evTimeT0AC,
+               evTimeT0ACErr,
+               trk.tofFlags());
     }
   }
 };
