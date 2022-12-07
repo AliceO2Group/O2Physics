@@ -12,7 +12,7 @@
 /// \file HFOmegacCandidateSelector.cxx
 /// \brief Omegac → Xi Pi selection task
 ///
-/// \author Fedrica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
+/// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/TrackSelection.h"
