@@ -14,8 +14,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_TRACKSELECTORPID_H_
-#define O2_ANALYSIS_TRACKSELECTORPID_H_
+#ifndef COMMON_CORE_TRACKSELECTORPID_H__
+#define COMMON_CORE_TRACKSELECTORPID_H_
 
 #include <TPDGCode.h>
 
@@ -582,4 +582,4 @@ class TrackSelectorPID
   float mPtBayesMax = 100.; ///< maximum pT for Bayesian PID [GeV/c]
 };
 
-#endif // O2_ANALYSIS_TRACKSELECTORPID_H_
+#endif // COMMON_CORE_TRACKSELECTORPID_H_

@@ -12,8 +12,8 @@
 /// \file SelectorCuts.h
 /// \brief Default pT bins and cut arrays for heavy-flavour selectors and analysis tasks
 
-#ifndef HF_SELECTOR_CUTS_H_
-#define HF_SELECTOR_CUTS_H_
+#ifndef PWGHF_CORE_SELECTORCUTS_H_
+#define PWGHF_CORE_SELECTORCUTS_H_
 
 #include "Framework/Configurable.h"
 #include <vector>
@@ -870,4 +870,4 @@ static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 Jpsi", "d0
 
 } // namespace o2::analysis
 
-#endif // HF_SELECTOR_CUTS_H_
+#endif // PWGHF_CORE_SELECTORCUTS_H_
