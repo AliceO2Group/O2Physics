@@ -411,6 +411,9 @@ struct singlestrangeBuilder {
       return false;
     }
 
+    v0candidate.posTrackX = fitter.getTrack(0).getX();
+    v0candidate.negTrackX = fitter.getTrack(1).getX();
+    
     lPositiveTrack.getPxPyPzGlo(v0candidate.posP);
     lNegativeTrack.getPxPyPzGlo(v0candidate.negP);
 
@@ -469,10 +472,10 @@ struct singlestrangeBuilder {
       }
 
       // populates table for V0 analysis
-      v0data(v0candidate.posTrackId,
-             v0candidate.negTrackId,
-             v0candidate.collisionId,
-             v0candidate.globalIndex,
+      v0data(V0.posTrackId(),
+             V0.negTrackId(),
+             V0.collisionId(),
+             V0.globalIndex(),
              v0candidate.posTrackX, v0candidate.negTrackX,
              v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
              v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
