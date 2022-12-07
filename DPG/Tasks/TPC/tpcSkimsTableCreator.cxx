@@ -17,11 +17,11 @@
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
 #include "tpcSkimsTableCreator.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <cmath>
 /// ROOT
 #include "TRandom3.h"
-#include <cmath>
 /// O2
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -284,7 +284,7 @@ struct TreeWriterTPCTOF {
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
 
-    const double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
                     1. / dEdxExp,

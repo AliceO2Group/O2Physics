@@ -17,11 +17,11 @@
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
 #include "tpcTreeCreatorLight.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <cmath>
 /// ROOT
 #include "TRandom3.h"
-#include <cmath>
 /// O2
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
