@@ -640,7 +640,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
   delete cut;
-  return nullptr;}
+  return nullptr;
+}
 
 AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 {
