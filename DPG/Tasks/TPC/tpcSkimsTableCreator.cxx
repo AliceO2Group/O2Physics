@@ -17,6 +17,8 @@
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
 #include "tpcSkimsTableCreator.h"
+/// ROOT
+#include "TRandom3.h"
 #include <cmath>
 /// O2
 #include <CCDB/BasicCCDBManager.h>
@@ -31,8 +33,6 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
-/// ROOT
-#include "TRandom3.h"
 
 using namespace o2;
 using namespace o2::framework;

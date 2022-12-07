@@ -53,4 +53,4 @@ DECLARE_SOA_TABLE(TPCTOFTree, "AOD", "TPCTOFTREE",
                   tpctree::PIDTrack,
                   tpctree::RunNumber);
 } // namespace o2::aod
-#endif
+#endif  // DPG_TASKS_TPC_TPCTREECREATORLIGHT_H_

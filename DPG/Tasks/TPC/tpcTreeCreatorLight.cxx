@@ -17,6 +17,8 @@
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
 #include "tpcTreeCreatorLight.h"
+/// ROOT
+#include "TRandom3.h"
 #include <cmath>
 /// O2
 #include <CCDB/BasicCCDBManager.h>
@@ -29,8 +31,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
-/// ROOT
-#include "TRandom3.h"
 
 using namespace o2;
 using namespace o2::framework;
