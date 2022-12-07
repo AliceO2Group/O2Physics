@@ -234,12 +234,12 @@ DECLARE_SOA_TABLE(HfSelXiccToPKPiPi, "AOD", "HFSELXICC", //!
 
 namespace hf_sel_omegac
 {
-DECLARE_SOA_COLUMN(StatusPidLambda, statuspidlambda, int);
-DECLARE_SOA_COLUMN(StatusPidCascade, statuspidcascade, int);
-DECLARE_SOA_COLUMN(StatusPidOmegac, statuspidomegac, int);
-DECLARE_SOA_COLUMN(StatusInvMassLambda, statusinvmasslambda, int);
-DECLARE_SOA_COLUMN(StatusInvMassCascade, statusinvmasscascade, int);
-DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusinvmassomegac, int);
+DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, int);
+DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, int);
+DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, int);
+DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, int);
+DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, int);
+DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, int);
 } // namespace hf_sel_omegac
 DECLARE_SOA_TABLE(HFSelOmegacCandidate, "AOD", "HFSELOMECCAND",
                   hf_sel_omegac::StatusPidLambda, hf_sel_omegac::StatusPidCascade, hf_sel_omegac::StatusPidOmegac,

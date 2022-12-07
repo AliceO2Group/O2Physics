@@ -22,6 +22,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsVertexing/DCAFitterN.h"
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -43,21 +44,18 @@ using namespace o2::aod::cascdataext;
 using namespace o2::aod::hf_cand_omegac;
 using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
-
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorOmegac {
   Produces<aod::HfCandOmegacBase> rowCandidateBase;
 
-  Configurable<bool> b_propdca{"b_propdca", false, "create tracks version propagated to PCA"};
-  Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
-  Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
-  Configurable<bool> b_useabsdca{"b_useabsdca", true, "use absolute DCA for vertexing"};
-  Configurable<bool> b_useweightedpca{"b_useweightedpca", false, "vertices use cov matrices"};
-  Configurable<bool> b_refitwithmatcorr{"b_refitwithmatcorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
+  Configurable<bool> PropToPCA{"PropToPCA", false, "create tracks version propagated to PCA"};
+  Configurable<double> MaxR{"MaxR", 200., "reject PCA's above this radius"};
+  Configurable<double> MaxDzIni{"MaxDzIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> MinParamChange{"MinParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> MinRelChi2Change{"MinRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<bool> UseAbsDCA{"UseAbsDCA", true, "use absolute DCA for vertexing"};
+  Configurable<bool> UseWeightedPCA{"UseWeightedPCA", false, "vertices use cov matrices"};
+  Configurable<bool> RefitWithMatCorr{"RefitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
 
   Configurable<bool> RejDiffCollTrack{"RejDiffCollTrack", true, "Reject tracks coming from different collisions"};
 
@@ -112,41 +110,41 @@ struct HfCandidateCreatorOmegac {
     // 2-prong vertex fitter to build the omegac vertex
     o2::vertexing::DCAFitterN<2> df;
     df.setBz(magneticField);
-    df.setPropagateToPCA(b_propdca);
-    df.setMaxR(d_maxr);
-    df.setMaxDZIni(d_maxdzini);
-    df.setMinParamChange(d_minparamchange);
-    df.setMinRelChi2Change(d_minrelchi2change);
-    df.setUseAbsDCA(b_useabsdca);
-    df.setWeightedFinalPCA(b_useweightedpca);
-    df.setRefitWithMatCorr(b_refitwithmatcorr);
+    df.setPropagateToPCA(PropToPCA);
+    df.setMaxR(MaxR);
+    df.setMaxDZIni(MaxDzIni);
+    df.setMinParamChange(MinParamChange);
+    df.setMinRelChi2Change(MinRelChi2Change);
+    df.setUseAbsDCA(UseAbsDCA);
+    df.setWeightedFinalPCA(UseWeightedPCA);
+    df.setRefitWithMatCorr(RefitWithMatCorr);
 
     // 2-prong vertex fitter to build the cascade vertex
     o2::vertexing::DCAFitterN<2> dfc;
     dfc.setBz(magneticField);
-    dfc.setPropagateToPCA(b_propdca);
-    dfc.setMaxR(d_maxr);
-    dfc.setMaxDZIni(d_maxdzini);
-    dfc.setMinParamChange(d_minparamchange);
-    dfc.setMinRelChi2Change(d_minrelchi2change);
-    dfc.setUseAbsDCA(b_useabsdca);
-    dfc.setWeightedFinalPCA(b_useweightedpca);
-    dfc.setRefitWithMatCorr(b_refitwithmatcorr);
+    dfc.setPropagateToPCA(PropToPCA);
+    dfc.setMaxR(MaxR);
+    dfc.setMaxDZIni(MaxDzIni);
+    dfc.setMinParamChange(MinParamChange);
+    dfc.setMinRelChi2Change(MinRelChi2Change);
+    dfc.setUseAbsDCA(UseAbsDCA);
+    dfc.setWeightedFinalPCA(UseWeightedPCA);
+    dfc.setRefitWithMatCorr(RefitWithMatCorr);
 
     // 2-prong vertex fitter to build the V0 vertex
     o2::vertexing::DCAFitterN<2> dfv;
     dfv.setBz(magneticField);
-    dfv.setPropagateToPCA(b_propdca);
-    dfv.setMaxR(d_maxr);
-    dfv.setMaxDZIni(d_maxdzini);
-    dfv.setMinParamChange(d_minparamchange);
-    dfv.setMinRelChi2Change(d_minrelchi2change);
-    dfv.setUseAbsDCA(b_useabsdca);
-    dfv.setWeightedFinalPCA(b_useweightedpca);
-    dfv.setRefitWithMatCorr(b_refitwithmatcorr);
+    dfv.setPropagateToPCA(PropToPCA);
+    dfv.setMaxR(MaxR);
+    dfv.setMaxDZIni(MaxDzIni);
+    dfv.setMinParamChange(MinParamChange);
+    dfv.setMinRelChi2Change(MinRelChi2Change);
+    dfv.setUseAbsDCA(UseAbsDCA);
+    dfv.setWeightedFinalPCA(UseWeightedPCA);
+    dfv.setRefitWithMatCorr(RefitWithMatCorr);
 
     // loop over cascades reconstructed by cascadebuilder.cxx
-    for (auto& casc : cascades) {
+    for (auto const& casc : cascades) {
 
       if (collision.globalIndex() != casc.collisionId()) {
         continue;
@@ -252,7 +250,7 @@ struct HfCandidateCreatorOmegac {
       auto trackcasc_copy = trackcasc;
 
       //-------------------combining cascade and pion tracks--------------------------
-      for (auto& trackpion : tracks) {
+      for (auto const& trackpion : tracks) {
 
         if ((RejDiffCollTrack) && (trackxidaucharged.collisionId() != trackpion.collisionId())) {
           continue;
@@ -320,16 +318,10 @@ struct HfCandidateCreatorOmegac {
         double dcaxyv0dau1 = trackv0dau1.dcaXY();
         double dcaxycascdau = trackxidaucharged.dcaXY();
 
-        // get uncertainty of the decay length
-        double phi, theta;
-        getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, vertexomegacFromFitter, phi, theta);
-        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
-
         hxVertexOmegac->Fill(vertexomegacFromFitter[0]);
 
         // primary pi  pT spectrum
-        double ptprimarypi = sqrt((pvecpionfromomegac[0] * pvecpionfromomegac[0]) + (pvecpionfromomegac[1] * pvecpionfromomegac[1]));
+        double ptprimarypi = std::sqrt((pvecpionfromomegac[0] * pvecpionfromomegac[0]) + (pvecpionfromomegac[1] * pvecpionfromomegac[1]));
         hPtPrimaryPi->Fill(ptprimarypi);
 
         // computing invariant mass under the hypothesis of particles ID corresponding to the decay chain
@@ -394,7 +386,6 @@ struct HfCandidateCreatorOmegac {
                          vertexomegacFromFitter[0], vertexomegacFromFitter[1], vertexomegacFromFitter[2],
                          vertexcascFromFitter[0], vertexcascFromFitter[1], vertexcascFromFitter[2],
                          vertexV0FromFitter[0], vertexV0FromFitter[1], vertexV0FromFitter[2],
-                         // errorDecayLength, errorDecayLengthXY,
                          trackxidaucharged.sign(),
                          chi2PCA_omegac, chi2PCA_v0, chi2PCA_cascade,
                          pvecomegac[0], pvecomegac[1], pvecomegac[2],
@@ -450,7 +441,7 @@ struct HfCandidateCreatorOmegacMc {
       flag = 0;
       // origin = 0;
       debug = 0;
-      auto arrayDaughters = array{candidate.primarypi_as<aod::BigTracksMC>(), // pi <- omegac
+      auto arrayDaughters = array{candidate.primaryPi_as<aod::BigTracksMC>(), // pi <- omegac
                                   candidate.bachelor_as<aod::BigTracksMC>(),  // pi <- cascade
                                   candidate.posTrack_as<aod::BigTracksMC>(),  // p <- lambda
                                   candidate.negTrack_as<aod::BigTracksMC>()}; // pi <- lambda
