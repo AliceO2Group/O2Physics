@@ -16,14 +16,14 @@
 /// \brief  Definition of the skimmed data format for the TOF skims
 ///
 
+#include "Common/TableProducer/PID/pidTOFBase.h"
+#include "Common/DataModel/PIDResponse.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::dataformats;
-
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/PIDResponse.h"
 
 namespace o2::aod
 {
