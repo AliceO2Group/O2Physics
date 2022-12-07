@@ -76,10 +76,12 @@ struct TrackSelectionFlags {
 #define requireTrackWithinBeamPipe (nabs(aod::track::x) < o2::constants::geom::XBeamPipeOuterRef)
 
 // Columns to store track filter decisions
-DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);                     //!
-DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype);       //! Flag with the single cut passed flagged
-DECLARE_SOA_COLUMN(TrackCutFlagFb1, trackCutFlagFb1, bool); //! Flag with the single cut passed flagged for the first selection criteria
-DECLARE_SOA_COLUMN(TrackCutFlagFb2, trackCutFlagFb2, bool); //! Flag with the single cut passed flagged for the first selection criteria
+DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
+DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged (general selection... stil being tuned)
+DECLARE_SOA_COLUMN(TrackCutFlagFb1, trackCutFlagFb1, bool);                    //! Flag with the single cut passed flagged for the first selection criteria (as general but 1 point in ITS IB)
+DECLARE_SOA_COLUMN(TrackCutFlagFb2, trackCutFlagFb2, bool);                    //! Flag with the single cut passed flagged for the second selection criteria (as general but 2 point2 in ITS IB)
+DECLARE_SOA_COLUMN(TrackCutFlagFb3, trackCutFlagFb3, bool);                    //! Flag with the single cut passed flagged for the third selection criteria (HF-like: global w/o tight DCA selection)
+DECLARE_SOA_COLUMN(TrackCutFlagFb4, trackCutFlagFb4, bool);                    //! Flag with the single cut passed flagged for the fourth selection criteria (nuclei)
 
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
   DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); });
@@ -87,22 +89,7 @@ DECLARE_SOA_COLUMN(TrackCutFlagFb2, trackCutFlagFb2, bool); //! Flag with the si
 // Single selection
 DECLARE_SOA_DYNAMIC_COLUMN(CheckFlag, checkFlag,
                            [](TrackSelectionFlags::flagtype flags,
-                              TrackSelectionFlags::flagtype mask) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); });  //! Checks the single cut
-DECLARE_DYN_TRKSEL_COLUMN(PassedTrackType, passedTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
-DECLARE_DYN_TRKSEL_COLUMN(PassedPtRange, passedPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
-DECLARE_DYN_TRKSEL_COLUMN(PassedEtaRange, passedEtaRange, TrackSelectionFlags::kEtaRange);                                           //! Passed the track cut: kEtaRange
-DECLARE_DYN_TRKSEL_COLUMN(PassedTPCNCls, passedTPCNCls, TrackSelectionFlags::kTPCNCls);                                              //! Passed the track cut: kTPCNCls
-DECLARE_DYN_TRKSEL_COLUMN(PassedTPCCrossedRows, passedTPCCrossedRows, TrackSelectionFlags::kTPCCrossedRows);                         //! Passed the track cut: kTPCCrossedRows
-DECLARE_DYN_TRKSEL_COLUMN(PassedTPCCrossedRowsOverNCls, passedTPCCrossedRowsOverNCls, TrackSelectionFlags::kTPCCrossedRowsOverNCls); //! Passed the track cut: kTPCCrossedRowsOverNCls
-DECLARE_DYN_TRKSEL_COLUMN(PassedTPCChi2NDF, passedTPCChi2NDF, TrackSelectionFlags::kTPCChi2NDF);                                     //! Passed the track cut: kTPCChi2NDF
-DECLARE_DYN_TRKSEL_COLUMN(PassedTPCRefit, passedTPCRefit, TrackSelectionFlags::kTPCRefit);                                           //! Passed the track cut: kTPCRefit
-DECLARE_DYN_TRKSEL_COLUMN(PassedITSNCls, passedITSNCls, TrackSelectionFlags::kITSNCls);                                              //! Passed the track cut: kITSNCls
-DECLARE_DYN_TRKSEL_COLUMN(PassedITSChi2NDF, passedITSChi2NDF, TrackSelectionFlags::kITSChi2NDF);                                     //! Passed the track cut: kITSChi2NDF
-DECLARE_DYN_TRKSEL_COLUMN(PassedITSRefit, passedITSRefit, TrackSelectionFlags::kITSRefit);                                           //! Passed the track cut: kITSRefit
-DECLARE_DYN_TRKSEL_COLUMN(PassedITSHits, passedITSHits, TrackSelectionFlags::kITSHits);                                              //! Passed the track cut: kITSHits
-DECLARE_DYN_TRKSEL_COLUMN(PassedGoldenChi2, passedGoldenChi2, TrackSelectionFlags::kGoldenChi2);                                     //! Passed the track cut: kGoldenChi2
-DECLARE_DYN_TRKSEL_COLUMN(PassedDCAxy, passedDCAxy, TrackSelectionFlags::kDCAxy);                                                    //! Passed the track cut: kDCAxy
-DECLARE_DYN_TRKSEL_COLUMN(PassedDCAz, passedDCAz, TrackSelectionFlags::kDCAz);                                                       //! Passed the track cut: kDCAz
+                              TrackSelectionFlags::flagtype mask) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); }); //! Checks the single cut
 // Combo selections
 DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrack, isQualityTrack, TrackSelectionFlags::kQualityTracks);                  //! Passed the combined track cut: kQualityTracks
 DECLARE_DYN_TRKSEL_COLUMN(IsPrimaryTrack, isPrimaryTrack, TrackSelectionFlags::kPrimaryTracks);                  //! Passed the combined track cut: kPrimaryTracks
@@ -113,10 +100,6 @@ DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, TrackSelection
 
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
-} // namespace track
-
-namespace track2
-{
 // Single selection
 DECLARE_SOA_COLUMN(PassedTrackType, passedTrackType, bool);                           //! Passed the track cut: kTrackType
 DECLARE_SOA_COLUMN(PassedPtRange, passedPtRange, bool);                               //! Passed the track cut: kPtRange
@@ -133,12 +116,14 @@ DECLARE_SOA_COLUMN(PassedITSHits, passedITSHits, bool);                         
 DECLARE_SOA_COLUMN(PassedGoldenChi2, passedGoldenChi2, bool);                         //! Passed the track cut: kGoldenChi2
 DECLARE_SOA_COLUMN(PassedDCAxy, passedDCAxy, bool);                                   //! Passed the track cut: kDCAxy
 DECLARE_SOA_COLUMN(PassedDCAz, passedDCAz, bool);                                     //! Passed the track cut: kDCAz
-DECLARE_SOA_COLUMN(PassedDCAzFB1, passedDCAzFB1, bool);                               //! Passed the track cut: kDCAz defined for FB1
-  DECLARE_SOA_COLUMN(QuestoTest, questoTest, bool);                           //! Passed the track cut: kTrackType
-// Combo selections
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrack, isQualityTrack, 
-                           [](bool passedTrackType, bool passedTPCNCls, bool passedITSChi2NDF) -> bool { return (passedTrackType && passedTPCNCls && passedITSChi2NDF); }); //! Passed the combined track cut: kQualityTracks
-} // namespace track2
+DECLARE_SOA_COLUMN(PassedITSHitsFB1, passedITSHitsFB1, bool);                         //! Passed the track cut: kITSHits defined for FB1
+DECLARE_SOA_COLUMN(PassedITSHitsFB2, passedITSHitsFB2, bool);                         //! Passed the track cut: kITSHits defined for FB2
+
+// Combo selections (not yet implemented, being thinking about it)
+// DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrack, isQualityTrack,
+//                          [](bool passedTrackType, bool passedTPCNCls, bool passedITSChi2NDF) -> bool { return (passedTrackType && passedTPCNCls && passedITSChi2NDF); }); //! Passed the combined track cut: kQualityTracks
+
+} // namespace track
 
 DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the track
                   track::DcaXY,
@@ -147,25 +132,10 @@ DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the trac
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
-		  track::TrackCutFlagFb1,
-		  track::TrackCutFlagFb2,
-/*,
-                  track::CheckFlag<track::TrackCutFlag>,
-                  track::PassedTrackType<track::TrackCutFlag>,
-                  track::PassedPtRange<track::TrackCutFlag>,
-                  track::PassedEtaRange<track::TrackCutFlag>,
-                  track::PassedTPCNCls<track::TrackCutFlag>,
-                  track::PassedTPCCrossedRows<track::TrackCutFlag>,
-                  track::PassedTPCCrossedRowsOverNCls<track::TrackCutFlag>,
-                  track::PassedTPCChi2NDF<track::TrackCutFlag>,
-                  track::PassedTPCRefit<track::TrackCutFlag>,
-                  track::PassedITSNCls<track::TrackCutFlag>,
-                  track::PassedITSChi2NDF<track::TrackCutFlag>,
-                  track::PassedITSRefit<track::TrackCutFlag>,
-                  track::PassedITSHits<track::TrackCutFlag>,
-                  track::PassedGoldenChi2<track::TrackCutFlag>,
-                  track::PassedDCAxy<track::TrackCutFlag>,
-                  track::PassedDCAz<track::TrackCutFlag>);*/
+                  track::TrackCutFlagFb1,
+                  track::TrackCutFlagFb2,
+                  track::TrackCutFlagFb3,
+                  track::TrackCutFlagFb4,
                   track::IsQualityTrack<track::TrackCutFlag>,
                   track::IsPrimaryTrack<track::TrackCutFlag>,
                   track::IsInAcceptanceTrack<track::TrackCutFlag>,
@@ -173,26 +143,24 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::IsGlobalTrackWoPtEta<track::TrackCutFlag>,
                   track::IsGlobalTrackWoDCA<track::TrackCutFlag>);
 
-
-
-DECLARE_SOA_TABLE(TrackSelectionExtension, "AOD", "TRACKSELEXTRA", //! Information on the track selections set by each Filter Bit                
-		  track2::PassedTrackType,
-                  track2::PassedPtRange,
-                  track2::PassedEtaRange,
-                  track2::PassedTPCNCls,
-                  track2::PassedTPCCrossedRows,
-                  track2::PassedTPCCrossedRowsOverNCls,
-                  track2::PassedTPCChi2NDF,
-                  track2::PassedTPCRefit,
-                  track2::PassedITSNCls,
-                  track2::PassedITSChi2NDF,
-                  track2::PassedITSRefit,
-                  track2::PassedITSHits,
-                  track2::PassedGoldenChi2,
-                  track2::PassedDCAxy,
-                  track2::PassedDCAz,
-		  track2::PassedDCAzFB1);
-//		  track2::IsQualityTrack<track2::PassedTPCNCls,track2::PassedTPCNCls,track2::PassedITSChi2NDF>);
+DECLARE_SOA_TABLE(TrackSelectionExtension, "AOD", "TRACKSELEXTRA", //! Information on the track selections set by each Filter Bit
+                  track::PassedTrackType,
+                  track::PassedPtRange,
+                  track::PassedEtaRange,
+                  track::PassedTPCNCls,
+                  track::PassedTPCCrossedRows,
+                  track::PassedTPCCrossedRowsOverNCls,
+                  track::PassedTPCChi2NDF,
+                  track::PassedTPCRefit,
+                  track::PassedITSNCls,
+                  track::PassedITSChi2NDF,
+                  track::PassedITSRefit,
+                  track::PassedITSHits,
+                  track::PassedGoldenChi2,
+                  track::PassedDCAxy,
+                  track::PassedDCAz,
+                  track::PassedITSHitsFB1,
+                  track::PassedITSHitsFB2);
 
 DECLARE_SOA_TABLE(FwdTracksDCA, "AOD", "FWDTRACKDCA", //! DCA information for the forward track
                   fwdtrack::FwdDcaX,

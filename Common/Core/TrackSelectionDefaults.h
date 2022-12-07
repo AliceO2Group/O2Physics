@@ -31,4 +31,10 @@ TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching);
 // SDD -> complementary tracks to global selection
 TrackSelection getGlobalTrackSelectionSDD();
 
+// Default track selection for nuclei analysis in run3
+TrackSelection getGlobalTrackSelectionRun3Nuclei();
+
+// Default track selection for HF analysis (global tracks, with its points, but no tight selection for primary) in run3
+TrackSelection getGlobalTrackSelectionRun3HF();
+
 #endif
