@@ -289,9 +289,9 @@ struct HfCandidateCreatorOmegac {
         if (!df.isPropagateTracksToVertexDone()) {
           continue;
         }
-        df.getTrack(0).getPxPyPzGlo(pveccasc_d);                                                                                                            
-        df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac);                                                                                                    
-        array<float, 3> pvecomegac = {pveccasc_d[0] + pvecpionfromomegac[0], pveccasc_d[1] + pvecpionfromomegac[1], pveccasc_d[2] + pvecpionfromomegac[2]}; 
+        df.getTrack(0).getPxPyPzGlo(pveccasc_d);
+        df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac);
+        array<float, 3> pvecomegac = {pveccasc_d[0] + pvecpionfromomegac[0], pveccasc_d[1] + pvecpionfromomegac[1], pveccasc_d[2] + pvecpionfromomegac[2]};
 
         std::array<float, 3> coordvtx_omegac = df.getPCACandidatePos();
         std::array<float, 3> momvtx_omegac = pvecomegac;
@@ -435,8 +435,8 @@ struct HfCandidateCreatorOmegacMc {
   Produces<aod::HfCandOmegacMCGen> rowMCMatchGen;
 
   void processMC(aod::HfCandOmegacBase const& candidates,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+                 aod::BigTracksMC const& tracks,
+                 aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -515,8 +515,7 @@ struct HfCandidateCreatorOmegacMc {
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorOmegacMc, processMC, "Process MC", false);
-};  // close struct
-
+}; // close struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
