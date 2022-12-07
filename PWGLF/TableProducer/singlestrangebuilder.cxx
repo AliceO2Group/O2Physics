@@ -140,10 +140,6 @@ struct singlestrangeBuilder {
 
   // Helper struct to pass V0 information
   struct {
-    int posTrackId;
-    int negTrackId;
-    int collisionId;
-    int globalIndex;
     float posTrackX;
     float negTrackX;
     std::array<float, 3> pos;
