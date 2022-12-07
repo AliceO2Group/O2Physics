@@ -46,7 +46,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPID1"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiBenchmarkCuts")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityBenchmark"));
@@ -54,35 +53,30 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
     return cut;
   }
-
   if (!nameStr.compare("DalitzCut1")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDany"));
     cut->AddCut(GetAnalysisCut("electronPIDOnly"));
     return cut;
   }
-
   if (!nameStr.compare("DalitzCut2")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDany"));
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
     return cut;
   }
-
   if (!nameStr.compare("DalitzCut1SPDfirst")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
     cut->AddCut(GetAnalysisCut("electronPIDOnly"));
     return cut;
   }
-
   if (!nameStr.compare("DalitzCut2SPDfirst")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
     return cut;
   }
-
   for (int i = 1; i <= 8; i++) {
     if (!nameStr.compare(Form("DalitzCut1_dalitzSelected%d", i))) {
       cut->AddCut(GetAnalysisCut("PIDStandardKine"));
@@ -91,7 +85,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
       return cut;
     }
-
     if (!nameStr.compare(Form("DalitzCut2_dalitzSelected%d", i))) {
       cut->AddCut(GetAnalysisCut("PIDStandardKine"));
       cut->AddCut(GetAnalysisCut("SPDany"));
@@ -99,7 +92,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
       return cut;
     }
-
     if (!nameStr.compare(Form("DalitzCut1SPDfirst_dalitzSelected%d", i))) {
       cut->AddCut(GetAnalysisCut("PIDStandardKine"));
       cut->AddCut(GetAnalysisCut("SPDfirst"));
@@ -107,7 +99,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
       return cut;
     }
-
     if (!nameStr.compare(Form("DalitzCut2SPDfirst_dalitzSelected%d", i))) {
       cut->AddCut(GetAnalysisCut("PIDStandardKine"));
       cut->AddCut(GetAnalysisCut("SPDfirst"));
@@ -116,21 +107,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts2")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts2_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts2_prefiltered1")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -138,83 +126,66 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("notDalitzLeg1"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts3")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
-
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts4")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
-
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts4_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug1"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts5")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryLoose"));
-
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts6")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryVeryLoose"));
-
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts7")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
-
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts7_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5"));
-
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts8")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPID1shiftUp"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts9")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPID1shiftDown"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiKineAndQuality")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPID1")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -222,7 +193,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPID1"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPID2")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -230,7 +200,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPID2"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPIDnsigma")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -238,32 +207,26 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
     return cut;
   }
-
   if (!nameStr.compare("PIDCalibElectron")) {
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     return cut;
   }
-
   if (!nameStr.compare("PIDCalibPion")) {
     cut->AddCut(GetAnalysisCut("pidcalib_pion"));
     return cut;
   }
-
   if (!nameStr.compare("PIDCalibProton")) {
     cut->AddCut(GetAnalysisCut("pidcalib_proton"));
     return cut;
   }
-
   if (!nameStr.compare("PIDCalib_basic")) {
     cut->AddCut(GetAnalysisCut("pidbasic"));
     return cut;
   }
-
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(GetAnalysisCut("highPtHadron"));
     return cut;
   }
-
   if (!nameStr.compare("PIDCalib")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -271,21 +234,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     return cut;
   }
-
   if (!nameStr.compare("NoPID")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
     return cut;
   }
-
   if (!nameStr.compare("kaonPID")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
     return cut;
   }
-
   if (!nameStr.compare("kaonPID")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -324,7 +284,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPID1randomized"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPID2Randomized")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -332,7 +291,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPID2randomized"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPIDnsigmaRandomized")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -340,7 +298,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaRandomized"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPIDworseRes")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -348,7 +305,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDworseRes"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPIDshift")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -356,7 +312,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDshift"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPID1shiftUp")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -364,7 +319,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPID1shiftUp"));
     return cut;
   }
-
   if (!nameStr.compare("jpsiPID1shiftDown")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -373,29 +327,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
   // -------------------------------------------------------------------------------------------------
-
   if (!nameStr.compare("lmeePID_TPChadrejTOFrec")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrack"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
-
     AnalysisCompositeCut* cut_tpc_hadrej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", kTRUE);
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_electron"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_pion_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_kaon_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_proton_rejection"));
-
     AnalysisCompositeCut* cut_tof_rec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", kTRUE);
     cut_tof_rec->AddCut(GetAnalysisCut("tpc_electron"));
     cut_tof_rec->AddCut(GetAnalysisCut("tof_electron"));
-
     AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("pid_TPChadrejTOFrec", "pid_TPChadrejTOFrec", kFALSE);
     cut_pid_OR->AddCut(cut_tpc_hadrej);
     cut_pid_OR->AddCut(cut_tof_rec);
     cut->AddCut(cut_pid_OR);
     return cut;
   }
-
   if (!nameStr.compare("lmeePID_TPChadrejTOFrecRun3")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -708,28 +657,23 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
     return cut;
   }
-
   if (!nameStr.compare("eventStandardNoINT7")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     return cut;
   }
-
   if (!nameStr.compare("eventDimuonStandard")) {
     cut->AddCut(VarManager::kIsMuonUnlikeLowPt7, 0.5, 1.5);
     return cut;
   }
-
   if (!nameStr.compare("eventMuonStandard")) {
     cut->AddCut(VarManager::kIsMuonSingleLowPt7, 0.5, 1.5);
     return cut;
   }
-
   if (!nameStr.compare("int7vtxZ5")) {
     cut->AddCut(VarManager::kVtxZ, -5.0, 5.0);
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
     return cut;
   }
-
   if (!nameStr.compare("jpsiStandardKine")) {
     cut->AddCut(VarManager::kPt, 1.0, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
@@ -798,7 +742,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     return cut;
   }
-
   if (!nameStr.compare("TightGlobalTrack")) {
     cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
     cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
@@ -810,7 +753,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kITSncls, 3.5, 7.5);
     return cut;
   }
-
   if (!nameStr.compare("TightGlobalTrackRun3")) {
     cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
@@ -819,20 +761,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kITSncls, 3.5, 7.5);
     return cut;
   }
-
   if (!nameStr.compare("TightTPCTrackRun3")) {
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
     return cut;
   }
-
   if (!nameStr.compare("TightTPCTrack")) {
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
     cut->AddCut(VarManager::kIsTPCrefit, 0.5, 1.5);
     return cut;
   }
-
   if (!nameStr.compare("electronStandardQuality")) {
     cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
     cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
@@ -842,7 +781,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 100.0, 161.);
     return cut;
   }
-
   if (!nameStr.compare("electronStandardQualityBenchmark")) {
     cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
     cut->AddCut(VarManager::kIsTPCrefit, 0.5, 1.5);
@@ -851,12 +789,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 70.0, 161.);
     return cut;
   }
-
   if (!nameStr.compare("SPDfirst")) {
     cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
     return cut;
   }
-
   if (!nameStr.compare("SPDany")) {
     cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
     return cut;
