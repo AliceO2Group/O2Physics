@@ -13,25 +13,25 @@
 /// \brief Reconstruction of Omegac0 candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, HEIDELBERG UNIVERSITY & GSI
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsVertexing/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/V0.h"
+#include "ReconstructionDataFormats/Track.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -43,27 +43,20 @@ using namespace o2::aod::cascdataext;
 using namespace o2::aod::hf_cand_omegac;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}}; // to be set in .json file
-  workflowOptions.push_back(optionDoMC);
-}
-
 #include "Framework/runDataProcessing.h"
 
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorOmegac {
   Produces<aod::HfCandOmegacBase> rowCandidateBase;
 
-  // - - - - - - - - - - CONFIGURABLES - - - - - - - - - -
   Configurable<bool> b_propdca{"b_propdca", false, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
-  Configurable<bool> useabsdca{"useabsdca", true, "use absolute DCA for vertexing"};
-  Configurable<bool> useweightedpca{"useweightedpca", false, "vertices use cov matrices"};
+  Configurable<bool> b_useabsdca{"b_useabsdca", true, "use absolute DCA for vertexing"};
+  Configurable<bool> b_useweightedpca{"b_useweightedpca", false, "vertices use cov matrices"};
   Configurable<bool> b_refitwithmatcorr{"b_refitwithmatcorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
 
   Configurable<bool> RejDiffCollTrack{"RejDiffCollTrack", true, "Reject tracks coming from different collisions"};
@@ -80,7 +73,12 @@ struct HfCandidateCreatorOmegac {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  // - - - - - - - - - - OUTPUTOBJECTS - - - - - - - - - -
+  // filter to use only HF selected collisions
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
+
+  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
+
   OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
@@ -98,20 +96,12 @@ struct HfCandidateCreatorOmegac {
     runNumber = 0;
   }
 
-  // filter to use only HF selected collisions
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-
-  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
-
-  // - - - - - - - - - - PROCESS - - - - - - - - - -
   void process(SelectedCollisions::iterator const& collision,
                aod::BCsWithTimestamps const& bcWithTimeStamps,
                aod::CascDataExt const& cascades,
                MyTracks const& tracks,
                aod::V0Datas const&,
                aod::V0sLinked const&)
-
   {
 
     // set the magnetic field from CCDB
@@ -127,8 +117,8 @@ struct HfCandidateCreatorOmegac {
     df.setMaxDZIni(d_maxdzini);
     df.setMinParamChange(d_minparamchange);
     df.setMinRelChi2Change(d_minrelchi2change);
-    df.setUseAbsDCA(useabsdca);
-    df.setWeightedFinalPCA(useweightedpca);
+    df.setUseAbsDCA(b_useabsdca);
+    df.setWeightedFinalPCA(b_useweightedpca);
     df.setRefitWithMatCorr(b_refitwithmatcorr);
 
     // 2-prong vertex fitter to build the cascade vertex
@@ -139,8 +129,8 @@ struct HfCandidateCreatorOmegac {
     dfc.setMaxDZIni(d_maxdzini);
     dfc.setMinParamChange(d_minparamchange);
     dfc.setMinRelChi2Change(d_minrelchi2change);
-    dfc.setUseAbsDCA(useabsdca);
-    dfc.setWeightedFinalPCA(useweightedpca);
+    dfc.setUseAbsDCA(b_useabsdca);
+    dfc.setWeightedFinalPCA(b_useweightedpca);
     dfc.setRefitWithMatCorr(b_refitwithmatcorr);
 
     // 2-prong vertex fitter to build the V0 vertex
@@ -151,8 +141,8 @@ struct HfCandidateCreatorOmegac {
     dfv.setMaxDZIni(d_maxdzini);
     dfv.setMinParamChange(d_minparamchange);
     dfv.setMinRelChi2Change(d_minrelchi2change);
-    dfv.setUseAbsDCA(useabsdca);
-    dfv.setWeightedFinalPCA(useweightedpca);
+    dfv.setUseAbsDCA(b_useabsdca);
+    dfv.setWeightedFinalPCA(b_useweightedpca);
     dfv.setRefitWithMatCorr(b_refitwithmatcorr);
 
     // loop over cascades reconstructed by cascadebuilder.cxx
@@ -162,7 +152,7 @@ struct HfCandidateCreatorOmegac {
         continue;
       }
 
-      //--------------------------accessing particles in the decay chain------------
+      //----------------accessing particles in the decay chain-------------
       // cascade daughter - charged particle
       int index_trackxidaucharged = casc.bachelorId();       // pion <- xi index from cascade table (not used)
       auto trackxidaucharged = casc.bachelor_as<MyTracks>(); // pion <- xi track from MyTracks table
@@ -188,8 +178,7 @@ struct HfCandidateCreatorOmegac {
         }
       }
 
-      //--------------------------reconstruct V0--------------------------------------
-
+      //--------------------------reconstruct V0---------------------------
       // pseudorapidity
       double pseudorap_v0posdau = trackv0dau0.eta();
       double pseudorap_v0negdau = trackv0dau1.eta();
@@ -228,7 +217,6 @@ struct HfCandidateCreatorOmegac {
       auto trackV0_copy = trackV0;
 
       //-----------------------------reconstruct cascade------------------------------
-
       // pseudorapidity
       double pseudorap_pifromcas = trackxidaucharged.eta();
 
@@ -264,7 +252,6 @@ struct HfCandidateCreatorOmegac {
       auto trackcasc_copy = trackcasc;
 
       //-------------------combining cascade and pion tracks--------------------------
-
       for (auto& trackpion : tracks) {
 
         if ((RejDiffCollTrack) && (trackxidaucharged.collisionId() != trackpion.collisionId())) {
@@ -302,9 +289,9 @@ struct HfCandidateCreatorOmegac {
         if (!df.isPropagateTracksToVertexDone()) {
           continue;
         }
-        df.getTrack(0).getPxPyPzGlo(pveccasc_d);                                                                                                            // update cascade momentum at omegac decay vertex
-        df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac);                                                                                                    // update pi <- omegac momentum at omegac decay vertex
-        array<float, 3> pvecomegac = {pveccasc_d[0] + pvecpionfromomegac[0], pveccasc_d[1] + pvecpionfromomegac[1], pveccasc_d[2] + pvecpionfromomegac[2]}; // omegac momentum
+        df.getTrack(0).getPxPyPzGlo(pveccasc_d);                                                                                                            
+        df.getTrack(1).getPxPyPzGlo(pvecpionfromomegac);                                                                                                    
+        array<float, 3> pvecomegac = {pveccasc_d[0] + pvecpionfromomegac[0], pveccasc_d[1] + pvecpionfromomegac[1], pveccasc_d[2] + pvecpionfromomegac[2]}; 
 
         std::array<float, 3> coordvtx_omegac = df.getPCACandidatePos();
         std::array<float, 3> momvtx_omegac = pvecomegac;
@@ -447,7 +434,7 @@ struct HfCandidateCreatorOmegacMc {
   Produces<aod::HfCandOmegacMCRec> rowMCMatchRec;
   Produces<aod::HfCandOmegacMCGen> rowMCMatchGen;
 
-  void process(aod::HfCandOmegacBase const& candidates,
+  void processMC(aod::HfCandOmegacBase const& candidates,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -526,19 +513,14 @@ struct HfCandidateCreatorOmegacMc {
       // rowMCMatchGen(flag, origin);
       rowMCMatchGen(flag);
     }
-
   } // close process
+  PROCESS_SWITCH(HfCandidateCreatorOmegacMc, processMC, "Process MC", false);
 };  // close struct
+
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{};
-
-  workflow.push_back(adaptAnalysisTask<HfCandidateCreatorOmegac>(cfgc));
-
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorOmegacMc>(cfgc));
-  }
-  return workflow;
+  return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateCreatorOmegac>(cfgc, TaskName{"hf-candidate-creator-omegac"}),
+    adaptAnalysisTask<HfCandidateCreatorOmegacMc>(cfgc, TaskName{"hf-candidate-creator-omegac-mc"})};
 }

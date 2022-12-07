@@ -14,12 +14,12 @@
 ///
 /// \author Fedrica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/TrackSelection.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/Core/TrackSelection.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -34,55 +34,56 @@ struct HFOmegacCandidateSelector {
   // LF analysis selections
   // zPV -> can be already set in HFeventselection -> 10 cm
   // sel8 -> can be already set in HFeventselection -> true
-  Configurable<double> CascRadius{"CascRadius", 0.5, "Min cascade radius"};
-  Configurable<double> V0Radius{"V0Radius", 2, "Min V0 radius"};
-  Configurable<double> V0CosPA{"V0CosPA", 0.95, "Cos PA V0"};
-  Configurable<double> CascCosPA{"CascCosPA", 0.95, "Cos PA cascade"};
-  Configurable<double> dcaCascDau{"dcaCascDau", 5.0, "Max DCA cascade daughters"};
-  Configurable<double> dcaV0Dau{"dcaV0Dau", 5.0, "Max DCA V0 daughters"};
-  Configurable<double> dcaOmegacDau{"dcaOmegacDau", 5.0, "Max DCA omegac daughters"};
+  Configurable<double> CascRadiusMin{"CascRadiusMin", 0.5, "Min cascade radius"};
+  Configurable<double> V0RadiusMin{"V0RadiusMin", 2, "Min V0 radius"};
+  Configurable<double> V0CosPACut{"V0CosPACut", 0.95, "Cos PA V0 cut"};
+  Configurable<double> CascCosPACut{"CascCosPACut", 0.95, "Cos PA cascade cut"};
+  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 5.0, "Max DCA cascade daughters"};
+  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 5.0, "Max DCA V0 daughters"};
+  Configurable<double> dcaOmegacDauMax{"dcaOmegacDauMax", 5.0, "Max DCA omegac daughters"};
 
   // limit charm baryon invariant mass spectrum
   Configurable<double> LowerLimitSpectrum{"LowerLimitSpectrum", 2.4, "Lower limit invariant mass spectrum charm baryon"};
   Configurable<double> UpperLimitSpectrum{"UpperLimitSpectrum", 3.0, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
-  Configurable<double> EtaMax{"EtaMax", 0.8, "Max absolute value of eta"};
-  Configurable<double> pTMinPiFromCasc{"pTMinPiFromCasc", 0.15, "Min pT pi <- casc"};
-  Configurable<double> pTMinPiFromOme{"pTMinPiFromOme", 0.2, "Min pT pi <- omegac"};
-  Configurable<double> PrimPiMindcaxyMin{"PrimPiMindcaxyMin", 0., "Min dcaxy primary pi track to PV"};
-  Configurable<double> PrimPiMindcaxyMax{"PrimPiMindcaxyMax", 10., "Max dcaxy primary pi track to PV"};
+  Configurable<double> EtaTrackMax{"EtaTrackMax", 0.8, "Max absolute value of eta"};
+  Configurable<double> ptMinPiFromCasc{"ptMinPiFromCasc", 0.15, "Min pT pi <- casc"};
+  Configurable<double> ptMinPiFromOme{"ptMinPiFromOme", 0.2, "Min pT pi <- omegac"};
+  Configurable<double> dcaxyPriPiMin{"dcaxyPriPiMin", 0., "Min dcaxy primary pi track to PV"};
+  Configurable<double> dcaxyPriPiMax{"dcaxyPriPiMax", 10., "Max dcaxy primary pi track to PV"};
 
-  Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> d_pTCandMax{"d_pTCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
 
   // PID options
-  Configurable<bool> PIDTPCOnly{"PIDTPCOnly", true, "PID with TPC only"};
-  Configurable<bool> PIDTPCTOFCombined{"PIDTPCTOFCombined", false, "PID with TPC & TOF"};
+  Configurable<bool> PidTpcOnly{"PidTpcOnly", true, "PID with TPC only"};
+  Configurable<bool> PidTpcTofCombined{"PidTpcTofCombined", false, "PID with TPC & TOF"};
 
   // PID - TPC selections
-  Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 5., "Upper bound of track pT for TPC PID"};
-  Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
-  Configurable<double> d_nSigmaTPCCombined{"d_nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<double> pidTpcPtMin{"pidTpcPtMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> pidTpcPtMax{"pidTpcPtMax", 5., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpc{"nSigmaTpc", 3., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombined{"nSigmaTpcCombined", 5., "Nsigma cut on TPC combined with TOF"};
   // PID - TOF selections
-  Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 5., "Upper bound of track pT for TOF PID"};
-  Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
-  Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> pidTofPtMin{"pidTofPtMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> pidTofPtMax{"pidTofPtMax", 5., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTof{"nSigmaTof", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombined{"nSigmaTofCombined", 5., "Nsigma cut on TOF combined with TPC"};
 
   // invariant mass cuts
-  Configurable<double> cutinvmasslambda{"cutinvmasslambda", 0.0025, "Invariant mass cut for lambda (sigma)"};
-  Configurable<double> cutinvmasscascade{"cutinvmasscascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
-  Configurable<int> nsigmainvmasscut{"nsigmainvmasscut", 4, "Number of sigma for invariant mass cut"};
-  Configurable<double> rangeinvmassomegac{"rangeinvmassomegac", 0.3, "Invariant mass range for omegac (sigma)"};
+  Configurable<double> SigmaInvMassLambda{"SigmaInvMassLambda", 0.0025, "Invariant mass cut for lambda (sigma)"};
+  Configurable<double> SigmaInvMassCascade{"SigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
+  Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
 
   // detector clusters selections
-  Configurable<int> tpcClusters{"tpcClusters", 70, "Minimum number of TPC clusters requirement"};
-  Configurable<int> tpcCrossedRows{"tpcCrossedRows", 70, "Minimum number of TPC crossed rows requirement"};
-  Configurable<double> tpcCrossedRowsOverFindableClustersRatio{"tpcCrossedRowsOverFindableClustersRatio", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
-  Configurable<int> itsClusters{"itsClusters", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
-  Configurable<int> itsClustersInnBarr{"itsClustersInnBarr", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
+  Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
+  Configurable<int> TpcCrossedRowsMin{"TpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
+  Configurable<double> TpcCrossedRowsOverFindableClustersRatioMin{"TpcCrossedRowsOverFindableClustersRatioMin", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
+  Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
+  Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
+
+  using MyTrackInfo = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 
   OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
@@ -93,41 +94,39 @@ struct HFOmegacCandidateSelector {
   OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
   OutputObj<TH1F> hTest2{TH1F("hTest2", "Test status consecutive;status;entries", 12, 0., 12.)};
 
-  using MyTrackInfo = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
-
   void process(aod::HfCandOmegacBase const& candidates, MyTrackInfo const&)
   {
     TrackSelectorPID selectorPionFromOme(kPiPlus);
-    selectorPionFromOme.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorPionFromOme.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorPionFromOme.setRangeNSigmaTPCCondTOF(-d_nSigmaTPCCombined, d_nSigmaTPCCombined);
-    selectorPionFromOme.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorPionFromOme.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorPionFromOme.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
+    selectorPionFromOme.setRangePtTPC(pidTpcPtMin, pidTpcPtMax);
+    selectorPionFromOme.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
+    selectorPionFromOme.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombined, nSigmaTpcCombined);
+    selectorPionFromOme.setRangePtTOF(pidTofPtMin, pidTofPtMax);
+    selectorPionFromOme.setRangeNSigmaTOF(-nSigmaTof, nSigmaTof);
+    selectorPionFromOme.setRangeNSigmaTOFCondTPC(-nSigmaTofCombined, nSigmaTofCombined);
 
     TrackSelectorPID selectorPionFromCasc(kPiPlus);
-    selectorPionFromCasc.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorPionFromCasc.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorPionFromCasc.setRangeNSigmaTPCCondTOF(-d_nSigmaTPCCombined, d_nSigmaTPCCombined);
-    selectorPionFromCasc.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorPionFromCasc.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorPionFromCasc.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
+    selectorPionFromCasc.setRangePtTPC(pidTpcPtMin, pidTpcPtMax);
+    selectorPionFromCasc.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
+    selectorPionFromCasc.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombined, nSigmaTpcCombined);
+    selectorPionFromCasc.setRangePtTOF(pidTofPtMin, pidTofPtMax);
+    selectorPionFromCasc.setRangeNSigmaTOF(-nSigmaTof, nSigmaTof);
+    selectorPionFromCasc.setRangeNSigmaTOFCondTPC(-nSigmaTofCombined, nSigmaTofCombined);
 
     TrackSelectorPID selectorPionFromV0(kPiPlus);
-    selectorPionFromV0.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorPionFromV0.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorPionFromV0.setRangeNSigmaTPCCondTOF(-d_nSigmaTPCCombined, d_nSigmaTPCCombined);
-    selectorPionFromV0.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorPionFromV0.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorPionFromV0.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
+    selectorPionFromV0.setRangePtTPC(pidTpcPtMin, pidTpcPtMax);
+    selectorPionFromV0.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
+    selectorPionFromV0.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombined, nSigmaTpcCombined);
+    selectorPionFromV0.setRangePtTOF(pidTofPtMin, pidTofPtMax);
+    selectorPionFromV0.setRangeNSigmaTOF(-nSigmaTof, nSigmaTof);
+    selectorPionFromV0.setRangeNSigmaTOFCondTPC(-nSigmaTofCombined, nSigmaTofCombined);
 
     TrackSelectorPID selectorProton(kProton);
-    selectorProton.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
-    selectorProton.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
-    selectorProton.setRangeNSigmaTPCCondTOF(-d_nSigmaTPCCombined, d_nSigmaTPCCombined);
-    selectorProton.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
-    selectorProton.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
-    selectorProton.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
+    selectorProton.setRangePtTPC(pidTpcPtMin, pidTpcPtMax);
+    selectorProton.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
+    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombined, nSigmaTpcCombined);
+    selectorProton.setRangePtTOF(pidTofPtMin, pidTofPtMax);
+    selectorProton.setRangeNSigmaTOF(-nSigmaTof, nSigmaTof);
+    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombined, nSigmaTofCombined);
 
     // looping over omegac candidates
     for (auto& candidate : candidates) {
@@ -154,100 +153,100 @@ struct HFOmegacCandidateSelector {
       double etav0negdau = candidate.etav0negdau();
       double etapifromcasc = candidate.etapifromcasc();
       double etapifromome = candidate.etapifromome();
-      if (abs(etav0posdau) > EtaMax) {
+      if (abs(etav0posdau) > EtaTrackMax) {
         continue;
       }
-      if (abs(etav0negdau) > EtaMax) {
+      if (abs(etav0negdau) > EtaTrackMax) {
         continue;
       }
-      if (abs(etapifromcasc) > EtaMax) {
+      if (abs(etapifromcasc) > EtaTrackMax) {
         continue;
       }
-      if (abs(etapifromome) > EtaMax) {
+      if (abs(etapifromome) > EtaTrackMax) {
         continue;
       }
 
       // minimum radius cut (LFcut)
-      if (RecoDecay::sqrtSumOfSquares(candidate.xdecayvtxcascade(), candidate.ydecayvtxcascade()) < CascRadius) {
+      if (RecoDecay::sqrtSumOfSquares(candidate.xdecayvtxcascade(), candidate.ydecayvtxcascade()) < CascRadiusMin) {
         continue;
       }
-      if (RecoDecay::sqrtSumOfSquares(candidate.xdecayvtxv0(), candidate.ydecayvtxv0()) < V0Radius) {
+      if (RecoDecay::sqrtSumOfSquares(candidate.xdecayvtxv0(), candidate.ydecayvtxv0()) < V0RadiusMin) {
         continue;
       }
       // cosPA (LFcut)
-      if (candidate.cospacasc() < CascCosPA) {
+      if (candidate.cospacasc() < CascCosPACut) {
         continue;
       }
-      if (candidate.cospav0() < V0CosPA) {
+      if (candidate.cospav0() < V0CosPACut) {
         continue;
       }
       // cascade and v0 daughters dca cut (LF cut)
-      if (candidate.dcacascdau() > dcaCascDau) {
+      if (candidate.dcacascdau() > dcaCascDauMax) {
         continue;
       }
-      if (candidate.dcav0dau() > dcaV0Dau) {
+      if (candidate.dcav0dau() > dcaV0DauMax) {
         continue;
       }
 
       // dca omegac daughters cut
-      if (candidate.dcaomegacdau() > dcaOmegacDau) {
+      if (candidate.dcaomegacdau() > dcaOmegacDauMax) {
         continue;
       }
 
       // cut on primary pion dcaXY
-      if ((candidate.dcaxytopvprimarypi() < PrimPiMindcaxyMin) || (candidate.dcaxytopvprimarypi() > PrimPiMindcaxyMax)) {
+      if ((candidate.dcaxytopvprimarypi() < dcaxyPriPiMin) || (candidate.dcaxytopvprimarypi() > dcaxyPriPiMax)) {
         continue;
       }
 
       // pT selections
       double ptpifromcasc = sqrt((candidate.pxpifromcascatprod() * candidate.pxpifromcascatprod()) + (candidate.pypifromcascatprod() * candidate.pypifromcascatprod()));
       double ptpifromome = sqrt((candidate.pxprimarypiatprod() * candidate.pxprimarypiatprod()) + (candidate.pyprimarypiatprod() * candidate.pyprimarypiatprod()));
-      if (abs(ptpifromcasc) > pTMinPiFromCasc) {
+      if (abs(ptpifromcasc) > ptMinPiFromCasc) {
         continue;
       }
-      if (abs(ptpifromome) > pTMinPiFromOme) {
+      if (abs(ptpifromome) > ptMinPiFromOme) {
         continue;
       }
 
       //  TPC clusters selections
-      if (trackPiFromOmeg.tpcNClsFound() < tpcClusters) {
+      if (trackPiFromOmeg.tpcNClsFound() < nClustersTpcMin) {
         continue;
       }
-      if (trackPiFromLam.tpcNClsFound() < tpcClusters) {
+      if (trackPiFromLam.tpcNClsFound() < nClustersTpcMin) {
         continue;
       }
-      if (trackPrFromLam.tpcNClsFound() < tpcClusters) {
+      if (trackPrFromLam.tpcNClsFound() < nClustersTpcMin) {
         continue;
       }
-      if (trackPiFromCasc.tpcNClsFound() < tpcClusters) {
-        continue;
-      }
-
-      if (trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRows) {
-        continue;
-      }
-      if (trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRows) {
-        continue;
-      }
-      if (trackPrFromLam.tpcNClsCrossedRows() < tpcCrossedRows) {
-        continue;
-      }
-      if (trackPiFromCasc.tpcNClsCrossedRows() < tpcCrossedRows) {
+      if (trackPiFromCasc.tpcNClsFound() < nClustersTpcMin) {
         continue;
       }
 
-      if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatio) {
+      if (trackPiFromOmeg.tpcNClsCrossedRows() < TpcCrossedRowsMin) {
+        continue;
+      }
+      if (trackPiFromLam.tpcNClsCrossedRows() < TpcCrossedRowsMin) {
+        continue;
+      }
+      if (trackPrFromLam.tpcNClsCrossedRows() < TpcCrossedRowsMin) {
+        continue;
+      }
+      if (trackPiFromCasc.tpcNClsCrossedRows() < TpcCrossedRowsMin) {
+        continue;
+      }
+
+      if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < TpcCrossedRowsOverFindableClustersRatioMin) {
         continue;
       }
 
       //  ITS clusters selection
-      if (trackPiFromOmeg.itsNCls() < itsClusters) {
+      if (trackPiFromOmeg.itsNCls() < nClustersItsMin) {
         continue;
       }
-      if (trackPiFromOmeg.itsNClsInnerBarrel() < itsClustersInnBarr) {
+      if (trackPiFromOmeg.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         continue;
       }
-      if (trackPiFromCasc.itsNCls() < itsClusters) {
+      if (trackPiFromCasc.itsNCls() < nClustersItsMin) {
         continue;
       }
 
@@ -256,12 +255,12 @@ struct HFOmegacCandidateSelector {
       int pidPiFromLam = -999;
       int pidPiFromCasc = -999;
       int pidPiFromOme = -999;
-      if (PIDTPCOnly) {
+      if (PidTpcOnly) {
         pidProton = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
         pidPiFromLam = selectorPionFromV0.getStatusTrackPIDTPC(trackPiFromLam);
         pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDTPC(trackPiFromCasc);
         pidPiFromOme = selectorPionFromOme.getStatusTrackPIDTPC(trackPiFromOmeg);
-      } else if (PIDTPCTOFCombined) {
+      } else if (PidTpcTofCombined) {
         pidProton = selectorProton.getStatusTrackPIDAll(trackPrFromLam);
         pidPiFromLam = selectorPionFromV0.getStatusTrackPIDAll(trackPiFromLam);
         pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDAll(trackPiFromCasc);
@@ -301,14 +300,14 @@ struct HFOmegacCandidateSelector {
       double invmasscascade = candidate.invmasscascade();
       double invmassomegac = candidate.invmassomegac();
 
-      if (abs(invmasslambda - 1.11568) < (nsigmainvmasscut * cutinvmasslambda)) {
+      if (abs(invmasslambda - 1.11568) < (nSigmaInvMassCut * SigmaInvMassLambda)) {
         statusinvmassLambda = 1;
         if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1) {
           hTest2->Fill(3.5);
         }
       }
 
-      if (abs(invmasscascade - 1.32171) < (nsigmainvmasscut * cutinvmasscascade)) {
+      if (abs(invmasscascade - 1.32171) < (nSigmaInvMassCut * SigmaInvMassCascade)) {
         statusinvmassCascade = 1;
         if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1) {
           hTest2->Fill(4.5);
