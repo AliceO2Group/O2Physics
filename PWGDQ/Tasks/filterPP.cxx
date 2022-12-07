@@ -429,7 +429,7 @@ struct DQFilterPPTask {
           fMuonPairCuts[icut] = (*dqcuts::GetCompositeCut(sel->At(1)->GetName()));
           fMuonRunPairing.push_back(true);
           fMuonNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
-          fMuonPairHistNames[icut] = Form("PairsMuonSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
+          fMuonPairHistNames[icut] = Form("PairsForwardSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
         } else {
           fMuonNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
           fMuonRunPairing.push_back(false);
@@ -690,7 +690,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
       }
-      if (classStr.Contains("Muon")) {
+      if (classStr.Contains("Forward")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon");
       }
     }

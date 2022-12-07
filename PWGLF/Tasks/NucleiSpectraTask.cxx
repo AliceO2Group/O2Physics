@@ -265,7 +265,7 @@ struct NucleiSpectraTask {
         }
 
         if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * nuclei::charges[iS] / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
           nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }

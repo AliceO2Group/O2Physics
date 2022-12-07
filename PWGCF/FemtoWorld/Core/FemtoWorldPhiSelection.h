@@ -16,8 +16,11 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDPHISELECTION_H_
-#define FEMTOWORLDPHISELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
+
+#include <string>
+#include <vector>
 
 #include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
@@ -80,7 +83,7 @@ class FemtoWorldPhiSelection : public FemtoWorldObjectSelection<float, femtoWorl
                              fInvMassUpLimit(1.3),
                              fRejectKaon(false),
                              fInvMassKaonLowLimit(0.48),
-                             fInvMassKaonUpLimit(0.515){};
+                             fInvMassKaonUpLimit(0.515) {}
   /// Initializes histograms for the task
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -93,6 +96,9 @@ class FemtoWorldPhiSelection : public FemtoWorldObjectSelection<float, femtoWorl
 
   template <typename C, typename V, typename T>
   void fillPhiQA(C const& col, V const& v0, T const& posTrack, T const& negTrack);
+
+  template <typename C, typename V, typename T, typename P>
+  void fillPhiQAMass(C const& col, V const& v0, T const& posTrack, T const& negTrack, P const& ConfInvMassLowLimit, P const& ConfInvMassUpLimit);
 
   /// \todo for the moment the PID of the tracks is factored out into a separate field, hence 5 values in total \\ASK: what does it mean?
   template <typename cutContainerType, typename C, typename T>
@@ -397,7 +403,7 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
   const float invMassPhi = v0.mPhi();
   const float invMassAntiPhi = v0.mAntiPhi();
 
-  if ((invMassPhi < fInvMassLowLimit or invMassPhi > fInvMassUpLimit) and (invMassAntiPhi < fInvMassLowLimit or invMassAntiPhi > fInvMassUpLimit)) {
+  if ((invMassPhi < fInvMassLowLimit || invMassPhi > fInvMassUpLimit) && (invMassAntiPhi < fInvMassLowLimit || invMassAntiPhi > fInvMassUpLimit)) {
     return false;
   }
   if (fRejectKaon) {
@@ -444,7 +450,7 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
   // v0
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg) < nSigmaPIDMax and abs(nSigmaPiPos) < nSigmaPIDMax) and !(abs(nSigmaPrPos) < nSigmaPIDMax and abs(nSigmaPiNeg) < nSigmaPIDMax)) {
+  if (!(abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) && !(abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax)) {
     return false;
   }
 
@@ -470,7 +476,7 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
 
   mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiNoCuts"), v0.mPhi());
 
-  if (invMassPhi > fInvMassLowLimit and invMassPhi < fInvMassUpLimit) {
+  if (invMassPhi > fInvMassLowLimit && invMassPhi < fInvMassUpLimit) {
     mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiInvMassCut"), v0.mPhi());
   }
 
@@ -501,6 +507,18 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
   }
 }
 
+template <typename C, typename V, typename T, typename P>
+void FemtoWorldPhiSelection::fillPhiQAMass(C const& col, V const& MassPhi, T const& posTrack, T const& negTrack, P const& ConfInvMassLowLimit, P const& ConfInvMassUpLimit)
+{
+  const auto signPos = posTrack.sign();
+  const auto signNeg = negTrack.sign();
+  if (signPos < 0 || signNeg > 0) {
+    LOGF(error, "-Something wrong in isSelectedMinimal--\n");
+    LOGF(error, "ERROR - Wrong sign for Phi daughters\n");
+  }
+  mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiNoCuts"), MassPhi);
+}
+
 /// the CosPA of Phi needs as argument the posXYZ of collisions vertex so we need to pass the collsion as well
 template <typename cutContainerType, typename C, typename T>
 std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const& col, T const& posTrack, T const& negTrack)
@@ -527,9 +545,7 @@ std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const&
     sign = -1.;
   } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {
     sign = 1.;
-  }
-  // if it happens that none of these are true, ignore the invariant mass
-  else {
+  } else { // if it happens that none of these are true, ignore the invariant mass
     if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) {
       sign = -1.;
     } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {
@@ -658,4 +674,4 @@ void FemtoWorldPhiSelection::fillQAPhi(C const& col, V const& v0, T const& posTr
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDPHISELECTION_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_

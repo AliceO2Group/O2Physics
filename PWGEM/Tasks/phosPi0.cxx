@@ -44,6 +44,7 @@ struct phosPi0 {
   Configurable<float> mMinCluTime{"minCluTime", -50.e-9, "Min. cluster time"};
   Configurable<float> mMaxCluTime{"mMinCluTime", 100.e-9, "Max. cluster time"};
   Configurable<int> mMinCluNcell{"mMinCluNcell", 2, "min cells in cluster"};
+  Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
 
   Configurable<float> mOccE{"minOccE", 0.6, "Minimum cluster energy to fill occupancy"};
 
@@ -67,9 +68,10 @@ struct phosPi0 {
       centAxis{10, 0., 10.},
       centralityAxis{100, 0., 100., "centrality", "centrality"};
 
-    mHistManager.add("eventsAll", "Number of events", HistType::kTH1F, {{1, 0., 2.}});
+    mHistManager.add("eventsAll", "Number of events", HistType::kTH1F, {{1, 0., 1.}});
     mHistManager.add("contributors", "Centrality", HistType::kTH1F, {centralityAxis});
     mHistManager.add("vertex", "vertex", HistType::kTH1F, {vertexAxis});
+    mHistManager.add("vertex2", "PHOS with vertex", HistType::kTH1F, {vertexAxis});
 
     mHistManager.add("cluSp", "Cluster spectrum per module",
                      HistType::kTH2F, {amplitudeAxisLarge, {4, 1., 5., "module", "module"}});
@@ -97,7 +99,13 @@ struct phosPi0 {
       //   mHistManager.fill(HIST("centralityFDDM"), collision.centFDDM);
       //   mHistManager.fill(HIST("centralityNTPV"), collision.centNTPV);
     }
+    uint64_t bcevent = 0;
     for (const auto& clu : clusters) {
+      if (clu.collision().bc().globalBC() != bcevent) {
+        mHistManager.fill(HIST("vertex2"), clu.collision().posZ());
+        mHistManager.fill(HIST("eventsAll"), 0.);
+        bcevent = clu.collision().bc().globalBC();
+      }
 
       mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
 
@@ -123,7 +131,8 @@ struct phosPi0 {
       // inv mass
       auto clu2 = clu;
       ++clu2;
-      int nMix = 2; // Number of photons to mix
+      int nMix = mMixedEvents; // Number of events to mix
+      uint64_t bcurrent = 0;
       for (; clu2 != clusters.end() && nMix > 0; clu2++) {
         if (clu2.caloType() != 0 || clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
             clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
@@ -145,7 +154,10 @@ struct phosPi0 {
         if (clu.collision().bc().globalBC() == clu2.collision().bc().globalBC()) { // Real
           mHistManager.fill(HIST("mggRe"), m, pt, cen1);
         } else { // Mixed
-          --nMix;
+          if (clu2.collision().bc().globalBC() != bcurrent) {
+            --nMix;
+            bcurrent = clu2.collision().bc().globalBC();
+          }
           mHistManager.fill(HIST("mggMi"), m, pt, cen1);
         }
       }

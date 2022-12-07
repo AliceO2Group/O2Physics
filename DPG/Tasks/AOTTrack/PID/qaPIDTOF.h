@@ -167,9 +167,9 @@ struct tofPidQa {
   Configurable<int> nBinsExpSigma{"nBinsExpSigma", 200, "Number of bins for the ExpSigma"};
   Configurable<float> minExpSigma{"minExpSigma", 0.f, "Minimum ExpSigma in range"};
   Configurable<float> maxExpSigma{"maxExpSigma", 200.f, "Maximum ExpSigma in range"};
-  Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
-  Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
-  Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+  Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
+  Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
+  Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};

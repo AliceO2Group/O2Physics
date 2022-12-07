@@ -36,3 +36,9 @@ o2physics_add_dpl_workflow(qa-pid-ml
                   SOURCES qaPidML.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
                   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kaon-pid
+                  SOURCES KaonPidTask.cxx
+                  JOB_POOL analysis
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
+                  COMPONENT_NAME Analysis)
