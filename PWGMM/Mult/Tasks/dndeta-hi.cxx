@@ -172,7 +172,7 @@ struct MultiplicityCounter {
       }
 
       for (auto eta : tracketas) {
-        registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, eta);
+        registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, eta);
         // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 1);
       }
     }
