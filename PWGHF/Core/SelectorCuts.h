@@ -15,9 +15,9 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include "Framework/Configurable.h"
 #include <vector>
 #include <string>
+#include "Framework/Configurable.h"
 
 namespace o2::analysis
 {
@@ -61,7 +61,6 @@ int findBin(T1 const& binsPt, T2 value)
   }
   return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
 }
-
 // namespace per channel
 
 namespace hf_cuts_single_track
