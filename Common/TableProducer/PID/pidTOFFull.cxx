@@ -11,20 +11,22 @@
 
 ///
 /// \file   pidTOFFull.cxx
-/// \author Nicolo' Jacazio
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TOF split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+///         QA histograms for the TOF PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
 // O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "TOFBase/EventTimeMaker.h"
+#include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/Track.h"
+
+// O2Physics includes
+#include "TableHelper.h"
+#include "pidTOFBase.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,9 +42,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Task to produce the response table
 struct tofPidFull {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-  using Coll = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFFullEl> tablePIDEl;
   Produces<o2::aod::pidTOFFullMu> tablePIDMu;
@@ -53,14 +54,16 @@ struct tofPidFull {
   Produces<o2::aod::pidTOFFullTr> tablePIDTr;
   Produces<o2::aod::pidTOFFullHe> tablePIDHe;
   Produces<o2::aod::pidTOFFullAl> tablePIDAl;
-  // Detector response and input parameters
-  DetectorResponse response;
+  // Detector response parameters
+  o2::pid::tof::TOFResoParams mRespParams;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> sigmaname{"param-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
+  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
+  Configurable<std::string> sigmaname{"param-sigma", "TOFResoParams", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+
+  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -71,38 +74,33 @@ struct tofPidFull {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  // Running variables
+  std::string parametrizationPath = "";
 
   void init(o2::framework::InitContext& initContext)
   {
-    // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
-        auto enableFlag = [&input](const std::string particle, Configurable<int>& flag) {
-          const std::string table = "pidTOFFull" + particle;
-          if (input.matcher.binding == table) {
-            if (flag < 0) {
-              flag.value = 1;
-              LOG(info) << "Auto-enabling table: " + table;
-            } else if (flag > 0) {
-              flag.value = 1;
-              LOG(info) << "Table enabled: " + table;
-            } else {
-              LOG(info) << "Table disabled: " + table;
-            }
-          }
-        };
-        enableFlag("El", pidEl);
-        enableFlag("Mu", pidMu);
-        enableFlag("Pi", pidPi);
-        enableFlag("Ka", pidKa);
-        enableFlag("Pr", pidPr);
-        enableFlag("De", pidDe);
-        enableFlag("Tr", pidTr);
-        enableFlag("He", pidHe);
-        enableFlag("Al", pidAl);
-      }
+    if (doprocessWSlice == true && doprocessWoSlice == true && doprocessWoSliceDev == true) {
+      LOGF(fatal, "Cannot enable processWoSlice and processWSlice and doprocessWoSliceDev at the same time. Please choose one.");
     }
+    if (doprocessWSlice == false && doprocessWoSlice == false && doprocessWoSliceDev == false) {
+      LOGF(fatal, "Cannot run without any of processWoSlice and processWSlice and doprocessWoSliceDev enabled. Please choose one.");
+    }
+
+    // Checking the tables are requested in the workflow and enabling them
+    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+      enableFlagIfTableRequired(initContext, "pidTOFFull" + particle, flag);
+    };
+
+    enableFlag("El", pidEl);
+    enableFlag("Mu", pidMu);
+    enableFlag("Pi", pidPi);
+    enableFlag("Ka", pidKa);
+    enableFlag("Pr", pidPr);
+    enableFlag("De", pidDe);
+    enableFlag("Tr", pidTr);
+    enableFlag("He", pidHe);
+    enableFlag("Al", pidAl);
+
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
     ccdb->setTimestamp(timestamp.value);
@@ -111,22 +109,26 @@ struct tofPidFull {
     // Not later than now objects
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     //
-    const std::vector<float> p = {0.008, 0.008, 0.002, 40.0};
-    response.SetParameters(DetectorResponse::kSigma, p);
     const std::string fname = paramfile.value;
     if (!fname.empty()) { // Loading the parametrization from file
       LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
-      response.LoadParamFromFile(fname.data(), sigmaname.value, DetectorResponse::kSigma);
+      mRespParams.LoadParamFromFile(fname.data(), sigmaname.value);
     } else { // Loading it from CCDB
-      std::string path = ccdbPath.value + "/" + sigmaname.value;
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
+      parametrizationPath = ccdbPath.value + "/" + sigmaname.value;
+      if (!enableTimeDependentResponse) {
+        LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: '" << parametrizationPath << "' for timestamp " << timestamp.value;
+        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp.value));
+        mRespParams.Print();
+      }
     }
   }
 
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  // Define slice per collision
+  Preslice<Trks> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
-  void process(Coll const& collisions, Trks const& tracks)
+  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
+  void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -138,198 +140,254 @@ struct tofPidFull {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    // Check and fill enabled tables
-    auto makeTable = [&tracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
-      if (flag.value == 1) {
-        // Prepare memory for enabled tables
-        table.reserve(tracks.size());
-        for (auto const& trk : tracks) { // Loop on Tracks
-          table(responsePID.GetExpectedSigmaFromTrackTime(response, trk),
-                responsePID.GetSeparationFromTrackTime(response, trk));
-        }
+    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
       }
+      table.reserve(tracks.size());
     };
-    makeTable(pidEl, tablePIDEl, response, responseEl);
-    makeTable(pidMu, tablePIDMu, response, responseMu);
-    makeTable(pidPi, tablePIDPi, response, responsePi);
-    makeTable(pidKa, tablePIDKa, response, responseKa);
-    makeTable(pidPr, tablePIDPr, response, responsePr);
-    makeTable(pidDe, tablePIDDe, response, responseDe);
-    makeTable(pidTr, tablePIDTr, response, responseTr);
-    makeTable(pidHe, tablePIDHe, response, responseHe);
-    makeTable(pidAl, tablePIDAl, response, responseAl);
-  }
-};
 
-struct tofPidFullQa {
-  static constexpr int Np = 9;
-  static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
-  static constexpr std::string_view hexpected[Np] = {"expected/El", "expected/Mu", "expected/Pi",
-                                                     "expected/Ka", "expected/Pr", "expected/De",
-                                                     "expected/Tr", "expected/He", "expected/Al"};
-  static constexpr std::string_view hexpected_diff[Np] = {"expected_diff/El", "expected_diff/Mu", "expected_diff/Pi",
-                                                          "expected_diff/Ka", "expected_diff/Pr", "expected_diff/De",
-                                                          "expected_diff/Tr", "expected_diff/He", "expected_diff/Al"};
-  static constexpr std::string_view hexpsigma[Np] = {"expsigma/El", "expsigma/Mu", "expsigma/Pi",
-                                                     "expsigma/Ka", "expsigma/Pr", "expsigma/De",
-                                                     "expsigma/Tr", "expsigma/He", "expsigma/Al"};
-  static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
-                                                   "nsigma/Ka", "nsigma/Pr", "nsigma/De",
-                                                   "nsigma/Tr", "nsigma/He", "nsigma/Al"};
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
 
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
-  Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
-  Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
-  Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
-  Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
-  Configurable<int> nBinsExpSigma{"nBinsExpSigma", 200, "Number of bins for the ExpSigma"};
-  Configurable<float> minExpSigma{"minExpSigma", 0.f, "Minimum ExpSigma in range"};
-  Configurable<float> maxExpSigma{"maxExpSigma", 200.f, "Maximum ExpSigma in range"};
-  Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
-  Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
-  Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+    int lastCollisionId = -1;          // Last collision ID analysed
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+        auto makeTableEmpty = [&](const Configurable<int>& flag, auto& table) {
+          if (flag.value != 1) {
+            return;
+          }
+          table(-999.f, -999.f);
+        };
 
-  template <uint8_t i>
-  void addParticleHistos()
-  {
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
-    }
+        makeTableEmpty(pidEl, tablePIDEl);
+        makeTableEmpty(pidMu, tablePIDMu);
+        makeTableEmpty(pidPi, tablePIDPi);
+        makeTableEmpty(pidKa, tablePIDKa);
+        makeTableEmpty(pidPr, tablePIDPr);
+        makeTableEmpty(pidDe, tablePIDDe);
+        makeTableEmpty(pidTr, tablePIDTr);
+        makeTableEmpty(pidHe, tablePIDHe);
+        makeTableEmpty(pidAl, tablePIDAl);
 
-    // Exp signal
-    const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s)", pT[i])};
-    histos.add(hexpected[i].data(), "", kTH2F, {pAxis, expAxis});
-
-    // Signal - Expected signal
-    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("(t-t_{evt}-t_{exp}(%s))", pT[i])};
-    histos.add(hexpected_diff[i].data(), "", kTH2F, {pAxis, deltaAxis});
-
-    // Exp Sigma
-    const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TOF}(%s)", pT[i])};
-    histos.add(hexpsigma[i].data(), "", kTH2F, {pAxis, expSigmaAxis});
-
-    // NSigma
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TOF}(%s)", pT[i])};
-    histos.add(hnsigma[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
-  }
-
-  void init(o2::framework::InitContext&)
-  {
-
-    const AxisSpec pExpAxis{100, 0, 10, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
-    const AxisSpec multAxis{100, 0, 100, "TOF multiplicity"};
-    const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
-    const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
-    const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
-    const AxisSpec colTimeResoAxis{100, 0, 1000, "#sigma_{Collision time} (ps)"};
-    const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
-    const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      ptAxis.makeLogaritmic();
-      pAxis.makeLogaritmic();
-    }
-
-    // Event properties
-    histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
-    histos.add("event/tofmultiplicity", "", kTH1F, {multAxis});
-    histos.add("event/colltime", "", kTH1F, {colTimeAxis});
-    histos.add("event/colltimereso", "", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/tofsignal", "", kTH2F, {pAxis, tofAxis});
-    histos.add("event/pexp", "", kTH2F, {pAxis, pExpAxis});
-    histos.add("event/eta", "", kTH1F, {etaAxis});
-    histos.add("event/length", "", kTH1F, {lAxis});
-    histos.add("event/pt", "", kTH1F, {ptAxis});
-    histos.add("event/p", "", kTH1F, {pAxis});
-    histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
-
-    addParticleHistos<0>();
-    addParticleHistos<1>();
-    addParticleHistos<2>();
-    addParticleHistos<3>();
-    addParticleHistos<4>();
-    addParticleHistos<5>();
-    addParticleHistos<6>();
-    addParticleHistos<7>();
-    addParticleHistos<8>();
-  }
-
-  template <uint8_t i, typename T>
-  void fillParticleHistos(const T& t, const float& tof, const float& exp_diff, const float& expsigma, const float& nsigma)
-  {
-    histos.fill(HIST(hexpected[i]), t.p(), tof - exp_diff);
-    histos.fill(HIST(hexpected_diff[i]), t.p(), exp_diff);
-    histos.fill(HIST(hexpsigma[i]), t.p(), expsigma);
-    histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
-  }
-
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
-                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                         aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                         aod::TrackSelection>;
-  void process(aod::Collision const& collision, Trks const& tracks)
-  {
-    // Computing Multiplicity first
-    int mult = 0;
-    for (auto t : tracks) {
-      //
-      if (!t.hasTOF()) { // Skipping tracks without TOF
-        continue;
-      }
-      mult++;
-    }
-
-    const float collisionTime_ps = collision.collisionTime() * 1000.f;
-    histos.fill(HIST("event/vertexz"), collision.posZ());
-    histos.fill(HIST("event/colltime"), collisionTime_ps);
-    histos.fill(HIST("event/tofmultiplicity"), mult);
-    histos.fill(HIST("event/colltimereso"), mult, collision.collisionTimeRes() * 1000.f);
-
-    for (auto t : tracks) {
-      //
-      if (!t.hasTOF()) { // Skipping tracks without TOF
-        continue;
-      }
-      if (!t.isGlobalTrack()) {
         continue;
       }
 
-      const float tofSignal = o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t);
-      const float tof = tofSignal - collisionTime_ps;
+      if (track.collisionId() == lastCollisionId) { // Tracks from last collision already processed
+        continue;
+      }
 
-      //
-      histos.fill(HIST("event/tofsignal"), t.p(), tofSignal);
-      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom());
-      histos.fill(HIST("event/eta"), t.eta());
-      histos.fill(HIST("event/length"), t.length());
-      histos.fill(HIST("event/pt"), t.pt());
-      histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
-      //
-      fillParticleHistos<0>(t, tof, t.tofExpSignalDiffEl(), t.tofExpSigmaEl(), t.tofNSigmaEl());
-      fillParticleHistos<1>(t, tof, t.tofExpSignalDiffMu(), t.tofExpSigmaMu(), t.tofNSigmaMu());
-      fillParticleHistos<2>(t, tof, t.tofExpSignalDiffPi(), t.tofExpSigmaPi(), t.tofNSigmaPi());
-      fillParticleHistos<3>(t, tof, t.tofExpSignalDiffKa(), t.tofExpSigmaKa(), t.tofNSigmaKa());
-      fillParticleHistos<4>(t, tof, t.tofExpSignalDiffPr(), t.tofExpSigmaPr(), t.tofNSigmaPr());
-      fillParticleHistos<5>(t, tof, t.tofExpSignalDiffDe(), t.tofExpSigmaDe(), t.tofNSigmaDe());
-      fillParticleHistos<6>(t, tof, t.tofExpSignalDiffTr(), t.tofExpSigmaTr(), t.tofNSigmaTr());
-      fillParticleHistos<7>(t, tof, t.tofExpSignalDiffHe(), t.tofExpSigmaHe(), t.tofNSigmaHe());
-      fillParticleHistos<8>(t, tof, t.tofExpSignalDiffAl(), t.tofExpSigmaAl(), t.tofNSigmaAl());
+      // Fill new table for the tracks in a collision
+      lastCollisionId = track.collisionId(); // Cache last collision ID
+      timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
+      if (enableTimeDependentResponse) {
+        LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
+        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+      }
+
+      const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
+      for (auto const& trkInColl : tracksInCollision) { // Loop on tracks
+        // Check and fill enabled tables
+        auto makeTable = [&trkInColl, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
+          if (flag.value != 1) {
+            return;
+          }
+          table(responsePID.GetExpectedSigma(mRespParams, trkInColl),
+                responsePID.GetSeparation(mRespParams, trkInColl));
+        };
+
+        makeTable(pidEl, tablePIDEl, responseEl);
+        makeTable(pidMu, tablePIDMu, responseMu);
+        makeTable(pidPi, tablePIDPi, responsePi);
+        makeTable(pidKa, tablePIDKa, responseKa);
+        makeTable(pidPr, tablePIDPr, responsePr);
+        makeTable(pidDe, tablePIDDe, responseDe);
+        makeTable(pidTr, tablePIDTr, responseTr);
+        makeTable(pidHe, tablePIDHe, responseHe);
+        makeTable(pidAl, tablePIDAl, responseAl);
+      }
     }
   }
+  PROCESS_SWITCH(tofPidFull, processWSlice, "Process with track slices", true);
+
+  void processWoSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  {
+    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+
+    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
+      }
+      table.reserve(tracks.size());
+    };
+
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
+
+    int lastCollisionId = -1;          // Last collision ID analysed
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+        auto makeTableEmpty = [&](const Configurable<int>& flag, auto& table) {
+          if (flag.value != 1) {
+            return;
+          }
+          table(-999.f, -999.f);
+        };
+
+        makeTableEmpty(pidEl, tablePIDEl);
+        makeTableEmpty(pidMu, tablePIDMu);
+        makeTableEmpty(pidPi, tablePIDPi);
+        makeTableEmpty(pidKa, tablePIDKa);
+        makeTableEmpty(pidPr, tablePIDPr);
+        makeTableEmpty(pidDe, tablePIDDe);
+        makeTableEmpty(pidTr, tablePIDTr);
+        makeTableEmpty(pidHe, tablePIDHe);
+        makeTableEmpty(pidAl, tablePIDAl);
+
+        continue;
+      }
+
+      if (enableTimeDependentResponse && (track.collisionId() != lastCollisionId)) { // Time dependent calib is enabled and this is a new collision
+        lastCollisionId = track.collisionId();                                       // Cache last collision ID
+        timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
+        LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
+        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+      }
+
+      // Check and fill enabled tables
+      auto makeTable = [&track, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
+        if (flag.value != 1) {
+          return;
+        }
+        table(responsePID.GetExpectedSigma(mRespParams, track),
+              responsePID.GetSeparation(mRespParams, track));
+      };
+
+      makeTable(pidEl, tablePIDEl, responseEl);
+      makeTable(pidMu, tablePIDMu, responseMu);
+      makeTable(pidPi, tablePIDPi, responsePi);
+      makeTable(pidKa, tablePIDKa, responseKa);
+      makeTable(pidPr, tablePIDPr, responsePr);
+      makeTable(pidDe, tablePIDDe, responseDe);
+      makeTable(pidTr, tablePIDTr, responseTr);
+      makeTable(pidHe, tablePIDHe, responseHe);
+      makeTable(pidAl, tablePIDAl, responseAl);
+    }
+  }
+  PROCESS_SWITCH(tofPidFull, processWoSlice, "Process without track slices", false);
+
+  void processWoSliceDev(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  {
+    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+
+#define doReserveTable(Particle)               \
+  if (pid##Particle.value == 1) {              \
+    tablePID##Particle.reserve(tracks.size()); \
+  }
+
+    doReserveTable(El);
+    doReserveTable(Mu);
+    doReserveTable(Pi);
+    doReserveTable(Ka);
+    doReserveTable(Pr);
+    doReserveTable(De);
+    doReserveTable(Tr);
+    doReserveTable(He);
+    doReserveTable(Al);
+
+#undef doReserveTable
+
+    int lastCollisionId = -1;          // Last collision ID analysed
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+
+#define doFillTableEmpty(Particle) \
+  if (pid##Particle.value == 1) {  \
+    tablePID##Particle(-999.f,     \
+                       -999.f);    \
+  }
+
+        doFillTableEmpty(El);
+        doFillTableEmpty(Mu);
+        doFillTableEmpty(Pi);
+        doFillTableEmpty(Ka);
+        doFillTableEmpty(Pr);
+        doFillTableEmpty(De);
+        doFillTableEmpty(Tr);
+        doFillTableEmpty(He);
+        doFillTableEmpty(Al);
+
+#undef doFillTableEmpty
+
+        continue;
+      }
+
+      if (enableTimeDependentResponse && (track.collisionId() != lastCollisionId)) { // Time dependent calib is enabled and this is a new collision
+        lastCollisionId = track.collisionId();                                       // Cache last collision ID
+        timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
+        LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
+        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+      }
+
+// Check and fill enabled tables
+#define doFillTable(Particle)                                                   \
+  if (pid##Particle.value == 1) {                                               \
+    tablePID##Particle(response##Particle.GetExpectedSigma(mRespParams, track), \
+                       response##Particle.GetSeparation(mRespParams, track));   \
+  }
+
+      doFillTable(El);
+      doFillTable(Mu);
+      doFillTable(Pi);
+      doFillTable(Ka);
+      doFillTable(Pr);
+      doFillTable(De);
+      doFillTable(Tr);
+      doFillTable(He);
+      doFillTable(Al);
+
+#undef doFillTable
+    }
+  }
+  PROCESS_SWITCH(tofPidFull, processWoSliceDev, "Process without track slices dev", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofPidFull>(cfgc)};
   if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tofPidFullQa>(cfgc));
+    workflow.push_back(adaptAnalysisTask<tofPidQa>(cfgc));
   }
+
   return workflow;
 }

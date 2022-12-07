@@ -1,16 +1,17 @@
+---
 name: "Close stale PRs"
 on:
   schedule:
-  - cron: "0 0 * * *"
+    - cron: "0 0 * * *"
 
 jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/stale@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        stale-pr-message: 'This PR has not been updated in the last 30 days. Is it still needed? Unless further action is taken, it will be closed in 5 days.'
-        stale-pr-label: stale
-        days-before-stale: 30
-        days-before-close: 5
+      - uses: actions/stale@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-pr-message: 'This PR has not been updated in the last 30 days. Is it still needed? Unless further action is taken, it will be closed in 5 days.'
+          stale-pr-label: stale
+          days-before-stale: 30
+          days-before-close: 5

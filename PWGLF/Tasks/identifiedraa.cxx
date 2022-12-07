@@ -24,12 +24,11 @@
 /// o2-analysis-pid-tpc-full,  o2-analysis-trackextension,
 /// o2-analysis-pid-tof-full, o2-analysis-id-raa
 
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisTask.h"
 
@@ -115,7 +114,7 @@ struct identifiedraaTask {
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)
   {
     for (auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.template mcParticle_as<aod::McParticles_000>();
       for (int j = 0; j < 16; j++) {
         if (globalTrackswoPrim.IsSelected(track, static_cast<TrackSelection::TrackCuts>(j))) {
           histos.fill(HIST("TrackCut"), j);
@@ -144,7 +143,7 @@ struct identifiedraaTask {
       if (!globalTrackswoPrim.IsSelected(track)) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(mcParticle)) {
+      if (!mcParticle.isPhysicalPrimary()) {
         if (mcParticle.pdgCode() == pdg_num[i]) {
           histos.fill(HIST(dca_xy_sec[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(dca_z_sec[i]), track.pt(), track.dcaZ());
@@ -190,7 +189,7 @@ struct identifiedraaTask {
       if (std::abs(0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()))) > 0.5) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(particle)) {
+      if (!particle.isPhysicalPrimary()) {
         continue;
       }
       if (particle.pdgCode() != pdg_num[i]) {
@@ -202,10 +201,10 @@ struct identifiedraaTask {
   }
 
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
-                           aod::TracksExtended, aod::McTrackLabels,
+                           aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa,
                            aod::pidTOFFullPr> const& tracks,
-                 const aod::McParticles& mcParticles)
+                 const aod::McParticles_000& mcParticles)
   {
     // LOGF(info, "Enter processMC!");
     fillHistograms_MC<0>(tracks, mcParticles);
@@ -278,8 +277,8 @@ struct identifiedraaTask {
     }
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision,
-                   soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
+                   soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                              aod::pidTOFFullPi, aod::pidTOFFullKa,
                              aod::pidTOFFullPr, aod::pidTPCFullPi,
                              aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
@@ -292,11 +291,11 @@ struct identifiedraaTask {
     if (!collision.sel7()) {
       return;
     }
-    histos.fill(HIST("Centrality"), collision.centV0M());
-    if (collision.centV0M() > 5.f || collision.centV0M() < 0.1f) {
+    histos.fill(HIST("Centrality"), collision.centRun2V0M());
+    if (collision.centRun2V0M() > 5.f || collision.centRun2V0M() < 0.1f) {
       return;
     }
-    histos.fill(HIST("CentralityAfterEvSel"), collision.centV0M());
+    histos.fill(HIST("CentralityAfterEvSel"), collision.centRun2V0M());
     histos.fill(HIST("VtxZ"), collision.posZ());
     if (std::abs(collision.posZ()) > 10.f) {
       return;
@@ -313,7 +312,7 @@ struct identifiedraaTask {
   PROCESS_SWITCH(identifiedraaTask, processData, "Process data events", true);
 
   void processMCasData(aod::Collision const& collision,
-                       soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+                       soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa,
                                  aod::pidTOFFullPr, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)

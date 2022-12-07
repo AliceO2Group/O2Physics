@@ -25,7 +25,7 @@ using namespace o2::framework::expressions;
 
 struct TrackExtensionTask {
   Configurable<float> magField{"magField", 5.f, "Magnetic field for the propagation to the primary vertex in kG"};
-  Produces<aod::TracksExtended> extendedTrackQuantities;
+  Produces<aod::TracksDCA> extendedTrackQuantities;
 
   void process(aod::Tracks const& tracks, aod::Collisions const&)
   {

@@ -32,8 +32,10 @@ struct IterateV0 {
   {
     LOGF(info, "Vertex = %f", collisionMatched.posZ());
     if (collisionMatched.has_fv0a()) {
-      auto v0a = collisionMatched.fv0a();
-      LOGF(info, "V0A: %f %f", v0a.amplitude()[0], v0a.amplitude()[1]);
+      auto fv0a = collisionMatched.fv0a();
+      for (unsigned int i = 0; i < fv0a.amplitude().size(); ++i) {
+        LOGF(info, "V0A channel %d: %f", fv0a.channel()[i], fv0a.amplitude()[i]);
+      }
     } else {
       LOGF(info, "No V0A info");
     }
@@ -50,7 +52,9 @@ struct IterateV0Exclusive {
   {
     LOGF(info, "Vertex = %f", matcher.collision().posZ());
     auto fv0a = matcher.fv0a();
-    LOGF(info, "V0: %f %f", fv0a.amplitude()[0], fv0a.amplitude()[1]);
+    for (unsigned int i = 0; i < fv0a.amplitude().size(); ++i) {
+      LOGF(info, "V0A channel %d: %f", fv0a.channel()[i], fv0a.amplitude()[i]);
+    }
   }
 };
 
@@ -61,8 +65,10 @@ struct IterateV0Tracks {
   {
     LOGF(info, "Vertex = %f. %d tracks", collisionMatched.posZ(), tracks.size());
     if (collisionMatched.has_fv0a()) {
-      auto v0a = collisionMatched.fv0a();
-      LOGF(info, "V0A: %f %f", v0a.amplitude()[0], v0a.amplitude()[1]);
+      auto fv0a = collisionMatched.fv0a();
+      for (unsigned int i = 0; i < fv0a.amplitude().size(); ++i) {
+        LOGF(info, "V0A channel %d: %f", fv0a.channel()[i], fv0a.amplitude()[i]);
+      }
     } else {
       LOGF(info, "No V0A info");
     }
@@ -75,8 +81,10 @@ struct IterateV0ZDC {
   {
     LOGF(info, "Vertex = %f", collisionMatched.posZ());
     if (collisionMatched.has_fv0a()) {
-      auto v0a = collisionMatched.fv0a();
-      LOGF(info, "V0A: %f %f", v0a.amplitude()[0], v0a.amplitude()[1]);
+      auto fv0a = collisionMatched.fv0a();
+      for (unsigned int i = 0; i < fv0a.amplitude().size(); ++i) {
+        LOGF(info, "V0A channel %d: %f", fv0a.channel()[i], fv0a.amplitude()[i]);
+      }
     } else {
       LOGF(info, "No V0A info");
     }

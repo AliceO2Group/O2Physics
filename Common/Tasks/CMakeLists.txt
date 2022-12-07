@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(trackqa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(propagatorqa
+                    SOURCES propagatorQa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(validation
                     SOURCES validation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase
@@ -37,8 +42,24 @@ o2physics_add_dpl_workflow(centrality-qa
 o2physics_add_dpl_workflow(check-data-model
                   SOURCES checkDataModel.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                  COMPONENT_NAME AnalysisTutorial)
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(check-data-model-mc
+                  SOURCES checkDataModelMC.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(orbit-range
+                  SOURCES orbitRangeTask.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(ft0-qa
                     SOURCES ft0Qa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qa-cpv
+                    SOURCES cpvQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)

@@ -65,8 +65,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::FT0s>>(cfgc, TaskName("FT0s")),
       adaptAnalysisTask<LoadTable<aod::FDDs>>(cfgc, TaskName("FDDs")),
 
-      adaptAnalysisTask<LoadTable<aod::StoredV0s>>(cfgc, TaskName("StoredV0s")),
-      adaptAnalysisTask<LoadTable<aod::StoredCascades>>(cfgc, TaskName("StoredCascades")),
+      adaptAnalysisTask<LoadTable<aod::V0s>>(cfgc, TaskName("V0s")),
+      adaptAnalysisTask<LoadTable<aod::Cascades>>(cfgc, TaskName("Cascades")),
 
       adaptAnalysisTask<LoadTable<aod::Run2BCInfos>>(cfgc, TaskName("Run2BCInfos")),
       adaptAnalysisTask<LoadTable<aod::FV0Cs>>(cfgc, TaskName("FV0Cs")),
@@ -76,8 +76,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::BCs>>(cfgc, TaskName("BCs")),
       adaptAnalysisTask<LoadTable<aod::Collisions>>(cfgc, TaskName("Collisions")),
 
-      adaptAnalysisTask<LoadTable<aod::Tracks>>(cfgc, TaskName("Tracks")),
-      adaptAnalysisTask<LoadTable<aod::TracksCov>>(cfgc, TaskName("TracksCov")),
+      adaptAnalysisTask<LoadTable<aod::TracksIU>>(cfgc, TaskName("TracksIU")),
+      adaptAnalysisTask<LoadTable<aod::TracksCovIU>>(cfgc, TaskName("TracksCovIU")),
       adaptAnalysisTask<LoadTable<aod::TracksExtra>>(cfgc, TaskName("TracksExtra")),
 
       adaptAnalysisTask<LoadTable<aod::FwdTracks>>(cfgc, TaskName("FwdTracks")),
@@ -92,8 +92,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::FT0s>>(cfgc, TaskName("FT0s")),
       adaptAnalysisTask<LoadTable<aod::FDDs>>(cfgc, TaskName("FDDs")),
 
-      adaptAnalysisTask<LoadTable<aod::StoredV0s>>(cfgc, TaskName("StoredV0s")),
-      adaptAnalysisTask<LoadTable<aod::StoredCascades>>(cfgc, TaskName("StoredCascades")),
+      adaptAnalysisTask<LoadTable<aod::V0s>>(cfgc, TaskName("V0s")),
+      adaptAnalysisTask<LoadTable<aod::Cascades>>(cfgc, TaskName("Cascades")),
 
       adaptAnalysisTask<LoadTable<aod::AmbiguousTracks>>(cfgc, TaskName("AmbiguousTracks")),
       adaptAnalysisTask<LoadTable<aod::MFTTracks>>(cfgc, TaskName("MFTTracks")),

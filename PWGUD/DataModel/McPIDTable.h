@@ -11,7 +11,6 @@
 #ifndef O2_ANALYSIS_UDDIFFMCSCAN_H
 #define O2_ANALYSIS_UDDIFFMCSCAN_H
 
-#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod

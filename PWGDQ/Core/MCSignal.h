@@ -13,15 +13,15 @@
 //
 /* Schematic Monte Carlo signal definition:
 
-  Prong_0:      Particle(0,0) <-- Particle(0,1) <-- ... Prong(0,m_0) ... <-- Particle(0, n_0)       
-                                                          |      
+  Prong_0:      Particle(0,0) <-- Particle(0,1) <-- ... Prong(0,m_0) ... <-- Particle(0, n_0)
+                                                          |
   Prong_1:      Particle(1,0) <-- Particle(1,1) <-- ... Prong(1,m_1) ... <-- Particle(1, n_1)
                                                           |
   Prong_i:      Particle(i,0) <-- Particle(i,1) <-- ... Prong(i,m_i) ... <-- Particle(i, n_i)
                                                           |
   Prong_N:      Particle(N,0) <-- Particle(N,1) <-- ... Prong(N,m_N) ... <-- Particle(N, n_N)
-                                             
-The MC signal model is composed of N prongs (see MCProng.h) with a variable number of generations specified for each prong (n_i, i=1,N). 
+
+The MC signal model is composed of N prongs (see MCProng.h) with a variable number of generations specified for each prong (n_i, i=1,N).
 At least one prong has to be specified for a valid MCsignal. An optional common ancestor for all prongs can be specified (m_i, i=1,N).
 The common ancestor index, m_i, does not need to be the same for all prongs (e.g. some prongs can have a smaller number of generations in the history up to the common ancestor).
 When a tuple of MC particles is checked whether it matches the specified signal, all prongs must be matched exactly with the particles in the tuple.
@@ -42,8 +42,8 @@ process(aod::McParticles const& mcTracks) {
   ...
   for (auto& mctrack : mcTracks) {
     if(mySignal.CheckSignal(true,mcTracks,mctrack)) {
-      cout << "Found signal" << endl;  
-    }  
+      cout << "Found signal" << endl;
+    }
   }
   for (auto& [mt1, mt2] : combinations(mcTracks, mcTracks)) {
     if(mySignal2.CheckSignal(true,mcTracks,mt1,mt2)) {
@@ -56,7 +56,6 @@ process(aod::McParticles const& mcTracks) {
 #ifndef MCSignal_H
 #define MCSignal_H
 
-//#include "Common/Core/MC.h"
 #include "MCProng.h"
 #include "TNamed.h"
 
@@ -148,20 +147,39 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         }
       }
     }
-    // make sure that a mother exists in the stack before moving one generation further in history
-    if (!currentMCParticle.has_mother0() && j < fProngs[i].fNGenerations - 1) {
-      return false;
-    }
-    if (currentMCParticle.has_mother0() && j < fProngs[i].fNGenerations - 1) {
-      currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
-      //currentMCParticle = currentMCParticle.template mother0_as<U>();
+
+    // if checking back in time: look for mother
+    // else (checking in time): look for daughter
+    if (!fProngs[i].fCheckGenerationsInTime) {
+      // make sure that a mother exists in the stack before moving one generation further in history
+      if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+        return false;
+      }
+      /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+        LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+      }*/
+      if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+        currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+        // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+        // currentMCParticle = currentMCParticle.template mother0_as<U>();
+      }
+    } else {
+      // make sure that a daughter exists in the stack before moving one generation younger
+      if (!currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+        return false;
+      }
+      if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+        const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
+        for (auto& d : daughtersSlice) {
+          if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
+            currentMCParticle = d;
+            break;
+          }
+        }
+      }
     }
   }
-  // NOTE:  Checking the sources is optional due to the fact that with the skimmed data model
-  //        the full history of a particle is not guaranteed to be present in the particle stack,
-  //        which means that some sources cannot be properly checked (e.g. ALICE physical primary)
-  //        However, in the skimmed data model, this kind of checks should had been already computed at skimming time
-  //        and present in the decision bit map.
+
   if (checkSources) {
     currentMCParticle = track;
     for (int j = 0; j < fProngs[i].fNGenerations; j++) {
@@ -172,22 +190,27 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       // check each source
       uint64_t sourcesDecision = 0;
       // Check kPhysicalPrimary
-      //TODO: compilation fails if MC.h is included (error: multiple definition of MC::isStable()). Check it out!
-      /*if(fProngs[i].fSourceBits[j] & MCProng::kPhysicalPrimary) { 
-        cout << "request kPhysicalPrimary, pdg " << currentMCParticle.pdgCode() << endl;    
-        if((fProngs[i].fExcludeSource[j] & MCProng::kPhysicalPrimary) != MC::isPhysicalPrimary<U>(track)) {
-          sourcesDecision |= MCProng::kPhysicalPrimary;
-          cout << "good " << sourcesDecision << endl;
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kPhysicalPrimary);
         }
-      }*/
+      }
       // Check kProducedInTransport
-      if (fProngs[i].fSourceBits[j] & MCProng::kProducedInTransport) {
-        cout << "request kProducedInTransport, pdg " << currentMCParticle.pdgCode() << endl;
-        cout << "1::" << (fProngs[i].fExcludeSource[j] & MCProng::kProducedInTransport) << endl;
-        cout << "2::" << (currentMCParticle.flags() & (uint8_t(1) << 0)) << endl;
-        if ((fProngs[i].fExcludeSource[j] & MCProng::kProducedInTransport) != (currentMCParticle.flags() & (uint8_t(1) << 0))) {
-          sourcesDecision |= MCProng::kProducedInTransport;
-          cout << "good " << sourcesDecision << endl;
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kProducedInTransport)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedInTransport);
+        }
+      }
+      // Check kProducedByGenerator
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kProducedByGenerator)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedByGenerator);
+        }
+      }
+      // Check kFromBackgroundEvent
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kFromBackgroundEvent);
         }
       }
       // no source bit is fulfilled
@@ -198,10 +221,43 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       if (fProngs[i].fUseANDonSourceBitMap[j] && (sourcesDecision != fProngs[i].fSourceBits[j])) {
         return false;
       }
-      // move one generation back in history
-      if (j < fProngs[i].fNGenerations - 1) {
-        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
-        //currentMCParticle = currentMCParticle.template mother0_as<U>();
+
+      // if checking back in time: look for mother
+      // else (checking in time): look for daughter
+      if (!fProngs[i].fCheckGenerationsInTime) {
+        // move one generation back in history
+        // make sure that a mother exists in the stack before moving one generation further in history
+        if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+          return false;
+        }
+        if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+          /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+            LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+          }*/
+          currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+          // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+          // currentMCParticle = currentMCParticle.template mother0_as<U>();
+        }
+        /*if (j < fProngs[i].fNGenerations - 1) {
+          currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
+          //currentMCParticle = currentMCParticle.template mother0_as<U>();
+        }*/
+      } else {
+        // move one generation further in history
+        // pong history will be moved to the branch of the first daughter that matches the PDG requirement
+        // make sure that a daughter exists in the stack before moving one generation younger
+        if (!currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+          return false;
+        }
+        if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+          const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
+          for (auto& d : daughtersSlice) {
+            if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
+              currentMCParticle = d;
+              break;
+            }
+          }
+        }
       }
     }
   }

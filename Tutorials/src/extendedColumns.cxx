@@ -28,6 +28,8 @@ using namespace o2;
 using namespace o2::framework;
 
 struct ExtendTable {
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     // note that this needs to be done only once, as it is done for the whole table
@@ -35,7 +37,7 @@ struct ExtendTable {
     // goes out of scope
     auto table_extension = soa::Extend<aod::Tracks, aod::extension::P2>(tracks);
     for (auto& collision : collisions) {
-      auto trackSlice = table_extension.sliceBy(aod::track::collisionId, collision.globalIndex());
+      auto trackSlice = table_extension.sliceBy(perCollision, collision.globalIndex());
       LOGP(info, "Collision {}", collision.globalIndex());
       for (auto& row : trackSlice) {
         if (row.trackType() != 3) {

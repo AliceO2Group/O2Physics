@@ -13,8 +13,8 @@
 /// \brief FemtoDreamEventHisto - Histogram class for tracks, V0s and cascades
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMEVENTHISTO_H_
-#define ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMEVENTHISTO_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMEVENTHISTO_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMEVENTHISTO_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
@@ -35,7 +35,8 @@ class FemtoDreamEventHisto
   {
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
   }
 
   /// Some basic QA of the event
@@ -46,6 +47,7 @@ class FemtoDreamEventHisto
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
+      mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNtrPV());
       mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multV0M());
     }
   }
@@ -55,4 +57,4 @@ class FemtoDreamEventHisto
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMEVENTHISTO_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMEVENTHISTO_H_

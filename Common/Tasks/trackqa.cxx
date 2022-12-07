@@ -16,7 +16,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/Core/MC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -45,7 +44,7 @@ struct TrackQa {
 
   Configurable<int> selectedTracks{"select", 1, "Choice of track selection. 0 = no selection, 1 = globalTracks, 2 = globalTracksSDD"};
 
-  Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = requireGlobalTrackInFilter();
 
   void init(o2::framework::InitContext&)
   {
@@ -87,7 +86,7 @@ struct TrackQa {
     histos.print();
   }
 
-  void process(soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection>>::iterator const& track)
+  void process(soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection>>::iterator const& track)
   {
     // fill kinematic variables
     histos.fill(HIST("Kine/pt"), track.pt());
@@ -143,7 +142,7 @@ struct TrackCutQa {
     }
   }
 
-  void process(soa::Join<aod::FullTracks, aod::TracksExtended>::iterator const& track)
+  void process(soa::Join<aod::FullTracks, aod::TracksDCA>::iterator const& track)
   {
     for (int i = 0; i < ncuts; i++) {
       if (selectedTracks.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) {

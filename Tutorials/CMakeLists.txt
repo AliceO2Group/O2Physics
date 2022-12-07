@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(Skimming)
+add_subdirectory(OpenData)
 
 o2physics_add_dpl_workflow(histogram-track-selection
                     SOURCES src/histogramTrackSelection.cxx
@@ -18,6 +19,11 @@ o2physics_add_dpl_workflow(histogram-track-selection
 
 o2physics_add_dpl_workflow(track-iteration
                   SOURCES src/trackIteration.cxx
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(pid
+                  SOURCES src/pid.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(full-track-iteration
@@ -86,6 +92,11 @@ o2physics_add_dpl_workflow(tracks-combinations
 
 o2physics_add_dpl_workflow(event-mixing
                   SOURCES src/eventMixing.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(event-mixing-validation
+                  SOURCES src/eventMixingValidation.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
@@ -184,4 +195,19 @@ o2physics_add_dpl_workflow(using-pdg
 o2physics_add_dpl_workflow(propagated-tracks
                   SOURCES src/propagatedTracks.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(tree-creator
+                  SOURCES src/treeCreator.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(reweighting
+                  SOURCES src/reweighting.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(hep-mc
+                  SOURCES src/hepMC.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework
                   COMPONENT_NAME AnalysisTutorial)

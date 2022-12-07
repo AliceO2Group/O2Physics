@@ -14,8 +14,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/MC.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Common/DataModel/EventSelection.h"
@@ -79,7 +78,7 @@ struct NucleiSpectraEfficiencyGen {
       if (mcParticleGen.pdgCode() != -1000020030) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(mcParticleGen)) {
+      if (!mcParticleGen.isPhysicalPrimary()) {
         continue;
       }
       if (abs(mcParticleGen.y()) > 0.5) {
@@ -115,12 +114,12 @@ struct NucleiSpectraEfficiencyRec {
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +10.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection>>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator const& collision,
-               TrackCandidates const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+               TrackCandidates const& tracks, aod::McParticles_000& mcParticles, aod::McCollisions const& mcCollisions)
   {
     //
     // check the vertex-z distribution
@@ -148,7 +147,7 @@ struct NucleiSpectraEfficiencyRec {
       //
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() != -1000020030) {
+        if (track.mcParticle_as<aod::McParticles_000>().pdgCode() != -1000020030) {
           continue;
         }
         // fill reconstructed histogram

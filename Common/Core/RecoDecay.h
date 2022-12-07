@@ -29,6 +29,7 @@
 #include "Framework/Logger.h"
 
 using std::array;
+using namespace o2;
 using namespace o2::constants::math;
 
 /// Base class for calculating properties of reconstructed decays
@@ -47,6 +48,11 @@ class RecoDecay
 
   /// Default destructor
   ~RecoDecay() = default;
+
+  // mapping of charm-hadron origin type
+  enum OriginType { None = 0,
+                    Prompt,
+                    NonPrompt };
 
   // Auxiliary functions
 
@@ -169,13 +175,13 @@ class RecoDecay
   /// \param mom  3-momentum array
   /// \return pseudorapidity
   template <typename T>
-  static double Eta(const array<T, 3>& mom)
+  static double eta(const array<T, 3>& mom)
   {
     // eta = arctanh(pz/p)
     if (std::abs(mom[0]) < Almost0 && std::abs(mom[1]) < Almost0) { // very small px and py
       return (double)(mom[2] > 0 ? VeryBig : -VeryBig);
     }
-    return (double)(std::atanh(mom[2] / P(mom)));
+    return (double)(std::atanh(mom[2] / p(mom)));
   }
 
   /// Calculates rapidity.
@@ -183,17 +189,17 @@ class RecoDecay
   /// \param mass  mass
   /// \return rapidity
   template <typename T, typename U>
-  static double Y(const array<T, 3>& mom, U mass)
+  static double y(const array<T, 3>& mom, U mass)
   {
     // y = arctanh(pz/E)
-    return std::atanh(mom[2] / E(mom, mass));
+    return std::atanh(mom[2] / e(mom, mass));
   }
 
   /// Calculates azimuth from x and y components.
   /// \param x,y  {x, y} components
   /// \return azimuth within [0, 2π]
   template <typename T, typename U>
-  static double Phi(T x, U y)
+  static double phi(T x, U y)
   {
     // conversion from [-π, +π] returned by atan2 to [0, 2π]
     return std::atan2((double)(-y), (double)(-x)) + o2::constants::math::PI;
@@ -204,9 +210,9 @@ class RecoDecay
   /// \param vec  vector (container of elements accessible by index)
   /// \return azimuth within [0, 2π]
   template <typename T>
-  static double Phi(const T& vec)
+  static double phi(const T& vec)
   {
-    return Phi(vec[0], vec[1]);
+    return phi(vec[0], vec[1]);
   }
 
   /// Constrains angle to be within a range.
@@ -232,7 +238,7 @@ class RecoDecay
   /// \param mom  3-momentum array
   /// \return cosine of pointing angle
   template <typename T, typename U, typename V>
-  static double CPA(const T& posPV, const U& posSV, const array<V, 3>& mom)
+  static double cpa(const T& posPV, const U& posSV, const array<V, 3>& mom)
   {
     // CPA = (l . p)/(|l| |p|)
     auto lineDecay = array{posSV[0] - posPV[0], posSV[1] - posPV[1], posSV[2] - posPV[2]};
@@ -252,7 +258,7 @@ class RecoDecay
   /// \param mom  {x, y, z} or {x, y} momentum array
   /// \return cosine of pointing angle in {x, y}
   template <std::size_t N, typename T, typename U, typename V>
-  static double CPAXY(const T& posPV, const U& posSV, const array<V, N>& mom)
+  static double cpaXY(const T& posPV, const U& posSV, const array<V, N>& mom)
   {
     // CPAXY = (r . pT)/(|r| |pT|)
     auto lineDecay = array{posSV[0] - posPV[0], posSV[1] - posPV[1]};
@@ -274,10 +280,10 @@ class RecoDecay
   /// \param length  decay length
   /// \return proper lifetime times c
   template <typename T, typename U, typename V>
-  static double Ct(const array<T, 3>& mom, U length, V mass)
+  static double ct(const array<T, 3>& mom, U length, V mass)
   {
     // c t = l m c^2/(p c)
-    return (double)length * (double)mass / P(mom);
+    return (double)length * (double)mass / p(mom);
   }
 
   /// Calculates cosine of θ* (theta star).
@@ -288,11 +294,11 @@ class RecoDecay
   /// \param iProng  index of the prong
   /// \return cosine of θ* of the i-th prong under the assumption of the invariant mass
   template <typename T, typename U, typename V>
-  static double CosThetaStar(const array<array<T, 3>, 2>& arrMom, const array<U, 2>& arrMass, V mTot, int iProng)
+  static double cosThetaStar(const array<array<T, 3>, 2>& arrMom, const array<U, 2>& arrMass, V mTot, int iProng)
   {
-    auto pVecTot = PVec(arrMom[0], arrMom[1]);                                                                             // momentum of the mother particle
-    auto pTot = P(pVecTot);                                                                                                // magnitude of the momentum of the mother particle
-    auto eTot = E(pTot, mTot);                                                                                             // energy of the mother particle
+    auto pVecTot = pVec(arrMom[0], arrMom[1]);                                                                             // momentum of the mother particle
+    auto pTot = p(pVecTot);                                                                                                // magnitude of the momentum of the mother particle
+    auto eTot = e(pTot, mTot);                                                                                             // energy of the mother particle
     auto gamma = eTot / mTot;                                                                                              // γ, Lorentz gamma factor of the mother particle
     auto beta = pTot / eTot;                                                                                               // β, velocity of the mother particle
     auto pStar = std::sqrt(sq(sq(mTot) - sq(arrMass[0]) - sq(arrMass[1])) - sq(2 * arrMass[0] * arrMass[1])) / (2 * mTot); // p*, prong momentum in the rest frame of the mother particle
@@ -301,14 +307,14 @@ class RecoDecay
     // p_L,i = γ (p*_L,i + β E*_i)
     // p*_L,i = p_L,i/γ - β E*_i
     // cos(θ*_i) = (p_L,i/γ - β E*_i)/p*
-    return (dotProd(arrMom[iProng], pVecTot) / (pTot * gamma) - beta * E(pStar, arrMass[iProng])) / pStar;
+    return (dotProd(arrMom[iProng], pVecTot) / (pTot * gamma) - beta * e(pStar, arrMass[iProng])) / pStar;
   }
 
   /// Sums 3-momenta.
   /// \param args  pack of 3-momentum arrays
   /// \return total 3-momentum array
   template <typename... T>
-  static auto PVec(const array<T, 3>&... args)
+  static auto pVec(const array<T, 3>&... args)
   {
     return sumOfVec(args...);
   }
@@ -316,7 +322,7 @@ class RecoDecay
   /// Calculates momentum squared from momentum components.
   /// \param px,py,pz  {x, y, z} momentum components
   /// \return momentum squared
-  static double P2(double px, double py, double pz)
+  static double p2(double px, double py, double pz)
   {
     return sumOfSquares(px, py, pz);
   }
@@ -325,7 +331,7 @@ class RecoDecay
   /// \param args  pack of 3-momentum arrays
   /// \return total momentum squared
   template <typename... T>
-  static double P2(const array<T, 3>&... args)
+  static double p2(const array<T, 3>&... args)
   {
     return sumOfSquares(getElement(0, args...), getElement(1, args...), getElement(2, args...));
   }
@@ -334,15 +340,15 @@ class RecoDecay
   /// \param args  {x, y, z} momentum components or pack of 3-momentum arrays
   /// \return (total) momentum magnitude
   template <typename... T>
-  static double P(const T&... args)
+  static double p(const T&... args)
   {
-    return std::sqrt(P2(args...));
+    return std::sqrt(p2(args...));
   }
 
   /// Calculates transverse momentum squared from momentum components.
   /// \param px,py  {x, y} momentum components
   /// \return transverse momentum squared
-  static double Pt2(double px, double py)
+  static double pt2(double px, double py)
   {
     return sumOfSquares(px, py);
   }
@@ -351,7 +357,7 @@ class RecoDecay
   /// \param args  pack of 3-(or 2-)momentum arrays
   /// \return total transverse momentum squared
   template <std::size_t N, typename... T>
-  static double Pt2(const array<T, N>&... args)
+  static double pt2(const array<T, N>&... args)
   {
     return sumOfSquares(getElement(0, args...), getElement(1, args...));
   }
@@ -360,9 +366,9 @@ class RecoDecay
   /// \param args  {x, y} momentum components or pack of 3-(or 2-)momentum arrays
   /// \return (total) transverse momentum
   template <typename... T>
-  static double Pt(const T&... args)
+  static double pt(const T&... args)
   {
-    return std::sqrt(Pt2(args...));
+    return std::sqrt(pt2(args...));
   }
 
   /// Calculates energy squared from momentum and mass.
@@ -370,7 +376,7 @@ class RecoDecay
   /// \param args  {x, y, z} momentum components, mass
   /// \return energy squared
   template <typename... T>
-  static double E2(T... args)
+  static double e2(T... args)
   {
     return sumOfSquares(args...);
   }
@@ -380,9 +386,9 @@ class RecoDecay
   /// \param mass  mass
   /// \return energy squared
   template <typename T, typename U>
-  static double E2(const array<T, 3>& mom, U mass)
+  static double e2(const array<T, 3>& mom, U mass)
   {
-    return E2(mom[0], mom[1], mom[2], mass);
+    return e2(mom[0], mom[1], mom[2], mass);
   }
 
   /// Calculates energy from momentum and mass.
@@ -391,16 +397,16 @@ class RecoDecay
   /// \param args  3-momentum array, mass
   /// \return energy
   template <typename... T>
-  static double E(const T&... args)
+  static double e(const T&... args)
   {
-    return std::sqrt(E2(args...));
+    return std::sqrt(e2(args...));
   }
 
   /// Calculates invariant mass squared from momentum magnitude and energy.
   /// \param mom  momentum magnitude
   /// \param energy  energy
   /// \return invariant mass squared
-  static double M2(double mom, double energy)
+  static double m2(double mom, double energy)
   {
     return energy * energy - mom * mom;
   }
@@ -410,9 +416,9 @@ class RecoDecay
   /// \param energy  energy
   /// \return invariant mass squared
   template <typename T>
-  static double M2(const array<T, 3>& mom, double energy)
+  static double m2(const array<T, 3>& mom, double energy)
   {
-    return energy * energy - P2(mom);
+    return energy * energy - p2(mom);
   }
 
   /// Calculates invariant mass squared from momenta and masses of several particles (prongs).
@@ -421,7 +427,7 @@ class RecoDecay
   /// \param arrMass  array of N masses (in the same order as arrMom)
   /// \return invariant mass squared
   template <std::size_t N, typename T, typename U>
-  static double M2(const array<array<T, 3>, N>& arrMom, const array<U, N>& arrMass)
+  static double m2(const array<array<T, 3>, N>& arrMom, const array<U, N>& arrMass)
   {
     array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
     double energyTot{0.};                  // candidate energy
@@ -429,9 +435,9 @@ class RecoDecay
       for (std::size_t iMom = 0; iMom < 3; ++iMom) {
         momTotal[iMom] += arrMom[iProng][iMom];
       } // loop over momentum components
-      energyTot += E(arrMom[iProng], arrMass[iProng]);
+      energyTot += e(arrMom[iProng], arrMass[iProng]);
     } // loop over prongs
-    return energyTot * energyTot - P2(momTotal);
+    return energyTot * energyTot - p2(momTotal);
   }
 
   /// Calculates invariant mass.
@@ -440,9 +446,9 @@ class RecoDecay
   /// \param args  array of momenta, array of masses
   /// \return invariant mass
   template <typename... T>
-  static double M(const T&... args)
+  static double m(const T&... args)
   {
-    return std::sqrt(M2(args...));
+    return std::sqrt(m2(args...));
   }
 
   // Calculation of topological quantities
@@ -453,11 +459,11 @@ class RecoDecay
   /// \param mom  {x, y, z} particle momentum array
   /// \return impact parameter in {x, y}
   template <typename T, typename U, typename V>
-  static double ImpParXY(const T& point, const U& posSV, const array<V, 3>& mom)
+  static double impParXY(const T& point, const U& posSV, const array<V, 3>& mom)
   {
     // Ported from AliAODRecoDecay::ImpParXY
     auto flightLineXY = array{posSV[0] - point[0], posSV[1] - point[1]};
-    auto k = dotProd(flightLineXY, array{mom[0], mom[1]}) / Pt2(mom);
+    auto k = dotProd(flightLineXY, array{mom[0], mom[1]}) / pt2(mom);
     auto dx = flightLineXY[0] - k * (double)mom[0];
     auto dy = flightLineXY[1] - k * (double)mom[1];
     auto absImpPar = sqrtSumOfSquares(dx, dy);
@@ -468,8 +474,8 @@ class RecoDecay
 
   /// Calculates the difference between measured and expected track impact parameter
   /// normalized to its uncertainty
-  /// \param decLenXY decay lenght in {x, y} plane
-  /// \param errDecLenXY error on decay lenght in {x, y} plane
+  /// \param decLenXY decay length in {x, y} plane
+  /// \param errDecLenXY error on decay length in {x, y} plane
   /// \param momMother {x, y, z} or {x, y} candidate momentum array
   /// \param impParProng prong impact parameter
   /// \param errImpParProng error on prong impact parameter
@@ -481,7 +487,7 @@ class RecoDecay
   {
     // Ported from AliAODRecoDecayHF::Getd0MeasMinusExpProng adding normalization directly in the function
     auto sinThetaP = ((double)momProng[0] * (double)momMother[1] - (double)momProng[1] * (double)momMother[0]) /
-                     (Pt(momProng) * Pt(momMother));
+                     (pt(momProng) * pt(momMother));
     auto diff = impParProng - (double)decLenXY * sinThetaP;
     auto errImpParExpProng = (double)errDecLenXY * sinThetaP;
     auto errDiff = sqrtSumOfSquares(errImpParProng, errImpParExpProng);
@@ -491,7 +497,7 @@ class RecoDecay
   /// Calculates maximum normalized difference between measured and expected impact parameter of candidate prongs
   /// \param posPV {x, y, z} or {x, y} position of primary vertex
   /// \param posSV {x, y, z} or {x, y} position of secondary vertex
-  /// \param errDecLenXY error on decay lenght in {x, y} plane
+  /// \param errDecLenXY error on decay length in {x, y} plane
   /// \param momMother {x, y, z} or {x, y} candidate momentum array
   /// \param arrImpPar array of prong impact parameters
   /// \param arrErrImpPar array of errors on prong impact parameter (same order as arrImpPar)
@@ -576,44 +582,64 @@ class RecoDecay
                        int8_t* sign = nullptr,
                        int8_t depthMax = -1)
   {
-    int8_t sgn = 0;                 // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
-    int indexMother = -1;           // index of the final matched mother, if found
-    auto particleMother = particle; // Initialise loop over mothers.
-    int stage = 0;                  // mother tree level (just for debugging)
+    int8_t sgn = 0;           // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
+    int indexMother = -1;     // index of the final matched mother, if found
+    int stage = 0;            // mother tree level (just for debugging)
+    bool motherFound = false; // true when the desired mother particle is found in the kine tree
     if (sign) {
       *sign = sgn;
     }
-    while (particleMother.has_mother0()) {
-      if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
-        return -1;
+
+    // vector of vectors with mother indices; each line corresponds to a "stage"
+    std::vector<std::vector<long int>> arrayIds{};
+    std::vector<long int> initVec{particle.globalIndex()};
+    arrayIds.push_back(initVec); // the first vector contains the index of the original particle
+
+    while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
+      // vector of mother indices for the current stage
+      std::vector<long int> arrayIdsStage{};
+      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+              continue;
+            }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            // Check mother's PDG code.
+            auto PDGParticleIMother = mother.pdgCode(); // PDG code of the mother
+            // printf("getMother: ");
+            // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+            //   printf(" ");
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
+            if (PDGParticleIMother == PDGMother) { // exact PDG match
+              sgn = 1;
+              indexMother = iMother;
+              motherFound = true;
+              break;
+            } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
+              sgn = -1;
+              indexMother = iMother;
+              motherFound = true;
+              break;
+            }
+            // add mother index in the vector for the current stage
+            arrayIdsStage.push_back(iMother);
+          }
+        }
       }
-      auto indexMotherTmp = particleMother.mother0Id();
-      particleMother = particlesMC.iteratorAt(indexMotherTmp);
-      // Check mother's PDG code.
-      auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
-      //printf("getMother: ");
-      //for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
-      //  printf(" ");
-      //printf("Stage %d: Mother PDG: %d\n", stage, PDGParticleIMother);
-      if (PDGParticleIMother == PDGMother) { // exact PDG match
-        sgn = 1;
-        indexMother = indexMotherTmp;
-        break;
-      } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
-        sgn = -1;
-        indexMother = indexMotherTmp;
-        break;
-      }
+      // add vector of mother indices for the current stage
+      arrayIds.push_back(arrayIdsStage);
       stage--;
     }
     if (sign) {
       *sign = sgn;
     }
+
     return indexMother;
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
-  /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
@@ -622,8 +648,7 @@ class RecoDecay
   /// \note Final state is defined as particles from arrPDGFinal plus final daughters of any other decay branch.
   /// \note Antiparticles of particles in arrPDGFinal are accepted as well.
   template <std::size_t N, typename T>
-  static void getDaughters(const T& particlesMC,
-                           const typename T::iterator& particle,
+  static void getDaughters(const T& particle,
                            std::vector<int>* list,
                            const array<int, N>& arrPDGFinal,
                            int8_t depthMax = -1,
@@ -637,11 +662,8 @@ class RecoDecay
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
     }
-    // Get the range of daughter indices.
-    int indexDaughterFirst = particle.daughter0Id();
-    int indexDaughterLast = particle.daughter1Id();
     // Check whether there are any daughters.
-    if (!isFinal && indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
+    if (!isFinal && !particle.has_daughters()) {
       // If the original particle has no daughters, we do nothing and exit.
       if (stage == 0) {
         //Printf("getDaughters: No daughters of %d", index);
@@ -677,22 +699,8 @@ class RecoDecay
     //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    // Get daughters of the first daughter.
-    if (indexDaughterFirst > -1) {
-      getDaughters(particlesMC, particlesMC.iteratorAt(indexDaughterFirst), list, arrPDGFinal, depthMax, stage);
-    }
-    // Get daughters of the daughters in between if any.
-    // Daughter indices are supposed to be consecutive and in increasing order.
-    // Reverse order means two daughters.
-    if (indexDaughterFirst > -1 && indexDaughterLast > -1) {
-      for (auto iD = indexDaughterFirst + 1; iD < indexDaughterLast; ++iD) {
-        getDaughters(particlesMC, particlesMC.iteratorAt(iD), list, arrPDGFinal, depthMax, stage);
-      }
-    }
-    // Get daughters of the last daughter if different from the first one.
-    // Same indices indicate a single daughter.
-    if (indexDaughterLast > -1 && indexDaughterLast != indexDaughterFirst) {
-      getDaughters(particlesMC, particlesMC.iteratorAt(indexDaughterLast), list, arrPDGFinal, depthMax, stage);
+    for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
+      getDaughters(dau, list, arrPDGFinal, depthMax, stage);
     }
   }
 
@@ -724,6 +732,9 @@ class RecoDecay
     }
     // Loop over decay candidate prongs
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
+      if (!arrDaughters[iProng].has_mcParticle()) {
+        return -1;
+      }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
@@ -737,21 +748,19 @@ class RecoDecay
           return -1;
         }
         //Printf("MC Rec: Good mother: %d", indexMother);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
-        int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
-        int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
+        auto particleMother = particlesMC.rawIteratorAt(indexMother - particlesMC.offset());
         // Check the daughter indices.
-        if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
+        if (!particleMother.has_daughters()) {
+          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
-          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
+        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > int(N)) {
+          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
           return -1;
         }
         // Get the list of actual final daughters.
-        getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
         //printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         //for (auto i : arrAllDaughtersIndex) {
         //  printf(" %d", i);
@@ -857,21 +866,19 @@ class RecoDecay
     // Check the PDG codes of the decay products.
     if (N > 0) {
       //Printf("MC Gen: Checking %d daughters", N);
-      std::vector<int> arrAllDaughtersIndex;            // vector of indices of all daughters
-      int indexDaughterFirst = candidate.daughter0Id(); // index of the first direct daughter
-      int indexDaughterLast = candidate.daughter1Id();  // index of the last direct daughter
+      std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters
       // Check the daughter indices.
-      if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
+      if (!candidate.has_daughters()) {
+        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
-        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
+      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > int(N)) {
+        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
         return false;
       }
       // Get the list of actual final daughters.
-      getDaughters(particlesMC, candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
       //printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       //for (auto i : arrAllDaughtersIndex) {
       //  printf(" %d", i);
@@ -884,8 +891,8 @@ class RecoDecay
       }
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
-        auto candidateDaughterI = particlesMC.iteratorAt(indexDaughterI); // ith daughter particle
-        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();        // PDG code of the ith daughter
+        auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
+        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
         //Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
@@ -909,6 +916,71 @@ class RecoDecay
       *sign = sgn;
     }
     return true;
+  }
+
+  /// Finds the origin (from charm hadronisation or beauty-hadron decay) of charm hadrons.
+  /// \param particlesMC  table with MC particles
+  /// \param particle  MC particle
+  /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on b-hadron
+  /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
+  template <typename T>
+  static int getCharmHadronOrigin(const T& particlesMC,
+                                  const typename T::iterator& particle,
+                                  const bool searchUpToQuark = false)
+  {
+    int stage = 0; // mother tree level (just for debugging)
+
+    // vector of vectors with mother indices; each line corresponds to a "stage"
+    std::vector<std::vector<long int>> arrayIds{};
+    std::vector<long int> initVec{particle.globalIndex()};
+    arrayIds.push_back(initVec); // the first vector contains the index of the original particle
+
+    while (arrayIds[-stage].size() > 0) {
+      // vector of mother indices for the current stage
+      std::vector<long int> arrayIdsStage{};
+      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+              continue;
+            }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            // Check mother's PDG code.
+            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            // printf("getMother: ");
+            // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+            //   printf(" ");
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
+
+            if (searchUpToQuark) {
+              if (PDGParticleIMother == 5) { // b quark
+                return OriginType::NonPrompt;
+              }
+              if (PDGParticleIMother == 4) { // c quark
+                return OriginType::Prompt;
+              }
+            } else {
+              if (
+                (PDGParticleIMother / 100 == 5 || // b mesons
+                 PDGParticleIMother / 1000 == 5)  // b baryons
+              ) {
+                return OriginType::NonPrompt;
+              }
+            }
+            // add mother index in the vector for the current stage
+            arrayIdsStage.push_back(iMother);
+          }
+        }
+      }
+      // add vector of mother indices for the current stage
+      arrayIds.push_back(arrayIdsStage);
+      stage--;
+    }
+    if (!searchUpToQuark) {
+      return OriginType::Prompt;
+    }
+    return OriginType::None;
   }
 
  private:

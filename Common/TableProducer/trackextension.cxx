@@ -23,7 +23,7 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "DetectorsCommonDataFormats/NameConf.h"
+#include "CommonUtils/NameConf.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
 
@@ -45,7 +45,7 @@ namespace analysis
 namespace trackextension
 {
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
-const char* ccdbpath_geo = "GLO/Config/Geometry";
+const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
 const char* ccdbpath_grp = "GLO/GRP/GRP";
 const char* ccdburl = "http://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.cern.ch:8080"; */
 } // namespace trackextension
@@ -53,8 +53,9 @@ const char* ccdburl = "http://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.c
 } // namespace o2
 
 struct TrackExtension {
-  Produces<aod::TracksExtended> extendedTrackQuantities;
+  Produces<aod::TracksDCA> extendedTrackQuantities;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<bool> compatibilityIU{"compatibilityIU", false, "compatibility option to allow the processing of tracks before the introduction of IU tracks"};
 
   o2::base::MatLayerCylSet* lut;
   int mRunNumber;
@@ -115,14 +116,15 @@ struct TrackExtension {
     /* done for Run2 needs to be implemented                        */
     /* but incorporating here only the GRP object makes appear      */
     /* the double peak in the DCAxy distribution again              */
-    /* so probaly the whole initalization sequence is needed        */
+    /* so probably the whole initialization sequence is needed        */
     /* when a new run (Run3) is processed                           */
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
     for (auto& track : tracks) {
       std::array<float, 2> dca{1e10f, 1e10f};
       if (track.has_collision()) {
-        if (track.trackType() == o2::aod::track::TrackTypeEnum::Track) {
+        if (((compatibilityIU.value) && track.trackType() == o2::aod::track::TrackTypeEnum::TrackIU) ||
+            ((!compatibilityIU.value) && track.trackType() == o2::aod::track::TrackTypeEnum::Track)) {
           auto bc = track.collision_as<aod::Collisions>().bc_as<aod::BCsWithTimestamps>();
           if (mRunNumber != bc.runNumber()) {
             auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());

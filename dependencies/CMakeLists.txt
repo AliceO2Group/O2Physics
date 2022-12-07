@@ -10,3 +10,4 @@
 # or submit itself to any jurisdiction.
 
 include("${CMAKE_CURRENT_LIST_DIR}/O2PhysicsCompileFlags.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/O2PhysicsDependencies.cmake")

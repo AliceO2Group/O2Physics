@@ -21,8 +21,10 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {kFALSE};
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
-o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProng;
-o2::vertexing::FwdDCAFitterN<2> VarManager::FwdfgFitterTwoProng;
+o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
+o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
+o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
+o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -94,7 +96,7 @@ void VarManager::FillEventDerived(float* values)
   // Fill event-wise derived quantities (these are all quantities which can be computed just based on the values already filled in the FillEvent() function)
   //
   if (fgUsedVars[kRunId]) {
-    values[kRunId] = (fgRunMap.size() > 0 ? fgRunMap[int(values[kRunNo])] : 0);
+    values[kRunId] = (fgRunMap.size() > 0 ? fgRunMap[static_cast<int>(values[kRunNo])] : 0);
   }
 }
 
@@ -108,7 +110,57 @@ void VarManager::FillTrackDerived(float* values)
     values[kP] = values[kPt] * std::cosh(values[kEta]);
   }
 }
+//_________________________________________________________________________________________________________________________________________________________________________________
+float VarManager::GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period)
+{
+  if (period.Contains("LHC22m_pass1_subset")) {
+    float El_mean_curve_pin = (pin < 0.3) ? 1.74338 : ((pin < 3.5) ? 1 / (0.694318 - 5.66879 * pin) + 2.73696 + 0.000483342 * pin : 2.70321);
+    float Pi_mean_curve_pin = (pin < 0.3) ? 1.95561 : ((pin < 3) ? -0.0606029 / pin + 2.18796 - 0.101135 * pin : 1.86435);
+    float Pr_mean_curve_pin = (pin < 0.4) ? 1.94664 : ((pin < 5) ? 1 / (-0.495484 - 1.03622 * pin) + 3.0513 - 0.0143036 * pin : 2.80362);
+    float El_mean_curve_eta = (std::abs(eta) < 0.9) ? -1.17942e-01 + -1.51932e-01 * std::cos(4.32572e+00 * eta) : 0.0;
+    float Pi_mean_curve_eta = (std::abs(eta) < 0.9) ? -5.21188e-02 + -3.35413e-01 * std::cos(4.16710e+00 * eta) : 0.0;
+    float Pr_mean_curve_eta = (std::abs(eta) < 0.9) ? -1.33413e-02 + -3.83269e-01 * std::cos(3.95128e+00 * eta) : 0.0;
 
+    float pin_map = (particle_type == 0) ? El_mean_curve_pin : ((particle_type == 1) ? Pi_mean_curve_pin : Pr_mean_curve_pin);
+    float eta_map = (particle_type == 0) ? El_mean_curve_eta : ((particle_type == 1) ? Pi_mean_curve_eta : Pr_mean_curve_eta);
+    float map = pin_map + eta_map;
+    return map;
+  } else if (period.Contains("LHC22f_pass1")) {
+    float El_mean_curve_pin = (pin < 0.3) ? 0.24335236 : ((pin < 3.5) ? 1 / (0.0113621 - 2.44516 * pin) + 1.63907 - 0.0367754 * pin : 1.3933518);
+    float Pi_mean_curve_pin = (pin < 0.3) ? -0.30059726 : ((pin < 3.5) ? 1 / (-4.51007e+06 - 5.52635e+06 * pin) - 0.349193 + 0.171139 * pin - 0.0305089 * pin * pin : -0.12394057);
+    float Pr_mean_curve_pin = (pin < 0.3) ? 0.1 : ((pin < 3.5) ? 1 / (0.482973 - 3.55557 * pin) + 1.38574 - 0.627066 * pin + 0.103612 * pin * pin : 0.37665460);
+    float El_mean_curve_eta = (std::abs(eta) < 0.9) ? -0.25877 + -0.136459 * eta : 0.0;
+    float Pi_mean_curve_eta = (std::abs(eta) < 0.9) ? -0.250769 + -0.321296 * eta + 0.509874 * eta * eta + 0.445708 * eta * eta * eta : 0.0;
+    float Pr_mean_curve_eta = (std::abs(eta) < 0.9) ? -0.330935 + -0.395157 * eta + 0.582457 * eta * eta + 0.501215 * eta * eta * eta : 0.0;
+
+    float pin_map = (particle_type == 0) ? El_mean_curve_pin : ((particle_type == 1) ? Pi_mean_curve_pin : Pr_mean_curve_pin);
+    float eta_map = (particle_type == 0) ? El_mean_curve_eta : ((particle_type == 1) ? Pi_mean_curve_eta : Pr_mean_curve_eta);
+
+    float map = pin_map + eta_map;
+    return map;
+  } else {
+    float map = 0.0;
+    return map;
+  }
+}
+//__________________________________________________________________
+TString VarManager::GetRunPeriod(float runNumber)
+{
+  int runlist_22f[2] = {520259, 520473};
+  int runlist_22m[2] = {523393, 523397};
+
+  if (runNumber >= runlist_22f[0] && runNumber <= runlist_22f[1]) {
+    TString runperiod = "LHC22f_pass1";
+    return runperiod;
+  } else if (runNumber >= runlist_22m[0] && runNumber <= runlist_22m[1]) {
+    TString runperiod = "LHC22m_pass1_subset";
+    return runperiod;
+  } else {
+    TString runperiod = "none";
+    // LOGF(info, "can't find run period for run %.0d", runNumber);
+    return runperiod;
+  }
+};
 //__________________________________________________________________
 void VarManager::SetDefaultVarNames()
 {
@@ -190,6 +242,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPin] = "GeV/c";
   fgVariableNames[kITSncls] = "ITS #cls";
   fgVariableUnits[kITSncls] = "";
+  fgVariableUnits[kITSClusterMap] = "ITSClusterMap";
   fgVariableNames[kITSchi2] = "ITS chi2";
   fgVariableUnits[kITSchi2] = "";
   fgVariableNames[kITSlayerHit] = "ITS layer";
@@ -214,14 +267,20 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAz] = "cm";
   fgVariableNames[kTPCnSigmaEl] = "n #sigma_{e}^{TPC}";
   fgVariableUnits[kTPCnSigmaEl] = "";
+  fgVariableNames[kTPCnSigmaEl_Corr] = "n #sigma_{e}^{TPC} Corr.";
+  fgVariableUnits[kTPCnSigmaEl_Corr] = "";
   fgVariableNames[kTPCnSigmaMu] = "n #sigma_{#mu}^{TPC}";
   fgVariableUnits[kTPCnSigmaMu] = "";
   fgVariableNames[kTPCnSigmaPi] = "n #sigma_{#pi}^{TPC}";
   fgVariableUnits[kTPCnSigmaPi] = "";
+  fgVariableNames[kTPCnSigmaPi_Corr] = "n #sigma_{#pi}^{TPC} Corr.";
+  fgVariableUnits[kTPCnSigmaPi_Corr] = "";
   fgVariableNames[kTPCnSigmaKa] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa] = "";
   fgVariableNames[kTPCnSigmaPr] = "n #sigma_{p}^{TPC}";
   fgVariableUnits[kTPCnSigmaPr] = "";
+  fgVariableNames[kTPCnSigmaPr_Corr] = "n #sigma_{p}^{TPC} Corr.";
+  fgVariableUnits[kTPCnSigmaPr_Corr] = "";
   fgVariableNames[kTOFnSigmaEl] = "n #sigma_{e}^{TOF}";
   fgVariableUnits[kTOFnSigmaEl] = "";
   fgVariableNames[kTOFnSigmaMu] = "n #sigma_{#mu}^{TOF}";
@@ -248,6 +307,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonRAtAbsorberEnd] = "cm";
   fgVariableNames[kMuonPDca] = "p x dca";
   fgVariableUnits[kMuonPDca] = "cm x GeV/c";
+  fgVariableNames[kMCHBitMap] = "MCH bitmap";
+  fgVariableUnits[kMCHBitMap] = "";
   fgVariableNames[kMuonChi2] = "#chi^{2}";
   fgVariableUnits[kMuonChi2] = "";
   fgVariableNames[kMuonChi2MatchMCHMID] = "#chi^{2} MCH-MID";
@@ -256,6 +317,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonChi2MatchMCHMFT] = "";
   fgVariableNames[kMuonMatchScoreMCHMFT] = "match score MCH-MFT";
   fgVariableUnits[kMuonMatchScoreMCHMFT] = "";
+  fgVariableNames[kMuonDCAx] = "dca_X";
+  fgVariableUnits[kMuonDCAx] = "cm";
+  fgVariableNames[kMuonDCAy] = "dca_Y";
+  fgVariableUnits[kMuonDCAy] = "cm";
   fgVariableNames[kMuonCXX] = "cov XX";
   fgVariableUnits[kMuonCXX] = "";
   fgVariableNames[kMuonCYY] = "cov YY";
@@ -320,6 +385,52 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingProcCode] = "";
   fgVariableNames[kVertexingChi2PCA] = "Pair #chi^{2} at PCA";
   fgVariableUnits[kVertexingChi2PCA] = "";
+  fgVariableNames[kQ2X0A] = "Q_{2,x}^{A} ";
+  fgVariableUnits[kQ2X0A] = "";
+  fgVariableNames[kQ2Y0A] = "Q_{2,y}^{A} ";
+  fgVariableUnits[kQ2Y0A] = "";
+  fgVariableNames[kQ2X0B] = "Q_{2,x}^{B} ";
+  fgVariableUnits[kQ2X0B] = "";
+  fgVariableNames[kQ2Y0B] = "Q_{2,y}^{B} ";
+  fgVariableUnits[kQ2Y0B] = "";
+  fgVariableNames[kQ2X0C] = "Q_{2,x}^{C} ";
+  fgVariableUnits[kQ2X0C] = "";
+  fgVariableNames[kQ2Y0C] = "Q_{2,y}^{C} ";
+  fgVariableUnits[kQ2Y0C] = "";
+  fgVariableNames[kMultA] = "N_{ch}^{A} ";
+  fgVariableUnits[kMultA] = "";
+  fgVariableNames[kMultB] = "N_{ch}^{B} ";
+  fgVariableUnits[kMultB] = "";
+  fgVariableNames[kMultC] = "N_{ch}^{C} ";
+  fgVariableUnits[kMultC] = "";
+  fgVariableNames[kQ3X0A] = "Q_{3,x}^{A} ";
+  fgVariableUnits[kQ3X0A] = "";
+  fgVariableNames[kQ3Y0A] = "Q_{3,y}^{A} ";
+  fgVariableUnits[kQ3Y0A] = "";
+  fgVariableNames[kQ3X0B] = "Q_{3,x}^{B} ";
+  fgVariableUnits[kQ3X0B] = "";
+  fgVariableNames[kQ3Y0B] = "Q_{3,y}^{B} ";
+  fgVariableUnits[kQ3Y0B] = "";
+  fgVariableNames[kQ3X0C] = "Q_{3,x}^{C} ";
+  fgVariableUnits[kQ3X0C] = "";
+  fgVariableNames[kQ3Y0C] = "Q_{3,y}^{C} ";
+  fgVariableUnits[kQ3Y0C] = "";
+  fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
+  fgVariableUnits[kU2Q2] = "";
+  fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
+  fgVariableUnits[kU3Q3] = "";
+  fgVariableNames[kCos2DeltaPhi] = "cos 2(#varphi-#Psi_{2}^{A}) ";
+  fgVariableUnits[kCos2DeltaPhi] = "";
+  fgVariableNames[kCos3DeltaPhi] = "cos 3(#varphi-#Psi_{3}^{A}) ";
+  fgVariableUnits[kCos3DeltaPhi] = "";
+  fgVariableNames[kR2SP] = "R_{2}^{SP} ";
+  fgVariableUnits[kR2SP] = "";
+  fgVariableNames[kR3SP] = "R_{3}^{SP} ";
+  fgVariableUnits[kR3SP] = "";
+  fgVariableNames[kR2EP] = "R_{2}^{EP} ";
+  fgVariableUnits[kR2EP] = "";
+  fgVariableNames[kR3EP] = "R_{3}^{EP} ";
+  fgVariableUnits[kR3EP] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";
@@ -328,6 +439,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairEta] = "";
   fgVariableNames[kPairPhi] = "#varphi";
   fgVariableUnits[kPairPhi] = "rad.";
+  fgVariableNames[kPairPhiv] = "#varphi_{V}";
+  fgVariableUnits[kPairPhiv] = "rad.";
   fgVariableNames[kDeltaEta] = "#Delta#eta";
   fgVariableUnits[kDeltaEta] = "";
   fgVariableNames[kDeltaPhi] = "#Delta#phi";
@@ -336,6 +449,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhiSym] = "rad.";
   fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
+  fgVariableNames[kPsiPair] = "#Psi_{pair}";
+  fgVariableUnits[kPsiPair] = "rad.";
+  fgVariableNames[kDeltaPhiPair] = "#Delta#phi";
+  fgVariableUnits[kDeltaPhiPair] = "rad.";
   fgVariableNames[kQuadDCAabsXY] = "DCA_{xy}^{quad}";
   fgVariableUnits[kQuadDCAabsXY] = "cm";
   fgVariableNames[kQuadDCAsigXY] = "DCA_{xy}^{quad}";

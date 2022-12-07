@@ -19,8 +19,7 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "ALICE3/DataModel/ECAL.h"
-#include "Common/Core/MC.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

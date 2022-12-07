@@ -18,10 +18,50 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TList.h"
+#include "TKey.h"
 #include "TDirectory.h"
 #include "TObjString.h"
 #include <TGrid.h>
 #include <TMap.h>
+#include <TLeaf.h>
+
+const char* removeVersionSuffix(const char* treeName)
+{
+  // remove version suffix, e.g. O2v0_001 becomes O2v0
+  static TString tmp;
+  tmp = treeName;
+  if (tmp.First("_") >= 0) {
+    tmp.Remove(tmp.First("_"));
+  }
+  return tmp;
+}
+
+const char* getTableName(const char* branchName, const char* treeName)
+{
+  // Syntax for branchName:
+  //   fIndex<Table>[_<Suffix>]
+  //   fIndexArray<Table>[_<Suffix>]
+  //   fIndexSlice<Table>[_<Suffix>]
+  // if <Table> is empty it is a self index and treeName is used as table name
+  static TString tableName;
+  tableName = branchName;
+  if (tableName.BeginsWith("fIndexArray") || tableName.BeginsWith("fIndexSlice")) {
+    tableName.Remove(0, 11);
+  } else {
+    tableName.Remove(0, 6);
+  }
+  if (tableName.First("_") >= 0) {
+    tableName.Remove(tableName.First("_"));
+  }
+  if (tableName.Length() == 0) {
+    return removeVersionSuffix(treeName);
+  }
+  tableName.Remove(tableName.Length() - 1); // remove s
+  tableName.ToLower();
+  tableName = "O2" + tableName;
+  // printf("%s --> %s\n", branchName, tableName.Data());
+  return tableName;
+}
 
 // AOD merger with correct index rewriting
 // No need to know the datamodel because the branch names follow a canonical standard (identified by fIndex)
@@ -55,11 +95,11 @@ int main(int argc, char* argv[])
     } else if (c == 3) {
       skipNonExistingFiles = true;
     } else if (c == 4) {
-      printf("AOD merging tool. Options: \n");
+      printf("AO2D merging tool. Options: \n");
       printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
-      printf("  --max-size <size in Bytes>   Target directory size. Default: %ld\n", maxDirSize);
-      printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the intput list.\n");
+      printf("  --max-size <size in Bytes>   Target directory size. Default: %ld. Set to 0 if file is not self-contained.\n", maxDirSize);
+      printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the input list.\n");
       return -1;
     } else {
       return -2;
@@ -68,7 +108,7 @@ int main(int argc, char* argv[])
 
   printf("AOD merger started with:\n");
   printf("  Input file: %s\n", inputCollection.c_str());
-  printf("  Ouput file name: %s\n", outputFileName.c_str());
+  printf("  Output file name: %s\n", outputFileName.c_str());
   printf("  Maximal folder size (uncompressed): %ld\n", maxDirSize);
   if (skipNonExistingFiles) {
     printf("  WARNING: Skipping non-existing files.\n");
@@ -87,6 +127,7 @@ int main(int argc, char* argv[])
   TString line;
   bool connectedToAliEn = false;
   TMap* metaData = nullptr;
+  TMap* parentFiles = nullptr;
   int totalMergedDFs = 0;
   int mergedDFs = 0;
   while (in.good() && exitCode == 0) {
@@ -143,6 +184,17 @@ int main(int argc, char* argv[])
         }
       }
 
+      if (((TObjString*)key1)->GetString().EqualTo("parentFiles")) {
+        auto parentFilesCurrentFile = (TMap*)inputFile->Get("parentFiles");
+        if (parentFiles == nullptr) {
+          parentFiles = new TMap;
+        }
+        for (auto pair : *parentFilesCurrentFile) {
+          parentFiles->Add(((TPair*)pair)->Key(), ((TPair*)pair)->Value());
+        }
+        delete parentFilesCurrentFile;
+      }
+
       if (!((TObjString*)key1)->GetString().BeginsWith("DF_")) {
         continue;
       }
@@ -154,14 +206,44 @@ int main(int argc, char* argv[])
       ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
       auto treeList = folder->GetListOfKeys();
+
+      treeList->Sort();
+
+      // purging keys from duplicates
+      for (auto i = 0; i < treeList->GetEntries(); ++i) {
+        TKey* ki = (TKey*)treeList->At(i);
+        for (int j = i + 1; j < treeList->GetEntries(); ++j) {
+          TKey* kj = (TKey*)treeList->At(j);
+          if (std::strcmp(ki->GetName(), kj->GetName()) == 0 && std::strcmp(ki->GetTitle(), kj->GetTitle()) == 0) {
+            if (ki->GetCycle() < kj->GetCycle()) {
+              printf("    *** FATAL *** we had ordered the keys, first cycle should be higher, please check");
+              exitCode = 5;
+            } else {
+              // key is a duplicate, let's remove it
+              treeList->Remove(kj);
+              j--;
+            }
+          } else {
+            // we changed key, since they are sorted, we won't have the same anymore
+            break;
+          }
+        }
+      }
+
       std::list<std::string> foundTrees;
 
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
+        printf("    Processing tree %s\n", treeName);
+        bool found = (std::find(foundTrees.begin(), foundTrees.end(), treeName) != foundTrees.end());
+        if (found == true) {
+          printf("    ***WARNING*** Tree %s was already merged (even if we purged duplicated trees before, so this should not happen), skipping\n", treeName);
+          continue;
+        }
         foundTrees.push_back(treeName);
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
-        printf("    Processing tree %s with %lld entries\n", treeName, inputTree->GetEntries());
+        printf("    Tree %s has %lld entries\n", treeName, inputTree->GetEntries());
 
         if (trees.count(treeName) == 0) {
           if (mergedDFs > 1) {
@@ -169,7 +251,7 @@ int main(int argc, char* argv[])
             exitCode = 3;
           }
 
-          // clone tree
+          // Connect trees but do not copy entries (using the clone function)
           // NOTE Basket size etc. are copied in CloneTree()
           if (!outputDir) {
             outputDir = outputFile->mkdir(dfName);
@@ -177,78 +259,100 @@ int main(int argc, char* argv[])
             printf("Writing to output folder %s\n", dfName);
           }
           outputDir->cd();
-          auto outputTree = inputTree->CloneTree(-1, "fast");
+          auto outputTree = inputTree->CloneTree(0);
           outputTree->SetAutoFlush(0);
           trees[treeName] = outputTree;
-          currentDirSize += inputTree->GetTotBytes();
         } else {
-          // append tree
-          auto outputTree = trees[treeName];
+          // adjust addresses tree
+          trees[treeName]->CopyAddresses(inputTree);
+        }
 
-          outputTree->CopyAddresses(inputTree);
+        auto outputTree = trees[treeName];
+        // register index and connect VLA columns
+        std::vector<std::pair<int*, int>> indexList;
+        std::vector<char*> vlaPointers;
+        std::vector<int*> indexPointers;
+        TObjArray* branches = inputTree->GetListOfBranches();
+        for (int i = 0; i < branches->GetEntriesFast(); ++i) {
+          TBranch* br = (TBranch*)branches->UncheckedAt(i);
+          TString branchName(br->GetName());
 
-          // register index columns
-          std::vector<std::pair<int*, int>> indexList;
-          TObjArray* branches = inputTree->GetListOfBranches();
-          for (int i = 0; i < branches->GetEntriesFast(); ++i) {
-            TBranch* br = (TBranch*)branches->UncheckedAt(i);
-            TString branchName(br->GetName());
-            if (branchName.BeginsWith("fIndex")) {
-              // Syntax: fIndex<Table>[_<Suffix>]
-              branchName.Remove(0, 6);
-              if (branchName.First("_") > 0) {
-                branchName.Remove(branchName.First("_"));
-              }
-              branchName.Remove(branchName.Length() - 1); // remove s
-              branchName.ToLower();
-              branchName = "O2" + branchName;
+          // detect VLA
+          if (((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount() != nullptr) {
+            int maximum = ((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount()->GetMaximum();
 
-              indexList.push_back({new int, offsets[branchName.Data()]});
+            // get type
+            static TClass* cls;
+            EDataType type;
+            br->GetExpectedType(cls, type);
+            auto typeSize = TDataType::GetDataType(type)->Size();
 
-              inputTree->SetBranchAddress(br->GetName(), indexList.back().first);
-              outputTree->SetBranchAddress(br->GetName(), indexList.back().first);
-            }
-          }
+            char* buffer = new char[maximum * typeSize];
+            memset(buffer, 0, maximum * typeSize);
+            vlaPointers.push_back(buffer);
+            printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
+            inputTree->SetBranchAddress(br->GetName(), buffer);
+            outputTree->SetBranchAddress(br->GetName(), buffer);
 
-          // on the first appending pass we need to find out the most negative index in the existing output
-          // to correctly continue negative index assignment
-          if (mergedDFs == 2) {
-            auto outentries = outputTree->GetEntries();
-            int minIndex = -1;
-            for (int i = 0; i < outentries; ++i) {
-              outputTree->GetEntry(i);
-              for (const auto& idx : indexList) {
-                minIndex = std::min(*(idx.first), minIndex);
+            if (branchName.BeginsWith("fIndexArray")) {
+              for (int i = 0; i < maximum; i++) {
+                indexList.push_back({reinterpret_cast<int*>(buffer + i * typeSize), offsets[getTableName(branchName, treeName)]});
               }
             }
-            unassignedIndexOffset[treeName] = minIndex;
-          }
+          } else if (branchName.BeginsWith("fIndexSlice")) {
+            int* buffer = new int[2];
+            memset(buffer, 0, 2 * sizeof(buffer[0]));
+            vlaPointers.push_back(reinterpret_cast<char*>(buffer));
 
-          auto entries = inputTree->GetEntries();
-          int minIndexOffset = unassignedIndexOffset[treeName];
-          for (int i = 0; i < entries; i++) {
-            inputTree->GetEntry(i);
-            // shift index columns by offset
-            for (const auto& idx : indexList) {
-              // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
-              if (*(idx.first) < 0) {
-                *(idx.first) += minIndexOffset;
-              } else {
-                *(idx.first) += idx.second;
-              }
-            }
-            int nbytes = outputTree->Fill();
-            if (nbytes > 0) {
-              currentDirSize += nbytes;
-            }
-          }
-          unassignedIndexOffset[treeName] -= 1;
+            inputTree->SetBranchAddress(br->GetName(), buffer);
+            outputTree->SetBranchAddress(br->GetName(), buffer);
 
+            indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
+            indexList.push_back({buffer + 1, offsets[getTableName(branchName, treeName)]});
+          } else if (branchName.BeginsWith("fIndex") && !branchName.EndsWith("_size")) {
+            int* buffer = new int;
+            *buffer = 0;
+            indexPointers.push_back(buffer);
+
+            inputTree->SetBranchAddress(br->GetName(), buffer);
+            outputTree->SetBranchAddress(br->GetName(), buffer);
+
+            indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
+          }
+        }
+
+        auto entries = inputTree->GetEntries();
+        int minIndexOffset = unassignedIndexOffset[treeName];
+        auto newMinIndexOffset = minIndexOffset;
+        for (int i = 0; i < entries; i++) {
+          for (auto& index : indexList) {
+            *(index.first) = 0; // Any positive number will do, in any case it will not be filled in the output. Otherwise the previous entry is used and manipulated in the following.
+          }
+          inputTree->GetEntry(i);
+          // shift index columns by offset
           for (const auto& idx : indexList) {
-            delete idx.first;
+            // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
+            if (*(idx.first) < 0) {
+              *(idx.first) += minIndexOffset;
+              newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
+            } else {
+              *(idx.first) += idx.second;
+            }
           }
+          int nbytes = outputTree->Fill();
+          if (nbytes > 0) {
+            currentDirSize += nbytes;
+          }
+        }
+        unassignedIndexOffset[treeName] = newMinIndexOffset;
 
-          delete inputTree;
+        delete inputTree;
+
+        for (auto& buffer : indexPointers) {
+          delete buffer;
+        }
+        for (auto& buffer : vlaPointers) {
+          delete[] buffer;
         }
       }
       if (exitCode > 0) {
@@ -266,15 +370,24 @@ int main(int argc, char* argv[])
         }
       }
 
+      // set to -1 to identify not found tables
+      for (auto& offset : offsets) {
+        offset.second = -1;
+      }
+
       // update offsets
       for (auto const& tree : trees) {
-        offsets[tree.first] = tree.second->GetEntries();
+        offsets[removeVersionSuffix(tree.first.c_str())] = tree.second->GetEntries();
       }
 
       // check for not found tables
-      for (auto const& offset : offsets) {
-        if (trees.count(offset.first) == 0) {
-          printf("ERROR: Index on %s but no tree found\n", offset.first.c_str());
+      for (auto& offset : offsets) {
+        if (offset.second < 0) {
+          if (maxDirSize > 0) {
+            // if maxDirSize is 0 then we do not merge DFs and this error is not an error actually (e.g. for not self-contained derived data)
+            printf("ERROR: Index on %s but no tree found\n", offset.first.c_str());
+          }
+          offset.second = 0;
         }
       }
 
@@ -293,6 +406,11 @@ int main(int argc, char* argv[])
       }
     }
     inputFile->Close();
+  }
+
+  if (parentFiles) {
+    outputFile->cd();
+    parentFiles->Write("parentFiles", TObject::kSingleKey);
   }
 
   outputFile->Write();

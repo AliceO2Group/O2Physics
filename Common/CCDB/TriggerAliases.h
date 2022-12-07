@@ -29,11 +29,24 @@ enum triggerAliases {
   kCUP9,
   kMUP10,
   kMUP11,
+  kINT1,
+  kUnbiased,
+  kDMC7,
+  kEG1,
+  kEJ1,
+  kEG2,
+  kEJ2,
+  kDG1,
+  kDJ1,
+  kDG2,
+  kDJ2,
+  kTVXinTRD,
+  kTVXinEMC,
   kALL,
   kNaliases
 };
 
-extern const char* aliasLabels[kNaliases];
+extern std::string aliasLabels[kNaliases];
 
 class TriggerAliases
 {
@@ -52,7 +65,7 @@ class TriggerAliases
   std::map<uint32_t, std::string> mAliasToClassNames;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMask;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMaskNext50;
-  ClassDefNV(TriggerAliases, 3)
+  ClassDefNV(TriggerAliases, 6)
 };
 
 #endif

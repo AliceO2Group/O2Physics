@@ -15,7 +15,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "MathUtils/Utils.h"
@@ -87,7 +87,7 @@ struct TPCSpectraProviderTask {
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
-  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::pt > trackPtCut) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::pt > trackPtCut) && (requireGlobalTrackInFilter());
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
                                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,

@@ -11,6 +11,12 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TString.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -24,12 +30,6 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MixingLibrary.h"
-#include <TH1F.h>
-#include <THashList.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
-#include <algorithm>
 
 using std::cout;
 using std::endl;
@@ -232,6 +232,8 @@ struct DQEventMixing {
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
   std::vector<TString> fCentBinNames;
 
+  NoBinningPolicy<aod::reducedevent::MixingHash> hashBin;
+
   void init(o2::framework::InitContext&)
   {
     fValues = new float[VarManager::kNVars];
@@ -254,10 +256,10 @@ struct DQEventMixing {
 
     events.bindExternalIndices(&muons);
     auto muonsTuple = std::make_tuple(muons);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerMuons(events, muonsTuple);
+    GroupSlicer slicerMuons(events, muonsTuple);
 
     // Strictly upper categorised collisions, for 100 combinations per bin, skipping those in entry -1
-    for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
+    for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
 
       // event informaiton is required to fill histograms where both event and pair information is required (e.g. inv.mass vs centrality)
       VarManager::ResetValues(0, VarManager::kNVars, fValues);
@@ -283,7 +285,7 @@ struct DQEventMixing {
       auto muons2 = std::get<soa::Filtered<MyMuonTracksSelected>>(im2.associatedTables());
       muons2.bindExternalIndices(&events);
 
-      constexpr static int pairType = VarManager::kJpsiToMuMu;
+      constexpr static int pairType = VarManager::kDecayToMuMu;
       for (auto& muon1 : muons1) {
         for (auto& muon2 : muons2) {
           twoTrackFilter = muon1.isMuonSelected() & muon2.isMuonSelected();
@@ -345,7 +347,7 @@ struct DQDileptonMuMu {
 
     // Run the same event pairing for barrel tracks
     uint8_t twoTrackFilter = 0;
-    constexpr static int pairType = VarManager::kJpsiToMuMu;
+    constexpr static int pairType = VarManager::kDecayToMuMu;
 
     // same event pairing for muons
     for (auto& [muon1, muon2] : combinations(muons, muons)) {

@@ -16,7 +16,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/MC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -25,7 +24,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct pidHMPIDQA {
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsP{"nBinsP", 500, "Number of momentum bins"};
   Configurable<float> minP{"minP", 0.01f, "Minimum momentum plotted (GeV/c)"};
   Configurable<float> maxP{"maxP", 10.f, "Maximum momentum plotted (GeV/c)"};
@@ -45,7 +44,7 @@ struct pidHMPIDQA {
     histos.add("nphotons/nonselected", ";HMPID number of detected photons", kTH1F, {{100, 0, 1000}});
   }
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   void process(const TrackCandidates& tracks,
                const aod::HMPIDs& hmpids,
                const aod::Collisions& colls)

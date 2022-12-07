@@ -38,7 +38,7 @@ struct ALICE3MultTask {
   }
 
   int nevs = 0;
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksExtended>& tracks)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks)
   {
     int nTracks = 0;
     for (const auto& track : tracks) {

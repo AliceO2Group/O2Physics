@@ -14,7 +14,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -31,7 +31,7 @@ struct UPCSpectraProviderTask {
 
   Produces<aod::UDTracks> outputTracks;
 
-  Filter trackFilter = (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (requireGlobalTrackInFilter());
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {

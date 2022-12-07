@@ -15,8 +15,8 @@
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
-#include "Common/Core/MC.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "SimulationDataFormat/MCUtils.h"
 
 using namespace o2;
 using namespace framework;
@@ -68,11 +68,11 @@ struct Alice3LutMaker {
     const TString commonTitle = Form(" PDG %i", pdg);
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} GeV/#it{c}"};
     if (ptLog) {
-      axisPt.makeLogaritmic();
+      axisPt.makeLogarithmic();
     }
     AxisSpec axisNch{nchBins, nchMin, nchMax, "N_{Ch}"};
     if (nchLog) {
-      axisNch.makeLogaritmic();
+      axisNch.makeLogarithmic();
     }
     const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
 
@@ -185,7 +185,7 @@ struct Alice3LutMaker {
     histos.add("QA/CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTH3F, {axisPt, axisEta, axisc1Pt21Pt2});
   }
 
-  void process(const o2::aod::McParticles& mcParticles,
+  void process(const o2::aod::McParticles_000& mcParticles,
                const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>&,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions&)
@@ -194,11 +194,11 @@ struct Alice3LutMaker {
     int ntrks = 0;
 
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       if (mcParticle.pdgCode() != pdg) {
         continue;
       }
-      if (selPrim.value && !MC::isPhysicalPrimary(mcParticle)) { // Requiring is physical primary
+      if (selPrim.value && !mcParticle.isPhysicalPrimary()) { // Requiring is physical primary
         continue;
       }
 
@@ -281,7 +281,7 @@ struct Alice3LutMaker {
       if (mcParticle.pdgCode() != pdg) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(mcParticle)) { // Requiring is physical primary
+      if (!mcParticle.isPhysicalPrimary()) { // Requiring is physical primary
         continue;
       }
 

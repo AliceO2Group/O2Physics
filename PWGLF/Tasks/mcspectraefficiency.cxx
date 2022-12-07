@@ -12,7 +12,6 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/Core/MC.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -23,7 +22,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace MC;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -68,7 +66,7 @@ struct GeneratedTask {
       if (abs(mcParticle.eta()) > 0.8) {
         continue;
       }
-      if (isPhysicalPrimary(mcParticle)) {
+      if (mcParticle.isPhysicalPrimary()) {
         const auto pdg = Form("%i", mcParticle.pdgCode());
         pdgH->Fill(pdg, 1);
         const float pdgbin = pdgH->GetXaxis()->GetBinCenter(pdgH->GetXaxis()->FindBin(pdg));
@@ -105,17 +103,17 @@ struct ReconstructedTask {
   OutputObj<TH2F> pDiff{TH2F("pDiff", "pDiff;#it{p}_{MC} #it{p}_{Rec} (GeV/#it{c})", 500, -2, 2, PDGBINNING)};
 
   Filter trackAcceptance = (nabs(aod::track::eta) < 0.8f);
-  Filter trackCuts = ((aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackCuts = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
-               soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+               soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
     LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
-      if (!isPhysicalPrimary(particle)) {
+      if (!particle.isPhysicalPrimary()) {
         pdgsecH->Fill(pdg, 1);
         const float pdgbinsec = pdgH->GetXaxis()->GetBinCenter(pdgsecH->GetXaxis()->FindBin(pdg));
         dcaxysecH->Fill(track.dcaXY(), pdgbinsec);

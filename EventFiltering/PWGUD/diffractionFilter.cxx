@@ -9,84 +9,56 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 // O2 includes
-///
-/// \brief A filter task for diffractive events
-///        requires: EvSels, o2-analysis-event-selection
-///                  TrackSelection, o2-analysis-trackselection
-///                  TracksExtended, o2-analysis-trackextension
-///                  pidTOF*, o2-analysis-pid-tof
-///                  pidTPC*, o2-analysis-pid-tpc
-///                  Timestamps, o2-analysis-timestamp
-///        usage: o2-analysis-timestamp --aod-file AO2D.root |
-///               o2-analysis-event-selection --processRun3 1 --isMC 1 |
-///               o2-analysis-trackextension |
-///               o2-analysis-trackselection --isRun3 |
-///               o2-analysis-pid-tof |
-///               o2-analysis-pid-tpc |
-///               o2-analysis-diffraction-filter
-/// \author P. Buehler , paul.buehler@oeaw.ac.at
-/// \since June 1, 2021
+//
+// \brief A filter task for diffractive events
+//
+//        options:  X in [2pi, 4pi, 2K, 4K]
+//
+//               DiffCutsX.mNDtcoll(4)
+//               DiffCutsX.mMinNTracks(0)
+//               DiffCutsX.mMaxNTracks(10000)
+//               DiffCutsX.mMinNetCharge(0)
+//               DiffCutsX.mMaxNetCharge(0)
+//               DiffCutsX.mPidHypo(211)
+//               DiffCutsX.mMinPosz(-1000.)
+//               DiffCutsX.mMaxPosz(1000.)
+//               DiffCutsX.mMinPt(0.)
+//               DiffCutsX.mMaxPt(1000.)
+//               DiffCutsX.mMinEta(-1.)
+//               DiffCutsX.mMaxEta(1.)
+//               DiffCutsX.mMinIVM(0.)
+//               DiffCutsX.mMaxIVM(1000.)
+//               DiffCutsX.mMaxnSigmaTPC(1000.)
+//               DiffCutsX.mMaxnSigmaTOF(1000.)
+//               DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
+//
+//        usage: copts="--configuration json://DiffFilterConfig.json -b"
+//               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
+//
+//               o2-analysis-timestamp $copts |
+//               o2-analysis-track-propagation $copts |
+//               o2-analysis-event-selection $copts |
+//               o2-analysis-multiplicity-table $copts |
+//               o2-analysis-trackextension $copts |
+//               o2-analysis-trackselection $copts |
+//               o2-analysis-pid-tpc-full $copts |
+//               o2-analysis-pid-tof-base $copts |
+//               o2-analysis-pid-tof-full $copts |
+//               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
+
+// \author P. Buehler, paul.buehler@oeaw.ac.at
+// \since June 1, 2021
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "CommonConstants/LHCConstants.h"
-
-#include "cutHolder.h"
-#include "diffractionSelectors.h"
+#include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/DGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 #include "../filterTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// The associations between collsisions and BCs can be ambiguous.
-// By default a collision is associated with the BC closest in time.
-// The collision time t_coll is determined by the tracks which are used to
-// reconstruct the vertex. t_coll has an uncertainty dt_coll.
-// Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
-// around t_coll could potentially be the true BC. ndt is typically 4.
-
-template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs)
-{
-  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
-
-  auto bcIter = collision.bc_as<T>();
-
-  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
-  uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  int64_t minBC = meanBC - deltaBC;
-  uint64_t maxBC = meanBC + deltaBC;
-  if (minBC < 0) {
-    minBC = 0;
-  }
-
-  // find slice of BCs table with BC in [minBC, maxBC]
-  int64_t maxBCId = bcIter.globalIndex();
-  int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    maxBCId = bcIter.globalIndex();
-    ++bcIter;
-    ++moveCount;
-  }
-
-  bcIter.moveByIndex(-moveCount); // Move back to original position
-  int64_t minBCId = collision.bcId();
-  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    minBCId = bcIter.globalIndex();
-    --bcIter;
-  }
-
-  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
-
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  return slice;
-}
 
 // Run 3
 struct DGFilterRun3 {
@@ -94,61 +66,130 @@ struct DGFilterRun3 {
   // Productions
   Produces<aod::DiffractionFilters> filterTable;
 
-  // configurable cutHolder
-  MutableConfigurable<cutHolder> diffCuts{"DiffCuts", {}, "Diffractive events cuts"};
+  // DGCutparHolders
+  DGCutparHolder diffCuts = DGCutparHolder();
+  static constexpr std::string_view cutNames[4] = {"DiffCuts2pi", "DiffCuts4pi", "DiffCuts2K", "DiffCuts4K"};
+  Configurable<DGCutparHolder> diffCuts2pi{cutNames[0].data(), {}, "Diffractive 2pi events cuts"};
+  Configurable<DGCutparHolder> diffCuts4pi{cutNames[1].data(), {}, "Diffractive 4pi events cuts"};
+  Configurable<DGCutparHolder> diffCuts2K{cutNames[2].data(), {}, "Diffractive 2K events cuts"};
+  Configurable<DGCutparHolder> diffCuts4K{cutNames[3].data(), {}, "Diffractive 4K events cuts"};
 
   // DG selector
   DGSelector dgSelector;
 
-  // some general Collisions and Tracks filter
+  // histograms with cut statistics
+  // bin:
+  //   1: All collisions
+  //   2: DG candidate
+  //   3: not clean FIT
+  //   4: number of FwdTracks > 0
+  //   5: not all global tracks are vtx tracks
+  //   6: not all vtx tracks are global tracks
+  //   7: fraction of tracks with TOF hit too low
+  //   8: number of vtx tracks out of range
+  //   9: has not good PID information
+  //  10: track pt out of range
+  //  11: track eta out of range
+  //  12: net charge out of range
+  //  13: IVM out of range
+  static constexpr std::string_view histNames[4] = {"aftercut2pi", "aftercut4pi", "aftercut2K", "aftercut4K"};
+  HistogramRegistry registry{
+    "registry",
+    {
+      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+    }};
 
+  void init(InitContext&)
+  {
+  }
+
+  // some general Collisions and Tracks filter
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                        aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
   // using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 
   void process(CC const& collision,
                BCs const& bcs,
                TCs& tracks,
-               //               MFs& mfttracks,
+               // MFs& mfttracks,
                FWs& fwdtracks,
                aod::Zdcs& zdcs,
                aod::FT0s& ft0s,
                aod::FV0As& fv0as,
-               aod::FV0Cs& fv0cs,
                aod::FDDs& fdds)
   {
-    // nominal BC
-    auto bc = collision.bc_as<BCs>();
 
-    // obtain slice of compatible BCs
-    auto bcRange = compatibleBCs(collision, diffCuts->NDtcoll(), bcs);
-    LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts->NDtcoll(), bcRange.size());
+    // loop over 4 cases
+    bool ccs[4]{false};
+    for (int ii = 0; ii < 4; ii++) {
 
-    // check that there are no FIT signals in any of the compatible BCs
-    // Double Gap (DG) condition
-    auto isDGEvent = true;
-    for (auto& bc : bcRange) {
-      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
-        isDGEvent = false;
-        break;
+      // different cases
+      switch (ii) {
+        case 0:
+          diffCuts = (DGCutparHolder)diffCuts2pi;
+          registry.fill(HIST(histNames[0]), 0.);
+          break;
+        case 1:
+          diffCuts = (DGCutparHolder)diffCuts4pi;
+          registry.fill(HIST(histNames[1]), 0.);
+          break;
+        case 2:
+          diffCuts = (DGCutparHolder)diffCuts2K;
+          registry.fill(HIST(histNames[2]), 0.);
+          break;
+        case 3:
+          diffCuts = (DGCutparHolder)diffCuts4K;
+          registry.fill(HIST(histNames[3]), 0.);
+          break;
+        default:
+          continue;
+      }
+
+      // obtain slice of compatible BCs
+      auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+      LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
+
+      // apply DG selection
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
+
+      // save decision
+      if (isDGEvent == 0) {
+        LOGF(debug, "This collision is a DG candidate!");
+      }
+      ccs[ii] = (isDGEvent == 0);
+
+      // update after cut histogram
+      // different cases
+      switch (ii) {
+        case 0:
+          registry.fill(HIST(histNames[0]), isDGEvent + 1);
+          break;
+        case 1:
+          registry.fill(HIST(histNames[1]), isDGEvent + 1);
+          break;
+        case 2:
+          registry.fill(HIST(histNames[2]), isDGEvent + 1);
+          break;
+        case 3:
+          registry.fill(HIST(histNames[3]), isDGEvent + 1);
+          break;
+        default:
+          continue;
       }
     }
 
-    // additional cuts
-    if (isDGEvent) {
-      isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
-    }
-
-    // fill filterTable
-    if (isDGEvent) {
-      LOGF(info, "This collision is a DG candidate!");
-    }
-    filterTable(isDGEvent);
+    // update filterTable
+    filterTable(ccs[0], ccs[1], ccs[2], ccs[3]);
   }
 };
 

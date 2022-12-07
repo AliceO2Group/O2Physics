@@ -7,22 +7,39 @@
 
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence.
-# **DO NOT USE** @AliceO2Group/core for anything else. 
+# **DO NOT USE** @AliceO2Group/core for anything else.
 
 # @alibuild has to be in each line to allow self approval of PRs
 
-* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf 
-/ALICE3 @alibuild @njacazio @ginnocen @vkucera 
-/DPG @alibuild @mario-krueger
-/EventFiltering @alibuild @mpuccio 
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
+/Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
+/Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
+/ALICE3 @alibuild @njacazio @ginnocen @vkucera
+/DPG @alibuild @chiarazampolli @noferini
+/DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @njacazio
+/EventFiltering @alibuild @mpuccio
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera
 /EventFiltering/PWGUD @alibuild @pbuehler
 /EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
 /EventFiltering/PWGCF @alibuild @lauraser
 /EventFiltering/PWGMM @alibuild @aortizve
 /EventFiltering/PWGJE @alibuild @fkrizek
-/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
-/PWGDQ @alibuild @iarsene
-/PWGHF @alibuild @ginnocen @vkucera @fcolamar
-/PWGLF @alibuild @njacazio
-/PWGMM @alibuild @aalkin 
+/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGDQ @alibuild @iarsene @dsekihat @feisenhu
+/PWGEM @alibuild @mikesas @rbailhac @feisenhu
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
+/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
+/PWGHF @alibuild @ginnocen @vkucera @fcolamar @cterrevo
+/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @cterrevo @xinyepeng @lvermunt
+/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
+/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh @rvertesi
+/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo @NicoleBastid @mvolkl
+/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio
+/PWGMM @alibuild @aalkin
+/PWGMM/Lumi @alibuild @aalkin
+/PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
+/PWGMM/UE @alibuild @aalkin @aortizve
+/PWGUD @alibuild @pbuehler
+/PWGJE @alibuild @lhavener @maoyx @nzardosh
+/Tools/PIDML @alibuild @saganatt

@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "CommonConstants/MathConstants.h"
+#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -25,11 +26,35 @@ using namespace constants::math;
 struct VertexDistribution {
   OutputObj<TH1F> vertex{TH1F("vertex", "vertex", 100, -10, 10)};
 
+  Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
+
   // loop over MC truth McCollisions
   void process(aod::McCollision const& mcCollision)
   {
-    LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
+    if (reduceOutput < 2) {
+      LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
+    }
     vertex->Fill(mcCollision.posZ());
+  }
+};
+
+// Simple analysis of PhysicalPrimary particles
+struct PhysicalPrimaryCharge {
+  OutputObj<TH1F> charge{TH1F("charge_prim", "charge_prim", 100, -5, 5)};
+  Service<TDatabasePDG> pdgDB;
+
+  void process(aod::McParticles const& mcParticles)
+  {
+    for (auto& particle : mcParticles) {
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      auto pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+      if (!pdgParticle) {
+        continue;
+      }
+      charge->Fill(pdgParticle->Charge() / 3.); // note that charge comes in units of 1/3
+    }
   }
 };
 
@@ -38,21 +63,44 @@ struct AccessMcData {
   OutputObj<TH1F> phiH{TH1F("phi", "phi", 100, 0., TwoPI)};
   OutputObj<TH1F> etaH{TH1F("eta", "eta", 102, -2.01, 2.01)};
 
+  Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
+
   // group according to McCollisions
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
-    LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
-    LOGF(info, "First: %d | Length: %d", mcParticles.begin().index(), mcParticles.size());
+    if (reduceOutput < 2) {
+      LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
+      LOGF(info, "First: %d | Length: %d", mcParticles.begin().index(), mcParticles.size());
+    }
     int count = 0;
     for (auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
         phiH->Fill(mcParticle.phi());
         etaH->Fill(mcParticle.eta());
         count++;
+        // Loop over mothers and daughters
+        if (mcParticle.has_mothers()) {
+          // Check first mother
+          auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
+          if (reduceOutput == 0) {
+            LOGF(info, "First mother: %d has pdg code %d", mother.globalIndex(), mother.pdgCode());
+          }
+          // Loop over all mothers (needed for some MCs with junctions etc.)
+          for (auto& m : mcParticle.mothers_as<aod::McParticles>()) {
+            LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+          }
+        }
+        if (mcParticle.has_daughters()) {
+          for (auto& d : mcParticle.daughters_as<aod::McParticles>()) {
+            LOGF(debug, "D2 %d %d", mcParticle.globalIndex(), d.globalIndex());
+          }
+        }
       }
     }
-    LOGF(info, "Primaries for this collision: %d", count);
+    if (reduceOutput < 2) {
+      LOGF(info, "Primaries for this collision: %d", count);
+    }
   }
 };
 
@@ -61,17 +109,25 @@ struct AccessMcTruth {
   OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
   OutputObj<TH1F> phiDiff{TH1F("phiDiff", ";phi_{MC} - phi_{Rec}", 100, -PI, PI)};
 
+  Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
+
   // group according to reconstructed Collisions
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks,
                aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
-    LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
+    if (reduceOutput < 2) {
+      LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
+    }
     for (auto& track : tracks) {
-      //if (track.trackType() != 0)
-      //  continue;
-      //if (track.labelMask() != 0)
-      //  continue;
+      // if (track.trackType() != 0)
+      //   continue;
+      // if (track.labelMask() != 0)
+      //   continue;
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "No MC particle for track, skip...");
+        continue;
+      }
       auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
         etaDiff->Fill(particle.eta() - track.eta());
@@ -84,7 +140,7 @@ struct AccessMcTruth {
         }
         phiDiff->Fill(delta);
       }
-      //LOGF(info, "eta: %.2f %.2f \t phi: %.2f %.2f | %d", track.mcParticle().eta(), track.eta(), track.mcParticle().phi(), track.phi(), track.mcParticle().index());
+      // LOGF(info, "eta: %.2f %.2f \t phi: %.2f %.2f | %d", track.mcParticle().eta(), track.eta(), track.mcParticle().phi(), track.phi(), track.mcParticle().index());
     }
   }
 };
@@ -96,18 +152,34 @@ struct AccessMcTruth {
 // Run 3, where we can have 0, 1, or more collisions for a given mc collision
 struct LoopOverMcMatched {
   OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
+
+  Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
+
+  using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+
   void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions,
-               soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+               LabeledTracks const& tracks, aod::McParticles const& mcParticles)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
-    LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
+    if (reduceOutput < 2) {
+      LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
+    }
     for (auto& collision : collisions) {
-      LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
+      if (reduceOutput < 2) {
+        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
+      }
 
       // NOTE this will be replaced by a improved grouping in the future
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      LOGF(info, "  which has %d tracks", groupedTracks.size());
+      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+      if (reduceOutput < 2) {
+        LOGF(info, "  which has %d tracks", groupedTracks.size());
+      }
       for (auto& track : groupedTracks) {
+        if (!track.has_mcParticle()) {
+          LOGF(warning, "No MC particle for track, skip...");
+          continue;
+        }
         etaDiff->Fill(track.mcParticle().eta() - track.eta());
       }
     }
@@ -118,6 +190,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<VertexDistribution>(cfgc),
+    adaptAnalysisTask<PhysicalPrimaryCharge>(cfgc),
     adaptAnalysisTask<AccessMcData>(cfgc),
     adaptAnalysisTask<AccessMcTruth>(cfgc),
     adaptAnalysisTask<LoopOverMcMatched>(cfgc)};

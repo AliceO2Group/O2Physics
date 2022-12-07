@@ -11,6 +11,9 @@
 
 # add_subdirectory(Core)
 # add_subdirectory(DataModel)
-add_subdirectory(Tasks)
 add_subdirectory(TableProducer)
-
+add_subdirectory(Tasks)
+add_subdirectory(D2H)
+add_subdirectory(HFC)
+add_subdirectory(HFJ)
+add_subdirectory(HFL)

@@ -9,23 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(qa-event-track
-                    SOURCES qaEventTrack.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(qa-efficiency
-                    SOURCES qaEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(qa-impact-parameter
-                    SOURCES qaImpPar.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats
-                                          O2Physics::AnalysisCore 
-                                          O2::ReconstructionDataFormats
-                                          O2::DetectorsBase
-                                          O2::DetectorsCommonDataFormats
-                    COMPONENT_NAME Analysis)
-
-
+add_subdirectory(AOTTrack)
+add_subdirectory(TPC)
+add_subdirectory(TOF)
+add_subdirectory(FDD)

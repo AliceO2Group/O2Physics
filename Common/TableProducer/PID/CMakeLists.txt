@@ -11,6 +11,16 @@
 
 # TOF
 
+
+o2physics_add_library(PIDTPCCore
+             SOURCES pidTPCML.cxx
+             PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime
+)
+o2physics_add_dpl_workflow(pid-tof-base
+                    SOURCES pidTOFBase.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::TOFBase
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tof
                     SOURCES pidTOF.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
@@ -18,11 +28,6 @@ o2physics_add_dpl_workflow(pid-tof
 
 o2physics_add_dpl_workflow(pid-tof-beta
                     SOURCES pidTOFbeta.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(pid-tof-qa-mc
-                    SOURCES qaTOFMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -35,17 +40,12 @@ o2physics_add_dpl_workflow(pid-tof-full
 
 o2physics_add_dpl_workflow(pid-tpc
                     SOURCES pidTPC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PIDTPCCore ONNXRuntime::ONNXRuntime
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-tpc-full
                     SOURCES pidTPCFull.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(pid-tpc-qa-mc
-                    SOURCES qaTPCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PIDTPCCore ONNXRuntime::ONNXRuntime
                     COMPONENT_NAME Analysis)
 
 # HMPID

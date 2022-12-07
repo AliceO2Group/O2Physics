@@ -12,7 +12,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/Logger.h"
 
-const char* aliasLabels[kNaliases] = {
+std::string aliasLabels[kNaliases] = {
   "kINT7",
   "kEMC7",
   "kINT7inMUON",
@@ -24,6 +24,19 @@ const char* aliasLabels[kNaliases] = {
   "kCUP9",
   "kMUP10",
   "kMUP11",
+  "kINT1",
+  "kUnbiased",
+  "kDMC7",
+  "kEG1",
+  "kEJ1",
+  "kEG2",
+  "kEJ2",
+  "kDG1",
+  "kDJ1",
+  "kDG2",
+  "kDJ2",
+  "kTVXinTRD",
+  "kTVXinEMC",
   "kALL"};
 
 void TriggerAliases::AddClassIdToAlias(uint32_t aliasId, int classId)
@@ -34,5 +47,12 @@ void TriggerAliases::AddClassIdToAlias(uint32_t aliasId, int classId)
     mAliasToTriggerMask[aliasId] |= 1ull << classId;
   } else {
     mAliasToTriggerMaskNext50[aliasId] |= 1ull << (classId - 50);
+  }
+}
+
+void TriggerAliases::Print()
+{
+  for (const auto& alias : mAliasToTriggerMask) {
+    LOGP(info, "alias={} classMask ={}", aliasLabels[alias.first], alias.second);
   }
 }

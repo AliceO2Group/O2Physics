@@ -16,8 +16,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/MC.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TableProducer/dptdptfilter.h"
@@ -44,15 +43,6 @@ using namespace o2::framework::expressions;
 #define MATCHRECGENLOGCOLLISIONS debug
 #define MATCHRECGENLOGTRACKS debug
 
-namespace o2
-{
-namespace aod
-{
-using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::ScannedTracks>>;
-using FilteredTrackData = Partition<aod::FilteredTracks>::filtered_iterator;
-} // namespace aod
-} // namespace o2
-
 namespace o2::analysis::recogenmap
 {
 std::vector<std::vector<int64_t>> mclabelpos[2];
@@ -63,7 +53,9 @@ std::vector<std::vector<int64_t>> mclabelneg[2];
 struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
+  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -83,7 +75,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   enum { kMATCH = 0,
          kDONTMATCH };
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     using namespace o2::analysis::recogenmap;
     using namespace o2::analysis::dptdptfilter;
@@ -101,8 +93,11 @@ struct CheckGeneratorLevelVsDetectorLevel {
     zvtxup = cfgBinning->mZVtxmax;
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
+    initializeTrackSelection();
     /* the centrality/multiplicity estimation */
     fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
+    /* the trigger selection */
+    fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
@@ -137,6 +132,8 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
     traceCollId0 = cfgTraceCollId0;
 
+    /* if the system type is not known at this time, we have to put the initialization somewhere else */
+    fSystem = getSystemType(cfgSystem);
     fDataType = getDataType(cfgDataType);
     fPDG = TDatabasePDG::Instance();
 
@@ -359,7 +356,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
 
-      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
       if (track.collisionId() < 0) {
         if (label >= 0) {
           mclabelpos[kNEGATIVE][label].push_back(recix);
@@ -414,14 +411,15 @@ struct CheckGeneratorLevelVsDetectorLevel {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
           float centormult = -100.0f;
           if (IsEvtSelected(coll, centormult)) {
-            bool asone = false;
-            bool astwo = false;
+            uint8_t asone = uint8_t(false);
+            uint8_t astwo = uint8_t(false);
 
+            /* TODO: AcceptTrack does not consider PID */
             AcceptTrack(track, asone, astwo);
-            if (asone or astwo) {
+            if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
               /* the track has been accepted */
               nreco++;
-              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
             }
           }
@@ -433,7 +431,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     collectData<kAFTER, kPOSITIVE>(tracks, mcParticles, collisions);
   }
 
-  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
                                 soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels> const& collisions,
                                 aod::McParticles const& mcParticles)
   {
@@ -442,7 +440,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksWithCent, "Process detector <=> generator levels with centrality/multiplicity information", false);
 
-  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
                                    soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels> const& collisions,
                                    aod::McParticles const& mcParticles)
   {

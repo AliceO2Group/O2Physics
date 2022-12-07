@@ -10,21 +10,24 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "filterTables.h"
-
-#include "Framework/HistogramRegistry.h"
-
 #include <iostream>
 #include <cstdio>
 #include <random>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include <fmt/format.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+
+#include "filterTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -63,7 +66,7 @@ bool readJsonFile(std::string& config, Document& d)
 
 std::unordered_map<std::string, std::unordered_map<std::string, float>> mDownscaling;
 static const std::vector<std::string> downscalingName{"Downscaling"};
-static const float defaultDownscaling[32][1]{
+static const float defaultDownscaling[128][1]{
   {1.f},
   {1.f},
   {1.f},
@@ -95,7 +98,103 @@ static const float defaultDownscaling[32][1]{
   {1.f},
   {1.f},
   {1.f},
-  {1.f}}; /// Max number of columns for triggers is 32 (extendible)
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f},
+  {1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
 #define FILTER_CONFIGURABLE(_TYPE_) \
   Configurable<LabeledArray<float>> cfg##_TYPE_ { #_TYPE_, {defaultDownscaling[0], NumberOfColumns < _TYPE_>(), 1, ColumnsNames(typename _TYPE_::iterator::persistent_columns_t{}), downscalingName }, #_TYPE_ " downscalings" }
@@ -105,9 +204,18 @@ static const float defaultDownscaling[32][1]{
 struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  Produces<aod::CefpDecisions> tags;
+  Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "nsigma timing cut associating BC and collisions"};
 
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
+  FILTER_CONFIGURABLE(DqFilters);
+  FILTER_CONFIGURABLE(HfFilters);
+  FILTER_CONFIGURABLE(CFFiltersTwoN);
+  FILTER_CONFIGURABLE(CFFilters);
+  FILTER_CONFIGURABLE(JetFilters);
+  FILTER_CONFIGURABLE(StrangenessFilters);
+  FILTER_CONFIGURABLE(MultFilters);
 
   void init(o2::framework::InitContext& initc)
   {
@@ -124,16 +232,33 @@ struct centralEventFilterTask {
     mScalers->GetXaxis()->SetBinLabel(1, "Total number of events");
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
     int bin{2};
+
+    // for (auto& spec : reinterpret_cast<std::unique_ptr<ConfigParamStore>*>(&(initc.mOptions))->get()->specs()) {
+    //   std::cout << "Configuration available: " << spec.name << "\t" << int(spec.type) << std::endl;
+    //   auto filterOpt = initc.mOptions.get<LabeledArray<float>>(spec.name.data());
+    //   std::cout << " -- row labs: ";
+    //   for (auto& lab : filterOpt.labels_rows) {
+    //     std::cout << lab << "\t";
+    //   }
+    //   std::cout << "\n -- col labs: ";
+    //   for (auto& lab : filterOpt.labels_cols) {
+    //     std::cout << lab << "\t";
+    //   }
+    //    std::cout << std::endl;
+    // }
+
     for (auto& table : mDownscaling) {
+      LOG(info) << "Setting downscalings for table " << table.first;
       for (auto& column : table.second) {
         mScalers->GetXaxis()->SetBinLabel(bin, column.first.data());
         mFiltered->GetXaxis()->SetBinLabel(bin++, column.first.data());
       }
-      if (initc.options().isDefault(table.first.data()) || !initc.options().isSet(table.first.data())) {
+      if (!initc.options().isSet(table.first.data())) {
         continue;
       }
       auto filterOpt = initc.mOptions.get<LabeledArray<float>>(table.first.data());
       for (auto& col : table.second) {
+        LOG(info) << "- Channel " << col.first << ": " << filterOpt.get(col.first.data(), 0u);
         col.second = filterOpt.get(col.first.data(), 0u);
       }
     }
@@ -145,6 +270,8 @@ struct centralEventFilterTask {
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
 
     int64_t nEvents{-1};
+    std::vector<uint64_t> outTrigger, outDecision;
+
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -157,23 +284,33 @@ struct centralEventFilterTask {
         LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
+      if (outDecision.size() == 0) {
+        outDecision.resize(nEvents, 0u);
+        outTrigger.resize(nEvents, 0u);
+      }
+
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
         int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
         double binCenter{mScalers->GetXaxis()->GetBinCenter(bin)};
+        uint64_t triggerBit{BIT(bin - 2)};
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
+          int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
             auto chunk{column->chunk(iC)};
             auto boolArray = std::static_pointer_cast<arrow::BooleanArray>(chunk);
             for (int64_t iS{0}; iS < chunk->length(); ++iS) {
               if (boolArray->Value(iS)) {
                 mScalers->Fill(binCenter);
+                outTrigger[entry] |= triggerBit;
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
+                  outDecision[entry] |= triggerBit;
                 }
               }
+              entry++;
             }
           }
         }
@@ -181,6 +318,46 @@ struct centralEventFilterTask {
     }
     mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents);
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
+
+    // Filling output table
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>("BCs");
+    auto bcTabPtr{bcTabConsumer->asArrowTable()};
+    auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
+    auto collTabPtr{collTabConsumer->asArrowTable()};
+    if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
+      LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
+    }
+    auto columnGloBCId{bcTabPtr->GetColumnByName("fGlobalBC")};
+    auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
+    auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
+    auto columnCollTimeRes{collTabPtr->GetColumnByName("fCollisionTimeRes")};
+
+    std::unordered_map<int32_t, int64_t> triggers, decisions;
+    auto GloBCId = -999.;
+
+    for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
+      LOG(info) << "columnBCId has " << columnBCId->num_chunks() << " chunks";
+      auto chunkBC{columnBCId->chunk(iC)};
+      auto chunkCollTime{columnCollTime->chunk(iC)};
+      auto chunkCollTimeRes{columnCollTimeRes->chunk(iC)};
+
+      auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
+      auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
+      auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTimeRes);
+      for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
+        for (int64_t iB{0}; iB < columnGloBCId->num_chunks(); ++iB) {
+          auto chunkGloBC{columnGloBCId->chunk(iB)};
+          auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkGloBC);
+          if (GloBCArray->Value(BCArray->Value(iD)))
+            GloBCId = GloBCArray->Value(BCArray->Value(iD));
+        }
+        tags(BCArray->Value(iD), GloBCId, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
+      }
+    }
+
+    // for (auto& decision : decisions) {
+    // tags(decision.first, triggers[decision.first], decision.second);
+    // }
   }
 
   std::mt19937_64 mGeneratorEngine;
@@ -190,6 +367,8 @@ struct centralEventFilterTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
   std::vector<InputSpec> inputs;
+  inputs.emplace_back("Collisions", "AOD", "COLLISION", 0, Lifetime::Timeframe);
+  inputs.emplace_back("BCs", "AOD", "BC", 0, Lifetime::Timeframe);
 
   auto config = cfg.options().get<std::string>("train_config");
   Document d;
@@ -198,11 +377,14 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 
   std::array<bool, NumberOfFilters> enabledFilters = {false};
   if (readJsonFile(config, d)) {
+    LOG(info) << "Reading workflow json... ";
     for (auto& workflow : d["workflows"].GetArray()) {
+      LOG(info) << "- Reading workflow list... " << workflow["workflow_name"].GetString();
       for (uint32_t iFilter{0}; iFilter < NumberOfFilters; ++iFilter) {
         if (std::string_view(workflow["workflow_name"].GetString()) == std::string_view(FilteringTaskNames[iFilter])) {
           inputs.emplace_back(std::string(AvailableFilters[iFilter]), "AOD", FilterDescriptions[iFilter], 0, Lifetime::Timeframe);
           enabledFilters[iFilter] = true;
+          LOG(info) << "    * Adding inputs from " << AvailableFilters[iFilter] << " to workflow";
           break;
         }
       }

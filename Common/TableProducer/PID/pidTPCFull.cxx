@@ -11,24 +11,35 @@
 
 ///
 /// \file   pidTPCFull.cxx
-/// \author Nicolo' Jacazio
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \author Christian Sonnabend christian.sonnabend@cern.ch
+/// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+///         QA histograms for the TPC PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
+// ROOT includes
+#include "TFile.h"
+#include "TSystem.h"
+
 // O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "CCDB/CcdbApi.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "TableHelper.h"
+#include "Common/TableProducer/PID/pidTPCML.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::pid;
+using namespace o2::pid::tpc;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
@@ -40,9 +51,11 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Task to produce the response table
 struct tpcPidFull {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = aod::Collisions;
+  using Coll = soa::Join<aod::Collisions, aod::Mults>;
+
   // Tables to produce
   Produces<o2::aod::pidTPCFullEl> tablePIDEl;
   Produces<o2::aod::pidTPCFullMu> tablePIDMu;
@@ -53,15 +66,26 @@ struct tpcPidFull {
   Produces<o2::aod::pidTPCFullTr> tablePIDTr;
   Produces<o2::aod::pidTPCFullHe> tablePIDHe;
   Produces<o2::aod::pidTPCFullAl> tablePIDAl;
-  // Detector response and input parameters
-  DetectorResponse response;
+  // TPC PID Response
+  o2::pid::tpc::Response response;
+  o2::pid::tpc::Response* responseptr = nullptr;
+  // Network correction for TPC PID response
+  Network network;
+  o2::ccdb::CcdbApi ccdbApi;
+
+  // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> signalname{"param-signal", "BetheBloch", "Name of the parametrization for the expected signal, used in both file and CCDB mode"};
-  Configurable<std::string> sigmaname{"param-sigma", "TPCReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
+  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
+  Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
+  // Parameters for loading network from a file / downloading the file
+  Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
+  Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
+  Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
+  Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
+  Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
+  Configurable<int> networkSetNumThreads{"networkSetNumThreads", 0, "Especially important for running on a SLURM cluster. Sets the number of threads used for execution."};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -73,201 +97,279 @@ struct tpcPidFull {
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
 
+  // Thread configuration
+  int activeThreads = 0;
+
+  // Paramatrization configuration
+  bool useCCDBParam = false;
+
   void init(o2::framework::InitContext& initContext)
   {
     // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
-        auto enableFlag = [&input](const std::string particle, Configurable<int>& flag) {
-          const std::string table = "pidTPCFull" + particle;
-          if (input.matcher.binding == table) {
-            if (flag < 0) {
-              flag.value = 1;
-              LOG(info) << "Auto-enabling table: " + table;
-            } else if (flag > 0) {
-              flag.value = 1;
-              LOG(info) << "Table enabled: " + table;
-            } else {
-              LOG(info) << "Table disabled: " + table;
-            }
-          }
-        };
-        enableFlag("El", pidEl);
-        enableFlag("Mu", pidMu);
-        enableFlag("Pi", pidPi);
-        enableFlag("Ka", pidKa);
-        enableFlag("Pr", pidPr);
-        enableFlag("De", pidDe);
-        enableFlag("Tr", pidTr);
-        enableFlag("He", pidHe);
-        enableFlag("Al", pidAl);
+    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+      enableFlagIfTableRequired(initContext, "pidTPCFull" + particle, flag);
+    };
+    enableFlag("El", pidEl);
+    enableFlag("Mu", pidMu);
+    enableFlag("Pi", pidPi);
+    enableFlag("Ka", pidKa);
+    enableFlag("Pr", pidPr);
+    enableFlag("De", pidDe);
+    enableFlag("Tr", pidTr);
+    enableFlag("He", pidHe);
+    enableFlag("Al", pidAl);
+
+    /// TPC PID Response
+    const TString fname = paramfile.value;
+    if (fname != "") { // Loading the parametrization from file
+      LOGP(info, "Loading TPC response from file {}", fname);
+      try {
+        std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
+        f->GetObject("Response", responseptr);
+        response.SetParameters(responseptr);
+      } catch (...) {
+        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
       }
+    } else {
+      useCCDBParam = true;
+      const std::string path = ccdbPath.value;
+      const auto time = ccdbTimestamp.value;
+      ccdb->setURL(url.value);
+
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      if (time != 0) {
+        LOGP(info, "Initialising TPC PID response for fixed timestamp {}:", time);
+        ccdb->setTimestamp(time);
+        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
+      } else {
+        LOGP(info, "Initialising default TPC PID response:");
+      }
+      response.PrintAll();
     }
-    // Getting the parametrization parameters
-    ccdb->setURL(url.value);
-    ccdb->setTimestamp(timestamp.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    //
-    const std::string fname = paramfile.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. signal parametrization from file" << fname << ", using param: " << signalname.value;
-      response.LoadParamFromFile(fname.data(), signalname.value, DetectorResponse::kSignal);
 
-      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
-      response.LoadParamFromFile(fname.data(), sigmaname.value, DetectorResponse::kSigma);
-    } else { // Loading it from CCDB
-      std::string path = ccdbPath.value + "/" + signalname.value;
-      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
+    /// Neural network init for TPC PID
 
-      path = ccdbPath.value + "/" + sigmaname.value;
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
-    }
-  }
+    if (!useNetworkCorrection) {
+      return;
+    } else {
 
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tpc::ELoss<Trks::iterator, pid>;
-  void process(Coll const& collisions, Trks const& tracks)
-  {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
-
-    // Check and fill enabled tables
-    auto makeTable = [&tracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
-      if (flag.value == 1) {
-        // Prepare memory for enabled tables
-        table.reserve(tracks.size());
-        for (auto const& trk : tracks) { // Loop on Tracks
-          table(responsePID.GetExpectedSigma(response, trk),
-                responsePID.GetSeparation(response, trk));
+      /// Testing hyperloop core settings
+      const char* alien_cores = gSystem->Getenv("ALIEN_JDL_CPUCORES");
+      if (alien_cores != NULL) {
+        LOGP(info, "Hyperloop test/Grid job detected! Number of cores = {}. Setting threads anyway to 1.", alien_cores);
+        activeThreads = 1;
+      } else {
+        if (networkSetNumThreads > 0) {
+          LOGP(info, "Not running on Hyperloop. Threads for neural network inference are fixed: {} threads", std::to_string(networkSetNumThreads));
+          activeThreads = networkSetNumThreads.value;
         }
       }
+
+      /// CCDB and auto-fetching
+      ccdbApi.init(url);
+      if (!autofetchNetworks) {
+        if (ccdbTimestamp > 0) {
+          /// Fetching network for specific timestamp
+          LOG(info) << "Fetching network for timestamp: " << ccdbTimestamp.value;
+          std::map<std::string, std::string> metadata;
+          bool retrieve_success = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, ccdbTimestamp.value, false, networkPathLocally.value);
+          if (retrieve_success) {
+            std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, ccdbTimestamp.value);
+            if (headers.count("Valid-From") == 0) {
+              LOG(fatal) << "Valid-From not found in metadata";
+            }
+            if (headers.count("Valid-Until") == 0) {
+              LOG(fatal) << "Valid-Until not found in metadata";
+            }
+            Network temp_net(networkPathLocally.value,
+                             strtoul(headers["Valid-From"].c_str(), NULL, 0),
+                             strtoul(headers["Valid-Until"].c_str(), NULL, 0),
+                             enableNetworkOptimizations.value,
+                             activeThreads);
+            network = temp_net;
+            network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          } else {
+            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          }
+        } else {
+          /// Taking the network from local file
+          if (networkPathLocally.value == "") {
+            LOG(fatal) << "Local path must be set (flag networkPathLocally)! Aborting...";
+          }
+          LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
+          Network temp_net(networkPathLocally.value,
+                           enableNetworkOptimizations.value,
+                           activeThreads);
+          network = temp_net;
+          network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+        }
+      } else {
+        return;
+      }
+    }
+  }
+
+  void process(Coll const& collisions, Trks const& tracks,
+               aod::BCsWithTimestamps const&)
+  {
+
+    const uint64_t tracks_size = tracks.size();
+
+    auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
+      }
+      table.reserve(tracks_size);
     };
-    makeTable(pidEl, tablePIDEl, response, responseEl);
-    makeTable(pidMu, tablePIDMu, response, responseMu);
-    makeTable(pidPi, tablePIDPi, response, responsePi);
-    makeTable(pidKa, tablePIDKa, response, responseKa);
-    makeTable(pidPr, tablePIDPr, response, responsePr);
-    makeTable(pidDe, tablePIDDe, response, responseDe);
-    makeTable(pidTr, tablePIDTr, response, responseTr);
-    makeTable(pidHe, tablePIDHe, response, responseHe);
-    makeTable(pidAl, tablePIDAl, response, responseAl);
-  }
-};
+    // Prepare memory for enabled tables
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
 
-struct tpcPidFullQa {
-  static constexpr int Np = 9;
-  static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
-  static constexpr std::string_view hexpected[Np] = {"expected/El", "expected/Mu", "expected/Pi",
-                                                     "expected/Ka", "expected/Pr", "expected/De",
-                                                     "expected/Tr", "expected/He", "expected/Al"};
-  static constexpr std::string_view hexpected_diff[Np] = {"expected_diff/El", "expected_diff/Mu", "expected_diff/Pi",
-                                                          "expected_diff/Ka", "expected_diff/Pr", "expected_diff/De",
-                                                          "expected_diff/Tr", "expected_diff/He", "expected_diff/Al"};
-  static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
-                                                   "nsigma/Ka", "nsigma/Pr", "nsigma/De",
-                                                   "nsigma/Tr", "nsigma/He", "nsigma/Al"};
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+    std::vector<float> network_prediction;
 
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
-  Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
-  Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
-  Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
-  Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
-  Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
-  Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
-  Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+    if (useNetworkCorrection) {
 
-  template <uint8_t i>
-  void addParticleHistos()
-  {
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
+      auto start_network_total = std::chrono::high_resolution_clock::now();
+
+      if (autofetchNetworks) {
+
+        auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+
+        if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
+          LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
+          std::map<std::string, std::string> metadata;
+          bool retrieve_success = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
+          if (retrieve_success) {
+            std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
+            if (headers.count("Valid-From") == 0) {
+              LOG(fatal) << "Valid-From not found in metadata";
+            }
+            if (headers.count("Valid-Until") == 0) {
+              LOG(fatal) << "Valid-Until not found in metadata";
+            }
+            Network temp_net(networkPathLocally.value,
+                             strtoul(headers["Valid-From"].c_str(), NULL, 0),
+                             strtoul(headers["Valid-Until"].c_str(), NULL, 0),
+                             enableNetworkOptimizations.value,
+                             activeThreads);
+            network = temp_net;
+            network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          } else {
+            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          }
+        }
+      }
+
+      // Defining some network parameters
+      int input_dimensions = network.getInputDimensions();
+      int output_dimensions = network.getOutputDimensions();
+      const uint64_t track_prop_size = input_dimensions * tracks_size;
+      const uint64_t prediction_size = output_dimensions * tracks_size;
+
+      network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+      const float nNclNormalization = response.GetNClNormalization();
+      float duration_network = 0;
+
+      std::vector<float> track_properties(track_prop_size);
+      uint64_t counter_track_props = 0;
+      int loop_counter = 0;
+
+      // Filling a std::vector<float> to be evaluated by the network
+      // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
+      for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
+        for (auto const& trk : tracks) {
+          track_properties[counter_track_props] = trk.tpcInnerParam();
+          track_properties[counter_track_props + 1] = trk.tgl();
+          track_properties[counter_track_props + 2] = trk.signed1Pt();
+          track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+          track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
+          track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
+          counter_track_props += input_dimensions;
+        }
+
+        auto start_network_eval = std::chrono::high_resolution_clock::now();
+        float* output_network = network.evalNetwork(track_properties);
+        auto stop_network_eval = std::chrono::high_resolution_clock::now();
+        duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
+        for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
+          for (int j = 0; j < output_dimensions; j++) {
+            network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+          }
+        }
+
+        counter_track_props = 0;
+        loop_counter += 1;
+      }
+      track_properties.clear();
+
+      auto stop_network_total = std::chrono::high_resolution_clock::now();
+      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (tracks_size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
+      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
     }
 
-    // Exp signal
-    const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[i])};
-    histos.add(hexpected[i].data(), "", kTH2F, {pAxis, expAxis});
+    int lastCollisionId = -1; // Last collision ID analysed
+    uint64_t count_tracks = 0;
 
-    // Signal - Expected signal
-    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[i])};
-    histos.add(hexpected_diff[i].data(), "", kTH2F, {pAxis, deltaAxis});
+    for (auto const& trk : tracks) {
+      // Loop on Tracks
+      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+        lastCollisionId = trk.collisionId();
+        const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
+        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
+      }
+      // Check and fill enabled tables
+      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
+        if (flag.value != 1) {
+          return;
+        }
 
-    // NSigma
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TPC}(%s)", pT[i])};
-    histos.add(hnsigma[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
-  }
+        if (useNetworkCorrection) {
 
-  void init(o2::framework::InitContext&)
-  {
+          // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+          // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
+          if (network.getOutputDimensions() == 1) {
+            table(response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+                  (trk.tpcSignal() - network_prediction[count_tracks + tracks_size * pid] * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+          } else if (network.getOutputDimensions() == 2) {
+            table((network_prediction[2 * (count_tracks + tracks_size * pid) + 1] - network_prediction[2 * (count_tracks + tracks_size * pid)]) * response.GetExpectedSignal(trk, pid),
+                  (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[2 * (count_tracks + tracks_size * pid)]) / (network_prediction[2 * (count_tracks + tracks_size * pid) + 1] - network_prediction[2 * (count_tracks + tracks_size * pid)]));
+          } else if (network.getOutputDimensions() == 3) {
+            if (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) >= network_prediction[3 * (count_tracks + tracks_size * pid)]) {
+              table((network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]) * response.GetExpectedSignal(trk, pid),
+                    (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]));
+            } else {
+              table((network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]) * response.GetExpectedSignal(trk, pid),
+                    (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]));
+            }
+          } else {
+            LOGF(fatal, "Network output-dimensions incompatible!");
+          }
+        } else {
+          table(response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+                response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+        }
+      };
 
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
-    }
-    const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} A.U."};
+      makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
+      makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
+      makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
+      makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
+      makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
+      makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
+      makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
+      makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
+      makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
 
-    // Event properties
-    histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
-    histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
-
-    addParticleHistos<0>();
-    addParticleHistos<1>();
-    addParticleHistos<2>();
-    addParticleHistos<3>();
-    addParticleHistos<4>();
-    addParticleHistos<5>();
-    addParticleHistos<6>();
-    addParticleHistos<7>();
-    addParticleHistos<8>();
-  }
-
-  template <uint8_t i, typename T>
-  void fillParticleHistos(const T& t, const float mom, const float exp_diff, const float nsigma)
-  {
-    histos.fill(HIST(hexpected[i]), mom, t.tpcSignal() - exp_diff);
-    histos.fill(HIST(hexpected_diff[i]), mom, exp_diff);
-    histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
-  }
-
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
-                                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                                          aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                                          aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                                                          aod::TrackSelection> const& tracks)
-  {
-    histos.fill(HIST("event/vertexz"), collision.posZ());
-
-    for (auto t : tracks) {
-      // const float mom = t.p();
-      const float mom = t.tpcInnerParam();
-      histos.fill(HIST("event/tpcsignal"), mom, t.tpcSignal());
-      //
-      fillParticleHistos<0>(t, mom, t.tpcExpSignalDiffEl(), t.tpcNSigmaEl());
-      fillParticleHistos<1>(t, mom, t.tpcExpSignalDiffMu(), t.tpcNSigmaMu());
-      fillParticleHistos<2>(t, mom, t.tpcExpSignalDiffPi(), t.tpcNSigmaPi());
-      fillParticleHistos<3>(t, mom, t.tpcExpSignalDiffKa(), t.tpcNSigmaKa());
-      fillParticleHistos<4>(t, mom, t.tpcExpSignalDiffPr(), t.tpcNSigmaPr());
-      fillParticleHistos<5>(t, mom, t.tpcExpSignalDiffDe(), t.tpcNSigmaDe());
-      fillParticleHistos<6>(t, mom, t.tpcExpSignalDiffTr(), t.tpcNSigmaTr());
-      fillParticleHistos<7>(t, mom, t.tpcExpSignalDiffHe(), t.tpcNSigmaHe());
-      fillParticleHistos<8>(t, mom, t.tpcExpSignalDiffAl(), t.tpcNSigmaAl());
+      count_tracks++;
     }
   }
 };
@@ -276,7 +378,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tpcPidFull>(cfgc)};
   if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tpcPidFullQa>(cfgc));
+    workflow.push_back(adaptAnalysisTask<tpcPidQa>(cfgc));
   }
   return workflow;
 }

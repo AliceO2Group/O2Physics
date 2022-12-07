@@ -20,7 +20,9 @@
 #define O2_ANALYSIS_PID_TOFRESOALICE3_H_
 
 // O2 includes
-#include "Common/Core/PID/ParamBase.h"
+#include "PID/ParamBase.h"
+#include "PID/DetectorResponse.h"
+#include "PID/PIDTOF.h"
 #include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid::tof
@@ -59,7 +61,7 @@ class TOFResoALICE3 : public Parametrization
 float TOFResoALICE3Param(const float& momentum, const float& momentumError, const float& evtimereso, const float& length, const float& mass, const Parameters& parameters)
 {
   if (momentum <= 0) {
-    return -999;
+    return -999.f;
   }
 
   const float p2 = momentum * momentum;
