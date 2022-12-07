@@ -120,7 +120,7 @@ struct DiffQA {
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal>;
   using FWs = aod::FwdTracks;
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;

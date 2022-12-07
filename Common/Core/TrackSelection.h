@@ -49,7 +49,8 @@ class TrackSelection
   enum GlobalTrackRun3ITSMatching {
     Run3ITSibAny,
     Run3ITSallAny,
-    Run3ITSall7Layers
+    Run3ITSall7Layers,
+    Run3ITSibTwo
   };
 
   static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
