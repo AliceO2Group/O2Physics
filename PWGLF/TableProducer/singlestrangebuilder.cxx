@@ -413,7 +413,7 @@ struct singlestrangeBuilder {
 
     v0candidate.posTrackX = fitter.getTrack(0).getX();
     v0candidate.negTrackX = fitter.getTrack(1).getX();
-    
+
     lPositiveTrack.getPxPyPzGlo(v0candidate.posP);
     lNegativeTrack.getPxPyPzGlo(v0candidate.negP);
 
