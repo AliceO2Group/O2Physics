@@ -100,10 +100,8 @@ struct TrackSelectionTask {
     globalTracksSDD.SetEtaRange(etaMin, etaMax);
 
     filtBit1 = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny);
-    filtBit1.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
 
     filtBit2 = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo);
-    filtBit2.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
 
     filtBit3 = getGlobalTrackSelectionRun3HF();
 
@@ -117,8 +115,8 @@ struct TrackSelectionTask {
         o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
         o2::aod::track::TrackSelectionFlags::flagtype trackflagFB1 = filtBit1.IsSelectedMask(track);
         o2::aod::track::TrackSelectionFlags::flagtype trackflagFB2 = filtBit2.IsSelectedMask(track);
-        o2::aod::track::TrackSelectionFlags::flagtype trackflagFB3 = filtBit3.IsSelectedMask(track);
-        o2::aod::track::TrackSelectionFlags::flagtype trackflagFB4 = filtBit4.IsSelectedMask(track);
+       // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB3 = filtBit3.IsSelectedMask(track); // only temporarily commented, will be used
+       // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB4 = filtBit4.IsSelectedMask(track);
 
         filterTable((uint8_t)0,
                     globalTracks.IsSelectedMask(track), filtBit1.IsSelected(track), filtBit2.IsSelected(track), filtBit3.IsSelected(track), filtBit4.IsSelected(track));
