@@ -85,4 +85,4 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   tpcskims::NSigTOF,
                   tpcskims::RunNumber);
 } // namespace o2::aod
-#endif  // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
+#endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
