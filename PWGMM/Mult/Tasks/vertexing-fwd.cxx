@@ -45,7 +45,7 @@ AxisSpec ZAxis = {301, -30.1, 30.1};
 struct vertexingfwd {
 
   Configurable<float> maxDCAXY{"maxDCAXY", 6.0, "max allowed transverse DCA"}; // To be used when associating ambitrack to collision using best DCA
-  std::vector<long long unsigned> ambTrackIds;
+  std::vector<uint64_t> ambTrackIds;
 
   HistogramRegistry registry{
     "registry",
