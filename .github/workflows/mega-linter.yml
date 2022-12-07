@@ -23,7 +23,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          # Checkout the HEAD of the PR instead of the merge commit.
+          # This may include unrelated files if the PR branch is not up to date with the upstream.
+          # ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
           persist-credentials: false
