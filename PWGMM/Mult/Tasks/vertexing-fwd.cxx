@@ -37,7 +37,7 @@ using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
-using CollisionsLabeled= soa::Join<o2::aod::Collisions, aod::McCollisionLabels>;
+using CollisionsLabeled = soa::Join<o2::aod::Collisions, aod::McCollisionLabels>;
 using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
@@ -47,65 +47,61 @@ struct vertexingfwd {
   Configurable<float> maxDCAXY{"maxDCAXY", 6.0, "max allowed transverse DCA"}; // To be used when associating ambitrack to collision using best DCA
   std::vector<long long unsigned> ambTrackIds;
 
-  HistogramRegistry registry
-  {
+  HistogramRegistry registry{
     "registry",
-    {
-      {"ParticleZR", "; #it{z}_{vtx} (cm); #it{R} (cm) ; count", {HistType::kTH2F, {ZAxis, {1001, -0.5, 100.5}}}}, //
-      {"Primary/ParticleZR", "; #it{z}_{vtx} (cm); #it{R} (cm) ; count", {HistType::kTH2F, {ZAxis, {1001, -0.5, 100.5}}}}, //
+    {{"ParticleZR", "; #it{z}_{vtx} (cm); #it{R} (cm) ; count", {HistType::kTH2F, {ZAxis, {1001, -0.5, 100.5}}}},         //
+     {"Primary/ParticleZR", "; #it{z}_{vtx} (cm); #it{R} (cm) ; count", {HistType::kTH2F, {ZAxis, {1001, -0.5, 100.5}}}}, //
 
-      {"Truth/DCAxTruth", "; DCA_{x}^{truth} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
-      {"Truth/DCAyTruth", "; DCA_{y}^{truth} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Truth/DCAxTruth", "; DCA_{x}^{truth} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Truth/DCAyTruth", "; DCA_{y}^{truth} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
 
-      {"Primary/DCAxPrimNAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
-      {"Primary/DCAyPrimNAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
-      {"Primary/DCAxPtPrimNAmb", "; DCA_{x} (cm); #it{p}_{T}^{true} (GeV/#it{c}) ; counts", {HistType::kTH2F, {{2500, -5, 5}, {21, -0.05, 10.05}}}},
+     {"Primary/DCAxPrimNAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Primary/DCAyPrimNAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Primary/DCAxPtPrimNAmb", "; DCA_{x} (cm); #it{p}_{T}^{true} (GeV/#it{c}) ; counts", {HistType::kTH2F, {{2500, -5, 5}, {21, -0.05, 10.05}}}},
 
-      {"Primary/DCAxPrimAmb1", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
-      {"Primary/DCAyPrimAmb1", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Primary/DCAxPrimAmb1", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Primary/DCAyPrimAmb1", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
 
-      {"Primary/DCAxPrimAmb2", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
-      {"Primary/DCAyPrimAmb2", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Primary/DCAxPrimAmb2", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
+     {"Primary/DCAyPrimAmb2", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{500, -5, 5}}}},
 
-      //ambiguous tracks and DCA with all compatible collisions
-      {"Ambiguous/TracksDCAXY", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-      {"Ambiguous/TracksDCAX", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
-      {"Ambiguous/TracksDCAY", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     // ambiguous tracks and DCA with all compatible collisions
+     {"Ambiguous/TracksDCAXY", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"Ambiguous/TracksDCAX", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     {"Ambiguous/TracksDCAY", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
 
-      //all tracks (before amb reassociation)
-      {"DCAXYAll", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-      {"DCAXAll", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
-      {"DCAYAll", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     // all tracks (before amb reassociation)
+     {"DCAXYAll", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"DCAXAll", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     {"DCAYAll", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
 
-      //ambiguous tracks before reassociation
-      {"DCAXYAmb", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-      {"DCAXAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
-      {"DCAYAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     // ambiguous tracks before reassociation
+     {"DCAXYAmb", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"DCAXAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     {"DCAYAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
 
-      //non ambiguous tracks
-      {"DCAXYNAmb", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-      {"DCAXNAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
-      {"DCAYNAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     // non ambiguous tracks
+     {"DCAXYNAmb", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"DCAXNAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
+     {"DCAYNAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
 
-      {"AmbiguousTrackStatus", "; ; N_{trk}", {HistType::kTH1F, {{6, 0.5, 6.5}}}},
+     {"AmbiguousTrackStatus", "; ; N_{trk}", {HistType::kTH1F, {{6, 0.5, 6.5}}}},
 
-      //DCAxy, x and y distributions for reassociated ambiguous tracks
-      //when it is a false reassociation and when it is true
-      {"Ambiguous/TracksDCAXYBest", "; DCA_{xy}^{best} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-      {"Ambiguous/TracksDCAXBest", "; DCA_{x}^{best} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
-      {"Ambiguous/TracksDCAYBest", "; DCA_{y}^{best} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
+     // DCAxy, x and y distributions for reassociated ambiguous tracks
+     // when it is a false reassociation and when it is true
+     {"Ambiguous/TracksDCAXYBest", "; DCA_{xy}^{best} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"Ambiguous/TracksDCAXBest", "; DCA_{x}^{best} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
+     {"Ambiguous/TracksDCAYBest", "; DCA_{y}^{best} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
 
-      {"Ambiguous/TracksDCAXYBestTrue", "; DCA_{xy}^{best, true} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-      {"Ambiguous/TracksDCAXYBestFalse", "; DCA_{xy}^{best, false} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"Ambiguous/TracksDCAXYBestTrue", "; DCA_{xy}^{best, true} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
+     {"Ambiguous/TracksDCAXYBestFalse", "; DCA_{xy}^{best, false} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
 
-      {"Ambiguous/TracksDCAXBestTrue", "; DCA_{x}^{best, true} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
-      {"Ambiguous/TracksDCAYBestTrue", "; DCA_{y}^{best, true} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
-      {"Ambiguous/TracksDCAXBestFalse", "; DCA_{x}^{best, false} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
-      {"Ambiguous/TracksDCAYBestFalse", "; DCA_{y}^{best, false} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}}
+     {"Ambiguous/TracksDCAXBestTrue", "; DCA_{x}^{best, true} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
+     {"Ambiguous/TracksDCAYBestTrue", "; DCA_{y}^{best, true} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
+     {"Ambiguous/TracksDCAXBestFalse", "; DCA_{x}^{best, false} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}},
+     {"Ambiguous/TracksDCAYBestFalse", "; DCA_{y}^{best, false} (cm); counts", {HistType::kTH1F, {{500, -10, 10}}}}
 
-
-    }
-  };
+    }};
 
   void init(InitContext&)
   {
@@ -120,10 +116,10 @@ struct vertexingfwd {
   }
 
   void processDCAamb(MFTTracksLabeled const&,
-                  CollisionsLabeled const&, ExtBCs const& bcs,
-                  aod::AmbiguousMFTTracks const& atracks,
-                  aod::McParticles const&,
-                  aod::McCollisions const&)
+                     CollisionsLabeled const&, ExtBCs const& bcs,
+                     aod::AmbiguousMFTTracks const& atracks,
+                     aod::McParticles const&,
+                     aod::McCollisions const&)
   {
 
     if (bcs.size() == 0) {
@@ -132,7 +128,7 @@ struct vertexingfwd {
     if (atracks.size() == 0) {
       return;
     }
-    //initCCDB(bcs.begin()); if Bz is needed
+    // initCCDB(bcs.begin()); if Bz is needed
     ambTrackIds.clear();
 
     // Only on DCAxy
@@ -168,24 +164,20 @@ struct vertexingfwd {
         if (!bc.has_collisions()) {
           continue;
         }
-        auto collisions = bc.collisions_as<CollisionsLabeled>();//compatible collisions
+        auto collisions = bc.collisions_as<CollisionsLabeled>(); // compatible collisions
         for (auto const& collision : collisions) {
 
-          //trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
+          // trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
           trackPar.propagateToZlinear(collision.posZ());
 
           const auto dcaX(trackPar.getX() - collision.posX());
           const auto dcaY(trackPar.getY() - collision.posY());
           dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
-
-
           registry.fill(HIST("Ambiguous/TracksDCAXY"), dcaXY);
           registry.fill(HIST("Ambiguous/TracksDCAX"), dcaX);
           registry.fill(HIST("Ambiguous/TracksDCAY"), dcaY);
-          //registry.fill(HIST("NumberOfContributors"), collision.numContrib());
-
-
+          // registry.fill(HIST("NumberOfContributors"), collision.numContrib());
 
           if ((dcaXY < bestDCA)) {
             bestCol = collision.globalIndex();
@@ -202,153 +194,137 @@ struct vertexingfwd {
 
       const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
       const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
-      auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);//this is DCA_xy truth
+      auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth); // this is DCA_xy truth
 
       registry.fill(HIST("Ambiguous/TracksDCAXYBest"), bestDCA);
       registry.fill(HIST("Ambiguous/TracksDCAXBest"), bestDCAX);
       registry.fill(HIST("Ambiguous/TracksDCAYBest"), bestDCAY);
 
-      if (particle.isPhysicalPrimary())
-      {
+      if (particle.isPhysicalPrimary()) {
         registry.fill(HIST("Primary/DCAxPrimAmb2"), bestDCAX);
         registry.fill(HIST("Primary/DCAyPrimAmb2"), bestDCAY);
       }
 
-
       auto mcCollID = particle.mcCollisionId();
       registry.fill(HIST("AmbiguousTrackStatus"), 2);
       if (!track.has_collision()) {
-        //this is a track extra
+        // this is a track extra
         registry.fill(HIST("AmbiguousTrackStatus"), 4);
-        if(bestMCCol == mcCollID)//correctly assigned to bestCol
+        if (bestMCCol == mcCollID) // correctly assigned to bestCol
         {
           registry.fill(HIST("AmbiguousTrackStatus"), 6);
           registry.fill(HIST("Ambiguous/TracksDCAXYBestTrue"), bestDCA);
           registry.fill(HIST("Ambiguous/TracksDCAXBestTrue"), bestDCAX);
           registry.fill(HIST("Ambiguous/TracksDCAYBestTrue"), bestDCAY);
-        }
-        else
-        {
+        } else {
           registry.fill(HIST("Ambiguous/TracksDCAXYBestFalse"), bestDCA);
           registry.fill(HIST("Ambiguous/TracksDCAXBestFalse"), bestDCAX);
           registry.fill(HIST("Ambiguous/TracksDCAYBestFalse"), bestDCAY);
         }
 
-
-      } else if (track.collisionId() != bestCol)
-      {
-        //this track has been reassigned
+      } else if (track.collisionId() != bestCol) {
+        // this track has been reassigned
         auto collOrig = track.collision_as<CollisionsLabeled>();
         registry.fill(HIST("AmbiguousTrackStatus"), 3);
-        if(bestMCCol == mcCollID)//correctly reassigned
+        if (bestMCCol == mcCollID) // correctly reassigned
         {
           registry.fill(HIST("AmbiguousTrackStatus"), 6);
           registry.fill(HIST("Ambiguous/TracksDCAXYBestTrue"), bestDCA);
           registry.fill(HIST("Ambiguous/TracksDCAXBestTrue"), bestDCAX);
           registry.fill(HIST("Ambiguous/TracksDCAYBestTrue"), bestDCAY);
-        }
-        else
-        {//uncorrectly reassigned
+        } else { // uncorrectly reassigned
           registry.fill(HIST("Ambiguous/TracksDCAXYBestFalse"), bestDCA);
           registry.fill(HIST("Ambiguous/TracksDCAXBestFalse"), bestDCAX);
           registry.fill(HIST("Ambiguous/TracksDCAYBestFalse"), bestDCAY);
         }
 
-        if (collOrig.mcCollisionId() == mcCollID)
-        {//initially correctly assigned
+        if (collOrig.mcCollisionId() == mcCollID) { // initially correctly assigned
           registry.fill(HIST("AmbiguousTrackStatus"), 5);
         }
+      }
+    }
+  }
+  PROCESS_SWITCH(vertexingfwd, processDCAamb, "get the DCAxy of MFT ambiguous tracks", true);
 
+  void processDCA(MFTTracksLabeled const& tracks,
+                  aod::Collisions const&,
+                  aod::McParticles const&,
+                  aod::McCollisions const&)
+  {
+    if (tracks.size() == 0) {
+      return;
+    }
+    registry.fill(HIST("AmbiguousTrackStatus"), 1, tracks.size());
+    float dcaXY;
+    o2::track::TrackParCovFwd bestTrackPar;
+
+    for (auto& track : tracks) {
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "No MC particle for ambiguous track, skip...");
+        continue;
+      }
+      auto particle = track.mcParticle();
+      if (!track.has_collision()) {
+        continue;
+      }
+      auto collision = track.collision();
+
+      std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
+      SMatrix55 tcovs(v1.begin(), v1.end());
+      SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+      o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
+
+      trackPar.propagateToZlinear(collision.posZ());
+
+      const auto dcaX(trackPar.getX() - collision.posX());
+      const auto dcaY(trackPar.getY() - collision.posY());
+      dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+
+      float Rv = std::sqrt(pow(particle.vx(), 2) + pow(particle.vy(), 2));
+      registry.fill(HIST("ParticleZR"), particle.vz(), Rv);
+
+      if (particle.isPhysicalPrimary()) {
+        registry.fill(HIST("Primary/ParticleZR"), particle.vz(), Rv);
       }
 
-    }
-  }
-PROCESS_SWITCH(vertexingfwd, processDCAamb, "get the DCAxy of MFT ambiguous tracks", true);
+      const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
+      const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
+      auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth); // this is DCA_xy truth
 
-void processDCA(MFTTracksLabeled const& tracks,
-                aod::Collisions const&,
-                aod::McParticles const&,
-                aod::McCollisions const&)
-{
-  if (tracks.size() == 0) {
-    return;
-  }
-  registry.fill(HIST("AmbiguousTrackStatus"), 1, tracks.size());
-  float dcaXY;
-  o2::track::TrackParCovFwd bestTrackPar;
+      registry.fill(HIST("Truth/DCAxTruth"), dcaXtruth);
+      registry.fill(HIST("Truth/DCAyTruth"), dcaYtruth);
 
-  for (auto& track : tracks) {
-    if (!track.has_mcParticle()) {
-      LOGF(warning, "No MC particle for ambiguous track, skip...");
-      continue;
-    }
-    auto particle = track.mcParticle();
-    if (!track.has_collision()){continue;}
-    auto collision = track.collision();
+      registry.fill(HIST("DCAXYAll"), dcaXY);
+      registry.fill(HIST("DCAXAll"), dcaX);
+      registry.fill(HIST("DCAYAll"), dcaY);
 
-    std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
-    SMatrix55 tcovs(v1.begin(), v1.end());
-    SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-    o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
+      if (find(ambTrackIds.begin(), ambTrackIds.end(), track.globalIndex()) != ambTrackIds.end()) {
+        registry.fill(HIST("DCAXYAmb"), dcaXY);
+        registry.fill(HIST("DCAXAmb"), dcaX);
+        registry.fill(HIST("DCAYAmb"), dcaY);
+        if (particle.isPhysicalPrimary()) {
+          registry.fill(HIST("Primary/DCAxPrimAmb1"), dcaX);
+          registry.fill(HIST("Primary/DCAyPrimAmb1"), dcaY);
+        }
 
-    trackPar.propagateToZlinear(collision.posZ());
-
-    const auto dcaX(trackPar.getX() - collision.posX());
-    const auto dcaY(trackPar.getY() - collision.posY());
-    dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-
-    float Rv = std::sqrt(pow(particle.vx(),2)+pow(particle.vy(),2));
-    registry.fill(HIST("ParticleZR"), particle.vz(), Rv);
-
-    if(particle.isPhysicalPrimary())
-    {
-      registry.fill(HIST("Primary/ParticleZR"), particle.vz(), Rv);
-    }
-
-    const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
-    const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
-    auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);//this is DCA_xy truth
-
-
-    registry.fill(HIST("Truth/DCAxTruth"), dcaXtruth);
-    registry.fill(HIST("Truth/DCAyTruth"), dcaYtruth);
-
-    registry.fill(HIST("DCAXYAll"), dcaXY);
-    registry.fill(HIST("DCAXAll"), dcaX);
-    registry.fill(HIST("DCAYAll"), dcaY);
-
-    if (find(ambTrackIds.begin(), ambTrackIds.end(), track.globalIndex()) != ambTrackIds.end()) {
-      registry.fill(HIST("DCAXYAmb"), dcaXY);
-      registry.fill(HIST("DCAXAmb"), dcaX);
-      registry.fill(HIST("DCAYAmb"), dcaY);
-      if (particle.isPhysicalPrimary())
-      {
-        registry.fill(HIST("Primary/DCAxPrimAmb1"), dcaX);
-        registry.fill(HIST("Primary/DCAyPrimAmb1"), dcaY);
+        continue; // this track has already been reassigned to bestcollision, don't double count
       }
+      registry.fill(HIST("DCAXYNAmb"), dcaXY);
+      registry.fill(HIST("DCAXNAmb"), dcaX);
+      registry.fill(HIST("DCAYNAmb"), dcaY);
 
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      // only tracks coming from primary particles here
+      // non ambiguous tracks
+      registry.fill(HIST("Primary/DCAxPrimNAmb"), dcaX);
+      registry.fill(HIST("Primary/DCAyPrimNAmb"), dcaY);
 
-      continue; // this track has already been reassigned to bestcollision, don't double count
+      registry.fill(HIST("Primary/DCAxPtPrimNAmb"), dcaX, particle.pt());
     }
-    registry.fill(HIST("DCAXYNAmb"), dcaXY);
-    registry.fill(HIST("DCAXNAmb"), dcaX);
-    registry.fill(HIST("DCAYNAmb"), dcaY);
-
-    if (!particle.isPhysicalPrimary()) {
-      continue;
-    }
-    //only tracks coming from primary particles here
-    //non ambiguous tracks
-    registry.fill(HIST("Primary/DCAxPrimNAmb"), dcaX);
-    registry.fill(HIST("Primary/DCAyPrimNAmb"), dcaY);
-
-    registry.fill(HIST("Primary/DCAxPtPrimNAmb"), dcaX, particle.pt());
-
   }
-}
-PROCESS_SWITCH(vertexingfwd, processDCA, "get the DCAxy of MFT tracks", true);
-
-
+  PROCESS_SWITCH(vertexingfwd, processDCA, "get the DCAxy of MFT tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
