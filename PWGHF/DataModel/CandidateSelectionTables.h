@@ -231,5 +231,19 @@ DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
 } // namespace hf_sel_candidate_xicc
 DECLARE_SOA_TABLE(HfSelXiccToPKPiPi, "AOD", "HFSELXICC", //!
                   hf_sel_candidate_xicc::IsSelXiccToPKPiPi);
+
+namespace hf_sel_omegac
+{
+DECLARE_SOA_COLUMN(StatusPidLambda, statuspidlambda, int);
+DECLARE_SOA_COLUMN(StatusPidCascade, statuspidcascade, int);
+DECLARE_SOA_COLUMN(StatusPidOmegac, statuspidomegac, int);
+DECLARE_SOA_COLUMN(StatusInvMassLambda, statusinvmasslambda, int);
+DECLARE_SOA_COLUMN(StatusInvMassCascade, statusinvmasscascade, int);
+DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusinvmassomegac, int);
+} // namespace hf_sel_omegac
+DECLARE_SOA_TABLE(HFSelOmegacCandidate, "AOD", "HFSELOMECCAND",
+                  hf_sel_omegac::StatusPidLambda, hf_sel_omegac::StatusPidCascade, hf_sel_omegac::StatusPidOmegac,
+                  hf_sel_omegac::StatusInvMassLambda, hf_sel_omegac::StatusInvMassCascade, hf_sel_omegac::StatusInvMassOmegac);
+
 } // namespace o2::aod
 #endif // O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
