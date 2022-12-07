@@ -204,9 +204,12 @@ struct DGCandAnalyzer {
     }
 
     // check FIT information
-    for (auto bit = 16; bit <= 16; bit++) {
-      // if (TESTBIT(dgcand.bbFT0Apf(), bit) || TESTBIT(dgcand.bbFT0Cpf(), bit)) {
-      if (TESTBIT(dgcand.bbFT0Apf(), bit)) {
+    for (auto bit = 15; bit <= 17; bit++) {
+      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
+          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
+          TESTBIT(dgcand.bbFV0Apf(), bit) ||
+          TESTBIT(dgcand.bbFDDApf(), bit) ||
+          TESTBIT(dgcand.bbFDDCpf(), bit) ) {
         return;
       }
     }
@@ -249,7 +252,6 @@ struct DGCandAnalyzer {
       }
 
       // applicable to 2-track events - cut on angle between two tracks
-      bool goodEvent = true;
       if (dgcand.numContrib() == 2) {
         auto ind1 = ivm.trkinds()[0];
         auto trk1 = dgtracks.rawIteratorAt(ind1);
