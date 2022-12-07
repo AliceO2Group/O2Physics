@@ -111,8 +111,6 @@ struct phosCluQA {
       ir.setFromLong(clu.collision_as<o2::aod::Collisions>().bc_as<o2::aod::BCs>().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
 
-      LOG(info) << "E=" << clu.e() << " Time=" << clu.time();
-
       if (mVetoBCID >= 0 && ir.bc == mVetoBCID)
         continue;
       mHistManager.fill(HIST("cluBCSelected"), ir.bc);

@@ -26,6 +26,11 @@ o2physics_add_dpl_workflow(spectra-tof
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(spectra-tof-run2
+                    SOURCES spectraTOFRun2.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(spectra-tpc
                     SOURCES spectraTPC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
@@ -98,6 +103,11 @@ o2physics_add_dpl_workflow(rsnanalysis
 
 o2physics_add_dpl_workflow(phianalysis
                     SOURCES phianalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(k892analysis
+                    SOURCES k892analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 

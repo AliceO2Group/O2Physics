@@ -119,6 +119,7 @@ struct lambdakzeroBuilder {
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
     },
   };
@@ -128,7 +129,7 @@ struct lambdakzeroBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", true, "Vertices use cov matrices"};
+  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
 
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -312,7 +313,16 @@ struct lambdakzeroBuilder {
 
       //---/---/---/
       // Move close to minima
-      int nCand = fitter.process(pTrackCopy, nTrackCopy);
+      int nCand = 0;
+      try {
+        nCand = fitter.process(pTrackCopy, nTrackCopy);
+        registry.fill(HIST("hCatchedExceptions"), 0.5f);
+      } catch (...) {
+        registry.fill(HIST("hCatchedExceptions"), 1.5f);
+        LOG(error) << "Exception caught in fitter.process";
+        continue;
+      }
+
       if (nCand == 0) {
         v0dataLink(-1);
         continue;

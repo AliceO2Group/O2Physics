@@ -14,9 +14,10 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDPARTICLEHISTO_H_
-#define FEMTOWORLDPARTICLEHISTO_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
 
+#include <string>
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -51,8 +52,8 @@ class FemtoWorldParticleHisto
       mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
       mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
       mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-      mHistogramRegistry->add((folderName + "/dEdxTPCVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); dE/dx (keV/cm)", kTH2F, {{100, 0., 5.}, {250, 0., 500.}});
-      mHistogramRegistry->add((folderName + "/TOFBetaVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); TOF #beta", kTH2F, {{100, 0., 5.}, {250, 0.4, 1.1}});
+      mHistogramRegistry->add((folderName + "/dEdxTPCVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); dE/dx (keV/cm)", kTH2F, {{200, 0., 5.}, {250, 0., 500.}});
+      mHistogramRegistry->add((folderName + "/TOFBetaVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); TOF #beta", kTH2F, {{200, 0., 5.}, {250, 0.4, 1.1}});
 
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
@@ -121,4 +122,4 @@ class FemtoWorldParticleHisto
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDPARTICLEHISTO_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_

@@ -73,31 +73,26 @@ DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool); //! at least 4 Xi
 DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R > 24.39 cm (YN interactions)
 
 // multiplicity
-DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);                 //! high trk muliplicity
-DECLARE_SOA_COLUMN(HighFddFt0cMftFv0Mult, hasHighFddFt0cMftFv0Mult, bool); //! high FDD MFT FT0 FV0 multiplicity
-DECLARE_SOA_COLUMN(HighFddMftFv0Mult, hasHighFddMftFv0Mult, bool);         //! high FDD MFT FV0 multiplicity
-DECLARE_SOA_COLUMN(HighFv0MftMult, hasHighFv0MftMult, bool);               //! high MFT FV0 multiplicity
-DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);                     //! high FV0 muliplicity
-DECLARE_SOA_COLUMN(HighMftMult, hasHighMftMult, bool);                     //! high MFT multiplicity
-DECLARE_SOA_COLUMN(HighFv0Flat, hasHighFv0Flat, bool);                     //! isotropic event FV0
-DECLARE_SOA_COLUMN(HighMftTrkFlat, hasHighMftTrkFlat, bool);               //! isotropic event MFT
-DECLARE_SOA_COLUMN(HighMftFv0TrkFlat, hasHighMftFv0TrkFlat, bool);         //! isotropic event MFT FV0 trk
-DECLARE_SOA_COLUMN(HighMftFv0Flat, hasHighMftFv0Flat, bool);               //! isotropic event MFT FV0
-DECLARE_SOA_COLUMN(HighMftFt0aMult, hasHighMftFt0aMult, bool);             //! high MFT T0A multiplicit
-DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);                     //! high FT0 multiplicity
-DECLARE_SOA_COLUMN(HighFt0Flat, hasHighFt0Flat, bool);                     //! isotropic event FT0
-DECLARE_SOA_COLUMN(HighMftFt0aFlat, hasHighMftFt0aFlat, bool);             //! isotropic event MFT FT0A
-DECLARE_SOA_COLUMN(HighFt0cFv0Mult, hasHighFt0cFv0Mult, bool);             //! high FT0C FV0 multiplicity
-DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool);             //! isotropic event FT0C FV0
-DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);               //! event contains leading track
+DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);     //! high trk muliplicity
+DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);         //! high FV0 muliplicity
+DECLARE_SOA_COLUMN(HighFv0Flat, hasHighFv0Flat, bool);         //! isotropic event FV0
+DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);         //! high FT0 multiplicity
+DECLARE_SOA_COLUMN(HighFt0Flat, hasHighFt0Flat, bool);         //! isotropic event FT0
+DECLARE_SOA_COLUMN(HighFt0cFv0Mult, hasHighFt0cFv0Mult, bool); //! high FT0C FV0 multiplicity
+DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool); //! isotropic event FT0C FV0
+DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);   //! event contains leading track
 
 } // namespace filtering
 
 namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
+DECLARE_SOA_COLUMN(BCId, hasBCId, int);                           //! Bunch crossing Id
+DECLARE_SOA_COLUMN(GlobalBCId, hasGlobalBCId, int);               //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float);       //! Collision time
+DECLARE_SOA_COLUMN(CollisionTimeRes, hasCollisionTimeRes, float); //! Collision time resolution
+DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t);    //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decision
 
 } // namespace decision
 
@@ -146,13 +141,13 @@ using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
-                  filtering::HighTrackMult, filtering::HighFddFt0cMftFv0Mult, filtering::HighFddMftFv0Mult, filtering::HighFv0MftMult, filtering::HighMultFv0, filtering::HighMftMult, filtering::HighFv0Flat, filtering::HighMftTrkFlat, filtering::HighMftFv0TrkFlat, filtering::HighMftFv0Flat, filtering::HighMftFt0aMult, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighMftFt0aFlat, filtering::HighFt0cFv0Mult, filtering::HighFt0cFv0Flat, filtering::LeadingPtTrack);
+                  filtering::HighTrackMult, filtering::HighMultFv0, filtering::HighFv0Flat, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighFt0cFv0Mult, filtering::HighFt0cFv0Flat, filtering::LeadingPtTrack);
 
 using MultFilter = MultFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::CefpSelected);
+                  decision::BCId, decision::GlobalBCId, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks

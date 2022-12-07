@@ -31,7 +31,7 @@ struct TwoParticleCorrelationsRegisterSkimming {
   bool registered = false;
   PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
 
   void init(InitContext const&)
   {

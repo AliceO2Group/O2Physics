@@ -43,6 +43,10 @@ DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 da
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative prong to PV
 
+// Saved from finding: covariance matrix of parent track (on request)
+DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
+DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
+
 // Derived expressions
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
@@ -186,6 +190,9 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>);
 
+DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //!
+                       v0data::PositionCovMat, v0data::MomentumCovMat);
+
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Datas, StoredV0Datas, "V0DATAEXT", //!
                                 v0data::Px, v0data::Py, v0data::Pz); // the table name has here to be the one with EXT which is not nice and under study
@@ -232,6 +239,10 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float); //!
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);             //!
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);             //!
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);           //!
+
+// Saved from finding: covariance matrix of parent track (on request)
+DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
+DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
 
 // Derived expressions
 // Momenta
@@ -317,6 +328,9 @@ DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
                   cascdata::YXi<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
                   cascdata::YOmega<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
                   cascdata::Eta<cascdataext::Px, cascdataext::Py, cascdataext::Pz>);
+
+DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
+                       cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
 using CascDataOrigin = CascData;
 

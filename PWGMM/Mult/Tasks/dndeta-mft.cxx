@@ -10,6 +10,10 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+// for CCDB access
+#include <chrono>
+#include "CCDB/BasicCCDBManager.h"
+
 #include "Framework/Configurable.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,9 +29,6 @@
 #include "CommonConstants/MathConstants.h"
 #include "TDatabasePDG.h"
 #include "MathUtils/Utils.h"
-// for CCDB access
-#include <CCDB/BasicCCDBManager.h>
-#include <chrono>
 
 #include "bestCollisionTable.h"
 
@@ -37,10 +38,11 @@ using namespace o2::framework::expressions;
 
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
-AxisSpec MultAxis = {301, -0.5, 300.5};
+// AxisSpec MultAxis = {301, -0.5, 300.5}; now replaced by a ConfigurableAxis
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec PhiAxis = {600, 0, 2 * M_PI};
 AxisSpec EtaAxis = {18, -4.6, -1.};
+AxisSpec DCAxyAxis = {100, -1, 10};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -48,6 +50,7 @@ struct PseudorapidityDensityMFT {
   Service<TDatabasePDG> pdg;
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
 
   Configurable<bool> useZDiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{"maxZDiff", 1.0f, "max allowed Z difference for reconstruced collisions (cm)"};
@@ -55,28 +58,41 @@ struct PseudorapidityDensityMFT {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // the histogram has been previously stored in the CCDB
   TH1D* histoReweight = nullptr;
-  std::vector<long long unsigned> ambTrackIds;
+  std::vector<uint64_t> ambTrackIds;
   int counter = 0;
   //------
 
   HistogramRegistry registry{
     "registry",
     {
-      {"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}}, //
-      {"TracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                //
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                         //
-      {"TracksPhiZvtx", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}},             //
-      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                            //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                                    //
-    }                                                                                                             //
+      //{"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}}, //
+      {"TracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},    //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},             //
+      {"TracksPhiZvtx", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
+      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                       //
+
+      {"Tracks/Control/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                                    //
+                                                                                                                                       //{"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                     //
+      {"Tracks/Control/ReassignedDCAXY", "  ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                         //
+                                                                                                                                       //{"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},           //
+      {"Tracks/Control/ExtraDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                               //
+                                                                                                                                       //{"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                //
+      {"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                 //
+      {"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                          //
+      {"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},            //
+      {"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                     //
+      {"Tracks/Control/ReassignedVertexCorr", "; #it{z}_{vtx}^{orig} (cm); #it{z}_{vtx}^{re} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}} //
+    }                                                                                                                                  //
   };
 
   void init(InitContext&)
   {
+    AxisSpec MultAxis = {multBinning, "N_{trk}"}; // for PbPb 3001,-0.5,3000.5
 
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
@@ -88,9 +104,11 @@ struct PseudorapidityDensityMFT {
     x->SetBinLabel(6, "BCs with collisions");
     x->SetBinLabel(7, "BCs with pile-up/splitting");
 
+    registry.add({"EventsNtrkZvtx", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+
     if (doprocessGen) {
-      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
-      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       registry.add({"TracksEtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksEtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
@@ -164,6 +182,7 @@ struct PseudorapidityDensityMFT {
                                      (aod::fwdtrack::etas > -3.9f) &&
                                      (nabs(aod::fwdtrack::bestDCAXY) <= 2.f);
 
+  using CollwEv = soa::Join<aod::Collisions, aod::EvSels>;
   void processAmbi(aod::AmbiguousMFTTracks const& atracks, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::MFTTracks const& tracks)
   {
     counter++;
@@ -171,13 +190,17 @@ struct PseudorapidityDensityMFT {
     for (auto& track : atracks) {
       auto mfttrack = track.mfttrack();
       if (mfttrack.has_collision()) {
-        ambTrackIds.push_back(track.mfttrackId());
+        auto coll = mfttrack.collision_as<CollwEv>();
+        if (!useEvSel || (useEvSel && coll.sel8())) // if the origColl doesn't pass the event selection, don't store the ambitrack
+        {
+          ambTrackIds.push_back(track.mfttrackId());
+        }
       }
     }
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processAmbi, "Fills vector of ambiTracks", true);
 
-  void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
+  void processMult(CollwEv::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
 
     if (tracks.size() == 0) {
@@ -192,6 +215,22 @@ struct PseudorapidityDensityMFT {
 
       registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
       for (auto& track : atracks) {
+        auto otrack = track.mfttrack(); // original track
+        float ophi = otrack.phi();
+        o2::math_utils::bringTo02Pi(ophi);
+        if (!otrack.has_collision()) {
+          registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), otrack.eta(), z);
+          registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), ophi, otrack.eta());
+          registry.fill(HIST("Tracks/Control/ExtraDCAXY"), otrack.pt(), track.bestDCAXY());
+          // registry.fill(HIST("Tracks/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ());
+        } else if (otrack.collisionId() != track.bestCollisionId()) {
+          registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z);
+          registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), ophi, otrack.eta());
+          registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<CollwEv>().posZ(), z);
+          registry.fill(HIST("Tracks/Control/ReassignedDCAXY"), otrack.pt(), track.bestDCAXY());
+          // registry.fill(HIST("Tracks/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ());
+        }
+        registry.fill(HIST("Tracks/Control/DCAXY"), track.bestDCAXY());
         registry.fill(HIST("TracksEtaZvtx"), track.etas(), z);
         float phi = track.phis();
         o2::math_utils::bringTo02Pi(phi);
@@ -328,7 +367,7 @@ struct PseudorapidityDensityMFT {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
-        charge = (int)p->Charge();
+        charge = static_cast<int>(p->Charge());
       }
       if (std::abs(charge) < 3.) {
         continue;

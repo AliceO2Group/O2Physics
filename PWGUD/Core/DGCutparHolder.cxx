@@ -93,6 +93,6 @@ float DGCutparHolder::minEta() const { return mMinEta; }
 float DGCutparHolder::maxEta() const { return mMaxEta; }
 float DGCutparHolder::minIVM() const { return mMinIVM; }
 float DGCutparHolder::maxIVM() const { return mMaxIVM; }
-float DGCutparHolder::maxNSigmaTPC() const { return mMaxNSigmaTPC; };
-float DGCutparHolder::maxNSigmaTOF() const { return mMaxNSigmaTOF; };
-std::vector<float> DGCutparHolder::FITAmpLimits() const { return mFITAmpLimits; };
+float DGCutparHolder::maxNSigmaTPC() const { return mMaxNSigmaTPC; }
+float DGCutparHolder::maxNSigmaTOF() const { return mMaxNSigmaTOF; }
+std::vector<float> DGCutparHolder::FITAmpLimits() const { return mFITAmpLimits; }

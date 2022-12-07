@@ -8,287 +8,125 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+///
+/// \brief
+/// \author Paul Buehler, paul.buehler@oeaw.ac.at
+/// \since  01.10.2021
 
-#ifndef O2_ANALYSIS_DGHELPERS_
-#define O2_ANALYSIS_DGHELPERS_
+#ifndef PWGUD_CORE_UDHELPERS_H_
+#define PWGUD_CORE_UDHELPERS_H_
 
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "Framework/DataTypes.h"
+#include <vector>
+#include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "EventFiltering/PWGUD/DGCutparHolder.h"
+#include "PWGUD/Core/DGCutparHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
-float FV0AmplitudeA(aod::FV0A&& fv0);
-template <typename T>
-bool cleanFV0(T& bc, float limitA);
-
-float FT0AmplitudeA(aod::FT0&& ft0);
-float FT0AmplitudeC(aod::FT0&& ft0);
-template <typename T>
-bool cleanFT0(T& bc, float limitA, float limitC);
-
-int16_t FDDAmplitudeA(aod::FDD&& fdd);
-int16_t FDDAmplitudeC(aod::FDD&& fdd);
-template <typename T>
-bool cleanFDD(T& bc, float limitA, float limitC);
-
-template <typename T>
-bool cleanFIT(T& bc, std::vector<float> lims);
-template <typename T>
-bool cleanFITCollision(T& col, std::vector<float> lims);
-
-template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
-
-template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims);
-
-template <typename TC>
-bool hasGoodPID(DGCutparHolder diffCuts, TC track);
-
-template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
-template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7);
+// namespace with helpers for UD framework
+namespace udhelpers
+{
 
 // -----------------------------------------------------------------------------
-// add here Selectors for different types of diffractive events
-// Selector for Double Gap events
-struct DGSelector {
- public:
-  DGSelector()
-  {
-    fPDG = TDatabasePDG::Instance();
+// return net charge of PV tracks
+template <bool onlyPV, typename std::enable_if<onlyPV>::type* = nullptr, typename TCs>
+int8_t netCharge(TCs tracks)
+{
+  int8_t nch = 0;
+  for (auto track : tracks) {
+    if (track.isPVContributor()) {
+      nch += track.sign();
+    }
   }
+  return nch;
+}
 
-  // Function to check if collisions passes filter
-  template <typename CC, typename BCs, typename TCs, typename FWs>
-  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
-  {
-    LOGF(debug, "Collision %f", collision.collisionTime());
-    LOGF(debug, "Number of close BCs: %i", bcRange.size());
+// -----------------------------------------------------------------------------
+// return net charge of tracks
+template <bool onlyPV, typename std::enable_if<!onlyPV>::type* = nullptr, typename TCs>
+int8_t netCharge(TCs tracks)
+{
+  int8_t nch = 0;
+  for (auto track : tracks) {
+    nch += track.sign();
+  }
+  return nch;
+}
 
-    // check that there are no FIT signals in any of the compatible BCs
-    // Double Gap (DG) condition
-    auto lims = diffCuts.FITAmpLimits();
-
-    for (auto const& bc : bcRange) {
-      LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
-           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : -1.,
-           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : -1.,
-           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : -1.,
-           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : -1,
-           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : -1);
-      LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", cleanFV0(bc, lims[0]), cleanFT0(bc, lims[1], lims[2]), cleanFDD(bc, lims[3], lims[4]));
-
-      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
-        return 1;
-      }
+// -----------------------------------------------------------------------------
+// return fraction of PV tracks with a TOF hit
+template <bool onlyPV, typename std::enable_if<onlyPV>::type* = nullptr, typename TCs>
+float rPVtrwTOF(TCs tracks, int nPVTracks)
+{
+  float rpvrwTOF = 0.;
+  for (auto& track : tracks) {
+    if (track.isPVContributor() && track.hasTOF()) {
+      rpvrwTOF += 1.;
     }
+  }
+  if (nPVTracks > 0) {
+    rpvrwTOF /= nPVTracks;
+  }
+  return rpvrwTOF;
+}
 
-    // no activity in muon arm
-    LOGF(debug, "FwdTracks %i", fwdtracks.size());
-    for (auto& fwdtrack : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
+// return fraction of tracks with a TOF hit
+template <bool onlyPV, typename std::enable_if<!onlyPV>::type* = nullptr, typename TCs>
+float rPVtrwTOF(TCs tracks, int nPVTracks)
+{
+  float rpvrwTOF = 0.;
+  for (auto& track : tracks) {
+    if (track.hasTOF()) {
+      rpvrwTOF += 1.;
     }
-    if (fwdtracks.size() > 0) {
-      return 2;
-    }
-
-    // no global tracks which are not vtx tracks
-    // no vtx tracks which are not global tracks
-    auto rgtrwTOF = 0.;
-    for (auto& track : tracks) {
-      if (track.isGlobalTrack() && !track.isPVContributor()) {
-        return 3;
-      }
-      if (diffCuts.globalTracksOnly() && !track.isGlobalTrack() && track.isPVContributor()) {
-        return 4;
-      }
-
-      // update fraction of PV tracks with TOF hit
-      if (track.isPVContributor() && track.hasTOF()) {
-        rgtrwTOF += 1.;
-      }
-    }
-    if (collision.numContrib() > 0) {
-      rgtrwTOF /= collision.numContrib();
-    }
-    if (rgtrwTOF < diffCuts.minRgtrwTOF()) {
-      return 5;
-    }
-
-    // number of vertex tracks
-    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      return 6;
-    }
-
-    // PID, pt, and eta of tracks, invariant mass, and net charge
-    // consider only vertex tracks
-
-    // which particle hypothesis?
-    auto mass2Use = 0.;
-    TParticlePDG* pdgparticle = fPDG->GetParticle(diffCuts.pidHypothesis());
-    if (pdgparticle != nullptr) {
-      mass2Use = pdgparticle->Mass();
-    }
-
-    auto netCharge = 0;
-    auto lvtmp = TLorentzVector();
-    auto ivm = TLorentzVector();
-    for (auto& track : tracks) {
-      if (track.isPVContributor()) {
-
-        // PID
-        if (!hasGoodPID(diffCuts, track)) {
-          return 7;
-        }
-
-        // pt
-        lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
-        if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-          return 8;
-        }
-
-        // eta
-        if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-          return 9;
-        }
-        netCharge += track.sign();
-        ivm += lvtmp;
-      }
-    }
-
-    // net charge
-    auto netChargeValues = diffCuts.netCharges();
-    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
-      return 10;
-    }
-    // invariant mass
-    if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 11;
-    }
-
-    // if we arrive here then the event is good!
-    return 0;
-  };
-
-  template <typename BCs, typename TCs, typename FWs>
-  int IsSelected(DGCutparHolder diffCuts, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
-  {
-    // check that there are no FIT signals in bcRange
-    // Double Gap (DG) condition
-    for (auto const& bc : bcRange) {
-      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
-        return 1;
-      }
-    }
-
-    // no activity in muon arm
-    LOGF(debug, "FwdTracks %i", fwdtracks.size());
-    for (auto& fwdtrack : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
-    }
-    if (fwdtracks.size() > 0) {
-      return 2;
-    }
-
-    // number of tracks
-    if ((int)tracks.size() < diffCuts.minNTracks() || (int)tracks.size() > diffCuts.maxNTracks()) {
-      return 6;
-    }
-
-    // PID, pt, and eta of tracks, invariant mass, and net charge
-    // which particle hypothesis?
-    auto mass2Use = 0.;
-    TParticlePDG* pdgparticle = fPDG->GetParticle(diffCuts.pidHypothesis());
-    if (pdgparticle != nullptr) {
-      mass2Use = pdgparticle->Mass();
-    }
-
-    auto netCharge = 0;
-    auto lvtmp = TLorentzVector();
-    auto ivm = TLorentzVector();
-    for (auto& track : tracks) {
-      // PID
-      if (!hasGoodPID(diffCuts, track)) {
-        return 7;
-      }
-
-      // pt
-      lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
-      if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-        return 8;
-      }
-
-      // eta
-      if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-        return 9;
-      }
-      netCharge += track.sign();
-      ivm += lvtmp;
-    }
-
-    // net charge
-    auto netChargeValues = diffCuts.netCharges();
-    if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
-      return 10;
-    }
-
-    // invariant mass
-    if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 11;
-    }
-
-    // if we arrive here then the event is good!
-    return 0;
-  };
-
- private:
-  TDatabasePDG* fPDG;
-};
+  }
+  if (nPVTracks > 0) {
+    rpvrwTOF /= nPVTracks;
+  }
+  return rpvrwTOF;
+}
 
 // -----------------------------------------------------------------------------
 // The associations between collsisions and BCs can be ambiguous.
 // By default a collision is associated with the BC closest in time.
 // Any BC falling within a BC window of meanBC +- deltaBC could potentially be the
 // true BC.
+// The bcIter is ideally placed within [minBC, maxBC], but it does not need to be.
 template <typename I, typename T>
 T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
 {
   // range of BCs to consider
-  int64_t minBC = meanBC - deltaBC;
-  uint64_t maxBC = meanBC + deltaBC;
-  if (minBC < 0) {
-    minBC = 0;
-  }
+  uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
+  uint64_t maxBC = meanBC + (uint64_t)deltaBC;
+  LOGF(debug, "  minBC %llu maxBC %llu", minBC, maxBC);
 
   // find slice of BCs table with BC in [minBC, maxBC]
   int64_t maxBCId = bcIter.globalIndex();
+  int64_t minBCId = bcs.size() - 1;
   int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
+    LOGF(debug, "  UP  globalIndex %i globalBC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    if (bcIter.globalBC() >= minBC && bcIter.globalIndex() < minBCId) {
+      minBCId = bcIter.globalIndex();
+    }
     maxBCId = bcIter.globalIndex();
     ++bcIter;
     ++moveCount;
   }
 
   bcIter.moveByIndex(-moveCount); // Move back to original position
-  int64_t minBCId = bcIter.globalIndex();
-  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+  while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
+    LOGF(debug, "  DOWN globalIndex %i globalBC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    if (bcIter.globalBC() <= maxBC && bcIter.globalIndex() > maxBCId) {
+      maxBCId = bcIter.globalIndex();
+    }
     minBCId = bcIter.globalIndex();
     --bcIter;
   }
-
   LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
 
   T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
@@ -300,7 +138,7 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
 // The range of compatible BCs is calculated from the collision time and the time
 // resolution dt. Typically the range is +- 4*dt.
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
@@ -321,6 +159,47 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;
   }
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// -----------------------------------------------------------------------------
+// Same as above but for collisions with MC information
+template <typename T>
+T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    LOGF(info, "Collision %i - no BC found!", collision.globalIndex());
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// -----------------------------------------------------------------------------
+// In this case the range of compatible BCs is defied by meanBC +- deltaBC.
+template <typename T>
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
+{
+  // find BC with globalBC ~ meanBC
+  uint64_t ind = (uint64_t)(bcs.size() / 2);
+  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -509,4 +388,78 @@ bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims)
 }
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_DGHELPERS_
+// check if all tracks come from same MCCollision
+template <typename T>
+int64_t sameMCCollision(T tracks, aod::McCollisions mccols, aod::McParticles mcparts)
+{
+  int64_t colID = -1;
+  for (auto const& track : tracks) {
+    if (track.has_mcParticle()) {
+      auto mcpart = track.mcParticle();
+      if (mcpart.has_mcCollision()) {
+        auto mccol = mcpart.mcCollision();
+        if (colID < 0) {
+          colID = mccol.globalIndex();
+        } else {
+          if (colID != mccol.globalIndex()) {
+            return (int64_t)-1;
+          }
+        }
+      } else {
+        return (int64_t)-1;
+      }
+    } else {
+      return (int64_t)-1;
+    }
+  }
+
+  return colID;
+}
+
+// -----------------------------------------------------------------------------
+// In PYTHIA a central diffractive produced (CD) particle has the ID
+// 9900110. Check the particles of a MC event to contain a CD particle.
+template <typename T>
+bool isPythiaCDE(T MCparts)
+{
+  for (auto mcpart : MCparts) {
+    if (mcpart.pdgCode() == 9900110) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// -----------------------------------------------------------------------------
+// In pp events produced with GRANIITTI the stack starts with
+// 22212/22212/99/22212/2212/99/90
+template <typename T>
+bool isGraniittiCDE(T MCparts)
+{
+  if (MCparts.size() < 7) {
+    return false;
+  } else {
+    if (MCparts.iteratorAt(0).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(1).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(2).pdgCode() != 99)
+      return false;
+    if (MCparts.iteratorAt(3).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(4).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(5).pdgCode() != 99)
+      return false;
+    if (MCparts.iteratorAt(6).pdgCode() != 90)
+      return false;
+  }
+
+  return true;
+}
+
+// -----------------------------------------------------------------------------
+
+} // namespace udhelpers
+
+#endif // PWGUD_CORE_UDHELPERS_H_
