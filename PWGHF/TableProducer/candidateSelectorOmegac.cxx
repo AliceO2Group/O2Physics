@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFOmegacCandidateSelector.cxx
+/// \file candidateSelectorOmegac.cxx
 /// \brief Omegac → Xi Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
