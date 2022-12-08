@@ -34,17 +34,17 @@ struct HfCandidateSelectorOmegac {
   // LF analysis selections
   // zPV -> can be already set in HFeventselection -> 10 cm
   // sel8 -> can be already set in HFeventselection -> true
-  Configurable<double> cascRadiusMin{"cascRadiusMin", 0.5, "Min cascade radius"};
-  Configurable<double> v0RadiusMin{"v0RadiusMin", 2, "Min V0 radius"};
-  Configurable<double> v0CosPAMin{"v0CosPAMin", 0.95, "Min valueCosPA V0"};
-  Configurable<double> cascCosPAMin{"cascCosPAMin", 0.95, "Min value CosPA cascade"};
+  Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min cascade radius"};
+  Configurable<double> radiusV0Min{"radiusV0Min", 2, "Min V0 radius"};
+  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.95, "Min valueCosPA V0"};
+  Configurable<double> cosPACascMin{"cosPACascMin", 0.95, "Min value CosPA cascade"};
   Configurable<double> dcaCascDauMax{"dcaCascDauMax", 5.0, "Max DCA cascade daughters"};
   Configurable<double> dcaV0DauMax{"dcaV0DauMax", 5.0, "Max DCA V0 daughters"};
   Configurable<double> dcaOmegacDauMax{"dcaOmegacDauMax", 5.0, "Max DCA omegac daughters"};
 
   // limit charm baryon invariant mass spectrum
-  Configurable<double> lowerLimitSpectrum{"lowerLimitSpectrum", 2.4, "Lower limit invariant mass spectrum charm baryon"};
-  Configurable<double> upperLimitSpectrum{"upperLimitSpectrum", 3.0, "Upper limit invariant mass spectrum charm baryon"};
+  Configurable<double> invMassOmegacMin{"invMassOmegacMin", 2.4, "Lower limit invariant mass spectrum charm baryon"};
+  Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.0, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
   Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "Max absolute value of eta"};
@@ -130,8 +130,8 @@ struct HfCandidateSelectorOmegac {
     selectorProton.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
     selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
-    double massLambdaTrueValue = 1.11568;
-    double massXiTrueValue = 1.32171;
+    double massLambdaTrueValue = RecoDecay::getMassPDG(3122);
+    double massXiTrueValue = RecoDecay::getMassPDG(3312);
 
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
@@ -172,17 +172,17 @@ struct HfCandidateSelectorOmegac {
       }
 
       // minimum radius cut (LFcut)
-      if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade()) < cascRadiusMin) {
+      if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade()) < radiusCascMin) {
         continue;
       }
-      if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0()) < v0RadiusMin) {
+      if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0()) < radiusV0Min) {
         continue;
       }
       // cosPA (LFcut)
-      if (candidate.cosPACasc() < cascCosPAMin) {
+      if (candidate.cosPACasc() < cosPACascMin) {
         continue;
       }
-      if (candidate.cosPAV0() < v0CosPAMin) {
+      if (candidate.cosPAV0() < cosPAV0Min) {
         continue;
       }
       // cascade and v0 daughters dca cut (LF cut)
@@ -322,7 +322,7 @@ struct HfCandidateSelectorOmegac {
         }
       }
 
-      if ((invMassOmegac >= lowerLimitSpectrum) && (invMassOmegac <= upperLimitSpectrum)) {
+      if ((invMassOmegac >= invMassOmegacMin) && (invMassOmegac <= invMassOmegacMax)) {
         statusInvMassOmegac = 1;
         if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1) {
           hTest2->Fill(5.5);
