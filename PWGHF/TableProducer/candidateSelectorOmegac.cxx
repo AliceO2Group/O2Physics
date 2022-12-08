@@ -15,6 +15,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/RecoDecay.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
