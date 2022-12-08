@@ -552,6 +552,10 @@ class RecoDecay
         mass = 3.87165; // https://pdg.lbl.gov/ (2021)
         break;
       }
+      case 4332: {     // Ω0c (wrong mass in ROOT)
+        mass = 2.6952; // https://pdg.lbl.gov/ (2022)
+        break;
+      }
       // Take the rest from ROOT.
       default: {
         const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
