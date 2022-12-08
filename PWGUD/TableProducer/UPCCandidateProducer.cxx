@@ -240,7 +240,7 @@ struct UpcCandProducer {
           newDaughterIDs[1] = fNewPartIDs.at(daughterIDs.back());
         }
       }
-      udMCParticles(newEventID, mcPart.pdgCode(), mcPart.getHepStatusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
+      udMCParticles(newEventID, mcPart.pdgCode(), mcPart.getHepMCStatusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
                     mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
     }
 
