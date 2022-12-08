@@ -800,7 +800,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the dalitz selections
   if constexpr ((fillMap & DalitzBits) > 0) {
     for (int i = 0; i < 8; i++) {
-      values[kIsDalitzLeg + i] = bool(track.dalitzBits() & (uint8_t(1) << i));
+      values[kIsDalitzLeg + i] = static_cast<bool>(track.dalitzBits() & (uint8_t(1) << i));
     }
   }
 
@@ -954,13 +954,6 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
 
     float bz = fgFitterTwoProngBarrel.getBz();
-
-    // ordering of tracks, so v1 has larger momentum
-    if (v1.P() < v2.P()) {
-      ROOT::Math::PtEtaPhiMVector v3 = v1;
-      v1 = v2;
-      v2 = v3;
-    }
 
     // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
     // vector product of pep X pem
