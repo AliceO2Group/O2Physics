@@ -378,6 +378,15 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
   // -------------------------------------------------------------------------------------------------
+  //
+  // LMee cuts
+  // List of cuts used for low mass dielectron analyses
+  //
+  // Skimming cuts:
+  if (!nameStr.compare("lmee_skimming")) {
+    cut->AddCut(GetAnalysisCut("lmee_skimming_cuts"));
+    return cut;
+  }
 
   if (!nameStr.compare("lmeePID_TPChadrejTOFrec")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
@@ -747,6 +756,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kITSncls, 2.5, 7.5);
     return cut;
   }
+
   if (!nameStr.compare("lmee_trackCut_debug")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
@@ -754,40 +764,47 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kITSncls, 0.0, 7.5);
     return cut;
   }
+
   if (!nameStr.compare("jpsi_TPCPID_debug1")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999);
     return cut;
   }
+
   if (!nameStr.compare("jpsi_TPCPID_debug2")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 3.0, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 3.0, 999);
     return cut;
   }
+
   if (!nameStr.compare("jpsi_TPCPID_debug3")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 3.5, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 3.5, 999);
     return cut;
   }
+
   if (!nameStr.compare("jpsi_TPCPID_debug4")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 999);
     return cut;
   }
+
   if (!nameStr.compare("jpsi_TPCPID_debug5")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4.0, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999);
     return cut;
   }
+
   if (!nameStr.compare("lmee_TPCPID_debug1")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -5.0, 5.0);
     return cut;
   }
+
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(VarManager::kPt, 4.0, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
@@ -798,14 +815,25 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 70.0, 161.);
     return cut;
   }
+
   if (!nameStr.compare("lmeeStandardKine")) {
     cut->AddCut(VarManager::kPt, 0.2, 10.0);
     cut->AddCut(VarManager::kEta, -0.8, 0.8);
     return cut;
   }
+
   if (!nameStr.compare("lmeeLowBKine")) {
     cut->AddCut(VarManager::kPt, 0.075, 10.0);
     cut->AddCut(VarManager::kEta, -0.8, 0.8);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_skimming_cuts")) {
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCnclsCR, 60.0, 161.);
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -5.0, 5.0);
     return cut;
   }
 
