@@ -70,6 +70,8 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hRawNTracksPV", "Raw NTracks", kTH1D, {axisMultNTracks});
     histos.add("multiplicityQa/hZeqFV0", "vtx-z eq FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hZeqFT0", "vtx-z eq FT0", kTH1D, {axisMultFT0});
+    histos.add("multiplicityQa/hZeqFT0A", "vtx-z eq FT0A", kTH1D, {axisMultFT0});
+    histos.add("multiplicityQa/hZeqFT0C", "vtx-z eq FT0C", kTH1D, {axisMultFT0});
     histos.add("multiplicityQa/hZeqFDD", "vtx-z eq FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hZeqNTracksPV", "vtx-z eq NTracks", kTH1D, {axisMultNTracks});
 
@@ -128,6 +130,8 @@ struct MultiplicityQa {
     //vertex-Z corrected - FIXME
     histos.fill(HIST("multiplicityQa/hZeqFV0"), col.multZeqFV0A());
     histos.fill(HIST("multiplicityQa/hZeqFT0"), col.multZeqFT0A() + col.multZeqFT0C());
+    histos.fill(HIST("multiplicityQa/hZeqFT0A"), col.multZeqFT0A());
+    histos.fill(HIST("multiplicityQa/hZeqFT0C"), col.multZeqFT0C());
     histos.fill(HIST("multiplicityQa/hZeqFDD"), col.multZeqFDDA() + col.multZeqFDDC());
     histos.fill(HIST("multiplicityQa/hZeqNTracksPV"), col.multZeqNTracksPV());
   }

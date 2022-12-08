@@ -55,7 +55,7 @@ AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "eventclass"};
-AxisSpec TrigClassAxis = {kTrigbegin - 1, kTrigbegin + 0.5, kTrigend - 0.5, "triggclass"};
+AxisSpec TrigClassAxis = {kTrigend - 1, kTrigbegin + 0.5, kTrigend - 0.5, "triggclass"};
 std::vector<double> centBinning = {0., 20, 60., 90., 100};
 AxisSpec CentAxis = {centBinning, "centrality"};
 
@@ -78,7 +78,6 @@ struct MultiplicityCounter {
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  // Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
   Configurable<bool> isMC{"isMC", false, "check if MC"};
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
@@ -98,19 +97,6 @@ struct MultiplicityCounter {
   };
 
   std::vector<int> usedTracksIds;
-
-  void init(InitContext&)
-  {
-    auto hstat = registry.get<TH1>(HIST("Events/Selection"));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "All");
-    x->SetBinLabel(2, "Selected");
-    x->SetBinLabel(3, "Selected INEL>0");
-    x->SetBinLabel(4, "Rejected");
-    x->SetBinLabel(5, "Good BCs");
-    x->SetBinLabel(6, "BCs with collisions");
-    x->SetBinLabel(7, "BCs with pile-up/splitting");
-  }
 
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   void processEventStat(
@@ -162,36 +148,21 @@ struct MultiplicityCounter {
   void processCounting(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     FiTracks const& tracks,
-    soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks) // soa::SmallGroups<aod::ReassignedTracks> const &atracks) // soa::Join<aod::AmbiguousTracks, aod::BestCollisions>
+    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks) // soa::Join<aod::AmbiguousTracks, aod::BestCollisions>
   {
 
     registry.fill(HIST("Events/Selection"), 1.);
-    // Bool_t IsMB0 = false;
     if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
       registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), 50., z);
       usedTracksIds.clear();
-      // auto Ntrks = 0;
-      /*
-      for (auto& track : atracks) {
-        usedTracksIds.emplace_back(track.trackId());
-        if (std::abs(track.etas()) < estimatorEta) {
-          ++Ntrks;
-        }
-      }
-      for (auto& track : tracks) {
-        if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
-          continue;
-        }
-        if (std::abs(track.eta()) < estimatorEta) {
-          ++Ntrks;
-        }
-      }*/
 
       tracketas.clear();
       for (auto& track : atracks) {
-        tracketas.push_back(track.etas());
+        auto otrack = track.track_as<FiTracks>();
+        // tracketas.push_back(track.etas());
+        tracketas.push_back(otrack.eta());
       }
       for (auto& track : tracks) {
         if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
@@ -201,7 +172,7 @@ struct MultiplicityCounter {
       }
 
       for (auto eta : tracketas) {
-        registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, eta);
+        registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, eta);
         // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 1);
       }
     }
@@ -245,8 +216,7 @@ struct MultiplicityCounter {
         auto ttrack = track.track_as<soa::Filtered<LabeledTracksEx>>();
         usedTracksIds.emplace_back(ttrack.globalIndex());
         if (ttrack.has_mcParticle()) {
-          // registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), 50., z, ttrack.mcParticle_as<Particles>().eta());
+          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, ttrack.mcParticle_as<Particles>().eta());
         } else {
           // when secondary
         }
@@ -256,9 +226,7 @@ struct MultiplicityCounter {
           continue;
         }
         if (track.has_mcParticle()) {
-          // registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), 50., z, track.mcParticle_as<Particles>().eta());
-          // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 2);
+          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, track.mcParticle_as<Particles>().eta());
         } else {
           // when secondary
         }
@@ -266,31 +234,6 @@ struct MultiplicityCounter {
     }
   }
   PROCESS_SWITCH(MultiplicityCounter, processMCCounting, "MC Count tracks", false);
-
-  Partition<aod::MFTTracks> sample = (aod::fwdtrack::eta < -2.8f) && (aod::fwdtrack::eta > -3.2f);
-  expressions::Filter atrackFilterForward = (aod::fwdtrack::bestCollisionId >= 0) &&
-                                            (aod::fwdtrack::etas < -2.0f) &&
-                                            (aod::fwdtrack::etas > -3.9f) &&
-                                            (nabs(aod::fwdtrack::bestDCAXY) <= 2.f);
-  void processForwardCounting(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
-  {
-    if (!useEvSel || (useEvSel && collision.sel8())) {
-      usedTracksIds.clear();
-      auto z = collision.posZ();
-      for (auto& track : atracks) {
-        usedTracksIds.emplace_back(track.mfttrackId());
-        registry.fill(HIST("hrecdndeta"), 1, 1, 50., z, track.etas());
-      }
-      for (auto& track : tracks) {
-        if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
-          continue;
-        }
-        registry.fill(HIST("hrecdndeta"), 1, 1, 50., z, track.eta());
-        // registry.fill(HIST("hrecdndeta"), 1 , 1, 50., z, 3);
-      }
-    }
-  }
-  PROCESS_SWITCH(MultiplicityCounter, processForwardCounting, "Count MFT tracks", false);
 
   void processGen(
     aod::McCollisions::iterator const& mcCollision,

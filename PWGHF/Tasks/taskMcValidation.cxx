@@ -11,7 +11,7 @@
 
 /// \file taskMcValidation.cxx
 /// \brief Monte Carlo validation task
-/// \note gen and rec. level validation
+/// \note generated and reconstructed level validation
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -32,9 +32,10 @@ using namespace o2::aod::hf_cand_3prong;
 namespace
 {
 static const int nCharmHadrons = 7;
-static const std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJPsi};
-static const std::array<int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
-static const std::array<std::string, nCharmHadrons> labels = {"D^{#plus}", "D*^{#plus}", "D^{0}", "D_{s}^{#plus}", "#Lambda_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "#Xi_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "J/#psi #rightarrow e^{#plus}e^{#minus}"};
+static const std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, pdg::Code::kDStar, pdg::Code::kD0, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJPsi};
+static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
+static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
+static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}", "J/#psi"};
 static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
@@ -105,7 +106,7 @@ struct HfTaskMcValidationAddAmbiguousTrackInfo {
   }
 };
 
-/// Gen Level Validation
+/// Generated Level Validation
 ///
 /// - Number of HF quarks produced per collision
 /// - Number of D±      → π± K∓ π±        per collision
@@ -127,10 +128,8 @@ struct HfTaskMcValidationGen {
   Configurable<double> zVertexMin{"zVertexMin", -100., "min. z of generated primary vertex [cm]"};
   Configurable<double> zVertexMax{"zVertexMax", 100., "max. z of generated primary vertex [cm]"};
 
-  std::shared_ptr<TH1> hPromptCharmHadronsPtDistr, hPromptCharmHadronsYDistr, hNonPromptCharmHadronsPtDistr, hNonPromptCharmHadronsYDistr, hPromptCharmHadronsDecLenDistr, hNonPromptCharmHadronsDecLenDistr, hQuarkPerEvent;
-
   AxisSpec axisNhadrons{10, -0.5, 9.5};
-  AxisSpec axisNquarks{10, -0.5, 19.5};
+  AxisSpec axisNquarks{20, -0.5, 19.5};
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
@@ -164,23 +163,23 @@ struct HfTaskMcValidationGen {
      {"hCounterPerCollisionNonPromptXiC", "Event counter - non-prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptJPsi", "Event counter - non-prompt JPsi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
-     {"hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}}}};
+     {"hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
+     {"hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
+     {"hPromptCharmHadronsYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
+     {"hPromptCharmHadronsDecLenDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}},
+     {"hNonPromptCharmHadronsPtDistr", "Pt distribution vs non-prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
+     {"hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
+     {"hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
 
   void init(o2::framework::InitContext&)
   {
-    hPromptCharmHadronsPtDistr = registry.add<TH2>("hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {axisSpecies, axisPt});
-    hPromptCharmHadronsYDistr = registry.add<TH2>("hPromptCharmHadronsYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {axisSpecies, axisY});
-    hPromptCharmHadronsDecLenDistr = registry.add<TH2>("hPromptCharmHadronsDecLDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", HistType::kTH2F, {axisSpecies, axisDecLen});
-    hNonPromptCharmHadronsPtDistr = registry.add<TH2>("hNonPromptCharmHadronsPtDistr", "Pt distribution vs non-prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {axisSpecies, axisPt});
-    hNonPromptCharmHadronsYDistr = registry.add<TH2>("hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {axisSpecies, axisY});
-    hNonPromptCharmHadronsDecLenDistr = registry.add<TH2>("hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", HistType::kTH2F, {axisSpecies, axisDecLen});
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
-      hPromptCharmHadronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      hPromptCharmHadronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      hPromptCharmHadronsDecLenDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      hNonPromptCharmHadronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      hNonPromptCharmHadronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      hNonPromptCharmHadronsDecLenDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("hPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("hPromptCharmHadronsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("hPromptCharmHadronsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("hNonPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("hNonPromptCharmHadronsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("hNonPromptCharmHadronsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
   }
 
@@ -206,27 +205,23 @@ struct HfTaskMcValidationGen {
 
   void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
   {
+    if (!selectVertex(mccollision)) {
+      return;
+    }
+
     int cPerCollision = 0;
     int cBarPerCollision = 0;
     int bPerCollision = 0;
     int bBarPerCollision = 0;
-
-    // Particles and their decay checked in the second part of the task
-    std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJPsi};
-    std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
-    std::vector<int> listDaughters{};
-
     bool hasSignal = false;
 
     for (auto& particle : particlesMC) {
-      if (!selectVertex(mccollision))
-        continue;
-
-      int particlePdgCode = particle.pdgCode();
       if (!particle.has_mothers()) {
         continue;
       }
+
+      int particlePdgCode = particle.pdgCode();
       auto mother = particle.mothers_as<aod::McParticles>().front();
       if (particlePdgCode != mother.pdgCode()) {
         switch (particlePdgCode) {
@@ -249,71 +244,77 @@ struct HfTaskMcValidationGen {
         }
       }
 
-      double sumPxDau = 0.;
-      double sumPyDau = 0.;
-      double sumPzDau = 0.;
-      bool momentumCheck = true;
-      listDaughters.clear();
-
       // Checking the decay of the particles and the momentum conservation
       for (std::size_t iD = 0; iD < PDGArrayParticle.size(); ++iD) {
-        int whichHadron = -1;
-        if (std::abs(particlePdgCode) == PDGArrayParticle[iD]) {
-          whichHadron = iD;
-          RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
-          std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
-          int origin = -1;
-          if (listDaughters.size() == arrayPDGsize) {
-            hasSignal = true;
-            origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-            if (origin == RecoDecay::OriginType::Prompt) {
-              counterPrompt[iD]++;
-            } else if (origin == RecoDecay::OriginType::NonPrompt) {
-              counterNonPrompt[iD]++;
-            }
-          }
-          for (std::size_t iDau = 0; iDau < listDaughters.size(); ++iDau) {
-            auto daughter = particlesMC.rawIteratorAt(listDaughters.at(iDau) - particlesMC.offset());
-            sumPxDau += daughter.px();
-            sumPyDau += daughter.py();
-            sumPzDau += daughter.pz();
-          }
-          auto pxDiff = particle.px() - sumPxDau;
-          auto pyDiff = particle.py() - sumPyDau;
-          auto pzDiff = particle.pz() - sumPzDau;
-          if (std::abs(pxDiff) > 0.001 || std::abs(pyDiff) > 0.001 || std::abs(pzDiff) > 0.001) {
-            momentumCheck = false;
-          }
-          double pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
-          double ptDiff = RecoDecay::pt(pxDiff, pyDiff);
-          auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
-          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+        if (std::abs(particlePdgCode) != PDGArrayParticle[iD]) {
+          continue;
+        }
 
-          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
-          // Filling histograms with per-component momentum conservation
-          registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
-          registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
-          registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
-          registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
-          registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
-          registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            if (std::abs(particle.y()) < 0.5) {
-              hPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
-            }
-            hPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
-            hPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            if (std::abs(particle.y()) < 0.5) {
-              hNonPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
-            }
-            hNonPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
-            hNonPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
+        // Check that the number of daughters match what we expect
+        std::vector<int> listDaughters{};
+        RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
+        if (listDaughters.size() != nDaughters[iD]) {
+          continue;
+        }
+
+        // Check momentum conservation
+        double sumPxDau = 0.;
+        double sumPyDau = 0.;
+        double sumPzDau = 0.;
+        bool momentumCheck = true;
+        for (std::size_t iDau = 0; iDau < listDaughters.size(); ++iDau) {
+          auto daughter = particlesMC.rawIteratorAt(listDaughters.at(iDau) - particlesMC.offset());
+          sumPxDau += daughter.px();
+          sumPyDau += daughter.py();
+          sumPzDau += daughter.pz();
+        }
+        auto pxDiff = particle.px() - sumPxDau;
+        auto pyDiff = particle.py() - sumPyDau;
+        auto pzDiff = particle.pz() - sumPzDau;
+        if (std::abs(pxDiff) > 0.001 || std::abs(pyDiff) > 0.001 || std::abs(pzDiff) > 0.001) {
+          momentumCheck = false;
+        }
+        double pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
+        double ptDiff = RecoDecay::pt(pxDiff, pyDiff);
+        registry.fill(HIST("hMomentumCheck"), static_cast<float>(momentumCheck));
+        registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
+        registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
+        registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
+        registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
+        registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
+
+        if (!momentumCheck) {
+          continue;
+        }
+
+        hasSignal = true;
+        int origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::Prompt) {
+          counterPrompt[iD]++;
+        } else if (origin == RecoDecay::OriginType::NonPrompt) {
+          counterNonPrompt[iD]++;
+        }
+
+        auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
+        double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+        double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+        auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
+        if (origin == RecoDecay::OriginType::Prompt) {
+          if (std::abs(particle.y()) < 0.5) {
+            registry.fill(HIST("hPromptCharmHadronsPtDistr"), iD, particle.pt());
           }
+          registry.fill(HIST("hPromptCharmHadronsYDistr"), iD, particle.y());
+          registry.fill(HIST("hPromptCharmHadronsDecLenDistr"), iD, decayLength * 10000);
+        } else if (origin == RecoDecay::OriginType::NonPrompt) {
+          if (std::abs(particle.y()) < 0.5) {
+            registry.fill(HIST("hNonPromptCharmHadronsPtDistr"), iD, particle.pt());
+          }
+          registry.fill(HIST("hNonPromptCharmHadronsYDistr"), iD, particle.y());
+          registry.fill(HIST("hNonPromptCharmHadronsDecLenDistr"), iD, decayLength * 10000);
         }
       }
     } // end particles
+
     registry.fill(HIST("hCountAverageC"), cPerCollision);
     registry.fill(HIST("hCountAverageB"), bPerCollision);
     registry.fill(HIST("hCountAverageCbar"), cBarPerCollision);
@@ -337,7 +338,7 @@ struct HfTaskMcValidationGen {
   }
 };
 
-/// Rec Level Validation
+/// Reconstruction Level Validation
 ///
 /// D±      → π± K∓ π±
 /// Ds±     → K± K∓ π±,
@@ -350,7 +351,6 @@ struct HfTaskMcValidationGen {
 struct HfTaskMcValidationRec {
   Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
 
-  static const int nCharmHadrons = 7;
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
   std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
@@ -441,7 +441,7 @@ struct HfTaskMcValidationRec {
       histDeltaDecayLength[iHad] = registry.add<TH1>(Form("histDeltaDecayLength%s", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
       for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
         histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("histPtReco%s%s", originNames[iOrigin].data(), particleNames[iHad].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
-        for (auto iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
+        for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
           histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histPtDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
           histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histEtaDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
           histImpactParameterDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histImpactParameterDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
@@ -486,7 +486,7 @@ struct HfTaskMcValidationRec {
           nGoodContributors++;
         }
       }
-      float frac = (nContributors > 0) ? float(nGoodContributors) / nContributors : 1.;
+      float frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
       registry.fill(HIST("histFracGoodContributors"), frac);
       uint64_t mostProbableBC = collision.bc().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
