@@ -15,8 +15,8 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
-#define O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
+#define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
 #include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
@@ -1603,4 +1603,4 @@ DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::OriginMcGen);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#endif // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
