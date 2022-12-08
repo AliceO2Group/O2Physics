@@ -302,7 +302,7 @@ struct HfCandidateSelectorOmegac {
       double invMassCascade = candidate.invMassCascade();
       double invMassOmegac = candidate.invMassOmegac();
 
-      if (std::abs(invmMassLambda - 1.11568) < (nSigmaInvMassCut * SigmaInvMassLambda)) {
+      if (std::abs(invMassLambda - 1.11568) < (nSigmaInvMassCut * SigmaInvMassLambda)) {
         statusInvMassLambda = 1;
         if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1) {
           hTest2->Fill(3.5);
