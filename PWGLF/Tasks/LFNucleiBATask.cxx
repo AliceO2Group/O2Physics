@@ -651,16 +651,16 @@ struct LFNucleiBATask {
 
     for (auto& track : tracks) {
 
-
       if constexpr (!IsFilteredData) {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
       }
 
-    if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) continue; 
-    if (track.tpcNClsFound() < cfgCutTPCClusters) continue; 
-  
+      if (track.tpcNClsCrossedRows() < cfgCutTPCXRows)
+        continue;
+      if (track.tpcNClsFound() < cfgCutTPCClusters)
+        continue;
 
       // Tracks DCA histos fill
       histos.fill(HIST("tracks/hDCAxy"), track.dcaXY());
@@ -723,14 +723,11 @@ struct LFNucleiBATask {
 
       // LOG(info)<<"\n collisionId ============>"<<track.collisionId();
 
-
-
       // QA histos fill
       histos.fill(HIST("qa/h1TPCncr"), track.tpcNClsCrossedRows());
       histos.fill(HIST("qa/h1rTPC"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("qa/h1chi2ITS"), track.tpcChi2NCl());
       histos.fill(HIST("qa/h1chi2TPC"), track.itsChi2NCl());
-
 
       if (enableDebug) {
         if (track.sign() > 0) {
@@ -761,7 +758,6 @@ struct LFNucleiBATask {
           }
         }
       }
-
 
       // Tracks histos fill
       histos.fill(HIST("tracks/h1Eta"), track.eta());
