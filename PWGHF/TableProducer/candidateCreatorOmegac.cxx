@@ -192,7 +192,7 @@ struct HfCandidateCreatorOmegac {
       auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
 
       // info from LF table
-      std::array<float, 3> pvecV0LFTable = {v0Element.px(), v0Element.py(), v0Element.pz()};
+      std::array<float, 3> pvecV0LFTable = {v0Element.px(), v0Element.py(), v0Element.pz()}; // pvec stands for vector containing the 3-momentum components
       std::array<float, 3> vertexV0 = {v0Element.x(), v0Element.y(), v0Element.z()};
 
       // reconstruct V0 with DCAFitter
