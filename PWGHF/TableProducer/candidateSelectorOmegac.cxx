@@ -140,30 +140,30 @@ struct HfCandidateSelectorOmegac {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int signdecay = candidate.signDecay(); // sign of pi <- cascade
+      int signDecay = candidate.signDecay(); // sign of pi <- cascade
 
-      if (signdecay > 0) {
+      if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
-      } else if (signdecay == 0) {
+      } else if (signDecay == 0) {
         continue;
       }
 
       // eta selection
-      double etav0posdau = candidate.etaV0PosDau();
-      double etav0negdau = candidate.etaV0NegDau();
-      double etapifromcasc = candidate.etaPiFromCasc();
-      double etapifromome = candidate.etaPiFromOme();
-      if (std::abs(etav0posdau) > etaTrackMax) {
+      double etaV0PosDau = candidate.etaV0PosDau();
+      double etaV0NegDau = candidate.etaV0NegDau();
+      double etaPiFromCasc = candidate.etaPiFromCasc();
+      double etaPiFromOme = candidate.etaPiFromOme();
+      if (std::abs(etaV0PosDau) > etaTrackMax) {
         continue;
       }
-      if (std::abs(etav0negdau) > etaTrackMax) {
+      if (std::abs(etaV0NegDau) > etaTrackMax) {
         continue;
       }
-      if (std::abs(etapifromcasc) > etaTrackMax) {
+      if (std::abs(etaPiFromCasc) > etaTrackMax) {
         continue;
       }
-      if (std::abs(etapifromome) > etaTrackMax) {
+      if (std::abs(etaPiFromOme) > etaTrackMax) {
         continue;
       }
 
@@ -200,12 +200,12 @@ struct HfCandidateSelectorOmegac {
       }
 
       // pT selections
-      double ptpifromcasc = std::sqrt((candidate.pxPiFromCascAtProd() * candidate.pxPiFromCascAtProd()) + (candidate.pyPiFromCascAtProd() * candidate.pyPiFromCascAtProd()));
-      double ptpifromome = std::sqrt((candidate.pxPrimaryPiAtProd() * candidate.pxPrimaryPiAtProd()) + (candidate.pyPrimaryPiAtProd() * candidate.pyPrimaryPiAtProd()));
-      if (std::abs(ptpifromcasc) > ptMinPiFromCasc) {
+      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCascAtProd(), candidate.pyPiFromCascAtProd());
+      double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPiAtProd(), candidate.pyPrimaryPiAtProd());
+      if (std::abs(ptPiFromCasc) > ptMinPiFromCasc) {
         continue;
       }
-      if (std::abs(ptpifromome) > ptMinPiFromOme) {
+      if (std::abs(ptPiFromOme) > ptMinPiFromOme) {
         continue;
       }
 
@@ -268,104 +268,103 @@ struct HfCandidateSelectorOmegac {
         pidPiFromOme = selectorPionFromOme.getStatusTrackPIDAll(trackPiFromOmeg);
       }
 
-      int statuspidLambda = -1;
-      int statuspidCascade = -1;
-      int statuspidOmegac = -1;
+      int statusPidLambda = -1;
+      int statusPidCascade = -1;
+      int statusPidOmegac = -1;
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
-        statuspidLambda = 1;
+        statusPidLambda = 1;
         hTest2->Fill(0.5);
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
-        statuspidCascade = 1;
+        statusPidCascade = 1;
         hTest2->Fill(1.5);
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && pidPiFromOme == TrackSelectorPID::Status::PIDAccepted) {
-        statuspidOmegac = 1;
+        statusPidOmegac = 1;
         hTest2->Fill(2.5);
       }
 
       // invariant mass cuts
-      int statusinvmassLambda = -1;
-      int statusinvmassCascade = -1;
-      int statusinvmassOmegac = -1;
+      int statusInvMassLambda = -1;
+      int statusInvMassCascade = -1;
+      int statusInvMassOmegac = -1;
 
-      double invmasslambda = 0;
-      if (signdecay < 0) {
-        invmasslambda = candidate.invMassLambda();
-      } else if (signdecay > 0) {
-        invmasslambda = candidate.invMassAntiLambda();
+      double invMassLambda = 0;
+      if (signDecay < 0) {
+        invMassLambda = candidate.invMassLambda();
+      } else if (signDecay > 0) {
+        invMassLambda = candidate.invMassAntiLambda();
       }
-      double invmasscascade = candidate.invMassCascade();
-      double invmassomegac = candidate.invMassOmegac();
+      double invMassCascade = candidate.invMassCascade();
+      double invMassOmegac = candidate.invMassOmegac();
 
-      if (std::abs(invmasslambda - 1.11568) < (nSigmaInvMassCut * SigmaInvMassLambda)) {
-        statusinvmassLambda = 1;
-        if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1) {
+      if (std::abs(invmMassLambda - 1.11568) < (nSigmaInvMassCut * SigmaInvMassLambda)) {
+        statusInvMassLambda = 1;
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1) {
           hTest2->Fill(3.5);
         }
       }
 
-      if (std::abs(invmasscascade - 1.32171) < (nSigmaInvMassCut * SigmaInvMassCascade)) {
-        statusinvmassCascade = 1;
-        if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1) {
+      if (std::abs(invMassCascade - 1.32171) < (nSigmaInvMassCut * SigmaInvMassCascade)) {
+        statusInvMassCascade = 1;
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1) {
           hTest2->Fill(4.5);
         }
       }
 
-      if ((invmassomegac >= LowerLimitSpectrum) && (invmassomegac <= UpperLimitSpectrum)) {
-        statusinvmassOmegac = 1;
-        if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1 && statusinvmassCascade == 1) {
+      if ((invMassOmegac >= LowerLimitSpectrum) && (invMassOmegac <= UpperLimitSpectrum)) {
+        statusInvMassOmegac = 1;
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1) {
           hTest2->Fill(5.5);
         }
       }
 
-      hfSelOmegacCandidate(statuspidLambda, statuspidCascade, statuspidOmegac, statusinvmassLambda, statusinvmassCascade, statusinvmassOmegac);
+      hfSelOmegacCandidate(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac);
 
-      if (statuspidLambda == -1) {
+      if (statusPidLambda == -1) {
         hTest1->Fill(0.5);
       }
-      if (statuspidLambda == 1) {
+      if (statusPidLambda == 1) {
         hTest1->Fill(1.5);
       }
-      if (statuspidCascade == -1) {
+      if (statusPidCascade == -1) {
         hTest1->Fill(2.5);
       }
-      if (statuspidCascade == 1) {
+      if (statusPidCascade == 1) {
         hTest1->Fill(3.5);
       }
-      if (statuspidOmegac == -1) {
+      if (statusPidOmegac == -1) {
         hTest1->Fill(4.5);
       }
-      if (statuspidOmegac == 1) {
+      if (statusPidOmegac == 1) {
         hTest1->Fill(5.5);
       }
-      if (statusinvmassLambda == -1) {
+      if (statusInvMassLambda == -1) {
         hTest1->Fill(6.5);
       }
-      if (statusinvmassLambda == 1) {
+      if (statusInvMassLambda == 1) {
         hTest1->Fill(7.5);
       }
-      if (statusinvmassCascade == -1) {
+      if (statusInvMassCascade == -1) {
         hTest1->Fill(8.5);
       }
-      if (statusinvmassCascade == 1) {
+      if (statusInvMassCascade == 1) {
         hTest1->Fill(9.5);
       }
-      if (statusinvmassOmegac == -1) {
+      if (statusInvMassOmegac == -1) {
         hTest1->Fill(10.5);
       }
-      if (statusinvmassOmegac == 1) {
+      if (statusInvMassOmegac == 1) {
         hTest1->Fill(11.5);
       }
 
-      double ptprimarypi = std::sqrt((candidate.pxPrimaryPiAtProd() * candidate.pxPrimaryPiAtProd()) + (candidate.pyPrimaryPiAtProd() * candidate.pyPrimaryPiAtProd()));
-      if (statuspidLambda == 1 && statuspidCascade == 1 && statuspidOmegac == 1 && statusinvmassLambda == 1 && statusinvmassCascade == 1 && statusinvmassOmegac == 1) {
-        hPtPrimaryPi->Fill(ptprimarypi);
+      if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1 && statusInvMassOmegac == 1) {
+        hPtPrimaryPi->Fill(ptPiFromOme);
         hxVertexOmegac->Fill(candidate.xDecayVtxOmegac());
-        hInvMassOmegac->Fill(invmassomegac);
+        hInvMassOmegac->Fill(invMassOmegac);
         hCTauOmegac->Fill(candidate.ctauOmegac());
         hInvMassOmegacNotFixed->Fill(candidate.massOmegacNotFixed());
       }
