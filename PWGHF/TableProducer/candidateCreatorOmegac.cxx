@@ -147,7 +147,7 @@ struct HfCandidateCreatorOmegac {
     double massProtonTrueValue = RecoDecay::getMassPDG(2212);
     double massLambdaTrueValue = RecoDecay::getMassPDG(3122);
     double massXiTrueValue = RecoDecay::getMassPDG(3312);
-    double massOmegacTrueValue = 2.6952;
+    double massOmegacTrueValue = RecoDecay::getMassPDG(4332);
 
     LOGF(info, "PDG masses: %f (pion), %f (proton), %f (lambda), %f (xi), %f (omegac)", massPionTrueValue, massProtonTrueValue, massLambdaTrueValue, massXiTrueValue, massOmegacTrueValue);
 
