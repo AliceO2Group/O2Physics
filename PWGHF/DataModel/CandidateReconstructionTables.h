@@ -1256,25 +1256,25 @@ DECLARE_SOA_COLUMN(EtaPiFromOme, etaPiFromOme, double);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(MyMassLambda, myMassLambda, double);
+DECLARE_SOA_COLUMN(MyMassLambda, myMassLambda, double); //mass of the lambda re-computed within the task candidateCreatorOmegac.cxx (not from LF table)
 DECLARE_SOA_COLUMN(MassCascadeNotFixed, massCascadeNotFixed, double);
 DECLARE_SOA_COLUMN(MassOmegacNotFixed, massOmegacNotFixed, double);
-DECLARE_SOA_COLUMN(xVtxCascLF, xvtxCascLF, double);
-DECLARE_SOA_COLUMN(yVtxCascLF, yvtxCascLF, double);
-DECLARE_SOA_COLUMN(zVtxCascLF, zvtxCascLF, double);
+DECLARE_SOA_COLUMN(XVtxCascLF, xVtxCascLF, double);
+DECLARE_SOA_COLUMN(YVtxCascLF, yVtxCascLF, double);
+DECLARE_SOA_COLUMN(ZVtxCascLF, zVtxCascLF, double);
 DECLARE_SOA_COLUMN(MassCascLF, massCascLF, double);
-DECLARE_SOA_COLUMN(dcaXYToPVPrimaryPi, dcaxyToPVPrimaryPi, double);
-DECLARE_SOA_COLUMN(dcaXYToPVCascDau, dcaxyToPVCascdau, double);
-DECLARE_SOA_COLUMN(dcaXYToPVV0Dau0, dcaxyToPVV0dau0, double);
-DECLARE_SOA_COLUMN(dcaXYToPVV0Dau1, dcaxyToPVV0dau1, double);
-DECLARE_SOA_COLUMN(DCACascDau, dcaCascDau, double);
-DECLARE_SOA_COLUMN(DCAV0Dau, dcaV0Dau, double);
-DECLARE_SOA_COLUMN(DCAOmegacDau, dcaOmegacDau, double);
+DECLARE_SOA_COLUMN(DcaXYToPVPrimaryPi, dcaXYToPVPrimaryPi, double);
+DECLARE_SOA_COLUMN(DcaXYToPVCascDau, dcaXYToPVCascdau, double);
+DECLARE_SOA_COLUMN(DcaXYToPVV0Dau0, dcaXYToPVV0dau0, double);
+DECLARE_SOA_COLUMN(DcaXYToPVV0Dau1, dcaXYToPVV0dau1, double);
+DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, double);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, double);
+DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, double);
 
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);         // debug flag for mis-association reconstruction level
-DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 
 // mapping of decay types
 enum DecayType { OmegacToXiPi = 0 };
@@ -1282,7 +1282,7 @@ enum DecayType { OmegacToXiPi = 0 };
 } // end of namespace hf_cand_omegac
 
 // declare dedicated Omegac candidate table
-DECLARE_SOA_TABLE(HfCandOmegacBase, "AOD", "HFCANDOMECBASE",
+DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEC",
                   o2::soa::Index<>,
                   hf_cand_omegac::CollisionId, collision::PosX, collision::PosY, collision::PosZ,
                   hf_cand_omegac::XDecayVtxOmegac, hf_cand_omegac::YDecayVtxOmegac, hf_cand_omegac::ZDecayVtxOmegac,
@@ -1309,18 +1309,18 @@ DECLARE_SOA_TABLE(HfCandOmegacBase, "AOD", "HFCANDOMECBASE",
                   hf_cand_omegac::EtaV0PosDau, hf_cand_omegac::EtaV0NegDau, hf_cand_omegac::EtaPiFromCasc, hf_cand_omegac::EtaPiFromOme,
                   hf_cand_omegac::EtaOmegac, hf_cand_omegac::EtaCascade, hf_cand_omegac::EtaV0,
                   hf_cand_omegac::MyMassLambda, hf_cand_omegac::MassCascadeNotFixed, hf_cand_omegac::MassOmegacNotFixed,
-                  hf_cand_omegac::xVtxCascLF, hf_cand_omegac::yVtxCascLF, hf_cand_omegac::zVtxCascLF, hf_cand_omegac::MassCascLF,
-                  hf_cand_omegac::dcaXYToPVPrimaryPi, hf_cand_omegac::dcaXYToPVV0Dau0, hf_cand_omegac::dcaXYToPVV0Dau1, hf_cand_omegac::dcaXYToPVCascDau,
-                  hf_cand_omegac::DCACascDau, hf_cand_omegac::DCAV0Dau, hf_cand_omegac::DCAOmegacDau, hf_track_index::HFflag);
+                  hf_cand_omegac::XVtxCascLF, hf_cand_omegac::YVtxCascLF, hf_cand_omegac::ZVtxCascLF, hf_cand_omegac::MassCascLF,
+                  hf_cand_omegac::DcaXYToPVPrimaryPi, hf_cand_omegac::DcaXYToPVV0Dau0, hf_cand_omegac::DcaXYToPVV0Dau1, hf_cand_omegac::DcaXYToPVCascDau,
+                  hf_cand_omegac::DcaCascDau, hf_cand_omegac::DcaV0Dau, hf_cand_omegac::DcaOmegacDau, hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandOmegacMCRec, "AOD", "HFCANDOMECMCREC", //!
-                  hf_cand_omegac::FlagMCMatchRec,
-                  hf_cand_omegac::DebugMCRec);
+                  hf_cand_omegac::FlagMcMatchRec,
+                  hf_cand_omegac::DebugMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandOmegacMCGen, "AOD", "HFCANDOMECMCGEN", //!
-                  hf_cand_omegac::FlagMCMatchGen);
+                  hf_cand_omegac::FlagMcMatchGen);
 
 // specific chic candidate properties
 namespace hf_cand_chic
