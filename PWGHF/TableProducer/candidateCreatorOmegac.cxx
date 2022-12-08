@@ -33,11 +33,13 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::pdg;
 using namespace o2::aod::v0data;
 using namespace o2::aod::cascdata;
 using namespace o2::aod::hf_track_index;
@@ -143,13 +145,11 @@ struct HfCandidateCreatorOmegac {
     dfv.setWeightedFinalPCA(useWeightedPCA);
     dfv.setRefitWithMatCorr(refitWithMatCorr);
 
-    double massPionTrueValue = RecoDecay::getMassPDG(211);
-    double massProtonTrueValue = RecoDecay::getMassPDG(2212);
-    double massLambdaTrueValue = RecoDecay::getMassPDG(3122);
-    double massXiTrueValue = RecoDecay::getMassPDG(3312);
-    double massOmegacTrueValue = RecoDecay::getMassPDG(4332);
-
-    LOGF(info, "PDG masses: %f (pion), %f (proton), %f (lambda), %f (xi), %f (omegac)", massPionTrueValue, massProtonTrueValue, massLambdaTrueValue, massXiTrueValue, massOmegacTrueValue);
+    double massPionTrueValue = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
+    double massProtonTrueValue = RecoDecay::getMassPDG(kProton);  // pdg code 2212
+    double massLambdaTrueValue = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
+    double massXiTrueValue = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
+    double massOmegacTrueValue = RecoDecay::getMassPDG(kOmegac0); // pdg code 4332
 
     // loop over cascades reconstructed by cascadebuilder.cxx
     for (auto const& casc : cascades) {
@@ -336,18 +336,18 @@ struct HfCandidateCreatorOmegac {
         double mLambda = v0Element.mLambda();         // from LF table, V0 mass under lambda hypothesis
         double mAntiLambda = v0Element.mAntiLambda(); // from LF table, V0 mass under anti-lambda hypothesis
 
-        double MyMLambda = 0.;
+        double myMLambda = 0.;
         const std::array<double, 2> arrMassLambda = {massProtonTrueValue, massPionTrueValue};
         const std::array<double, 2> arrMassAntiLambda = {massPionTrueValue, massProtonTrueValue};
         if (trackXiDauCharged.sign() > 0) {
-          MyMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassAntiLambda);
+          myMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassAntiLambda);
         } else if (trackXiDauCharged.sign() < 0) {
-          MyMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassLambda);
+          myMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassLambda);
         }
 
         const std::array<double, 2> arrMassCascade = {massLambdaTrueValue, massPionTrueValue};
         double mCascade = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, arrMassCascade);
-        double mCascadeNotFixed = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, std::array{MyMLambda, massPionTrueValue});
+        double mCascadeNotFixed = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, std::array{myMLambda, massPionTrueValue});
         double mCascLF = casc.mXi();
 
         const std::array<double, 2> arrMassOmegac = {massXiTrueValue, massPionTrueValue};
@@ -419,7 +419,7 @@ struct HfCandidateCreatorOmegac {
                      ctOmegac, ctCascade, ctV0,
                      pseudorapV0PosDau, pseudorapV0NegDau, pseudorapPiFromCas, pseudorapPiFromOme,
                      pseudorapOmegac, pseudorapCascade, pseudorapV0,
-                     MyMLambda, mCascadeNotFixed, mOmegacNotFixed,
+                     myMLambda, mCascadeNotFixed, mOmegacNotFixed,
                      vertexCascLFTable[0], vertexCascLFTable[0], vertexCascLFTable[0], mCascLF, dcaxyPrimaryPi, dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascDau,
                      dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag);
 

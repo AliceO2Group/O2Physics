@@ -24,6 +24,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
+using namespace o2::analysis::pdg;
 using namespace o2::aod::hf_cand_omegac;
 using namespace o2::aod::hf_sel_omegac;
 
@@ -130,8 +131,8 @@ struct HfCandidateSelectorOmegac {
     selectorProton.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
     selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
-    double massLambdaTrueValue = RecoDecay::getMassPDG(3122);
-    double massXiTrueValue = RecoDecay::getMassPDG(3312);
+    double massLambdaTrueValue = RecoDecay::getMassPDG(kLambda0);
+    double massXiTrueValue = RecoDecay::getMassPDG(kXiMinus);
 
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
