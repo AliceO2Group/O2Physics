@@ -124,7 +124,7 @@ class FemtoDreamMath
     return 0.5 * trackSum.Pt();
   }
 
-  /// Compute the transverse mass of a pair of particles
+    /// Compute the transverse mass of a pair of particles
   /// \tparam T type of tracks
   /// \param part1 Particle 1
   /// \param mass1 Mass of particle 1
@@ -134,6 +134,56 @@ class FemtoDreamMath
   static float getmT(const T& part1, const float mass1, const T& part2, const float mass2)
   {
     return std::sqrt(std::pow(getkT(part1, mass1, part2, mass2), 2.) + std::pow(0.5 * (mass1 + mass2), 2.));
+  }
+  
+  /// Compute the k* of a pair of particles
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  template <typename T>
+  static float getkstarMC(const T& part1, const float mass1, const T& part2, const float mass2)
+  {    
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.ptTruth(), part1.etaTruth(), part1.phiTruth(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.ptTruth(), part2.etaTruth(), part2.phiTruth(), mass2);
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+    ROOT::Math::PxPyPzMVector PartOneCMS(vecpart1);
+    ROOT::Math::PxPyPzMVector PartTwoCMS(vecpart2);
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    PartOneCMS = boostPRF(PartOneCMS);
+    PartTwoCMS = boostPRF(PartTwoCMS);
+    const ROOT::Math::PxPyPzMVector trackRelK = PartOneCMS - PartTwoCMS;
+    return 0.5 * trackRelK.P();
+  } 
+  /// Compute the transverse momentum of a pair of particles using MC truth
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  template <typename T>
+  static float getkTMC(const T& part1, const float mass1, const T& part2, const float mass2)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt_Truth(), part1.eta_Truth(), part1.phi_Truth(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt_Truth(), part2.eta_Truth(), part2.phi_Truth(), mass2);
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+    return 0.5 * trackSum.Pt();
+  }
+  /// Compute the transverse mass of a pair of particles using MC Truth
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  template <typename T>
+  static float getmTMC(const T& part1, const float mass1, const T& part2, const float mass2)
+  {
+    return std::sqrt(std::pow(getkTMC(part1, mass1, part2, mass2), 2.) + std::pow(0.5 * (mass1 + mass2), 2.));
   }
 };
 
