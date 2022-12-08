@@ -128,7 +128,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MGamma, mGamma, //! mass under gamma hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)}); });
 // Account for rigidity in case of hypertriton
 DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under hypertriton  hypothesis
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{2.0f*pxpos, 2.0f*pypos, 2.0f*pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)}); });
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{2.0f*pxpos, 2.0f*pypos, 2.0f*pzpos}, array{pxneg, pyneg, pzneg}}, array{2.80923, RecoDecay::getMassPDG(kPiPlus)}); });
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiHypertriton, mAntiHypertriton, //! mass under antihypertriton hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{2.0f*pxneg, 2.0f*pyneg, 2.0f*pzneg}}, array{RecoDecay::getMassPDG(kPiPlus), 2.80923}); });
 
