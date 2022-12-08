@@ -133,6 +133,7 @@ struct LfTreeCreatorNuclei {
         track.sign(),
         track.tpcNClsCrossedRows(),
         track.tpcCrossedRowsOverFindableCls(),
+        track.tpcNClsFound(),
         track.tpcChi2NCl(),
         track.itsChi2NCl());
 
