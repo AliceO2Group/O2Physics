@@ -1256,7 +1256,7 @@ DECLARE_SOA_COLUMN(EtaPiFromOme, etaPiFromOme, double);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(MyMassLambda, myMassLambda, double); //mass of the lambda re-computed within the task candidateCreatorOmegac.cxx (not from LF table)
+DECLARE_SOA_COLUMN(MyMassLambda, myMassLambda, double); // mass of the lambda re-computed within the task candidateCreatorOmegac.cxx (not from LF table)
 DECLARE_SOA_COLUMN(MassCascadeNotFixed, massCascadeNotFixed, double);
 DECLARE_SOA_COLUMN(MassOmegacNotFixed, massOmegacNotFixed, double);
 DECLARE_SOA_COLUMN(XVtxCascLF, xVtxCascLF, double);
