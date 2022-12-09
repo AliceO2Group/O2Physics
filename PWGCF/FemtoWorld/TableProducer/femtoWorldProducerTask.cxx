@@ -699,12 +699,12 @@ struct femtoWorldProducerTask {
         sumVec += part2Vec;
 
         float phiEta = sumVec.Eta();
-        float phiPhi = sumVec.Phi(); // change needed
+        float phiPhi = sumVec.Phi();
+        ; // later I'm changing phiPhi values
         float phiPt = sumVec.Pt();
         float phiP = sumVec.P();
         float phiM = sumVec.M();
-
-        PhiCuts.fillPhiQAMass(col, phiM, p1, p2, ConfInvMassLowLimitPhi, ConfInvMassUpLimitPhi);
+        // PhiCuts.fillPhiQAMass(col, phiM, p1, p2, ConfInvMassLowLimitPhi, ConfInvMassUpLimitPhi);
 
         if (((phiM < ConfInvMassLowLimitPhi) || (phiM > ConfInvMassUpLimitPhi))) {
           continue;
@@ -817,6 +817,11 @@ struct femtoWorldProducerTask {
 
           const int rowOfNegTrack = outputParts.lastIndex();
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          if (sumVec.Phi() < 0) {
+            phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+          } else if (sumVec.Phi() >= 0) {
+            phiPhi = sumVec.Phi();
+          }
           outputParts(outputCollision.lastIndex(),
                       phiPt,
                       phiEta,
