@@ -306,8 +306,8 @@ struct tofEventTime {
       // Compute the TOF event time
       const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, response, diamond);
 
-      float t0AC[2] = {.0f, 999.f};                                       // Value and error of T0A or T0C or T0AC
-      float t0TOF[2] = {evTimeTOF.mEventTime, evTimeTOF.mEventTimeError}; // Value and error of TOF
+      float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
+      float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
 
       uint8_t flags = 0;
       int nGoodTracksForTOF = 0;
