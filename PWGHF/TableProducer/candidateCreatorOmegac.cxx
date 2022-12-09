@@ -145,11 +145,11 @@ struct HfCandidateCreatorOmegac {
     dfv.setWeightedFinalPCA(useWeightedPCA);
     dfv.setRefitWithMatCorr(refitWithMatCorr);
 
-    double massPionTrueValue = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
-    double massProtonTrueValue = RecoDecay::getMassPDG(kProton);  // pdg code 2212
-    double massLambdaTrueValue = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
-    double massXiTrueValue = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
-    double massOmegacTrueValue = RecoDecay::getMassPDG(kOmegac0); // pdg code 4332
+    double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
+    double massProtonFromPDG = RecoDecay::getMassPDG(kProton);  // pdg code 2212
+    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
+    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
+    double massOmegacFromPDG = RecoDecay::getMassPDG(kOmegaC0); // pdg code 4332
 
     // loop over cascades reconstructed by cascadebuilder.cxx
     for (auto const& casc : cascades) {
@@ -337,22 +337,22 @@ struct HfCandidateCreatorOmegac {
         double mAntiLambda = v0Element.mAntiLambda(); // from LF table, V0 mass under anti-lambda hypothesis
 
         double myMLambda = 0.;
-        const std::array<double, 2> arrMassLambda = {massProtonTrueValue, massPionTrueValue};
-        const std::array<double, 2> arrMassAntiLambda = {massPionTrueValue, massProtonTrueValue};
+        const std::array<double, 2> arrMassLambda = {massProtonFromPDG, massPionFromPDG};
+        const std::array<double, 2> arrMassAntiLambda = {massPionFromPDG, massProtonFromPDG};
         if (trackXiDauCharged.sign() > 0) {
           myMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassAntiLambda);
         } else if (trackXiDauCharged.sign() < 0) {
           myMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassLambda);
         }
 
-        const std::array<double, 2> arrMassCascade = {massLambdaTrueValue, massPionTrueValue};
+        const std::array<double, 2> arrMassCascade = {massLambdaFromPDG, massPionFromPDG};
         double mCascade = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, arrMassCascade);
-        double mCascadeNotFixed = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, std::array{myMLambda, massPionTrueValue});
+        double mCascadeNotFixed = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, std::array{myMLambda, massPionFromPDG});
         double mCascLF = casc.mXi();
 
-        const std::array<double, 2> arrMassOmegac = {massXiTrueValue, massPionTrueValue};
+        const std::array<double, 2> arrMassOmegac = {massXiFromPDG, massPionFromPDG};
         double mOmegac = RecoDecay::m(std::array{pvecCascAsD, pvecPionFromOmegac}, arrMassOmegac);
-        double mOmegacNotFixed = RecoDecay::m(std::array{pvecCascAsD, pvecPionFromOmegac}, std::array{mCascadeNotFixed, massPionTrueValue});
+        double mOmegacNotFixed = RecoDecay::m(std::array{pvecCascAsD, pvecPionFromOmegac}, std::array{mCascadeNotFixed, massPionFromPDG});
 
         // computing cosPA
         double cpaV0 = RecoDecay::cpa(coordVtxCasc, coordVtxV0, pvecV0AsM);
@@ -366,9 +366,9 @@ struct HfCandidateCreatorOmegac {
         double decLenOmegac = RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac);
         double decLenCascade = RecoDecay::distance(coordVtxOmegac, coordVtxCasc);
         double decLenV0 = RecoDecay::distance(coordVtxCasc, coordVtxV0);
-        double ctOmegac = RecoDecay::ct(pvecOmegac, decLenOmegac, massOmegacTrueValue);
-        double ctCascade = RecoDecay::ct(pvecCascAsD, decLenCascade, massXiTrueValue);
-        double ctV0 = RecoDecay::ct(pvecV0AsM, decLenV0, massLambdaTrueValue);
+        double ctOmegac = RecoDecay::ct(pvecOmegac, decLenOmegac, massOmegacFromPDG);
+        double ctCascade = RecoDecay::ct(pvecCascAsD, decLenCascade, massXiFromPDG);
+        double ctV0 = RecoDecay::ct(pvecV0AsM, decLenV0, massLambdaFromPDG);
 
         // computing eta
         double pseudorapOmegac = RecoDecay::eta(pvecOmegac);
@@ -443,6 +443,13 @@ struct HfCandidateCreatorOmegacMc {
     // int8_t origin = 0; //to be used for prompt/non prompt
     int8_t debug = 0;
 
+    int omegaC0PDGCode = pdg::Code::kOmegaC0; // pdg::Code::kOmegac0=4332
+    int xiMinusPDGCode = kXiMinus; // pdg::Code::kXiMinus=3312
+    int lambdaPDGCode = kLambda0; // pdg::Code::kLambda=3122
+    int piPlusPDGCode = kPiPlus; // pdg::Code::kPiPlus=211
+    int piMinusPDGCode = kPiMinus; // pdg::Code::kPiMinus=-211
+    int protonPDGCode = kProton; // pdg::Code::kProton=2212
+
     // Match reconstructed candidates.
     for (auto& candidate : candidates) {
       // Printf("New rec. candidate");
@@ -459,23 +466,23 @@ struct HfCandidateCreatorOmegacMc {
       auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::BigTracksMC>(),
                                          candidate.negTrack_as<aod::BigTracksMC>()};
 
-      // Omegac → p pi pi pi
-      // Printf("Checking Omegac → p π π π");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 4332, std::array{211, -211, 2212, -211}, true, &sign, 3); // pdg::Code::kOmegac0=4332 - proton 2212 - pi+ 211
+      // Omegac → pi pi pi p
+      // Printf("Checking Omegac → pi pi pi p");
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, omegaC0PDGCode, std::array{piPlusPDGCode, piMinusPDGCode, protonPDGCode, piMinusPDGCode}, true, &sign, 3);
       if (indexRec == -1) {
         debug = 1;
       }
       if (indexRec > -1) {
         // cascade → lambda pi
-        // Printf("Checking cascade → lambda pi");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, 3312, std::array{-211, 2212, -211}, true, &sign, 2); // pdg::Code::kXiMinus=3312
+        // Printf("Checking cascade → pi pi p");
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, xiMinusPDGCode, std::array{piMinusPDGCode, protonPDGCode, piMinusPDGCode}, true, &sign, 2); 
         if (indexRec == -1) {
           debug = 2;
         }
         if (indexRec > -1) {
           // v0 → p pi
           // Printf("Checking v0 → p pi");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, 3122, std::array{2212, -211}, true, &sign, 1); // pdg::Code::kLambda=3122
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, lambdaPDGCode, std::array{protonPDGCode, piMinusPDGCode}, true, &sign, 1); 
           if (indexRec == -1) {
             debug = 3;
           }
@@ -497,14 +504,14 @@ struct HfCandidateCreatorOmegacMc {
       flag = 0;
       // origin = 0;
       //  Omegac → Xi pi
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, 4332, std::array{3312, 211}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, omegaC0PDGCode, std::array{xiMinusPDGCode, piPlusPDGCode}, true)) {
         // Match Xi -> lambda pi
         auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking cascade → lambda pi");
-        if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, 3312, std::array{3122, -211}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, xiMinusPDGCode, std::array{lambdaPDGCode, piMinusPDGCode}, true)) {
           // lambda -> p pi
           auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, 3122, std::array{2212, -211}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, lambdaPDGCode, std::array{protonPDGCode, piMinusPDGCode}, true, &sign)) {
             flag = sign * (1 << DecayType::OmegacToXiPi);
           }
         }

@@ -80,7 +80,7 @@ struct HfCandidateSelectorOmegac {
 
   // detector clusters selections
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
-  Configurable<int> tpcCrossedRowsMin{"tpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
+  Configurable<int> nTpcCrossedRowsMin{"nTpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
   Configurable<double> tpcCrossedRowsOverFindableClustersRatioMin{"tpcCrossedRowsOverFindableClustersRatioMin", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
@@ -131,8 +131,8 @@ struct HfCandidateSelectorOmegac {
     selectorProton.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
     selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
-    double massLambdaTrueValue = RecoDecay::getMassPDG(kLambda0);
-    double massXiTrueValue = RecoDecay::getMassPDG(kXiMinus);
+    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
+    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
 
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
@@ -228,16 +228,16 @@ struct HfCandidateSelectorOmegac {
         continue;
       }
 
-      if (trackPiFromOmeg.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
+      if (trackPiFromOmeg.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         continue;
       }
-      if (trackPiFromLam.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
+      if (trackPiFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         continue;
       }
-      if (trackPrFromLam.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
+      if (trackPrFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         continue;
       }
-      if (trackPiFromCasc.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
+      if (trackPiFromCasc.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         continue;
       }
 
@@ -309,14 +309,14 @@ struct HfCandidateSelectorOmegac {
       double invMassCascade = candidate.invMassCascade();
       double invMassOmegac = candidate.invMassOmegac();
 
-      if (std::abs(invMassLambda - massLambdaTrueValue) < (nSigmaInvMassCut * sigmaInvMassLambda)) {
+      if (std::abs(invMassLambda - massLambdaFromPDG) < (nSigmaInvMassCut * sigmaInvMassLambda)) {
         statusInvMassLambda = 1;
         if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1) {
           hTest2->Fill(3.5);
         }
       }
 
-      if (std::abs(invMassCascade - massXiTrueValue) < (nSigmaInvMassCut * sigmaInvMassCascade)) {
+      if (std::abs(invMassCascade - massXiFromPDG) < (nSigmaInvMassCut * sigmaInvMassCascade)) {
         statusInvMassCascade = 1;
         if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1) {
           hTest2->Fill(4.5);
