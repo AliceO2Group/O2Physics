@@ -22,19 +22,18 @@ struct collisionConverter {
   void process(aod::Collisions_000 const& collisionTable)
   {
     for (auto& collision : collisionTable) {
-      //Simple swap of XZ and YY with respect to expectations
+      // Simple swap of XZ and YY with respect to expectations
       Collisions_001(
-                 collision.bcId(),
-                 collision.posX(), collision.posY(), collision.posZ(),
-                 collision.covXX(),
-                 collision.covXY(),
-                 collision.covXZ(), //deliberate: Collisions_001 expects YY
-                 collision.covYY(), //deliberate: Collisions_001 expects XZ
-                 collision.covYZ(),
-                 collision.covZZ(),
-                 collision.flags(), collision.chi2(), collision.numContrib(),
-                 collision.collisionTime(), collision.collisionTimeRes()
-                 );
+        collision.bcId(),
+        collision.posX(), collision.posY(), collision.posZ(),
+        collision.covXX(),
+        collision.covXY(),
+        collision.covXZ(), // deliberate: Collisions_001 expects YY
+        collision.covYY(), // deliberate: Collisions_001 expects XZ
+        collision.covYZ(),
+        collision.covZZ(),
+        collision.flags(), collision.chi2(), collision.numContrib(),
+        collision.collisionTime(), collision.collisionTimeRes());
     }
   }
 };
