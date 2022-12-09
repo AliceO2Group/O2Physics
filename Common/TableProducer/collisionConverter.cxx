@@ -19,20 +19,23 @@ using namespace o2::framework;
 struct collisionConverter {
   Produces<aod::Collisions_001> Collisions_001;
 
-  void process(aod::Collisions_000::iterator const& collision)
+  void process(aod::Collisions_000 const& collisionTable)
   {
-    // Simple swap of XZ and YY with respect to expectations
-    Collisions_001(
-      collision.bcId(),
-      collision.posX(), collision.posY(), collision.posZ(),
-      collision.covXX(),
-      collision.covXY(),
-      collision.covXZ(), // deliberate: Collisions_001 expects YY
-      collision.covYY(), // deliberate: Collisions_001 expects XZ
-      collision.covYZ(),
-      collision.covZZ(),
-      collision.flags(), collision.chi2(), collision.numContrib(),
-      collision.collisionTime(), collision.collisionTimeRes());
+    for (auto& collision : collisionTable) {
+      //Simple swap of XZ and YY with respect to expectations
+      Collisions_001(
+                 collision.bcId(),
+                 collision.posX(), collision.posY(), collision.posZ(),
+                 collision.covXX(),
+                 collision.covXY(),
+                 collision.covXZ(), //deliberate: Collisions_001 expects YY
+                 collision.covYY(), //deliberate: Collisions_001 expects XZ
+                 collision.covYZ(),
+                 collision.covZZ(),
+                 collision.flags(), collision.chi2(), collision.numContrib(),
+                 collision.collisionTime(), collision.collisionTimeRes()
+                 );
+    }
   }
 };
 
