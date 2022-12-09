@@ -160,13 +160,13 @@ struct HfCandidateCreatorOmegac {
 
       //----------------accessing particles in the decay chain-------------
       // cascade daughter - charged particle
-      int indexTrackXiDauCharged = casc.bachelorId();        // pion <- xi index from cascade table (not used)
+      // int indexTrackXiDauCharged = casc.bachelorId();     // pion <- xi index from cascade table (not used)
       auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track from MyTracks table
       // cascade daughter - V0
       if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
         continue;
       }
-      int indexV0 = casc.v0Id(); // VO index from cascades table
+      // int indexV0 = casc.v0Id(); // VO index from cascades table (not used)
       auto v0 = casc.v0_as<aod::V0sLinked>();
       auto v0Element = v0.v0Data(); // V0 element from LF table containing V0 info
       // V0 positive daughter
@@ -193,9 +193,9 @@ struct HfCandidateCreatorOmegac {
       auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
       auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
 
-      // info from LF table
-      std::array<float, 3> pvecV0LFTable = {v0Element.px(), v0Element.py(), v0Element.pz()}; // pvec stands for vector containing the 3-momentum components
-      std::array<float, 3> vertexV0 = {v0Element.x(), v0Element.y(), v0Element.z()};
+      // info from LF table (not used in the task - for cross checks)
+      // std::array<float, 3> pvecV0LFTable = {v0Element.px(), v0Element.py(), v0Element.pz()}; // pvec stands for vector containing the 3-momentum components
+      // std::array<float, 3> vertexV0 = {v0Element.x(), v0Element.y(), v0Element.z()};
 
       // reconstruct V0 with DCAFitter
       int nVtxFromFitterV0 = dfv.process(trackParCovV0Dau0, trackParCovV0Dau1);
@@ -216,10 +216,9 @@ struct HfCandidateCreatorOmegac {
 
       std::array<float, 3> coordVtxV0 = dfv.getPCACandidatePos();
       std::array<float, 6> covVtxV0 = dfv.calcPCACovMatrixFlat();
-      std::array<float, 3> momVtxV0 = pvecV0AsM;
 
       // create V0 track
-      auto trackV0 = o2::dataformats::V0(dfv.getPCACandidatePos(), pvecV0AsM, dfv.calcPCACovMatrixFlat(), trackParCovV0Dau0, trackParCovV0Dau1, {0, 0}, {0, 0});
+      auto trackV0 = o2::dataformats::V0(coordVtxV0, pvecV0AsM, covVtxV0, trackParCovV0Dau0, trackParCovV0Dau1, {0, 0}, {0, 0});
       auto trackV0Copy = trackV0;
 
       //-----------------------------reconstruct cascade------------------------------
@@ -251,10 +250,9 @@ struct HfCandidateCreatorOmegac {
 
       std::array<float, 3> coordVtxCasc = dfc.getPCACandidatePos();
       std::array<float, 6> covVtxCasc = dfc.calcPCACovMatrixFlat();
-      std::array<float, 3> momVtxCasc = pvecCascAsM;
 
       // create cascade track
-      auto trackCasc = o2::dataformats::V0(dfc.getPCACandidatePos(), pvecCascAsM, dfc.calcPCACovMatrixFlat(), trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
+      auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
       auto trackCascCopy = trackCasc;
 
       //-------------------combining cascade and pion tracks--------------------------
@@ -286,9 +284,8 @@ struct HfCandidateCreatorOmegac {
         if (nVtxFromFitterOmegac == 0) {
           continue;
         }
-        auto vertexOmegacFromFitter = df.getPCACandidate();
+        auto vertexOmegacFromFitter = df.getPCACandidate(); // use df.calcPCACovMatrixFlat() to get the covariance matrix
         auto chi2PCAOmegac = df.getChi2AtPCACandidate();
-        auto covMatrixPCA = df.calcPCACovMatrixFlat();
         std::array<float, 3> pvecCascAsD;
         std::array<float, 3> pvecPionFromOmegac;
         df.propagateTracksToVertex();
@@ -301,18 +298,16 @@ struct HfCandidateCreatorOmegac {
 
         std::array<float, 3> coordVtxOmegac = df.getPCACandidatePos();
         std::array<float, 6> covVtxOmegac = df.calcPCACovMatrixFlat();
-        std::array<float, 3> momVtxOmegac = pvecOmegac;
 
         // create omegac track
-        auto trackOmegac = o2::dataformats::V0(df.getPCACandidatePos(), pvecOmegac, df.calcPCACovMatrixFlat(), trackCasc, trackParVarPi, {0, 0}, {0, 0});
+        auto trackOmegac = o2::dataformats::V0(coordVtxOmegac, pvecOmegac, covVtxOmegac, trackCasc, trackParVarPi, {0, 0}, {0, 0});
 
         // impact parameter omegac
         o2::dataformats::DCA impactParameterOmegac;
-        auto primaryVertex = getPrimaryVertex(collision);
+        auto primaryVertex = getPrimaryVertex(collision); // get the associated covariance matrix with auto covMatrixPV = primaryVertex.getCov();
         trackOmegac.propagateToDCA(primaryVertex, magneticField, &impactParameterOmegac);
 
         // impact parameter
-        auto covMatrixPV = primaryVertex.getCov();
         o2::dataformats::DCA impactParameterCasc;
         o2::dataformats::DCA impactParameterPrimaryPi;
         o2::dataformats::DCA impactParameterV0;
