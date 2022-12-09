@@ -444,11 +444,11 @@ struct HfCandidateCreatorOmegacMc {
     int8_t debug = 0;
 
     int omegaC0PDGCode = pdg::Code::kOmegaC0; // pdg::Code::kOmegac0=4332
-    int xiMinusPDGCode = kXiMinus; // pdg::Code::kXiMinus=3312
-    int lambdaPDGCode = kLambda0; // pdg::Code::kLambda=3122
-    int piPlusPDGCode = kPiPlus; // pdg::Code::kPiPlus=211
-    int piMinusPDGCode = kPiMinus; // pdg::Code::kPiMinus=-211
-    int protonPDGCode = kProton; // pdg::Code::kProton=2212
+    int xiMinusPDGCode = kXiMinus;            // pdg::Code::kXiMinus=3312
+    int lambdaPDGCode = kLambda0;             // pdg::Code::kLambda=3122
+    int piPlusPDGCode = kPiPlus;              // pdg::Code::kPiPlus=211
+    int piMinusPDGCode = kPiMinus;            // pdg::Code::kPiMinus=-211
+    int protonPDGCode = kProton;              // pdg::Code::kProton=2212
 
     // Match reconstructed candidates.
     for (auto& candidate : candidates) {
@@ -475,14 +475,14 @@ struct HfCandidateCreatorOmegacMc {
       if (indexRec > -1) {
         // cascade → lambda pi
         // Printf("Checking cascade → pi pi p");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, xiMinusPDGCode, std::array{piMinusPDGCode, protonPDGCode, piMinusPDGCode}, true, &sign, 2); 
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, xiMinusPDGCode, std::array{piMinusPDGCode, protonPDGCode, piMinusPDGCode}, true, &sign, 2);
         if (indexRec == -1) {
           debug = 2;
         }
         if (indexRec > -1) {
           // v0 → p pi
           // Printf("Checking v0 → p pi");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, lambdaPDGCode, std::array{protonPDGCode, piMinusPDGCode}, true, &sign, 1); 
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, lambdaPDGCode, std::array{protonPDGCode, piMinusPDGCode}, true, &sign, 1);
           if (indexRec == -1) {
             debug = 3;
           }
