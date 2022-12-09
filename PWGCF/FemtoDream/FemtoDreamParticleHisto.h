@@ -106,10 +106,11 @@ class FemtoDreamParticleHisto
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
         /// Track histograms
-        mHistogramRegistry->add((folderName + "/hDCAxy_primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
+        mHistogramRegistry->add((folderName + "/hDCAxy_Primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
         mHistogramRegistry->add((folderName + "/hDCAxy_Daughter").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
         mHistogramRegistry->add((folderName + "/hDCAxy_Material").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
         mHistogramRegistry->add((folderName + "/hDCAxy_NotPrimary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
+        mHistogramRegistry->add((folderName + "/hDCAxy_Fake").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
         mHistogramRegistry->add((folderName + "/hDCAxy_DaughterLambda").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
         mHistogramRegistry->add((folderName + "/hDCAxy_DaughterSigmaplus").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
@@ -146,6 +147,10 @@ class FemtoDreamParticleHisto
             break;
           case (o2::aod::femtodreamparticleMC::kNotPrimary):
             mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAxy_NotPrimary"),
+                                part.pt(), part.tempFitVar()); 
+            break;
+          case (o2::aod::femtodreamparticleMC::kFake):
+            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAxy_Fake"),
                                 part.pt(), part.tempFitVar()); 
             break;
           case (o2::aod::femtodreamparticleMC::kDaughterLambda):
