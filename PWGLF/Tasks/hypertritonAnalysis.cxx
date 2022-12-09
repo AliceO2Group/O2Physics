@@ -57,6 +57,7 @@ using std::array;
 
 //using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr>;
 using TracksCompleteIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCLfPi, aod::pidTPCLfHe>;
+using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCLfPi, aod::pidTPCLfHe, aod::McTrackLabels>;
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 using V0fullMC = soa::Join<aod::V0Datas, aod::V0Covs, aod::McV0Labels>;
 
@@ -66,18 +67,25 @@ struct hypertritonAnalysis {
   HistogramRegistry registry{
     "registry",
     {
+      // Invariant mass
       {"h2dMassHypertriton", "h2dMassHypertriton", {HistType::kTH2F, {{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {400, 2.800f, 3.200f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h2dMassAntiHypertriton", "h2dMassAntiHypertriton", {HistType::kTH2F, {{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {400, 2.800f, 3.200f, "Inv. Mass (GeV/c^{2})"}}}},
-
-      //Basic QA histogram
-      {"h3dPtVsMassHyVsDCAxy", "h3dPtVsMassHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 1.0f, "abs(dcaxy)"}}}},
-      {"h3dPtVsMassAHyVsDCAxy", "h3dPtVsMassAHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 1.0f, "abs(dcaxy)"}}}},
-
-      {"hQA3HedEdx", "hQA3HedEdx", {HistType::kTH1F, {{100,-10,10}}}},
-      {"hQAPidEdx", "hQAPidEdx", {HistType::kTH1F, {{100,-10,10}}}},
-      
+      // Basic QA histogram
+      {"h3dPtVsMassHyVsDCAxy", "h3dPtVsMassHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 0.5f, "abs(dcaxy)"}}}},
+      {"h3dPtVsMassAHyVsDCAxy", "h3dPtVsMassAHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 0.5f, "abs(dcaxy)"}}}},
+      // Very simple QA
+      {"hQAV0Radius", "hQAV0Radius", {HistType::kTH1F, {{200,0,50}}}},
+      {"hQADCAV0Dau", "hQADCAV0Dau", {HistType::kTH1F, {{100,0,5}}}},
+      {"hQADCAPosToPV", "hQADCAPosToPV", {HistType::kTH1F, {{100,-1,1}}}},
+      {"hQADCANegToPV", "hQADCANegToPV", {HistType::kTH1F, {{100,-1,1}}}},
+      {"hQADCAHypertritonToPV", "hQADCAHypertritonToPV", {HistType::kTH1F, {{100,-1,1}}}},
+      {"hQADCAAntiHypertritonToPV", "hQADCAAntiHypertritonToPV", {HistType::kTH1F, {{100,-1,1}}}},
+      // Bookkeeping
       {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
       {"V0loopFiltersCounts", "V0loopFiltersCounts", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
+      // dEdx QA plots
+      {"h2dQAdEdxHelium", "h2dQAdEdxHelium", {HistType::kTH2F, {{50, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
+      {"h2dQAdEdxPion", "h2dQAdEdxPion", {HistType::kTH2F, {{50, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
     },
   };
   
@@ -197,7 +205,7 @@ struct hypertritonAnalysis {
       registry.fill(HIST("hEventSelection"), ii, evselstats[ii]);
   }
   
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0full const& fullV0s, TracksCompleteIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0full const& fullV0s, TracksCompleteIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -217,6 +225,22 @@ struct hypertritonAnalysis {
     
     for (auto& v0 : fullV0s) {
       stats[kHypAll]++;
+      registry.fill(HIST("hQAV0Radius"), v0.v0radius());
+      registry.fill(HIST("hQADCAV0Dau"), v0.dcaV0daughters());
+      registry.fill(HIST("hQADCAPosToPV"), v0.posTrack_as<TracksCompleteIU>().dcaXY());
+      registry.fill(HIST("hQADCANegToPV"), v0.negTrack_as<TracksCompleteIU>().dcaXY());
+      registry.fill(HIST("h2dQAdEdxHelium"), TMath::Sqrt(
+                                                         v0.pxpos()*v0.pxpos()+
+                                                         v0.pypos()*v0.pypos()+
+                                                         v0.pzpos()*v0.pzpos()),
+                                                         v0.posTrack_as<TracksCompleteIU>().tpcNSigmaHe()
+                                                         );
+      registry.fill(HIST("h2dQAdEdxPion"), TMath::Sqrt(
+                                                       v0.pxpos()*v0.pxpos()+
+                                                       v0.pypos()*v0.pypos()+
+                                                       v0.pzpos()*v0.pzpos()),
+                                                       v0.posTrack_as<TracksCompleteIU>().tpcNSigmaPi()
+                                                       );
       if (v0.v0radius() > v0radius) {
         stats[kHypRadius]++;
         if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
@@ -246,7 +270,7 @@ struct hypertritonAnalysis {
                                                     covV, +1, true);
                   
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  
+                  registry.fill(HIST("hQADCAHypertritonToPV"), dcaInfo[0]);
                   if( TMath::Abs( dcaInfo[0] ) < dcahyptopv ){
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassHypertriton"), v0.ptHypertriton(), v0.mHypertriton());
@@ -277,7 +301,7 @@ struct hypertritonAnalysis {
                                                     covV, -1, true);
                   
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  
+                  registry.fill(HIST("hQADCAAntiHypertritonToPV"), dcaInfo[0]);
                   if( TMath::Abs( dcaInfo[0] ) < dcahyptopv ){
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassAntiHypertriton"), v0.ptAntiHypertriton(), v0.mAntiHypertriton());
@@ -293,9 +317,9 @@ struct hypertritonAnalysis {
     fillHistos();
     resetHistos();
   }
-  PROCESS_SWITCH(hypertritonAnalysis, process, "Regular analysis", true);
+  PROCESS_SWITCH(hypertritonAnalysis, processRealData, "Regular analysis", false);
   
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0fullMC const& fullV0s, TracksCompleteIU const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0fullMC const& fullV0s, TracksCompleteIUMC const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -314,14 +338,39 @@ struct hypertritonAnalysis {
     evselstats[kEvSelVtxZ]++;
     
     for (auto& v0 : fullV0s) {
-      stats[kHypAll]++;
-      if (!v0.has_mcParticle())
+      //Get perfect MC particle
+      auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
+      auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
+      if (!v0.has_mcParticle() || !posPartTrack.has_mcParticle() || !negPartTrack.has_mcParticle() )
         continue;
       auto v0mc = v0.mcParticle();
+      auto posMC = posPartTrack.mcParticle();
+      auto negMC = negPartTrack.mcParticle();
+      
       if (TMath::Abs(v0mc.pdgCode()) != 1010010030)
         continue;
-
+      if (posMC.pdgCode() != 1000020030)
+        continue;
+      if (negMC.pdgCode() != -211)
+        continue;
+      stats[kHypAll]++;
       if (v0.v0radius() > v0radius) {
+        registry.fill(HIST("hQAV0Radius"), v0.v0radius());
+        registry.fill(HIST("hQADCAV0Dau"), v0.dcaV0daughters());
+        registry.fill(HIST("hQADCAPosToPV"), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
+        registry.fill(HIST("hQADCANegToPV"), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
+        registry.fill(HIST("h2dQAdEdxHelium"), TMath::Sqrt(
+                                                           v0.pxpos()*v0.pxpos()+
+                                                           v0.pypos()*v0.pypos()+
+                                                           v0.pzpos()*v0.pzpos()),
+                                                           v0.posTrack_as<TracksCompleteIUMC>().tpcNSigmaHe()
+                                                           );
+        registry.fill(HIST("h2dQAdEdxPion"), TMath::Sqrt(
+                                                         v0.pxneg()*v0.pxneg()+
+                                                         v0.pyneg()*v0.pyneg()+
+                                                         v0.pzneg()*v0.pzneg()),
+                                                         v0.negTrack_as<TracksCompleteIUMC>().tpcNSigmaPi()
+                                                         );
         stats[kHypRadius]++;
         if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
           stats[kHypCosPA]++;
@@ -331,11 +380,11 @@ struct hypertritonAnalysis {
             // Hypertriton
             if (TMath::Abs(v0.yHypertriton()) < rapidity) {
               stats[kHypRapidity]++;
-              if (v0.posTrack_as<TracksCompleteIU>().tpcNSigmaHe() < heliumdEdx&&
-                  TMath::Abs(v0.negTrack_as<TracksCompleteIU>().tpcNSigmaPi()) < piondEdx ) {
+              if (v0.posTrack_as<TracksCompleteIUMC>().tpcNSigmaHe() < heliumdEdx&&
+                  TMath::Abs(v0.negTrack_as<TracksCompleteIUMC>().tpcNSigmaPi()) < piondEdx ) {
                 stats[kHypTPCdEdx]++;
-                if( TMath::Abs( v0.posTrack_as<TracksCompleteIU>().dcaXY() ) > dca3hetopv&&
-                   TMath::Abs( v0.negTrack_as<TracksCompleteIU>().dcaXY() ) > dcapiontopv){
+                if( TMath::Abs( v0.posTrack_as<TracksCompleteIUMC>().dcaXY() ) > dca3hetopv&&
+                   TMath::Abs( v0.negTrack_as<TracksCompleteIUMC>().dcaXY() ) > dcapiontopv){
                   stats[kHypDauDCAtoPV]++;
                   // Set up covariance matrices (should in fact be optional)
                   std::array<float, 21> covV = {0.};
@@ -350,7 +399,7 @@ struct hypertritonAnalysis {
                                                     covV, +1, true);
                   
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  
+                  registry.fill(HIST("hQADCAHypertritonToPV"), dcaInfo[0]);
                   if( TMath::Abs( dcaInfo[0] ) < dcahyptopv ){
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassHypertriton"), v0.ptHypertriton(), v0.mHypertriton());
@@ -362,11 +411,11 @@ struct hypertritonAnalysis {
             //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
             // AntiHypertriton
             if (TMath::Abs(v0.yAntiHypertriton()) < rapidity) {
-              if (v0.negTrack_as<TracksCompleteIU>().tpcNSigmaHe() < heliumdEdx&&
-                  TMath::Abs(v0.posTrack_as<TracksCompleteIU>().tpcNSigmaPi()) < piondEdx ) {
+              if (v0.negTrack_as<TracksCompleteIUMC>().tpcNSigmaHe() < heliumdEdx&&
+                  TMath::Abs(v0.posTrack_as<TracksCompleteIUMC>().tpcNSigmaPi()) < piondEdx ) {
                 stats[kHypTPCdEdx]++;
-                if( TMath::Abs( v0.posTrack_as<TracksCompleteIU>().dcaXY() ) > dcapiontopv&&
-                   TMath::Abs( v0.negTrack_as<TracksCompleteIU>().dcaXY() ) > dca3hetopv){
+                if( TMath::Abs( v0.posTrack_as<TracksCompleteIUMC>().dcaXY() ) > dcapiontopv&&
+                   TMath::Abs( v0.negTrack_as<TracksCompleteIUMC>().dcaXY() ) > dca3hetopv){
                   stats[kHypDauDCAtoPV]++;
                   // Set up covariance matrices (should in fact be optional)
                   std::array<float, 21> covV = {0.};
@@ -381,7 +430,7 @@ struct hypertritonAnalysis {
                                                     covV, -1, true);
                   
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  
+                  registry.fill(HIST("hQADCAAntiHypertritonToPV"), dcaInfo[0]);
                   if( TMath::Abs( dcaInfo[0] ) < dcahyptopv ){
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassAntiHypertriton"), v0.ptAntiHypertriton(), v0.mAntiHypertriton());
@@ -397,7 +446,7 @@ struct hypertritonAnalysis {
     fillHistos();
     resetHistos();
   }
-  PROCESS_SWITCH(hypertritonAnalysis, processMC, "MC analysis", false);
+  PROCESS_SWITCH(hypertritonAnalysis, processMC, "MC analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
