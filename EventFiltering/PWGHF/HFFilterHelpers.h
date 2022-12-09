@@ -234,7 +234,7 @@ std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort:
   }
   try {
     auto outputTensor = session->Run(session->GetInputNames(), inputTensor, session->GetOutputNames());
-    assert(outputTensor.size() == outputNames.size() && outputTensor[1].IsTensor());
+    assert(outputTensor.size() == session->GetOutputNames().size() && outputTensor[1].IsTensor());
     auto typeInfo = outputTensor[1].GetTensorTypeAndShapeInfo();
     assert(typeInfo.GetElementCount() == 3); // we need multiclass
     scores[0] = outputTensor[1].GetTensorMutableData<T>()[0];
