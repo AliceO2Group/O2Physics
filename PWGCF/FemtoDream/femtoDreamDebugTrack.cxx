@@ -38,7 +38,6 @@ static constexpr int nCuts = 5;
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.5f, 3.5f, 100.f}};
 
-static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 } // namespace
 
 struct femtoDreamDebugTrack {
@@ -49,19 +48,18 @@ struct femtoDreamDebugTrack {
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
+  Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
 
   using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
 
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                           // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
-                                           ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
 
   /// The configurables need to be passed to an std::vector
   std::vector<int> vPIDPartOne;
-
+  std::vector<float> kNsigma;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry FullQaRegistry{"FullTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -101,7 +99,8 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/nSigmaComb_p", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaComb_d", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
 
-    vPIDPartOne = ConfPIDPartOne;
+    vPIDPartOne = ConfPIDPartOne.value;
+    kNsigma = ConfPIDnSigmaMax.value;
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework
@@ -115,7 +114,14 @@ struct femtoDreamDebugTrack {
       if (part.p() > cfgCutTable->get("MaxP") || part.pt() > cfgCutTable->get("MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
+      if (!isFullPIDSelected(part.pidcut(),
+                             part.p(),
+                             cfgCutTable->get("PIDthr"),
+                             vPIDPartOne,
+                             cfgNspecies,
+                             kNsigma,
+                             cfgCutTable->get("nSigmaTPC"),
+                             cfgCutTable->get("nSigmaTPCTOF"))) {
         continue;
       }
 

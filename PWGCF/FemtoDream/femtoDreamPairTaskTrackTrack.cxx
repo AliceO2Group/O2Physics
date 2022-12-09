@@ -13,6 +13,7 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include <vector>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -84,6 +85,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// The configurables need to be passed to an std::vector
   std::vector<int> vPIDPartOne, vPIDPartTwo;
+  std::vector<float> kNsigma;
 
   /// Correlation part
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
@@ -130,6 +132,7 @@ struct femtoDreamPairTaskTrackTrack {
 
     vPIDPartOne = ConfPIDPartOne;
     vPIDPartTwo = ConfPIDPartTwo;
+    kNsigma = ConfPIDnSigmaMax;
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -156,7 +159,7 @@ struct femtoDreamPairTaskTrackTrack {
                              cfgCutTable->get("PartOne", "PIDthr"),
                              vPIDPartOne,
                              cfgNspecies,
-                             ConfPIDnSigmaMax.value,
+                             kNsigma,
                              cfgCutTable->get("PartOne", "nSigmaTPC"),
                              cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
@@ -173,7 +176,7 @@ struct femtoDreamPairTaskTrackTrack {
                                cfgCutTable->get("PartTwo", "PIDthr"),
                                vPIDPartTwo,
                                cfgNspecies,
-                               ConfPIDnSigmaMax.value,
+                               kNsigma,
                                cfgCutTable->get("PartTwo", "nSigmaTPC"),
                                cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
@@ -191,7 +194,7 @@ struct femtoDreamPairTaskTrackTrack {
                              cfgCutTable->get("PartOne", "PIDthr"),
                              vPIDPartOne,
                              cfgNspecies,
-                             ConfPIDnSigmaMax.value,
+                             kNsigma,
                              cfgCutTable->get("PartOne", "nSigmaTPC"),
                              cfgCutTable->get("PartOne", "nSigmaTPCTOF")) ||
           !isFullPIDSelected(p2.pidcut(),
@@ -199,7 +202,7 @@ struct femtoDreamPairTaskTrackTrack {
                              cfgCutTable->get("PartTwo", "PIDthr"),
                              vPIDPartTwo,
                              cfgNspecies,
-                             ConfPIDnSigmaMax.value,
+                             kNsigma,
                              cfgCutTable->get("PartTwo", "nSigmaTPC"),
                              cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
         continue;
@@ -253,7 +256,7 @@ struct femtoDreamPairTaskTrackTrack {
                                cfgCutTable->get("PartOne", "PIDthr"),
                                vPIDPartOne,
                                cfgNspecies,
-                               ConfPIDnSigmaMax.value,
+                               kNsigma,
                                cfgCutTable->get("PartOne", "nSigmaTPC"),
                                cfgCutTable->get("PartOne", "nSigmaTPCTOF")) ||
             !isFullPIDSelected(p2.pidcut(),
@@ -261,7 +264,7 @@ struct femtoDreamPairTaskTrackTrack {
                                cfgCutTable->get("PartTwo", "PIDthr"),
                                vPIDPartTwo,
                                cfgNspecies,
-                               ConfPIDnSigmaMax.value,
+                               kNsigma,
                                cfgCutTable->get("PartTwo", "nSigmaTPC"),
                                cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;

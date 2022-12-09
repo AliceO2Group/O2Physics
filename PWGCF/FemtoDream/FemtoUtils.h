@@ -39,7 +39,7 @@ int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 {
   for (std::size_t i = 0; i < vNsigma.size(); i++) {
     if (abs(nSigma - vNsigma[i]) < 1e-3) {
-      return i;
+      return static_cast<int>(i);
     }
   }
   LOG(info) << "Invalid value of nSigma: " << nSigma << ". Return the first value of the vector: " << vNsigma[0] << std::endl;
@@ -78,7 +78,7 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std:
 /// \param nSigmaTPC Number of TPC sigmas for selection
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled
-bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const momentum, float const pidThresh, std::vector<int> const& vSpecies, int nSpecies, const std::vector<float>& vNsigma = {3.5, 3., 2.5}, const float nSigmaTPC = 3.5, const float nSigmaTPCTOF = 3.5)
+bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const momentum, float const pidThresh, std::vector<int> const& vSpecies, int nSpecies, const std::vector<float>& vNsigma, const float nSigmaTPC, const float nSigmaTPCTOF)
 {
   bool pidSelection = true;
   if (momentum < pidThresh) {
