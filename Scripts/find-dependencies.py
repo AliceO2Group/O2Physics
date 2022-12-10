@@ -16,12 +16,12 @@ Find dependencies required to produce a given table or to run a given workflow.
 Author: Vít Kučera on 2022-12-10
 """
 
-import json
 import argparse
-import sys
-import os
 import glob
+import json
+import os
 import subprocess as sp  # nosec B404
+import sys
 
 
 def eprint(*args, **kwargs):
@@ -56,9 +56,9 @@ def load_workflows_from_json():
     for file_json in glob.glob(f"{dir_json}/*.json"):
         # print(file_json)
         # Get the workflow name from the JSON file name
-        workflow = os.path.basename(file_json).split('.')[0]
+        workflow = os.path.basename(file_json).split(".")[0]
         try:
-            with open(file_json, 'r') as j:
+            with open(file_json, "r") as j:
                 specs_wf = json.load(j)
                 db_wf[workflow] = specs_wf["workflow"]
         except FileNotFoundError:
@@ -67,23 +67,23 @@ def load_workflows_from_json():
     return db_wf
 
 
-def get_devices(specs_wf : dict):
+def get_devices(specs_wf: dict):
     """Get the list of devices of a given workflow loaded from a JSON file."""
     return [d["name"] for d in specs_wf]
 
 
-def get_inputs(specs_wf : dict, device=""):
+def get_inputs(specs_wf: dict, device=""):
     """Get the list of input tables of a given workflow loaded from a JSON file.
     If a device name is provided, only inputs of that device are considered."""
     list_inputs = []
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_inputs += [i['binding'] for i in dev["inputs"] if i["origin"] == "AOD"]
-    return list(dict.fromkeys(list_inputs)) # Remove duplicities
+        list_inputs += [i["binding"] for i in dev["inputs"] if i["origin"] == "AOD"]
+    return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
 
-def get_outputs(specs_wf : dict, device=""):
+def get_outputs(specs_wf: dict, device=""):
     """Get the list of output tables of a given workflow loaded from a JSON file.
     If a device name is provided, only outputs of that device are considered."""
     list_outputs = []
@@ -91,14 +91,15 @@ def get_outputs(specs_wf : dict, device=""):
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_outputs += [i['binding'] for i in dev["outputs"] if i["origin"] == "AOD"]
-    return list(dict.fromkeys(list_outputs)) # Remove duplicities
+        list_outputs += [i["binding"] for i in dev["outputs"] if i["origin"] == "AOD"]
+    return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
 
-def print_workflows(dic_wf_all : dict, list_wf=None):
+def print_workflows(dic_wf_all: dict, list_wf=None):
     """Print properties of a given workflow or workflows in the simplified dictionary.
     If no workflow name is provided, print all."""
-    def print_wf(dic_wf : dict, wf : str):
+
+    def print_wf(dic_wf: dict, wf: str):
         """Print a single workflow"""
         print(wf)
         # print(dic_wf)
@@ -107,6 +108,7 @@ def print_workflows(dic_wf_all : dict, list_wf=None):
             print(f"  device: {dev}")
             print(f"    inputs:  {dic_dev['inputs']}")
             print(f"    outputs: {dic_dev['outputs']}")
+
     if list_wf:
         for wf in list_wf:
             print_wf(dic_wf_all[wf], wf)
@@ -115,7 +117,7 @@ def print_workflows(dic_wf_all : dict, list_wf=None):
             print_wf(dic_wf, wf)
 
 
-def get_table_producers(table : str, dic_wf_all : dict, case_sensitive=False):
+def get_table_producers(table: str, dic_wf_all: dict, case_sensitive=False):
     """Find all workflows that have this table as output."""
     list_producers = []
     if not case_sensitive:
@@ -124,34 +126,38 @@ def get_table_producers(table : str, dic_wf_all : dict, case_sensitive=False):
     for wf, dic_wf in dic_wf_all.items():
         # Loop over devices
         for dev in dic_wf:
-            outputs = [o if case_sensitive else o.lower() for o in dic_wf[dev]["outputs"]]
+            outputs = [
+                o if case_sensitive else o.lower() for o in dic_wf[dev]["outputs"]
+            ]
             if table in outputs:
                 list_producers.append(wf)
-    return list(dict.fromkeys(list_producers)) # Remove duplicities
+    return list(dict.fromkeys(list_producers))  # Remove duplicities
 
 
-def get_workflow_outputs(wf : str, dic_wf_all : dict):
+def get_workflow_outputs(wf: str, dic_wf_all: dict):
     """Get list of workflow outputs from the simplified dictionary."""
     list_outputs = []
     # Loop over devices
     for dev in dic_wf_all[wf]:
         list_outputs += dic_wf_all[wf][dev]["outputs"]
-    return list(dict.fromkeys(list_outputs)) # Remove duplicities
+    return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
 
-def get_workflow_inputs(wf : str, dic_wf_all : dict):
+def get_workflow_inputs(wf: str, dic_wf_all: dict):
     """Get list of workflow inputs from the simplified dictionary."""
     list_inputs = []
     # list_outputs = get_workflow_outputs(wf, dic_wf_all)
     # Loop over devices
     for dev in dic_wf_all[wf]:
         list_inputs += dic_wf_all[wf][dev]["inputs"]
-    list_inputs = list(dict.fromkeys(list_inputs)) # Remove duplicities
+    list_inputs = list(dict.fromkeys(list_inputs))  # Remove duplicities
     # l = [d for d in l if d not in list_outputs] # avoid circular dependence (can be legit)
     return list_inputs
 
 
-def get_tree_for_workflow(wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False, level=0, levels_max=0):
+def get_tree_for_workflow(
+    wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False, level=0, levels_max=0
+):
     """Get the dependency tree of tables and workflows needed to run this workflow."""
     # print(level, levels_max)
     if dic_wf_tree is None:
@@ -169,12 +175,21 @@ def get_tree_for_workflow(wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False
                 if producers:
                     print(f"{(level) * '    ' + '  '}{tab} <- {producers}")
                     for p in producers:
-                        if p not in dic_wf_tree: # avoid infinite recursion
-                            get_tree_for_workflow(p, dic_wf_all, dic_wf_tree, case_sensitive, level + 1, levels_max)
+                        if p not in dic_wf_tree:  # avoid infinite recursion
+                            get_tree_for_workflow(
+                                p,
+                                dic_wf_all,
+                                dic_wf_tree,
+                                case_sensitive,
+                                level + 1,
+                                levels_max,
+                            )
     return dic_wf_tree
 
 
-def get_tree_for_table(tab, dic_wf_all, dic_wf_tree=None, case_sensitive=False, levels_max=0):
+def get_tree_for_table(
+    tab, dic_wf_all, dic_wf_tree=None, case_sensitive=False, levels_max=0
+):
     """Get the dependency tree of tables and workflows needed to produce this table."""
     if dic_wf_tree is None:
         dic_wf_tree = {}
@@ -183,7 +198,9 @@ def get_tree_for_table(tab, dic_wf_all, dic_wf_tree=None, case_sensitive=False, 
         print(f"{tab} <- {producers}\n")
         print("Workflow dependency tree:\n")
         for p in producers:
-            get_tree_for_workflow(p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max)
+            get_tree_for_workflow(
+                p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max
+            )
     else:
         print("No producers found")
     return dic_wf_tree
@@ -194,23 +211,34 @@ def main():
     parser = argparse.ArgumentParser(
         description="Find dependencies required to produce a given table or to run a given workflow."
     )
+    parser.add_argument("-t", dest="table", type=str, nargs="+", help="table(s)")
+    parser.add_argument("-w", dest="workflow", type=str, nargs="+", help="workflow(s)")
     parser.add_argument(
-        "-t", dest="table", type=str, nargs='+', help="table(s)"
+        "-c",
+        dest="case",
+        action="store_true",
+        help="be case-sensitive with table names",
     )
     parser.add_argument(
-        "-w", dest="workflow", type=str, nargs='+', help="workflow(s)"
+        "-g",
+        dest="suffix",
+        type=str,
+        choices=["pdf", "svg", "png"],
+        help="make a topology graph if suffix provided",
     )
     parser.add_argument(
-        "-c", dest="case", action="store_true", help="be case-sensitive with table names"
+        "-x",
+        dest="exclude",
+        type=str,
+        nargs="+",
+        help="tables and workflows to exclude",
     )
     parser.add_argument(
-        "-g", dest="suffix", type=str, choices=["pdf", "svg", "png"], help="make a topology graph if suffix provided"
-    )
-    parser.add_argument(
-        "-x", dest="exclude", type=str, nargs='+', help="tables and workflows to exclude"
-    )
-    parser.add_argument(
-        "-l", dest="levels", type=int, default=0, help="maximum number of workflow tree levels (default = 0, include all if < 0)"
+        "-l",
+        dest="levels",
+        type=int,
+        default=0,
+        help="maximum number of workflow tree levels (default = 0, include all if < 0)",
     )
     args = parser.parse_args()
     if not (args.table or args.workflow):
@@ -260,7 +288,9 @@ def main():
             #     return
             # print(producers)
             # print_workflows(dic_wf_all_simple, producers)
-            get_tree_for_table(table, dic_wf_all_simple, dic_deps, case_sensitive, n_levels)
+            get_tree_for_table(
+                table, dic_wf_all_simple, dic_deps, case_sensitive, n_levels
+            )
 
     # Find workflow dependencies
     if workflows:
@@ -269,7 +299,9 @@ def main():
             if not workflow:
                 msg_fatal("Bad workflow")
             # print_workflows(dic_wf_all_simple, [workflow])
-            get_tree_for_workflow(workflow, dic_wf_all_simple, dic_deps, case_sensitive, 0, n_levels)
+            get_tree_for_workflow(
+                workflow, dic_wf_all_simple, dic_deps, case_sensitive, 0, n_levels
+            )
 
     # Print the tree dictionary with dependencies
     # print("\nTree\n")
@@ -277,24 +309,26 @@ def main():
 
     # Produce topology graph.
     if graph_suffix and dic_deps:
-        basename = "_".join((tables if tables else []) + (workflows if workflows else []))
+        basename = "_".join(
+            (tables if tables else []) + (workflows if workflows else [])
+        )
         ext_graph = graph_suffix
         path_file_dot = basename + ".gv"
         path_file_graph = basename + "." + ext_graph
         print(f"\nMaking dot file in: {path_file_dot}")
         dot = "digraph {\n"
         dot += "  ranksep=2 // vertical node separation\n"
-        dot += '  node [shape=box, fontname=Courier, fontsize=20]\n'
+        dot += "  node [shape=box, fontname=Courier, fontsize=20]\n"
         # dot += "  edge [dir=back] // inverted arrow direction\n"
         # dot += "  rankdir=BT // bottom to top drawing\n"
         # lines with dependencies
         dot_deps = ""
         # subgraph for tables
-        dot_tables = '  subgraph tables {\n'
-        dot_tables += '    node [fillcolor=lightgrey,style=filled]\n'
+        dot_tables = "  subgraph tables {\n"
+        dot_tables += "    node [fillcolor=lightgrey,style=filled]\n"
         list_tables = []
         # subgraph for workflows
-        dot_workflows = '  subgraph workflows {\n'
+        dot_workflows = "  subgraph workflows {\n"
         dot_workflows += '    node [fillcolor=papayawhip,style="filled,rounded"]\n'
         for wf in dic_deps:
             # Hyphens are not allowed in node names.
@@ -311,7 +345,7 @@ def main():
             nodes_in = (" ".join(inputs)).replace("-", "_")
             nodes_out = (" ".join(outputs)).replace("-", "_")
             dot_deps += f"  {{{nodes_in}}} -> {node_wf} -> {{{nodes_out}}}\n"
-        list_tables = list(dict.fromkeys(list_tables)) # Remove duplicities
+        list_tables = list(dict.fromkeys(list_tables))  # Remove duplicities
         for table in list_tables:
             dot_tables += f"    {table}\n"
         dot_tables += "  }\n"
