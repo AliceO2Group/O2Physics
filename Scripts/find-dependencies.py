@@ -77,26 +77,6 @@ def load_workflows_from_json():
     return db_wf
 
 
-def print_workflows(dic_wf_all : dict, list_wf=None):
-    """Print properties of a given workflow or workflows in the simplified dictionary.
-    If no workflow name is provided, print all."""
-    def print_wf(dic_wf : dict, wf : str):
-        """Print a single workflow"""
-        print(wf)
-        # print(dic_wf)
-        # Loop over devices
-        for dev, dic_dev in dic_wf.items():
-            print(f"  device: {dev}")
-            print(f"    inputs:  {dic_dev['inputs']}")
-            print(f"    outputs: {dic_dev['outputs']}")
-    if list_wf:
-        for wf in list_wf:
-            print_wf(dic_wf_all[wf], wf)
-    else:
-        for wf, dic_wf in dic_wf_all.items():
-            print_wf(dic_wf, wf)
-
-
 def get_devices(specs_wf : dict):
     """Get the list of devices of a given workflow loaded from a JSON file."""
     return [d["name"] for d in specs_wf]
@@ -123,6 +103,26 @@ def get_outputs(specs_wf : dict, device=""):
             continue
         l += [i['binding'] for i in dev["outputs"] if i["origin"] == "AOD"]
     return list(dict.fromkeys(l)) # Remove duplicities
+
+
+def print_workflows(dic_wf_all : dict, list_wf=None):
+    """Print properties of a given workflow or workflows in the simplified dictionary.
+    If no workflow name is provided, print all."""
+    def print_wf(dic_wf : dict, wf : str):
+        """Print a single workflow"""
+        print(wf)
+        # print(dic_wf)
+        # Loop over devices
+        for dev, dic_dev in dic_wf.items():
+            print(f"  device: {dev}")
+            print(f"    inputs:  {dic_dev['inputs']}")
+            print(f"    outputs: {dic_dev['outputs']}")
+    if list_wf:
+        for wf in list_wf:
+            print_wf(dic_wf_all[wf], wf)
+    else:
+        for wf, dic_wf in dic_wf_all.items():
+            print_wf(dic_wf, wf)
 
 
 def get_table_producers(table : str, dic_wf_all : dict, case_sensitive=False):
