@@ -156,7 +156,12 @@ def get_workflow_inputs(wf: str, dic_wf_all: dict):
 
 
 def get_tree_for_workflow(
-    wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False, level=0, levels_max=0
+    wf: str,
+    dic_wf_all: dict,
+    dic_wf_tree=None,
+    case_sensitive=False,
+    level=0,
+    levels_max=0,
 ):
     """Get the dependency tree of tables and workflows needed to run this workflow."""
     # print(level, levels_max)
@@ -188,7 +193,7 @@ def get_tree_for_workflow(
 
 
 def get_tree_for_table(
-    tab, dic_wf_all, dic_wf_tree=None, case_sensitive=False, levels_max=0
+    tab: str, dic_wf_all: dict, dic_wf_tree=None, case_sensitive=False, levels_max=0
 ):
     """Get the dependency tree of tables and workflows needed to produce this table."""
     if dic_wf_tree is None:
