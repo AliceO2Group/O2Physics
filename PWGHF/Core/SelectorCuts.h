@@ -12,12 +12,12 @@
 /// \file SelectorCuts.h
 /// \brief Default pT bins and cut arrays for heavy-flavour selectors and analysis tasks
 
-#ifndef HF_SELECTOR_CUTS_H_
-#define HF_SELECTOR_CUTS_H_
+#ifndef PWGHF_CORE_SELECTORCUTS_H_
+#define PWGHF_CORE_SELECTORCUTS_H_
 
-#include "Framework/Configurable.h"
 #include <vector>
 #include <string>
+#include "Framework/Configurable.h"
 
 namespace o2::analysis
 {
@@ -42,7 +42,8 @@ enum Code {
   kB0 = 511,
   kB0Bar = -511,
   kBPlus = 521,
-  kX3872 = 9920443
+  kX3872 = 9920443,
+  kOmegaC0 = 4332
 };
 } // namespace pdg
 
@@ -871,4 +872,4 @@ static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 Jpsi", "d0
 
 } // namespace o2::analysis
 
-#endif // HF_SELECTOR_CUTS_H_
+#endif // PWGHF_CORE_SELECTORCUTS_H_
