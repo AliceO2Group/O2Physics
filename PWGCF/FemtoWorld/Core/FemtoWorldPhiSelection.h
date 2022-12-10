@@ -83,7 +83,7 @@ class FemtoWorldPhiSelection : public FemtoWorldObjectSelection<float, femtoWorl
                              fInvMassUpLimit(1.3),
                              fRejectKaon(false),
                              fInvMassKaonLowLimit(0.48),
-                             fInvMassKaonUpLimit(0.515){}
+                             fInvMassKaonUpLimit(0.515) {}
   /// Initializes histograms for the task
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
