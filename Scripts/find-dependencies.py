@@ -45,16 +45,6 @@ def msg_warn(message: str):
     eprint("\x1b[1;36mWarning:\x1b[0m %s" % message)
 
 
-def join_strings(obj):
-    """Return strings concatenated into one."""
-    if isinstance(obj, str):
-        return obj
-    elif isinstance(obj, list):
-        return " ".join(obj)
-    else:
-        msg_fatal("Cannot convert %s into a string" % type(obj))
-
-
 def load_workflows_from_json():
     """Load all workflows from JSON files."""
     try:
@@ -206,10 +196,10 @@ def main():
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
-        "-t", dest="table", help="table"
+        "-t", dest="table", type=str, nargs='+', help="table(s)"
     )
     group.add_argument(
-        "-w", dest="workflow", help="workflow"
+        "-w", dest="workflow", type=str, nargs='+', help="workflow(s)"
     )
     parser.add_argument(
         "-c", dest="case", action="store_true", help="be case-sensitive with table names"
@@ -224,8 +214,8 @@ def main():
         "-l", dest="levels", type=int, default=0, help="maximum number of workflow tree levels"
     )
     args = parser.parse_args()
-    table = args.table
-    workflow = args.workflow
+    tables = args.table
+    workflows = args.workflow
     case_sensitive = args.case
     graph_suffix = args.suffix
     list_exclude = args.exclude
@@ -254,22 +244,27 @@ def main():
     # print_workflows(dic_wf_all_simple)
     # return
 
-    # Find table producers
-    if table:
-        print(f"Table: {table}\n")
-        # producers = get_table_producers(table, dic_wf_all_simple, case_sensitive)
-        # if not producers:
-        #     print("No producers found")
-        #     return
-        # print(producers)
-        # print_workflows(dic_wf_all_simple, producers)
-        dic_deps = get_tree_for_table(table, dic_wf_all_simple, None, case_sensitive, n_levels)
+    # Dictionary with dependencies
+    dic_deps = {}
+
+    # Find table dependencies
+    if tables:
+        for table in tables:
+            print(f"\nTable: {table}\n")
+            # producers = get_table_producers(table, dic_wf_all_simple, case_sensitive)
+            # if not producers:
+            #     print("No producers found")
+            #     return
+            # print(producers)
+            # print_workflows(dic_wf_all_simple, producers)
+            get_tree_for_table(table, dic_wf_all_simple, dic_deps, case_sensitive, n_levels)
 
     # Find workflow dependencies
-    if workflow:
-        print(f"Workflow: {workflow}\n")
-        # print_workflows(dic_wf_all_simple, [workflow])
-        dic_deps = get_tree_for_workflow(workflow, dic_wf_all_simple, None, case_sensitive, 0, n_levels)
+    if workflows:
+        for workflow in workflows:
+            print(f"\nWorkflow: {workflow}\n")
+            # print_workflows(dic_wf_all_simple, [workflow])
+            get_tree_for_workflow(workflow, dic_wf_all_simple, dic_deps, case_sensitive, 0, n_levels)
 
     # Print the tree dictionary with dependencies
     # print("\nTree\n")
@@ -277,7 +272,7 @@ def main():
 
     # Produce topology graph.
     if graph_suffix and dic_deps:
-        basename = workflow if workflow else table
+        basename = "_".join(workflows, tables) if workflows else "_".join(tables)
         ext_graph = graph_suffix
         path_file_dot = basename + ".gv"
         path_file_graph = basename + "." + ext_graph
@@ -308,8 +303,8 @@ def main():
             inputs = get_workflow_inputs(wf, dic_deps)
             outputs = get_workflow_outputs(wf, dic_deps)
             list_tables += inputs + outputs
-            nodes_in = join_strings(inputs).replace("-", "_")
-            nodes_out = join_strings(outputs).replace("-", "_")
+            nodes_in = (" ".join(inputs)).replace("-", "_")
+            nodes_out = (" ".join(outputs)).replace("-", "_")
             dot_deps += f"  {{{nodes_in}}} -> {node_wf} -> {{{nodes_out}}}\n"
         list_tables = list(dict.fromkeys(list_tables)) # Remove duplicities
         for table in list_tables:
