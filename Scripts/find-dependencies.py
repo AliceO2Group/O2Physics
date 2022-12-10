@@ -205,28 +205,28 @@ def main():
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
-        "-t", "--table", help="table"
+        "-t", dest="table", help="table"
     )
     group.add_argument(
-        "-w", "--workflow", help="workflow"
+        "-w", dest="workflow", help="workflow"
     )
     parser.add_argument(
-        "-c", "--case", action="store_true", help="be case sensitive with table names"
+        "-c", dest="case", action="store_true", help="be case-sensitive with table names"
     )
     parser.add_argument(
-        "-g", "--graph", action="store_true", help="make a topology graph"
+        "-g", dest="suffix", type=str, choices=["pdf", "svg", "png"], help="make a topology graph if suffix provided"
     )
     parser.add_argument(
-        "-x", "--exclude", nargs='+', help="tables and workflows to be excluded"
+        "-x", dest="exclude", type=str, nargs='+', help="tables and workflows to exclude"
     )
     parser.add_argument(
-        "-l", "--levels", type=int, default=0, help="maximum number of workflow tree levels"
+        "-l", dest="levels", type=int, default=0, help="maximum number of workflow tree levels"
     )
     args = parser.parse_args()
     table = args.table
     workflow = args.workflow
     case_sensitive = args.case
-    make_graph = args.graph
+    graph_suffix = args.suffix
     list_exclude = args.exclude
     n_levels = args.levels
 
@@ -277,9 +277,9 @@ def main():
     # print(dic_deps)
 
     # Produce topology graph.
-    if make_graph and dic_deps:
+    if graph_suffix and dic_deps:
         basename = workflow if workflow else table
-        ext_graph = "pdf"
+        ext_graph = graph_suffix
         path_file_dot = basename + ".gv"
         path_file_graph = basename + "." + ext_graph
         print(f"\nMaking dot file in: {path_file_dot}")
