@@ -75,24 +75,24 @@ def get_devices(specs_wf : dict):
 def get_inputs(specs_wf : dict, device=""):
     """Get the list of input tables of a given workflow loaded from a JSON file.
     If a device name is provided, only inputs of that device are considered."""
-    l = []
+    list_inputs = []
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        l += [i['binding'] for i in dev["inputs"] if i["origin"] == "AOD"]
-    return list(dict.fromkeys(l)) # Remove duplicities
+        list_inputs += [i['binding'] for i in dev["inputs"] if i["origin"] == "AOD"]
+    return list(dict.fromkeys(list_inputs)) # Remove duplicities
 
 
 def get_outputs(specs_wf : dict, device=""):
     """Get the list of output tables of a given workflow loaded from a JSON file.
     If a device name is provided, only outputs of that device are considered."""
-    l = []
+    list_outputs = []
     # Loop over devices
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        l += [i['binding'] for i in dev["outputs"] if i["origin"] == "AOD"]
-    return list(dict.fromkeys(l)) # Remove duplicities
+        list_outputs += [i['binding'] for i in dev["outputs"] if i["origin"] == "AOD"]
+    return list(dict.fromkeys(list_outputs)) # Remove duplicities
 
 
 def print_workflows(dic_wf_all : dict, list_wf=None):
@@ -117,7 +117,7 @@ def print_workflows(dic_wf_all : dict, list_wf=None):
 
 def get_table_producers(table : str, dic_wf_all : dict, case_sensitive=False):
     """Find all workflows that have this table as output."""
-    l = []
+    list_producers = []
     if not case_sensitive:
         table = table.lower()
     # Loop over workflows
@@ -126,29 +126,29 @@ def get_table_producers(table : str, dic_wf_all : dict, case_sensitive=False):
         for dev in dic_wf:
             outputs = [o if case_sensitive else o.lower() for o in dic_wf[dev]["outputs"]]
             if table in outputs:
-                l.append(wf)
-    return list(dict.fromkeys(l)) # Remove duplicities
+                list_producers.append(wf)
+    return list(dict.fromkeys(list_producers)) # Remove duplicities
 
 
 def get_workflow_outputs(wf : str, dic_wf_all : dict):
     """Get list of workflow outputs from the simplified dictionary."""
-    l = []
+    list_outputs = []
     # Loop over devices
     for dev in dic_wf_all[wf]:
-        l += dic_wf_all[wf][dev]["outputs"]
-    return list(dict.fromkeys(l)) # Remove duplicities
+        list_outputs += dic_wf_all[wf][dev]["outputs"]
+    return list(dict.fromkeys(list_outputs)) # Remove duplicities
 
 
 def get_workflow_inputs(wf : str, dic_wf_all : dict):
     """Get list of workflow inputs from the simplified dictionary."""
-    l = []
+    list_inputs = []
     # list_outputs = get_workflow_outputs(wf, dic_wf_all)
     # Loop over devices
     for dev in dic_wf_all[wf]:
-        l += dic_wf_all[wf][dev]["inputs"]
-    l = list(dict.fromkeys(l)) # Remove duplicities
+        list_inputs += dic_wf_all[wf][dev]["inputs"]
+    list_inputs = list(dict.fromkeys(list_inputs)) # Remove duplicities
     # l = [d for d in l if d not in list_outputs] # avoid circular dependence (can be legit)
-    return l
+    return list_inputs
 
 
 def get_tree_for_workflow(wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False, level=0, levels_max=0):
