@@ -73,17 +73,17 @@ struct hypertritonAnalysis {
       {"h3dPtVsMassHyVsDCAxy", "h3dPtVsMassHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 0.5f, "abs(dcaxy)"}}}},
       {"h3dPtVsMassAHyVsDCAxy", "h3dPtVsMassAHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 0.5f, "abs(dcaxy)"}}}},
       // Very simple QA
-      {"h2dHypertritonQAV0Radius", "h2dHypertritonQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{200, 0, 50}}}},
-      {"h2dHypertritonQADCAV0Dau", "h2dHypertritonQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{100, 0, 5}}}},
-      {"h2dHypertritonQADCAPosToPV", "h2dHypertritonQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{200, -1, 1}}}},
-      {"h2dHypertritonQADCANegToPV", "h2dHypertritonQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{200, -10, 10}}}},
-      {"h2dHypertritonQADCAToPV", "h2dHypertritonQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{100, -1, 1}}}},
+      {"h2dHypertritonQAV0Radius", "h2dHypertritonQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
+      {"h2dHypertritonQADCAV0Dau", "h2dHypertritonQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 5}}}},
+      {"h2dHypertritonQADCAPosToPV", "h2dHypertritonQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -1, 1}}}},
+      {"h2dHypertritonQADCANegToPV", "h2dHypertritonQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10, 10}}}},
+      {"h2dHypertritonQADCAToPV", "h2dHypertritonQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, -1, 1}}}},
 
-      {"h2dAntiHypertritonQAV0Radius", "h2dAntiHypertritonQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{200, 0, 50}}}},
-      {"h2dAntiHypertritonQADCAV0Dau", "h2dAntiHypertritonQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{100, 0, 5}}}},
-      {"h2dAntiHypertritonQADCAPosToPV", "h2dAntiHypertritonQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{200, -10, 10}}}},
-      {"h2dAntiHypertritonQADCANegToPV", "h2dAntiHypertritonQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{200, -1, 1}}}},
-      {"h2dAntiHypertritonQADCAToPV", "h2dAntiHypertritonQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"},{100, -1, 1}}}},
+      {"h2dAntiHypertritonQAV0Radius", "h2dAntiHypertritonQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
+      {"h2dAntiHypertritonQADCAV0Dau", "h2dAntiHypertritonQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 5}}}},
+      {"h2dAntiHypertritonQADCAPosToPV", "h2dAntiHypertritonQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10, 10}}}},
+      {"h2dAntiHypertritonQADCANegToPV", "h2dAntiHypertritonQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -1, 1}}}},
+      {"h2dAntiHypertritonQADCAToPV", "h2dAntiHypertritonQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, -1, 1}}}},
 
       // Bookkeeping
       {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
@@ -101,7 +101,7 @@ struct hypertritonAnalysis {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dca3hetopv{"dca3hetopv", -1, "DCA helium To PV"};
   Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA pion To PV"};
-  Configurable<float> dcahyptopv{"dcahyptopv", .2, "DCA Hypertriton To PV"}; //propagated correctly
+  Configurable<float> dcahyptopv{"dcahyptopv", .2, "DCA Hypertriton To PV"}; // propagated correctly
   Configurable<float> v0radius{"v0radius", 1.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.8, "rapidity"};
   Configurable<float> heliumdEdx{"heliumdEdx", 8, "heliumdEdx"};
