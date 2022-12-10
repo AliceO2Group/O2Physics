@@ -53,13 +53,16 @@ struct femtoDreamPairTaskTrackTrack {
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
-  Configurable<bool> isMonteCarlo{"isMonteCarlo", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
+  Configurable<bool> isMonteCarlo{"isMonteCarlo", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
+ 
 
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
+  ConfigurableAxis CfgpTBinsPartOne{"CfgpTBinsPartOne", {20, 0.5, 4.05}, "Particle 1 - binning pT in 2D plots"};
+  ConfigurableAxis CfgDCAxyBinsPartOne{"CfgDCAxyBinsPartOne", {500, -0.5, 0.5}, "Particle 1 - binning DCAxy"};
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
@@ -75,6 +78,8 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 5542474, "Particle 2 - Selection bit"};
   Configurable<std::vector<int>> ConfPIDPartTwo{"ConfPIDPartTwo", std::vector<int>{2}, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
+  ConfigurableAxis CfgpTBinsPartTwo{"CfgpTBinsPartTwo", {20, 0.5, 4.05}, "Particle 2 - binning pT in 2D plots"};
+  ConfigurableAxis CfgDCAxyBinsPartTwo{"CfgDCAxyBinsPartTwo", {500, -0.5, 0.5}, "Particle 2 - binning DCAxy"};
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
@@ -121,11 +126,11 @@ struct femtoDreamPairTaskTrackTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry);
-    if (isMonteCarlo){ trackHistoPartOneMC.initMC(&qaRegistry); }
+    trackHistoPartOne.init(&qaRegistry, CfgpTBinsPartOne, CfgDCAxyBinsPartOne);
+    if (isMonteCarlo){ trackHistoPartOneMC.initMC(&qaRegistry, CfgpTBinsPartOne, CfgDCAxyBinsPartOne); }
     if (!ConfIsSame) {
-      trackHistoPartTwo.init(&qaRegistry);
-      if (isMonteCarlo){ trackHistoPartTwoMC.initMC(&qaRegistry); }
+      trackHistoPartTwo.init(&qaRegistry, CfgpTBinsPartTwo, CfgDCAxyBinsPartTwo);
+      if (isMonteCarlo){ trackHistoPartTwoMC.initMC(&qaRegistry, CfgpTBinsPartTwo, CfgDCAxyBinsPartTwo); }
     }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});

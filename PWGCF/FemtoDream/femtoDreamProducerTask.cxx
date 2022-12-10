@@ -200,8 +200,6 @@ struct femtoDreamProducerTask {
 
     /// \todo fix how to pass array to setSelection, getRow() passing a different type!
     // v0Cuts.setSelection(ConfV0Selection->getRow(0), femtoDreamV0Selection::kDecVtxMax, femtoDreamSelection::kAbsUpperLimit);
-    
-    /* 
     if (ConfStoreV0) {
       v0Cuts.setSelection(ConfV0Sign, femtoDreamV0Selection::kV0Sign, femtoDreamSelection::kEqual);
       v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kpTV0Min, femtoDreamSelection::kLowerLimit);
@@ -238,7 +236,6 @@ struct femtoDreamProducerTask {
         o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
       }
     }
-    */
 
     mRunNumber = 0;
     mMagField = 0.0;
@@ -370,10 +367,8 @@ struct femtoDreamProducerTask {
     }
   }
 
-  //template <bool isMC, typename V0Type, typename TrackType, typename CollisionType>
-  //void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
-  template <bool isMC, typename TrackType, typename CollisionType>
-  void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks)
+  template <bool isMC, typename V0Type, typename TrackType, typename CollisionType>
+  void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
 
     const auto vtxZ = col.posZ();
@@ -433,7 +428,6 @@ struct femtoDreamProducerTask {
       }
     }
 
-    /*
     if (ConfStoreV0) {
       for (auto& v0 : fullV0s) {
         auto postrack = v0.template posTrack_as<TrackType>();
@@ -490,33 +484,30 @@ struct femtoDreamProducerTask {
         }
       }
     }
-    */
   }
 
-  //void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
-  //                 o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
-  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
+                   o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    //fillCollisionsAndTracksAndV0<false>(col, tracks, fullV0s);
-    fillCollisionsAndTracksAndV0<false>(col, tracks);
+    fillCollisionsAndTracksAndV0<false>(col, tracks, fullV0s);
+    //fillCollisionsAndTracksAndV0<false>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData, "Provide experimental data", true);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-                 //aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles,
-                 //soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles,
+                 soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    //fillCollisionsAndTracksAndV0<true>(col, tracks, fullV0s);
-    fillCollisionsAndTracksAndV0<true>(col, tracks);
+    fillCollisionsAndTracksAndV0<true>(col, tracks, fullV0s);
+    //fillCollisionsAndTracksAndV0<true>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 };
