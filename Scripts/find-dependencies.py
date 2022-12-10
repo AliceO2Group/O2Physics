@@ -194,11 +194,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Find dependencies required to produce a given table or to run a given workflow."
     )
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
+    parser.add_argument(
         "-t", dest="table", type=str, nargs='+', help="table(s)"
     )
-    group.add_argument(
+    parser.add_argument(
         "-w", dest="workflow", type=str, nargs='+', help="workflow(s)"
     )
     parser.add_argument(
@@ -214,6 +213,8 @@ def main():
         "-l", dest="levels", type=int, default=0, help="maximum number of workflow tree levels"
     )
     args = parser.parse_args()
+    if not (args.table or args.workflow):
+        parser.error("Provide table(s) and/or workflow(s)")
     tables = args.table
     workflows = args.workflow
     case_sensitive = args.case
@@ -276,7 +277,7 @@ def main():
 
     # Produce topology graph.
     if graph_suffix and dic_deps:
-        basename = "_".join(workflows, tables) if workflows else "_".join(tables)
+        basename = "_".join((tables if tables else []) + (workflows if workflows else []))
         ext_graph = graph_suffix
         path_file_dot = basename + ".gv"
         path_file_graph = basename + "." + ext_graph
