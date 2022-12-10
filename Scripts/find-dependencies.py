@@ -174,11 +174,11 @@ def get_tree_for_workflow(
     inputs = get_workflow_inputs(wf, dic_wf_all)
     if inputs:
         print(f"{level * '    '}{wf} <- {inputs}")
-        if levels_max <= -1 or level < levels_max:
+        if levels_max < 0 or level < levels_max:
             for tab in inputs:
                 producers = get_table_producers(tab, dic_wf_all, case_sensitive)
                 if producers:
-                    print(f"{(level) * '    ' + '  '}{tab} <- {producers}")
+                    print(f"{level * '    ' + '  '}{tab} <- {producers}")
                     for p in producers:
                         if p not in dic_wf_tree:  # avoid infinite recursion
                             get_tree_for_workflow(
@@ -200,12 +200,13 @@ def get_tree_for_table(
         dic_wf_tree = {}
     producers = get_table_producers(tab, dic_wf_all, case_sensitive)
     if producers:
-        print(f"{tab} <- {producers}\n")
-        print("Workflow dependency tree:\n")
-        for p in producers:
-            get_tree_for_workflow(
-                p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max
-            )
+        print(f"{tab} <- {producers}")
+        if levels_max != 0:  # Search for more dependencies only if needed.
+            print("\nWorkflow dependency tree:\n")
+            for p in producers:
+                get_tree_for_workflow(
+                    p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max
+                )
     else:
         print("No producers found")
     return dic_wf_tree
@@ -322,8 +323,8 @@ def main():
         path_file_graph = basename + "." + ext_graph
         print(f"\nMaking dot file in: {path_file_dot}")
         dot = "digraph {\n"
-        dot += "  ranksep=2 // vertical node separation\n"
         dot += "  node [shape=box, fontname=Courier, fontsize=20]\n"
+        dot += "  ranksep=2 // vertical node separation\n"
         # dot += "  edge [dir=back] // inverted arrow direction\n"
         # dot += "  rankdir=BT // bottom to top drawing\n"
         # lines with dependencies
@@ -343,7 +344,7 @@ def main():
             label_wf = wf
             # Replace hyphens with line breaks to save horizontal space.
             # label_wf = label_wf.replace("-", "\\n")
-            dot_workflows += '    %s [label="%s"]\n' % (node_wf, label_wf)
+            dot_workflows += f'    {node_wf} [label="{label_wf}"]\n'
             inputs = get_workflow_inputs(wf, dic_deps)
             outputs = get_workflow_outputs(wf, dic_deps)
             list_tables += inputs + outputs
