@@ -60,6 +60,8 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
+  ConfigurableAxis CfgpTBinsPartOne{"CfgpTBinsPartOne", {20, 0.5, 4.05}, "Particle 1 - binning pT in 2D plots"};
+  ConfigurableAxis CfgDCAxyBinsPartOne{"CfgDCAxyBinsPartOne", {500, -0.5, 0.5}, "Particle 1 - binning DCAxy"};
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
@@ -70,6 +72,8 @@ struct femtoDreamPairTaskTrackV0 {
   /// Particle 2 (V0)
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 3122, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
+  ConfigurableAxis CfgpTBinsPartTwo{"CfgpTBinsPartTwo", {20, 0.5, 4.05}, "Particle 2 - binning pT in 2D plots"};
+  ConfigurableAxis CfgDCAxyBinsPartTwo{"CfgDCAxyBinsPartTwo", {500, -0.5, 0.5}, "Particle 2 - binning DCAxy"};
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
@@ -104,8 +108,8 @@ struct femtoDreamPairTaskTrackV0 {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry);
-    trackHistoPartTwo.init(&qaRegistry);
+    trackHistoPartOne.init(&qaRegistry, CfgpTBinsPartOne, CfgDCAxyBinsPartOne);
+    trackHistoPartTwo.init(&qaRegistry, CfgpTBinsPartTwo, CfgDCAxyBinsPartTwo);
 
     sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
