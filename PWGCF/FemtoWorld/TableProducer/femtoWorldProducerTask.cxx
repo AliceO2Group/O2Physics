@@ -698,7 +698,7 @@ struct femtoWorldProducerTask {
         sumVec += part2Vec;
 
         float phiEta = sumVec.Eta();
-        float phiPhi;
+        float phiPhi = sumVec.Phi();
         float phiPt = sumVec.Pt();
         float phiP = sumVec.P();
         float phiM = sumVec.M();
