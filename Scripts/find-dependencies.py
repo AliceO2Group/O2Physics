@@ -251,6 +251,8 @@ def main():
     if tables:
         for table in tables:
             print(f"\nTable: {table}\n")
+            if not table:
+                msg_fatal("Bad table")
             # producers = get_table_producers(table, dic_wf_all_simple, case_sensitive)
             # if not producers:
             #     print("No producers found")
@@ -263,6 +265,8 @@ def main():
     if workflows:
         for workflow in workflows:
             print(f"\nWorkflow: {workflow}\n")
+            if not workflow:
+                msg_fatal("Bad workflow")
             # print_workflows(dic_wf_all_simple, [workflow])
             get_tree_for_workflow(workflow, dic_wf_all_simple, dic_deps, case_sensitive, 0, n_levels)
 
