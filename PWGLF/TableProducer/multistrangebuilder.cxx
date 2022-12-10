@@ -430,6 +430,9 @@ struct multistrangeBuilder {
     if (nCand == 0)
       return false;
 
+    lV0Track = fitter.getTrack(0);
+    lBachelorTrack = fitter.getTrack(1);
+
     // DCA between cascade daughters
     cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
     if (cascadecandidate.cascradius < dcacascdau)

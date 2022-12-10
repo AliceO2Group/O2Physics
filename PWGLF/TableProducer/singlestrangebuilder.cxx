@@ -386,6 +386,11 @@ struct singlestrangeBuilder {
     if (fabs(posTrack.dcaXY()) < dcapostopv || fabs(negTrack.dcaXY()) < dcanegtopv) {
       return false;
     }
+
+    // Initialize properly, please
+    v0candidate.posDCAxy = posTrack.dcaXY();
+    v0candidate.negDCAxy = negTrack.dcaXY();
+
     // passes DCAxy
     statisticsRegistry.v0stats[kV0DCAxy]++;
 
@@ -410,6 +415,8 @@ struct singlestrangeBuilder {
     v0candidate.posTrackX = fitter.getTrack(0).getX();
     v0candidate.negTrackX = fitter.getTrack(1).getX();
 
+    lPositiveTrack = fitter.getTrack(0);
+    lNegativeTrack = fitter.getTrack(1);
     lPositiveTrack.getPxPyPzGlo(v0candidate.posP);
     lNegativeTrack.getPxPyPzGlo(v0candidate.negP);
 
