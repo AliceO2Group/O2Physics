@@ -210,7 +210,7 @@ def main():
         "-x", dest="exclude", type=str, nargs='+', help="tables and workflows to exclude"
     )
     parser.add_argument(
-        "-l", dest="levels", type=int, default=0, help="maximum number of workflow tree levels"
+        "-l", dest="levels", type=int, default=0, help="maximum number of workflow tree levels (default = 0, include all if < 0)"
     )
     args = parser.parse_args()
     if not (args.table or args.workflow):
