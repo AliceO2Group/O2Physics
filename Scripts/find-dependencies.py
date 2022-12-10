@@ -55,7 +55,7 @@ def join_strings(obj):
         msg_fatal("Cannot convert %s into a string" % type(obj))
 
 
-def load_workflows():
+def load_workflows_from_json():
     """Load all workflows from JSON files."""
     try:
         dir_o2p = os.environ["O2PHYSICS_ROOT"]
@@ -78,7 +78,8 @@ def load_workflows():
 
 
 def print_workflows(dic_wf_all : dict, list_wf=None):
-    """Print properties of a given workflow or workflows in the simplified dictionary."""
+    """Print properties of a given workflow or workflows in the simplified dictionary.
+    If no workflow name is provided, print all."""
     def print_wf(dic_wf : dict, wf : str):
         """Print a single workflow"""
         print(wf)
@@ -97,13 +98,13 @@ def print_workflows(dic_wf_all : dict, list_wf=None):
 
 
 def get_devices(specs_wf : dict):
-    """Get the list of devices of a given workflow loaded from a JSON files"""
+    """Get the list of devices of a given workflow loaded from a JSON file."""
     return [d["name"] for d in specs_wf]
 
 
 def get_inputs(specs_wf : dict, device=""):
-    """Get the list of input tables of a given workflow loaded from a JSON files.
-    If a device names is provided, only inputs of that device are considered."""
+    """Get the list of input tables of a given workflow loaded from a JSON file.
+    If a device name is provided, only inputs of that device are considered."""
     l = []
     for dev in specs_wf:
         if device and dev["name"] != device:
@@ -113,8 +114,8 @@ def get_inputs(specs_wf : dict, device=""):
 
 
 def get_outputs(specs_wf : dict, device=""):
-    """Get the list of output tables of a given workflow loaded from a JSON files.
-    If a device names is provided, only outputs of that device are considered."""
+    """Get the list of output tables of a given workflow loaded from a JSON file.
+    If a device name is provided, only outputs of that device are considered."""
     l = []
     # Loop over devices
     for dev in specs_wf:
@@ -136,11 +137,11 @@ def get_table_producers(table : str, dic_wf_all : dict, case_sensitive=False):
             outputs = [o if case_sensitive else o.lower() for o in dic_wf[dev]["outputs"]]
             if table in outputs:
                 l.append(wf)
-    return l
+    return list(dict.fromkeys(l)) # Remove duplicities
 
 
 def get_workflow_outputs(wf : str, dic_wf_all : dict):
-    """Get list of workflow outputs from the simplified dictionary"""
+    """Get list of workflow outputs from the simplified dictionary."""
     l = []
     # Loop over devices
     for dev in dic_wf_all[wf]:
@@ -149,7 +150,7 @@ def get_workflow_outputs(wf : str, dic_wf_all : dict):
 
 
 def get_workflow_inputs(wf : str, dic_wf_all : dict):
-    """Get list of workflow inputs from the simplified dictionary"""
+    """Get list of workflow inputs from the simplified dictionary."""
     l = []
     # list_outputs = get_workflow_outputs(wf, dic_wf_all)
     # Loop over devices
@@ -161,7 +162,7 @@ def get_workflow_inputs(wf : str, dic_wf_all : dict):
 
 
 def get_tree_for_workflow(wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False, level=0, levels_max=0):
-    """Get the dependency tree of workflows needed to run this workflow"""
+    """Get the dependency tree of tables and workflows needed to run this workflow."""
     # print(level, levels_max)
     if dic_wf_tree is None:
         dic_wf_tree = {}
@@ -184,7 +185,7 @@ def get_tree_for_workflow(wf, dic_wf_all, dic_wf_tree=None, case_sensitive=False
 
 
 def get_tree_for_table(tab, dic_wf_all, dic_wf_tree=None, case_sensitive=False, levels_max=0):
-    """Get the dependency tree of workflows needed to produce this table"""
+    """Get the dependency tree of tables and workflows needed to produce this table."""
     if dic_wf_tree is None:
         dic_wf_tree = {}
     producers = get_table_producers(tab, dic_wf_all, case_sensitive)
@@ -231,7 +232,7 @@ def main():
     n_levels = args.levels
 
     # Load all workflows from JSON files
-    dic_wf_all_full = load_workflows()
+    dic_wf_all_full = load_workflows_from_json()
     # Extract only needed info and make a simplified dictionary
     dic_wf_all_simple = {}
     for wf, dic_wf in dic_wf_all_full.items():
@@ -267,13 +268,11 @@ def main():
     # Find workflow dependencies
     if workflow:
         print(f"Workflow: {workflow}\n")
-        # if workflow not in dic_wf_all_simple:
-        #     msg_fatal(f"Workflow {workflow} not found")
         # print_workflows(dic_wf_all_simple, [workflow])
         dic_deps = get_tree_for_workflow(workflow, dic_wf_all_simple, None, case_sensitive, 0, n_levels)
 
     # Print the tree dictionary with dependencies
-    # print("\nTree")
+    # print("\nTree\n")
     # print(dic_deps)
 
     # Produce topology graph.
@@ -292,12 +291,10 @@ def main():
         dot_deps = ""
         # subgraph for tables
         dot_tables = '  subgraph tables {\n'
-        # dot_tables += '    label="tables"\n'
         dot_tables += '    node [fillcolor=lightgrey,style=filled]\n'
         list_tables = []
         # subgraph for workflows
         dot_workflows = '  subgraph workflows {\n'
-        # dot_wf += '    label="workflows"\n'
         dot_workflows += '    node [fillcolor=papayawhip,style="filled,rounded"]\n'
         for wf in dic_deps:
             # Hyphens are not allowed in node names.
