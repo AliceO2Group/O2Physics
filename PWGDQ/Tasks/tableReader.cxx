@@ -252,10 +252,10 @@ struct AnalysisTrackSelection {
       iCut = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          if (iCut < fConfigPrefilterCutId) {
+          if (iCut != fConfigPrefilterCutId) {
             filterMap |= (uint32_t(1) << iCut);
           }
-          if (iCut >= fConfigPrefilterCutId) {
+          if (iCut == fConfigPrefilterCutId) {
             filterMapPrefilter |= (uint8_t(1) << (iCut - fConfigPrefilterCutId));
           }
           if (fConfigQA) { // TODO: make this compile time
