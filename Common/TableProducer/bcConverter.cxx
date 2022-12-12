@@ -22,7 +22,6 @@ struct bcConverter {
   void process(aod::BCs_000 const& bcTable)
   {
     for (auto& bc : bcTable) {
-      // Simple swap of XZ and YY with respect to expectations
       constexpr uint64_t lEmptyTriggerInputs = 0;
       bc_001(bc.runNumber(), bc.globalBC(), bc.triggerMask(), lEmptyTriggerInputs);
     }
