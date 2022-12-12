@@ -105,7 +105,7 @@ struct dalitzPairing {
     }
 
     if (fTrackCuts.size() != fPairCuts.size()) {
-      LOGF(fatal,"YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS");
+      LOGF(fatal, "YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS");
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -223,7 +223,7 @@ struct dalitzPairing {
         VarManager::FillTrack<TTrackFillMap>(track);
 
         int icut = 0;
-        auto trackCut = fTrackCuts.begin();    
+        auto trackCut = fTrackCuts.begin();
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
           if (filterMap & (uint8_t(1) << icut)) {
             ((TH1I*)fStatsList->At(0))->Fill(icut);
@@ -233,8 +233,6 @@ struct dalitzPairing {
       }
     }
   }
-
-
 
   void processFullTracks(MyEvents const& collisions, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
   {

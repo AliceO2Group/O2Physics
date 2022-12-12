@@ -385,7 +385,6 @@ struct AnalysisPrefilterSelection {
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
-
   }
 
   template <int TPairType, uint32_t TTrackFillMap, typename TTracks1, typename TTracks2>
