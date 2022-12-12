@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_FT0CORRECTED_H_
-#define O2_ANALYSIS_FT0CORRECTED_H_
+#ifndef COMMON_DATAMODEL_FT0CORRECTED_H_
+#define COMMON_DATAMODEL_FT0CORRECTED_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -41,4 +41,4 @@ DECLARE_SOA_TABLE(FT0sCorrected, "AOD", "FT0CORRECTED", //! Table with corrected
 using FT0Corrected = FT0sCorrected::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_FT0CORRECTED_H_
+#endif // COMMON_DATAMODEL_FT0CORRECTED_H_
