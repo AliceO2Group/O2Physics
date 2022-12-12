@@ -13,15 +13,15 @@
 /// \brief Definition of the FemtoDreamMath Container for math calculations of quantities related to pairs
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
+
+#include <iostream>
 
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
-
-#include <iostream>
 
 namespace o2::analysis::femtoDream
 {
@@ -124,7 +124,7 @@ class FemtoDreamMath
     return 0.5 * trackSum.Pt();
   }
 
-    /// Compute the transverse mass of a pair of particles
+  /// Compute the transverse mass of a pair of particles
   /// \tparam T type of tracks
   /// \param part1 Particle 1
   /// \param mass1 Mass of particle 1
@@ -135,7 +135,7 @@ class FemtoDreamMath
   {
     return std::sqrt(std::pow(getkT(part1, mass1, part2, mass2), 2.) + std::pow(0.5 * (mass1 + mass2), 2.));
   }
-  
+
   /// Compute the k* of a pair of particles
   /// \tparam T type of tracks
   /// \param part1 Particle 1
@@ -144,7 +144,7 @@ class FemtoDreamMath
   /// \param mass2 Mass of particle 2
   template <typename T>
   static float getkstarMC(const T& part1, const float mass1, const T& part2, const float mass2)
-  {    
+  {
     const ROOT::Math::PtEtaPhiMVector vecpart1(part1.ptTruth(), part1.etaTruth(), part1.phiTruth(), mass1);
     const ROOT::Math::PtEtaPhiMVector vecpart2(part2.ptTruth(), part2.etaTruth(), part2.phiTruth(), mass2);
     const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
@@ -159,7 +159,7 @@ class FemtoDreamMath
     PartTwoCMS = boostPRF(PartTwoCMS);
     const ROOT::Math::PxPyPzMVector trackRelK = PartOneCMS - PartTwoCMS;
     return 0.5 * trackRelK.P();
-  } 
+  }
   /// Compute the transverse momentum of a pair of particles using MC truth
   /// \tparam T type of tracks
   /// \param part1 Particle 1
@@ -189,4 +189,4 @@ class FemtoDreamMath
 
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMMATH_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMMATH_H_

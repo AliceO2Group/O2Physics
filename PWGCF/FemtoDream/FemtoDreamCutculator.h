@@ -280,4 +280,4 @@ class FemtoDreamCutculator
 };
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_

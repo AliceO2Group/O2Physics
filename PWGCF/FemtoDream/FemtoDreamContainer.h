@@ -14,8 +14,11 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+
+#include <string>
+#include <vector>
 
 #include "Framework/HistogramRegistry.h"
 #include "FemtoDreamMath.h"
@@ -36,7 +39,7 @@ enum Observable { kstar ///< kstar
 };
 
 /// Type of the event processind
-enum EventType { same, ///< Pair from same event
+enum EventType { same,  ///< Pair from same event
                  mixed, ///< Pair from mixed event
                  sameMC,
                  mixedMC
@@ -127,7 +130,7 @@ class FemtoDreamContainer
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("PtPart1PtPart2"), part1.pt(), part2.pt());
     }
   }
-  
+
   template <typename T>
   void initMC(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins)
   {
@@ -147,7 +150,7 @@ class FemtoDreamContainer
     mHistogramRegistry->add((folderName + "relPairkT_truth").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
     mHistogramRegistry->add((folderName + "relPairkstarkT_truth").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
     mHistogramRegistry->add((folderName + "relPairkstarmT_truth").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    */ 
+    */
     mHistogramRegistry->add((folderName + "relPairkstarMult_truth").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
     /*
     mHistogramRegistry->add((folderName + "kstarPtPart1_truth").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
@@ -155,11 +158,12 @@ class FemtoDreamContainer
     mHistogramRegistry->add((folderName + "MultPtPart1_truth").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
     mHistogramRegistry->add((folderName + "MultPtPart2_truth").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
     mHistogramRegistry->add((folderName + "PtPart1PtPart2_truth").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
-    */ 
-    if constexpr (mEventType==femtoDreamContainer::EventType::sameMC){ mHistogramRegistry->add((folderName + "kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis}); }
+    */
+    if constexpr (mEventType == femtoDreamContainer::EventType::sameMC) {
+      mHistogramRegistry->add((folderName + "kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
+    }
   }
-  
-  
+
   /// Pass a pair to the container and compute all the relevant observables
   /// \tparam T type of the femtodreamparticle
   /// \param part1 Particle one
@@ -173,8 +177,8 @@ class FemtoDreamContainer
       femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
       femtoObsMC = FemtoDreamMath::getkstarMC(part1, mMassOne, part2, mMassTwo);
     }
-    //const float kT = FemtoDreamMath::getkTMC(part1, mMassOne, part2, mMassTwo);
-    //const float mT = FemtoDreamMath::getmTMC(part1, mMassOne, part2, mMassTwo);
+    // const float kT = FemtoDreamMath::getkTMC(part1, mMassOne, part2, mMassTwo);
+    // const float mT = FemtoDreamMath::getmTMC(part1, mMassOne, part2, mMassTwo);
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist_truth"), femtoObsMC);
       /*
@@ -183,26 +187,28 @@ class FemtoDreamContainer
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarmT_truth"), femtoObsMC, mT);
       */
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarMult_truth"), femtoObsMC, mult);
-      /* 
+      /*
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstarPtPart1"), femtoObsMC, part1.ptTruth());
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstarPtPart2"), femtoObsMC, part2.ptTruth());
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart1"), part1.ptTruth(), mult);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart2"), part2.ptTruth(), mult);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("PtPart1PtPart2"), part1.pt(), part2.pt());
       */
-      if constexpr (mEventType==femtoDreamContainer::EventType::sameMC){ mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstar_resolution"), femtoObsMC, femtoObs); }
+      if constexpr (mEventType == femtoDreamContainer::EventType::sameMC) {
+        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstar_resolution"), femtoObsMC, femtoObs);
+      }
     }
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;                                    ///< For QA output
+  HistogramRegistry* mHistogramRegistry = nullptr;                                                                     ///< For QA output
   static constexpr std::string_view mFolderSuffix[4] = {"SameEvent/", "MixedEvent/", "SameEventMC/", "MixedEventMC/"}; ///< Folder naming for the output according to mEventType
-  static constexpr femtoDreamContainer::Observable mFemtoObs = obs;                   ///< Femtoscopic observable to be computed (according to femtoDreamContainer::Observable)
-  static constexpr int mEventType = eventType;                                        ///< Type of the event (same/mixed, according to femtoDreamContainer::EventType)
-  float mMassOne = 0.f;                                                               ///< PDG mass of particle 1
-  float mMassTwo = 0.f;                                                               ///< PDG mass of particle 2
+  static constexpr femtoDreamContainer::Observable mFemtoObs = obs;                                                    ///< Femtoscopic observable to be computed (according to femtoDreamContainer::Observable)
+  static constexpr int mEventType = eventType;                                                                         ///< Type of the event (same/mixed, according to femtoDreamContainer::EventType)
+  float mMassOne = 0.f;                                                                                                ///< PDG mass of particle 1
+  float mMassTwo = 0.f;                                                                                                ///< PDG mass of particle 2
 };
 
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_

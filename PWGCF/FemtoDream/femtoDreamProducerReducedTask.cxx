@@ -183,7 +183,6 @@ struct femtoDreamProducerReducedTask {
     mRunNumber = bc.runNumber();
   }
 
-
   template <typename ParticleType>
   void fillMCParticle(ParticleType const& particle)
   {
@@ -192,14 +191,14 @@ struct femtoDreamProducerReducedTask {
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
 
-      int particleOrigin = 99; 
+      int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
-      
-      if(abs(pdgCode)==2212){ //TODO: create a configurable and do not hardcode!
+
+      if (abs(pdgCode) == 2212) { // TODO: create a configurable and do not hardcode!
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kPrimary;
-        }else if(motherparticleMC.producedByGenerator()){
-          switch( abs(motherparticleMC.pdgCode()) ){
+        } else if (motherparticleMC.producedByGenerator()) {
+          switch (abs(motherparticleMC.pdgCode())) {
             case 3122:
               particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughterLambda;
               break;
@@ -207,23 +206,22 @@ struct femtoDreamProducerReducedTask {
               particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughterSigmaplus;
               break;
             default:
-                particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughter;
-          }//switch
-        }else{
+              particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughter;
+          } // switch
+        } else {
           particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kMaterial;
         }
-      }else{
+      } else {
         particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kFake;
       }
-      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi()); 
+      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       // fill with correct values, this is currently placeholder
-      //outputDebugPartsMC(-999);
+      // outputDebugPartsMC(-999);
     } else {
       outputPartsMC(-999, -999, -999, -999, -999);
-      //outputDebugPartsMC(-999);
+      // outputDebugPartsMC(-999);
     }
   }
-
 
   template <bool isMC, typename CollisionType, typename TrackType>
   void fillCollisionsAndTracks(CollisionType const& col, TrackType const& tracks) /// \todo with FilteredFullV0s
@@ -276,11 +274,11 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
-      
+
       if constexpr (isMC) {
         fillMCParticle(track);
       }
-      
+
       if (ConfDebugOutput) {
         outputDebugParts(track.sign(),
                          (uint8_t)track.tpcNClsFound(),
@@ -312,7 +310,7 @@ struct femtoDreamProducerReducedTask {
       }
     }
   }
-  
+
   void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
@@ -333,7 +331,6 @@ struct femtoDreamProducerReducedTask {
     fillCollisionsAndTracks<true>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC, "Provide MC data", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

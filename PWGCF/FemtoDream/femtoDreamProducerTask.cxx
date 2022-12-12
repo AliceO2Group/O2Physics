@@ -335,14 +335,14 @@ struct femtoDreamProducerTask {
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
 
-      int particleOrigin = 99; 
+      int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
-      
-      if(abs(pdgCode)==2212){ //TODO: create a configurable and do not hardcode!
+
+      if (abs(pdgCode) == 2212) { // TODO: create a configurable and do not hardcode!
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kPrimary;
-        }else if(motherparticleMC.producedByGenerator()){
-          switch( abs(motherparticleMC.pdgCode()) ){
+        } else if (motherparticleMC.producedByGenerator()) {
+          switch (abs(motherparticleMC.pdgCode())) {
             case 3122:
               particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughterLambda;
               break;
@@ -350,15 +350,15 @@ struct femtoDreamProducerTask {
               particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughterSigmaplus;
               break;
             default:
-                particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughter;
-          }//switch
-        }else{
+              particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kDaughter;
+          } // switch
+        } else {
           particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kMaterial;
         }
-      }else{
+      } else {
         particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kFake;
       }
-      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi()); 
+      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       // fill with correct values, this is currently placeholder
       outputDebugPartsMC(-999);
     } else {
@@ -493,7 +493,7 @@ struct femtoDreamProducerTask {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<false>(col, tracks, fullV0s);
-    //fillCollisionsAndTracksAndV0<false>(col, tracks);
+    // fillCollisionsAndTracksAndV0<false>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData, "Provide experimental data", true);
 
@@ -507,7 +507,7 @@ struct femtoDreamProducerTask {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true>(col, tracks, fullV0s);
-    //fillCollisionsAndTracksAndV0<true>(col, tracks);
+    // fillCollisionsAndTracksAndV0<true>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 };
