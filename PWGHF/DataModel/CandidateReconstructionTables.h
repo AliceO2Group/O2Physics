@@ -43,15 +43,16 @@ namespace hf_amb_tracks
 enum eTrackType { Ambiguous = 0,
                   PVContributor };
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //!
-DECLARE_SOA_INDEX_COLUMN(Track, track);            //!
-DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t); //!
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);           //!
-DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);             //!
-DECLARE_SOA_COLUMN(P, p, float);                   //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                 //!
-DECLARE_SOA_COLUMN(Eta, eta, float);               //!
-DECLARE_SOA_COLUMN(Phi, phi, float);               //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);                           //!
+DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t);                //!
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);                          //!
+DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);                            //!
+DECLARE_SOA_COLUMN(P, p, float);                                  //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                                //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                              //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                              //!
+DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool); //!
 
 DECLARE_SOA_COLUMN(CYY, cYY, float);             //!
 DECLARE_SOA_COLUMN(CZY, cZY, float);             //!
@@ -97,10 +98,11 @@ DECLARE_SOA_TABLE(HfAmbTrackCov, "AOD", "HFAMBTRACKCOV",                        
 
 namespace hf_sel_track
 {
-DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
-DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
-DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
-DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
+DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int);       //!
+DECLARE_SOA_COLUMN(IsSelProngAmb, isSelProngAmb, int); //!
+DECLARE_SOA_COLUMN(PxProng, pxProng, float);           //!
+DECLARE_SOA_COLUMN(PyProng, pyProng, float);           //!
+DECLARE_SOA_COLUMN(PzProng, pzProng, float);           //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
@@ -110,7 +112,7 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::PzProng);
 
 DECLARE_SOA_TABLE(HfSelAmbTrack, "AOD", "HFSELAMBTRACK", //!
-                  hf_sel_track::IsSelProng,
+                  hf_sel_track::IsSelProngAmb,
                   hf_sel_track::PxProng,
                   hf_sel_track::PyProng,
                   hf_sel_track::PzProng);
