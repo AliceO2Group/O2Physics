@@ -109,6 +109,12 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::PyProng,
                   hf_sel_track::PzProng);
 
+DECLARE_SOA_TABLE(HfSelAmbTrack, "AOD", "HFSELAMBTRACK", //!
+                  hf_sel_track::IsSelProng,
+                  hf_sel_track::PxProng,
+                  hf_sel_track::PyProng,
+                  hf_sel_track::PzProng);
+
 namespace hf_pv_refit_track
 {
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!

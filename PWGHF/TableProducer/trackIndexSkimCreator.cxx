@@ -403,6 +403,7 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
 struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HfSelTrack> rowSelectedTrack;
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
+  Produces<aod::HfSelAmbTrack> rowSelectedAmbTrack;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
@@ -524,12 +525,12 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
   }
 
-  /// Single-track cuts for 2-prongs or 3-prongs
+  /// Single-track cuts for 2-prongs or 3-prongs on dcaXY
   /// \param hfTrack is a track
   /// \param dca is a 2-element array with dca in transverse and longitudinal directions
   /// \return true if track passes all cuts
   template <typename T>
-  bool isSelectedTrack(const T& hfTrack, const array<float, 2>& dca, const int candType)
+  bool isSelectedTrackDCA(const T& hfTrack, const array<float, 2>& dca, const int candType)
   {
     auto pTBinTrack = findBin(binsPtTrack, hfTrack.pt());
     if (pTBinTrack == -1) {
@@ -543,6 +544,190 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       return false; // maximum DCAxy
     }
     return true;
+  }
+
+  /// Single-track cuts for 2-prongs or 3-prongs
+  /// \param hfTrack is a track
+  /// \param dca is a 2-element array with dca in transverse and longitudinal directions
+  /// \return true if track passes all cuts
+  template <typename T>
+  void isSelectedTrack(const T& hfTrack, int& statusProng, const std::array<float,2>& pvRefitDcaXYDcaZ)
+  {
+      auto trackPt = hfTrack.pt();
+      auto trackEta = hfTrack.eta();
+
+      if (fillHistograms) {
+        registry.fill(HIST("hPtNoCuts"), trackPt);
+      }
+
+      int iDebugCut = 2;
+      // pT cut
+      if (trackPt < ptMinTrack2Prong) {
+        CLRBIT(statusProng, CandidateType::Cand2Prong); // set the nth bit to 0
+        if (debug) {
+          // cutStatus[CandidateType::Cand2Prong][0] = false;
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
+          }
+        }
+      }
+      if (trackPt < ptMinTrack3Prong) {
+        CLRBIT(statusProng, CandidateType::Cand3Prong);
+        if (debug) {
+          // cutStatus[CandidateType::Cand3Prong][0] = false;
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
+          }
+        }
+      }
+      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " pt = " << trackPt << " (cut " << ptMinTrackBach << ")");
+
+      if (trackPt < ptMinTrackBach) {
+        CLRBIT(statusProng, CandidateType::CandV0bachelor);
+        if (debug) {
+          // cutStatus[CandidateType::CandV0bachelor][0] = false;
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+          }
+        }
+      }
+
+      iDebugCut = 3;
+      // eta cut
+      if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && std::abs(trackEta) > etaMaxTrack2Prong) {
+        CLRBIT(statusProng, CandidateType::Cand2Prong);
+        if (debug) {
+          // cutStatus[CandidateType::Cand2Prong][1] = false;
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
+          }
+        }
+      }
+      if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && std::abs(trackEta) > etaMaxTrack3Prong) {
+        CLRBIT(statusProng, CandidateType::Cand3Prong);
+        if (debug) {
+          // cutStatus[CandidateType::Cand3Prong][1] = false;
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
+          }
+        }
+      }
+      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " eta = " << trackEta << " (cut " << etaMaxTrackBach << ")");
+
+      if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && std::abs(trackEta) > etaMaxTrackBach) {
+        CLRBIT(statusProng, CandidateType::CandV0bachelor);
+        if (debug) {
+          // cutStatus[CandidateType::CandV0bachelor][1] = false;
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+          }
+        }
+      }
+
+      // quality cut
+      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " tpcNClsFound = " << hfTrack.tpcNClsFound() << " (cut " << tpcNClsFoundMin.value << ")");
+
+      iDebugCut = 4;
+      if (doCutQuality.value && (debug || statusProng > 0)) { // FIXME to make a more complete selection e.g track.flags() & o2::aod::track::TPCrefit && track.flags() & o2::aod::track::GoldenChi2 &&
+        bool hasGoodQuality = true;
+        if (useIsGlobalTrack) {
+          if (hfTrack.isGlobalTrack() != (uint8_t) true) {
+            hasGoodQuality = false;
+          }
+        } else if (useIsGlobalTrackWoDCA) {
+          if (hfTrack.isGlobalTrackWoDCA() != (uint8_t) true) {
+            hasGoodQuality = false;
+          }
+        } else {
+          UChar_t clustermap = hfTrack.itsClusterMap();
+          if (!(hfTrack.tpcNClsFound() >= tpcNClsFoundMin.value && // is this the number of TPC clusters? It should not be used
+                hfTrack.flags() & o2::aod::track::ITSrefit &&
+                (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+            hasGoodQuality = false;
+          }
+        }
+        if (!hasGoodQuality) {
+          statusProng = 0;
+          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " did not pass clusters cut");
+          if (debug) {
+            for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
+              // cutStatus[iCandType][2] = false;
+              if (fillHistograms) {
+                registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
+              }
+            }
+          }
+        }
+      }
+
+      iDebugCut = 5;
+      // DCA cut
+      array<float, 2> dca{hfTrack.dcaXY(), hfTrack.dcaZ()};
+      if (doPvRefit) {
+        dca[0] = pvRefitDcaXYDcaZ[0]; // dcaXY with respect to PV refit
+        dca[1] = pvRefitDcaXYDcaZ[1]; // dcaZ with respect to PV refit
+      }
+      if ((debug || statusProng > 0)) {
+        if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrackDCA(hfTrack, dca, CandidateType::Cand2Prong)) {
+          CLRBIT(statusProng, CandidateType::Cand2Prong);
+          if (debug) {
+            // cutStatus[CandidateType::Cand2Prong][3] = false;
+            if (fillHistograms) {
+              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
+            }
+          }
+        }
+        if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && !isSelectedTrackDCA(hfTrack, dca, CandidateType::Cand3Prong)) {
+          CLRBIT(statusProng, CandidateType::Cand3Prong);
+          if (debug) {
+            // cutStatus[CandidateType::Cand3Prong][3] = false;
+            if (fillHistograms) {
+              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
+            }
+          }
+        }
+        if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && !isSelectedTrackDCA(hfTrack, dca, CandidateType::CandV0bachelor)) {
+          CLRBIT(statusProng, CandidateType::CandV0bachelor);
+          if (debug) {
+            // cutStatus[CandidateType::CandV0bachelor][3] = false;
+            if (fillHistograms) {
+              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+            }
+          }
+        }
+      }
+      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "statusProng = " << statusProng; printf("\n"));
+
+      // fill histograms
+      if (fillHistograms) {
+        iDebugCut = 1;
+        if (TESTBIT(statusProng, CandidateType::Cand2Prong)) {
+          registry.fill(HIST("hPtCuts2Prong"), trackPt);
+          registry.fill(HIST("hEtaCuts2Prong"), trackEta);
+          registry.fill(HIST("hDCAToPrimXYVsPtCuts2Prong"), trackPt, dca[0]);
+          if (debug) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
+          }
+        }
+        if (TESTBIT(statusProng, CandidateType::Cand3Prong)) {
+          registry.fill(HIST("hPtCuts3Prong"), trackPt);
+          registry.fill(HIST("hEtaCuts3Prong"), trackEta);
+          registry.fill(HIST("hDCAToPrimXYVsPtCuts3Prong"), trackPt, dca[0]);
+          if (debug) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
+          }
+        }
+        if (TESTBIT(statusProng, CandidateType::CandV0bachelor)) {
+          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "Will be kept: Proton from Lc " << indexBach);
+          registry.fill(HIST("hPtCutsV0bachelor"), trackPt);
+          registry.fill(HIST("hEtaCutsV0bachelor"), trackEta);
+          registry.fill(HIST("hDCAToPrimXYVsPtCutsV0bachelor"), trackPt, dca[0]);
+          if (debug) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+          }
+        }
+      }
+
   }
 
   /// Method for the PV refit and DCA recalculation for tracks with a collision assigned
@@ -725,7 +910,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
   void process(aod::Collisions const& collisions,
                MY_TYPE1 const& tracks,
-               aod::BCsWithTimestamps const& bcWithTimeStamps // for PV refit
+               aod::BCsWithTimestamps const& bcWithTimeStamps, // for PV refit
+               aod::HfAmbTrack const& ambTracks /// ambiguous tracks + PV contr. propagated to all other compatible collisions
 #ifdef MY_DEBUG
                ,
                aod::McParticles& mcParticles
@@ -738,6 +924,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       LOG(info) << ">>> number of collisions: " << collisions.size();
     }
 
+    /// loop over tracks propagated to the "default" collision
     for (auto& track : tracks) {
 
 #ifdef MY_DEBUG
@@ -797,185 +984,24 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       //   }
       // }
 
-      auto trackPt = track.pt();
-      auto trackEta = track.eta();
-
-      if (fillHistograms) {
-        registry.fill(HIST("hPtNoCuts"), trackPt);
-      }
-
-      int iDebugCut = 2;
-      // pT cut
-      if (trackPt < ptMinTrack2Prong) {
-        CLRBIT(statusProng, CandidateType::Cand2Prong); // set the nth bit to 0
-        if (debug) {
-          // cutStatus[CandidateType::Cand2Prong][0] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
-          }
-        }
-      }
-      if (trackPt < ptMinTrack3Prong) {
-        CLRBIT(statusProng, CandidateType::Cand3Prong);
-        if (debug) {
-          // cutStatus[CandidateType::Cand3Prong][0] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
-          }
-        }
-      }
-      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " pt = " << trackPt << " (cut " << ptMinTrackBach << ")");
-
-      if (trackPt < ptMinTrackBach) {
-        CLRBIT(statusProng, CandidateType::CandV0bachelor);
-        if (debug) {
-          // cutStatus[CandidateType::CandV0bachelor][0] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
-          }
-        }
-      }
-
-      iDebugCut = 3;
-      // eta cut
-      if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && std::abs(trackEta) > etaMaxTrack2Prong) {
-        CLRBIT(statusProng, CandidateType::Cand2Prong);
-        if (debug) {
-          // cutStatus[CandidateType::Cand2Prong][1] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
-          }
-        }
-      }
-      if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && std::abs(trackEta) > etaMaxTrack3Prong) {
-        CLRBIT(statusProng, CandidateType::Cand3Prong);
-        if (debug) {
-          // cutStatus[CandidateType::Cand3Prong][1] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
-          }
-        }
-      }
-      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " eta = " << trackEta << " (cut " << etaMaxTrackBach << ")");
-
-      if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && std::abs(trackEta) > etaMaxTrackBach) {
-        CLRBIT(statusProng, CandidateType::CandV0bachelor);
-        if (debug) {
-          // cutStatus[CandidateType::CandV0bachelor][1] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
-          }
-        }
-      }
-
-      // quality cut
-      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " tpcNClsFound = " << track.tpcNClsFound() << " (cut " << tpcNClsFoundMin.value << ")");
-
-      iDebugCut = 4;
-      if (doCutQuality.value && (debug || statusProng > 0)) { // FIXME to make a more complete selection e.g track.flags() & o2::aod::track::TPCrefit && track.flags() & o2::aod::track::GoldenChi2 &&
-        bool hasGoodQuality = true;
-        if (useIsGlobalTrack) {
-          if (track.isGlobalTrack() != (uint8_t) true) {
-            hasGoodQuality = false;
-          }
-        } else if (useIsGlobalTrackWoDCA) {
-          if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
-            hasGoodQuality = false;
-          }
-        } else {
-          UChar_t clustermap = track.itsClusterMap();
-          if (!(track.tpcNClsFound() >= tpcNClsFoundMin.value && // is this the number of TPC clusters? It should not be used
-                track.flags() & o2::aod::track::ITSrefit &&
-                (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
-            hasGoodQuality = false;
-          }
-        }
-        if (!hasGoodQuality) {
-          statusProng = 0;
-          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " did not pass clusters cut");
-          if (debug) {
-            for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
-              // cutStatus[iCandType][2] = false;
-              if (fillHistograms) {
-                registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
-              }
-            }
-          }
-        }
-      }
-
-      iDebugCut = 5;
-      // DCA cut
-      array<float, 2> dca{track.dcaXY(), track.dcaZ()};
-      if (doPvRefit) {
-        dca[0] = pvRefitDcaXYDcaZ[0]; // dcaXY with respect to PV refit
-        dca[1] = pvRefitDcaXYDcaZ[1]; // dcaZ with respect to PV refit
-      }
-      if ((debug || statusProng > 0)) {
-        if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
-          CLRBIT(statusProng, CandidateType::Cand2Prong);
-          if (debug) {
-            // cutStatus[CandidateType::Cand2Prong][3] = false;
-            if (fillHistograms) {
-              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
-            }
-          }
-        }
-        if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand3Prong)) {
-          CLRBIT(statusProng, CandidateType::Cand3Prong);
-          if (debug) {
-            // cutStatus[CandidateType::Cand3Prong][3] = false;
-            if (fillHistograms) {
-              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
-            }
-          }
-        }
-        if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && !isSelectedTrack(track, dca, CandidateType::CandV0bachelor)) {
-          CLRBIT(statusProng, CandidateType::CandV0bachelor);
-          if (debug) {
-            // cutStatus[CandidateType::CandV0bachelor][3] = false;
-            if (fillHistograms) {
-              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
-            }
-          }
-        }
-      }
-      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "statusProng = " << statusProng; printf("\n"));
-
-      // fill histograms
-      if (fillHistograms) {
-        iDebugCut = 1;
-        if (TESTBIT(statusProng, CandidateType::Cand2Prong)) {
-          registry.fill(HIST("hPtCuts2Prong"), trackPt);
-          registry.fill(HIST("hEtaCuts2Prong"), trackEta);
-          registry.fill(HIST("hDCAToPrimXYVsPtCuts2Prong"), trackPt, dca[0]);
-          if (debug) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
-          }
-        }
-        if (TESTBIT(statusProng, CandidateType::Cand3Prong)) {
-          registry.fill(HIST("hPtCuts3Prong"), trackPt);
-          registry.fill(HIST("hEtaCuts3Prong"), trackEta);
-          registry.fill(HIST("hDCAToPrimXYVsPtCuts3Prong"), trackPt, dca[0]);
-          if (debug) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
-          }
-        }
-        if (TESTBIT(statusProng, CandidateType::CandV0bachelor)) {
-          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "Will be kept: Proton from Lc " << indexBach);
-          registry.fill(HIST("hPtCutsV0bachelor"), trackPt);
-          registry.fill(HIST("hEtaCutsV0bachelor"), trackEta);
-          registry.fill(HIST("hDCAToPrimXYVsPtCutsV0bachelor"), trackPt, dca[0]);
-          if (debug) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
-          }
-        }
-      }
+      /// select tracks associated to "default" collision
+      isSelectedTrack(track, statusProng, pvRefitDcaXYDcaZ);
 
       // fill table row
       rowSelectedTrack(statusProng, track.px(), track.py(), track.pz());
-    }
-  }
+    } /// end loop over tracks propagated to the "default" collision
+
+    /// loop over ambiguous tracks + PV contr. propagated to all other compatible collisions
+    for(auto& ambTrack : ambTracks) {
+      int statusProng = BIT(CandidateType::NCandidateTypes) - 1; // selection flag , all bits on
+
+      /// select tracks associated to "default" collision
+      isSelectedTrack(ambTrack, statusProng, std::array<float,2>{ambTrack.dcaXY(), ambTrack.dcaZ()});
+
+      // fill table row
+      rowSelectedAmbTrack(statusProng, ambTrack.px(), ambTrack.py(), ambTrack.pz());
+    } /// end loop over ambiguous tracks + PV contr. propagated to all other compatible collisions
+  } /// end process
 };
 
 //____________________________________________________________________________________________________________________________________________
