@@ -13,7 +13,8 @@
 
 """
 Find dependencies required to produce a given table or to run a given workflow.
-Author: Vít Kučera on 2022-12-10
+
+Author: Vít Kučera <vit.kucera@cern.ch>, Inha University, on 2022-12-10
 """
 
 import argparse
