@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <bitset>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -18,7 +19,6 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "DataFormatsFT0/Digit.h"
-#include <bitset>
 
 using namespace o2;
 using namespace o2::framework;
@@ -117,9 +117,9 @@ struct FT0qanew {
       uint16_t nContrib = collision.numContrib();
       hNcontrib->Fill(nContrib);
 
-      //  collision time ?!
+      //  collision time
       float colTime = collision.collisionTime();
-      hColTime->Fill(float(colTime));
+      hColTime->Fill(colTime);
 
       // is FT0
       if (collision.has_foundFT0()) {
