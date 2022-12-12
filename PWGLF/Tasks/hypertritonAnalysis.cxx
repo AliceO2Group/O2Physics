@@ -58,8 +58,7 @@ using std::array;
 // using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr>;
 using TracksCompleteIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCLfPi, aod::pidTPCLfHe>;
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCLfPi, aod::pidTPCLfHe, aod::McTrackLabels>;
-using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
-using V0fullMC = soa::Join<aod::V0Datas, aod::V0Covs, aod::McV0Labels>;
+using V0MC = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
 struct hypertritonAnalysis {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -74,27 +73,35 @@ struct hypertritonAnalysis {
       {"h3dPtVsMassHyVsDCAxy", "h3dPtVsMassHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 0.5f, "abs(dcaxy)"}}}},
       {"h3dPtVsMassAHyVsDCAxy", "h3dPtVsMassAHyVsDCAxy", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 2.900f, 3.100f, "Inv. Mass (GeV/c^{2})"}, {50, 0.0f, 0.5f, "abs(dcaxy)"}}}},
       // Very simple QA
-      {"hQAV0Radius", "hQAV0Radius", {HistType::kTH1F, {{200, 0, 50}}}},
-      {"hQADCAV0Dau", "hQADCAV0Dau", {HistType::kTH1F, {{100, 0, 5}}}},
-      {"hQADCAPosToPV", "hQADCAPosToPV", {HistType::kTH1F, {{100, -1, 1}}}},
-      {"hQADCANegToPV", "hQADCANegToPV", {HistType::kTH1F, {{100, -1, 1}}}},
-      {"hQADCAHypertritonToPV", "hQADCAHypertritonToPV", {HistType::kTH1F, {{100, -1, 1}}}},
-      {"hQADCAAntiHypertritonToPV", "hQADCAAntiHypertritonToPV", {HistType::kTH1F, {{100, -1, 1}}}},
+      {"h2dHypertritonQAV0Radius", "h2dHypertritonQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
+      {"h2dHypertritonQADCAV0Dau", "h2dHypertritonQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 5}}}},
+      {"h2dHypertritonQADCAPosToPV", "h2dHypertritonQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -1, 1}}}},
+      {"h2dHypertritonQADCANegToPV", "h2dHypertritonQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10, 10}}}},
+      {"h2dHypertritonQADCAToPV", "h2dHypertritonQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, -1, 1}}}},
+
+      {"h2dAntiHypertritonQAV0Radius", "h2dAntiHypertritonQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
+      {"h2dAntiHypertritonQADCAV0Dau", "h2dAntiHypertritonQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 5}}}},
+      {"h2dAntiHypertritonQADCAPosToPV", "h2dAntiHypertritonQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10, 10}}}},
+      {"h2dAntiHypertritonQADCANegToPV", "h2dAntiHypertritonQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -1, 1}}}},
+      {"h2dAntiHypertritonQADCAToPV", "h2dAntiHypertritonQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, -1, 1}}}},
+
       // Bookkeeping
       {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
       {"V0loopFiltersCounts", "V0loopFiltersCounts", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
       // dEdx QA plots
-      {"h2dQAdEdxHelium", "h2dQAdEdxHelium", {HistType::kTH2F, {{50, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
-      {"h2dQAdEdxPion", "h2dQAdEdxPion", {HistType::kTH2F, {{50, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
+      {"h2dHypertritonQAdEdxHelium", "h2dHypertritonQAdEdxHelium", {HistType::kTH2F, {{50, 0.0f, 10.0f, "p/z (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
+      {"h2dHypertritonQAdEdxPion", "h2dHypertritonQAdEdxPion", {HistType::kTH2F, {{50, 0.0f, 10.0f, "p/z (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
+      {"h2dAntiHypertritonQAdEdxHelium", "h2dAntiHypertritonQAdEdxHelium", {HistType::kTH2F, {{50, 0.0f, 10.0f, "p/z (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
+      {"h2dAntiHypertritonQAdEdxPion", "h2dAntiHypertritonQAdEdxPion", {HistType::kTH2F, {{50, 0.0f, 10.0f, "p/z (GeV/c)"}, {200, -10.0f, 10.0f, "dE/dx N_{sigma}"}}}},
     },
   };
 
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"}; // very open, please
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> dca3hetopv{"dca3hetopv", -1, "DCA Neg To PV"};
-  Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pos To PV"};
-  Configurable<float> dcahyptopv{"dcahyptopv", .2, "DCA Hypertriton To PV"};
+  Configurable<float> dca3hetopv{"dca3hetopv", -1, "DCA helium To PV"};
+  Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA pion To PV"};
+  Configurable<float> dcahyptopv{"dcahyptopv", .2, "DCA Hypertriton To PV"}; // propagated correctly
   Configurable<float> v0radius{"v0radius", 1.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.8, "rapidity"};
   Configurable<float> heliumdEdx{"heliumdEdx", 8, "heliumdEdx"};
@@ -105,7 +112,7 @@ struct hypertritonAnalysis {
 
   // Material correction to use when propagating hypertriton: none
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  o2::track::TrackParCov lHyTrack;
+  o2::track::TrackPar lHyTrack;
 
   // CCDB options
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -205,7 +212,7 @@ struct hypertritonAnalysis {
       registry.fill(HIST("hEventSelection"), ii, evselstats[ii]);
   }
 
-  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0full const& fullV0s, TracksCompleteIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& V0s, TracksCompleteIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -223,15 +230,27 @@ struct hypertritonAnalysis {
     }
     evselstats[kEvSelVtxZ]++;
 
-    for (auto& v0 : fullV0s) {
+    for (auto& v0 : V0s) {
       stats[kHypAll]++;
-      registry.fill(HIST("hQAV0Radius"), v0.v0radius());
-      registry.fill(HIST("hQADCAV0Dau"), v0.dcaV0daughters());
-      registry.fill(HIST("hQADCAPosToPV"), v0.posTrack_as<TracksCompleteIU>().dcaXY());
-      registry.fill(HIST("hQADCANegToPV"), v0.negTrack_as<TracksCompleteIU>().dcaXY());
-      registry.fill(HIST("h2dQAdEdxHelium"), TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
+      registry.fill(HIST("h2dHypertritonQAV0Radius"), v0.ptHypertriton(), v0.v0radius());
+      registry.fill(HIST("h2dHypertritonQADCAV0Dau"), v0.ptHypertriton(), v0.dcaV0daughters());
+      registry.fill(HIST("h2dHypertritonQADCAPosToPV"), v0.ptHypertriton(), v0.posTrack_as<TracksCompleteIU>().dcaXY());
+      registry.fill(HIST("h2dHypertritonQADCANegToPV"), v0.ptHypertriton(), v0.negTrack_as<TracksCompleteIU>().dcaXY());
+      registry.fill(HIST("h2dAntiHypertritonQAV0Radius"), v0.ptAntiHypertriton(), v0.v0radius());
+      registry.fill(HIST("h2dAntiHypertritonQADCAV0Dau"), v0.ptAntiHypertriton(), v0.dcaV0daughters());
+      registry.fill(HIST("h2dAntiHypertritonQADCAPosToPV"), v0.ptAntiHypertriton(), v0.posTrack_as<TracksCompleteIU>().dcaXY());
+      registry.fill(HIST("h2dAntiHypertritonQADCANegToPV"), v0.ptAntiHypertriton(), v0.negTrack_as<TracksCompleteIU>().dcaXY());
+      registry.fill(HIST("h2dHypertritonQAdEdxHelium"),
+                    TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
                     v0.posTrack_as<TracksCompleteIU>().tpcNSigmaHe());
-      registry.fill(HIST("h2dQAdEdxPion"), TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
+      registry.fill(HIST("h2dHypertritonQAdEdxPion"),
+                    TMath::Sqrt(v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg()),
+                    v0.negTrack_as<TracksCompleteIU>().tpcNSigmaPi());
+      registry.fill(HIST("h2dAntiHypertritonQAdEdxHelium"),
+                    TMath::Sqrt(v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg()),
+                    v0.negTrack_as<TracksCompleteIU>().tpcNSigmaHe());
+      registry.fill(HIST("h2dAntiHypertritonQAdEdxPion"),
+                    TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
                     v0.posTrack_as<TracksCompleteIU>().tpcNSigmaPi());
       if (v0.v0radius() > v0radius) {
         stats[kHypRadius]++;
@@ -249,20 +268,14 @@ struct hypertritonAnalysis {
                 if (TMath::Abs(v0.posTrack_as<TracksCompleteIU>().dcaXY()) > dca3hetopv &&
                     TMath::Abs(v0.negTrack_as<TracksCompleteIU>().dcaXY()) > dcapiontopv) {
                   stats[kHypDauDCAtoPV]++;
-                  // Set up covariance matrices (should in fact be optional)
-                  std::array<float, 21> covV = {0.};
-                  constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-                  for (int i = 0; i < 6; i++) {
-                    covV[MomInd[i]] = v0.momentumCovMat()[i]; // fixme: rigidity <-> momentum not taken into account in cov
-                    covV[i] = v0.positionCovMat()[i];
-                  }
-                  lHyTrack = o2::track::TrackParCov(
+
+                  lHyTrack = o2::track::TrackPar(
                     {v0.x(), v0.y(), v0.z()},
                     {2.0f * v0.pxpos() + v0.pxneg(), 2.0f * v0.pypos() + v0.pyneg(), 2.0f * v0.pzpos() + v0.pzneg()},
-                    covV, +1, true);
+                    +1, true);
 
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  registry.fill(HIST("hQADCAHypertritonToPV"), dcaInfo[0]);
+                  registry.fill(HIST("h2dHypertritonQADCAToPV"), v0.ptAntiHypertriton(), dcaInfo[0]);
                   if (TMath::Abs(dcaInfo[0]) < dcahyptopv) {
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassHypertriton"), v0.ptHypertriton(), v0.mHypertriton());
@@ -280,20 +293,14 @@ struct hypertritonAnalysis {
                 if (TMath::Abs(v0.posTrack_as<TracksCompleteIU>().dcaXY()) > dcapiontopv &&
                     TMath::Abs(v0.negTrack_as<TracksCompleteIU>().dcaXY()) > dca3hetopv) {
                   stats[kHypDauDCAtoPV]++;
-                  // Set up covariance matrices (should in fact be optional)
-                  std::array<float, 21> covV = {0.};
-                  constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-                  for (int i = 0; i < 6; i++) {
-                    covV[MomInd[i]] = v0.momentumCovMat()[i]; // fixme: rigidity <-> momentum not taken into account in cov
-                    covV[i] = v0.positionCovMat()[i];
-                  }
-                  lHyTrack = o2::track::TrackParCov(
+
+                  lHyTrack = o2::track::TrackPar(
                     {v0.x(), v0.y(), v0.z()},
                     {v0.pxpos() + 2.0f * v0.pxneg(), v0.pypos() + 2.0f * v0.pyneg(), v0.pzpos() + 2.0f * v0.pzneg()},
-                    covV, -1, true);
+                    -1, true);
 
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  registry.fill(HIST("hQADCAAntiHypertritonToPV"), dcaInfo[0]);
+                  registry.fill(HIST("h2dAntiHypertritonQADCAToPV"), v0.ptAntiHypertriton(), dcaInfo[0]);
                   if (TMath::Abs(dcaInfo[0]) < dcahyptopv) {
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassAntiHypertriton"), v0.ptAntiHypertriton(), v0.mAntiHypertriton());
@@ -311,7 +318,7 @@ struct hypertritonAnalysis {
   }
   PROCESS_SWITCH(hypertritonAnalysis, processRealData, "Regular analysis", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0fullMC const& fullV0s, TracksCompleteIUMC const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0MC const& fullV0s, TracksCompleteIUMC const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -347,14 +354,26 @@ struct hypertritonAnalysis {
         continue;
       stats[kHypAll]++;
       if (v0.v0radius() > v0radius) {
-        registry.fill(HIST("hQAV0Radius"), v0.v0radius());
-        registry.fill(HIST("hQADCAV0Dau"), v0.dcaV0daughters());
-        registry.fill(HIST("hQADCAPosToPV"), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
-        registry.fill(HIST("hQADCANegToPV"), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
-        registry.fill(HIST("h2dQAdEdxHelium"), TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
+        registry.fill(HIST("h2dHypertritonQAV0Radius"), v0.ptHypertriton(), v0.v0radius());
+        registry.fill(HIST("h2dHypertritonQADCAV0Dau"), v0.ptHypertriton(), v0.dcaV0daughters());
+        registry.fill(HIST("h2dHypertritonQADCAPosToPV"), v0.ptHypertriton(), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
+        registry.fill(HIST("h2dHypertritonQADCANegToPV"), v0.ptHypertriton(), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
+        registry.fill(HIST("h2dAntiHypertritonQAV0Radius"), v0.ptAntiHypertriton(), v0.v0radius());
+        registry.fill(HIST("h2dAntiHypertritonQADCAV0Dau"), v0.ptAntiHypertriton(), v0.dcaV0daughters());
+        registry.fill(HIST("h2dAntiHypertritonQADCAPosToPV"), v0.ptAntiHypertriton(), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
+        registry.fill(HIST("h2dAntiHypertritonQADCANegToPV"), v0.ptAntiHypertriton(), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
+        registry.fill(HIST("h2dHypertritonQAdEdxHelium"),
+                      TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
                       v0.posTrack_as<TracksCompleteIUMC>().tpcNSigmaHe());
-        registry.fill(HIST("h2dQAdEdxPion"), TMath::Sqrt(v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg()),
+        registry.fill(HIST("h2dHypertritonQAdEdxPion"),
+                      TMath::Sqrt(v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg()),
                       v0.negTrack_as<TracksCompleteIUMC>().tpcNSigmaPi());
+        registry.fill(HIST("h2dAntiHypertritonQAdEdxHelium"),
+                      TMath::Sqrt(v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg()),
+                      v0.negTrack_as<TracksCompleteIUMC>().tpcNSigmaHe());
+        registry.fill(HIST("h2dAntiHypertritonQAdEdxPion"),
+                      TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
+                      v0.posTrack_as<TracksCompleteIUMC>().tpcNSigmaPi());
         stats[kHypRadius]++;
         if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
           stats[kHypCosPA]++;
@@ -370,20 +389,14 @@ struct hypertritonAnalysis {
                 if (TMath::Abs(v0.posTrack_as<TracksCompleteIUMC>().dcaXY()) > dca3hetopv &&
                     TMath::Abs(v0.negTrack_as<TracksCompleteIUMC>().dcaXY()) > dcapiontopv) {
                   stats[kHypDauDCAtoPV]++;
-                  // Set up covariance matrices (should in fact be optional)
-                  std::array<float, 21> covV = {0.};
-                  constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-                  for (int i = 0; i < 6; i++) {
-                    covV[MomInd[i]] = v0.momentumCovMat()[i]; // fixme: rigidity <-> momentum not taken into account in cov
-                    covV[i] = v0.positionCovMat()[i];
-                  }
-                  lHyTrack = o2::track::TrackParCov(
+
+                  lHyTrack = o2::track::TrackPar(
                     {v0.x(), v0.y(), v0.z()},
                     {2.0f * v0.pxpos() + v0.pxneg(), 2.0f * v0.pypos() + v0.pyneg(), 2.0f * v0.pzpos() + v0.pzneg()},
-                    covV, +1, true);
+                    +1, true);
 
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  registry.fill(HIST("hQADCAHypertritonToPV"), dcaInfo[0]);
+                  registry.fill(HIST("h2dHypertritonQADCAToPV"), v0.ptHypertriton(), dcaInfo[0]);
                   if (TMath::Abs(dcaInfo[0]) < dcahyptopv) {
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassHypertriton"), v0.ptHypertriton(), v0.mHypertriton());
@@ -401,20 +414,14 @@ struct hypertritonAnalysis {
                 if (TMath::Abs(v0.posTrack_as<TracksCompleteIUMC>().dcaXY()) > dcapiontopv &&
                     TMath::Abs(v0.negTrack_as<TracksCompleteIUMC>().dcaXY()) > dca3hetopv) {
                   stats[kHypDauDCAtoPV]++;
-                  // Set up covariance matrices (should in fact be optional)
-                  std::array<float, 21> covV = {0.};
-                  constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-                  for (int i = 0; i < 6; i++) {
-                    covV[MomInd[i]] = v0.momentumCovMat()[i]; // fixme: rigidity <-> momentum not taken into account in cov
-                    covV[i] = v0.positionCovMat()[i];
-                  }
-                  lHyTrack = o2::track::TrackParCov(
+
+                  lHyTrack = o2::track::TrackPar(
                     {v0.x(), v0.y(), v0.z()},
                     {v0.pxpos() + 2.0f * v0.pxneg(), v0.pypos() + 2.0f * v0.pyneg(), v0.pzpos() + 2.0f * v0.pzneg()},
-                    covV, -1, true);
+                    -1, true);
 
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyTrack, 2.f, matCorr, &dcaInfo);
-                  registry.fill(HIST("hQADCAAntiHypertritonToPV"), dcaInfo[0]);
+                  registry.fill(HIST("h2dAntiHypertritonQADCAToPV"), v0.ptAntiHypertriton(), dcaInfo[0]);
                   if (TMath::Abs(dcaInfo[0]) < dcahyptopv) {
                     stats[kHypDCAtoPV]++;
                     registry.fill(HIST("h2dMassAntiHypertriton"), v0.ptAntiHypertriton(), v0.mAntiHypertriton());
