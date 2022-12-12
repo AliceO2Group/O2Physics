@@ -355,44 +355,45 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
       }
 
       for (int& collID : collIDs) {
-
-        auto collision = collisions.rawIteratorAt(collID);
-
         /// tracks for the current collision
         const auto& tracksColl = tracks.sliceBy(perRecoCollision, collID);
 
         for (auto& track : tracksColl) {
           /// select the tracks according to: 1) track selection; 2) is PV contributor or not
           if ((!useIsGlobalTrackWoDCA || (useIsGlobalTrackWoDCA && track.isGlobalTrackWoDCA())) && track.isPVContributor()) {
-            if (track.collisionId() == collID) { /// this is already considered in the standard track table
-              continue;
-            }
+            // track selection done wrt the "default" vertex (~ equivalent to IU point)
+            for(int& collIDother : collIDs) {
+              if (collIDother == collID) { /// this is already considered in the standard track table
+                continue;
+              }
+              auto collision = collisions.rawIteratorAt(collIDother);
 
-            /// At this point, wthe remaining collisions are by definition compatible in time
-            initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+              /// At this point, wthe remaining collisions are by definition compatible in time
+              initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
 
-            // let's propagate track to collision
-            dcaInfoCov.set(999, 999, 999, 999, 999);
-            auto trackParCov = getTrackParCov(track);
-            vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-            vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
+              // let's propagate track to collision
+              dcaInfoCov.set(999, 999, 999, 999, 999);
+              auto trackParCov = getTrackParCov(track);
+              vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+              vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+              o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
 
-            /// Fill the table with this track propagated to the new collisions
-            ambTrack(track.globalIndex(), collision.globalIndex(), BIT(hf_amb_tracks::PVContributor), // fill the tacle with this track, as PV contributor
-                     trackParCov.getX(), trackParCov.getAlpha(),
-                     trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
-                     trackParCov.getQ2Pt(), trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(),
-                     trackParCov.getPhi(), dcaInfoCov.getY(), dcaInfoCov.getZ());
-            ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
-                        std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                        trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
-                        trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
-                        trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
-                        trackParCov.getSigma1Pt2());
+              /// Fill the table with this track propagated to the new collisions
+              ambTrack(track.globalIndex(), collision.globalIndex(), BIT(hf_amb_tracks::PVContributor), // fill the tacle with this track, as PV contributor
+                       trackParCov.getX(), trackParCov.getAlpha(),
+                       trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
+                       trackParCov.getQ2Pt(), trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(),
+                       trackParCov.getPhi(), dcaInfoCov.getY(), dcaInfoCov.getZ());
+              ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
+                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
+                          trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
+                          trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
+                          trackParCov.getSigma1Pt2());
+            } /// end second loop on collIDs
           }
         } /// end loop on tracks of the current collision
-      }
+      } /// end first loop on collIDs
 
     } /// end loop on bcs
   }
