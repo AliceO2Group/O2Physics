@@ -11,10 +11,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""
-Find dependencies required to produce a given table or to run a given workflow.
-
-Author: Vít Kučera <vit.kucera@cern.ch>, Inha University, on 2022-12-10
+"""!
+\brief  Find dependencies required to produce a given table or to run a given workflow.
+\author Vít Kučera <vit.kucera@cern.ch>, Inha University
+\date   2022-12-10
 """
 
 import argparse
@@ -372,4 +372,5 @@ def main():
             msg_fatal(f"executing: {cmd}")
 
 
-main()
+if __name__ == "__main__":
+    main()
