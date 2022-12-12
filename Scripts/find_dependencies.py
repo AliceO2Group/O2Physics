@@ -230,7 +230,7 @@ def main():
         dest="suffix",
         type=str,
         choices=["pdf", "svg", "png"],
-        help="make a topology graph if suffix provided",
+        help="make a topology graph in a given format",
     )
     parser.add_argument(
         "-x",
