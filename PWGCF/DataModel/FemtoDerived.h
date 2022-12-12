@@ -194,8 +194,6 @@ enum ParticleOriginMCTruth {
   kDaughterSigmaplus
 };
 
-// DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
-// DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
 DECLARE_SOA_COLUMN(PtTruth, ptTruth, float);                       //! p_T of the generated particle (GeV/c)
@@ -207,9 +205,6 @@ DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where moth
 } // namespace femtodreamparticleMC
 
 DECLARE_SOA_TABLE(FemtoDreamParticlesMC, "AOD", "FEMTODREAMPSMC",
-                  // o2::soa::Index<>,
-                  // femtodreamparticleMC::FemtoDreamParticleId,
-                  // femtodreamparticleMC::FemtoDreamCollisionId,
                   femtodreamparticleMC::PartOriginMCTruth,
                   femtodreamparticleMC::PDGMCTruth,
                   femtodreamparticleMC::PtTruth,

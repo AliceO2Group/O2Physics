@@ -146,19 +146,7 @@ class FemtoDreamContainer
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]);
     mHistogramRegistry->add((folderName + "relPairDist_truth").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    /*
-    mHistogramRegistry->add((folderName + "relPairkT_truth").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarkT_truth").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarmT_truth").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    */
     mHistogramRegistry->add((folderName + "relPairkstarMult_truth").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    /*
-    mHistogramRegistry->add((folderName + "kstarPtPart1_truth").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "kstarPtPart2_truth").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "MultPtPart1_truth").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    mHistogramRegistry->add((folderName + "MultPtPart2_truth").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    mHistogramRegistry->add((folderName + "PtPart1PtPart2_truth").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
-    */
     if constexpr (mEventType == femtoDreamContainer::EventType::sameMC) {
       mHistogramRegistry->add((folderName + "kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
     }
@@ -177,23 +165,9 @@ class FemtoDreamContainer
       femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
       femtoObsMC = FemtoDreamMath::getkstarMC(part1, mMassOne, part2, mMassTwo);
     }
-    // const float kT = FemtoDreamMath::getkTMC(part1, mMassOne, part2, mMassTwo);
-    // const float mT = FemtoDreamMath::getmTMC(part1, mMassOne, part2, mMassTwo);
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist_truth"), femtoObsMC);
-      /*
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkT_truth"), kT);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarkT_truth"), femtoObsMC, kT);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarmT_truth"), femtoObsMC, mT);
-      */
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarMult_truth"), femtoObsMC, mult);
-      /*
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstarPtPart1"), femtoObsMC, part1.ptTruth());
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstarPtPart2"), femtoObsMC, part2.ptTruth());
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart1"), part1.ptTruth(), mult);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart2"), part2.ptTruth(), mult);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("PtPart1PtPart2"), part1.pt(), part2.pt());
-      */
       if constexpr (mEventType == femtoDreamContainer::EventType::sameMC) {
         mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstar_resolution"), femtoObsMC, femtoObs);
       }

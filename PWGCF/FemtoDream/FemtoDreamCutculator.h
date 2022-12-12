@@ -39,7 +39,7 @@ class FemtoDreamCutculator
   /// \param configFile Path to the dpl-config.json file from the femtodream-producer task
   void init(const char* configFile)
   {
-    std::cout << "Welcome to the CutCulator!\n";
+    LOG(info) << "Welcome to the CutCulator!\n";
 
     boost::property_tree::ptree root;
     try {
@@ -53,7 +53,7 @@ class FemtoDreamCutculator
     for (auto& Producer : ProducerTasks) {
       if (root.count(Producer) > 0) {
         mConfigTree = root.get_child(Producer);
-        std::cout << "Found " << Producer << " in " << configFile << std::endl;
+        LOG(info) << "Found " << Producer << " in " << configFile << std::endl;
         break;
       }
     }
