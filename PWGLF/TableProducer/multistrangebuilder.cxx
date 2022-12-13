@@ -398,7 +398,7 @@ struct multistrangeBuilder {
     statisticsRegistry.cascstats[kBachCrossedRows]++;
 
     // bachelor DCA track to PV
-    if (bachTrack.dcaXY() < dcabachtopv)
+    if (TMath::Abs(bachTrack.dcaXY()) < dcabachtopv)
       return false;
     statisticsRegistry.cascstats[kBachDCAxy]++;
 
