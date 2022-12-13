@@ -258,28 +258,6 @@ struct UpcCandProducer {
     newEventIDs.clear();
   }
 
-  template <typename TTrack, typename TAmbTracks>
-  uint64_t getTrackBC(TTrack track,
-                      TAmbTracks ambTracks,
-                      int64_t ambTrId,
-                      o2::aod::Collisions const& collisions,
-                      BCsWithBcSels const& bcs)
-  {
-    uint64_t trackBC = 0;
-    if (ambTrId >= 0) {
-      const auto& ambTr = ambTracks.iteratorAt(ambTrId);
-      const auto& bcSlice = ambTr.bc();
-      auto first = bcSlice.begin();
-      trackBC = first.globalBC();
-    } else {
-      const auto& col = track.collision();
-      trackBC = col.template bc_as<BCsWithBcSels>().globalBC();
-    }
-    int64_t tint = std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-    uint64_t bc = trackBC + tint;
-    return bc;
-  }
-
   void fillFwdTracks(ForwardTracks const& tracks,
                      std::vector<int64_t> const& trackIDs,
                      int32_t candID,
