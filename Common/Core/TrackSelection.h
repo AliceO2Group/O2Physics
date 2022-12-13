@@ -13,14 +13,15 @@
 // Class for track selection
 //
 
-#ifndef TrackSelection_H
-#define TrackSelection_H
+#ifndef COMMON_CORE_TRACKSELECTION_H
+#define COMMON_CORE_TRACKSELECTION_H
 
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
+#include "Rtypes.h"
 #include <set>
 #include <vector>
-#include "Rtypes.h"
+#include <utility>
 
 class TrackSelection
 {
