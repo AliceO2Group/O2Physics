@@ -15,8 +15,8 @@
 /// \since 20-10-2020
 ///
 
-#ifndef TrackSelectionDefaults_H
-#define TrackSelectionDefaults_H
+#ifndef COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
+#define COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
 
 #include "Framework/DataTypes.h"
 #include "Common/Core/TrackSelection.h"
