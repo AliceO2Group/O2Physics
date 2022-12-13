@@ -13,6 +13,16 @@
 
 """!
 @brief  Find dependencies required to produce a given table or to run a given workflow.
+
+This scripts finds out which workflows can produce a given table and which tables are needed to run a given workflow.
+These dependencies are reported in the terminal in the form of a nested tree and optionally visualised graphically in a figure.
+- Depending on the specified maximum number of levels of the workflow tree, one can request any dependency depth,
+  from the direct dependencies to the full workflow topology leading to the provided table(s) and/or workflow(s).
+- By default, all possible ways of producing a table and all possible ways of running a workflow are considered.
+  This can be customised by providing a list of tables and workflows that should be excluded from the search.
+- Since the "Couldn't get TTree" error message in O2 reports the lowercase name of the missing table,
+  table names are treated as case-insensitive by default so that one can just copy-paste the name from the error message.
+
 @author Vít Kučera <vit.kucera@cern.ch>, Inha University
 @date   2022-12-10
 """
