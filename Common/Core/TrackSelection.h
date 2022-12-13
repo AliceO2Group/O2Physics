@@ -13,8 +13,8 @@
 // Class for track selection
 //
 
-#ifndef COMMON_CORE_TRACKSELECTION_H
-#define COMMON_CORE_TRACKSELECTION_H
+#ifndef COMMON_CORE_TRACKSELECTION_H_
+#define COMMON_CORE_TRACKSELECTION_H_
 
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
