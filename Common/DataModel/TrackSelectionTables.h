@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_TRACKSELECTIONTABLES_H_
-#define O2_ANALYSIS_TRACKSELECTIONTABLES_H_
+#ifndef COMMON_DATAMODEL_TRACKSELECTIONTABLES_H_
+#define COMMON_DATAMODEL_TRACKSELECTIONTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 
