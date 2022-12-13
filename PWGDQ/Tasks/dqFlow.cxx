@@ -70,12 +70,16 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
 using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
+// using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
+// using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels>;
 
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
+// constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -91,8 +95,10 @@ struct AnalysisQvector {
   // Configurable<float> fConfigVtxCut{"cfgVtxCut", 12.0, "Z vertex cut"};
   Configurable<float> fConfigCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
   Configurable<float> fConfigCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
-  Configurable<float> fConfigCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> fConfigEtaLimit{"cfgEtaLimit", 0.4f, "Eta gap separation, only if using subEvents"};
+  Configurable<float> fConfigCutEtaMin{"cfgCutEtaMin", -0.8f, "Eta min range for tracks"};
+  Configurable<float> fConfigCutEtaMax{"cfgCutEtaMax", 0.8f, "Eta max range for tracks"};
+  Configurable<float> fConfigEtaLimitMin{"cfgEtaLimitMin", -0.4f, "Eta gap min separation, only if using subEvents"};
+  Configurable<float> fConfigEtaLimitMax{"cfgEtaLimitMax", 0.4f, "Eta gap max separation, only if using subEvents"};
   Configurable<int> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
 
   // Access to the efficiencies and acceptances from CCDB
@@ -111,7 +117,10 @@ struct AnalysisQvector {
   //  AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
 
   // Filter collisionFilter = nabs(aod::collision::posZ) < fConfigVtxCut;
-  Filter trackFilter = (nabs(aod::track::eta) < fConfigCutEta) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) <= fConfigCutEtaMax) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+
+  Partition<aod::MFTTracks> sample = (aod::fwdtrack::eta <= -2.4f) && (aod::fwdtrack::eta >= -3.2f);
+  Filter fwdFilter = (aod::fwdtrack::eta < -2.4f) && (aod::fwdtrack::eta > -3.2f) && (o2::aod::fwdtrack::pt >= fConfigCutPtMin);
 
   struct Config {
     TH1D* mEfficiency = nullptr;
@@ -182,9 +191,9 @@ struct AnalysisQvector {
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
     // Define regions of positive and negative eta in order to create gaps
-    fGFW->AddRegion("refN", 7, pows, -fConfigCutEta, -fConfigEtaLimit, 1, 1);
-    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit, fConfigCutEta, 1, 1);
-    fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta, fConfigCutEta, 1, 2);
+    fGFW->AddRegion("refN", 7, pows, fConfigCutEtaMin, fConfigEtaLimitMin, 1, 1);
+    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimitMax, fConfigCutEtaMax, 1, 1);
+    fGFW->AddRegion("full", 7, powsFull, fConfigCutEtaMin, fConfigCutEtaMax, 1, 2);
 
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
@@ -230,6 +239,11 @@ struct AnalysisQvector {
     //      return;
     //    }
   }
+  //    HistogramRegistry registry{
+  //      "registry",
+  //      {{"phi", "phi", {HistType::kTH1F, {{200, -2. * M_PI, 2. * M_PI}}}},
+  //       {"eta", "eta", {HistType::kTH1F, {{202, -4.01, 4.01}} }},
+  //          {"Psi", "Psi", {HistType::kTH1F, {{102, -M_PI, M_PI}} }}  }};
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
@@ -273,6 +287,8 @@ struct AnalysisQvector {
         wacc = 1;
       }
       // VarManager::FillTrack<TTrackFillMap>(track);
+      // registry.get<TH1>(HIST("phi"))->Fill(track.phi());
+      // registry.get<TH1>(HIST("eta"))->Fill(track.eta());
 
       // Fill the GFW for each track to compute Q vector
       fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 3); // using default values for ptin=0 and mask=3
@@ -331,12 +347,20 @@ struct AnalysisQvector {
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C]);
     }
+    // registry.get<TH1>(HIST("Psi"))->Fill(VarManager::getEventPlane(2, VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A]));
   }
 
-  // Process to fill Q vector in a reduced event table for barrel/muon tracks flow related analyses
+  // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses
   void processBarrelQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
+  }
+
+  // Process to fill Q vector  using forward tracks in a reduced event table for barrel/muon tracks flow related analyses
+  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
+  {
+    // Need to add gkEventFillMap with proper centrality values
+    runFillQvector<gkEventFillMap, 0u>(collisions, bcs, tracks);
   }
 
   // TODO: dummy function for the case when no process function is enabled
@@ -346,6 +370,7 @@ struct AnalysisQvector {
   }
 
   PROCESS_SWITCH(AnalysisQvector, processBarrelQvector, "Run q-vector task on barrel tracks", false);
+  PROCESS_SWITCH(AnalysisQvector, processForwardQvector, "Run q-vector task on forward tracks for Run3", false);
   PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function", false);
 };
 
