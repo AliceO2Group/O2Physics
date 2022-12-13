@@ -37,4 +37,4 @@ TrackSelection getGlobalTrackSelectionRun3Nuclei();
 // Default track selection for HF analysis (global tracks, with its points, but no tight selection for primary) in run3
 TrackSelection getGlobalTrackSelectionRun3HF();
 
-#endif  // COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
+#endif // COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
