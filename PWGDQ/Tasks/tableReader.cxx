@@ -986,7 +986,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
           dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
         }
       }
-      if (classStr.Contains("Muons")) {
+      if (classStr.Contains("Muon")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
       }
     }
