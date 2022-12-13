@@ -24,7 +24,6 @@
 #include "Framework/DataTypes.h"
 #include "Rtypes.h"
 
-
 class TrackSelection
 {
  public:
