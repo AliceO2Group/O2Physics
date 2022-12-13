@@ -53,7 +53,7 @@ struct CheckFilterBit {
         Printf("FB1 is passed");
       } else {
         Printf("FB1 not passed");
-      }  
+      }
 
       histos.fill(HIST("Tracks/Reco/histpt"), track.pt());
       if (track.passedITSHitsFB1()) { // o2::aod::track2<TrackSelectionExtension::passedTPCCrossedRows>()){
