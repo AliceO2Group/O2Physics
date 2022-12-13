@@ -12,9 +12,9 @@
 # or submit itself to any jurisdiction.
 
 """!
-\brief  Find dependencies required to produce a given table or to run a given workflow.
-\author Vít Kučera <vit.kucera@cern.ch>, Inha University
-\date   2022-12-10
+@brief  Find dependencies required to produce a given table or to run a given workflow.
+@author Vít Kučera <vit.kucera@cern.ch>, Inha University
+@date   2022-12-10
 """
 
 import argparse
