@@ -42,6 +42,7 @@ AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec PhiAxis = {600, 0, 2 * M_PI};
 AxisSpec EtaAxis = {18, -4.6, -1.};
+AxisSpec DCAxyAxis = {100, -1, 10};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -73,8 +74,20 @@ struct PseudorapidityDensityMFT {
       {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},             //
       {"TracksPhiZvtx", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
       {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                        //
-    }                                                                                                 //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                       //
+
+      {"Tracks/Control/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                                    //
+                                                                                                                                       //{"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                     //
+      {"Tracks/Control/ReassignedDCAXY", "  ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                         //
+                                                                                                                                       //{"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},           //
+      {"Tracks/Control/ExtraDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                               //
+                                                                                                                                       //{"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                //
+      {"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                 //
+      {"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                          //
+      {"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},            //
+      {"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                     //
+      {"Tracks/Control/ReassignedVertexCorr", "; #it{z}_{vtx}^{orig} (cm); #it{z}_{vtx}^{re} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}} //
+    }                                                                                                                                  //
   };
 
   void init(InitContext&)
@@ -169,6 +182,7 @@ struct PseudorapidityDensityMFT {
                                      (aod::fwdtrack::etas > -3.9f) &&
                                      (nabs(aod::fwdtrack::bestDCAXY) <= 2.f);
 
+  using CollwEv = soa::Join<aod::Collisions, aod::EvSels>;
   void processAmbi(aod::AmbiguousMFTTracks const& atracks, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::MFTTracks const& tracks)
   {
     counter++;
@@ -176,13 +190,17 @@ struct PseudorapidityDensityMFT {
     for (auto& track : atracks) {
       auto mfttrack = track.mfttrack();
       if (mfttrack.has_collision()) {
-        ambTrackIds.push_back(track.mfttrackId());
+        auto coll = mfttrack.collision_as<CollwEv>();
+        if (!useEvSel || (useEvSel && coll.sel8())) // if the origColl doesn't pass the event selection, don't store the ambitrack
+        {
+          ambTrackIds.push_back(track.mfttrackId());
+        }
       }
     }
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processAmbi, "Fills vector of ambiTracks", true);
 
-  void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
+  void processMult(CollwEv::iterator const& collision, aod::MFTTracks const& tracks, soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
   {
 
     if (tracks.size() == 0) {
@@ -197,6 +215,22 @@ struct PseudorapidityDensityMFT {
 
       registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
       for (auto& track : atracks) {
+        auto otrack = track.mfttrack(); // original track
+        float ophi = otrack.phi();
+        o2::math_utils::bringTo02Pi(ophi);
+        if (!otrack.has_collision()) {
+          registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), otrack.eta(), z);
+          registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), ophi, otrack.eta());
+          registry.fill(HIST("Tracks/Control/ExtraDCAXY"), otrack.pt(), track.bestDCAXY());
+          // registry.fill(HIST("Tracks/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ());
+        } else if (otrack.collisionId() != track.bestCollisionId()) {
+          registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z);
+          registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), ophi, otrack.eta());
+          registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<CollwEv>().posZ(), z);
+          registry.fill(HIST("Tracks/Control/ReassignedDCAXY"), otrack.pt(), track.bestDCAXY());
+          // registry.fill(HIST("Tracks/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ());
+        }
+        registry.fill(HIST("Tracks/Control/DCAXY"), track.bestDCAXY());
         registry.fill(HIST("TracksEtaZvtx"), track.etas(), z);
         float phi = track.phis();
         o2::math_utils::bringTo02Pi(phi);

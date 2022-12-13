@@ -14,13 +14,14 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_RECODECAY_H_
-#define O2_ANALYSIS_RECODECAY_H_
+#ifndef COMMON_CORE_RECODECAY_H_
+#define COMMON_CORE_RECODECAY_H_
 
 #include <tuple>
 #include <vector>
 #include <array>
 #include <cmath>
+#include <utility>
 
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
@@ -72,7 +73,7 @@ class RecoDecay
   template <typename T>
   static double sq(T num)
   {
-    return (double)num * (double)num;
+    return static_cast<double>(num) * static_cast<double>(num);
   }
 
   /// Sums squares of numbers.
@@ -82,7 +83,7 @@ class RecoDecay
   template <typename... T>
   static double sumOfSquares(const T&... args)
   {
-    return (((double)args * (double)args) + ...);
+    return ((static_cast<double>(args) * static_cast<double>(args)) + ...);
   }
 
   /// Calculates square root of a sum of squares of numbers.
@@ -123,7 +124,7 @@ class RecoDecay
   {
     double res{0};
     for (std::size_t iDim = 0; iDim < N; ++iDim) {
-      res += (double)vec1[iDim] * (double)vec2[iDim];
+      res += static_cast<double>(vec1[iDim]) * static_cast<double>(vec2[iDim]);
     }
     return res;
   }
@@ -136,9 +137,9 @@ class RecoDecay
   template <typename T, typename U>
   static array<double, 3> crossProd(const array<T, 3>& vec1, const array<U, 3>& vec2)
   {
-    return array<double, 3>{((double)vec1[1] * (double)vec2[2]) - ((double)vec1[2] * (double)vec2[1]),
-                            ((double)vec1[2] * (double)vec2[0]) - ((double)vec1[0] * (double)vec2[2]),
-                            ((double)vec1[0] * (double)vec2[1]) - ((double)vec1[1] * (double)vec2[0])};
+    return array<double, 3>{(static_cast<double>(vec1[1]) * static_cast<double>(vec2[2])) - (static_cast<double>(vec1[2]) * static_cast<double>(vec2[1])),
+                            (static_cast<double>(vec1[2]) * static_cast<double>(vec2[0])) - (static_cast<double>(vec1[0]) * static_cast<double>(vec2[2])),
+                            (static_cast<double>(vec1[0]) * static_cast<double>(vec2[1])) - (static_cast<double>(vec1[1]) * static_cast<double>(vec2[0]))};
   }
 
   /// Calculates magnitude squared of a vector.
@@ -179,9 +180,9 @@ class RecoDecay
   {
     // eta = arctanh(pz/p)
     if (std::abs(mom[0]) < Almost0 && std::abs(mom[1]) < Almost0) { // very small px and py
-      return (double)(mom[2] > 0 ? VeryBig : -VeryBig);
+      return static_cast<double>(mom[2] > 0 ? VeryBig : -VeryBig);
     }
-    return (double)(std::atanh(mom[2] / p(mom)));
+    return static_cast<double>(std::atanh(mom[2] / p(mom)));
   }
 
   /// Calculates rapidity.
@@ -202,7 +203,7 @@ class RecoDecay
   static double phi(T x, U y)
   {
     // conversion from [-π, +π] returned by atan2 to [0, 2π]
-    return std::atan2((double)(-y), (double)(-x)) + o2::constants::math::PI;
+    return std::atan2(static_cast<double>(-y), static_cast<double>(-x)) + o2::constants::math::PI;
   }
 
   /// Calculates azimuth of a vector.
@@ -283,7 +284,7 @@ class RecoDecay
   static double ct(const array<T, 3>& mom, U length, V mass)
   {
     // c t = l m c^2/(p c)
-    return (double)length * (double)mass / p(mom);
+    return static_cast<double>(length) * static_cast<double>(mass) / p(mom);
   }
 
   /// Calculates cosine of θ* (theta star).
@@ -464,8 +465,8 @@ class RecoDecay
     // Ported from AliAODRecoDecay::ImpParXY
     auto flightLineXY = array{posSV[0] - point[0], posSV[1] - point[1]};
     auto k = dotProd(flightLineXY, array{mom[0], mom[1]}) / pt2(mom);
-    auto dx = flightLineXY[0] - k * (double)mom[0];
-    auto dy = flightLineXY[1] - k * (double)mom[1];
+    auto dx = flightLineXY[0] - k * static_cast<double>(mom[0]);
+    auto dy = flightLineXY[1] - k * static_cast<double>(mom[1]);
     auto absImpPar = sqrtSumOfSquares(dx, dy);
     auto flightLine = array{posSV[0] - point[0], posSV[1] - point[1], posSV[2] - point[2]};
     auto cross = crossProd(mom, flightLine);
@@ -486,10 +487,10 @@ class RecoDecay
                                             X errImpParProng, const array<Y, M>& momProng)
   {
     // Ported from AliAODRecoDecayHF::Getd0MeasMinusExpProng adding normalization directly in the function
-    auto sinThetaP = ((double)momProng[0] * (double)momMother[1] - (double)momProng[1] * (double)momMother[0]) /
+    auto sinThetaP = (static_cast<double>(momProng[0]) * static_cast<double>(momMother[1]) - static_cast<double>(momProng[1]) * static_cast<double>(momMother[0])) /
                      (pt(momProng) * pt(momMother));
-    auto diff = impParProng - (double)decLenXY * sinThetaP;
-    auto errImpParExpProng = (double)errDecLenXY * sinThetaP;
+    auto diff = impParProng - static_cast<double>(decLenXY) * sinThetaP;
+    auto errImpParExpProng = static_cast<double>(errDecLenXY) * sinThetaP;
     auto errDiff = sqrtSumOfSquares(errImpParProng, errImpParExpProng);
     return (errDiff > 0. ? diff / errDiff : 0.);
   }
@@ -552,6 +553,10 @@ class RecoDecay
         mass = 3.87165; // https://pdg.lbl.gov/ (2021)
         break;
       }
+      case 4332: {     // Ω0c (wrong mass in ROOT)
+        mass = 2.6952; // https://pdg.lbl.gov/ (2022)
+        break;
+      }
       // Take the rest from ROOT.
       default: {
         const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
@@ -591,13 +596,13 @@ class RecoDecay
     }
 
     // vector of vectors with mother indices; each line corresponds to a "stage"
-    std::vector<std::vector<long int>> arrayIds{};
-    std::vector<long int> initVec{particle.globalIndex()};
+    std::vector<std::vector<int64_t>> arrayIds{};
+    std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
 
     while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
       // vector of mother indices for the current stage
-      std::vector<long int> arrayIdsStage{};
+      std::vector<int64_t> arrayIdsStage{};
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
@@ -755,7 +760,7 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > int(N)) {
+        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
           //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
           return -1;
         }
@@ -873,7 +878,7 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > int(N)) {
+      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
         //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
         return false;
       }
@@ -931,13 +936,13 @@ class RecoDecay
     int stage = 0; // mother tree level (just for debugging)
 
     // vector of vectors with mother indices; each line corresponds to a "stage"
-    std::vector<std::vector<long int>> arrayIds{};
-    std::vector<long int> initVec{particle.globalIndex()};
+    std::vector<std::vector<int64_t>> arrayIds{};
+    std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
 
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
-      std::vector<long int> arrayIdsStage{};
+      std::vector<int64_t> arrayIdsStage{};
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
@@ -989,4 +994,4 @@ class RecoDecay
 
 std::vector<std::tuple<int, double>> RecoDecay::mListMass;
 
-#endif // O2_ANALYSIS_RECODECAY_H_
+#endif // COMMON_CORE_RECODECAY_H_

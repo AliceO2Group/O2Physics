@@ -12,7 +12,7 @@
 ///
 /// \file   pidTOFbeta.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Task to produce TOF beta tables
+/// \brief  Task to produce TOF beta and TOF mass tables
 ///
 
 // O2 includes
@@ -20,7 +20,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "pidTOFBase.h"
 #include "TableHelper.h"
-#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::pid;
