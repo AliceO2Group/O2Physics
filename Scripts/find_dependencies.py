@@ -361,8 +361,8 @@ def main():
             inputs = get_workflow_inputs(wf, dic_deps)
             outputs = get_workflow_outputs(wf, dic_deps)
             list_tables += inputs + outputs
-            nodes_in = (" ".join(inputs)).replace("-", "_")
-            nodes_out = (" ".join(outputs)).replace("-", "_")
+            nodes_in = " ".join(inputs)
+            nodes_out = " ".join(outputs)
             dot_deps += f"  {{{nodes_in}}} -> {node_wf} -> {{{nodes_out}}}\n"
         list_tables = list(dict.fromkeys(list_tables))  # Remove duplicities
         for table in list_tables:
@@ -375,13 +375,13 @@ def main():
             with open(path_file_dot, "w") as file_dot:
                 file_dot.write(dot)
         except IOError:
-            msg_fatal("Failed to open file " + path_file_dot)
+            msg_fatal(f"Failed to open file {path_file_dot}")
         cmd = f"dot -T{ext_graph} {path_file_dot} -o {path_file_graph}"
         try:
             print(f"Making graph in: {path_file_graph}")
             sp.run(cmd, shell=True, check=True)  # nosec B602
         except sp.CalledProcessError:
-            msg_fatal(f"executing: {cmd}")
+            msg_fatal(f"Failed to execute: {cmd}")
 
 
 if __name__ == "__main__":
