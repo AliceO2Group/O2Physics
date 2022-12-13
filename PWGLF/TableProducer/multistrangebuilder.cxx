@@ -245,19 +245,19 @@ struct multistrangeBuilder {
               }
               if (option.name.compare("cascadesetting_dcacascdau") == 0) {
                 detected_dcacascdau = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA V0 daughters = %f", device.name, detected_dcacascdau);
+                LOGF(info, "%s requested DCA cascade daughters = %f", device.name, detected_dcacascdau);
                 if (detected_dcacascdau > loosest_dcacascdau)
                   loosest_dcacascdau = detected_dcacascdau;
               }
               if (option.name.compare("cascadesetting_dcabachtopv") == 0) {
                 detected_dcabachtopv = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA positive daughter to PV = %f", device.name, detected_dcabachtopv);
+                LOGF(info, "%s requested DCA bachelor daughter = %f", device.name, detected_dcabachtopv);
                 if (detected_dcabachtopv < loosest_dcabachtopv)
                   loosest_dcabachtopv = detected_dcabachtopv;
               }
               if (option.name.compare("cascadesetting_cascradius") == 0) {
                 detected_radius = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA negative daughter to PV = %f", device.name, detected_radius);
+                LOGF(info, "%s requested  to PV = %f", device.name, detected_radius);
                 if (detected_radius < loosest_radius)
                   loosest_radius = detected_radius;
               }
@@ -435,7 +435,7 @@ struct multistrangeBuilder {
 
     // DCA between cascade daughters
     cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if (cascadecandidate.cascradius < dcacascdau)
+    if (cascadecandidate.dcacascdau < dcacascdau)
       return false;
     statisticsRegistry.cascstats[kCascDCADau]++;
 
