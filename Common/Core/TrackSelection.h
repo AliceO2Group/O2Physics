@@ -292,4 +292,4 @@ class TrackSelection
   ClassDefNV(TrackSelection, 1);
 };
 
-#endif
+#endif // COMMON_CORE_TRACKSELECTION_H_
