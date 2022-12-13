@@ -251,13 +251,13 @@ struct multistrangeBuilder {
               }
               if (option.name.compare("cascadesetting_dcabachtopv") == 0) {
                 detected_dcabachtopv = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA bachelor daughter = %f", device.name, detected_dcabachtopv);
+                LOGF(info, "%s requested DCA bachelor daughter to PV = %f", device.name, detected_dcabachtopv);
                 if (detected_dcabachtopv < loosest_dcabachtopv)
                   loosest_dcabachtopv = detected_dcabachtopv;
               }
               if (option.name.compare("cascadesetting_cascradius") == 0) {
                 detected_radius = option.defaultValue.get<float>();
-                LOGF(info, "%s requested  to PV = %f", device.name, detected_radius);
+                LOGF(info, "%s requested cascade radius = %f", device.name, detected_radius);
                 if (detected_radius < loosest_radius)
                   loosest_radius = detected_radius;
               }
