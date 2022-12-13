@@ -454,7 +454,7 @@ struct multistrangeBuilder {
       return false;
     }
     statisticsRegistry.cascstats[kCascCosPA]++;
-    
+
     // Cascade radius
     cascadecandidate.cascradius = RecoDecay::sqrtSumOfSquares(cascadecandidate.pos[0], cascadecandidate.pos[1]);
     if (cascadecandidate.cascradius < cascradius)
