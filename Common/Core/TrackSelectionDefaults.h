@@ -15,8 +15,8 @@
 /// \since 20-10-2020
 ///
 
-#ifndef TrackSelectionDefaults_H
-#define TrackSelectionDefaults_H
+#ifndef COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
+#define COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
 
 #include "Framework/DataTypes.h"
 #include "Common/Core/TrackSelection.h"
@@ -37,4 +37,4 @@ TrackSelection getGlobalTrackSelectionRun3Nuclei();
 // Default track selection for HF analysis (global tracks, with its points, but no tight selection for primary) in run3
 TrackSelection getGlobalTrackSelectionRun3HF();
 
-#endif
+#endif  // COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
