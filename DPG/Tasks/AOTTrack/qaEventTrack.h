@@ -63,7 +63,7 @@ DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                                
 
 DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
                   dpgtrack::DPGCollisionId,
-                  dpgtrack::Pt, dpgtrack::Eta, dpgtrack::Phi, dpgtrack::PtReso,
+                  dpgtrack::Pt, track::TPCInnerParam, dpgtrack::Eta, dpgtrack::Phi, dpgtrack::PtReso,
                   track::Flags, dpgtrack::Sign,
                   track::DcaXY, track::DcaZ, track::Length,
                   track::ITSClusterMap,
