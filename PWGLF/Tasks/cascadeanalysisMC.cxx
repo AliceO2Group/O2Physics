@@ -212,7 +212,7 @@ struct cascadeAnalysisMC {
   Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
   Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  
+
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   Configurable<int> tpcClusters{"tpcClusters", 70, "minimum number of TPC clusters requirement"};
@@ -232,7 +232,7 @@ struct cascadeAnalysisMC {
 
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > v0setting_dcapostopv&& nabs(aod::cascdata::dcanegtopv) > v0setting_dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < v0setting_dcav0dau&& aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau;
-  
+
   template <class TCascTracksTo, typename TCascade>
   int checkCascadeTPCPID(TCascade& lCascade)
   //function to check PID of a certain cascade candidate for a hypothesis
@@ -346,7 +346,7 @@ struct cascadeAnalysisMC {
     //assign TPC PID compatibility booleans
     bool lCompatiblePID_Xi = (lPIDvalue >> 0 & 1);
     bool lCompatiblePID_Om = (lPIDvalue >> 1 & 1);
-    
+
     if (casc.v0radius() > v0setting_radius &&
         casc.cascradius() > cascadesetting_cascradius &&
         casc.v0cosPA(pvx, pvy, pvz) > v0setting_cospa &&
