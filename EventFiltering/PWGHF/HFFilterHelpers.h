@@ -53,7 +53,9 @@ enum HfTriggers {
   kDoubleCharm2P,
   kDoubleCharm3P,
   kDoubleCharmMix,
-  kNtriggersHF
+  kNtriggersHF,
+  kGammaCharm2P,
+  kGammaCharm3P
 };
 
 enum charmParticles {

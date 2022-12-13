@@ -41,6 +41,8 @@ using namespace o2::aod::hffilters;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
 
+using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
+
 struct AddCollisionId {
 
   Produces<o2::aod::Colls2Prong> colls2Prong;
@@ -271,6 +273,34 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     return kRegular;
+  }
+
+  /// Basic selection of gamma candidates
+  /// \return true if gamma passes all cuts
+  template <typename T>
+  bool isSelectedGamma(const T& gamma, float GammaCosinePA)
+  {
+    if (std::abs(gamma.eta()) > 0.8) {
+      return false;
+    }
+
+    if (gamma.v0radius() < 0. || gamma.v0radius() > 180.) {
+      return false;
+    }
+
+    if ((std::pow(gamma.alpha() / 0.95, 2) + std::pow(gamma.qtarm() / 0.05, 2)) >= 1) {
+      return false;
+    }
+
+    if (std::abs(gamma.psipair()) > 0.1) {
+      return false;
+    }
+
+    if (GammaCosinePA < 0.85) {
+      return false;
+    }
+
+    return true;
   }
 
   /// Basic selection of proton candidates
@@ -632,6 +662,7 @@ struct HfFilter { // Main struct for HF triggers
 
   void process(aod::Collision const& collision,
                aod::BCsWithTimestamps const&,
+               aod::V0DatasAdditional const& theV0s,
                HfTrackIndexProng2withColl const& cand2Prongs,
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksPID const& tracks)
@@ -800,6 +831,22 @@ struct HfFilter { // Main struct for HF triggers
         } // end femto selection
 
       } // end loop over tracks
+
+      // 2-prong with Gamma (conversion photon)
+      if (!keepEvent[kGammaCharm2P] && isCharmTagged) {
+        for (auto& gamma : theV0s) {
+          float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+          bool isGamma = isSelectedGamma(gamma, V0CosinePA);
+          if(isGamma){
+            auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gamma}, std::array{massD0, 0.});
+            if(massGammaCharm < 3.0){ // remove candidates with invariant mass above 3 GeV
+              keepEvent[kGammaCharm2P] = true;
+            }
+          }
+        }
+      } // end gamma selection
+
+
     }   // end loop over 2-prong candidates
 
     std::vector<std::vector<long>> indicesDau3Prong{};
@@ -985,6 +1032,24 @@ struct HfFilter { // Main struct for HF triggers
         } // end femto selection
 
       } // end loop over tracks
+
+      // 3-prong with Gamma (conversion photon)
+      for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kGammaCharm3P]; ++iHypo) {
+        if (isCharmTagged[iHypo]) {
+          for (auto& gamma : theV0s) {
+            float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+            bool isGamma = isSelectedGamma(gamma, V0CosinePA);
+            if(isGamma){
+              auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gamma}, std::array{massCharmHypos[iHypo], 0.});
+              if(massGammaCharm < 3.){ // remove candidates with invariant mass above some value
+                keepEvent[kGammaCharm3P] = true;
+              }
+            }
+          }
+        }
+      } // end gamma selection
+
+
     }   // end loop over 3-prong candidates
 
     auto n2Prongs = computeNumberOfCandidates(indicesDau2Prong);
@@ -1007,7 +1072,7 @@ struct HfFilter { // Main struct for HF triggers
       keepEvent[kDoubleCharmMix] = true;
     }
 
-    tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix]);
+    tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kGammaCharm2P], keepEvent[kGammaCharm3P]);
 
     if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
       hProcessedEvents->Fill(1);
