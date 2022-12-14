@@ -176,7 +176,7 @@ struct HfFilter { // Main struct for HF triggers
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
-    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p double charm", "w/ 2p and 3p double charm"};
+    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p double charm", "w/ 2p and 3p double charm", "w/ 2p soft gamma", "w/ 3p soft gamma"};
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
       hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
@@ -662,7 +662,7 @@ struct HfFilter { // Main struct for HF triggers
 
   void process(aod::Collision const& collision,
                aod::BCsWithTimestamps const&,
-               aod::V0DatasAdditional const& theV0s,
+               V0DatasAdditional const& theV0s,
                HfTrackIndexProng2withColl const& cand2Prongs,
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksPID const& tracks)
@@ -682,7 +682,7 @@ struct HfFilter { // Main struct for HF triggers
     hProcessedEvents->Fill(0);
 
     // collision process loop
-    bool keepEvent[kNtriggersHF]{false};
+    bool keepEvent[kNtriggersHF]{false}; 
     //
 
     std::vector<std::vector<long>> indicesDau2Prong{};
@@ -838,7 +838,8 @@ struct HfFilter { // Main struct for HF triggers
           float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
           bool isGamma = isSelectedGamma(gamma, V0CosinePA);
           if(isGamma){
-            auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gamma}, std::array{massD0, 0.});
+            std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
+            auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gammaVec}, std::array{massD0, massGamma});
             if(massGammaCharm < 3.0){ // remove candidates with invariant mass above 3 GeV
               keepEvent[kGammaCharm2P] = true;
             }
@@ -1034,14 +1035,15 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
 
       // 3-prong with Gamma (conversion photon)
+      float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
       for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kGammaCharm3P]; ++iHypo) {
         if (isCharmTagged[iHypo]) {
           for (auto& gamma : theV0s) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA);
             if(isGamma){
-              float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
-              auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gamma}, std::array{massCharmHypos[iHypo], 0.});
+              std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
+              auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massCharmHypos[iHypo], massGamma});
               if(massGammaCharm < 3.){ // remove candidates with invariant mass above some value
                 keepEvent[kGammaCharm3P] = true;
               }
