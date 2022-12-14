@@ -48,6 +48,7 @@ struct tofPidBetaQa {
   Configurable<bool> splitTrdTracks{"splitTrdTracks", false, "Flag to fill histograms for tracks with TRD match"};
   ConfigurableAxis tofMassBins{"tofMassBins", {1000, 0, 3.f}, "Binning in the TOF mass plot"};
   ConfigurableAxis tofBetaBins{"tofBetaBins", {4000, 0, 2.f}, "Binning in the TOF beta plot"};
+  ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
 
   void init(o2::framework::InitContext&)
   {
@@ -55,9 +56,10 @@ struct tofPidBetaQa {
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
     const AxisSpec betaAxis{tofBetaBins, "TOF #beta"};
     const AxisSpec massAxis{tofMassBins, "TOF mass (GeV/#it{c}^{2})"};
+    const AxisSpec trdAxis{20, 0, 20, "TRD clusters"};
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
-    const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
+    const AxisSpec lAxis{trackLengthBins, "Track length (cm)"};
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
     const AxisSpec pAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}/z (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
@@ -80,6 +82,12 @@ struct tofPidBetaQa {
       histos.add("tofmass/trd/EvTimeTOFOnly", "Ev. Time TOF Only (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
       histos.add("tofmass/trd/EvTimeT0AC", "Ev. Time T0AC (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
       histos.add("tofmass/trd/EvTimeT0ACOnly", "Ev. Time T0AC Only (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
+
+      histos.add("tofmass/notrd/inclusive", "(hasTRD)", HistType::kTH2F, {pAxis, massAxis});
+      histos.add("tofmass/notrd/EvTimeTOF", "Ev. Time TOF (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
+      histos.add("tofmass/notrd/EvTimeTOFOnly", "Ev. Time TOF Only (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
+      histos.add("tofmass/notrd/EvTimeT0AC", "Ev. Time T0AC (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
+      histos.add("tofmass/notrd/EvTimeT0ACOnly", "Ev. Time T0AC Only (hasTRD)", HistType::kTH2F, {pAxis, massAxis});
     }
 
     histos.add("tofbeta/inclusive", "", HistType::kTH2F, {pAxis, betaAxis});
@@ -93,6 +101,12 @@ struct tofPidBetaQa {
       histos.add("tofbeta/trd/EvTimeTOFOnly", "Ev. Time TOF Only (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
       histos.add("tofbeta/trd/EvTimeT0AC", "Ev. Time T0AC (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
       histos.add("tofbeta/trd/EvTimeT0ACOnly", "Ev. Time T0AC Only (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
+
+      histos.add("tofbeta/notrd/inclusive", "(hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("tofbeta/notrd/EvTimeTOF", "Ev. Time TOF (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("tofbeta/notrd/EvTimeTOFOnly", "Ev. Time TOF Only (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("tofbeta/notrd/EvTimeT0AC", "Ev. Time T0AC (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("tofbeta/notrd/EvTimeT0ACOnly", "Ev. Time T0AC Only (hasTRD)", HistType::kTH2F, {pAxis, betaAxis});
     }
 
     histos.add("signedtofbeta/inclusive", "", HistType::kTH2F, {pAxisPosNeg, betaAxis});
@@ -101,15 +115,25 @@ struct tofPidBetaQa {
     histos.add("signedtofbeta/EvTimeT0AC", "Ev. Time T0AC", HistType::kTH2F, {pAxisPosNeg, betaAxis});
     histos.add("signedtofbeta/EvTimeT0ACOnly", "Ev. Time T0AC Only", HistType::kTH2F, {pAxisPosNeg, betaAxis});
     if (splitTrdTracks) {
-      histos.add("signedtofbeta/trd/inclusive", " (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+      histos.add("signedtofbeta/trd/inclusive", "(hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
       histos.add("signedtofbeta/trd/EvTimeTOF", "Ev. Time TOF (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
       histos.add("signedtofbeta/trd/EvTimeTOFOnly", "Ev. Time TOF Only (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
       histos.add("signedtofbeta/trd/EvTimeT0AC", "Ev. Time T0AC (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
       histos.add("signedtofbeta/trd/EvTimeT0ACOnly", "Ev. Time T0AC Only (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+
+      histos.add("signedtofbeta/notrd/inclusive", "(hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+      histos.add("signedtofbeta/notrd/EvTimeTOF", "Ev. Time TOF (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+      histos.add("signedtofbeta/notrd/EvTimeTOFOnly", "Ev. Time TOF Only (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+      histos.add("signedtofbeta/notrd/EvTimeT0AC", "Ev. Time T0AC (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
+      histos.add("signedtofbeta/notrd/EvTimeT0ACOnly", "Ev. Time T0AC Only (hasTRD)", HistType::kTH2F, {pAxisPosNeg, betaAxis});
     }
 
     histos.add("event/eta", "", HistType::kTH1F, {etaAxis});
     histos.add("event/length", "", HistType::kTH1F, {lAxis});
+    if (splitTrdTracks) {
+      histos.add("event/trd/length", "", HistType::kTH2F, {lAxis, trdAxis});
+      histos.add("event/notrd/length", "", HistType::kTH1F, {lAxis});
+    }
     histos.add("event/pt", "", HistType::kTH1F, {ptAxis});
     histos.add("event/p", "", HistType::kTH1F, {pAxis});
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
@@ -203,32 +227,60 @@ struct tofPidBetaQa {
       histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-      if (!splitTrdTracks || !track.hasTRD()) {
+      if (!splitTrdTracks) {
         continue;
       }
-      if (track.isEvTimeTOF()) {
-        histos.fill(HIST("tofmass/trd/EvTimeTOF"), track.p(), track.mass());
-        histos.fill(HIST("tofbeta/trd/EvTimeTOF"), track.p(), track.beta());
-        histos.fill(HIST("signedtofbeta/trd/EvTimeTOF"), track.p() * track.sign(), track.beta());
+      if (!track.hasTRD()) {
+        histos.fill(HIST("event/notrd/length"), track.length());
+        if (track.isEvTimeTOF()) {
+          histos.fill(HIST("tofmass/notrd/EvTimeTOF"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/notrd/EvTimeTOF"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/notrd/EvTimeTOF"), track.p() * track.sign(), track.beta());
+        }
+        if (track.isEvTimeTOF() && !track.isEvTimeT0AC()) {
+          histos.fill(HIST("tofmass/notrd/EvTimeTOFOnly"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/notrd/EvTimeTOFOnly"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/notrd/EvTimeTOFOnly"), track.p() * track.sign(), track.beta());
+        }
+        if (track.isEvTimeT0AC()) {
+          histos.fill(HIST("tofmass/notrd/EvTimeT0AC"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/notrd/EvTimeT0AC"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/notrd/EvTimeT0AC"), track.p() * track.sign(), track.beta());
+        }
+        if (track.isEvTimeT0AC() && !track.isEvTimeTOF()) {
+          histos.fill(HIST("tofmass/notrd/EvTimeT0ACOnly"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/notrd/EvTimeT0ACOnly"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/notrd/EvTimeT0ACOnly"), track.p() * track.sign(), track.beta());
+        }
+        histos.fill(HIST("tofmass/notrd/inclusive"), track.p(), track.mass());
+        histos.fill(HIST("tofbeta/notrd/inclusive"), track.p(), track.beta());
+        histos.fill(HIST("signedtofbeta/notrd/inclusive"), track.p() * track.sign(), track.beta());
+      } else {
+        histos.fill(HIST("event/trd/length"), track.length(), track.trdPattern());
+        if (track.isEvTimeTOF()) {
+          histos.fill(HIST("tofmass/trd/EvTimeTOF"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/trd/EvTimeTOF"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/trd/EvTimeTOF"), track.p() * track.sign(), track.beta());
+        }
+        if (track.isEvTimeTOF() && !track.isEvTimeT0AC()) {
+          histos.fill(HIST("tofmass/trd/EvTimeTOFOnly"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/trd/EvTimeTOFOnly"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/trd/EvTimeTOFOnly"), track.p() * track.sign(), track.beta());
+        }
+        if (track.isEvTimeT0AC()) {
+          histos.fill(HIST("tofmass/trd/EvTimeT0AC"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/trd/EvTimeT0AC"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/trd/EvTimeT0AC"), track.p() * track.sign(), track.beta());
+        }
+        if (track.isEvTimeT0AC() && !track.isEvTimeTOF()) {
+          histos.fill(HIST("tofmass/trd/EvTimeT0ACOnly"), track.p(), track.mass());
+          histos.fill(HIST("tofbeta/trd/EvTimeT0ACOnly"), track.p(), track.beta());
+          histos.fill(HIST("signedtofbeta/trd/EvTimeT0ACOnly"), track.p() * track.sign(), track.beta());
+        }
+        histos.fill(HIST("tofmass/trd/inclusive"), track.p(), track.mass());
+        histos.fill(HIST("tofbeta/trd/inclusive"), track.p(), track.beta());
+        histos.fill(HIST("signedtofbeta/trd/inclusive"), track.p() * track.sign(), track.beta());
       }
-      if (track.isEvTimeTOF() && !track.isEvTimeT0AC()) {
-        histos.fill(HIST("tofmass/trd/EvTimeTOFOnly"), track.p(), track.mass());
-        histos.fill(HIST("tofbeta/trd/EvTimeTOFOnly"), track.p(), track.beta());
-        histos.fill(HIST("signedtofbeta/trd/EvTimeTOFOnly"), track.p() * track.sign(), track.beta());
-      }
-      if (track.isEvTimeT0AC()) {
-        histos.fill(HIST("tofmass/trd/EvTimeT0AC"), track.p(), track.mass());
-        histos.fill(HIST("tofbeta/trd/EvTimeT0AC"), track.p(), track.beta());
-        histos.fill(HIST("signedtofbeta/trd/EvTimeT0AC"), track.p() * track.sign(), track.beta());
-      }
-      if (track.isEvTimeT0AC() && !track.isEvTimeTOF()) {
-        histos.fill(HIST("tofmass/trd/EvTimeT0ACOnly"), track.p(), track.mass());
-        histos.fill(HIST("tofbeta/trd/EvTimeT0ACOnly"), track.p(), track.beta());
-        histos.fill(HIST("signedtofbeta/trd/EvTimeT0ACOnly"), track.p() * track.sign(), track.beta());
-      }
-      histos.fill(HIST("tofmass/trd/inclusive"), track.p(), track.mass());
-      histos.fill(HIST("tofbeta/trd/inclusive"), track.p(), track.beta());
-      histos.fill(HIST("signedtofbeta/trd/inclusive"), track.p() * track.sign(), track.beta());
     }
   }
 };

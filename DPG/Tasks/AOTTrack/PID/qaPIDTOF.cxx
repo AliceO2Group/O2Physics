@@ -160,6 +160,7 @@ struct tofPidQa {
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
+  ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
   Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
   Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
   Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
@@ -286,7 +287,8 @@ struct tofPidQa {
     const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec colTimeResoAxis{100, 0, 1000, "#sigma_{Collision time} (ps)"};
-    const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
+    const AxisSpec lAxis{trackLengthBins, "Track length (cm)"};
+
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
