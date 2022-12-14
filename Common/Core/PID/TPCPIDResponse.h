@@ -119,7 +119,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
   }
   float resolution = 0.;
   if (mUseDefaultResolutionParam) {
-    const float reso = GetExpectedSignal(track, id) * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / static_cast<float>(track.tpcNClsFound())) : 1.f);
+    const float reso = GetExpectedSignal(track, id) * mResolutionParamsDefault[0] * (static_cast<float>(track.tpcNClsFound()) > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / static_cast<float>(track.tpcNClsFound())) : 1.f);
     reso >= 0.f ? resolution = reso : resolution = -999.f;
   } else {
 
@@ -127,7 +127,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
-    const double dEdx = o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
+    const double dEdx = o2::tpc::BetheBlochAleph(static_cast<float>(bg), mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
     const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
