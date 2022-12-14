@@ -682,7 +682,7 @@ struct HfFilter { // Main struct for HF triggers
     hProcessedEvents->Fill(0);
 
     // collision process loop
-    bool keepEvent[kNtriggersHF]{false}; 
+    bool keepEvent[kNtriggersHF]{false};
     //
 
     std::vector<std::vector<long>> indicesDau2Prong{};
