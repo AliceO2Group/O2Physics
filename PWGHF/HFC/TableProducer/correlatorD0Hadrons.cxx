@@ -141,7 +141,7 @@ struct HfCorrelatorD0Hadrons {
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
-    //protection against empty tables to be sliced
+    // protection against empty tables to be sliced
     if (selectedD0Candidates.size() == 0) {
       return;
     }
@@ -269,7 +269,7 @@ struct HfCorrelatorD0Hadrons {
 
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
   {
-    //protection against empty tables to be sliced
+    // protection against empty tables to be sliced
     if (selectedD0candidatesMC.size() == 0) {
       return;
     }
