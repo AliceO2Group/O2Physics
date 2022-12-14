@@ -115,7 +115,6 @@ struct AnalysisQvector {
   //  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
   //  AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
 
-  // Filter collisionFilter = nabs(aod::collision::posZ) < fConfigVtxCut;
   Filter trackFilter = (nabs(aod::track::eta) <= fConfigCutEtaMax) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   Partition<aod::MFTTracks> sample = (aod::fwdtrack::eta <= -2.4f) && (aod::fwdtrack::eta >= -3.6f);
@@ -238,11 +237,6 @@ struct AnalysisQvector {
     //      return;
     //    }
   }
-  //    HistogramRegistry registry{
-  //      "registry",
-  //      {{"phi", "phi", {HistType::kTH1F, {{200, -2. * M_PI, 2. * M_PI}}}},
-  //       {"eta", "eta", {HistType::kTH1F, {{202, -4.01, 4.01}} }},
-  //          {"Psi", "Psi", {HistType::kTH1F, {{102, -M_PI, M_PI}} }}  }};
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
@@ -286,8 +280,6 @@ struct AnalysisQvector {
         wacc = 1;
       }
       // VarManager::FillTrack<TTrackFillMap>(track);
-      // registry.get<TH1>(HIST("phi"))->Fill(track.phi());
-      // registry.get<TH1>(HIST("eta"))->Fill(track.eta());
 
       // Fill the GFW for each track to compute Q vector
       fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 3); // using default values for ptin=0 and mask=3
@@ -346,7 +338,6 @@ struct AnalysisQvector {
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C]);
     }
-    // registry.get<TH1>(HIST("Psi"))->Fill(VarManager::getEventPlane(2, VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A]));
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses
