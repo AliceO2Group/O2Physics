@@ -42,33 +42,42 @@ struct HfTaskSigmaC{
         "registry",
         {/// Σc0
         {"RecoData/hPtSigmaCZero", "#Sigma_{c}^{0} candidates; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-        {"RecoData/hEtaSigmaCZero", "#Sigma_{c}^{0} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
-        {"RecoData/hPhiSigmaCZero", "#Sigma_{c}^{0} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
+        {"RecoData/hEtaSigmaCZero", "#Sigma_{c}^{0} candidates; #eta(#Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiSigmaCZero", "#Sigma_{c}^{0} candidates; #varphi(#Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassSigmaCZero", "#Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+        {"RecoData/hPtSoftPiSigmaCZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}}, /// soft π
+        {"RecoData/hEtaSoftPiSigmaCZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}}, /// soft π
+        {"RecoData/hPhiSoftPiSigmaCZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}}, /// soft π
         /// Σc++
         {"RecoData/hPtSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-        {"RecoData/hEtaSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
-        {"RecoData/hPhiSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
+        {"RecoData/hEtaSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #eta(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #varphi(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+        {"RecoData/hPtSoftPiSigmaCPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}}, /// soft π
+        {"RecoData/hEtaSoftPiSigmaCPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}}, /// soft π
+        {"RecoData/hPhiSoftPiSigmaCPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}}, /// soft π
         /// Σc0,++
         {"RecoData/hPtSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-        {"RecoData/hEtaSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
-        {"RecoData/hPhiSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
+        {"RecoData/hEtaSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #eta(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #varphi(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+        {"RecoData/hPtSoftPiSigmaCZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}}, /// soft π
+        {"RecoData/hEtaSoftPiSigmaCZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}}, /// soft π
+        {"RecoData/hPhiSoftPiSigmaCZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}}, /// soft π
         /// Λc+ ← Σc0
         {"RecoData/hPtLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-        {"RecoData/hEtaLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
-        {"RecoData/hPhiLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
+        {"RecoData/hEtaLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Λc+ ← Σc++
-        {"RecoData/hPtLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-        {"RecoData/hEtaLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
-        {"RecoData/hPhiLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
+        {"RecoData/hPtLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Λc+ ← Σc0,++
-        {"RecoData/hPtLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-        {"RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
-        {"RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
+        {"RecoData/hPtLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}}}
     };
 
@@ -118,6 +127,7 @@ struct HfTaskSigmaC{
             double ptSigmaC(candSigmaC.pt()), ptLambdaC(candLambdaC.pt());
             double etaSigmaC(candSigmaC.eta()), etaLambdaC(candLambdaC.eta());
             double phiSigmaC(candSigmaC.phi()), phiLambdaC(candLambdaC.phi());
+            double ptSoftPi(candSigmaC.prong1().pt()), etaSoftPi(candSigmaC.prong1().eta()), phiSoftPi(candSigmaC.prong1().phi());
             /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
             if(isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
                 massSigmaC = invMassScRecoLcToPKPi(candSigmaC);
@@ -129,10 +139,16 @@ struct HfTaskSigmaC{
                     registry.fill(HIST("RecoData/hEtaSigmaCZero"), etaSigmaC);
                     registry.fill(HIST("RecoData/hPhiSigmaCZero"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZero"), deltaMass, ptSigmaC);   // Σc0
+                    registry.fill(HIST("RecoData/hPtSoftPiSigmaCZero"), ptSoftPi);
+                    registry.fill(HIST("RecoData/hEtaSoftPiSigmaCZero"), etaSoftPi);
+                    registry.fill(HIST("RecoData/hPhiSoftPiSigmaCZero"), phiSoftPi);   // π ← Σc0
                     registry.fill(HIST("RecoData/hPtSigmaCZeroPlusPlus"), ptSigmaC);
                     registry.fill(HIST("RecoData/hEtaSigmaCZeroPlusPlus"), etaSigmaC);
                     registry.fill(HIST("RecoData/hPhiSigmaCZeroPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZeroPlusPlus"), deltaMass, ptSigmaC);   // Σc0,++
+                    registry.fill(HIST("RecoData/hPtSoftPiSigmaCZeroPlusPlus"), ptSoftPi);
+                    registry.fill(HIST("RecoData/hEtaSoftPiSigmaCZeroPlusPlus"), etaSoftPi);
+                    registry.fill(HIST("RecoData/hPhiSoftPiSigmaCZeroPlusPlus"), phiSoftPi);   // π ← Σc0,++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZero"), ptLambdaC);
                     registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZero"), etaLambdaC);
                     registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZero"), phiLambdaC);
@@ -146,10 +162,16 @@ struct HfTaskSigmaC{
                     registry.fill(HIST("RecoData/hEtaSigmaCPlusPlus"), etaSigmaC);
                     registry.fill(HIST("RecoData/hPhiSigmaCPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCPlusPlus"), deltaMass, ptSigmaC);   // Σc++
+                    registry.fill(HIST("RecoData/hPtSoftPiSigmaCPlusPlus"), ptSoftPi);
+                    registry.fill(HIST("RecoData/hEtaSoftPiSigmaCPlusPlus"), etaSoftPi);
+                    registry.fill(HIST("RecoData/hPhiSoftPiSigmaCPlusPlus"), phiSoftPi);   // π ← Σc++
                     registry.fill(HIST("RecoData/hPtSigmaCZeroPlusPlus"), ptSigmaC);
                     registry.fill(HIST("RecoData/hEtaSigmaCZeroPlusPlus"), etaSigmaC);
                     registry.fill(HIST("RecoData/hPhiSigmaCZeroPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZeroPlusPlus"), deltaMass, ptSigmaC);   // Σc0,++
+                    registry.fill(HIST("RecoData/hPtSoftPiSigmaCZeroPlusPlus"), ptSoftPi);
+                    registry.fill(HIST("RecoData/hEtaSoftPiSigmaCZeroPlusPlus"), etaSoftPi);
+                    registry.fill(HIST("RecoData/hPhiSoftPiSigmaCZeroPlusPlus"), phiSoftPi);   // π ← Σc0,++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCPlusPlus"), ptLambdaC);
                     registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCPlusPlus"), etaLambdaC);
                     registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCPlusPlus"), phiLambdaC);
