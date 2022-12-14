@@ -70,7 +70,6 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
 using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-// using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 // using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels>;
@@ -78,8 +77,8 @@ using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels>;
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
-// constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
+constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -119,8 +118,8 @@ struct AnalysisQvector {
   // Filter collisionFilter = nabs(aod::collision::posZ) < fConfigVtxCut;
   Filter trackFilter = (nabs(aod::track::eta) <= fConfigCutEtaMax) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
-  Partition<aod::MFTTracks> sample = (aod::fwdtrack::eta <= -2.4f) && (aod::fwdtrack::eta >= -3.2f);
-  Filter fwdFilter = (aod::fwdtrack::eta < -2.4f) && (aod::fwdtrack::eta > -3.2f) && (o2::aod::fwdtrack::pt >= fConfigCutPtMin);
+  Partition<aod::MFTTracks> sample = (aod::fwdtrack::eta <= -2.4f) && (aod::fwdtrack::eta >= -3.6f);
+  Filter fwdFilter = (aod::fwdtrack::eta < -2.4f) && (aod::fwdtrack::eta > -3.6f) && (o2::aod::fwdtrack::pt >= fConfigCutPtMin);
 
   struct Config {
     TH1D* mEfficiency = nullptr;
@@ -360,7 +359,7 @@ struct AnalysisQvector {
   void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
   {
     // Need to add gkEventFillMap with proper centrality values
-    runFillQvector<gkEventFillMap, 0u>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks);
   }
 
   // TODO: dummy function for the case when no process function is enabled
