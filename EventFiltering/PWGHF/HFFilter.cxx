@@ -837,16 +837,15 @@ struct HfFilter { // Main struct for HF triggers
         for (auto& gamma : theV0s) {
           float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
           bool isGamma = isSelectedGamma(gamma, V0CosinePA);
-          if(isGamma){
+          if (isGamma) {
             std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
             auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gammaVec}, std::array{massD0, massGamma});
-            if(massGammaCharm < 3.0){ // remove candidates with invariant mass above 3 GeV
+            if (massGammaCharm < 3.0) { // remove candidates with invariant mass above 3 GeV
               keepEvent[kGammaCharm2P] = true;
             }
           }
         }
       } // end gamma selection
-
 
     }   // end loop over 2-prong candidates
 
@@ -1041,17 +1040,16 @@ struct HfFilter { // Main struct for HF triggers
           for (auto& gamma : theV0s) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA);
-            if(isGamma){
+            if (isGamma) {
               std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
               auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massCharmHypos[iHypo], massGamma});
-              if(massGammaCharm < 3.){ // remove candidates with invariant mass above some value
+              if (massGammaCharm < 3.) { // remove candidates with invariant mass above some value
                 keepEvent[kGammaCharm3P] = true;
               }
             }
           }
         }
       } // end gamma selection
-
 
     }   // end loop over 3-prong candidates
 

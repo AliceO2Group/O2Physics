@@ -49,8 +49,8 @@ DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);               //! 3-prong cha
 DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);   //! at least two 2-prong charm-hadron candidates
 DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);   //! at least two 3-prong charm-hadron candidates
 DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool); //! at least one 2-prong and one 3-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfSoftGamma2P, hasHfSoftGamma2P, bool);             //! soft gamma with 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfSoftGamma3P, hasHfSoftGamma3P, bool);             //! soft gamma with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfSoftGamma2P, hasHfSoftGamma2P, bool);       //! soft gamma with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfSoftGamma3P, hasHfSoftGamma3P, bool);       //! soft gamma with 3-prong charm hadron
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
