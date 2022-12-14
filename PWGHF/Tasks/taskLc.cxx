@@ -325,11 +325,11 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
         auto pt = candidate.pt();
         /// MC reconstructed signal
-        if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
+        if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), invMassLcToPKPi(candidate));
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), invMassLcToPKPi(candidate), pt);
         }
-        if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
+        if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), invMassLcToPiKP(candidate));
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), invMassLcToPiKP(candidate), pt);
         }
