@@ -119,7 +119,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
   }
   float resolution = 0.;
   if (mUseDefaultResolutionParam) {
-    const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
+    const float reso = GetExpectedSignal(track,id) * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
     reso >= 0.f ? resolution = reso : resolution = -999.f;
   } else {
 
