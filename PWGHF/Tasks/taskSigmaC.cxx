@@ -42,21 +42,33 @@ struct HfTaskSigmaC{
         "registry",
         {/// Σc0
         {"RecoData/hPtSigmaCZero", "#Sigma_{c}^{0} candidates; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaSigmaCZero", "#Sigma_{c}^{0} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiSigmaCZero", "#Sigma_{c}^{0} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassSigmaCZero", "#Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Σc++
         {"RecoData/hPtSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassSigmaCPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Σc0,++
         {"RecoData/hPtSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassSigmaCZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Λc+ ← Σc0
         {"RecoData/hPtLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassLambdaCFromSigmaCZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Λc+ ← Σc++
         {"RecoData/hPtLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassLambdaCFromSigmaCPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
         /// Λc+ ← Σc0,++
         {"RecoData/hPtLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+        {"RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #eta; entries;", {HistType::kTH1D, {{36, -2., 2.}}}},
+        {"RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi; entries;", {HistType::kTH1D, {{72, 0, 2*M_PI}}}},
         {"RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}}}
     };
 
@@ -65,6 +77,9 @@ struct HfTaskSigmaC{
     void init(InitContext&) {
         /// TO DO: add histograms for MC, when required
         /// [...]
+        if(doprocessMc) {
+            
+        }
     }; /// end init
 
     template <typename L, typename S>
@@ -99,7 +114,10 @@ struct HfTaskSigmaC{
             //const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmaC.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
             //const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmaC.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
             const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmaC);
-            double massSigmaC(-1.), massLambdaC(-1.), deltaMass(-1.), ptSigmaC(candSigmaC.pt()), ptLambdaC(candLambdaC.pt());
+            double massSigmaC(-1.), massLambdaC(-1.), deltaMass(-1.);
+            double ptSigmaC(candSigmaC.pt()), ptLambdaC(candLambdaC.pt());
+            double etaSigmaC(candSigmaC.eta()), etaLambdaC(candLambdaC.eta());
+            double phiSigmaC(candSigmaC.phi()), phiLambdaC(candLambdaC.phi());
             /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
             if(isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
                 massSigmaC = invMassScRecoLcToPKPi(candSigmaC);
@@ -108,21 +126,37 @@ struct HfTaskSigmaC{
                 /// fill the histograms
                 if(chargeSigmaC == 0) {
                     registry.fill(HIST("RecoData/hPtSigmaCZero"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCZero"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCZero"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZero"), deltaMass, ptSigmaC);   // Σc0
                     registry.fill(HIST("RecoData/hPtSigmaCZeroPlusPlus"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCZeroPlusPlus"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCZeroPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZeroPlusPlus"), deltaMass, ptSigmaC);   // Σc0,++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZero"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZero"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZero"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZero"), deltaMass, ptLambdaC);   // Λc+ ← Σc0
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZeroPlusPlus"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc0,++
                 } else { /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorSigmaCZeroPlusPlus.cxx
                     registry.fill(HIST("RecoData/hPtSigmaCPlusPlus"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCPlusPlus"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCPlusPlus"), deltaMass, ptSigmaC);   // Σc++
                     registry.fill(HIST("RecoData/hPtSigmaCZeroPlusPlus"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCZeroPlusPlus"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCZeroPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZeroPlusPlus"), deltaMass, ptSigmaC);   // Σc0,++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCPlusPlus"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCPlusPlus"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCPlusPlus"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZeroPlusPlus"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc0,++
                 }
             } /// end candidate Λc+ → pK-π+ (and charge conjugate)
@@ -134,21 +168,37 @@ struct HfTaskSigmaC{
                 /// fill the histograms
                 if(chargeSigmaC == 0) {
                     registry.fill(HIST("RecoData/hPtSigmaCZero"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCZero"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCZero"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZero"), deltaMass, ptSigmaC);   // Σc0
                     registry.fill(HIST("RecoData/hPtSigmaCZeroPlusPlus"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCZeroPlusPlus"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCZeroPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZeroPlusPlus"), deltaMass, ptSigmaC);   // Σc0,++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZero"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZero"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZero"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZero"), deltaMass, ptLambdaC);   // Λc+ ← Σc0
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZeroPlusPlus"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc0,++
                 } else { /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorSigmaCZeroPlusPlus.cxx
                     registry.fill(HIST("RecoData/hPtSigmaCPlusPlus"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCPlusPlus"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCPlusPlus"), deltaMass, ptSigmaC);   // Σc++
                     registry.fill(HIST("RecoData/hPtSigmaCZeroPlusPlus"), ptSigmaC);
+                    registry.fill(HIST("RecoData/hEtaSigmaCZeroPlusPlus"), etaSigmaC);
+                    registry.fill(HIST("RecoData/hPhiSigmaCZeroPlusPlus"), phiSigmaC);
                     registry.fill(HIST("RecoData/hDeltaMassSigmaCZeroPlusPlus"), deltaMass, ptSigmaC);   // Σc0,++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCPlusPlus"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCPlusPlus"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCPlusPlus"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc++
                     registry.fill(HIST("RecoData/hPtLambdaCFromSigmaCZeroPlusPlus"), ptLambdaC);
+                    registry.fill(HIST("RecoData/hEtaLambdaCFromSigmaCZeroPlusPlus"), etaLambdaC);
+                    registry.fill(HIST("RecoData/hPhiLambdaCFromSigmaCZeroPlusPlus"), phiLambdaC);
                     registry.fill(HIST("RecoData/hDeltaMassLambdaCFromSigmaCZeroPlusPlus"), deltaMass, ptLambdaC);   // Λc+ ← Σc0,++
                 }
             } /// end candidate Λc+ → π+K-p (and charge conjugate)
