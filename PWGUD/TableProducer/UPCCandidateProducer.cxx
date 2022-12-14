@@ -258,28 +258,6 @@ struct UpcCandProducer {
     newEventIDs.clear();
   }
 
-  template <typename TTrack, typename TAmbTracks>
-  uint64_t getTrackBC(TTrack track,
-                      TAmbTracks const& ambTracks,
-                      int64_t ambTrId,
-                      o2::aod::Collisions const& collisions,
-                      BCsWithBcSels const& bcs)
-  {
-    uint64_t trackBC = 0;
-    if (ambTrId >= 0) {
-      const auto& ambTr = ambTracks.iteratorAt(ambTrId);
-      const auto& bcSlice = ambTr.bc();
-      auto first = bcSlice.begin();
-      trackBC = first.globalBC();
-    } else {
-      const auto& col = track.collision();
-      trackBC = col.template bc_as<BCsWithBcSels>().globalBC();
-    }
-    int64_t tint = std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-    uint64_t bc = trackBC + tint;
-    return bc;
-  }
-
   void fillFwdTracks(ForwardTracks const& tracks,
                      std::vector<int64_t> const& trackIDs,
                      int32_t candID,
@@ -310,13 +288,13 @@ struct UpcCandProducer {
                         int32_t candID,
                         uint64_t bc,
                         const o2::aod::McTrackLabels* mcTrackLabels,
-                        std::unordered_map<int64_t, int64_t>& ambBarrelTrIds)
+                        std::unordered_map<int64_t, uint64_t>& ambBarrelTrBCs)
   {
     for (auto trackID : trackIDs) {
       const auto& track = tracks.iteratorAt(trackID);
       double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
       int64_t colId = -1;
-      if (ambBarrelTrIds.find(trackID) == ambBarrelTrIds.end()) {
+      if (ambBarrelTrBCs.find(trackID) == ambBarrelTrBCs.end()) {
         colId = track.collisionId();
       }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
@@ -455,7 +433,7 @@ struct UpcCandProducer {
   }
 
   template <int32_t tracksSwitch, typename TAmbTrack>
-  int64_t getAmbTrackId(TAmbTrack& ambTrack)
+  int64_t getAmbTrackId(TAmbTrack ambTrack)
   {
     int64_t trkId = -1;
     if constexpr (tracksSwitch == 0) { // central barrel
@@ -467,13 +445,20 @@ struct UpcCandProducer {
     return trkId;
   }
 
+  // "uncorrected" bcs
   template <int32_t tracksSwitch, typename TAmbTracks>
-  void collectAmbTracks(std::unordered_map<int64_t, int64_t>& ambTrIds,
-                        TAmbTracks const& ambTracks)
+  void collectAmbTrackBCs(std::unordered_map<int64_t, uint64_t>& ambTrIds,
+                          TAmbTracks ambTracks)
   {
     for (const auto& ambTrk : ambTracks) {
       auto trkId = getAmbTrackId<tracksSwitch>(ambTrk);
-      ambTrIds[trkId] = ambTrk.globalIndex();
+      const auto& bcSlice = ambTrk.bc();
+      uint64_t trackBC = -1;
+      if (bcSlice.size() != 0) {
+        auto first = bcSlice.begin();
+        trackBC = first.globalBC();
+      }
+      ambTrIds[trkId] = trackBC;
     }
   }
 
@@ -493,22 +478,24 @@ struct UpcCandProducer {
                            o2::aod::Collisions const& collisions,
                            BarrelTracks const& barrelTracks,
                            o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                           std::unordered_map<int64_t, int64_t>& ambBarrelTrIds)
+                           std::unordered_map<int64_t, uint64_t>& ambBarrelTrBCs)
   {
     for (const auto& trk : barrelTracks) {
       if (!applyBarCuts(trk))
         continue;
       int64_t trkId = trk.globalIndex();
-      int64_t ambTrId = -1;
       int32_t nContrib = -1;
-      auto ambIter = ambBarrelTrIds.find(trkId);
-      if (ambIter == ambBarrelTrIds.end()) {
+      uint64_t trackBC = 0;
+      auto ambIter = ambBarrelTrBCs.find(trkId);
+      if (ambIter == ambBarrelTrBCs.end()) {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
+        trackBC = col.bc_as<BCsWithBcSels>().globalBC();
       } else {
-        ambTrId = ambIter->second;
+        trackBC = ambIter->second;
       }
-      uint64_t bc = getTrackBC(trk, ambBarrelTracks, ambTrId, collisions, bcs);
+      int64_t tint = std::round(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      uint64_t bc = trackBC + tint;
       if (bc > fMaxBC)
         continue;
       bool checkNContrib = nContrib <= upcCuts.getMaxNContrib();
@@ -530,7 +517,7 @@ struct UpcCandProducer {
                             o2::aod::Collisions const& collisions,
                             ForwardTracks const& fwdTracks,
                             o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                            std::unordered_map<int64_t, int64_t>& ambFwdTrIds)
+                            std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
   {
     for (const auto& trk : fwdTracks) {
       if (trk.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
@@ -538,16 +525,18 @@ struct UpcCandProducer {
       if (!applyFwdCuts(trk))
         continue;
       int64_t trkId = trk.globalIndex();
-      int64_t ambTrId = -1;
       int32_t nContrib = -1;
-      auto ambIter = ambFwdTrIds.find(trkId);
-      if (ambIter == ambFwdTrIds.end()) {
+      uint64_t trackBC = 0;
+      auto ambIter = ambFwdTrBCs.find(trkId);
+      if (ambIter == ambFwdTrBCs.end()) {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
+        trackBC = col.bc_as<BCsWithBcSels>().globalBC();
       } else {
-        ambTrId = ambIter->second;
+        trackBC = ambIter->second;
       }
-      uint64_t bc = getTrackBC(trk, ambFwdTracks, ambTrId, collisions, bcs);
+      int64_t tint = std::round(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      uint64_t bc = trackBC + tint;
       if (bc > fMaxBC)
         continue;
       if (nContrib <= upcCuts.getMaxNContrib())
@@ -613,12 +602,12 @@ struct UpcCandProducer {
     std::vector<BCTracksPair> bcsMatchedTrIdsITSTPC;
 
     // trackID -> index in amb. track table
-    std::unordered_map<int64_t, int64_t> ambBarrelTrIds;
-    collectAmbTracks<0>(ambBarrelTrIds, ambBarrelTracks);
+    std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
+    collectAmbTrackBCs<0>(ambBarrelTrBCs, ambBarrelTracks);
 
     collectBarrelTracks(bcsMatchedTrIdsTOF, bcsMatchedTrIdsITSTPC,
                         bcs, collisions,
-                        barrelTracks, ambBarrelTracks, ambBarrelTrIds);
+                        barrelTracks, ambBarrelTracks, ambBarrelTrBCs);
 
     uint32_t nBCsWithITSTPC = bcsMatchedTrIdsITSTPC.size();
 
@@ -700,7 +689,7 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
-      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrBCs);
       eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
@@ -712,7 +701,7 @@ struct UpcCandProducer {
     }
 
     indexBCglId.clear();
-    ambBarrelTrIds.clear();
+    ambBarrelTrBCs.clear();
     bcsMatchedTrIdsTOF.clear();
   }
 
@@ -741,19 +730,19 @@ struct UpcCandProducer {
     std::vector<BCTracksPair> bcsMatchedTrIdsMID;
 
     // trackID -> index in amb. track table
-    std::unordered_map<int64_t, int64_t> ambBarrelTrIds;
-    collectAmbTracks<0>(ambBarrelTrIds, ambBarrelTracks);
+    std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
+    collectAmbTrackBCs<0>(ambBarrelTrBCs, ambBarrelTracks);
 
-    std::unordered_map<int64_t, int64_t> ambFwdTrIds;
-    collectAmbTracks<1>(ambFwdTrIds, ambFwdTracks);
+    std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
+    collectAmbTrackBCs<1>(ambFwdTrBCs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          bcs, collisions,
-                         fwdTracks, ambFwdTracks, ambFwdTrIds);
+                         fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
     collectBarrelTracks(bcsMatchedTrIdsTOF, bcsMatchedTrIdsITSTPC,
                         bcs, collisions,
-                        barrelTracks, ambBarrelTracks, ambBarrelTrIds);
+                        barrelTracks, ambBarrelTracks, ambBarrelTrBCs);
 
     LOGP(debug, "bcsMatchedTrIdsMID.size()={}", bcsMatchedTrIdsMID.size());
     LOGP(debug, "bcsMatchedTrIdsTOF.size()={}", bcsMatchedTrIdsTOF.size());
@@ -863,7 +852,7 @@ struct UpcCandProducer {
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
-      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrIds);
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambFwdTrBCs);
       eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
@@ -875,9 +864,9 @@ struct UpcCandProducer {
     }
 
     indexBCglId.clear();
-    ambFwdTrIds.clear();
+    ambFwdTrBCs.clear();
     bcsMatchedTrIdsMID.clear();
-    ambBarrelTrIds.clear();
+    ambBarrelTrBCs.clear();
     bcsMatchedTrIdsTOFTagged.clear();
   }
 
