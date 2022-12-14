@@ -120,7 +120,7 @@ struct qaEventTrack {
       return;
     }
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
-    const AxisSpec axisInvPt{100, 0, 100, "#it{p}_{T} [GeV/c]"};
+    const AxisSpec axisInvPt{100, 0, 100, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
     const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
@@ -186,9 +186,7 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
     if (doprocessMC || doprocessRun2ConvertedMC) {
       histos.add<TH2>("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
-      auto hreso = histos.add<TH2>("Tracks/Kine/resoInvPt", "", kTH2D, {axisDeltaPt, axisInvPt});
-      hreso->GetXaxis()->SetTitle("1/#it{p}_{T}_{rec} - 1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
-      hreso->GetYaxis()->SetTitle("1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
+      histos.add<TH2>("Tracks/Kine/resoInvPt", "", kTH2D, {axisDeltaPt, axisInvPt})->GetXaxis()->SetTitle("1/#it{p}_{T}_{rec} - 1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
       histos.add<TH2>("Tracks/Kine/ptVsptmc", "", kTH2D, {axisPt, axisPt})->GetXaxis()->SetTitle("#it{p}_{T}_{gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
