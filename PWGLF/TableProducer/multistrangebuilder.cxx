@@ -124,10 +124,10 @@ struct multistrangeBuilder {
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
   enum cascstep { kCascAll = 0,
+                  kCascLambdaMass,
                   kBachTPCrefit,
                   kBachCrossedRows,
                   kBachDCAxy,
-                  kCascLambdaMass,
                   kCascDCADau,
                   kCascCosPA,
                   kCascRadius,
@@ -245,19 +245,19 @@ struct multistrangeBuilder {
               }
               if (option.name.compare("cascadesetting_dcacascdau") == 0) {
                 detected_dcacascdau = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA V0 daughters = %f", device.name, detected_dcacascdau);
+                LOGF(info, "%s requested DCA cascade daughters = %f", device.name, detected_dcacascdau);
                 if (detected_dcacascdau > loosest_dcacascdau)
                   loosest_dcacascdau = detected_dcacascdau;
               }
               if (option.name.compare("cascadesetting_dcabachtopv") == 0) {
                 detected_dcabachtopv = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA positive daughter to PV = %f", device.name, detected_dcabachtopv);
+                LOGF(info, "%s requested DCA bachelor daughter = %f", device.name, detected_dcabachtopv);
                 if (detected_dcabachtopv < loosest_dcabachtopv)
                   loosest_dcabachtopv = detected_dcabachtopv;
               }
               if (option.name.compare("cascadesetting_cascradius") == 0) {
                 detected_radius = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA negative daughter to PV = %f", device.name, detected_radius);
+                LOGF(info, "%s requested  to PV = %f", device.name, detected_radius);
                 if (detected_radius < loosest_radius)
                   loosest_radius = detected_radius;
               }
@@ -398,7 +398,7 @@ struct multistrangeBuilder {
     statisticsRegistry.cascstats[kBachCrossedRows]++;
 
     // bachelor DCA track to PV
-    if (bachTrack.dcaXY() < dcabachtopv)
+    if (TMath::Abs(bachTrack.dcaXY()) < dcabachtopv)
       return false;
     statisticsRegistry.cascstats[kBachDCAxy]++;
 
@@ -435,7 +435,7 @@ struct multistrangeBuilder {
 
     // DCA between cascade daughters
     cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if (cascadecandidate.cascradius < dcacascdau)
+    if (cascadecandidate.dcacascdau > dcacascdau)
       return false;
     statisticsRegistry.cascstats[kCascDCADau]++;
 
@@ -449,7 +449,7 @@ struct multistrangeBuilder {
     cascadecandidate.cosPA = RecoDecay::cpa(
       array{collision.posX(), collision.posY(), collision.posZ()},
       array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]},
-      array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzpos() + cascadecandidate.bachP[2]});
+      array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzneg() + cascadecandidate.bachP[2]});
     if (cascadecandidate.cosPA < casccospa) {
       return false;
     }
@@ -483,7 +483,7 @@ struct multistrangeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
-      cascdata(v0.globalIndex(),
+      cascdata(v0index.globalIndex(),
                bachTrackCast.globalIndex(),
                cascade.collisionId(),
                cascadecandidate.charge,
@@ -545,6 +545,7 @@ struct multistrangeLabelBuilder {
       // Loop over those that actually have the corresponding V0 associated to them
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
       if (!(v0.has_v0Data())) {
+        casclabels(-1);
         continue; // skip those cascades for which V0 doesn't exist
       }
       auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
