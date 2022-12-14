@@ -36,6 +36,7 @@
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "Framework/AnalysisDataModel.h"
 
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
@@ -70,6 +71,7 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
+    BCWithTimeStamps = BIT(10),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -483,6 +485,13 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & BC) > 0) {
     values[kRunNo] = event.bc().runNumber(); // accessed via Collisions table
     values[kBC] = event.bc().globalBC();
+  }
+
+  if constexpr ((fillMap & BCWithTimeStamps) > 0) {
+    auto bcWithTime = event.template bc_as<o2::aod::BCsWithTimestamps>();
+    values[kRunNo] = bcWithTime.runNumber();
+    values[kBC] = bcWithTime.globalBC();
+    values[kTimestamp] = bcWithTime.timestamp();
   }
 
   if constexpr ((fillMap & CollisionTimestamp) > 0) {
