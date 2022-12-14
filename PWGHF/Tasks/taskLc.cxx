@@ -367,11 +367,11 @@ struct HfTaskLc {
 
         /// reconstructed signal prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
+          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), invMassLcToPKPi(candidate));
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), invMassLcToPKPi(candidate), pt);
           }
-          if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
+          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), invMassLcToPiKP(candidate));
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), invMassLcToPiKP(candidate), pt);
           }
