@@ -1040,6 +1040,7 @@ struct HfFilter { // Main struct for HF triggers
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA);
             if(isGamma){
+              float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
               auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gamma}, std::array{massCharmHypos[iHypo], 0.});
               if(massGammaCharm < 3.){ // remove candidates with invariant mass above some value
                 keepEvent[kGammaCharm3P] = true;
