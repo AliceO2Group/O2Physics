@@ -235,7 +235,7 @@ struct TableMaker {
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
-  void fullSkimming(TEvent const& collision, aod::BCsWithTimestamps  const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
+  void fullSkimming(TEvent const& collision, aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
     // get the trigger aliases
     uint32_t triggerAliases = 0;
