@@ -483,7 +483,7 @@ struct multistrangeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
-      cascdata(v0.globalIndex(),
+      cascdata(v0index.globalIndex(),
                bachTrackCast.globalIndex(),
                cascade.collisionId(),
                cascadecandidate.charge,
