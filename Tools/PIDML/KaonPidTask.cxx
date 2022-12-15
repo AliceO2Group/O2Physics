@@ -52,7 +52,7 @@ struct KaonPidTask {
   Configurable<float> cfgMinPtCut{"cfgMinPtCut", 0.5, "Min Pt cut"};
   Configurable<float> cfgMinNSigmaTPCCut{"cfgMinNSigmaTPCCut", 3., "N-sigma TPC cut"};
   Configurable<float> cfgChargeCut{"cfgChargeCut", 0., "N-sigma TPC cut"};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/shira/kaon-mlpid/", "base path to the local directory with ONNX models"};
+  Configurable<std::string> cfgPathLocal{"local-path", ".", "base path to the local directory with ONNX models"};
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<int> cfgPid{"pid", 321, "PID to predict"};
@@ -94,8 +94,6 @@ struct KaonPidTask {
   {
     auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex());
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex());
-    histos.fill(HIST("hZvtx"), coll.posZ());
-
     for (auto track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
       if (pidModel.get()->applyModelBoolean(track)) {

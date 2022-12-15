@@ -130,6 +130,22 @@ struct QaEfficiency {
                                                                  "MC/ka/neg/pt/its_tpc_tof", "MC/pr/neg/pt/its_tpc_tof", "MC/de/neg/pt/its_tpc_tof",
                                                                  "MC/tr/neg/pt/its_tpc_tof", "MC/he/neg/pt/its_tpc_tof", "MC/al/neg/pt/its_tpc_tof",
                                                                  "MC/all/neg/pt/its_tpc_tof"};
+  static constexpr std::string_view hPtItsTpcTrdTof[nHistograms] = {"MC/el/pos/pt/its_tpc_trd_tof", "MC/mu/pos/pt/its_tpc_trd_tof", "MC/pi/pos/pt/its_tpc_trd_tof",
+                                                                    "MC/ka/pos/pt/its_tpc_trd_tof", "MC/pr/pos/pt/its_tpc_trd_tof", "MC/de/pos/pt/its_tpc_trd_tof",
+                                                                    "MC/tr/pos/pt/its_tpc_trd_tof", "MC/he/pos/pt/its_tpc_trd_tof", "MC/al/pos/pt/its_tpc_trd_tof",
+                                                                    "MC/all/pos/pt/its_tpc_trd_tof",
+                                                                    "MC/el/neg/pt/its_tpc_trd_tof", "MC/mu/neg/pt/its_tpc_trd_tof", "MC/pi/neg/pt/its_tpc_trd_tof",
+                                                                    "MC/ka/neg/pt/its_tpc_trd_tof", "MC/pr/neg/pt/its_tpc_trd_tof", "MC/de/neg/pt/its_tpc_trd_tof",
+                                                                    "MC/tr/neg/pt/its_tpc_trd_tof", "MC/he/neg/pt/its_tpc_trd_tof", "MC/al/neg/pt/its_tpc_trd_tof",
+                                                                    "MC/all/neg/pt/its_tpc_trd_tof"};
+  static constexpr std::string_view hPtItsTpcTrd[nHistograms] = {"MC/el/pos/pt/its_tpc_trd", "MC/mu/pos/pt/its_tpc_trd", "MC/pi/pos/pt/its_tpc_trd",
+                                                                 "MC/ka/pos/pt/its_tpc_trd", "MC/pr/pos/pt/its_tpc_trd", "MC/de/pos/pt/its_tpc_trd",
+                                                                 "MC/tr/pos/pt/its_tpc_trd", "MC/he/pos/pt/its_tpc_trd", "MC/al/pos/pt/its_tpc_trd",
+                                                                 "MC/all/pos/pt/its_tpc_trd",
+                                                                 "MC/el/neg/pt/its_tpc_trd", "MC/mu/neg/pt/its_tpc_trd", "MC/pi/neg/pt/its_tpc_trd",
+                                                                 "MC/ka/neg/pt/its_tpc_trd", "MC/pr/neg/pt/its_tpc_trd", "MC/de/neg/pt/its_tpc_trd",
+                                                                 "MC/tr/neg/pt/its_tpc_trd", "MC/he/neg/pt/its_tpc_trd", "MC/al/neg/pt/its_tpc_trd",
+                                                                 "MC/all/neg/pt/its_tpc_trd"};
   static constexpr std::string_view hPtTrkItsTpc[nHistograms] = {"MC/el/pos/pt/trk/its_tpc", "MC/mu/pos/pt/trk/its_tpc", "MC/pi/pos/pt/trk/its_tpc",
                                                                  "MC/ka/pos/pt/trk/its_tpc", "MC/pr/pos/pt/trk/its_tpc", "MC/de/pos/pt/trk/its_tpc",
                                                                  "MC/tr/pos/pt/trk/its_tpc", "MC/he/pos/pt/trk/its_tpc", "MC/al/pos/pt/trk/its_tpc",
@@ -496,7 +512,9 @@ struct QaEfficiency {
     registry->add(hPtItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1F, {axisPt});
     registry->add(hPtItsTof[histogramIndex].data(), "ITS-TOF tracks " + tagPt, kTH1F, {axisPt});
     registry->add(hPtTpcTof[histogramIndex].data(), "TPC-TOF tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcTrd[histogramIndex].data(), "ITS-TPC-TRD tracks " + tagPt, kTH1F, {axisPt});
     registry->add(hPtItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtItsTpcTrdTof[histogramIndex].data(), "ITS-TPC-TRD-TOF tracks " + tagPt, kTH1F, {axisPt});
     registry->add(hPtTrkItsTpc[histogramIndex].data(), "ITS-TPC track (reco) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1F, {axisPt});
 
@@ -600,7 +618,9 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]));
     makeEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]));
     makeEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
+    makeEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]));
+    makeEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt_Trk", HIST(hPtTrkItsTpc[histogramIndex]));
 
     makeEfficiency("ITS_vsPt_Prm", HIST(hPtItsPrm[histogramIndex]));
@@ -995,12 +1015,18 @@ struct QaEfficiency {
     if (passedTPC && passedTOF) {
       h->fill(HIST(hPtTpcTof[histogramIndex]), mcParticle.pt());
     }
+    if (passedITS && passedTPC && passedTRD) {
+      h->fill(HIST(hPtItsTpcTrd[histogramIndex]), mcParticle.p());
+    }
     if (passedITS && passedTPC && passedTOF) {
       h->fill(HIST(hPItsTpcTof[histogramIndex]), mcParticle.p());
       h->fill(HIST(hPtItsTpcTof[histogramIndex]), mcParticle.pt());
       h->fill(HIST(hEtaItsTpcTof[histogramIndex]), mcParticle.eta());
       h->fill(HIST(hYItsTpcTof[histogramIndex]), mcParticle.y());
       h->fill(HIST(hPhiItsTpcTof[histogramIndex]), mcParticle.phi());
+    }
+    if (passedITS && passedTPC && passedTRD && passedTOF) {
+      h->fill(HIST(hPtItsTpcTrdTof[histogramIndex]), mcParticle.p());
     }
 
     if (mcParticle.isPhysicalPrimary()) {
@@ -1136,7 +1162,9 @@ struct QaEfficiency {
     doFillEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt_Trk", HIST(hPtTrkItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
 
     doFillEfficiency("ITS_vsPt_Prm", HIST(hPtItsPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
@@ -1251,6 +1279,7 @@ struct QaEfficiency {
   // Function to apply track selection
   bool passedITS = false;
   bool passedTPC = false;
+  bool passedTRD = false;
   bool passedTOF = false;
   template <bool isMC = true, typename trackType, typename histoType>
   bool isTrackSelected(trackType& track, const histoType& countingHisto)
@@ -1258,6 +1287,7 @@ struct QaEfficiency {
     // Reset selections
     passedITS = false;
     passedTPC = false;
+    passedTRD = false;
     passedTOF = false;
 
     histos.fill(countingHisto, 1); // Read tracks
@@ -1335,10 +1365,12 @@ struct QaEfficiency {
                   track.passedTPCChi2NDF() &&
                   track.passedTPCRefit() &&
                   track.hasTPC();
+      passedTRD = track.hasTRD();
       passedTOF = track.hasTOF();
     } else {
       passedITS = track.hasITS();
       passedTPC = track.hasTPC();
+      passedTRD = track.hasTRD();
       passedTOF = track.hasTOF();
     }
 

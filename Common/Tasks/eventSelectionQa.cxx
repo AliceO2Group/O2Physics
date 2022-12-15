@@ -494,12 +494,21 @@ struct EventSelectionQaTask {
         LOGP(info, "tsOrbitReset={} us", tsOrbitReset);
 
         // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        std::map<std::string, std::string> metadata;
-        metadata["runNumber"] = Form("%d", runNumber);
-        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
-        tsSOR = grpecs->getTimeStart();                 // ms
-        tsEOR = grpecs->getTimeEnd();                   // ms
+        // std::map<std::string, std::string> metadata;
+        // metadata["runNumber"] = Form("%d", runNumber);
+        // auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
+        // uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
+        // tsSOR = grpecs->getTimeStart();                 // ms
+        // tsEOR = grpecs->getTimeEnd();                   // ms
+
+        // Temporary workaround for 22q (due to ZDC bc shifts)
+        o2::ccdb::CcdbApi ccdb_api;
+        ccdb_api.init("http://alice-ccdb.cern.ch");
+        std::map<string, string> metadataRCT, headers;
+        headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
+        tsSOR = atol(headers["SOR"].c_str());
+        tsEOR = atol(headers["EOR"].c_str());
+        uint32_t nOrbitsPerTF = 128;
         LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits

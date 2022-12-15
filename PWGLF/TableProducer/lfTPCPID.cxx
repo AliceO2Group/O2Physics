@@ -497,7 +497,4 @@ struct lfTpcPid {
 #undef makeProcess
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<lfTpcPid>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<lfTpcPid>(cfgc)}; }
