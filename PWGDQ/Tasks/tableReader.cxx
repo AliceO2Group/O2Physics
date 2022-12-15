@@ -239,12 +239,12 @@ struct AnalysisTrackSelection {
 
     trackSel.reserve(tracks.size());
     uint32_t filterMap = 0;
-    uint8_t filterMapPrefilter = 0.;
+    bool prefilterSelected = false;
     int iCut = 0;
 
     for (auto& track : tracks) {
       filterMap = 0;
-      filterMapPrefilter = 0.;
+      prefilterSelected = false;
       VarManager::FillTrack<TTrackFillMap>(track);
       if (fConfigQA) { // TODO: make this compile time
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -256,7 +256,7 @@ struct AnalysisTrackSelection {
             filterMap |= (uint32_t(1) << iCut);
           }
           if (iCut == fConfigPrefilterCutId) {
-            filterMapPrefilter |= (uint8_t(1) << (iCut - fConfigPrefilterCutId));
+            prefilterSelected = true;
           }
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
@@ -264,7 +264,7 @@ struct AnalysisTrackSelection {
         }
       }
 
-      trackSel(static_cast<int>(filterMap), static_cast<int>(filterMapPrefilter));
+      trackSel(static_cast<int>(filterMap), static_cast<int>(prefilterSelected));
     } // end loop over tracks
   }
 
@@ -381,7 +381,9 @@ struct AnalysisPrefilterSelection {
   {
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
-    fPairCut->AddCut(dqcuts::GetAnalysisCut(pairCutStr.Data()));
+    if (!pairCutStr.IsNull()) {
+      fPairCut->AddCut(dqcuts::GetAnalysisCut(pairCutStr.Data()));
+    }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
