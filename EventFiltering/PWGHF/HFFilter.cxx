@@ -41,8 +41,6 @@ using namespace o2::aod::hffilters;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
 
-using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
-
 struct AddCollisionId {
 
   Produces<o2::aod::Colls2Prong> colls2Prong;
@@ -662,7 +660,7 @@ struct HfFilter { // Main struct for HF triggers
 
   void process(aod::Collision const& collision,
                aod::BCsWithTimestamps const&,
-               V0DatasAdditional const& theV0s,
+               aod::V0Datas const& theV0s,
                HfTrackIndexProng2withColl const& cand2Prongs,
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksPID const& tracks)
@@ -847,7 +845,7 @@ struct HfFilter { // Main struct for HF triggers
         }
       } // end gamma selection
 
-    }   // end loop over 2-prong candidates
+    } // end loop over 2-prong candidates
 
     std::vector<std::vector<long>> indicesDau3Prong{};
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
@@ -1048,7 +1046,7 @@ struct HfFilter { // Main struct for HF triggers
         }
       } // end gamma selection
 
-    }   // end loop over 3-prong candidates
+    } // end loop over 3-prong candidates
 
     auto n2Prongs = computeNumberOfCandidates(indicesDau2Prong);
     auto n3Prongs = computeNumberOfCandidates(indicesDau3Prong);
