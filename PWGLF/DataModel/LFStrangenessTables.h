@@ -259,6 +259,7 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float); //!
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);             //!
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);             //!
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);           //!
+DECLARE_SOA_COLUMN(DCACascToPV, dcacasctopv, float);           //!
 
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
@@ -281,8 +282,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(V0CosPA, v0cosPA, //!
 DECLARE_SOA_DYNAMIC_COLUMN(CascCosPA, casccosPA, //!
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(array{pvX, pvY, pvZ}, array{X, Y, Z}, array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAV0ToPV, dcav0topv, //!
-                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
-DECLARE_SOA_DYNAMIC_COLUMN(DCACascToPV, dcacasctopv, //!
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
 
 // Calculated on the fly with mass assumption + dynamic tables
@@ -329,7 +328,7 @@ DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
-                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
 
                   // Dynamic columns
                   cascdata::Pt<cascdataext::Px, cascdataext::Py>,
@@ -338,7 +337,6 @@ DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
                   cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
                   cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
                   cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  cascdata::DCACascToPV<cascdata::X, cascdata::Y, cascdata::Z, cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
 
                   // Invariant masses
                   cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
