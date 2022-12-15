@@ -334,7 +334,7 @@ struct multistrangeBuilder {
     if (useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     fitter.setMatCorrType(matCorr);
-    
+
     matCorrCascade = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrTypeCasc == 1)
       matCorrCascade = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
@@ -474,17 +474,17 @@ struct multistrangeBuilder {
       return false;
     statisticsRegistry.cascstats[kCascRadius]++;
 
-    //Calculate DCAxy of the cascade (with bending)
+    // Calculate DCAxy of the cascade (with bending)
     lCascadeTrack = fitter.createParentTrackPar();
     lCascadeTrack.setAbsCharge(cascadecandidate.charge); // to be sure
-    lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+    lCascadeTrack.setPID(o2::track::PID::XiMinus);       // FIXME: not OK for omegas
     gpu::gpustd::array<float, 2> dcaInfo;
     dcaInfo[0] = 999;
     dcaInfo[1] = 999;
-    
+
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
-    
+
     return true;
   }
 
@@ -518,7 +518,7 @@ struct multistrangeBuilder {
                cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
                v0.dcaV0daughters(), cascadecandidate.dcacascdau,
                v0.dcapostopv(), v0.dcanegtopv(),
-               cascadecandidate.bachDCAxy,cascadecandidate.cascDCAxy);
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
     }
     // En masse filling at end of process call
     fillHistos();

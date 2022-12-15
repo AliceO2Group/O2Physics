@@ -407,35 +407,35 @@ struct cascadeBuilder {
 
       // Fill table, please
       hCascCandidate->Fill(16.5); // this is the master fill: if this is filled, viable candidate
-      
+
       if (casc.collisionId() < 0)
         hCascCandidate->Fill(17.5);
       if (casc.collisionId() >= 0)
         hCascCandidate->Fill(18.5);
-      
-      //Calculate DCAxy of the cascade (with bending)
+
+      // Calculate DCAxy of the cascade (with bending)
       auto lCascadeTrack = fitterCasc.createParentTrackPar();
-      lCascadeTrack.setAbsCharge(charge); // to be sure
+      lCascadeTrack.setAbsCharge(charge);            // to be sure
       lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
       gpu::gpustd::array<float, 2> dcaInfo;
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
-      
+
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo);
-      
+
       cascdata(
-               v0.globalIndex(),
-               bachTrackCast.globalIndex(),
-               casc.collisionId(),
-               charge, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
-               pvecpos[0], pvecpos[1], pvecpos[2],
-               pvecneg[0], pvecneg[1], pvecneg[2],
-               pvecbach[0], pvecbach[1], pvecbach[2],
-               fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
-               posTrackCast.dcaXY(),
-               negTrackCast.dcaXY(),
-               bachTrackCast.dcaXY(),
-               dcaInfo[0]);
+        v0.globalIndex(),
+        bachTrackCast.globalIndex(),
+        casc.collisionId(),
+        charge, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
+        pvecpos[0], pvecpos[1], pvecpos[2],
+        pvecneg[0], pvecneg[1], pvecneg[2],
+        pvecbach[0], pvecbach[1], pvecbach[2],
+        fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
+        posTrackCast.dcaXY(),
+        negTrackCast.dcaXY(),
+        bachTrackCast.dcaXY(),
+        dcaInfo[0]);
     }
   }
 
