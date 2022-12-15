@@ -414,12 +414,14 @@ struct cascadeBuilder {
         hCascCandidate->Fill(18.5);
       
       //Calculate DCAxy of the cascade (with bending)
-      auto lCascadeTrack = fitter.createParentTrackPar();
+      auto lCascadeTrack = fitterCasc.createParentTrackPar();
+      lCascadeTrack.setAbsCharge(charge); // to be sure
+      lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
       gpu::gpustd::array<float, 2> dcaInfo;
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
       
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorr, &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo);
       
       cascdata(
                v0.globalIndex(),
