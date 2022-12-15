@@ -85,7 +85,7 @@ struct vertexingfwd {
      {"DCAXNAmb", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
      {"DCAYNAmb", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{1000, -10, 10}}}},
 
-     {"AmbiguousTrackStatus", "; ; N_{trk}", {HistType::kTH1F, {{6, 0.5, 6.5}}}},
+     {"AmbiguousTrackStatus", "; ; N_{trk}", {HistType::kTH1F, {{8, 0.5, 8.5}}}},
 
      // DCAxy, x and y distributions for reassociated ambiguous tracks
      // when it is a false reassociation and when it is true
@@ -111,8 +111,10 @@ struct vertexingfwd {
     x2->SetBinLabel(2, "MFT ambiguous tracks");
     x2->SetBinLabel(3, "Reassigned tracks");
     x2->SetBinLabel(4, "Extra tracks");
-    x2->SetBinLabel(5, "orig=true");
-    x2->SetBinLabel(6, "best=true");
+    x2->SetBinLabel(5, "orig=true (re)");
+    x2->SetBinLabel(6, "best=true (re)");
+    x2->SetBinLabel(7, "not reassigned");
+    x2->SetBinLabel(8, "not reassigned and true");
   }
 
   void processDCAamb(MFTTracksLabeled const&,
@@ -235,6 +237,17 @@ struct vertexingfwd {
 
         if (collOrig.mcCollisionId() == mcCollID) { // initially correctly assigned
           registry.fill(HIST("AmbiguousTrackStatus"), 5);
+        }
+      } else // the track has a collision and track.collisionId() == bestCol
+      {
+        if (track.collisionId() != bestCol) {
+          printf("------------------- PROBLEM HERE track.collisionId() %d, bestCollid %d\n", track.collisionId(), bestCol);
+        }
+
+        registry.fill(HIST("AmbiguousTrackStatus"), 7);
+        if (bestMCCol == mcCollID) // correctly assigned
+        {
+          registry.fill(HIST("AmbiguousTrackStatus"), 8);
         }
       }
     }
