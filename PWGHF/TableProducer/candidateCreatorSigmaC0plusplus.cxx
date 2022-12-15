@@ -167,10 +167,6 @@ struct candidateCreatorSigmaC0plusplus {
 
 struct candidateSigmaC0plusplusMcMatch {
 
-    /// Table with MC info for reconstructed and geerated Σc0,++
-    /// TODO
-    /// [...]  
-
     /// @brief init function
     void init(InitContext const&) {}
 
@@ -180,7 +176,7 @@ struct candidateSigmaC0plusplusMcMatch {
     /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
     /// @param candidatesSigmaC reconstructed Σc0,++ candidates
     /// @param particlesMc table of generaed particles
-    void processMC(const aod::HfCandSigmaC& candidatesSigmaC, aod::McParticles const& particlesMc,
+    void processMC(const aod::HfCandSigmaC& candidatesSigmaC, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMc,
     LambdacMC const&, const TracksMC&) {
 
       Produces<aod::HfCandSigmaCMcRec> rowMCMatchSigmaCRec;
@@ -203,7 +199,7 @@ struct candidateSigmaC0plusplusMcMatch {
 
         /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
         auto candLc = candSigmaC.prong0_as<LambdacMC>();
-        if (!(std::abs(candLc.flagMcMatchRec()) == 1 << DecayType::LcToPKPi)) {
+        if (!(std::abs(candLc.flagMcMatchRec()) == 1 << DecayType::LcToPKPi)) { /// (*)
           rowMCMatchSigmaCRec(flag, origin);
           continue;
         }
@@ -216,14 +212,22 @@ struct candidateSigmaC0plusplusMcMatch {
         chargeSc = candSigmaC.charge();
         if(chargeSc == 0) {
           /// candidate Σc0
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaC0, array{(int) kProton, (int) kKMinus, (int) kPiPlus, (int) kPiMinus}, true, &sign, 2);
-          if (indexRec > -1) {
+          /// 3 levels:
+          ///   1. Σc0 → Λc+ π-,+
+          ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
+          ///   3. in case of (ii): resonant channel to pK-π+
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaC0, array{(int) kProton, (int) kKMinus, (int) kPiPlus, (int) kPiMinus}, true, &sign, 3);
+          if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
             flag = sign * (1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi);
           }
         } else if(std::abs(chargeSc) == 2) {
           /// candidate Σc++
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaCPlusPlus, array{(int) kProton, (int) kKMinus, (int) kPiPlus, (int) kPiPlus}, true, &sign, 2);
-          if (indexRec > -1) {
+          /// 3 levels:
+          ///   1. Σc0 → Λc+ π-,+
+          ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
+          ///   3. in case of (ii): resonant channel to pK-π+
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaCPlusPlus, array{(int) kProton, (int) kKMinus, (int) kPiPlus, (int) kPiPlus}, true, &sign, 3);
+          if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
             flag = sign * (1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi);
           }
         }
@@ -243,12 +247,37 @@ struct candidateSigmaC0plusplusMcMatch {
         flag = 0;
         origin = 0;
 
-        if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{(int) kProton, (int) kKMinus, (int) kPiPlus, (int) kPiMinus}, true, &sign, 2)) {
+        /// 3 levels:
+        ///   1. Σc0 → Λc+ π-,+
+        ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
+        ///   3. in case of (ii): resonant channel to pK-π+
+        /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
+        if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{(int) pdg::Code::kLambdaCPlus, (int) kPiMinus}, true, &sign, 1)) {
           // generated Σc0
-          flag = sign * (1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi);
-        } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{(int) kProton, (int) kKMinus, (int) kPiPlus, (int) kPiPlus}, true, &sign, 2)) {
+          for(auto& daughter : particle.daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>()) {
+            // look for Λc+ daughter decaying in pK-π+
+            if( std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi) ){
+              /// Λc+ daughter decaying in pK-π+ found!
+              flag = sign * (1 << aod::hf_cand_sc::DecayType::SigmaC0ToPKPiPi);
+              break;
+            }
+          }
+        } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{(int) pdg::Code::kLambdaCPlus, (int) kPiPlus}, true, &sign, 1)) {
           // generated Σc++
-          flag = sign * (1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi);
+          for(auto& daughter : particle.daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>()) {
+            // look for Λc+ daughter decaying in pK-π+
+            if( std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi) ){
+              /// Λc+ daughter decaying in pK-π+ found!
+              flag = sign * (1 << aod::hf_cand_sc::DecayType::SigmaCplusplusToPKPiPi);
+              break;
+            }
+          }
+        }
+
+        /// check the origin (prompt vs. non-prompt) 
+        if(flag != 0) {
+          auto particle = particlesMc.rawIteratorAt(indexRec);
+          origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle);
         }
 
         /// fill the table with results of generation level MC matching
