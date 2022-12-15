@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
+#include <vector>
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -30,8 +33,6 @@
 #include <TDatabasePDG.h>
 #include <TH2F.h>
 #include <TPDGCode.h>
-#include <cmath>
-#include <vector>
 
 using namespace std;
 using namespace o2;
