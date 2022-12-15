@@ -989,7 +989,7 @@ struct LFNucleiBATask {
         }
       }
 
-      // PID 
+      // PID
       if (std::abs(track.tpcNSigmaPr()) < nsigmaTPCcut && TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton))) < yCut) {
         if (track.sign() > 0) {
           histos.fill(HIST("tracks/proton/h1ProtonSpectra"), track.pt());
@@ -1003,7 +1003,7 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/deuteron/h1DeuteronSpectra"), track.pt());
         } else {
           histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectra"), track.pt());
-        } 
+        }
       }
 
       if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCcut && TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut) {
@@ -1022,7 +1022,7 @@ struct LFNucleiBATask {
         }
       }
 
-      if (std::abs(track.tpcNSigmaAl()) < nsigmaTPCcut && TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Alpha))) < yCut)  {
+      if (std::abs(track.tpcNSigmaAl()) < nsigmaTPCcut && TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Alpha))) < yCut) {
         if (track.sign() > 0) {
           histos.fill(HIST("tracks/alpha/h1AlphaSpectra"), track.pt());
         } else {
