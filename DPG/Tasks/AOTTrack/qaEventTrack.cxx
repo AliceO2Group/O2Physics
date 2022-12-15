@@ -154,6 +154,7 @@ struct qaEventTrack {
     histos.add("Events/posYvsNContrib", "", kTH2D, {axisVertexPosY, axisVertexNumContrib});
     histos.add("Events/posZvsNContrib", "", kTH2D, {axisVertexPosZ, axisVertexNumContrib});
     histos.add("Events/nContrib", "", kTH1D, {axisVertexNumContrib});
+    histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
 
@@ -164,6 +165,7 @@ struct qaEventTrack {
     histos.add("Events/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
     histos.add("Events/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
 
+    histos.add("Events/nFilteredTracks", "", kTH1D, {axisTrackMultiplicity});
     histos.add("Events/nTracks", "", kTH1D, {axisTrackMultiplicity});
 
     if (doprocessMC || doprocessRun2ConvertedMC) {
@@ -844,14 +846,14 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     return;
   }
 
-  int nTracks = 0;
+  int nFilteredTracks = 0;
   for (const auto& track : tracks) {
     histos.fill(HIST("Tracks/selection"), 1.f);
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
     histos.fill(HIST("Tracks/selection"), 2.f);
-    ++nTracks;
+    ++nFilteredTracks;
     if (track.passedTrackType()) {
       histos.fill(HIST("Tracks/selection"), 3.f);
     }
@@ -991,7 +993,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Events/posZvsNContrib"), collision.posZ(), collision.numContrib());
 
   histos.fill(HIST("Events/nContrib"), collision.numContrib());
-  histos.fill(HIST("Events/nContribVsMult"), collision.numContrib(), nTracks);
+  histos.fill(HIST("Events/nContribVsFilteredMult"), collision.numContrib(), nFilteredTracks);
+  histos.fill(HIST("Events/nContribVsMult"), collision.numContrib(), tracksUnfiltered.size());
   histos.fill(HIST("Events/vertexChi2"), collision.chi2());
 
   histos.fill(HIST("Events/covXX"), collision.covXX());
@@ -1001,7 +1004,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Events/covYZ"), collision.covYZ());
   histos.fill(HIST("Events/covZZ"), collision.covZZ());
 
-  histos.fill(HIST("Events/nTracks"), nTracks);
+  histos.fill(HIST("Events/nFilteredTracks"), nFilteredTracks);
+  histos.fill(HIST("Events/nTracks"), tracksUnfiltered.size());
 
   // vertex resolution
   if constexpr (IS_MC) {
