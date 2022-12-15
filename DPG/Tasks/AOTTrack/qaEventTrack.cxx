@@ -73,6 +73,7 @@ struct qaEventTrack {
 
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
@@ -119,6 +120,7 @@ struct qaEventTrack {
       return;
     }
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
+    const AxisSpec axisInvPt{100, 0, 100, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
     const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
@@ -136,7 +138,7 @@ struct qaEventTrack {
     const AxisSpec axisParSnp{11, -0.1, 0.1, "snp"};
     const AxisSpec axisParTgl{200, -1., 1., "tgl"};
 
-    const AxisSpec axisDeltaPt{100, -0.5, 0.5, "#it{p}_{T, rec} - #it{p}_{T, gen}"};
+    const AxisSpec axisDeltaPt{binsDeltaPt, "#it{p}_{T, rec} - #it{p}_{T, gen}"};
     const AxisSpec axisDeltaEta{100, -0.1, 0.1, "#eta_{rec} - #eta_{gen}"};
     const AxisSpec axisDeltaPhi{100, -0.1, 0.1, "#varphi_{rec} - #varphi_{gen}"};
 
@@ -184,6 +186,8 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
     if (doprocessMC || doprocessRun2ConvertedMC) {
       histos.add<TH2>("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
+      histos.add<TH2>("Tracks/Kine/resoInvPt", "", kTH2D, {axisDeltaPt, axisInvPt})->GetXaxis()->SetTitle("1/#it{p}_{T}_{rec} - 1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
+      histos.add<TH2>("Tracks/Kine/ptVsptmc", "", kTH2D, {axisPt, axisPt})->GetXaxis()->SetTitle("#it{p}_{T}_{gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
@@ -1101,6 +1105,10 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         // resolution plots
         auto particle = track.mcParticle();
         histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
+        if (particle.pt() > 0.f) {
+          histos.fill(HIST("Tracks/Kine/resoInvPt"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
+        }
+        histos.fill(HIST("Tracks/Kine/ptVsptmc"), particle.pt(), track.pt());
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
       }
