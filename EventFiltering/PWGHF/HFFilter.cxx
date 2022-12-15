@@ -1034,18 +1034,15 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
 
       // 3-prong with Gamma (conversion photon)
-      float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
-      for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kGammaCharm3P]; ++iHypo) {
-        if (isCharmTagged[iHypo]) {
-          for (auto& gamma : theV0s) {
-            float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            bool isGamma = isSelectedGamma(gamma, V0CosinePA);
-            if (isGamma) {
-              std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
-              auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massCharmHypos[iHypo], massGamma});
-              if (massGammaCharm < 3.) { // remove candidates with invariant mass above some value
-                keepEvent[kGammaCharm3P] = true;
-              }
+      if (!keepEvent[kGammaCharm3P] && isCharmTagged[kDs - 1]) {
+        for (auto& gamma : theV0s) {
+          float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+          bool isGamma = isSelectedGamma(gamma, V0CosinePA);
+          if (isGamma) {
+            std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
+            auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massDs, massGamma});
+            if (massGammaCharm < 3.) { // remove candidates with invariant mass above some value (TODO: set me as a configurable)
+              keepEvent[kGammaCharm3P] = true;
             }
           }
         }
