@@ -206,7 +206,7 @@ struct cascadeBuilder {
       }
       auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
 
-      std::array<float, 3> pVtx = {v0data.collision().posX(), v0data.collision().posY(), v0data.collision().posZ()};
+      std::array<float, 3> pVtx = {casc.collision().posX(), casc.collision().posY(), casc.collision().posZ()};
 
       auto bachTrackCast = casc.bachelor_as<TCascTracksTo>();
       auto posTrackCast = v0data.posTrack_as<TCascTracksTo>();
@@ -407,24 +407,33 @@ struct cascadeBuilder {
 
       // Fill table, please
       hCascCandidate->Fill(16.5); // this is the master fill: if this is filled, viable candidate
-
+      
       if (casc.collisionId() < 0)
         hCascCandidate->Fill(17.5);
       if (casc.collisionId() >= 0)
         hCascCandidate->Fill(18.5);
-
+      
+      //Calculate DCAxy of the cascade (with bending)
+      auto lCascadeTrack = fitter.createParentTrackPar();
+      gpu::gpustd::array<float, 2> dcaInfo;
+      dcaInfo[0] = 999;
+      dcaInfo[1] = 999;
+      
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorr, &dcaInfo);
+      
       cascdata(
-        v0.globalIndex(),
-        bachTrackCast.globalIndex(),
-        casc.collisionId(),
-        charge, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
-        pvecpos[0], pvecpos[1], pvecpos[2],
-        pvecneg[0], pvecneg[1], pvecneg[2],
-        pvecbach[0], pvecbach[1], pvecbach[2],
-        fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
-        posTrackCast.dcaXY(),
-        negTrackCast.dcaXY(),
-        bachTrackCast.dcaXY());
+               v0.globalIndex(),
+               bachTrackCast.globalIndex(),
+               casc.collisionId(),
+               charge, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
+               pvecpos[0], pvecpos[1], pvecpos[2],
+               pvecneg[0], pvecneg[1], pvecneg[2],
+               pvecbach[0], pvecbach[1], pvecbach[2],
+               fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
+               posTrackCast.dcaXY(),
+               negTrackCast.dcaXY(),
+               bachTrackCast.dcaXY(),
+               dcaInfo[0]);
     }
   }
 

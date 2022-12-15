@@ -340,6 +340,14 @@ struct cascadefinder {
               posXi[i] = cascvtx[i];
             }
             fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
+            
+            //Calculate DCAxy of the cascade (with bending)
+            auto lCascadeTrack = fitter.createParentTrackPar();
+            gpu::gpustd::array<float, 2> dcaInfo;
+            dcaInfo[0] = 999;
+            dcaInfo[1] = 999;
+            
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorr, &dcaInfo);
 
             lNCand++;
             // If we got here, it means this is a good candidate!
@@ -351,7 +359,8 @@ struct cascadefinder {
                      fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
-                     t0id.dcaXY());
+                     t0id.dcaXY(),
+                     dcaInfo[0]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
