@@ -41,6 +41,7 @@ struct QaEfficiency {
   static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040, 0};
   // Track/particle selection
   Configurable<bool> noFakesHits{"noFakesHits", false, "Flag to reject tracks that have fake hits"};
+  Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
   // Charge selection
   Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
   Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
@@ -929,7 +930,7 @@ struct QaEfficiency {
   }
 
   template <int charge, o2::track::PID::ID id, typename particleType>
-  bool isPdgSelected(particleType mcParticle)
+  bool isPdgSelected(const particleType& mcParticle)
   {
     static_assert(charge == 0 || charge == 1);
     static_assert(id > 0 || id < nSpecies);
@@ -937,9 +938,19 @@ struct QaEfficiency {
     // Selecting PDG code
     if constexpr (PDGs[id] == 0) { // All PDGs
       if constexpr (charge == 0) {
-        return mcParticle.pdgCode() > 0; // Positive
+        for (int i = 0; i < nSpecies - 1; i++) {
+          if (mcParticle.pdgCode() == PDGs[id]) {
+            return true;
+          }
+          return false;
+        }
       } else {
-        return mcParticle.pdgCode() < 0; // Negative
+        for (int i = 0; i < nSpecies - 1; i++) {
+          if (mcParticle.pdgCode() == -PDGs[id]) {
+            return true;
+          }
+          return false;
+        }
       }
     }
     // Specific PDGs
@@ -1029,7 +1040,14 @@ struct QaEfficiency {
       h->fill(HIST(hPtItsTpcTrdTof[histogramIndex]), mcParticle.p());
     }
 
-    if (mcParticle.isPhysicalPrimary()) {
+    bool isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+    if (maxProdRadius < 999.f) {
+      if ((mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()) > maxProdRadius * maxProdRadius) {
+        isPhysicalPrimary = false;
+      }
+    }
+
+    if (isPhysicalPrimary) {
       if (passedITS) {
         h->fill(HIST(hPtItsPrm[histogramIndex]), mcParticle.pt());
       }
@@ -1092,7 +1110,14 @@ struct QaEfficiency {
     h->fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
     h->fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
 
-    if (mcParticle.isPhysicalPrimary()) {
+    bool isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+    if (maxProdRadius < 999.f) {
+      if ((mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()) > maxProdRadius * maxProdRadius) {
+        isPhysicalPrimary = false;
+      }
+    }
+
+    if (isPhysicalPrimary) {
       h->fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
     } else {
       if (mcParticle.getProcess() == 4) { // Particle deday
