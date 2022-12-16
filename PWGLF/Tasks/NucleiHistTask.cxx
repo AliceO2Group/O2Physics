@@ -88,9 +88,7 @@ struct NucleiHistTask {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
-
-                                     1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
+    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
@@ -213,12 +211,12 @@ struct NucleiHistTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>; // aod::pidTOFmass, pidTOFbeta
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;// aod::pidTOFmass, pidTOFbeta
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
 
-    // collision process loop
+// collision process loop
     bool keepEvent_p = kFALSE;
     bool keepEvent_d = kFALSE;
     bool keepEvent_He3 = kFALSE;
@@ -229,9 +227,9 @@ struct NucleiHistTask {
 
     spectra.fill(HIST("histRecVtxZData"), collision.posZ());
 
-    for (auto track : tracks) { // start loop over tracks
+    for (auto track : tracks) {// start loop over tracks
 
-      // cut on rapidity
+// cut on rapidity
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
       TLorentzVector lorentzVector_He3{};
@@ -246,7 +244,7 @@ struct NucleiHistTask {
         continue;
       }
 
-      // fill QA histograms
+// fill QA histograms
       float nSigmaProton = track.tpcNSigmaPr();
       float nSigmaDeut = track.tpcNSigmaDe();
       float nSigmaHe3 = track.tpcNSigmaHe();
@@ -264,7 +262,7 @@ struct NucleiHistTask {
         spectra.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
 
-        // fill TOF m^2 histogram
+// fill TOF m^2 histogram
         if (track.hasTOF()) {
 
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
@@ -289,7 +287,7 @@ struct NucleiHistTask {
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Proton   *******************
+//**************   check offline-trigger (skimming) condidition Proton   *******************
 
       if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) {
 
@@ -359,7 +357,7 @@ struct NucleiHistTask {
           track.dcaZ());
       }
 
-      //**************   check offline-trigger (skimming) condidition Deuteron   *******************
+//**************   check offline-trigger (skimming) condidition Deuteron   *******************
 
       if (nSigmaDeut > nsigmacutLow && nSigmaDeut < nsigmacutHigh) {
 
@@ -429,7 +427,7 @@ struct NucleiHistTask {
           track.dcaZ());
       }
 
-      //**************   check offline-trigger (skimming) condidition Helium-3   *******************
+//**************   check offline-trigger (skimming) condidition Helium-3   *******************
 
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
 
