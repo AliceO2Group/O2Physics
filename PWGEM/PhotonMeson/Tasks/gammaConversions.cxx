@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
+using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0RecalculationAndKF>;
 using V0DaughterTracksWithMC = soa::Join<aod::V0DaughterTracks, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
@@ -146,6 +146,7 @@ struct GammaConversions {
       {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
       {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
+      {"hXVsY", "hXVsY;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {gAxis_z2d, gAxis_z2d}}},
       {"hpeDivpGamma", "hpeDivpGamma;p_{T} (GeV/c);p_{T, e}/p_{T, #gamma};counts", {HistType::kTH2F, {gAxis_pT, {220, 0.f, 1.1f}}}}};
 
     // recalculated conversion Point for V0, only Rec and MCVal need this
@@ -732,7 +733,8 @@ struct GammaConversions {
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
-    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
+    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.recalculatedVtxZ());
+    fillTH2(theContainer, "hXVsY", theV0.recalculatedVtxX(), theV0.recalculatedVtxY());
     fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracpos());
     fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracneg());
   }
