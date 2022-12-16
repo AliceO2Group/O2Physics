@@ -349,13 +349,14 @@ struct HfTaskSc {
   /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
   void processMc(const soa::Join<aod::HfCandSc, aod::HfCandScMcRec>& candidatesSc,
-                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMc,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLambdaC,
+                 aod::McParticles const& particlesMc,
+                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMcSc,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLc,
                  soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const aod::BigTracksMC&)
   {
 
     /// MC generated particles
-    for (auto& particle : particlesMc) {
+    for (auto& particle : particlesMcSc) {
 
       /// reject immediately particles different from Σc0,++
       bool isScZeroGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi));
@@ -395,7 +396,7 @@ struct HfTaskSc {
       int8_t channel = -1;
       if (std::abs(arrayDaughtersIds[0]) == pdg::Code::kLambdaCPlus) {
         /// daughter 0 is the Λc+, daughter 1 the soft π
-        auto daugLambdaC = particlesMcLambdaC.rawIteratorAt(arrayDaughtersIds[0]);
+        auto daugLambdaC = particlesMcLc.rawIteratorAt(arrayDaughtersIds[0]);
         auto daugSoftPi = particlesMc.rawIteratorAt(arrayDaughtersIds[1]);
         ptGenLambdaC = daugLambdaC.pt();
         etaGenLambdaC = daugLambdaC.eta();
@@ -407,7 +408,7 @@ struct HfTaskSc {
         phiGenSoftPi = daugSoftPi.phi();
       } else if (std::abs(arrayDaughtersIds[0]) == kPiPlus) {
         /// daughter 0 is the soft π, daughter 1 the Λc+
-        auto daugLambdaC = particlesMcLambdaC.rawIteratorAt(arrayDaughtersIds[1]);
+        auto daugLambdaC = particlesMcLc.rawIteratorAt(arrayDaughtersIds[1]);
         auto daugSoftPi = particlesMc.rawIteratorAt(arrayDaughtersIds[0]);
         ptGenLambdaC = daugLambdaC.pt();
         etaGenLambdaC = daugLambdaC.eta();
@@ -491,7 +492,7 @@ struct HfTaskSc {
       /// Reconstructed Σc0 signal
       if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandScMcGen>>(), pdg::Code::kSigmac0, true);
+        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmac0, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = array{candLambdaC.prong0_as<aod::BigTracksMC>(), candLambdaC.prong1_as<aod::BigTracksMC>(), candLambdaC.prong2_as<aod::BigTracksMC>()};
@@ -611,7 +612,7 @@ struct HfTaskSc {
       /// Reconstructed Σc++ signal
       else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandScMcGen>>(), pdg::Code::kSigmacPlusPlus, true);
+        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmacPlusPlus, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = array{candLambdaC.prong0_as<aod::BigTracksMC>(), candLambdaC.prong1_as<aod::BigTracksMC>(), candLambdaC.prong2_as<aod::BigTracksMC>()};

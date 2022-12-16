@@ -1804,7 +1804,7 @@ auto invMassScRecoLcToPKPi(const T& candidate)
 {
   //auto candLc = candidate.prongLc_as<aod::HfCand3Prong>();
   auto candLc = candidate.prongLc();
-  return candidate.m(array{hf_cand_3prong::invMassLcToPKPi(candLc), RecoDecay::getMassPDG(kPiPlus)});
+  return candidate.m(array{(double) hf_cand_3prong::invMassLcToPKPi(candLc), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 /// @brief Sc inv. mass using reco mass for Lc in piKp and PDG mass for pion
@@ -1813,7 +1813,7 @@ auto invMassScRecoLcToPiKP(const T& candidate)
 {
   //auto candLc = candidate.prongLc_as<aod::HfCand3Prong>();
   auto candLc = candidate.prongLc();
-  return candidate.m(array{hf_cand_3prong::invMassLcToPiKP(candLc), RecoDecay::getMassPDG(kPiPlus)});
+  return candidate.m(array{(double) hf_cand_3prong::invMassLcToPiKP(candLc), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
