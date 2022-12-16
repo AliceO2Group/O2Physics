@@ -13,8 +13,6 @@
 // Authors: Rafael Manhart,
 // Date: 30.11.2022
 
-
-
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
