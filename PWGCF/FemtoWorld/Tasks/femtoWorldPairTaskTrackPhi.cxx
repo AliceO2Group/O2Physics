@@ -145,8 +145,9 @@ struct femtoWorldPairTaskTrackPhi {
         if (mom < 2.0) {
           if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma)
             return true;
-        } else if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma2)
+        } else if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma2) {
           return true;
+        }
       } else {
         if (TMath::Abs(nsigmaTPCP) < fNsigma)
           return true;
@@ -166,7 +167,6 @@ struct femtoWorldPairTaskTrackPhi {
           return true;
       }
     }
-
     return false;
   }
   void init(InitContext&)

@@ -179,7 +179,7 @@ struct femtoWorldProducerTask {
   Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
   Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
 
-  // For Phi (daughter 1)
+  // For Phi (daughter 2)
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
   Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
   Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 4.0, "Higher limit for Pt for the second particle"};
