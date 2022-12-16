@@ -200,7 +200,7 @@ struct candidateSigmac0plusplusMcMatch {
       // arrDaughIndex.clear();
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
-      auto candLc = candSigmac.prong0_as<LambdacMC>();
+      auto candLc = candSigmac.prongLc_as<LambdacMC>();
       if (!(std::abs(candLc.flagMcMatchRec()) == 1 << DecayType::LcToPKPi)) { /// (*)
         rowMCMatchSigmacRec(flag, origin);
         continue;

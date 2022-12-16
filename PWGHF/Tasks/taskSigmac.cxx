@@ -223,7 +223,7 @@ struct HfTaskSigmac {
 
       /// get the candidate Λc+ used to build the candidate Σc0,++
       /// and understand which mass hypotheses are possible
-      const auto& candLambdaC = candSigmac.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+      const auto& candLambdaC = candSigmac.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
       // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmac.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmac.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
       const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmac);
@@ -483,7 +483,7 @@ struct HfTaskSigmac {
 
       /// get the candidate Λc+ used to build the Σc0
       /// and understand which mass hypotheses are possible
-      const auto& candLambdaC = candSigmac.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
+      const auto& candLambdaC = candSigmac.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
       const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmac);
 
       candLambdaC.flagMcDecayChanRec();
