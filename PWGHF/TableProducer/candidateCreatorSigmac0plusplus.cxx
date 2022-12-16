@@ -83,7 +83,7 @@ struct candidateCreatorSigmac0plusplus {
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::FullTracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
 
     /// loop over Λc+ → pK-π+ (and charge conj.) candidates
