@@ -1802,7 +1802,7 @@ enum DecayType { Sigmac0ToPKPiPi = 0,
 template <typename T>
 auto invMassScRecoLcToPKPi(const T& candidate)
 {
-  auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+  auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
   return candidate.m(array{hf_cand_3prong::invMassLcToPKPi(candLc), RecoDecay::getMassPDG(kPiPlus)});
 }
 
@@ -1810,8 +1810,8 @@ auto invMassScRecoLcToPKPi(const T& candidate)
 template <typename T>
 auto invMassScRecoLcToPiKP(const T& candidate)
 {
-  auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-  return candidate.m(array{hf_cand_3prong::invMassLcToPiKPi(candLc), RecoDecay::getMassPDG(kPiPlus)});
+  auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
+  return candidate.m(array{hf_cand_3prong::invMassLcToPiKP(candLc), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
