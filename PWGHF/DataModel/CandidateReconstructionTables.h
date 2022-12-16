@@ -1819,13 +1819,13 @@ auto invMassScRecoLcToPiKP(const T& candidate)
 template <typename T>
 auto ySc0(const T& candidate)
 {
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kSc0));
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kSigmac0));
 }
 
 template <typename T>
 auto yScPlusPlus(const T& candidate)
 {
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kScPlusPlus));
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kSigmacPlusPlus));
 }
 
 } // namespace hf_cand_sc
