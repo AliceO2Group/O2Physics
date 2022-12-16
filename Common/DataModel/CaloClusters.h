@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_CALOCLUSTERS_H_
-#define O2_ANALYSIS_CALOCLUSTERS_H_
+#ifndef COMMON_DATAMODEL_CALOCLUSTERS_H_
+#define COMMON_DATAMODEL_CALOCLUSTERS_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -19,18 +19,18 @@ namespace o2::aod
 namespace calocluster
 {
 // Columns to store momenta of "photons"
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-DECLARE_SOA_COLUMN(Type, caloType, uint8_t);    //! calo type: 0: PHOS, 1: EMCAL
-DECLARE_SOA_COLUMN(Px, px, float);              //! momenta components
-DECLARE_SOA_COLUMN(Py, py, float);              //!
-DECLARE_SOA_COLUMN(Pz, pz, float);              //!
-DECLARE_SOA_COLUMN(E, e, float);                //!
+DECLARE_SOA_INDEX_COLUMN(BC, bc);            //! BC index
+DECLARE_SOA_COLUMN(ColId, colId, int);       //! collision index used to calculate momentum, -1 if no collision and def vertex used
+DECLARE_SOA_COLUMN(Type, caloType, uint8_t); //! calo type: 0: PHOS, 1: EMCAL
+DECLARE_SOA_COLUMN(Px, px, float);           //! momenta components
+DECLARE_SOA_COLUMN(Py, py, float);           //!
+DECLARE_SOA_COLUMN(Pz, pz, float);           //!
+DECLARE_SOA_COLUMN(E, e, float);             //!
 
 // Columns to store cluster PID parameters
 DECLARE_SOA_COLUMN(Module, mod, uint8_t);                //! module/supermodule number
 DECLARE_SOA_COLUMN(Ncell, ncell, uint8_t);               //! cluster multiplicity
-DECLARE_SOA_COLUMN(X, x, float);                         //! cluster global coordinates
-DECLARE_SOA_COLUMN(Y, y, float);                         //!
+DECLARE_SOA_COLUMN(X, x, float);                         //! cluster local coordinates
 DECLARE_SOA_COLUMN(Z, z, float);                         //!
 DECLARE_SOA_COLUMN(Time, time, float);                   //! cluster time (seconds)
 DECLARE_SOA_COLUMN(NLM, nlm, uint8_t);                   //! number of local maxima
@@ -44,11 +44,12 @@ DECLARE_SOA_COLUMN(DistBad, distBad, float);             //! distance to closest
 } // namespace calocluster
 
 DECLARE_SOA_TABLE(CaloClusters, "AOD", "CALOCLUSTERS", //!
-                  o2::soa::Index<>, calocluster::CollisionId,
+                  o2::soa::Index<>, calocluster::BCId,
+                  calocluster::ColId,
                   calocluster::Type,
                   calocluster::Px, calocluster::Py, calocluster::Pz, calocluster::E,
                   calocluster::Module, calocluster::Ncell,
-                  calocluster::X, calocluster::Y, calocluster::Z,
+                  calocluster::X, calocluster::Z,
                   calocluster::Time, calocluster::NLM, calocluster::M02, calocluster::M20,
                   calocluster::TrackDist, calocluster::TrackIndex, calocluster::FiredTrigger, calocluster::DistBad);
 
@@ -56,4 +57,4 @@ using CaloCluster = CaloClusters::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_CALOCLUSTERS_H_
+#endif // COMMON_DATAMODEL_CALOCLUSTERS_H_
