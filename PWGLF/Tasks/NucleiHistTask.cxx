@@ -12,6 +12,11 @@
 // Authors: Rafael Manhart,
 // Date: 30.11.2022
 
+#include <cmath>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TObjArray.h>
+
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -21,18 +26,11 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 
 #include "Framework/HistogramRegistry.h"
 
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -43,7 +41,7 @@ namespace o2::aod
 namespace NucleiTableHist
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Sign, sign, short);
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
