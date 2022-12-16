@@ -96,7 +96,7 @@ struct skimmerGammaConversions {
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
-  Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
+  Produces<aod::V0RecalculationAndKF> fFuncTableV0Recalculated;
   Produces<aod::V0DaughterMcParticles> fFuncTableMCTrackInformation;
   Produces<aod::MCParticleIndex> fIndexTableMCTrackIndex;
 
@@ -181,7 +181,8 @@ struct skimmerGammaConversions {
     fFuncTableV0Recalculated(
       recalculatedVtx[0],
       recalculatedVtx[1],
-      recalculatedVtx[2]);
+      recalculatedVtx[2],
+      0.0);                 // temporarily add 0
   }
 
   template <typename TTRACK>
