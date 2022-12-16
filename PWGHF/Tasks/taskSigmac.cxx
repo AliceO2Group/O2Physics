@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskSigmac.cxx
+/// \file taskSc.cxx
 /// \brief Task for Σc0,++ → Λc+(→pK-π+) π-,+ analysis
-/// \note Σc0,++ candidates built in O2Physics/PWGHF/TableProducer/HFCandidateCreatorSigmacZeroPlusPlus.cxx
+/// \note Σc0,++ candidates built in O2Physics/PWGHF/TableProducer/HFCandidateCreatorScZeroPlusPlus.cxx
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
@@ -25,7 +25,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_sc;
 
-struct HfTaskSigmac {
+struct HfTaskSc {
 
   /// One value of rapidity only
   /// Remember that in Run2 the distinction among GenLimAcc, GenAccMother, GenAcc was done, where:
@@ -35,50 +35,50 @@ struct HfTaskSigmac {
   /// Properly normalize your results to provide a cross section
   /// OR
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
-  Configurable<float> yCandMax{"yCandMax", -1, "Sigmac rapidity"};
+  Configurable<float> yCandMax{"yCandMax", -1, "Sc rapidity"};
 
   /// analysis histograms
   HistogramRegistry registry{
     "registry",
     {/// Σc0
-     {"Data/hPtSigmacZero", "#Sigma_{c}^{0} candidates; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-     {"Data/hEtaSigmacZero", "#Sigma_{c}^{0} candidates; #eta(#Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
-     {"Data/hPhiSigmacZero", "#Sigma_{c}^{0} candidates; #varphi(#Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
-     {"Data/hDeltaMassSigmacZero", "#Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
-     {"Data/hPtSoftPiSigmacZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
-     {"Data/hEtaSoftPiSigmacZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
-     {"Data/hPhiSoftPiSigmacZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
+     {"Data/hPtScZero", "#Sigma_{c}^{0} candidates; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+     {"Data/hEtaScZero", "#Sigma_{c}^{0} candidates; #eta(#Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
+     {"Data/hPhiScZero", "#Sigma_{c}^{0} candidates; #varphi(#Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
+     {"Data/hDeltaMassScZero", "#Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+     {"Data/hPtSoftPiScZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
+     {"Data/hEtaSoftPiScZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
+     {"Data/hPhiSoftPiScZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
                                                                                                                                                                                       /// Σc++
-     {"Data/hPtSigmacPlusPlus", "#Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-     {"Data/hEtaSigmacPlusPlus", "#Sigma_{c}^{++} candidates; #eta(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
-     {"Data/hPhiSigmacPlusPlus", "#Sigma_{c}^{++} candidates; #varphi(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
-     {"Data/hDeltaMassSigmacPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
-     {"Data/hPtSoftPiSigmacPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
-     {"Data/hEtaSoftPiSigmacPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
-     {"Data/hPhiSoftPiSigmacPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
+     {"Data/hPtScPlusPlus", "#Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+     {"Data/hEtaScPlusPlus", "#Sigma_{c}^{++} candidates; #eta(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
+     {"Data/hPhiScPlusPlus", "#Sigma_{c}^{++} candidates; #varphi(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
+     {"Data/hDeltaMassScPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+     {"Data/hPtSoftPiScPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
+     {"Data/hEtaSoftPiScPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
+     {"Data/hPhiSoftPiScPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
                                                                                                                                                                                             /// Σc0,++
-     {"Data/hPtSigmacZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-     {"Data/hEtaSigmacZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #eta(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
-     {"Data/hPhiSigmacZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #varphi(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
-     {"Data/hDeltaMassSigmacZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
-     {"Data/hPtSoftPiSigmacZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
-     {"Data/hEtaSoftPiSigmacZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
-     {"Data/hPhiSoftPiSigmacZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
+     {"Data/hPtScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+     {"Data/hEtaScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #eta(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
+     {"Data/hPhiScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #varphi(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
+     {"Data/hDeltaMassScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+     {"Data/hPtSoftPiScZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
+     {"Data/hEtaSoftPiScZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
+     {"Data/hPhiSoftPiScZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
                                                                                                                                                                                                     /// Λc+ ← Σc0
-     {"Data/hPtLambdaCFromSigmacZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-     {"Data/hEtaLambdaCFromSigmacZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
-     {"Data/hPhiLambdaCFromSigmacZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
-     {"Data/hDeltaMassLambdaCFromSigmacZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+     {"Data/hPtLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+     {"Data/hEtaLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
+     {"Data/hPhiLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
+     {"Data/hDeltaMassLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
      /// Λc+ ← Σc++
-     {"Data/hPtLambdaCFromSigmacPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-     {"Data/hEtaLambdaCFromSigmacPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
-     {"Data/hPhiLambdaCFromSigmacPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
-     {"Data/hDeltaMassLambdaCFromSigmacPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
+     {"Data/hPtLambdaCFromScPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+     {"Data/hEtaLambdaCFromScPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
+     {"Data/hPhiLambdaCFromScPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
+     {"Data/hDeltaMassLambdaCFromScPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}},
      /// Λc+ ← Σc0,++
-     {"Data/hPtLambdaCFromSigmacZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
-     {"Data/hEtaLambdaCFromSigmacZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
-     {"Data/hPhiLambdaCFromSigmacZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
-     {"Data/hDeltaMassLambdaCFromSigmacZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}}}};
+     {"Data/hPtLambdaCFromScZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
+     {"Data/hEtaLambdaCFromScZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
+     {"Data/hPhiLambdaCFromScZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
+     {"Data/hDeltaMassLambdaCFromScZeroPlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}}}};
 
   /// @brief init function, to define the additional analysis histograms
   /// @param
@@ -89,120 +89,120 @@ struct HfTaskSigmac {
       ///   Generated   ///
       /////////////////////
       /// Generated Σc0 signal
-      registry.add("MC/generated/hPtGenSigmacZeroSig", "#Sigma_{c}^{0} generated signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hEtaGenSigmacZeroSig", "#Sigma_{c}^{0} generated signal; #eta^{gen}(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPhiGenSigmacZeroSig", "#Sigma_{c}^{0} generated signal; #varphi^{gen}(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPtGenSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} generated signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
-      registry.add("MC/generated/hEtaGenSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} generated signal; #eta^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                  /// soft π
-      registry.add("MC/generated/hPhiGenSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} generated signal; #varphi^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});           /// soft π
+      registry.add("MC/generated/hPtGenScZeroSig", "#Sigma_{c}^{0} generated signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hEtaGenScZeroSig", "#Sigma_{c}^{0} generated signal; #eta^{gen}(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPhiGenScZeroSig", "#Sigma_{c}^{0} generated signal; #varphi^{gen}(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPtGenSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} generated signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
+      registry.add("MC/generated/hEtaGenSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} generated signal; #eta^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                  /// soft π
+      registry.add("MC/generated/hPhiGenSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} generated signal; #varphi^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});           /// soft π
       /// Generated Σc++ signal
-      registry.add("MC/generated/hPtGenSigmacPlusPlusSig", "#Sigma_{c}^{++} generated signal; #it{p}_{T}^{gen}(#Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hEtaGenSigmacPlusPlusSig", "#Sigma_{c}^{++} generated signal; #eta^{gen}(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPhiGenSigmacPlusPlusSig", "#Sigma_{c}^{++} generated signal; #varphi^{gen}(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPtGenSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} generated signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
-      registry.add("MC/generated/hEtaGenSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} generated signal; #eta^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                  /// soft π
-      registry.add("MC/generated/hPhiGenSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} generated signal; #varphi^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});           /// soft π
+      registry.add("MC/generated/hPtGenScPlusPlusSig", "#Sigma_{c}^{++} generated signal; #it{p}_{T}^{gen}(#Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hEtaGenScPlusPlusSig", "#Sigma_{c}^{++} generated signal; #eta^{gen}(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPhiGenScPlusPlusSig", "#Sigma_{c}^{++} generated signal; #varphi^{gen}(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPtGenSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} generated signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
+      registry.add("MC/generated/hEtaGenSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} generated signal; #eta^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                  /// soft π
+      registry.add("MC/generated/hPhiGenSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} generated signal; #varphi^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});           /// soft π
       /// Generated Σc0,++ signal
-      registry.add("MC/generated/hPtGenSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} generated signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hEtaGenSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} generated signal; #eta^{gen}(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPhiGenSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} generated signal; #varphi^{gen}(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPtGenSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} generated signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
-      registry.add("MC/generated/hEtaGenSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} generated signal; #eta^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                  /// soft π
-      registry.add("MC/generated/hPhiGenSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} generated signal; #varphi^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});           /// soft π
+      registry.add("MC/generated/hPtGenScZeroPlusPlusSig", "#Sigma_{c}^{0,++} generated signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hEtaGenScZeroPlusPlusSig", "#Sigma_{c}^{0,++} generated signal; #eta^{gen}(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPhiGenScZeroPlusPlusSig", "#Sigma_{c}^{0,++} generated signal; #varphi^{gen}(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPtGenSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} generated signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
+      registry.add("MC/generated/hEtaGenSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} generated signal; #eta^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                  /// soft π
+      registry.add("MC/generated/hPhiGenSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} generated signal; #varphi^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});           /// soft π
       /// Generated Λc+ ← Σc0 signal
-      registry.add("MC/generated/hPtGenLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} generated signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hEtaGenLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} generated signal; #eta^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPhiGenLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} generated signal; #varphi^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPtGenLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} generated signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hEtaGenLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} generated signal; #eta^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPhiGenLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} generated signal; #varphi^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       /// Generated Λc+ ← Σc++ signal
-      registry.add("MC/generated/hPtGenLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} generated signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hEtaGenLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} generated signal; #eta^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPhiGenLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} generated signal; #varphi^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPtGenLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} generated signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hEtaGenLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} generated signal; #eta^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPhiGenLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} generated signal; #varphi^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       /// Generated Λc+ ← Σc0,++ signal
-      registry.add("MC/generated/hPtGenLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} generated signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hEtaGenLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} generated signal; #eta^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/generated/hPhiGenLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} generated signal; #varphi^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPtGenLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} generated signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hEtaGenLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} generated signal; #eta^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/generated/hPhiGenLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} generated signal; #varphi^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
 
       /////////////////////////
       ///   Reconstructed   ///
       /////////////////////////
       /// Reconstructed Σc0 signal
-      registry.add("MC/reconstructed/hPtSigmacZeroSig", "#Sigma_{c}^{0} reconstructed signal; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtGenSigmacZeroSig", "#Sigma_{c}^{0} reconstructed signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hEtaSigmacZeroSig", "#Sigma_{c}^{0} reconstructed signal; #eta(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPhiSigmacZeroSig", "#Sigma_{c}^{0} reconstructed signal; #varphi(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacZeroSig", "#Sigma_{c}^{0} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacZeroSigPrompt", "#Sigma_{c}^{0} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacZeroSigNonPrompt", "#Sigma_{c}^{0} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});          /// soft π
-      registry.add("MC/reconstructed/hPtGenSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
-      registry.add("MC/reconstructed/hEtaSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                           /// soft π
-      registry.add("MC/reconstructed/hPhiSoftPiSigmacZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                    /// soft π
+      registry.add("MC/reconstructed/hPtScZeroSig", "#Sigma_{c}^{0} reconstructed signal; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtGenScZeroSig", "#Sigma_{c}^{0} reconstructed signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hEtaScZeroSig", "#Sigma_{c}^{0} reconstructed signal; #eta(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPhiScZeroSig", "#Sigma_{c}^{0} reconstructed signal; #varphi(#Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScZeroSig", "#Sigma_{c}^{0} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScZeroSigPrompt", "#Sigma_{c}^{0} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScZeroSigNonPrompt", "#Sigma_{c}^{0} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});          /// soft π
+      registry.add("MC/reconstructed/hPtGenSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
+      registry.add("MC/reconstructed/hEtaSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                           /// soft π
+      registry.add("MC/reconstructed/hPhiSoftPiScZeroSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} reconstructed signal; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                    /// soft π
       /// Reconstructed Σc++ signal
-      registry.add("MC/reconstructed/hPtSigmacPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtGenSigmacPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hEtaSigmacPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #eta(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPhiSigmacPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #varphi(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacPlusPlusSigPrompt", "#Sigma_{c}^{++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacPlusPlusSigNonPrompt", "#Sigma_{c}^{++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});          /// soft π
-      registry.add("MC/reconstructed/hPtGenSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
-      registry.add("MC/reconstructed/hEtaSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                           /// soft π
-      registry.add("MC/reconstructed/hPhiSoftPiSigmacPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                    /// soft π
+      registry.add("MC/reconstructed/hPtScPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtGenScPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hEtaScPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #eta(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPhiScPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #varphi(#Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScPlusPlusSig", "#Sigma_{c}^{++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt", "#Sigma_{c}^{++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt", "#Sigma_{c}^{++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});          /// soft π
+      registry.add("MC/reconstructed/hPtGenSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
+      registry.add("MC/reconstructed/hEtaSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                           /// soft π
+      registry.add("MC/reconstructed/hPhiSoftPiScPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} reconstructed signal; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                    /// soft π
       /// Reconstructed Σc0,++ signal
-      registry.add("MC/reconstructed/hPtSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtGenSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hEtaSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #eta(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPhiSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #varphi(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigPrompt", "#Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigNonPrompt", "#Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});          /// soft π
-      registry.add("MC/reconstructed/hPtGenSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
-      registry.add("MC/reconstructed/hEtaSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                           /// soft π
-      registry.add("MC/reconstructed/hPhiSoftPiSigmacZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                    /// soft π
+      registry.add("MC/reconstructed/hPtScZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtGenScZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hEtaScZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #eta(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPhiScZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #varphi(#Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScZeroPlusPlusSig", "#Sigma_{c}^{0,++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScZeroPlusPlusSigPrompt", "#Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassScZeroPlusPlusSigNonPrompt", "#Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});          /// soft π
+      registry.add("MC/reconstructed/hPtGenSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{60, 0., 6.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}}); /// soft π
+      registry.add("MC/reconstructed/hEtaSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                           /// soft π
+      registry.add("MC/reconstructed/hPhiSoftPiScZeroPlusPlusSig", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});                    /// soft π
       /// Reconstructed Λc+ ← Σc0 signal
-      registry.add("MC/reconstructed/hPtLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtGenLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hEtaLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPhiLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtGenLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hEtaLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPhiLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
       /// Reconstructed Λc+ ← Σc++ signal
-      registry.add("MC/reconstructed/hPtLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtGenLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hEtaLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPhiLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtGenLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hEtaLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPhiLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
       /// Reconstructed Λc+ ← Σc0,++ signal
-      registry.add("MC/reconstructed/hPtLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPtGenLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hEtaLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hPhiLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
+      registry.add("MC/reconstructed/hPtLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
     }
   }; /// end init
 
   /// @brief Function to determine if the reconstructed candidate Σc0,++ decays into Λc+ → pK-π+, Λc+ → π+K-p or both
-  /// @tparam L template for LambdaC daughter of Sigmac candidate
-  /// @tparam S template for Sigmac candidate
-  /// @param candLambdaC LambdaC daughter of Sigmac candidate
-  /// @param candSigmac Sigmac candidate
+  /// @tparam L template for LambdaC daughter of Sc candidate
+  /// @tparam S template for Sc candidate
+  /// @param candLambdaC LambdaC daughter of Sc candidate
+  /// @param candSc Sc candidate
   /// @return 0: none; 1: only Λc+ → pK-π+ possible; 2: Λc+ → π+K-p possible; 3: both possible
   template <typename L, typename S>
-  int isDecayToPKPiToPiKP(L& candLambdaC, S& candSigmac)
+  int isDecayToPKPiToPiKP(L& candLambdaC, S& candSc)
   {
     int channel = 0;
-    if ((candLambdaC.isSelLcToPKPi() >= 1) && candSigmac.statusSpreadLcMinvPKPiFromPDG()) {
+    if ((candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
       // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       channel += 1;
     }
-    if ((candLambdaC.isSelLcToPiKP() >= 1) && candSigmac.statusSpreadLcMinvPiKPFromPDG()) {
+    if ((candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
       // Λc+ → π+K-p and within the requested mass to build the Σc0,++
       channel += 2;
     }
@@ -210,146 +210,146 @@ struct HfTaskSigmac {
   }
 
   /// @brief process function to fill the histograms needed in analysis (data)
-  /// @param candidatesSigmac are the reconstructed candidate Σc0,++
+  /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  void process(const aod::HfCandSigmac& candidatesSigmac,
+  void process(const aod::HfCandSc& candidatesSc,
                soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&, const soa::Join<aod::Tracks, aod::TracksDCA>&)
   {
 
     /// loop over the candidate Σc0,++
-    for (auto& candSigmac : candidatesSigmac) {
+    for (auto& candSc : candidatesSc) {
 
-      const int chargeSigmac = candSigmac.charge(); // either Σc0 or Σc++
+      const int chargeSc = candSc.charge(); // either Σc0 or Σc++
 
       /// get the candidate Λc+ used to build the candidate Σc0,++
       /// and understand which mass hypotheses are possible
-      const auto& candLambdaC = candSigmac.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmac.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-      // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmac.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmac);
-      double massSigmac(-1.), massLambdaC(-1.), deltaMass(-1.);
-      double ptSigmac(candSigmac.pt()), ptLambdaC(candLambdaC.pt());
-      double etaSigmac(candSigmac.eta()), etaLambdaC(candLambdaC.eta());
-      double phiSigmac(candSigmac.phi()), phiLambdaC(candLambdaC.phi());
-      double ptSoftPi(candSigmac.prong1().pt()), etaSoftPi(candSigmac.prong1().eta()), phiSoftPi(candSigmac.prong1().phi());
+      const auto& candLambdaC = candSc.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+      // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+      // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSc);
+      double massSc(-1.), massLambdaC(-1.), deltaMass(-1.);
+      double ptSc(candSc.pt()), ptLambdaC(candLambdaC.pt());
+      double etaSc(candSc.eta()), etaLambdaC(candLambdaC.eta());
+      double phiSc(candSc.phi()), phiLambdaC(candLambdaC.phi());
+      double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
-        massSigmac = invMassScRecoLcToPKPi(candSigmac);
+        massSc = invMassScRecoLcToPKPi(candSc);
         massLambdaC = invMassLcToPKPi(candLambdaC);
-        deltaMass = massSigmac - massLambdaC;
+        deltaMass = massSc - massLambdaC;
         /// fill the histograms
-        if (chargeSigmac == 0) {
-          registry.fill(HIST("Data/hPtSigmacZero"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacZero"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacZero"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacZero"), deltaMass, ptSigmac); // Σc0
-          registry.fill(HIST("Data/hPtSoftPiSigmacZero"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacZero"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacZero"), phiSoftPi); // π ← Σc0
-          registry.fill(HIST("Data/hPtSigmacZeroPlusPlus"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacZeroPlusPlus"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacZeroPlusPlus"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacZeroPlusPlus"), deltaMass, ptSigmac); // Σc0,++
-          registry.fill(HIST("Data/hPtSoftPiSigmacZeroPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacZeroPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacZero"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacZero"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacZero"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacZero"), deltaMass, ptLambdaC); // Λc+ ← Σc0
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacZeroPlusPlus"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacZeroPlusPlus"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacZeroPlusPlus"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
-        } else {                                                                                     /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorSigmacZeroPlusPlus.cxx
-          registry.fill(HIST("Data/hPtSigmacPlusPlus"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacPlusPlus"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacPlusPlus"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacPlusPlus"), deltaMass, ptSigmac); // Σc++
-          registry.fill(HIST("Data/hPtSoftPiSigmacPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacPlusPlus"), phiSoftPi); // π ← Σc++
-          registry.fill(HIST("Data/hPtSigmacZeroPlusPlus"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacZeroPlusPlus"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacZeroPlusPlus"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacZeroPlusPlus"), deltaMass, ptSigmac); // Σc0,++
-          registry.fill(HIST("Data/hPtSoftPiSigmacZeroPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacZeroPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacPlusPlus"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacPlusPlus"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacPlusPlus"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc++
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacZeroPlusPlus"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacZeroPlusPlus"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacZeroPlusPlus"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
+        if (chargeSc == 0) {
+          registry.fill(HIST("Data/hPtScZero"), ptSc);
+          registry.fill(HIST("Data/hEtaScZero"), etaSc);
+          registry.fill(HIST("Data/hPhiScZero"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScZero"), deltaMass, ptSc); // Σc0
+          registry.fill(HIST("Data/hPtSoftPiScZero"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScZero"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScZero"), phiSoftPi); // π ← Σc0
+          registry.fill(HIST("Data/hPtScZeroPlusPlus"), ptSc);
+          registry.fill(HIST("Data/hEtaScZeroPlusPlus"), etaSc);
+          registry.fill(HIST("Data/hPhiScZeroPlusPlus"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScZeroPlusPlus"), deltaMass, ptSc); // Σc0,++
+          registry.fill(HIST("Data/hPtSoftPiScZeroPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScZeroPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
+          registry.fill(HIST("Data/hPtLambdaCFromScZero"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScZero"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScZero"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScZero"), deltaMass, ptLambdaC); // Λc+ ← Σc0
+          registry.fill(HIST("Data/hPtLambdaCFromScZeroPlusPlus"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScZeroPlusPlus"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScZeroPlusPlus"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
+        } else {                                                                                     /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorScZeroPlusPlus.cxx
+          registry.fill(HIST("Data/hPtScPlusPlus"), ptSc);
+          registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);
+          registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass, ptSc); // Σc++
+          registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScPlusPlus"), phiSoftPi); // π ← Σc++
+          registry.fill(HIST("Data/hPtScZeroPlusPlus"), ptSc);
+          registry.fill(HIST("Data/hEtaScZeroPlusPlus"), etaSc);
+          registry.fill(HIST("Data/hPhiScZeroPlusPlus"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScZeroPlusPlus"), deltaMass, ptSc); // Σc0,++
+          registry.fill(HIST("Data/hPtSoftPiScZeroPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScZeroPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
+          registry.fill(HIST("Data/hPtLambdaCFromScPlusPlus"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScPlusPlus"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScPlusPlus"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc++
+          registry.fill(HIST("Data/hPtLambdaCFromScZeroPlusPlus"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScZeroPlusPlus"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScZeroPlusPlus"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
         }
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
-        massSigmac = invMassScRecoLcToPiKP(candSigmac);
+        massSc = invMassScRecoLcToPiKP(candSc);
         massLambdaC = invMassLcToPiKP(candLambdaC);
-        deltaMass = massSigmac - massLambdaC;
+        deltaMass = massSc - massLambdaC;
         /// fill the histograms
-        if (chargeSigmac == 0) {
-          registry.fill(HIST("Data/hPtSigmacZero"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacZero"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacZero"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacZero"), deltaMass, ptSigmac); // Σc0
-          registry.fill(HIST("Data/hPtSoftPiSigmacZero"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacZero"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacZero"), phiSoftPi); // π ← Σc0
-          registry.fill(HIST("Data/hPtSigmacZeroPlusPlus"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacZeroPlusPlus"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacZeroPlusPlus"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacZeroPlusPlus"), deltaMass, ptSigmac); // Σc0,++
-          registry.fill(HIST("Data/hPtSoftPiSigmacZeroPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacZeroPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacZero"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacZero"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacZero"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacZero"), deltaMass, ptLambdaC); // Λc+ ← Σc0
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacZeroPlusPlus"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacZeroPlusPlus"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacZeroPlusPlus"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
-        } else {                                                                                     /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorSigmacZeroPlusPlus.cxx
-          registry.fill(HIST("Data/hPtSigmacPlusPlus"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacPlusPlus"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacPlusPlus"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacPlusPlus"), deltaMass, ptSigmac); // Σc++
-          registry.fill(HIST("Data/hPtSoftPiSigmacPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacPlusPlus"), phiSoftPi); // π ← Σc++
-          registry.fill(HIST("Data/hPtSigmacZeroPlusPlus"), ptSigmac);
-          registry.fill(HIST("Data/hEtaSigmacZeroPlusPlus"), etaSigmac);
-          registry.fill(HIST("Data/hPhiSigmacZeroPlusPlus"), phiSigmac);
-          registry.fill(HIST("Data/hDeltaMassSigmacZeroPlusPlus"), deltaMass, ptSigmac); // Σc0,++
-          registry.fill(HIST("Data/hPtSoftPiSigmacZeroPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSigmacZeroPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSigmacZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacPlusPlus"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacPlusPlus"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacPlusPlus"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc++
-          registry.fill(HIST("Data/hPtLambdaCFromSigmacZeroPlusPlus"), ptLambdaC);
-          registry.fill(HIST("Data/hEtaLambdaCFromSigmacZeroPlusPlus"), etaLambdaC);
-          registry.fill(HIST("Data/hPhiLambdaCFromSigmacZeroPlusPlus"), phiLambdaC);
-          registry.fill(HIST("Data/hDeltaMassLambdaCFromSigmacZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
+        if (chargeSc == 0) {
+          registry.fill(HIST("Data/hPtScZero"), ptSc);
+          registry.fill(HIST("Data/hEtaScZero"), etaSc);
+          registry.fill(HIST("Data/hPhiScZero"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScZero"), deltaMass, ptSc); // Σc0
+          registry.fill(HIST("Data/hPtSoftPiScZero"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScZero"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScZero"), phiSoftPi); // π ← Σc0
+          registry.fill(HIST("Data/hPtScZeroPlusPlus"), ptSc);
+          registry.fill(HIST("Data/hEtaScZeroPlusPlus"), etaSc);
+          registry.fill(HIST("Data/hPhiScZeroPlusPlus"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScZeroPlusPlus"), deltaMass, ptSc); // Σc0,++
+          registry.fill(HIST("Data/hPtSoftPiScZeroPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScZeroPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
+          registry.fill(HIST("Data/hPtLambdaCFromScZero"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScZero"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScZero"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScZero"), deltaMass, ptLambdaC); // Λc+ ← Σc0
+          registry.fill(HIST("Data/hPtLambdaCFromScZeroPlusPlus"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScZeroPlusPlus"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScZeroPlusPlus"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
+        } else {                                                                                     /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorScZeroPlusPlus.cxx
+          registry.fill(HIST("Data/hPtScPlusPlus"), ptSc);
+          registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);
+          registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass, ptSc); // Σc++
+          registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScPlusPlus"), phiSoftPi); // π ← Σc++
+          registry.fill(HIST("Data/hPtScZeroPlusPlus"), ptSc);
+          registry.fill(HIST("Data/hEtaScZeroPlusPlus"), etaSc);
+          registry.fill(HIST("Data/hPhiScZeroPlusPlus"), phiSc);
+          registry.fill(HIST("Data/hDeltaMassScZeroPlusPlus"), deltaMass, ptSc); // Σc0,++
+          registry.fill(HIST("Data/hPtSoftPiScZeroPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScZeroPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScZeroPlusPlus"), phiSoftPi); // π ← Σc0,++
+          registry.fill(HIST("Data/hPtLambdaCFromScPlusPlus"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScPlusPlus"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScPlusPlus"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc++
+          registry.fill(HIST("Data/hPtLambdaCFromScZeroPlusPlus"), ptLambdaC);
+          registry.fill(HIST("Data/hEtaLambdaCFromScZeroPlusPlus"), etaLambdaC);
+          registry.fill(HIST("Data/hPhiLambdaCFromScZeroPlusPlus"), phiLambdaC);
+          registry.fill(HIST("Data/hDeltaMassLambdaCFromScZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
         }
       } /// end candidate Λc+ → π+K-p (and charge conjugate)
     }   /// end loop over the candidate Σc0,++
   };    /// end process
-  PROCESS_SWITCH(HfTaskSigmac, process, "Process data", true);
+  PROCESS_SWITCH(HfTaskSc, process, "Process data", true);
 
   /// @brief process function to fill the histograms needed in analysis (MC)
-  /// @param candidatesSigmac are the reconstructed candidate Σc0,++ with MC info
+  /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  void processMc(const soa::Join<aod::HfCandSigmac, aod::HfCandSigmacMcRec>& candidatesSigmac,
-                 soa::Join<aod::McParticles, aod::HfCandSigmacMcGen> const& particlesMc,
+  void processMc(const soa::Join<aod::HfCandSc, aod::HfCandScMcRec>& candidatesSc,
+                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMc,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLambdaC,
                  soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const aod::BigTracksMC&)
   {
@@ -358,9 +358,9 @@ struct HfTaskSigmac {
     for (auto& particle : particlesMc) {
 
       /// reject immediately particles different from Σc0,++
-      bool isSigmacZeroGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::Sigmac0ToPKPiPi));
-      bool isSigmacPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::SigmacplusplusToPKPiPi));
-      if (!isSigmacZeroGen && !isSigmacPlusPlusGen)
+      bool isScZeroGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi));
+      bool isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sc::DecayType::ScplusplusToPKPiPi));
+      if (!isScZeroGen && !isScPlusPlusGen)
         continue;
 
       /// look for generated particles in acceptance
@@ -381,7 +381,7 @@ struct HfTaskSigmac {
       /// Get the kinematic information of Σc0,++ and the daughters
       /// Get information about origin (prompt, non-prompt)
       /// Get information about decay Λc+ channel (direct, resonant)
-      double ptGenSigmac(particle.pt()), etaGenSigmac(particle.eta()), phiGenSigmac(particle.phi());
+      double ptGenSc(particle.pt()), etaGenSc(particle.eta()), phiGenSc(particle.phi());
       auto arrayDaughtersIds = particle.daughtersIds();
       if (arrayDaughtersIds.size() != 2) {
         /// This should never happen
@@ -420,310 +420,310 @@ struct HfTaskSigmac {
       }
 
       /// Fill histograms
-      if (isSigmacZeroGen) {
+      if (isScZeroGen) {
         /// Generated Σc0 and Λc+ ← Σc0 signals
-        registry.fill(HIST("MC/generated/hPtGenSigmacZeroSig"), ptGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSigmacZeroSig"), etaGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSigmacZeroSig"), phiGenSigmac, (double)origin, (double)channel); /// Generated Σc0 signal
-        registry.fill(HIST("MC/generated/hPtGenSoftPiSigmacZeroSig"), ptGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSoftPiSigmacZeroSig"), etaGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSoftPiSigmacZeroSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc0 signal
-        registry.fill(HIST("MC/generated/hPtGenLambdaCFromSigmacZeroSig"), ptGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromSigmacZeroSig"), etaGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromSigmacZeroSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc0 signal
+        registry.fill(HIST("MC/generated/hPtGenScZeroSig"), ptGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenScZeroSig"), etaGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenScZeroSig"), phiGenSc, (double)origin, (double)channel); /// Generated Σc0 signal
+        registry.fill(HIST("MC/generated/hPtGenSoftPiScZeroSig"), ptGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenSoftPiScZeroSig"), etaGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenSoftPiScZeroSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc0 signal
+        registry.fill(HIST("MC/generated/hPtGenLambdaCFromScZeroSig"), ptGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromScZeroSig"), etaGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromScZeroSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc0 signal
         /// Generated Σc0,++ and Λc+ ← Σc0,++ signals
-        registry.fill(HIST("MC/generated/hPtGenSigmacZeroPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSigmacZeroPlusPlusSig"), etaGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSigmacZeroPlusPlusSig"), phiGenSigmac, (double)origin, (double)channel); /// Generated Σc0,++ signal
-        registry.fill(HIST("MC/generated/hPtGenSoftPiSigmacZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSoftPiSigmacZeroPlusPlusSig"), etaGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSoftPiSigmacZeroPlusPlusSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc0,++ signal
-        registry.fill(HIST("MC/generated/hPtGenLambdaCFromSigmacZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromSigmacZeroPlusPlusSig"), etaGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromSigmacZeroPlusPlusSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc0,++ signal
-      } else if (isSigmacPlusPlusGen) {
+        registry.fill(HIST("MC/generated/hPtGenScZeroPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenScZeroPlusPlusSig"), etaGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenScZeroPlusPlusSig"), phiGenSc, (double)origin, (double)channel); /// Generated Σc0,++ signal
+        registry.fill(HIST("MC/generated/hPtGenSoftPiScZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenSoftPiScZeroPlusPlusSig"), etaGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenSoftPiScZeroPlusPlusSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc0,++ signal
+        registry.fill(HIST("MC/generated/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromScZeroPlusPlusSig"), etaGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromScZeroPlusPlusSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc0,++ signal
+      } else if (isScPlusPlusGen) {
         /// Generated Σc++ and Λc+ ← Σc++ signals
-        registry.fill(HIST("MC/generated/hPtGenSigmacPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSigmacPlusPlusSig"), etaGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSigmacPlusPlusSig"), phiGenSigmac, (double)origin, (double)channel); /// Generated Σc++ signal
-        registry.fill(HIST("MC/generated/hPtGenSoftPiSigmacPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSoftPiSigmacPlusPlusSig"), etaGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSoftPiSigmacPlusPlusSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc++ signal
-        registry.fill(HIST("MC/generated/hPtGenLambdaCFromSigmacPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromSigmacPlusPlusSig"), etaGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromSigmacPlusPlusSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc++ signal
+        registry.fill(HIST("MC/generated/hPtGenScPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenScPlusPlusSig"), etaGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenScPlusPlusSig"), phiGenSc, (double)origin, (double)channel); /// Generated Σc++ signal
+        registry.fill(HIST("MC/generated/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenSoftPiScPlusPlusSig"), etaGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenSoftPiScPlusPlusSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc++ signal
+        registry.fill(HIST("MC/generated/hPtGenLambdaCFromScPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromScPlusPlusSig"), etaGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromScPlusPlusSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc++ signal
         /// Generated Σc0,++ and Λc+ ← Σc0,++ signals
-        registry.fill(HIST("MC/generated/hPtGenSigmacZeroPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSigmacZeroPlusPlusSig"), etaGenSigmac, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSigmacZeroPlusPlusSig"), phiGenSigmac, (double)origin, (double)channel); /// Generated Σc0,++ signal
-        registry.fill(HIST("MC/generated/hPtGenSoftPiSigmacZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenSoftPiSigmacZeroPlusPlusSig"), etaGenSoftPi, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenSoftPiSigmacZeroPlusPlusSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc0,++ signal
-        registry.fill(HIST("MC/generated/hPtGenLambdaCFromSigmacZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromSigmacZeroPlusPlusSig"), etaGenLambdaC, (double)origin, (double)channel);
-        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromSigmacZeroPlusPlusSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc0,++ signal
+        registry.fill(HIST("MC/generated/hPtGenScZeroPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenScZeroPlusPlusSig"), etaGenSc, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenScZeroPlusPlusSig"), phiGenSc, (double)origin, (double)channel); /// Generated Σc0,++ signal
+        registry.fill(HIST("MC/generated/hPtGenSoftPiScZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenSoftPiScZeroPlusPlusSig"), etaGenSoftPi, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenSoftPiScZeroPlusPlusSig"), phiGenSoftPi, (double)origin, (double)channel); /// Generated π ← Σc0,++ signal
+        registry.fill(HIST("MC/generated/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hEtaGenLambdaCFromScZeroPlusPlusSig"), etaGenLambdaC, (double)origin, (double)channel);
+        registry.fill(HIST("MC/generated/hPhiGenLambdaCFromScZeroPlusPlusSig"), phiGenLambdaC, (double)origin, (double)channel); /// Generated Λc+ ← Σc0,++ signal
       }
 
     } /// end loop over generated particles
 
     /// reconstructed Σc0,++ matched to MC
-    for (auto& candSigmac : candidatesSigmac) {
+    for (auto& candSc : candidatesSc) {
 
       /// Candidate selected as Σc0 and/or Σc++
-      if (!(candSigmac.hfflag() & 1 << aod::hf_cand_sc::DecayType::Sigmac0ToPKPiPi) && !(candSigmac.hfflag() & 1 << aod::hf_cand_sc::DecayType::SigmacplusplusToPKPiPi)) {
+      if (!(candSc.hfflag() & 1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi) && !(candSc.hfflag() & 1 << aod::hf_cand_sc::DecayType::ScplusplusToPKPiPi)) {
         continue;
       }
       /// rapidity selection on Σc0,++
-      if (yCandMax >= 0. && std::abs(ySc0(candSigmac)) > yCandMax && std::abs(yScPlusPlus(candSigmac)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(ySc0(candSc)) > yCandMax && std::abs(yScPlusPlus(candSc)) > yCandMax) {
         continue;
       }
 
       /// electric charge
-      const int chargeSigmac = candSigmac.charge(); // either Σc0 or Σc++
+      const int chargeSc = candSc.charge(); // either Σc0 or Σc++
 
       /// get the candidate Λc+ used to build the Σc0
       /// and understand which mass hypotheses are possible
-      const auto& candLambdaC = candSigmac.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
-      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSigmac);
+      const auto& candLambdaC = candSc.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
+      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSc);
 
       candLambdaC.flagMcDecayChanRec();
 
       /// Reconstructed Σc0 signal
-      if (std::abs(candSigmac.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::Sigmac0ToPKPiPi && (chargeSigmac == 0)) {
-        // Get the corresponding MC particle for Sigmac, found as the mother of the soft pion
-        auto indexMcSigmacRec = RecoDecay::getMother(particlesMc, candSigmac.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandSigmacMcGen>>(), pdg::Code::kSigmac0, true);
-        auto particleSigmac = particlesMc.rawIteratorAt(indexMcSigmacRec);
+      if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
+        // Get the corresponding MC particle for Sc, found as the mother of the soft pion
+        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandScMcGen>>(), pdg::Code::kSigmac0, true);
+        auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = array{candLambdaC.prong0_as<aod::BigTracksMC>(), candLambdaC.prong1_as<aod::BigTracksMC>(), candLambdaC.prong2_as<aod::BigTracksMC>()};
         int8_t sign = 0;
         int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLambdaC = particlesMc.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
-        auto particleSoftPi = candSigmac.prong1_as<aod::BigTracksMC>().mcParticle();
+        auto particleSoftPi = candSc.prong1_as<aod::BigTracksMC>().mcParticle();
 
-        // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmac.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-        // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmac.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-        double massSigmac(-1.), massLambdaC(-1.), deltaMass(-1.);
-        double ptSigmac(candSigmac.pt()), ptLambdaC(candLambdaC.pt());
-        double etaSigmac(candSigmac.eta()), etaLambdaC(candLambdaC.eta());
-        double phiSigmac(candSigmac.phi()), phiLambdaC(candLambdaC.phi());
-        double ptSoftPi(candSigmac.prong1().pt()), etaSoftPi(candSigmac.prong1().eta()), phiSoftPi(candSigmac.prong1().phi());
-        double ptGenSigmac(particleSigmac.pt()), ptGenLambdaC(particleLambdaC.pt()), ptGenSoftPi(particleSoftPi.pt());
-        int origin = candSigmac.originMcRec();
+        // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+        // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+        double massSc(-1.), massLambdaC(-1.), deltaMass(-1.);
+        double ptSc(candSc.pt()), ptLambdaC(candLambdaC.pt());
+        double etaSc(candSc.eta()), etaLambdaC(candLambdaC.eta());
+        double phiSc(candSc.phi()), phiLambdaC(candLambdaC.phi());
+        double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+        double ptGenSc(particleSc.pt()), ptGenLambdaC(particleLambdaC.pt()), ptGenSoftPi(particleSoftPi.pt());
+        int origin = candSc.originMcRec();
         auto channel = candLambdaC.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
-          massSigmac = invMassScRecoLcToPKPi(candSigmac);
+          massSc = invMassScRecoLcToPKPi(candSc);
           massLambdaC = invMassLcToPKPi(candLambdaC);
-          deltaMass = massSigmac - massLambdaC;
+          deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacZeroSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacZeroSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacZeroSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacZeroSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroSig"), deltaMass, ptSigmac);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroSigPrompt"), deltaMass, ptSigmac);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroSigNonPrompt"), deltaMass, ptSigmac); // Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacZeroSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacZeroSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacZeroSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacZeroSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacZeroSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacZeroSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacZeroSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacZeroSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSig"), deltaMass, ptLambdaC);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSigPrompt"), deltaMass, ptLambdaC);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSigNonPrompt"), deltaMass, ptLambdaC); // Λc+ ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtScZeroSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScZeroSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScZeroSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScZeroSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroSig"), deltaMass, ptSc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroSigPrompt"), deltaMass, ptSc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroSigNonPrompt"), deltaMass, ptSc); // Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScZeroSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScZeroSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScZeroSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScZeroSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScZeroSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroSig"), deltaMass, ptLambdaC);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroSigPrompt"), deltaMass, ptLambdaC);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroSigNonPrompt"), deltaMass, ptLambdaC); // Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacZeroPlusPlusSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacZeroPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacZeroPlusPlusSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacZeroPlusPlusSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSig"), deltaMass, ptSigmac);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigPrompt"), deltaMass, ptSigmac);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptSigmac); // Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSig"), deltaMass, ptLambdaC);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtScZeroPlusPlusSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScZeroPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScZeroPlusPlusSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScZeroPlusPlusSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSig"), deltaMass, ptSc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigPrompt"), deltaMass, ptSc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigNonPrompt"), deltaMass, ptSc); // Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig"), deltaMass, ptLambdaC);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++ signal
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
-          massSigmac = invMassScRecoLcToPiKP(candSigmac);
+          massSc = invMassScRecoLcToPiKP(candSc);
           massLambdaC = invMassLcToPiKP(candLambdaC);
-          deltaMass = massSigmac - massLambdaC;
+          deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacZeroSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacZeroSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacZeroSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacZeroSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroSig"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroSigPrompt"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroSigNonPrompt"), deltaMass, ptSigmac, (double)channel); // Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacZeroSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacZeroSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacZeroSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacZeroSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacZeroSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacZeroSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacZeroSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacZeroSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSig"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSigPrompt"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtScZeroSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScZeroSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScZeroSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScZeroSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroSig"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroSigPrompt"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroSigNonPrompt"), deltaMass, ptSc, (double)channel); // Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScZeroSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScZeroSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScZeroSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScZeroSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScZeroSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacZeroPlusPlusSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacZeroPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacZeroPlusPlusSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacZeroPlusPlusSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSig"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigPrompt"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptSigmac, (double)channel); // Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtScZeroPlusPlusSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScZeroPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScZeroPlusPlusSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScZeroPlusPlusSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSig"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigPrompt"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigNonPrompt"), deltaMass, ptSc, (double)channel); // Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
       }   /// end reconstructed Σc0 signal
 
       /// Reconstructed Σc++ signal
-      else if (std::abs(candSigmac.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::SigmacplusplusToPKPiPi && (std::abs(chargeSigmac) == 2)) {
-        // Get the corresponding MC particle for Sigmac, found as the mother of the soft pion
-        auto indexMcSigmacRec = RecoDecay::getMother(particlesMc, candSigmac.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandSigmacMcGen>>(), pdg::Code::kSigmac0, true);
-        auto particleSigmac = particlesMc.rawIteratorAt(indexMcSigmacRec);
+      else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
+        // Get the corresponding MC particle for Sc, found as the mother of the soft pion
+        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandScMcGen>>(), pdg::Code::kSigmacPlusPlus, true);
+        auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = array{candLambdaC.prong0_as<aod::BigTracksMC>(), candLambdaC.prong1_as<aod::BigTracksMC>(), candLambdaC.prong2_as<aod::BigTracksMC>()};
         int8_t sign = 0;
         int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLambdaC = particlesMc.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
-        auto particleSoftPi = candSigmac.prong1_as<aod::BigTracksMC>().mcParticle();
+        auto particleSoftPi = candSc.prong1_as<aod::BigTracksMC>().mcParticle();
 
-        // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSigmac.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-        // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSigmac.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-        double massSigmac(-1.), massLambdaC(-1.), deltaMass(-1.);
-        double ptSigmac(candSigmac.pt()), ptLambdaC(candLambdaC.pt());
-        double etaSigmac(candSigmac.eta()), etaLambdaC(candLambdaC.eta());
-        double phiSigmac(candSigmac.phi()), phiLambdaC(candLambdaC.phi());
-        double ptSoftPi(candSigmac.prong1().pt()), etaSoftPi(candSigmac.prong1().eta()), phiSoftPi(candSigmac.prong1().phi());
-        double ptGenSigmac(particleSigmac.pt()), ptGenLambdaC(particleLambdaC.pt()), ptGenSoftPi(particleSoftPi.pt());
-        int origin = candSigmac.originMcRec();
+        // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+        // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+        double massSc(-1.), massLambdaC(-1.), deltaMass(-1.);
+        double ptSc(candSc.pt()), ptLambdaC(candLambdaC.pt());
+        double etaSc(candSc.eta()), etaLambdaC(candLambdaC.eta());
+        double phiSc(candSc.phi()), phiLambdaC(candLambdaC.phi());
+        double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+        double ptGenSc(particleSc.pt()), ptGenLambdaC(particleLambdaC.pt()), ptGenSoftPi(particleSoftPi.pt());
+        int origin = candSc.originMcRec();
         auto channel = candLambdaC.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
-          massSigmac = invMassScRecoLcToPKPi(candSigmac);
+          massSc = invMassScRecoLcToPKPi(candSc);
           massLambdaC = invMassLcToPKPi(candLambdaC);
-          deltaMass = massSigmac - massLambdaC;
+          deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacPlusPlusSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacPlusPlusSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacPlusPlusSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacPlusPlusSig"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacPlusPlusSigPrompt"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacPlusPlusSigNonPrompt"), deltaMass, ptSigmac, (double)channel); // Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtScPlusPlusSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScPlusPlusSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScPlusPlusSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSig"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, (double)channel); // Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacZeroPlusPlusSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacZeroPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacZeroPlusPlusSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacZeroPlusPlusSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSig"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigPrompt"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptSigmac, (double)channel); // Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtScZeroPlusPlusSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScZeroPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScZeroPlusPlusSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScZeroPlusPlusSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSig"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigPrompt"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigNonPrompt"), deltaMass, ptSc, (double)channel); // Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
-          massSigmac = invMassScRecoLcToPiKP(candSigmac);
+          massSc = invMassScRecoLcToPiKP(candSc);
           massLambdaC = invMassLcToPiKP(candLambdaC);
-          deltaMass = massSigmac - massLambdaC;
+          deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacPlusPlusSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacPlusPlusSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacPlusPlusSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacPlusPlusSig"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacPlusPlusSigPrompt"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacPlusPlusSigNonPrompt"), deltaMass, ptSigmac, (double)channel); // Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtScPlusPlusSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScPlusPlusSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScPlusPlusSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSig"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, (double)channel); // Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSigmacZeroPlusPlusSig"), ptSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSigmacZeroPlusPlusSig"), ptGenSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSigmacZeroPlusPlusSig"), etaSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSigmacZeroPlusPlusSig"), phiSigmac, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSig"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigPrompt"), deltaMass, ptSigmac, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptSigmac, (double)channel); // Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtSoftPiSigmacZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSigmacZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaSoftPiSigmacZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSigmacZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
-          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromSigmacZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromSigmacZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromSigmacZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromSigmacZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromSigmacZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtScZeroPlusPlusSig"), ptSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenScZeroPlusPlusSig"), ptGenSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaScZeroPlusPlusSig"), etaSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiScZeroPlusPlusSig"), phiSc, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSig"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigPrompt"), deltaMass, ptSc, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassScZeroPlusPlusSigNonPrompt"), deltaMass, ptSc, (double)channel); // Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtSoftPiScZeroPlusPlusSig"), ptSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScZeroPlusPlusSig"), ptGenSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaSoftPiScZeroPlusPlusSig"), etaSoftPi, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScZeroPlusPlusSig"), phiSoftPi, (double)origin, (double)channel); // π ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPtLambdaCFromScZeroPlusPlusSig"), ptLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
       }   /// end reconstructed Σc++ signal
@@ -731,10 +731,10 @@ struct HfTaskSigmac {
     } /// end loop on reconstructed Σc0,++
 
   }; /// end processMc
-  PROCESS_SWITCH(HfTaskSigmac, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfTaskSc, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskSigmac>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSc>(cfgc)};
 }
