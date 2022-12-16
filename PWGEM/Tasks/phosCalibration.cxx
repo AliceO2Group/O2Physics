@@ -65,13 +65,15 @@ struct phosCalibration {
   };
 
   Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0.3, "Minimum cell amplitude for histograms."};
+  Configurable<double> mCellTimeMinE{"minCellTimeAmp", 100, "Minimum cell amplitude for time histograms (ADC)"};
   Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50.e-9, "Min. cell time of main bunch selection"};
   Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100.e-9, "Max. cell time of main bunch selection"};
+  Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
   Configurable<uint32_t> mL1{"L1", 0, "L1 phase"};
 
   HistogramRegistry mHistManager{"phosCallQAHistograms"};
 
-  std::unique_ptr<o2::phos::Geometry> geom;
+  o2::phos::Geometry* geom; // singleton
   std::unique_ptr<o2::phos::Clusterer> clusterizer;
   std::vector<o2::phos::Cell> phosCells;
   std::vector<o2::phos::TriggerRecord> phosCellTRs;
@@ -91,7 +93,7 @@ struct phosCalibration {
 
     const AxisSpec
       bcAxis{4, 0., 4., "bc%4"},
-      modAxis{4, 0., 5., "module", "Module"},
+      modAxis{4, 1., 5., "module", "Module"},
       timeAxis{200, -50.e-9, 150.e-9, "t (s)"},
       timeDdlAxis{200, -200.e-9, 400.e-9, "t (s)"},
       timeAxisLarge{1000, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
@@ -106,18 +108,24 @@ struct phosCalibration {
     mHistManager.add("eventsAll", "Number of events", HistType::kTH1F, {{2, 0., 2.}});
 
     // Cells
-    mHistManager.add("cellOcc", "Cell occupancy per module", HistType::kTH3F, {cellXAxis, cellZAxis, modAxis});
-    mHistManager.add("cellAmp", "Cell amplitude per module", HistType::kTH3F, {cellXAxis, cellZAxis, modAxis});
-    mHistManager.add("cellTime", "Time per module", HistType::kTH2F, {absIdAxis, timeAxis});
+    mHistManager.add("cellOcc", "Cell occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
+    mHistManager.add("cellAmp", "Cell amplitude per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
+    mHistManager.add("cellTimeHG", "Time per cell, High Gain", HistType::kTH2F, {absIdAxis, timeAxis});
+    mHistManager.add("cellTimeLG", "Time per cell, Low Gain", HistType::kTH2F, {absIdAxis, timeAxis});
     mHistManager.add("timeDDL", "time vs bc for DDL", HistType::kTH3F, {timeDdlAxis, bcAxis, ddlAxis});
 
     // Clusters
-    mHistManager.add("cluLowOcc", "Soft clu occupancy per module", HistType::kTH3F, {cellXAxis, cellZAxis, modAxis});
-    mHistManager.add("cluHighOcc", "Hard clu occupancy per module", HistType::kTH3F, {cellXAxis, cellZAxis, modAxis});
-    mHistManager.add("cluTimeE", "Time vs E", HistType::kTH3F, {amplitudeAxisLarge, timeAxis, modAxis});
-    mHistManager.add("cluMggRe", "Real m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
-    mHistManager.add("cluMggMi", "Mixed m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
+    mHistManager.add("hSoftClu", "Soft clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
+    mHistManager.add("hHardClu", "Hard clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
+    mHistManager.add("hSpClu", "Spectra", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
+    mHistManager.add("hTimeEClu", "Time vs E vs DDL", HistType::kTH3F, {ddlAxis, amplitudeAxisLarge, timeAxis});
+    mHistManager.add("hTimeDdlCorr", "Time vs DDL", HistType::kTH2F, {ddlAxis, timeAxis});
+    mHistManager.add("hRemgg", "Real m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
+    mHistManager.add("hMimgg", "Mixed m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
+    mHistManager.add("hResum", "Real m_{#gamma#gamma}", HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
+    mHistManager.add("hMisum", "Mixed m_{#gamma#gamma}", HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
 
+    geom = o2::phos::Geometry::GetInstance("Run3");
     LOG(info) << "Calibration configured ...";
   }
 
@@ -188,6 +196,7 @@ struct phosCalibration {
         // Next event/trig rec.
         ir.setFromLong(c.bc().globalBC());
         phosCellTRs.emplace_back(ir, phosCells.size(), 0);
+        mHistManager.fill(HIST("eventsAll"), 1.);
       }
       phosCells.emplace_back(c.cellNumber(), c.amplitude(), c.time(),
                              static_cast<o2::phos::ChannelType_t>(c.cellType()));
@@ -197,7 +206,8 @@ struct phosCalibration {
         continue;
       char relid[3];
       o2::phos::Geometry::absToRelNumbering(c.cellNumber(), relid);
-      mHistManager.fill(HIST("cellOcc"), relid[0] - 1., relid[1] - 0.5, relid[2] - 0.5);
+      mHistManager.fill(HIST("cellOcc"), relid[0], relid[1], relid[2]);
+      mHistManager.fill(HIST("cellAmp"), relid[0], relid[1], relid[2], c.amplitude());
 
       int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
       uint64_t bc = c.bc().globalBC();
@@ -207,12 +217,21 @@ struct phosCalibration {
         shift += 4;
       }
       float tcorr = c.time() - shift * 25.e-9;
-      mHistManager.fill(HIST("timeDDL"), bc % 4, tcorr, ddl);
-      mHistManager.fill(HIST("cellTime"), c.cellNumber(), tcorr);
+      if (c.amplitude() > mCellTimeMinE) {
+        mHistManager.fill(HIST("timeDDL"), tcorr, bc % 4, ddl);
+        if (c.cellType() == o2::phos::HIGH_GAIN) {
+          mHistManager.fill(HIST("cellTimeHG"), c.cellNumber(), tcorr);
+        } else {
+          if (c.cellType() == o2::phos::LOW_GAIN) {
+            mHistManager.fill(HIST("cellTimeLG"), c.cellNumber(), tcorr);
+          }
+        }
+      }
     }
     // Set number of cells in last TrigRec
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
+      mHistManager.fill(HIST("eventsAll"), 1.);
     }
 
     // Clusterize
@@ -256,22 +275,22 @@ struct phosCalibration {
         phos::Geometry::absToRelNumbering(absId, relid);
         int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
         int al1 = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
-        al1 = tr.getBCData().bc % 4 - al1;
+        al1 = tr.getBCData().toLong() % 4 - al1;
         if (al1 < 0)
           al1 += 4;
         float tcorr = clu.getTime() - al1 * 25.e-9;
 
         mHistManager.fill(HIST("hTimeEClu"), ddl, e, tcorr);
-        mHistManager.fill(HIST("hSpClu"), mod - 1, e);
+        mHistManager.fill(HIST("hSpClu"), e, mod);
         if (e > 0.5) {
           mHistManager.fill(HIST("hTimeDdlCorr"), static_cast<float>(ddl), tcorr);
         }
 
         if (e > 0.5) {
-          mHistManager.fill(HIST("hSoftClu"), mod - 0.5, relid[1] - 0.5, relid[2] - 0.5);
+          mHistManager.fill(HIST("hSoftClu"), mod, relid[1], relid[2]);
         }
         if (e > 1.5) {
-          mHistManager.fill(HIST("hHardClu"), mod - 0.5, relid[1] - 0.5, relid[2] - 0.5);
+          mHistManager.fill(HIST("hHardClu"), mod, relid[1], relid[2]);
         }
 
         TVector3 globaPos;
@@ -299,19 +318,25 @@ struct phosCalibration {
     // Make Real and Mixed
     for (size_t i = 0; i < event.size() - 1; i++) {
       int absId1 = event[i].getAbsId();
-      for (size_t j = i + 1; j < event.size(); j++) {
+      int nMix = mMixedEvents; // Number of events to mix
+      uint64_t bcurrent = 0;
+      for (size_t j = i + 1; nMix && (j < event.size()); j++) {
         TLorentzVector s = event[i] + event[j];
         int absId2 = event[j].getAbsId();
+        if (event[j].getBC() != bcurrent) {
+          --nMix;
+          bcurrent = event[j].getBC();
+        }
         if (s.Pt() > 2.) {
           if (!event[j].isBad()) {
-            if (event[j].getBC() == event[j].getBC()) {
+            if (event[i].getBC() == event[j].getBC()) {
               mHistManager.fill(HIST("hRemgg"), absId1, s.M());
             } else {
               mHistManager.fill(HIST("hMimgg"), absId1, s.M());
             }
           }
           if (!event[i].isBad()) {
-            if (event[j].getBC() == event[j].getBC()) {
+            if (event[i].getBC() == event[j].getBC()) {
               mHistManager.fill(HIST("hRemgg"), absId2, s.M());
             } else {
               mHistManager.fill(HIST("hMimgg"), absId2, s.M());
@@ -319,7 +344,7 @@ struct phosCalibration {
           }
         }
         if (!event[i].isBad() && !event[j].isBad()) {
-          if (event[j].getBC() == event[j].getBC()) {
+          if (event[i].getBC() == event[j].getBC()) {
             mHistManager.fill(HIST("hResum"), s.M(), s.Pt());
           } else {
             mHistManager.fill(HIST("hMisum"), s.M(), s.Pt());

@@ -31,6 +31,7 @@
 #include "Framework/StaticFor.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "spectraTOF.h"
 
 #include "TPDGCode.h"
 
@@ -39,17 +40,8 @@ using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// #define ADDRUN2
-
 // Spectra task
 struct tofSpectra {
-  static constexpr PID::ID Np = 9;
-  static constexpr PID::ID NpCharge = Np * 2;
-  static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
-  static constexpr const char* pTCharge[NpCharge] = {"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "d", "t", "{}^{3}He", "#alpha",
-                                                     "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}", "#bar{d}", "#bar{t}", "{}^{3}#bar{He}", "#bar{#alpha}"};
-  static constexpr int PDGs[NpCharge] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
-                                         -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -59,180 +51,16 @@ struct tofSpectra {
   ConfigurableAxis binsnsigmaTOF{"binsnsigmaTOF", {200, -10, 10}, "Binning of the nsigmaTOF axis"};
   ConfigurableAxis binsdeltaTPC{"binsdeltaTPC", {500, -1000, 1000}, "Binning of the nsigmaTPC axis"};
   ConfigurableAxis binsdeltaTOF{"binsdeltaTOF", {500, -1000, 1000}, "Binning of the nsigmaTOF axis"};
-#ifndef ADDRUN2
-  Configurable<bool> doprocessLfTinyEl{"doprocessLfTinyEl", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyMu{"doprocessLfTinyMu", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyPi{"doprocessLfTinyPi", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyKa{"doprocessLfTinyKa", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyPr{"doprocessLfTinyPr", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyDe{"doprocessLfTinyDe", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyTr{"doprocessLfTinyTr", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyHe{"doprocessLfTinyHe", false, "Dummy flag to process tiny with LF tables"};
-  Configurable<bool> doprocessLfTinyAl{"doprocessLfTinyAl", false, "Dummy flag to process tiny with LF tables"};
-
-  Configurable<bool> doprocessTinyRun2El{"doprocessTinyRun2El", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2Mu{"doprocessTinyRun2Mu", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2Pi{"doprocessTinyRun2Pi", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2Ka{"doprocessTinyRun2Ka", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2Pr{"doprocessTinyRun2Pr", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2De{"doprocessTinyRun2De", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2Tr{"doprocessTinyRun2Tr", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2He{"doprocessTinyRun2He", false, "Dummy flag to process tiny Run2"};
-  Configurable<bool> doprocessTinyRun2Al{"doprocessTinyRun2Al", false, "Dummy flag to process tiny Run2"};
-
-  Configurable<bool> doprocessFullRun2El{"doprocessFullRun2El", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2Mu{"doprocessFullRun2Mu", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2Pi{"doprocessFullRun2Pi", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2Ka{"doprocessFullRun2Ka", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2Pr{"doprocessFullRun2Pr", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2De{"doprocessFullRun2De", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2Tr{"doprocessFullRun2Tr", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2He{"doprocessFullRun2He", false, "Dummy flag to process full Run2"};
-  Configurable<bool> doprocessFullRun2Al{"doprocessFullRun2Al", false, "Dummy flag to process full Run2"};
-#endif
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Multiplicity"};
   ConfigurableAxis binsMultPercentile{"binsMultPercentile", {100, 0, 100}, "Multiplicity percentile"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  static constexpr std::string_view hnsigmatpctof[NpCharge] = {"nsigmatpctof/pos/el", "nsigmatpctof/pos/mu", "nsigmatpctof/pos/pi",
-                                                               "nsigmatpctof/pos/ka", "nsigmatpctof/pos/pr", "nsigmatpctof/pos/de",
-                                                               "nsigmatpctof/pos/tr", "nsigmatpctof/pos/he", "nsigmatpctof/pos/al",
-                                                               "nsigmatpctof/neg/el", "nsigmatpctof/neg/mu", "nsigmatpctof/neg/pi",
-                                                               "nsigmatpctof/neg/ka", "nsigmatpctof/neg/pr", "nsigmatpctof/neg/de",
-                                                               "nsigmatpctof/neg/tr", "nsigmatpctof/neg/he", "nsigmatpctof/neg/al"};
-  static constexpr std::string_view hnsigmatof[NpCharge] = {"nsigmatof/pos/el", "nsigmatof/pos/mu", "nsigmatof/pos/pi",
-                                                            "nsigmatof/pos/ka", "nsigmatof/pos/pr", "nsigmatof/pos/de",
-                                                            "nsigmatof/pos/tr", "nsigmatof/pos/he", "nsigmatof/pos/al",
-                                                            "nsigmatof/neg/el", "nsigmatof/neg/mu", "nsigmatof/neg/pi",
-                                                            "nsigmatof/neg/ka", "nsigmatof/neg/pr", "nsigmatof/neg/de",
-                                                            "nsigmatof/neg/tr", "nsigmatof/neg/he", "nsigmatof/neg/al"};
-  static constexpr std::string_view hnsigmatpc[NpCharge] = {"nsigmatpc/pos/el", "nsigmatpc/pos/mu", "nsigmatpc/pos/pi",
-                                                            "nsigmatpc/pos/ka", "nsigmatpc/pos/pr", "nsigmatpc/pos/de",
-                                                            "nsigmatpc/pos/tr", "nsigmatpc/pos/he", "nsigmatpc/pos/al",
-                                                            "nsigmatpc/neg/el", "nsigmatpc/neg/mu", "nsigmatpc/neg/pi",
-                                                            "nsigmatpc/neg/ka", "nsigmatpc/neg/pr", "nsigmatpc/neg/de",
-                                                            "nsigmatpc/neg/tr", "nsigmatpc/neg/he", "nsigmatpc/neg/al"};
-  static constexpr std::string_view hdeltatof[NpCharge] = {"deltatof/pos/el", "deltatof/pos/mu", "deltatof/pos/pi",
-                                                           "deltatof/pos/ka", "deltatof/pos/pr", "deltatof/pos/de",
-                                                           "deltatof/pos/tr", "deltatof/pos/he", "deltatof/pos/al",
-                                                           "deltatof/neg/el", "deltatof/neg/mu", "deltatof/neg/pi",
-                                                           "deltatof/neg/ka", "deltatof/neg/pr", "deltatof/neg/de",
-                                                           "deltatof/neg/tr", "deltatof/neg/he", "deltatof/neg/al"};
-  static constexpr std::string_view hdeltatpc[NpCharge] = {"deltatpc/pos/el", "deltatpc/pos/mu", "deltatpc/pos/pi",
-                                                           "deltatpc/pos/ka", "deltatpc/pos/pr", "deltatpc/pos/de",
-                                                           "deltatpc/pos/tr", "deltatpc/pos/he", "deltatpc/pos/al",
-                                                           "deltatpc/neg/el", "deltatpc/neg/mu", "deltatpc/neg/pi",
-                                                           "deltatpc/neg/ka", "deltatpc/neg/pr", "deltatpc/neg/de",
-                                                           "deltatpc/neg/tr", "deltatpc/neg/he", "deltatpc/neg/al"};
-  static constexpr std::string_view hdcaxy[NpCharge] = {"dcaxy/pos/el", "dcaxy/pos/mu", "dcaxy/pos/pi",
-                                                        "dcaxy/pos/ka", "dcaxy/pos/pr", "dcaxy/pos/de",
-                                                        "dcaxy/pos/tr", "dcaxy/pos/he", "dcaxy/pos/al",
-                                                        "dcaxy/neg/el", "dcaxy/neg/mu", "dcaxy/neg/pi",
-                                                        "dcaxy/neg/ka", "dcaxy/neg/pr", "dcaxy/neg/de",
-                                                        "dcaxy/neg/tr", "dcaxy/neg/he", "dcaxy/neg/al"};
-  static constexpr std::string_view hdcaz[NpCharge] = {"dcaz/pos/el", "dcaz/pos/mu", "dcaz/pos/pi",
-                                                       "dcaz/pos/ka", "dcaz/pos/pr", "dcaz/pos/de",
-                                                       "dcaz/pos/tr", "dcaz/pos/he", "dcaz/pos/al",
-                                                       "dcaz/neg/el", "dcaz/neg/mu", "dcaz/neg/pi",
-                                                       "dcaz/neg/ka", "dcaz/neg/pr", "dcaz/neg/de",
-                                                       "dcaz/neg/tr", "dcaz/neg/he", "dcaz/neg/al"};
-  static constexpr std::string_view hdcaxyphi[NpCharge] = {"dcaxyphi/pos/el", "dcaxyphi/pos/mu", "dcaxyphi/pos/pi",
-                                                           "dcaxyphi/pos/ka", "dcaxyphi/pos/pr", "dcaxyphi/pos/de",
-                                                           "dcaxyphi/pos/tr", "dcaxyphi/pos/he", "dcaxyphi/pos/al",
-                                                           "dcaxyphi/neg/el", "dcaxyphi/neg/mu", "dcaxyphi/neg/pi",
-                                                           "dcaxyphi/neg/ka", "dcaxyphi/neg/pr", "dcaxyphi/neg/de",
-                                                           "dcaxyphi/neg/tr", "dcaxyphi/neg/he", "dcaxyphi/neg/al"};
-  // MC
-  static constexpr std::string_view hpt_num_prm[NpCharge] = {"MC/el/pos/prm/pt/num", "MC/mu/pos/prm/pt/num", "MC/pi/pos/prm/pt/num",
-                                                             "MC/ka/pos/prm/pt/num", "MC/pr/pos/prm/pt/num", "MC/de/pos/prm/pt/num",
-                                                             "MC/tr/pos/prm/pt/num", "MC/he/pos/prm/pt/num", "MC/al/pos/prm/pt/num",
-                                                             "MC/el/neg/prm/pt/num", "MC/mu/neg/prm/pt/num", "MC/pi/neg/prm/pt/num",
-                                                             "MC/ka/neg/prm/pt/num", "MC/pr/neg/prm/pt/num", "MC/de/neg/prm/pt/num",
-                                                             "MC/tr/neg/prm/pt/num", "MC/he/neg/prm/pt/num", "MC/al/neg/prm/pt/num"};
-  static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/numtof", "MC/mu/pos/prm/pt/numtof", "MC/pi/pos/prm/pt/numtof",
-                                                                "MC/ka/pos/prm/pt/numtof", "MC/pr/pos/prm/pt/numtof", "MC/de/pos/prm/pt/numtof",
-                                                                "MC/tr/pos/prm/pt/numtof", "MC/he/pos/prm/pt/numtof", "MC/al/pos/prm/pt/numtof",
-                                                                "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
-                                                                "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
-                                                                "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
-  static constexpr std::string_view hpt_den_prm[NpCharge] = {"MC/el/pos/prm/pt/den", "MC/mu/pos/prm/pt/den", "MC/pi/pos/prm/pt/den",
-                                                             "MC/ka/pos/prm/pt/den", "MC/pr/pos/prm/pt/den", "MC/de/pos/prm/pt/den",
-                                                             "MC/tr/pos/prm/pt/den", "MC/he/pos/prm/pt/den", "MC/al/pos/prm/pt/den",
-                                                             "MC/el/neg/prm/pt/den", "MC/mu/neg/prm/pt/den", "MC/pi/neg/prm/pt/den",
-                                                             "MC/ka/neg/prm/pt/den", "MC/pr/neg/prm/pt/den", "MC/de/neg/prm/pt/den",
-                                                             "MC/tr/neg/prm/pt/den", "MC/he/neg/prm/pt/den", "MC/al/neg/prm/pt/den"};
-  static constexpr std::string_view hpt_num_str[NpCharge] = {"MC/el/pos/str/pt/num", "MC/mu/pos/str/pt/num", "MC/pi/pos/str/pt/num",
-                                                             "MC/ka/pos/str/pt/num", "MC/pr/pos/str/pt/num", "MC/de/pos/str/pt/num",
-                                                             "MC/tr/pos/str/pt/num", "MC/he/pos/str/pt/num", "MC/al/pos/str/pt/num",
-                                                             "MC/el/neg/str/pt/num", "MC/mu/neg/str/pt/num", "MC/pi/neg/str/pt/num",
-                                                             "MC/ka/neg/str/pt/num", "MC/pr/neg/str/pt/num", "MC/de/neg/str/pt/num",
-                                                             "MC/tr/neg/str/pt/num", "MC/he/neg/str/pt/num", "MC/al/neg/str/pt/num"};
-  static constexpr std::string_view hpt_den_str[NpCharge] = {"MC/el/pos/str/pt/den", "MC/mu/pos/str/pt/den", "MC/pi/pos/str/pt/den",
-                                                             "MC/ka/pos/str/pt/den", "MC/pr/pos/str/pt/den", "MC/de/pos/str/pt/den",
-                                                             "MC/tr/pos/str/pt/den", "MC/he/pos/str/pt/den", "MC/al/pos/str/pt/den",
-                                                             "MC/el/neg/str/pt/den", "MC/mu/neg/str/pt/den", "MC/pi/neg/str/pt/den",
-                                                             "MC/ka/neg/str/pt/den", "MC/pr/neg/str/pt/den", "MC/de/neg/str/pt/den",
-                                                             "MC/tr/neg/str/pt/den", "MC/he/neg/str/pt/den", "MC/al/neg/str/pt/den"};
-  static constexpr std::string_view hpt_num_mat[NpCharge] = {"MC/el/pos/mat/pt/num", "MC/mu/pos/mat/pt/num", "MC/pi/pos/mat/pt/num",
-                                                             "MC/ka/pos/mat/pt/num", "MC/pr/pos/mat/pt/num", "MC/de/pos/mat/pt/num",
-                                                             "MC/tr/pos/mat/pt/num", "MC/he/pos/mat/pt/num", "MC/al/pos/mat/pt/num",
-                                                             "MC/el/neg/mat/pt/num", "MC/mu/neg/mat/pt/num", "MC/pi/neg/mat/pt/num",
-                                                             "MC/ka/neg/mat/pt/num", "MC/pr/neg/mat/pt/num", "MC/de/neg/mat/pt/num",
-                                                             "MC/tr/neg/mat/pt/num", "MC/he/neg/mat/pt/num", "MC/al/neg/mat/pt/num"};
-  static constexpr std::string_view hpt_den_mat[NpCharge] = {"MC/el/pos/mat/pt/den", "MC/mu/pos/mat/pt/den", "MC/pi/pos/mat/pt/den",
-                                                             "MC/ka/pos/mat/pt/den", "MC/pr/pos/mat/pt/den", "MC/de/pos/mat/pt/den",
-                                                             "MC/tr/pos/mat/pt/den", "MC/he/pos/mat/pt/den", "MC/al/pos/mat/pt/den",
-                                                             "MC/el/neg/mat/pt/den", "MC/mu/neg/mat/pt/den", "MC/pi/neg/mat/pt/den",
-                                                             "MC/ka/neg/mat/pt/den", "MC/pr/neg/mat/pt/den", "MC/de/neg/mat/pt/den",
-                                                             "MC/tr/neg/mat/pt/den", "MC/he/neg/mat/pt/den", "MC/al/neg/mat/pt/den"};
-  static constexpr std::string_view hdcaxyprm[NpCharge] = {"dcaxyprm/pos/el", "dcaxyprm/pos/mu", "dcaxyprm/pos/pi",
-                                                           "dcaxyprm/pos/ka", "dcaxyprm/pos/pr", "dcaxyprm/pos/de",
-                                                           "dcaxyprm/pos/tr", "dcaxyprm/pos/he", "dcaxyprm/pos/al",
-                                                           "dcaxyprm/neg/el", "dcaxyprm/neg/mu", "dcaxyprm/neg/pi",
-                                                           "dcaxyprm/neg/ka", "dcaxyprm/neg/pr", "dcaxyprm/neg/de",
-                                                           "dcaxyprm/neg/tr", "dcaxyprm/neg/he", "dcaxyprm/neg/al"};
-  static constexpr std::string_view hdcazprm[NpCharge] = {"dcazprm/pos/el", "dcazprm/pos/mu", "dcazprm/pos/pi",
-                                                          "dcazprm/pos/ka", "dcazprm/pos/pr", "dcazprm/pos/de",
-                                                          "dcazprm/pos/tr", "dcazprm/pos/he", "dcazprm/pos/al",
-                                                          "dcazprm/neg/el", "dcazprm/neg/mu", "dcazprm/neg/pi",
-                                                          "dcazprm/neg/ka", "dcazprm/neg/pr", "dcazprm/neg/de",
-                                                          "dcazprm/neg/tr", "dcazprm/neg/he", "dcazprm/neg/al"};
-  static constexpr std::string_view hdcaxystr[NpCharge] = {"dcaxystr/pos/el", "dcaxystr/pos/mu", "dcaxystr/pos/pi",
-                                                           "dcaxystr/pos/ka", "dcaxystr/pos/pr", "dcaxystr/pos/de",
-                                                           "dcaxystr/pos/tr", "dcaxystr/pos/he", "dcaxystr/pos/al",
-                                                           "dcaxystr/neg/el", "dcaxystr/neg/mu", "dcaxystr/neg/pi",
-                                                           "dcaxystr/neg/ka", "dcaxystr/neg/pr", "dcaxystr/neg/de",
-                                                           "dcaxystr/neg/tr", "dcaxystr/neg/he", "dcaxystr/neg/al"};
-  static constexpr std::string_view hdcazstr[NpCharge] = {"dcazstr/pos/el", "dcazstr/pos/mu", "dcazstr/pos/pi",
-                                                          "dcazstr/pos/ka", "dcazstr/pos/pr", "dcazstr/pos/de",
-                                                          "dcazstr/pos/tr", "dcazstr/pos/he", "dcazstr/pos/al",
-                                                          "dcazstr/neg/el", "dcazstr/neg/mu", "dcazstr/neg/pi",
-                                                          "dcazstr/neg/ka", "dcazstr/neg/pr", "dcazstr/neg/de",
-                                                          "dcazstr/neg/tr", "dcazstr/neg/he", "dcazstr/neg/al"};
-  static constexpr std::string_view hdcaxymat[NpCharge] = {"dcaxymat/pos/el", "dcaxymat/pos/mu", "dcaxymat/pos/pi",
-                                                           "dcaxymat/pos/ka", "dcaxymat/pos/pr", "dcaxymat/pos/de",
-                                                           "dcaxymat/pos/tr", "dcaxymat/pos/he", "dcaxymat/pos/al",
-                                                           "dcaxymat/neg/el", "dcaxymat/neg/mu", "dcaxymat/neg/pi",
-                                                           "dcaxymat/neg/ka", "dcaxymat/neg/pr", "dcaxymat/neg/de",
-                                                           "dcaxymat/neg/tr", "dcaxymat/neg/he", "dcaxymat/neg/al"};
-  static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazmat/pos/mu", "dcazmat/pos/pi",
-                                                          "dcazmat/pos/ka", "dcazmat/pos/pr", "dcazmat/pos/de",
-                                                          "dcazmat/pos/tr", "dcazmat/pos/he", "dcazmat/pos/al",
-                                                          "dcazmat/neg/el", "dcazmat/neg/mu", "dcazmat/neg/pi",
-                                                          "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
-                                                          "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
 
   void init(o2::framework::InitContext&)
   {
     // Standard process functions
-    if (doprocessRun3) {
-      LOG(info) << "Enabling process function processRun3";
-    }
-    if (doprocessRun2) {
-      LOG(info) << "Enabling process function processRun2";
-    }
     // Full
     if (doprocessFullEl) {
       LOG(info) << "Enabling process function processFullEl";
@@ -345,120 +173,7 @@ struct tofSpectra {
     if (doprocessLfTinyAl) {
       LOG(info) << "Enabling process function processLfTinyAl";
     }
-    // Full Run 2
-    if (doprocessFullRun2El) {
-      LOG(info) << "Enabling process function processFullRun2El";
-      if (doprocessFullEl) {
-        LOG(fatal) << "Cannot have doprocessFullEl as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2Mu) {
-      LOG(info) << "Enabling process function processFullRun2Mu";
-      if (doprocessFullMu) {
-        LOG(fatal) << "Cannot have doprocessFullMu as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2Pi) {
-      LOG(info) << "Enabling process function processFullRun2Pi";
-      if (doprocessFullPi) {
-        LOG(fatal) << "Cannot have doprocessFullPi as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2Ka) {
-      LOG(info) << "Enabling process function processFullRun2Ka";
-      if (doprocessFullKa) {
-        LOG(fatal) << "Cannot have doprocessFullKa as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2Pr) {
-      LOG(info) << "Enabling process function processFullRun2Pr";
-      if (doprocessFullPr) {
-        LOG(fatal) << "Cannot have doprocessFullPr as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2De) {
-      LOG(info) << "Enabling process function processFullRun2De";
-      if (doprocessFullDe) {
-        LOG(fatal) << "Cannot have doprocessFullDe as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2Tr) {
-      LOG(info) << "Enabling process function processFullRun2Tr";
-      if (doprocessFullTr) {
-        LOG(fatal) << "Cannot have doprocessFullTr as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2He) {
-      LOG(info) << "Enabling process function processFullRun2He";
-      if (doprocessFullHe) {
-        LOG(fatal) << "Cannot have doprocessFullHe as well, please pick one";
-      }
-    }
-    if (doprocessFullRun2Al) {
-      LOG(info) << "Enabling process function processFullRun2Al";
-      if (doprocessFullAl) {
-        LOG(fatal) << "Cannot have doprocessFullAl as well, please pick one";
-      }
-    }
-    // Tiny Run2
-    if (doprocessTinyRun2El) {
-      LOG(info) << "Enabling process function processTinyRun2El";
-      if (doprocessTinyEl) {
-        LOG(fatal) << "Cannot have doprocessTinyEl as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2Mu) {
-      LOG(info) << "Enabling process function processTinyRun2Mu";
-      if (doprocessTinyMu) {
-        LOG(fatal) << "Cannot have doprocessTinyMu as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2Pi) {
-      LOG(info) << "Enabling process function processTinyRun2Pi";
-      if (doprocessTinyPi) {
-        LOG(fatal) << "Cannot have doprocessTinyPi as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2Ka) {
-      LOG(info) << "Enabling process function processTinyRun2Ka";
-      if (doprocessTinyKa) {
-        LOG(fatal) << "Cannot have doprocessTinyKa as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2Pr) {
-      LOG(info) << "Enabling process function processTinyRun2Pr";
-      if (doprocessTinyPr) {
-        LOG(fatal) << "Cannot have doprocessTinyPr as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2De) {
-      LOG(info) << "Enabling process function processTinyRun2De";
-      if (doprocessTinyDe) {
-        LOG(fatal) << "Cannot have doprocessTinyDe as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2Tr) {
-      LOG(info) << "Enabling process function processTinyRun2Tr";
-      if (doprocessTinyTr) {
-        LOG(fatal) << "Cannot have doprocessTinyTr as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2He) {
-      LOG(info) << "Enabling process function processTinyRun2He";
-      if (doprocessTinyHe) {
-        LOG(fatal) << "Cannot have doprocessTinyHe as well, please pick one";
-      }
-    }
-    if (doprocessTinyRun2Al) {
-      LOG(info) << "Enabling process function processTinyRun2Al";
-      if (doprocessTinyAl) {
-        LOG(fatal) << "Cannot have doprocessTinyAl as well, please pick one";
-      }
-    }
     // Checking consistency
-    if (doprocessRun2 == true && doprocessRun3 == true) {
-      LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
-    }
     if (doprocessFullEl == true && doprocessTinyEl == true) {
       LOGF(fatal, "Cannot enable processFullEl and processTinyEl at the same time. Please choose one.");
     }
@@ -686,7 +401,7 @@ struct tofSpectra {
     }
   }
 
-  template <bool fillFullInfo, bool useRun3Multiplicity, PID::ID id, typename T, typename C>
+  template <bool fillFullInfo, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& collision)
   {
     if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
@@ -697,35 +412,33 @@ struct tofSpectra {
     // const auto id = track.sign() > 0 ? id : id + Np;
     float multiplicity = 0.f;
 
-    if constexpr (useRun3Multiplicity) {
-      switch (multiplicityEstimator) {
-        case 1: // MultFV0M
-          // multiplicity = collision.multFV0M();
-          // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
-          multiplicity = collision.multZeqFV0A();
-          break;
-        case 2: // MultFT0M
-          // multiplicity = collision.multFT0M();
-          multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-          break;
-        case 3: // MultFDDM
-          // multiplicity = collision.multFDDM();
-          multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
-          break;
-        case 4: // MultTracklets
-          multiplicity = collision.multTracklets();
-          break;
-        case 5: // MultTPC
-          multiplicity = collision.multTPC();
-          break;
-        case 6: // MultNTracksPV
-          // multiplicity = collision.multNTracksPV();
-          multiplicity = collision.multZeqNTracksPV();
-          break;
-        case 7: // MultNTracksPVeta1
-          multiplicity = collision.multNTracksPVeta1();
-          break;
-      }
+    switch (multiplicityEstimator) {
+      case 1: // MultFV0M
+        // multiplicity = collision.multFV0M();
+        // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
+        multiplicity = collision.multZeqFV0A();
+        break;
+      case 2: // MultFT0M
+        // multiplicity = collision.multFT0M();
+        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
+        break;
+      case 3: // MultFDDM
+        // multiplicity = collision.multFDDM();
+        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
+        break;
+      case 4: // MultTracklets
+        multiplicity = collision.multTracklets();
+        break;
+      case 5: // MultTPC
+        multiplicity = collision.multTPC();
+        break;
+      case 6: // MultNTracksPV
+        // multiplicity = collision.multNTracksPV();
+        multiplicity = collision.multZeqNTracksPV();
+        break;
+      case 7: // MultNTracksPVeta1
+        multiplicity = collision.multNTracksPVeta1();
+        break;
     }
 
     if (multiplicityEstimator == 0) {
@@ -834,10 +547,7 @@ struct tofSpectra {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1);
     }
-    if (doprocessRun2 == true && !collision.sel7()) {
-      return false;
-
-    } else if (!collision.sel8()) {
+    if (!collision.sel8()) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -929,13 +639,12 @@ struct tofSpectra {
     return true;
   }
 
-  using CollisionCandidateRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-  using CollisionCandidate = soa::Join<CollisionCandidateRun2, aod::MultZeqs>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
-  void processRun3(CollisionCandidate::iterator const& collision,
-                   TrackCandidates const& tracks)
+  void process(CollisionCandidate::iterator const& collision,
+               TrackCandidates const& tracks)
   {
     if (!isEventSelected<true, true>(collision)) {
       return;
@@ -956,42 +665,27 @@ struct tofSpectra {
       // }
     }
   } // end of the process function
-  PROCESS_SWITCH(tofSpectra, processRun3, "Standard process function for the Run3 data", true);
 
-  void processRun2(CollisionCandidateRun2::iterator const& collision,
-                   TrackCandidates const& tracks)
-  {
-    if (!isEventSelected<true, false>(collision)) {
-      return;
-    }
-    for (const auto& track : tracks) {
-      if (!isTrackSelected<true>(track)) {
-        continue;
-      }
-    }
-  } // end of the process function
-  PROCESS_SWITCH(tofSpectra, processRun2, "Standard process function for the Run2 data", false);
-
-#define makeProcessFunction(processorName, inputPid, particleId, isFull, isRun3, tofTable, tpcTable) \
-  void process##processorName##inputPid(CollisionCandidate::iterator const& collision,               \
-                                        soa::Join<TrackCandidates,                                   \
-                                                  aod::pid##tofTable##inputPid,                      \
-                                                  aod::pid##tpcTable##inputPid> const& tracks)       \
-  {                                                                                                  \
-    if (!isEventSelected<false, false>(collision)) {                                                 \
-      return;                                                                                        \
-    }                                                                                                \
-    for (const auto& track : tracks) {                                                               \
-      if (!isTrackSelected<false>(track)) {                                                          \
-        continue;                                                                                    \
-      }                                                                                              \
-      fillParticleHistos<isFull, isRun3, PID::particleId>(track, collision);                         \
-    }                                                                                                \
-  }                                                                                                  \
+#define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
+  void process##processorName##inputPid(CollisionCandidate::iterator const& collision,         \
+                                        soa::Join<TrackCandidates,                             \
+                                                  aod::pid##tofTable##inputPid,                \
+                                                  aod::pid##tpcTable##inputPid> const& tracks) \
+  {                                                                                            \
+    if (!isEventSelected<false, false>(collision)) {                                           \
+      return;                                                                                  \
+    }                                                                                          \
+    for (const auto& track : tracks) {                                                         \
+      if (!isTrackSelected<false>(track)) {                                                    \
+        continue;                                                                              \
+      }                                                                                        \
+      fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
+    }                                                                                          \
+  }                                                                                            \
   PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
-#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, true, TOFFull, TPCFull)
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, TOFFull, TPCFull)
 
   makeProcessFunctionFull(El, Electron);
   makeProcessFunctionFull(Mu, Muon);
@@ -1005,7 +699,7 @@ struct tofSpectra {
 #undef makeProcessFunctionFull
 
 // Tiny tables
-#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, true, TOF, TPC)
+#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, TOF, TPC)
 
   makeProcessFunctionTiny(El, Electron);
   makeProcessFunctionTiny(Mu, Muon);
@@ -1019,7 +713,7 @@ struct tofSpectra {
 #undef makeProcessFunctionTiny
 
 // Full LF tables
-#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, true, TOFFull, TPCLfFull)
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, TOFFull, TPCLfFull)
 
   makeProcessFunctionFull(El, Electron);
   makeProcessFunctionFull(Mu, Muon);
@@ -1033,9 +727,8 @@ struct tofSpectra {
 #undef makeProcessFunctionFull
 
 // Tiny tables
-#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(LfTiny, inputPid, particleId, false, true, TOF, TPCLf)
+#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(LfTiny, inputPid, particleId, false, TOF, TPCLf)
 
-#ifdef ADDRUN2
   makeProcessFunctionTiny(El, Electron);
   makeProcessFunctionTiny(Mu, Muon);
   makeProcessFunctionTiny(Pi, Pion);
@@ -1045,40 +738,7 @@ struct tofSpectra {
   makeProcessFunctionTiny(Tr, Triton);
   makeProcessFunctionTiny(He, Helium3);
   makeProcessFunctionTiny(Al, Alpha);
-#endif
 #undef makeProcessFunctionTiny
-
-// Full tables (Run2)
-#define makeProcessFunctionFullRun2(inputPid, particleId) makeProcessFunction(FullRun2, inputPid, particleId, true, false, TOFFull, TPCFull)
-
-#ifdef ADDRUN2
-  makeProcessFunctionFullRun2(El, Electron);
-  makeProcessFunctionFullRun2(Mu, Muon);
-  makeProcessFunctionFullRun2(Pi, Pion);
-  makeProcessFunctionFullRun2(Ka, Kaon);
-  makeProcessFunctionFullRun2(Pr, Proton);
-  makeProcessFunctionFullRun2(De, Deuteron);
-  makeProcessFunctionFullRun2(Tr, Triton);
-  makeProcessFunctionFullRun2(He, Helium3);
-  makeProcessFunctionFullRun2(Al, Alpha);
-#endif
-#undef makeProcessFunctionFullRun2
-
-// Tiny tables (Run2)
-#define makeProcessFunctionTinyRun2(inputPid, particleId) makeProcessFunction(TinyRun2, inputPid, particleId, false, false, TOF, TPC)
-
-#ifdef ADDRUN2
-  makeProcessFunctionTinyRun2(El, Electron);
-  makeProcessFunctionTinyRun2(Mu, Muon);
-  makeProcessFunctionTinyRun2(Pi, Pion);
-  makeProcessFunctionTinyRun2(Ka, Kaon);
-  makeProcessFunctionTinyRun2(Pr, Proton);
-  makeProcessFunctionTinyRun2(De, Deuteron);
-  makeProcessFunctionTinyRun2(Tr, Triton);
-  makeProcessFunctionTinyRun2(He, Helium3);
-  makeProcessFunctionTinyRun2(Al, Alpha);
-#endif
-#undef makeProcessFunctionTinyRun2
 
   template <std::size_t i, typename T1, typename T2>
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)

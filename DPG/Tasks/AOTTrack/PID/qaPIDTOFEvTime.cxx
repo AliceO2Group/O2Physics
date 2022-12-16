@@ -40,6 +40,7 @@ struct tofPidCollisionTimeQa {
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
   Configurable<float> minPReso{"minPReso", 1.4f, "Minimum momentum in range for the resolution plot"};
   Configurable<float> maxPReso{"maxPReso", 1.5f, "Maximum momentum in range for the resolution plot"};
+  Configurable<bool> enableDebug{"enableDebug", false, "Add debug plots"};
 
   OutputObj<THashList> listEfficiency{"Efficiency"};
 
@@ -116,52 +117,70 @@ struct tofPidCollisionTimeQa {
     histos.add("deltaVsMult/pi", Form("pi %.2f < #it{p} < %.2f", minPReso.value, maxPReso.value), kTH2F, {multAxis, deltaAxis});
     histos.add("deltaVsReso/pi", Form("pi %.2f < #it{p} < %.2f", minPReso.value, maxPReso.value), kTH2F, {evTimeResoAxis, deltaAxis});
 
-    histos.add("withtof/p", "p", kTH1F, {pAxis});
-    histos.add("withtof/pt", "pt", kTH1F, {ptAxis});
-    histos.add("withtof/length", "length", kTH1F, {lengthAxis});
-    histos.add("withtof/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
-    histos.add("withtof/beta", "beta", kTH2F, {pAxis, betaAxis});
-    histos.add("withtof/delta", "delta", kTH2F, {pAxis, deltaAxis});
-    histos.add("withtof/expP", "expP", kTH2F, {pAxis, pAxis});
-    histos.add("withtof/mass", "mass", kTH1F, {massAxis});
-    histos.add("withtof/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
+    histos.add("tofbeta/inclusive", "", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("tofbeta/EvTimeTOF", "Ev. Time TOF", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("tofbeta/EvTimeTOFOnly", "Ev. Time TOF Only", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("tofbeta/EvTimeT0AC", "Ev. Time T0AC", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("tofbeta/EvTimeT0AOnly", "Ev. Time T0A Only", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("tofbeta/EvTimeT0COnly", "Ev. Time T0A Only", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("tofbeta/EvTimeT0ACOnly", "Ev. Time T0AC Only", HistType::kTH2F, {pAxis, betaAxis});
 
-    histos.add("goodreso/p", "p", kTH1F, {pAxis});
-    histos.add("goodreso/pt", "pt", kTH1F, {ptAxis});
-    histos.add("goodreso/ptden", "ptden", kTH1F, {ptAxis});
-    histos.add("goodreso/length", "length", kTH1F, {lengthAxis});
-    histos.add("goodreso/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
-    histos.add("goodreso/beta", "beta", kTH2F, {pAxis, betaAxis});
-    histos.add("goodreso/delta", "delta", kTH2F, {pAxis, deltaAxis});
-    histos.add("goodreso/expP", "expP", kTH2F, {pAxis, pAxis});
-    histos.add("goodreso/mass", "mass", kTH1F, {massAxis});
-    histos.add("goodreso/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
+    histos.add("tofmass/inclusive", "", HistType::kTH2F, {pAxis, massAxis});
+    histos.add("tofmass/EvTimeTOF", "Ev. Time TOF", HistType::kTH2F, {pAxis, massAxis});
+    histos.add("tofmass/EvTimeTOFOnly", "Ev. Time TOF Only", HistType::kTH2F, {pAxis, massAxis});
+    histos.add("tofmass/EvTimeT0AC", "Ev. Time T0AC", HistType::kTH2F, {pAxis, massAxis});
+    histos.add("tofmass/EvTimeT0AOnly", "Ev. Time T0A Only", HistType::kTH2F, {pAxis, massAxis});
+    histos.add("tofmass/EvTimeT0COnly", "Ev. Time T0C Only", HistType::kTH2F, {pAxis, massAxis});
+    histos.add("tofmass/EvTimeT0ACOnly", "Ev. Time T0AC Only", HistType::kTH2F, {pAxis, massAxis});
 
-    histos.add("badreso/p", "p", kTH1F, {pAxis});
-    histos.add("badreso/pt", "pt", kTH1F, {ptAxis});
-    histos.add("badreso/ptden", "ptden", kTH1F, {ptAxis});
-    histos.add("badreso/length", "length", kTH1F, {lengthAxis});
-    histos.add("badreso/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
-    histos.add("badreso/beta", "beta", kTH2F, {pAxis, betaAxis});
-    histos.add("badreso/delta", "delta", kTH2F, {pAxis, deltaAxis});
-    histos.add("badreso/expP", "expP", kTH2F, {pAxis, pAxis});
-    histos.add("badreso/mass", "mass", kTH1F, {massAxis});
-    histos.add("badreso/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
+    if (enableDebug) {
+      histos.add("withtof/p", "p", kTH1F, {pAxis});
+      histos.add("withtof/pt", "pt", kTH1F, {ptAxis});
+      histos.add("withtof/length", "length", kTH1F, {lengthAxis});
+      histos.add("withtof/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
+      histos.add("withtof/beta", "beta", kTH2F, {pAxis, betaAxis});
+      histos.add("withtof/delta", "delta", kTH2F, {pAxis, deltaAxis});
+      histos.add("withtof/expP", "expP", kTH2F, {pAxis, pAxis});
+      histos.add("withtof/mass", "mass", kTH1F, {massAxis});
+      histos.add("withtof/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
 
-    histos.add("goodforevtime/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
-    histos.add("goodforevtime/p", "p", kTH1F, {pAxis});
-    histos.add("goodforevtime/pt", "pt", kTH1F, {ptAxis});
-    histos.add("goodforevtime/length", "length", kTH1F, {lengthAxis});
-    histos.add("goodforevtime/beta", "beta", kTH2F, {pAxis, betaAxis});
-    histos.add("goodforevtime/delta", "delta", kTH2F, {pAxis, deltaAxis});
-    histos.add("goodforevtime/expP", "expP", kTH2F, {pAxis, pAxis});
-    histos.add("goodforevtime/mass", "mass", kTH1F, {massAxis});
-    histos.add("goodforevtime/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
+      histos.add("goodreso/p", "p", kTH1F, {pAxis});
+      histos.add("goodreso/pt", "pt", kTH1F, {ptAxis});
+      histos.add("goodreso/ptden", "ptden", kTH1F, {ptAxis});
+      histos.add("goodreso/length", "length", kTH1F, {lengthAxis});
+      histos.add("goodreso/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
+      histos.add("goodreso/beta", "beta", kTH2F, {pAxis, betaAxis});
+      histos.add("goodreso/delta", "delta", kTH2F, {pAxis, deltaAxis});
+      histos.add("goodreso/expP", "expP", kTH2F, {pAxis, pAxis});
+      histos.add("goodreso/mass", "mass", kTH1F, {massAxis});
+      histos.add("goodreso/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
 
-    histos.add("withqualitycuts/p", "p", kTH1F, {pAxis});
-    histos.add("withqualitycuts/pt", "pt", kTH1F, {ptAxis});
-    histos.add("withqualitycuts/length", "length", kTH1F, {lengthAxis});
-    histos.add("withqualitycuts/mass", "mass", kTH1F, {massAxis});
+      histos.add("badreso/p", "p", kTH1F, {pAxis});
+      histos.add("badreso/pt", "pt", kTH1F, {ptAxis});
+      histos.add("badreso/ptden", "ptden", kTH1F, {ptAxis});
+      histos.add("badreso/length", "length", kTH1F, {lengthAxis});
+      histos.add("badreso/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
+      histos.add("badreso/beta", "beta", kTH2F, {pAxis, betaAxis});
+      histos.add("badreso/delta", "delta", kTH2F, {pAxis, deltaAxis});
+      histos.add("badreso/expP", "expP", kTH2F, {pAxis, pAxis});
+      histos.add("badreso/mass", "mass", kTH1F, {massAxis});
+      histos.add("badreso/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
+
+      histos.add("goodforevtime/tofSignal", "tofSignal", kTH1F, {tofSignalAxis});
+      histos.add("goodforevtime/p", "p", kTH1F, {pAxis});
+      histos.add("goodforevtime/pt", "pt", kTH1F, {ptAxis});
+      histos.add("goodforevtime/length", "length", kTH1F, {lengthAxis});
+      histos.add("goodforevtime/beta", "beta", kTH2F, {pAxis, betaAxis});
+      histos.add("goodforevtime/delta", "delta", kTH2F, {pAxis, deltaAxis});
+      histos.add("goodforevtime/expP", "expP", kTH2F, {pAxis, pAxis});
+      histos.add("goodforevtime/mass", "mass", kTH1F, {massAxis});
+      histos.add("goodforevtime/tofSignalPerCollision", "tofSignalPerCollision", kTH2S, {collisionAxis, tofSignalAxis});
+
+      histos.add("withqualitycuts/p", "p", kTH1F, {pAxis});
+      histos.add("withqualitycuts/pt", "pt", kTH1F, {ptAxis});
+      histos.add("withqualitycuts/length", "length", kTH1F, {lengthAxis});
+      histos.add("withqualitycuts/mass", "mass", kTH1F, {massAxis});
+    }
 
     listEfficiency.setObject(new THashList);
     auto makeEfficiency = [&](TString effname, TString efftitle) {
@@ -175,7 +194,7 @@ struct tofPidCollisionTimeQa {
     makeEfficiency("effT0CEvTime", "Efficiency of the T0C Event Time");
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::EvTimeTOFOnly, aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::pidTOFbeta, aod::pidTOFmass, aod::EvTimeTOFOnly, aod::TrackSelection>;
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
@@ -268,10 +287,12 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("tracks/pt"), trk.pt());
         histos.fill(HIST("tracks/length"), trk.length());
 
-        if (trk.tofEvTimeErr() > 199.f) {
-          histos.fill(HIST("badreso/ptden"), trk.pt());
-        } else {
-          histos.fill(HIST("goodreso/ptden"), trk.pt());
+        if (enableDebug) {
+          if (trk.tofEvTimeErr() > 199.f) {
+            histos.fill(HIST("badreso/ptden"), trk.pt());
+          } else {
+            histos.fill(HIST("goodreso/ptden"), trk.pt());
+          }
         }
 
         if (!trk.hasTOF()) {
@@ -280,63 +301,96 @@ struct tofPidCollisionTimeQa {
         nTracksWithTOF++;
         histos.fill(HIST("trackSelection"), 4.5f);
 
-        const float beta = o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, trk.tofEvTime());
-        const float mass = o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk.p(), beta);
-        const float deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk);
-        histos.fill(HIST("withtof/p"), trk.p());
-        histos.fill(HIST("withtof/pt"), trk.pt());
-        histos.fill(HIST("withtof/length"), trk.length());
-        histos.fill(HIST("withtof/tofSignal"), trk.tofSignal());
-        histos.fill(HIST("withtof/beta"), trk.p(), beta);
-        histos.fill(HIST("withtof/delta"), trk.p(), deltaPi);
-        if (trk.p() > minPReso && trk.p() < maxPReso) {
-          histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
-          histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
-        }
+        // Recompute quantities with event times
+        const float& betaTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, trk.evTimeTOF()) : 999.f;
+        const float& betaT0A = collision.t0ACorrectedValid() ? o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, collision.t0ACorrected() * 1000.f) : 999.f;
+        const float& betaT0C = collision.t0CCorrectedValid() ? o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, collision.t0CCorrected() * 1000.f) : 999.f;
+        const float& betaT0AC = collision.t0ACValid() ? o2::pid::tof::Beta<Trks::iterator>::GetBeta(trk, collision.t0AC() * 1000.f) : 999.f;
 
-        histos.fill(HIST("withtof/expP"), trk.p(), trk.tofExpMom());
-        histos.fill(HIST("withtof/mass"), mass);
-        histos.fill(HIST("withtof/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
-        if (trk.pt() > 0.3 && beta > 0.3) {
-          histos.fill(HIST("withqualitycuts/p"), trk.p());
-          histos.fill(HIST("withqualitycuts/pt"), trk.pt());
-          histos.fill(HIST("withqualitycuts/length"), trk.length());
-          histos.fill(HIST("withqualitycuts/mass"), mass);
-        }
+        const float& massTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, betaTOF) : 999.f;
+        const float& massT0A = collision.t0ACorrectedValid() ? o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, betaT0A) : 999.f;
+        const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, betaT0C) : 999.f;
+        const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, betaT0AC) : 999.f;
 
-        if (trk.tofEvTimeErr() > 199.f) {
-          histos.fill(HIST("badreso/p"), trk.p());
-          histos.fill(HIST("badreso/pt"), trk.pt());
-          histos.fill(HIST("badreso/length"), trk.length());
-          histos.fill(HIST("badreso/tofSignal"), trk.tofSignal());
-          histos.fill(HIST("badreso/beta"), trk.p(), beta);
-          histos.fill(HIST("badreso/delta"), trk.p(), deltaPi);
-          histos.fill(HIST("badreso/expP"), trk.p(), trk.tofExpMom());
-          histos.fill(HIST("badreso/mass"), mass);
-          histos.fill(HIST("badreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
-        } else {
-          histos.fill(HIST("goodreso/p"), trk.p());
-          histos.fill(HIST("goodreso/pt"), trk.pt());
-          histos.fill(HIST("goodreso/length"), trk.length());
-          histos.fill(HIST("goodreso/tofSignal"), trk.tofSignal());
-          histos.fill(HIST("goodreso/beta"), trk.p(), beta);
-          histos.fill(HIST("goodreso/delta"), trk.p(), deltaPi);
-          histos.fill(HIST("goodreso/expP"), trk.p(), trk.tofExpMom());
-          histos.fill(HIST("goodreso/mass"), mass);
-          histos.fill(HIST("goodreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
+        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk);
+
+        histos.fill(HIST("tofbeta/inclusive"), trk.p(), trk.beta());
+        histos.fill(HIST("tofmass/inclusive"), trk.p(), trk.mass());
+        if (trk.isEvTimeTOF()) {
+          histos.fill(HIST("tofbeta/EvTimeTOF"), trk.p(), trk.beta());
+          histos.fill(HIST("tofmass/EvTimeTOF"), trk.p(), trk.mass());
+          histos.fill(HIST("tofbeta/EvTimeTOFOnly"), trk.p(), betaTOF);
+          histos.fill(HIST("tofmass/EvTimeTOFOnly"), trk.p(), massTOF);
         }
-        if (!trk.usedForTOFEvTime()) {
-          continue;
+        if (trk.isEvTimeT0AC()) {
+          histos.fill(HIST("tofbeta/EvTimeT0AC"), trk.p(), trk.beta());
+          histos.fill(HIST("tofmass/EvTimeT0AC"), trk.p(), trk.mass());
         }
-        histos.fill(HIST("goodforevtime/p"), trk.p());
-        histos.fill(HIST("goodforevtime/pt"), trk.pt());
-        histos.fill(HIST("goodforevtime/length"), trk.length());
-        histos.fill(HIST("goodforevtime/tofSignal"), trk.tofSignal());
-        histos.fill(HIST("goodforevtime/beta"), trk.p(), beta);
-        histos.fill(HIST("goodforevtime/delta"), trk.p(), deltaPi);
-        histos.fill(HIST("goodforevtime/expP"), trk.p(), trk.tofExpMom());
-        histos.fill(HIST("goodforevtime/mass"), mass);
-        histos.fill(HIST("goodforevtime/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
+        histos.fill(HIST("tofbeta/EvTimeT0AOnly"), trk.p(), betaT0A);
+        histos.fill(HIST("tofbeta/EvTimeT0COnly"), trk.p(), betaT0C);
+        histos.fill(HIST("tofbeta/EvTimeT0ACOnly"), trk.p(), betaT0AC);
+
+        histos.fill(HIST("tofmass/EvTimeT0AOnly"), trk.p(), massT0A);
+        histos.fill(HIST("tofmass/EvTimeT0COnly"), trk.p(), massT0C);
+        histos.fill(HIST("tofmass/EvTimeT0ACOnly"), trk.p(), massT0AC);
+
+        if (enableDebug) {
+
+          histos.fill(HIST("withtof/p"), trk.p());
+          histos.fill(HIST("withtof/pt"), trk.pt());
+          histos.fill(HIST("withtof/length"), trk.length());
+          histos.fill(HIST("withtof/tofSignal"), trk.tofSignal());
+          histos.fill(HIST("withtof/beta"), trk.p(), trk.beta());
+          histos.fill(HIST("withtof/delta"), trk.p(), deltaPi);
+          if (trk.p() > minPReso && trk.p() < maxPReso) {
+            histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
+            histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
+          }
+
+          histos.fill(HIST("withtof/expP"), trk.p(), trk.tofExpMom());
+          histos.fill(HIST("withtof/mass"), trk.mass());
+          histos.fill(HIST("withtof/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
+          if (trk.pt() > 0.3 && trk.beta() > 0.3) {
+            histos.fill(HIST("withqualitycuts/p"), trk.p());
+            histos.fill(HIST("withqualitycuts/pt"), trk.pt());
+            histos.fill(HIST("withqualitycuts/length"), trk.length());
+            histos.fill(HIST("withqualitycuts/mass"), trk.mass());
+          }
+
+          if (trk.tofEvTimeErr() > 199.f) {
+            histos.fill(HIST("badreso/p"), trk.p());
+            histos.fill(HIST("badreso/pt"), trk.pt());
+            histos.fill(HIST("badreso/length"), trk.length());
+            histos.fill(HIST("badreso/tofSignal"), trk.tofSignal());
+            histos.fill(HIST("badreso/beta"), trk.p(), trk.beta());
+            histos.fill(HIST("badreso/delta"), trk.p(), deltaPi);
+            histos.fill(HIST("badreso/expP"), trk.p(), trk.tofExpMom());
+            histos.fill(HIST("badreso/mass"), trk.mass());
+            histos.fill(HIST("badreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
+          } else {
+            histos.fill(HIST("goodreso/p"), trk.p());
+            histos.fill(HIST("goodreso/pt"), trk.pt());
+            histos.fill(HIST("goodreso/length"), trk.length());
+            histos.fill(HIST("goodreso/tofSignal"), trk.tofSignal());
+            histos.fill(HIST("goodreso/beta"), trk.p(), trk.beta());
+            histos.fill(HIST("goodreso/delta"), trk.p(), deltaPi);
+            histos.fill(HIST("goodreso/expP"), trk.p(), trk.tofExpMom());
+            histos.fill(HIST("goodreso/mass"), trk.mass());
+            histos.fill(HIST("goodreso/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
+          }
+          if (!trk.usedForTOFEvTime()) {
+            continue;
+          }
+          histos.fill(HIST("goodforevtime/p"), trk.p());
+          histos.fill(HIST("goodforevtime/pt"), trk.pt());
+          histos.fill(HIST("goodforevtime/length"), trk.length());
+          histos.fill(HIST("goodforevtime/tofSignal"), trk.tofSignal());
+          histos.fill(HIST("goodforevtime/beta"), trk.p(), trk.beta());
+          histos.fill(HIST("goodforevtime/delta"), trk.p(), deltaPi);
+          histos.fill(HIST("goodforevtime/expP"), trk.p(), trk.tofExpMom());
+          histos.fill(HIST("goodforevtime/mass"), trk.mass());
+          histos.fill(HIST("goodforevtime/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
+        }
       }
       static_cast<TEfficiency*>(listEfficiency->FindObject("effTOFEvTime"))->Fill(t.isEvTimeTOF(), nTracksWithTOF);
       static_cast<TEfficiency*>(listEfficiency->FindObject("effT0AEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);

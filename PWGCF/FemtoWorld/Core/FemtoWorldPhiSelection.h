@@ -403,7 +403,7 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
   const float invMassPhi = v0.mPhi();
   const float invMassAntiPhi = v0.mAntiPhi();
 
-  if ((invMassPhi < fInvMassLowLimit || invMassPhi > fInvMassUpLimit) && (invMassAntiPhi < fInvMassLowLimit || invMassAntiPhi > fInvMassUpLimit)) {
+  if (((invMassPhi < fInvMassLowLimit) || (invMassPhi > fInvMassUpLimit)) && ((invMassAntiPhi < fInvMassLowLimit) || (invMassAntiPhi > fInvMassUpLimit))) {
     return false;
   }
   if (fRejectKaon) {
@@ -450,7 +450,7 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
   // v0
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) && !(abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax)) {
+  if (!((abs(nSigmaPrNeg) < nSigmaPIDMax) && (abs(nSigmaPiPos) < nSigmaPIDMax)) && !((abs(nSigmaPrPos) < nSigmaPIDMax) && (abs(nSigmaPiNeg) < nSigmaPIDMax))) {
     return false;
   }
 
@@ -476,7 +476,7 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
 
   mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiNoCuts"), v0.mPhi());
 
-  if (invMassPhi > fInvMassLowLimit && invMassPhi < fInvMassUpLimit) {
+  if ((invMassPhi > fInvMassLowLimit) && (invMassPhi < fInvMassUpLimit)) {
     mHistogramRegistry->fill(HIST("PhiQA/hInvMassPhiInvMassCut"), v0.mPhi());
   }
 

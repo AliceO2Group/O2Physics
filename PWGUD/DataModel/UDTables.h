@@ -113,7 +113,7 @@ DECLARE_SOA_COLUMN(BGFDDCPF, bgFDDCpf, int32_t); //! Beam-gas time in FDC
 DECLARE_SOA_DYNAMIC_COLUMN(BBFT0A, bbFT0A,
                            [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BBFT0C, bbFT0C,
-                           [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
+                           [](int32_t bbFT0Cpf) -> bool { return TESTBIT(bbFT0Cpf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFT0A, bgFT0A,
                            [](int32_t bgFT0Apf) -> bool { return TESTBIT(bgFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFT0C, bgFT0C,

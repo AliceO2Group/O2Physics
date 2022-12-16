@@ -20,6 +20,12 @@
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 
+#include <cmath>
+
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TObjArray.h>
+
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -34,11 +40,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
-
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,20 +59,22 @@ struct LfTreeCreatorNuclei {
   }
 
   // track
-  Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
-  Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
+  Configurable<float> yCut{"yMin", 1.f, "Rapidity cut"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
+  Configurable<int> trackSelType{"trackSelType", 0, "Option for the track cut: 0 isGlobalTrackWoDCA, 1 isGlobalTrack"};
+
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackWoDCAInFilter());
+  Filter etaFilter = (nabs(aod::track::eta) < cfgCutEta);
+  Filter trackFilter = (trackSelType.value == 0 && requireGlobalTrackWoDCAInFilter()) || (trackSelType.value == 1 && requireGlobalTrackInFilter());
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -130,6 +133,7 @@ struct LfTreeCreatorNuclei {
         track.sign(),
         track.tpcNClsCrossedRows(),
         track.tpcCrossedRowsOverFindableCls(),
+        track.tpcNClsFound(),
         track.tpcChi2NCl(),
         track.itsChi2NCl());
 

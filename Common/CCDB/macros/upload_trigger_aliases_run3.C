@@ -54,6 +54,14 @@ void upload_trigger_aliases_run3()
 
   for (auto& run : runs) {
     LOGP(info, "run = {}", run);
+    if (run == 527349)
+      continue; // no CTP info
+    if (run == 527963)
+      continue; // no CTP info
+    if (run <= 528537)
+      continue; // no CTP info
+    if (run == 528543)
+      continue; // no CTP info
     // read SOR and EOR timestamps from RCT CCDB
     header = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", run), metadataRCT, -1);
     ULong64_t sor = atol(header["SOR"].c_str());
@@ -63,7 +71,7 @@ void upload_trigger_aliases_run3()
     metadata["runNumber"] = Form("%d", run);
     auto ctpcfg = ccdb.retrieveFromTFileAny<o2::ctp::CTPConfiguration>("CTP/Config/Config", metadata, ts);
     std::vector<o2::ctp::CTPClass> classes = ctpcfg->getCTPClasses();
-
+    // ctpcfg->printConfigString();
     // create trigger aliases
     TriggerAliases* aliases = new TriggerAliases();
     for (auto& al : mAliases) {
@@ -75,12 +83,14 @@ void upload_trigger_aliases_run3()
           if (aliasId == kTVXinTRD && cl.cluster->name != "trd") { // workaround for configs with ambiguous class names
             continue;
           }
+          if (aliasId == kTVXinEMC && cl.cluster->name != "emc") { // workaround for configs with ambiguous class names
+            continue;
+          }
           aliases->AddClassIdToAlias(aliasId, classId);
         }
       }
     }
     aliases->Print();
-
     ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor);
   }
 }
