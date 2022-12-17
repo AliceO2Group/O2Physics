@@ -203,16 +203,16 @@ struct AnalysisTrackSelection {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
-  
+
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
-  
-  int fCurrentRun;    // needed to detect if the run changed and trigger update of calibrations etc.
+
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   void init(o2::framework::InitContext&)
   {
     fCurrentRun = 0;
-    
+
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -239,7 +239,7 @@ struct AnalysisTrackSelection {
       VarManager::SetUseVars(fHistMan->GetUsedVars());                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
-    
+
     if (fConfigComputeTPCpostCalib) {
       // CCDB configuration
       fCCDB->setURL(fConfigCcdbUrl.value);
@@ -252,13 +252,13 @@ struct AnalysisTrackSelection {
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runTrackSelection(TEvent const& event, TTracks const& tracks)
-  {          
+  {
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     // fill event information which might be needed in histograms/cuts that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
 
     // check whether the run changed, and if so, update calibrations in the VarManager
-    // TODO: Here, for the run number and timestamp we assume the function runs with the 
+    // TODO: Here, for the run number and timestamp we assume the function runs with the
     //      DQ skimmed model. However, we need a compile time check so to make this compatible
     //      also with the full data model.
     if (fConfigComputeTPCpostCalib && fCurrentRun != event.runNumber()) {
@@ -271,7 +271,7 @@ struct AnalysisTrackSelection {
       VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
       fCurrentRun = event.runNumber();
     }
-    
+
     trackSel.reserve(tracks.size());
     uint32_t filterMap = 0;
     uint8_t filterMapPrefilter = 0.;

@@ -25,8 +25,8 @@ o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
-std::map<VarManager::CalibObjects,TObject*> VarManager::fgCalibs;
-bool VarManager::fgRunTPCPostCalibration[4] = {false,false,false,false};
+std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
+bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()

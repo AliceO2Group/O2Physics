@@ -334,7 +334,7 @@ class VarManager : public TObject
   }; // end of Variables enumeration
 
   enum CalibObjects {
-    kTPCElectronMean=0,
+    kTPCElectronMean = 0,
     kTPCElectronSigma,
     kTPCPionMean,
     kTPCPionSigma,
@@ -342,7 +342,7 @@ class VarManager : public TObject
     kTPCProtonSigma,
     kNCalibObjects
   };
-  
+
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
   static void SetDefaultVarNames();
@@ -437,7 +437,8 @@ class VarManager : public TObject
   template <int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
 
-  static void SetCalibrationObject(CalibObjects calib, TObject* obj) {
+  static void SetCalibrationObject(CalibObjects calib, TObject* obj)
+  {
     fgCalibs[calib] = obj;
     // Check whether all the needed objects for TPC postcalibration are available
     if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
@@ -450,15 +451,16 @@ class VarManager : public TObject
       fgRunTPCPostCalibration[3] = true;
     }
   }
-  static TObject* GetCalibrationObject(CalibObjects calib) {
+  static TObject* GetCalibrationObject(CalibObjects calib)
+  {
     auto obj = fgCalibs.find(calib);
     if (obj == fgCalibs.end()) {
-      return 0x0;        
+      return 0x0;
     } else {
-      return obj->second;        
+      return obj->second;
     }
   }
-  
+
  public:
   VarManager();
   ~VarManager() override;
@@ -485,9 +487,9 @@ class VarManager : public TObject
   static o2::vertexing::FwdDCAFitterN<2> fgFitterTwoProngFwd;
   static o2::vertexing::FwdDCAFitterN<3> fgFitterThreeProngFwd;
 
-  static std::map<CalibObjects,TObject*> fgCalibs;      // map of calibration histograms
-  static bool fgRunTPCPostCalibration[4];      // 0-electron, 1-pion, 2-kaon, 3-proton
-  
+  static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
+  static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
+
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
@@ -842,7 +844,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
     values[kTPCnSigmaPr] = track.tpcNSigmaPr();
-    
+
     // TODO: This part is deprecated and should be removed soon. It performs TPC postcalibration based on some
     //      hardcoded parameterization.
     if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
@@ -850,22 +852,22 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
       values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
     }
-    
+
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
       TH3F* calibMean = (TH3F*)fgCalibs[kTPCElectronMean];
       TH3F* calibSigma = (TH3F*)fgCalibs[kTPCElectronSigma];
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls==0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls>calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
       int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin==0 ? 1 : binPin);
-      binPin = (binPin>calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
       int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta==0 ? 1 : binEta);
-      binEta = (binEta>calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-      
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
@@ -876,15 +878,15 @@ void VarManager::FillTrack(T const& track, float* values)
       TH3F* calibSigma = (TH3F*)fgCalibs[kTPCPionSigma];
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls==0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls>calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
       int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin==0 ? 1 : binPin);
-      binPin = (binPin>calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
       int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta==0 ? 1 : binEta);
-      binEta = (binEta>calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-      
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
@@ -895,15 +897,15 @@ void VarManager::FillTrack(T const& track, float* values)
       TH3F* calibSigma = (TH3F*)fgCalibs[kTPCProtonSigma];
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls==0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls>calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
       int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin==0 ? 1 : binPin);
-      binPin = (binPin>calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
       int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta==0 ? 1 : binEta);
-      binEta = (binEta>calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-      
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
