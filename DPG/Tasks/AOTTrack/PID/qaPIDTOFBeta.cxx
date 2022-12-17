@@ -56,7 +56,7 @@ struct tofPidBetaQa {
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
     const AxisSpec betaAxis{tofBetaBins, "TOF #beta"};
     const AxisSpec massAxis{tofMassBins, "TOF mass (GeV/#it{c}^{2})"};
-    const AxisSpec trdAxis{20, 0, 20, "TRD clusters"};
+    const AxisSpec trdAxis{10, -0.5, 9.5, "Last TRD cluster"};
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec lAxis{trackLengthBins, "Track length (cm)"};
@@ -256,7 +256,19 @@ struct tofPidBetaQa {
         histos.fill(HIST("tofbeta/notrd/inclusive"), track.p(), track.beta());
         histos.fill(HIST("signedtofbeta/notrd/inclusive"), track.p() * track.sign(), track.beta());
       } else {
-        histos.fill(HIST("event/trd/length"), track.length(), track.trdPattern());
+
+        int lastLayer = 0;
+        for (int l = 7; l >= 0; l--) {
+          if (track.trdPattern() & (1 << l)) {
+            lastLayer = l;
+            break;
+          }
+        }
+
+        histos.fill(HIST("event/trd/length"), track.length(), lastLayer);
+        if (lastLayer < 5) {
+          continue;
+        }
         if (track.isEvTimeTOF()) {
           histos.fill(HIST("tofmass/trd/EvTimeTOF"), track.p(), track.mass());
           histos.fill(HIST("tofbeta/trd/EvTimeTOF"), track.p(), track.beta());
