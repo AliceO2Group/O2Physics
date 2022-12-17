@@ -358,11 +358,11 @@ struct femtoDreamProducerTask {
       } else {
         particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kFake;
       }
-      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      outputPartsMC(outputCollision.lastIndex(), particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       // fill with correct values, this is currently placeholder
       outputDebugPartsMC(-999);
     } else {
-      outputPartsMC(-999, -999, -999, -999, -999);
+      outputPartsMC(-999, -999, -999, -999, -999, -999);
       outputDebugPartsMC(-999);
     }
   }

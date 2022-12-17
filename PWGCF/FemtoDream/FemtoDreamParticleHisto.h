@@ -115,15 +115,9 @@ class FemtoDreamParticleHisto
       std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]);
       folderName += static_cast<std::string>(mFolderSuffix[mFolderSuffixType]);
 
-      /// Histograms of the kinematic properties
-      mHistogramRegistry->add((folderName + "/hPtTruth").c_str(), "; #it{p}_{T} Truth (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-      mHistogramRegistry->add((folderName + "/hEtaTruth").c_str(), "; #eta Truth; Entries", kTH1F, {{200, -1.5, 1.5}});
-      mHistogramRegistry->add((folderName + "/hPhiTruth").c_str(), "; #phi Truth; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
         /// Track histograms
-
         mHistogramRegistry->add((folderName + "/hDCAxy_Primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {ptAxis, DCAxyAxis});
         mHistogramRegistry->add((folderName + "/hDCAxy_Daughter").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {ptAxis, DCAxyAxis});
         mHistogramRegistry->add((folderName + "/hDCAxy_Material").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {ptAxis, DCAxyAxis});
@@ -143,19 +137,15 @@ class FemtoDreamParticleHisto
   /// Filling of the histograms for MC
   /// \tparam T Data type of the particle
   /// \param part Particle
-  template <typename T>
-  void fillQAMC(T const& part)
+  template <typename T, typename TMC>
+  void fillQAMC(T const& part, TMC const& partMC)
   {
     if (mHistogramRegistry) {
-
-      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPtTruth"), part.ptTruth());
-      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hEtaTruth"), part.etaTruth());
-      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPhiTruth"), part.phiTruth());
 
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
         /// Track histograms
-        switch (part.partOriginMCTruth()) {
+        switch (partMC.partOriginMCTruth()) {
           case (o2::aod::femtodreamparticleMC::kPrimary):
             mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAxy_Primary"),
                                      part.pt(), part.tempFitVar());

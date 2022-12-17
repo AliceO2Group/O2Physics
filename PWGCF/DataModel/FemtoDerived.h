@@ -198,28 +198,27 @@ enum ParticleOriginMCTruth {
 // DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
-DECLARE_SOA_COLUMN(PtTruth, ptTruth, float);                       //! p_T of the generated particle (GeV/c)
-DECLARE_SOA_COLUMN(EtaTruth, etaTruth, float);                     //! Eta of the generated particle
-DECLARE_SOA_COLUMN(PhiTruth, phiTruth, float);                     //! Phi of the generated particle
+// DECLARE_SOA_COLUMN(PtTruth, ptTruth, float);                       //! p_T of the generated particle (GeV/c)
+// DECLARE_SOA_COLUMN(EtaTruth, etaTruth, float);                     //! Eta of the generated particle
+// DECLARE_SOA_COLUMN(PhiTruth, phiTruth, float);                     //! Phi of the generated particle
 
 // debug variables
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
 } // namespace femtodreamparticleMC
 
 DECLARE_SOA_TABLE(FemtoDreamParticlesMC, "AOD", "FEMTODREAMPSMC",
-                  // o2::soa::Index<>,
-                  // femtodreamparticleMC::FemtoDreamParticleId,
-                  // femtodreamparticleMC::FemtoDreamCollisionId,
+                  o2::soa::Index<>,
+                  femtodreamparticle::FemtoDreamCollisionId,
                   femtodreamparticleMC::PartOriginMCTruth,
                   femtodreamparticleMC::PDGMCTruth,
-                  femtodreamparticleMC::PtTruth,
-                  femtodreamparticleMC::EtaTruth,
-                  femtodreamparticleMC::PhiTruth);
+                  femtodreamparticle::Pt,
+                  femtodreamparticle::Eta,
+                  femtodreamparticle::Phi);
 using FemtoDreamParticleMC = FemtoDreamParticlesMC::iterator;
 
 DECLARE_SOA_TABLE(FemtoDreamDebugParticlesMC, "AOD", "FEMTODEBUGPMC",
                   femtodreamparticleMC::MotherPDG);
-using FemtoDreamDebugParticleMC = FemtoDreamParticlesMC::iterator;
+using FemtoDreamDebugParticleMC = FemtoDreamDebugParticlesMC::iterator;
 
 /// Hash
 namespace hash
