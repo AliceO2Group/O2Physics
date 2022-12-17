@@ -27,6 +27,7 @@ using namespace evsel;
 
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
@@ -238,6 +239,7 @@ struct EventSelectionQaTask {
 
     histos.add("hITStrackBcDiff", "", kTH1F, {axisBcDif});
     histos.add("hTrackBcDiffVsEta", "", kTH2F, {axisEta, axisBcDif});
+    histos.add("hTrackBcDiffVsEtaAll", "", kTH2F, {axisEta, axisBcDif});
 
     histos.add("hNcontribCol", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAcc", "", kTH1F, {axisNcontrib});
@@ -267,7 +269,7 @@ struct EventSelectionQaTask {
   }
 
   void processRun2(
-    soa::Join<aod::Collisions, aod::EvSels> const& cols,
+    ColEvSels const& cols,
     BCsRun2 const& bcs,
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
@@ -449,10 +451,12 @@ struct EventSelectionQaTask {
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
   Preslice<aod::FullTracks> perCollision = aod::track::collisionId;
+  Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
 
   void processRun3(
-    soa::Join<aod::Collisions, aod::EvSels> const& cols,
+    ColEvSels const& cols,
     aod::FullTracks const& tracks,
+    aod::AmbiguousTracks const& ambTracks,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
@@ -542,6 +546,7 @@ struct EventSelectionQaTask {
       const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
       const AxisSpec axisBcDif{200, -100., 100., "collision bc difference"};
       histos.add("hSecondsTVXvsBcDif", "", kTH2F, {axisSeconds, axisBcDif});
+      histos.add("hSecondsTVXvsBcDifAll", "", kTH2F, {axisSeconds, axisBcDif});
     }
 
     // background studies
@@ -753,7 +758,56 @@ struct EventSelectionQaTask {
       vGlobalBCs[indexBc] = globalBC;
     }
 
-    // std::map<int32_t, std::vector<int32_t>> mapBcsToCollisions;
+    // build map from track index to ambiguous track index
+    std::unordered_map<int32_t, int32_t> mapAmbTrIds;
+    for (const auto& ambTrack : ambTracks) {
+      mapAmbTrIds[ambTrack.trackId()] = ambTrack.globalIndex();
+    }
+
+    // Fill track bc distributions (all tracks including ambiguous)
+    for (const auto& track : tracks) {
+      auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
+      int ambTrId = mapAmbTrIdsIt == mapAmbTrIds.end() ? -1 : mapAmbTrIdsIt->second;
+      int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc().begin().globalIndex();
+      auto bc = bcs.iteratorAt(indexBc);
+      int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+      int indexNearestTVX = indexBc;
+      if (vIsTVX[indexBc]) {
+        indexNearestTVX = indexBc;
+      } else {
+        bool foundNext = 0;
+        int indexNext = indexBc;
+        while (!foundNext && indexNext < nBCs - 1) {
+          if (vIsTVX[++indexNext]) {
+            foundNext = 1;
+          }
+        }
+        bool foundPrev = 0;
+        int indexPrev = indexBc;
+        while (!foundPrev && indexPrev > 0) {
+          if (vIsTVX[--indexPrev]) {
+            foundPrev = 1;
+          }
+        }
+        if (foundNext && foundPrev) {
+          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
+          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
+          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
+        } else if (foundNext) {
+          indexNearestTVX = indexNext;
+        } else if (foundPrev) {
+          indexNearestTVX = indexPrev;
+        }
+      }
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexNearestTVX]);
+      if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
+        continue;
+      histos.fill(HIST("hTrackBcDiffVsEtaAll"), track.eta(), bcDiff);
+      if (track.eta() < -0.2 || track.eta() > 0.2)
+        continue;
+      histos.fill(HIST("hSecondsTVXvsBcDifAll"), bc.timestamp() / 1000., bcDiff);
+    }
 
     // collision-based event selection qa
     for (auto& col : cols) {
@@ -944,9 +998,6 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultZNAcol"), multZNA);
       histos.fill(HIST("hMultZNCcol"), multZNC);
 
-      // map from BCs to Collisions for pileup checks
-      // mapBcsToCollisions[foundBC.globalIndex()].push_back(col.globalIndex());
-
       // filling plots for accepted events
       if (!col.sel8()) {
         continue;
@@ -971,24 +1022,19 @@ struct EventSelectionQaTask {
     } // collisions
 
     // pileup checks
-
-    // for(const auto &entry : mapBcsToCollisions) {
-    //   int32_t bcIndex = entry.first;
-    //   const auto &foundBC = bcs.iteratorAt(bcIndex);
-    //   float multT0M = 0;
-    //   if (foundBC.has_ft0()) {
-    //     for (auto amplitude : foundBC.ft0().amplitudeA()) {
-    //       multT0M += amplitude;
-    //     }
-    //     for (auto amplitude : foundBC.ft0().amplitudeC()) {
-    //       multT0M += amplitude;
-    //     }
-    //   }
-    //   histos.fill(HIST("hMultT0Mall"), multT0M);
-    //   if (entry.second.size()>1) {
-    //     histos.fill(HIST("hMultT0Mpup"), multT0M);
-    //   }
-    // }
+    for (auto const& bc : bcs) {
+      auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
+      if (collisionsGrouped.size() < 2)
+        continue;
+      float multT0M = 0;
+      if (bc.has_ft0()) {
+        for (auto amplitude : bc.ft0().amplitudeA())
+          multT0M += amplitude;
+        for (auto amplitude : bc.ft0().amplitudeC())
+          multT0M += amplitude;
+      }
+      histos.fill(HIST("hMultT0Mpup"), multT0M);
+    }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 
