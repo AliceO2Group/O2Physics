@@ -17,7 +17,7 @@ ClassImp(VarManager);
 
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
-bool VarManager::fgUsedVars[VarManager::kNVars] = {kFALSE};
+bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
@@ -25,6 +25,8 @@ o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
+std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
+bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -110,6 +112,7 @@ void VarManager::FillTrackDerived(float* values)
     values[kP] = values[kPt] * std::cosh(values[kEta]);
   }
 }
+
 //_________________________________________________________________________________________________________________________________________________________________________________
 float VarManager::GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period)
 {
