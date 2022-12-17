@@ -12,6 +12,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CaloClusters.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
@@ -23,6 +24,104 @@
 // todo: declare more columns in this file dynamic or expression, atm I save a lot of redundant information
 namespace o2::aod
 {
+
+namespace emreducedevent
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_COLUMN(Tag, tag, uint64_t);         //!  Bit-field for storing event information (e.g. high level info, cut decisions)
+DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
+DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
+DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
+
+} // namespace emreducedevent
+DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
+                  o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, evsel::Sel8,
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes,
+                  emreducedevent::NgammaPCM, emreducedevent::NgammaPHOS, emreducedevent::NgammaEMC);
+using EMReducedEvent = EMReducedEvents::iterator;
+
+namespace v0leg
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);           //!
+DECLARE_SOA_COLUMN(Sign, sign, int);              //!
+DECLARE_SOA_COLUMN(IsAmbTrack, isAmbTrack, bool); //!
+
+} // namespace v0leg
+// reconstructed v0 information
+DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
+                  o2::soa::Index<>, v0leg::CollisionId,
+                  v0leg::TrackId, v0leg::Sign, v0leg::IsAmbTrack,
+                  track::Pt, track::Eta, track::Phi,
+                  track::DcaXY, track::DcaZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCChi2NCl, track::TPCInnerParam,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
+
+                  // dynamic column
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::ITSNCls<track::ITSClusterMap>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
+                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
+
+// iterators
+using V0Leg = V0Legs::iterator;
+
+namespace v0photon
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
+DECLARE_SOA_COLUMN(Vx, vx, float);                                      //!
+DECLARE_SOA_COLUMN(Vy, vy, float);                                      //!
+DECLARE_SOA_COLUMN(Vz, vz, float);                                      //!
+DECLARE_SOA_COLUMN(PxPosAtSV, pxposatsv, float);                        //!
+DECLARE_SOA_COLUMN(PyPosAtSV, pyposatsv, float);                        //!
+DECLARE_SOA_COLUMN(PzPosAtSV, pzposatsv, float);                        //!
+DECLARE_SOA_COLUMN(PxNegAtSV, pxnegatsv, float);                        //!
+DECLARE_SOA_COLUMN(PyNegAtSV, pynegatsv, float);                        //!
+DECLARE_SOA_COLUMN(PzNegAtSV, pznegatsv, float);                        //!
+DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
+DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
+
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pxpos, float pxneg) -> float { return pxpos + pxneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pypos, float pyneg) -> float { return pypos + pyneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pzpos, float pzneg) -> float { return pzpos + pzneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::eta(array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::phi(pxpos + pxneg, pypos + pyneg); });
+
+} // namespace v0photon
+// reconstructed v0 information
+DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
+                  o2::soa::Index<>, v0photon::CollisionId, v0photon::PosTrackId, v0photon::NegTrackId,
+                  v0photon::Vx, v0photon::Vy, v0photon::Vz,
+                  v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV,
+                  v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV,
+                  v0photon::CosPA, v0photon::PCA,
+
+                  // dynamic column
+                  v0photon::Px<v0photon::PxPosAtSV, v0photon::PxNegAtSV>,
+                  v0photon::Py<v0photon::PyPosAtSV, v0photon::PyNegAtSV>,
+                  v0photon::Pz<v0photon::PzPosAtSV, v0photon::PzNegAtSV>,
+                  v0photon::Pt<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
+                  v0photon::Eta<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+                  v0photon::Phi<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
+                  v0data::V0Radius<v0photon::Vx, v0photon::Vy>,
+                  v0data::Alpha<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+                  v0data::QtArm<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+                  v0data::PsiPair<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
+
+                  // invariant mass mee
+                  v0data::MGamma<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>);
+// iterators
+using V0Photon = V0Photons::iterator;
+
 namespace gammatrackreco
 {
 DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity
@@ -169,5 +268,43 @@ DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //!
                   gammacaloreco::Eta, gammacaloreco::Phi, gammacaloreco::M02, gammacaloreco::M20, gammacaloreco::NCells, gammacaloreco::Time,
                   gammacaloreco::IsExotic, gammacaloreco::DistanceToBadChannel, gammacaloreco::NLM, gammacaloreco::Definition);
 
+namespace phoscluster
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                     //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                                                   //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_INDEX_COLUMN_FULL(MatchedTrack, matchedTrack, int, Tracks, "_Matched"); //! matched track index
+DECLARE_SOA_COLUMN(E, e, float);                                                    //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(X, x, float);                                                    //! cluster hit position in ALICE global coordinate
+DECLARE_SOA_COLUMN(Y, y, float);                                                    //! cluster hit position in ALICE global coordinate
+DECLARE_SOA_COLUMN(Z, z, float);                                                    //! cluster hit position in ALICE global coordinate
+DECLARE_SOA_COLUMN(M02, m02, float);                                                //! shower shape long axis
+DECLARE_SOA_COLUMN(M20, m20, float);                                                //! shower shape short axis
+DECLARE_SOA_COLUMN(NCells, nCells, int);                                            //! number of cells in cluster
+DECLARE_SOA_COLUMN(Time, time, float);                                              //! cluster time (ns)
+DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float);              //! distance to bad channel in cm
+DECLARE_SOA_COLUMN(NLM, nlm, int);                                                  //! number of local maxima
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float x, float y, float z) -> float { return RecoDecay::eta(array{x, y, z}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float x, float y) -> float { return RecoDecay::phi(x, y); });
+} // namespace phoscluster
+
+DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
+                  o2::soa::Index<>, phoscluster::CollisionId, phoscluster::BCId, phoscluster::MatchedTrackId,
+                  phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
+                  phoscluster::M02, phoscluster::M20, phoscluster::NCells,
+                  phoscluster::Time, phoscluster::DistanceToBadChannel, phoscluster::NLM,
+                  // dynamic column
+                  phoscluster::Px<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Py<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Pz<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Pt<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Eta<phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Phi<phoscluster::X, phoscluster::Y>);
+using PHOSCluster = PHOSClusters::iterator;
+
 } // namespace o2::aod
+
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
