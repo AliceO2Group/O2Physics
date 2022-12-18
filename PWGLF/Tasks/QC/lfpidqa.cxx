@@ -52,6 +52,35 @@ struct lfpidqa {
   static constexpr std::string_view hnsigmalf[Np] = {"nsigmalf/El", "nsigmalf/Mu", "nsigmalf/Pi",
                                                      "nsigmalf/Ka", "nsigmalf/Pr", "nsigmalf/De",
                                                      "nsigmalf/Tr", "nsigmalf/He", "nsigmalf/Al"};
+
+  // Positive
+  static constexpr std::string_view hdeltapos[Np] = {"delta/pos/El", "delta/pos/Mu", "delta/pos/Pi",
+                                                     "delta/pos/Ka", "delta/pos/Pr", "delta/pos/De",
+                                                     "delta/pos/Tr", "delta/pos/He", "delta/pos/Al"};
+  static constexpr std::string_view hnsigmapos[Np] = {"nsigma/pos/El", "nsigma/pos/Mu", "nsigma/pos/Pi",
+                                                      "nsigma/pos/Ka", "nsigma/pos/Pr", "nsigma/pos/De",
+                                                      "nsigma/pos/Tr", "nsigma/pos/He", "nsigma/pos/Al"};
+  static constexpr std::string_view hdeltalfpos[Np] = {"deltalf/pos/El", "deltalf/pos/Mu", "deltalf/pos/Pi",
+                                                       "deltalf/pos/Ka", "deltalf/pos/Pr", "deltalf/pos/De",
+                                                       "deltalf/pos/Tr", "deltalf/pos/He", "deltalf/pos/Al"};
+  static constexpr std::string_view hnsigmalfpos[Np] = {"nsigmalf/pos/El", "nsigmalf/pos/Mu", "nsigmalf/pos/Pi",
+                                                        "nsigmalf/pos/Ka", "nsigmalf/pos/Pr", "nsigmalf/pos/De",
+                                                        "nsigmalf/pos/Tr", "nsigmalf/pos/He", "nsigmalf/pos/Al"};
+
+  // Negative
+  static constexpr std::string_view hdeltaneg[Np] = {"delta/neg/El", "delta/neg/Mu", "delta/neg/Pi",
+                                                     "delta/neg/Ka", "delta/neg/Pr", "delta/neg/De",
+                                                     "delta/neg/Tr", "delta/neg/He", "delta/neg/Al"};
+  static constexpr std::string_view hnsigmaneg[Np] = {"nsigma/neg/El", "nsigma/neg/Mu", "nsigma/neg/Pi",
+                                                      "nsigma/neg/Ka", "nsigma/neg/Pr", "nsigma/neg/De",
+                                                      "nsigma/neg/Tr", "nsigma/neg/He", "nsigma/neg/Al"};
+  static constexpr std::string_view hdeltalfneg[Np] = {"deltalf/neg/El", "deltalf/neg/Mu", "deltalf/neg/Pi",
+                                                       "deltalf/neg/Ka", "deltalf/neg/Pr", "deltalf/neg/De",
+                                                       "deltalf/neg/Tr", "deltalf/neg/He", "deltalf/neg/Al"};
+  static constexpr std::string_view hnsigmalfneg[Np] = {"nsigmalf/neg/El", "nsigmalf/neg/Mu", "nsigmalf/neg/Pi",
+                                                        "nsigmalf/neg/Ka", "nsigmalf/neg/Pr", "nsigmalf/neg/De",
+                                                        "nsigmalf/neg/Tr", "nsigmalf/neg/He", "nsigmalf/neg/Al"};
+
   Configurable<uint16_t> minPVcontrib{"minPVcontrib", 0, "Minimum number of PV contributors"};
   Configurable<uint16_t> maxPVcontrib{"maxPVcontrib", 10000, "Maximum number of PV contributors"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
@@ -78,20 +107,38 @@ struct lfpidqa {
       const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
       histos.add(hdelta[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
 
+      histos.addClone(hdelta[id].data(), hdeltapos[id].data());
+      histos.addClone(hdelta[id].data(), hdeltaneg[id].data());
+      histos.addClone(hnsigma[id].data(), hnsigmapos[id].data());
+      histos.addClone(hnsigma[id].data(), hnsigmaneg[id].data());
+
       histos.addClone(hdelta[id].data(), hdeltalf[id].data());
       histos.addClone(hnsigma[id].data(), hnsigmalf[id].data());
+
+      histos.addClone(hdelta[id].data(), hdeltalfpos[id].data());
+      histos.addClone(hdelta[id].data(), hdeltalfneg[id].data());
+      histos.addClone(hnsigma[id].data(), hnsigmalfpos[id].data());
+      histos.addClone(hnsigma[id].data(), hnsigmalfneg[id].data());
     }
   }
 
   Filter collisionZVtxFilter = (nabs(o2::aod::collision::posZ) < zVtxMax);
   // Filter collisionEvSelFilter = ((o2::aod::evsel::Sel8 > 0));
   Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
+  Filter trackFilter = (requireGlobalTrackInFilter());
 
   template <int id, typename T>
   void fillStd(const T& track)
   {
     histos.fill(HIST(hnsigma[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
     histos.fill(HIST(hdelta[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    if (track.sign() > 0) {
+      histos.fill(HIST(hnsigmapos[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+      histos.fill(HIST(hdeltapos[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    } else {
+      histos.fill(HIST(hnsigmaneg[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+      histos.fill(HIST(hdeltaneg[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    }
   }
 
   template <int id, typename T>
@@ -99,31 +146,26 @@ struct lfpidqa {
   {
     histos.fill(HIST(hnsigmalf[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
     histos.fill(HIST(hdeltalf[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    if (track.sign() > 0) {
+      histos.fill(HIST(hnsigmalfpos[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+      histos.fill(HIST(hdeltalfpos[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    } else {
+      histos.fill(HIST(hnsigmalfneg[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+      histos.fill(HIST(hdeltalfneg[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    }
   }
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   void process(soa::Filtered<CollisionCandidate> const& collisions,
                soa::Filtered<soa::Join<TrackCandidates,
-                                       aod::pidTPCFullEl,
-                                       aod::pidTPCFullMu,
-                                       aod::pidTPCFullPi,
-                                       aod::pidTPCFullKa,
-                                       aod::pidTPCFullPr,
-                                       aod::pidTPCFullDe,
-                                       aod::pidTPCFullTr,
-                                       aod::pidTPCFullHe,
-                                       aod::pidTPCFullAl>> const& tracks,
+                                       aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                       aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                       aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl>> const& tracks,
                soa::Filtered<soa::Join<TrackCandidates,
-                                       aod::pidTPCLfFullEl,
-                                       aod::pidTPCLfFullMu,
-                                       aod::pidTPCLfFullPi,
-                                       aod::pidTPCLfFullKa,
-                                       aod::pidTPCLfFullPr,
-                                       aod::pidTPCLfFullDe,
-                                       aod::pidTPCLfFullTr,
-                                       aod::pidTPCLfFullHe,
-                                       aod::pidTPCLfFullAl>> const& lftracks)
+                                       aod::pidTPCLfFullEl, aod::pidTPCLfFullMu, aod::pidTPCLfFullPi,
+                                       aod::pidTPCLfFullKa, aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
+                                       aod::pidTPCLfFullTr, aod::pidTPCLfFullHe, aod::pidTPCLfFullAl>> const& lftracks)
   {
     for (const auto& trk : tracks) {
       static_for<0, 8>([&](auto i) {

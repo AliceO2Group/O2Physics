@@ -15,7 +15,9 @@
 #include <vector>
 #include <algorithm>
 #include <TH1F.h>
+#include <TH3F.h>
 #include <THashList.h>
+#include <TList.h>
 #include <TString.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
@@ -194,14 +196,23 @@ struct AnalysisTrackSelection {
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
   Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+  Configurable<string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<int> fConfigPrefilterCutId{"cfgPrefilterCutId", 32, "Id of the Prefilter track cut (starting at 0)"}; // In order to create another column prefilter (should be temporary before improving cut selection in configurables, then displaced to AnalysisPrefilterSelection)
+  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
 
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+
   void init(o2::framework::InitContext&)
   {
+    fCurrentRun = 0;
+
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -228,6 +239,15 @@ struct AnalysisTrackSelection {
       VarManager::SetUseVars(fHistMan->GetUsedVars());                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
+
+    if (fConfigComputeTPCpostCalib) {
+      // CCDB configuration
+      fCCDB->setURL(fConfigCcdbUrl.value);
+      fCCDB->setCaching(true);
+      fCCDB->setLocalObjectValidityChecking();
+      // Not later than now objects
+      fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+    }
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
@@ -237,14 +257,29 @@ struct AnalysisTrackSelection {
     // fill event information which might be needed in histograms/cuts that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
 
+    // check whether the run changed, and if so, update calibrations in the VarManager
+    // TODO: Here, for the run number and timestamp we assume the function runs with the
+    //      DQ skimmed model. However, we need a compile time check so to make this compatible
+    //      also with the full data model.
+    if (fConfigComputeTPCpostCalib && fCurrentRun != event.runNumber()) {
+      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, event.timestamp());
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+      fCurrentRun = event.runNumber();
+    }
+
     trackSel.reserve(tracks.size());
     uint32_t filterMap = 0;
-    uint8_t filterMapPrefilter = 0.;
+    bool prefilterSelected = false;
     int iCut = 0;
 
     for (auto& track : tracks) {
       filterMap = 0;
-      filterMapPrefilter = 0.;
+      prefilterSelected = false;
       VarManager::FillTrack<TTrackFillMap>(track);
       if (fConfigQA) { // TODO: make this compile time
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -256,7 +291,7 @@ struct AnalysisTrackSelection {
             filterMap |= (uint32_t(1) << iCut);
           }
           if (iCut == fConfigPrefilterCutId) {
-            filterMapPrefilter |= (uint8_t(1) << (iCut - fConfigPrefilterCutId));
+            prefilterSelected = true;
           }
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
@@ -264,7 +299,7 @@ struct AnalysisTrackSelection {
         }
       }
 
-      trackSel(static_cast<int>(filterMap), static_cast<int>(filterMapPrefilter));
+      trackSel(static_cast<int>(filterMap), static_cast<int>(prefilterSelected));
     } // end loop over tracks
   }
 
@@ -381,7 +416,9 @@ struct AnalysisPrefilterSelection {
   {
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
-    fPairCut->AddCut(dqcuts::GetAnalysisCut(pairCutStr.Data()));
+    if (!pairCutStr.IsNull()) {
+      fPairCut->AddCut(dqcuts::GetAnalysisCut(pairCutStr.Data()));
+    }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
@@ -690,7 +727,7 @@ struct AnalysisSameEventPairing {
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
-  Configurable<string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};

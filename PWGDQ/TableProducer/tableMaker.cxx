@@ -22,6 +22,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/DataTypes.h"
 #include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -121,12 +122,19 @@ struct TableMaker {
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
+  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
+  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
   Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= fConfigMinTpcSignal && o2::aod::track::tpcSignal <= fConfigMaxTpcSignal && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
@@ -202,6 +210,15 @@ struct TableMaker {
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
+
+    // CCDB configuration
+    if (fConfigComputeTPCpostCalib) {
+      fCCDB->setURL(fConfigCcdbUrl.value);
+      fCCDB->setCaching(true);
+      fCCDB->setLocalObjectValidityChecking();
+      // Not later than now objects
+      fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+    }
   }
 
   void DefineCuts()
@@ -234,8 +251,20 @@ struct TableMaker {
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
-  void fullSkimming(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
+  void fullSkimming(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
+      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+      fCurrentRun = bc.runNumber();
+    }
+
     // get the trigger aliases
     uint32_t triggerAliases = 0;
     for (int i = 0; i < kNaliases; i++) {
@@ -256,6 +285,11 @@ struct TableMaker {
     // TODO: Add the event level decisions from the filtering task into the tag
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    // TODO: These variables cannot be filled in the VarManager for the moment as long as BCsWithTimestamps are used.
+    //       So temporarily, we filled them here, in order to be available for eventual QA of the skimming
+    VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
+    VarManager::fgValues[VarManager::kBC] = bc.globalBC();
+    VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -284,8 +318,8 @@ struct TableMaker {
     fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
 
     // create the event tables
-    event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
-    eventExtended(collision.bc().globalBC(), collision.bc().triggerMask(), 0, triggerAliases, VarManager::fgValues[VarManager::kCentVZERO]);
+    event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+    eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO]);
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
     uint64_t trackFilteringTag = 0;
@@ -376,12 +410,14 @@ struct TableMaker {
                          track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
                          track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
         }
+        // NOTE: If the TPC postcalibration is switched on, then we write the postcalibrated n-sigma values directly in the skimmed data
+        float nSigmaEl = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
+        float nSigmaPi = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
+        float nSigmaPr = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
         trackBarrelPID(track.tpcSignal(),
-                       track.tpcNSigmaEl(), track.tpcNSigmaMu(),
-                       track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                       nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, track.tpcNSigmaKa(), nSigmaPr,
                        track.beta(),
-                       track.tofNSigmaEl(), track.tofNSigmaMu(),
-                       track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                       track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                        track.trdSignal());
       }
     } // end if constexpr (TTrackFillMap)
@@ -571,41 +607,41 @@ struct TableMaker {
   }
 
   // Produce barrel + muon tables -------------------------------------------------------------------------------------------------------------
-  void processFull(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processFull(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                    soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
-  void processFullWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processFullWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                           soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   // Produce barrel + muon tables, with centrality --------------------------------------------------------------------------------------------
-  void processFullWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
+  void processFullWithCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                            soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with V0Bits ------------------------------------------------------------------------------------------------
-  void processBarrelOnlyWithV0Bits(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processBarrelOnlyWithV0Bits(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                    soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with DalitzBits ------------------------------------------------------------------------------------------------
-  void processBarrelOnlyWithDalitzBits(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processBarrelOnlyWithDalitzBits(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                        soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithDalitzBits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with event filtering ----------------------------------------------------------------------------------------
-  void processBarrelOnlyWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
+  void processBarrelOnlyWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                         soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     for (int i = 0; i < kNaliases; i++) {
@@ -620,49 +656,49 @@ struct TableMaker {
   }
 
   // Produce barrel only tables, with centrality -----------------------------------------------------------------------------------------------
-  void processBarrelOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
+  void processBarrelOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
-  void processBarrelOnlyWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processBarrelOnlyWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only ----------------------------------------------------------------------------------------------------------------
-  void processBarrelOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processBarrelOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                          soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce muon tables only, with centrality -------------------------------------------------------------------------------------------------
-  void processMuonOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
+  void processMuonOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only, with muon cov matrix --------------------------------------------------------------------------------------------
-  void processMuonOnlyWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processMuonOnlyWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                               soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
-  void processMuonOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processMuonOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only, with event filtering --------------------------------------------------------------------------------------------
-  void processMuonOnlyWithFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
+  void processMuonOnlyWithFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                  soa::Filtered<MyMuons> const& tracksMuon)
   {
     for (int i = 0; i < kNaliases; i++) {
@@ -677,14 +713,14 @@ struct TableMaker {
   }
 
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
-  void processAmbiguousMuonOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processAmbiguousMuonOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, ambiTracksFwd);
   }
 
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
-  void processAmbiguousBarrelOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
+  void processAmbiguousBarrelOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collision, bcs, tracksBarrel, nullptr, ambiTracksMid, nullptr);
