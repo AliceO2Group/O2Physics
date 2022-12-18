@@ -79,7 +79,7 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FV0A, "Process with Run 3 FV0A estimator", false);
 
-  void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels,aod::CentFT0Ms>::iterator const& col)
+  void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& col)
   {
     if (!col.sel8())
       return;
