@@ -26,6 +26,8 @@ struct CentralityQa {
   OutputObj<TH1F> hCentRun2CL1{TH1F("hCentRun2CL1", "CL1", 21, 0, 105.)};
   OutputObj<TH1F> hCentFV0A{TH1F("hCentFV0A", "FV0A", 21, 0, 105.)};
   OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0M", "FT0M", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0A", "FT0A", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0C", "FT0C", 21, 0, 105.)};
   OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", 21, 0, 105.)};
   OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", 21, 0, 105.)};
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss>::iterator const& col)
@@ -68,7 +70,7 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun2PbPb, "Process with Run2 CL0 and CL1 multiplicities centrality/multiplicity  estimation", false);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFDDMs, aod::CentNTPVs>::iterator const& col)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>::iterator const& col)
   {
     if (!col.sel8()) {
       return;
@@ -81,6 +83,8 @@ struct CentralityQa {
     // fill centrality histos
     hCentFV0A->Fill(col.centFV0A());
     hCentFT0M->Fill(col.centFT0M());
+    hCentFT0A->Fill(col.centFT0A());
+    hCentFT0C->Fill(col.centFT0C());
     hCentFDDM->Fill(col.centFDDM());
     hCentNTPV->Fill(col.centNTPV());
   }
