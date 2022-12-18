@@ -100,8 +100,8 @@ class multCalibrator : public TNamed
   TString fOutputFileName; // Filename for calibration OADB output
 
   // Anchor point functionality
-  Float_t fAnchorPointValue; //AP value (raw estimator)
-  Float_t fAnchorPointPercentage; //AP percentage
+  Float_t fAnchorPointValue;      // AP value (raw estimator)
+  Float_t fAnchorPointPercentage; // AP percentage
 
   // TList object for storing histograms
   TList* fCalibHists;
