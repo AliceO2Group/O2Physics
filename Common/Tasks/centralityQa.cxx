@@ -26,8 +26,8 @@ struct CentralityQa {
   OutputObj<TH1F> hCentRun2CL1{TH1F("hCentRun2CL1", "CL1", 21, 0, 105.)};
   OutputObj<TH1F> hCentFV0A{TH1F("hCentFV0A", "FV0A", 21, 0, 105.)};
   OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0M", "FT0M", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0A", "FT0A", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0C", "FT0C", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0A{TH1F("hCentFT0A", "FT0A", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0C{TH1F("hCentFT0C", "FT0C", 21, 0, 105.)};
   OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", 21, 0, 105.)};
   OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", 21, 0, 105.)};
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss>::iterator const& col)
