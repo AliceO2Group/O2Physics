@@ -26,6 +26,8 @@ struct CentralityQa {
   OutputObj<TH1F> hCentRun2CL1{TH1F("hCentRun2CL1", "CL1", 21, 0, 105.)};
   OutputObj<TH1F> hCentFV0A{TH1F("hCentFV0A", "FV0A", 21, 0, 105.)};
   OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0M", "FT0M", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0A{TH1F("hCentFT0A", "FT0A", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0C{TH1F("hCentFT0C", "FT0C", 21, 0, 105.)};
   OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", 21, 0, 105.)};
   OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", 21, 0, 105.)};
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss>::iterator const& col)
@@ -68,23 +70,55 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun2PbPb, "Process with Run2 CL0 and CL1 multiplicities centrality/multiplicity  estimation", false);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFDDMs, aod::CentNTPVs>::iterator const& col)
+  void processRun3_FV0A(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& col)
   {
-    if (!col.sel8()) {
+    if (!col.sel8())
       return;
-    }
-
-    LOGF(debug, "centV0M=%.0f", col.centFV0A());
-    LOGF(debug, "centFT0M=%.0f", col.centFT0M());
-    LOGF(debug, "centFDDM=%.0f", col.centFDDM());
-    LOGF(debug, "centNTPV=%.0f", col.centNTPV());
-    // fill centrality histos
+    LOGF(debug, "centFV0A=%.0f", col.centFV0A());
     hCentFV0A->Fill(col.centFV0A());
+  }
+  PROCESS_SWITCH(CentralityQa, processRun3_FV0A, "Process with Run 3 FV0A estimator", false);
+
+  void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& col)
+  {
+    if (!col.sel8())
+      return;
+    LOGF(debug, "centFT0M=%.0f", col.centFT0M());
     hCentFT0M->Fill(col.centFT0M());
+  }
+  PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
+
+  void processRun3_FT0A(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As>::iterator const& col)
+  {
+    if (!col.sel8())
+      return;
+    hCentFT0A->Fill(col.centFT0A());
+  }
+  PROCESS_SWITCH(CentralityQa, processRun3_FT0A, "Process with Run 3 FT0A estimator", false);
+
+  void processRun3_FT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& col)
+  {
+    if (!col.sel8())
+      return;
+    hCentFT0A->Fill(col.centFT0C());
+  }
+  PROCESS_SWITCH(CentralityQa, processRun3_FT0C, "Process with Run 3 FT0A estimator", false);
+
+  void processRun3_FDDM(soa::Join<aod::Collisions, aod::EvSels, aod::CentFDDMs>::iterator const& col)
+  {
+    if (!col.sel8())
+      return;
     hCentFDDM->Fill(col.centFDDM());
+  }
+  PROCESS_SWITCH(CentralityQa, processRun3_FDDM, "Process with Run 3 FDDM estimator", false);
+
+  void processRun3_NTPV(soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>::iterator const& col)
+  {
+    if (!col.sel8())
+      return;
     hCentNTPV->Fill(col.centNTPV());
   }
-  PROCESS_SWITCH(CentralityQa, processRun3, "Process with Run3 centrality/multiplicity estimators", false);
+  PROCESS_SWITCH(CentralityQa, processRun3_NTPV, "Process with Run 3 NTPV estimator", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
