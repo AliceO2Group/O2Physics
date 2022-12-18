@@ -160,23 +160,23 @@ Double_t multCalibrator::GetBoundaryForPercentile(TH1* histo, Double_t lPercenti
   Double_t lPercentile = 100.0 - lPercentileRequested;
   Double_t lPercentileAnchor = 100.0 - fAnchorPointPercentage;
   lPrecisionEstimate = -1;
-  if(lPercentile < lPercentileAnchor+1e-7)
+  if (lPercentile < lPercentileAnchor + 1e-7)
     return fAnchorPointValue;
   Double_t lCount = 0;
-  
-  //Anchor point changes: if anchored, start at the first bin that includes that
+
+  // Anchor point changes: if anchored, start at the first bin that includes that
   Long_t lFirstBin = 1;
   Double_t lHadronicTotal = histo->GetEntries();
-  if(fAnchorPointValue>0){
-    lFirstBin = histo->FindBin(fAnchorPointValue+1e-6);
+  if (fAnchorPointValue > 0) {
+    lFirstBin = histo->FindBin(fAnchorPointValue + 1e-6);
     Double_t lAbove = histo->Integral(lFirstBin, histo->GetNbinsX());
-    lHadronicTotal = lAbove*100.0/(fAnchorPointPercentage);
-    lCount = lHadronicTotal-lAbove; // the relevant anchored-out part
+    lHadronicTotal = lAbove * 100.0 / (fAnchorPointPercentage);
+    lCount = lHadronicTotal - lAbove; // the relevant anchored-out part
   }
-  
+
   const Long_t lNBins = histo->GetNbinsX();
   Double_t lCountDesired = lPercentile * lHadronicTotal / 100;
-  
+
   for (Long_t ibin = lFirstBin; ibin < lNBins; ibin++) {
     lCount += histo->GetBinContent(ibin);
     if (lCount >= lCountDesired) {
@@ -248,28 +248,29 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
   ResetPrecisionHistogram();
 
   // Consistency check
-  if( fAnchorPointValue > 0 && TMath::Abs(fAnchorPointPercentage - lDesiredBoundaries[0]) > 1e-6 ){
-    cout<<"PROBLEM WITH ANCHOR POINT SETTINGS! "<<endl;
-    cout<<"Anchor point percentage requested: "<<fAnchorPointPercentage<<endl;
-    cout<<"Last boundary: "<<lDesiredBoundaries[0]<<endl;
+  if (fAnchorPointValue > 0 && TMath::Abs(fAnchorPointPercentage - lDesiredBoundaries[0]) > 1e-6) {
+    cout << "PROBLEM WITH ANCHOR POINT SETTINGS! " << endl;
+    cout << "Anchor point percentage requested: " << fAnchorPointPercentage << endl;
+    cout << "Last boundary: " << lDesiredBoundaries[0] << endl;
   }
-  
+
   //Aux vars
   Double_t lMiddleOfBins[1000];
   for (Long_t lB = 1; lB < lNDesiredBoundaries; lB++) {
     //place squarely at the middle to ensure it's all fine
     lMiddleOfBins[lB - 1] = 0.5 * (lDesiredBoundaries[lB] + lDesiredBoundaries[lB - 1]);
   }
-  Double_t lBounds[lNDesiredBoundaries+1];
-  Double_t lPrecision[lNDesiredBoundaries+1];
+  Double_t lBounds[lNDesiredBoundaries + 1];
+  Double_t lPrecision[lNDesiredBoundaries + 1];
 
-  if( fAnchorPointValue>0){
+  if (fAnchorPointValue > 0) {
     lBounds[0] = 0;
   }
-     
+
   for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
     Int_t lDisplacedii = ii;
-    if(fAnchorPointValue>0) lDisplacedii++;
+    if (fAnchorPointValue > 0)
+      lDisplacedii++;
     lBounds[lDisplacedii] = GetBoundaryForPercentile(histoRaw, lDesiredBoundaries[ii], lPrecision[ii]);
     TString lPrecisionString = "(Precision OK)";
     if (ii != 0 && ii != lNDesiredBoundaries - 1) {
@@ -281,12 +282,12 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
     }
     cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[lDisplacedii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
   }
-  TH1F* hCalib = new TH1F(lHistoName.Data(), "", fAnchorPointValue<0?lNDesiredBoundaries - 1:lNDesiredBoundaries, lBounds);
+  TH1F* hCalib = new TH1F(lHistoName.Data(), "", fAnchorPointValue < 0 ? lNDesiredBoundaries - 1 : lNDesiredBoundaries, lBounds);
   hCalib->SetDirectory(0);
   hCalib->SetBinContent(0, 100.5);
   hCalib->SetBinContent(1, 100.5);
-  for (Long_t ibin = fAnchorPointValue<0?1:2; ibin < lNDesiredBoundaries; ibin++) {
-    hCalib->SetBinContent(ibin, lMiddleOfBins[fAnchorPointValue<0?ibin - 1:ibin - 2]);
+  for (Long_t ibin = fAnchorPointValue < 0 ? 1 : 2; ibin < lNDesiredBoundaries; ibin++) {
+    hCalib->SetBinContent(ibin, lMiddleOfBins[fAnchorPointValue < 0 ? ibin - 1 : ibin - 2]);
     fPrecisionHistogram->SetBinContent(lNDesiredBoundaries - ibin + 1, std::hypot(lPrecision[ibin - 1], lPrecision[ibin]));
   }
   return hCalib;
