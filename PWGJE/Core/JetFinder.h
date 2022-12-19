@@ -173,11 +173,14 @@ class JetFinder
 
 // does this belong here?
 template <typename T>
-void fillConstituents(const T& constituent, std::vector<fastjet::PseudoJet>& constituents)
+void fillConstituents(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999, double mass = JetFinder::mPion)
 {
-
-  auto energy = std::sqrt(constituent.p() * constituent.p() + JetFinder::mPion * JetFinder::mPion);
+  // auto energy = std::sqrt(constituent.p() * constituent.p() + JetFinder::mPion * JetFinder::mPion);
+  auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
+  auto energy = std::sqrt((p * p) + (mass * mass));
   constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
+  if (index != -99999)
+    constituents.back().set_user_index(index); //can the index of a track be -99999?
 }
 
 #endif

@@ -22,6 +22,8 @@ void JetFinder::setParams()
   if (!isReclustering) {
     jetEtaMin = etaMin + jetR; //in aliphysics this was (-etaMax + 0.95*jetR)
     jetEtaMax = etaMax - jetR;
+  } else {
+    jetR = 5.0 * jetR;
   }
 
   //selGhosts =fastjet::SelectorRapRange(ghostEtaMin,ghostEtaMax) && fastjet::SelectorPhiRange(phiMin,phiMax);
@@ -89,5 +91,8 @@ fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>
   fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDef, areaDef);
   jets = sub ? (*sub)(clusterSeq.inclusive_jets()) : clusterSeq.inclusive_jets();
   jets = selJets(jets);
+  if (isReclustering) {
+    jetR = jetR / 5.0;
+  }
   return clusterSeq;
 }
