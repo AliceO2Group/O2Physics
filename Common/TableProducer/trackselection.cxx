@@ -37,6 +37,7 @@ using namespace o2::framework::expressions;
 struct TrackSelectionTask {
   // FIXME: this will be removed once we can get this via meta data
   Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
+  Configurable<bool> produceFBextendedTable{"produceFBextendedTable", false, "option to produce table with FB selection information"};
   Configurable<bool> compatibilityIU{"compatibilityIU", false, "compatibility option to allow the processing of tracks before the introduction of IU tracks"};
   Configurable<int> itsMatching{"itsMatching", 0, "condition for ITS matching (0: Run2 SPD kAny, 1: Run3ITSibAny, 2: Run3ITSallAny, 3: Run3ITSall7Layers)"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Lower cut on pt for the track selected"};
@@ -45,9 +46,13 @@ struct TrackSelectionTask {
   Configurable<float> etaMax{"etaMax", 0.8, "Upper cut on eta for the track selected"};
 
   Produces<aod::TrackSelection> filterTable;
-
+  Produces<aod::TrackSelectionExtension> filterTableDetail;
   TrackSelection globalTracks;
   TrackSelection globalTracksSDD;
+  TrackSelection filtBit1;
+  TrackSelection filtBit2;
+  TrackSelection filtBit3;
+  TrackSelection filtBit4;
 
   void init(InitContext&)
   {
@@ -93,20 +98,54 @@ struct TrackSelectionTask {
     globalTracksSDD = getGlobalTrackSelectionSDD();
     globalTracksSDD.SetPtRange(ptMin, ptMax);
     globalTracksSDD.SetEtaRange(etaMin, etaMax);
+
+    filtBit1 = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny);
+
+    filtBit2 = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo);
+
+    filtBit3 = getGlobalTrackSelectionRun3HF();
+
+    filtBit4 = getGlobalTrackSelectionRun3Nuclei();
   }
 
   void process(soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
   {
     if (isRun3) {
       for (auto& track : tracks) {
+        o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
+        o2::aod::track::TrackSelectionFlags::flagtype trackflagFB1 = filtBit1.IsSelectedMask(track);
+        o2::aod::track::TrackSelectionFlags::flagtype trackflagFB2 = filtBit2.IsSelectedMask(track);
+        // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB3 = filtBit3.IsSelectedMask(track); // only temporarily commented, will be used
+        // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB4 = filtBit4.IsSelectedMask(track);
+
         filterTable((uint8_t)0,
-                    globalTracks.IsSelectedMask(track));
+                    globalTracks.IsSelectedMask(track), filtBit1.IsSelected(track), filtBit2.IsSelected(track), filtBit3.IsSelected(track), filtBit4.IsSelected(track));
+        if (produceFBextendedTable) {
+          filterTableDetail(o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTrackType),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kPtRange),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kEtaRange),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCNCls),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCCrossedRows),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCCrossedRowsOverNCls),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCChi2NDF),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCRefit),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSNCls),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSChi2NDF),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSRefit),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSHits),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kGoldenChi2),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kDCAxy),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kDCAz),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagFB1, o2::aod::track::TrackSelectionFlags::kITSHits),
+                            o2::aod::track::TrackSelectionFlags::checkFlag(trackflagFB2, o2::aod::track::TrackSelectionFlags::kITSHits));
+        }
       }
       return;
     }
+
     for (auto& track : tracks) {
       filterTable((uint8_t)globalTracksSDD.IsSelected(track),
-                  globalTracks.IsSelectedMask(track));
+                  globalTracks.IsSelectedMask(track), filtBit1.IsSelected(track), filtBit2.IsSelected(track), filtBit3.IsSelected(track), filtBit4.IsSelected(track));
     }
   }
 };

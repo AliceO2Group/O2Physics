@@ -226,7 +226,7 @@ struct QaTrackCuts {
     }
   }
 
-  using AnalysisTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>;
+  using AnalysisTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>;
   using AnalysisColls = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   void process(const AnalysisTracks& tracks,
                const AnalysisColls&)

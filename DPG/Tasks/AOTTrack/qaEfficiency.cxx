@@ -1166,7 +1166,7 @@ struct QaEfficiency {
 
   // Global process
   void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>& tracks)
   {
     isCollisionSelected<true>(collision);
   }
@@ -1332,7 +1332,7 @@ struct QaEfficiency {
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   void processMC(o2::aod::McCollision const& mcCollision,
                  o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
-                 o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection> const& tracks,
+                 o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension> const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
     if (collisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
@@ -1406,7 +1406,7 @@ struct QaEfficiency {
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-                   const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
+                   const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>& tracks)
   {
 
     if (!isCollisionSelected<false>(collision)) {

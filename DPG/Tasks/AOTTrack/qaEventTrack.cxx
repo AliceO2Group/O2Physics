@@ -87,14 +87,14 @@ struct qaEventTrack {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
-  using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection>;
+  using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackIUTable> tracksIUFiltered = (trackSelection.node() == 0) ||
                                              ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                              ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                                              ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                              ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                                              ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
+  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackTableData> tracksFilteredCorrIU = (trackSelection.node() == 0) ||
                                                    ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                                    ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
