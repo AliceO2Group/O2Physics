@@ -106,6 +106,7 @@ struct multistrangeBuilder {
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
 
   // CCDB options
@@ -120,14 +121,16 @@ struct multistrangeBuilder {
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::base::Propagator::MatCorrType matCorr;
+  o2::base::Propagator::MatCorrType matCorrCascade;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
   enum cascstep { kCascAll = 0,
+                  kCascLambdaMass,
                   kBachTPCrefit,
                   kBachCrossedRows,
                   kBachDCAxy,
-                  kCascLambdaMass,
                   kCascDCADau,
                   kCascCosPA,
                   kCascRadius,
@@ -145,10 +148,12 @@ struct multistrangeBuilder {
     float bachDCAxy;
     float cosPA;
     float cascradius;
+    float cascDCAxy; // cascade DCA xy (with bending)
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
   o2::track::TrackParCov lV0Track;
+  o2::track::TrackPar lCascadeTrack;
 
   // Helper struct to do bookkeeping of building parameters
   struct {
@@ -245,19 +250,19 @@ struct multistrangeBuilder {
               }
               if (option.name.compare("cascadesetting_dcacascdau") == 0) {
                 detected_dcacascdau = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA V0 daughters = %f", device.name, detected_dcacascdau);
+                LOGF(info, "%s requested DCA cascade daughters = %f", device.name, detected_dcacascdau);
                 if (detected_dcacascdau > loosest_dcacascdau)
                   loosest_dcacascdau = detected_dcacascdau;
               }
               if (option.name.compare("cascadesetting_dcabachtopv") == 0) {
                 detected_dcabachtopv = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA positive daughter to PV = %f", device.name, detected_dcabachtopv);
+                LOGF(info, "%s requested DCA bachelor daughter = %f", device.name, detected_dcabachtopv);
                 if (detected_dcabachtopv < loosest_dcabachtopv)
                   loosest_dcabachtopv = detected_dcabachtopv;
               }
               if (option.name.compare("cascadesetting_cascradius") == 0) {
                 detected_radius = option.defaultValue.get<float>();
-                LOGF(info, "%s requested DCA negative daughter to PV = %f", device.name, detected_radius);
+                LOGF(info, "%s requested  to PV = %f", device.name, detected_radius);
                 if (detected_radius < loosest_radius)
                   loosest_radius = detected_radius;
               }
@@ -323,12 +328,18 @@ struct multistrangeBuilder {
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
     // Material correction in the DCA fitter
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+    matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     if (useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     fitter.setMatCorrType(matCorr);
+
+    matCorrCascade = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+    if (useMatCorrTypeCasc == 1)
+      matCorrCascade = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+    if (useMatCorrTypeCasc == 2)
+      matCorrCascade = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -398,7 +409,7 @@ struct multistrangeBuilder {
     statisticsRegistry.cascstats[kBachCrossedRows]++;
 
     // bachelor DCA track to PV
-    if (bachTrack.dcaXY() < dcabachtopv)
+    if (TMath::Abs(bachTrack.dcaXY()) < dcabachtopv)
       return false;
     statisticsRegistry.cascstats[kBachDCAxy]++;
 
@@ -415,7 +426,9 @@ struct multistrangeBuilder {
     lV0Track = o2::track::TrackParCov(
       {v0.x(), v0.y(), v0.z()},
       {v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()},
-      covV, cascadecandidate.charge, true);
+      covV, 0, true);
+    lV0Track.setAbsCharge(0);
+    lV0Track.setPID(o2::track::PID::Lambda);
 
     //---/---/---/
     // Move close to minima
@@ -435,7 +448,7 @@ struct multistrangeBuilder {
 
     // DCA between cascade daughters
     cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if (cascadecandidate.cascradius < dcacascdau)
+    if (cascadecandidate.dcacascdau > dcacascdau)
       return false;
     statisticsRegistry.cascstats[kCascDCADau]++;
 
@@ -449,7 +462,7 @@ struct multistrangeBuilder {
     cascadecandidate.cosPA = RecoDecay::cpa(
       array{collision.posX(), collision.posY(), collision.posZ()},
       array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]},
-      array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzpos() + cascadecandidate.bachP[2]});
+      array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzneg() + cascadecandidate.bachP[2]});
     if (cascadecandidate.cosPA < casccospa) {
       return false;
     }
@@ -460,6 +473,17 @@ struct multistrangeBuilder {
     if (cascadecandidate.cascradius < cascradius)
       return false;
     statisticsRegistry.cascstats[kCascRadius]++;
+
+    // Calculate DCAxy of the cascade (with bending)
+    lCascadeTrack = fitter.createParentTrackPar();
+    lCascadeTrack.setAbsCharge(cascadecandidate.charge); // to be sure
+    lCascadeTrack.setPID(o2::track::PID::XiMinus);       // FIXME: not OK for omegas
+    gpu::gpustd::array<float, 2> dcaInfo;
+    dcaInfo[0] = 999;
+    dcaInfo[1] = 999;
+
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
+    cascadecandidate.cascDCAxy = dcaInfo[0];
 
     return true;
   }
@@ -483,7 +507,7 @@ struct multistrangeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
-      cascdata(v0.globalIndex(),
+      cascdata(v0index.globalIndex(),
                bachTrackCast.globalIndex(),
                cascade.collisionId(),
                cascadecandidate.charge,
@@ -494,7 +518,7 @@ struct multistrangeBuilder {
                cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
                v0.dcaV0daughters(), cascadecandidate.dcacascdau,
                v0.dcapostopv(), v0.dcanegtopv(),
-               cascadecandidate.bachDCAxy);
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
     }
     // En masse filling at end of process call
     fillHistos();
@@ -545,6 +569,7 @@ struct multistrangeLabelBuilder {
       // Loop over those that actually have the corresponding V0 associated to them
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
       if (!(v0.has_v0Data())) {
+        casclabels(-1);
         continue; // skip those cascades for which V0 doesn't exist
       }
       auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists

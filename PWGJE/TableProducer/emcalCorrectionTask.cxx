@@ -14,6 +14,7 @@
 // Author: Raymond Ehlers & Florian Jonas
 
 #include <algorithm>
+#include <iostream>
 #include <cmath>
 
 #include "CCDB/BasicCCDBManager.h"
@@ -39,8 +40,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
@@ -79,8 +78,6 @@ struct EmcalCorrectionTask {
   OutputObj<TH2I> hCellRowCol{"hCellRowCol"};
   OutputObj<TH1F> hClusterE{"hClusterE"};
   OutputObj<TH2F> hClusterEtaPhi{"hClusterEtaPhi"};
-  OutputObj<TH1F> hCollisionMatching{"hCollisionMatching"};
-  OutputObj<TH1F> hCollisionMatchingReadout{"hCollisionMatchingReadout"};
 
   void init(InitContext const&)
   {
@@ -142,8 +139,6 @@ struct EmcalCorrectionTask {
     hCellRowCol.setObject(new TH2I("hCellRowCol", "hCellRowCol;Column;Row", 97, 0, 97, 600, 0, 600));
     hClusterE.setObject(new TH1F("hClusterE", "hClusterE", 200, 0.0, 100));
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
-    hCollisionMatching.setObject(new TH1F("hCollisionMatching", "hCollisionMatching", 3, -0.5, 2.5));        // 0, no vertex,1 vertex found , 2 multiple vertices found
-    hCollisionMatchingReadout.setObject(new TH1F("hCollisionMatching", "hCollisionMatching", 3, -0.5, 2.5)); // 0, no vertex,1 vertex found , 2 multiple vertices found, only filled for BCs with kTVXinEMC
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
@@ -151,7 +146,7 @@ struct EmcalCorrectionTask {
   // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
 
   //  Appears to need the BC to be accessed to be available in the collision table...
-  void process(bcEvSelIt const& bc, aod::Collisions const& collisions, aod::Tracks const& tracks, aod::Calos const& cells)
+  void process(aod::BC const& bc, aod::Collisions const& collisions, aod::Tracks const& tracks, aod::Calos const& cells)
   {
     LOG(debug) << "Starting process.";
     // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -176,11 +171,6 @@ struct EmcalCorrectionTask {
       c++;
     }
     LOG(debug) << "Number of cells (CF): " << mEmcalCells.size();
-
-    bool isEMCALreadout = false;
-    if (bc.alias()[kTVXinEMC]) {
-      isEMCALreadout = true;
-    }
 
     // Cell QA
     // For convenience, use the clusterizer stored geometry to get the eta-phi
@@ -232,12 +222,6 @@ struct EmcalCorrectionTask {
       float vx = 0, vy = 0, vz = 0;
       bool hasCollision = false;
       if (collisions.size() > 1) {
-        if (i == 0) {
-          hCollisionMatching->Fill(2);
-          if (isEMCALreadout) {
-            hCollisionMatchingReadout->Fill(2);
-          }
-        }
         LOG(error) << "More than one collision in the bc. This is not supported.";
       } else {
         // dummy loop to get the first collision
@@ -246,12 +230,6 @@ struct EmcalCorrectionTask {
           vy = col.posY();
           vz = col.posZ();
           hasCollision = true;
-          if (i == 0) {
-            hCollisionMatching->Fill(1);
-            if (isEMCALreadout) {
-              hCollisionMatchingReadout->Fill(1);
-            }
-          }
 
           // store positions of all tracks of collision
           auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
@@ -321,19 +299,11 @@ struct EmcalCorrectionTask {
           } // end of cluster loop
         }   // end of collision loop
       }
-      if (!hasCollision) {
-        if (i == 0) {
-          hCollisionMatching->Fill(0);
-          if (isEMCALreadout) {
-            hCollisionMatchingReadout->Fill(0);
-          }
-        }
-        // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
-      }
 
       // Store the clusters in the table where a mathcing collision could
       // be identified.
       if (!hasCollision) { // ambiguous
+        // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
         int cellindex = -1;
         clustersAmbiguous.reserve(mAnalysisClusters.size());
         for (const auto& cluster : mAnalysisClusters) {

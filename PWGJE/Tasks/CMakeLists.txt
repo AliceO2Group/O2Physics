@@ -9,27 +9,30 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
 o2physics_add_dpl_workflow(emc-cellmonitor
-                    SOURCES emccellmonitor.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES emccellmonitor.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(emc-clustermonitor
-                    SOURCES emcclustermonitor.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-if(FastJet_FOUND)
-o2physics_add_dpl_workflow(jet-substructure
-                    SOURCES jetsubstructure.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(jet-charged-trigger-qa
-                    SOURCES ChJetTriggerQATask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(jet-matching-hf-qa
-                    SOURCES jetmatchinghfqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-endif()
+    SOURCES emcclustermonitor.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(emc-eventselection-qa
+    SOURCES emceventselectionqa.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
+if(FastJet_FOUND)
+    o2physics_add_dpl_workflow(jet-substructure
+        SOURCES jetsubstructure.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-charged-trigger-qa
+        SOURCES ChJetTriggerQATask.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-matching-hf-qa
+        SOURCES jetmatchinghfqa.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)
+endif()

@@ -91,7 +91,10 @@ struct MultiplicityCounter {
       {"hrecdndeta", "evntclass; triggerclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis, EtaAxis}}}, //
       {"hgendndeta", "evntclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis, EtaAxis}}},                              //
       {"hreczvtx", "evntclass; triggerclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis}}},                 //
-      {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}}                                               //
+      {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}},                                              //
+      {"PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                                                                        //
+      {"DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                         //
+      {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}}                                                                                            //
     }
 
   };
@@ -167,6 +170,11 @@ struct MultiplicityCounter {
       for (auto& track : tracks) {
         if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
           continue;
+        }
+        if (z > -10 && z < 10) {
+          registry.fill(HIST("PhiEta"), track.phi(), track.eta());
+          registry.fill(HIST("DCAXY"), track.dcaXY());
+          registry.fill(HIST("DCAZ"), track.dcaZ());
         }
         tracketas.push_back(track.eta());
       }

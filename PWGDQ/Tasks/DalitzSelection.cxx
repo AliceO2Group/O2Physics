@@ -70,13 +70,12 @@ struct dalitzPairing {
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
 
-  std::map<int, uint8_t> trackmap;
-  std::map<int, uint8_t> dalitzmap;
+  std::map<int, uint8_t> fTrackmap;
+  std::map<int, uint8_t> fDalitzmap;
 
   AnalysisCompositeCut* fEventCut;
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<AnalysisCompositeCut> fPairCuts;
-  int nCuts = 0;
 
   HistogramManager* fHistMan;
 
@@ -106,9 +105,8 @@ struct dalitzPairing {
     }
 
     if (fTrackCuts.size() != fPairCuts.size()) {
-      std::cout << "WARNING: YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS" << std::endl;
+      LOGF(fatal, "YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS");
     }
-    nCuts = std::min(fTrackCuts.size(), fPairCuts.size());
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
@@ -120,11 +118,10 @@ struct dalitzPairing {
     TString histClasses = "";
 
     if (fQA) {
-      for (int icut = 0; icut < nCuts; icut++) {
-        AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
-        AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-        histClasses += Form("TrackBarrel_%s_%s;", trackCut.GetName(), pairCut.GetName());
-        histClasses += Form("Pair_%s_%s;", trackCut.GetName(), pairCut.GetName());
+      auto trackCut = fTrackCuts.begin();
+      for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++) {
+        histClasses += Form("TrackBarrel_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
+        histClasses += Form("Pair_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
       }
     }
 
@@ -152,11 +149,11 @@ struct dalitzPairing {
     fStatsList->SetOwner(kTRUE);
 
     // Dalitz selection statistics: one bin for each (track,pair) selection
-    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", nCuts, -0.5, nCuts - 0.5);
-    for (int icut = 0; icut < nCuts; icut++) {
-      AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
-      AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-      histTracks->GetXaxis()->SetBinLabel(icut + 1, Form("%s_%s", trackCut.GetName(), pairCut.GetName()));
+    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", fPairCuts.size(), -0.5, fPairCuts.size() - 0.5);
+    auto trackCut = fTrackCuts.begin();
+    int icut = 0;
+    for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
+      histTracks->GetXaxis()->SetBinLabel(icut + 1, Form("%s_%s", (*trackCut).GetName(), (*pairCut).GetName()));
     }
     if (fQA) {
       fStatsList->Add(histTracks);
@@ -179,90 +176,71 @@ struct dalitzPairing {
         }
       }
       if (filterMap) {
-        trackmap[track.globalIndex()] = filterMap;
+        fTrackmap[track.globalIndex()] = filterMap;
       }
     } // end loop over tracks
   }
 
-  template <uint32_t TTrackFillMap, typename TTracks>
+  template <int TPairType, uint32_t TTrackFillMap, typename TTracks>
   void runDalitzPairing(TTracks const& tracks1, TTracks const& tracks2)
   {
-    const int TPairType = VarManager::kDecayToEE; // For dielectron
     for (auto& [track1, track2] : o2::soa::combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
       if (track1.sign() * track2.sign() > 0) {
         continue;
       }
 
-      uint8_t twoTracksFilterMap = trackmap[track1.globalIndex()] & trackmap[track2.globalIndex()];
+      uint8_t twoTracksFilterMap = fTrackmap[track1.globalIndex()] & fTrackmap[track2.globalIndex()];
       if (!twoTracksFilterMap)
         continue;
 
       // pairing
       VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
-      uint8_t track1Untagged = uint8_t(0);
-      uint8_t track2Untagged = uint8_t(0);
 
       // Fill pair selection map and fill pair histogram
-      for (int icut = 0; icut < nCuts; icut++) {
-        if (!(twoTracksFilterMap & (uint8_t(1) << icut)))
+      int icut = 0;
+      auto trackCut = fTrackCuts.begin();
+      for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
+        if (!(twoTracksFilterMap & (uint8_t(1) << icut))) {
           continue;
-        AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-        if (pairCut.IsSelected(VarManager::fgValues)) {
+        }
+        if ((*pairCut).IsSelected(VarManager::fgValues)) {
+          fDalitzmap[track1.globalIndex()] |= (uint8_t(1) << icut);
+          fDalitzmap[track2.globalIndex()] |= (uint8_t(1) << icut);
           if (fQA) {
-            AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
-            fHistMan->FillHistClass(Form("Pair_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
-          }
-
-          // Check if tracks were already tagged
-          bool b1 = dalitzmap[track1.globalIndex()] & (uint8_t(1) << icut);
-          if (!b1) {
-            track1Untagged |= (uint8_t(1) << icut);
-            if (fQA) {
-              ((TH1I*)fStatsList->At(0))->Fill(icut);
-            }
-          }
-          bool b2 = dalitzmap[track2.globalIndex()] & (uint8_t(1) << icut);
-          if (!b2) {
-            track2Untagged |= (uint8_t(1) << icut);
-            if (fQA) {
-              ((TH1I*)fStatsList->At(0))->Fill(icut);
-            }
-          }
-        }
-      }
-
-      // Tag tracks which are not already tagged
-      dalitzmap[track1.globalIndex()] |= track1Untagged;
-      dalitzmap[track2.globalIndex()] |= track2Untagged;
-
-      // Fill track histograms if not already tagged
-      if (fQA) {
-        VarManager::FillTrack<TTrackFillMap>(track1);
-        for (int icut = 0; icut < nCuts; icut++) {
-          if (track1Untagged & (uint8_t(1) << icut)) {
-            AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
-            AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-            fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
-          }
-        }
-        VarManager::FillTrack<TTrackFillMap>(track2);
-        for (int icut = 0; icut < nCuts; icut++) {
-          if (track2Untagged & (uint8_t(1) << icut)) {
-            AnalysisCompositeCut trackCut = fTrackCuts.at(icut);
-            AnalysisCompositeCut pairCut = fPairCuts.at(icut);
-            fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", trackCut.GetName(), pairCut.GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Pair_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
           }
         }
       }
     } // end of tracksP,N loop
+
+    // Fill Hists
+    if (fQA) {
+      for (auto& track : tracks1) {
+        uint8_t filterMap = fDalitzmap[track.globalIndex()];
+        if (!filterMap) {
+          continue;
+        }
+        VarManager::FillTrack<TTrackFillMap>(track);
+
+        int icut = 0;
+        auto trackCut = fTrackCuts.begin();
+        for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
+          if (filterMap & (uint8_t(1) << icut)) {
+            ((TH1I*)fStatsList->At(0))->Fill(icut);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
+          }
+        }
+      }
+    }
   }
 
   void processFullTracks(MyEvents const& collisions, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
   {
-    dalitzmap.clear();
+    const int pairType = VarManager::kDecayToEE;
+    fDalitzmap.clear();
 
     for (auto& collision : collisions) {
-      trackmap.clear();
+      fTrackmap.clear();
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<gkEventFillMap>(collision);
       bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
@@ -270,12 +248,12 @@ struct dalitzPairing {
       if (isEventSelected) {
         auto groupedFilteredTracks = filteredTracks.sliceBy(perCollision, collision.globalIndex());
         runTrackSelection<gkTrackFillMap>(groupedFilteredTracks);
-        runDalitzPairing<gkTrackFillMap>(groupedFilteredTracks, groupedFilteredTracks);
+        runDalitzPairing<pairType, gkTrackFillMap>(groupedFilteredTracks, groupedFilteredTracks);
       }
     }
 
     for (auto& track : tracks) { // Fill dalitz bits
-      dalitzbits(dalitzmap[track.globalIndex()]);
+      dalitzbits(fDalitzmap[track.globalIndex()]);
     }
   }
 
