@@ -100,7 +100,7 @@ struct CentralityQa {
   {
     if (!col.sel8())
       return;
-    hCentFT0A->Fill(col.centFT0C());
+    hCentFT0C->Fill(col.centFT0C());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0C, "Process with Run 3 FT0A estimator", false);
 
