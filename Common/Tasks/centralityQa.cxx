@@ -19,17 +19,19 @@ using namespace o2;
 using namespace o2::framework;
 
 struct CentralityQa {
-  OutputObj<TH1F> hCentRun2V0M{TH1F("hCentRun2V0M", "V0M", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun2SPDTks{TH1F("hCentRun2SPDTks", "SPD Tracklets", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun2SPDCls{TH1F("hCentRun2SPDCls", "SPD Clusters", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun2CL0{TH1F("hCentRun2CL0", "CL0", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun2CL1{TH1F("hCentRun2CL1", "CL1", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFV0A{TH1F("hCentFV0A", "FV0A", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0M", "FT0M", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFT0A{TH1F("hCentFT0A", "FT0A", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFT0C{TH1F("hCentFT0C", "FT0C", 21, 0, 105.)};
-  OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", 21, 0, 105.)};
-  OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", 21, 0, 105.)};
+  Configurable<int> nBins{"nBins", 1050, "number of bins"};
+  OutputObj<TH1F> hCentRun2V0M{TH1F("hCentRun2V0M", "V0M", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentRun2SPDTks{TH1F("hCentRun2SPDTks", "SPD Tracklets", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentRun2SPDCls{TH1F("hCentRun2SPDCls", "SPD Clusters", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentRun2CL0{TH1F("hCentRun2CL0", "CL0", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentRun2CL1{TH1F("hCentRun2CL1", "CL1", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentFV0A{TH1F("hCentFV0A", "FV0A", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0M", "FT0M", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentFT0A{TH1F("hCentFT0A", "FT0A", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentFT0C{TH1F("hCentFT0C", "FT0C", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", nBins, 0, 105.)};
+
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss>::iterator const& col)
   {
     if (!col.alias()[kINT7]) {
