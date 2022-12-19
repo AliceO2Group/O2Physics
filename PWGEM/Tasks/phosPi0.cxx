@@ -58,8 +58,9 @@ struct phosPi0 {
     LOG(info) << "Initializing PHOS Cluster QA monitor task ...";
 
     const AxisSpec
-      cluPhiAxis{256, 4.3633231, 5.5850536, "phi", ""},
-      cluZAxis{56, -60., 60., "z", ""},
+      zAxis{56, -63., 63., "z", "z (cm)"},
+      phiAxis{64, -72., 72., "x", "x (cm)"},
+      modAxis{4, 1., 5., "module", "Module"},
       amplitudeAxisLarge{100, 0., 20., "amplitude", "Amplutude (GeV)"},
       timeAxisLarge{500, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       multAxis{100, 0., 100.},
@@ -74,17 +75,27 @@ struct phosPi0 {
     mHistManager.add("vertex2", "PHOS with vertex", HistType::kTH1F, {vertexAxis});
 
     mHistManager.add("cluSp", "Cluster spectrum per module",
-                     HistType::kTH2F, {amplitudeAxisLarge, {4, 1., 5., "module", "module"}});
+                     HistType::kTH2F, {amplitudeAxisLarge, modAxis});
     mHistManager.add("cluETime", "Cluster time vs E",
-                     HistType::kTH3F, {amplitudeAxisLarge, timeAxisLarge, {4, 1., 5., "module", "module"}});
+                     HistType::kTH3F, {amplitudeAxisLarge, timeAxisLarge, modAxis});
     mHistManager.add("mggRe", "inv mass for centrality",
                      HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
     mHistManager.add("mggMi", "inv mass for centrality",
                      HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+    mHistManager.add("mggReCPV", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+    mHistManager.add("mggMiCPV", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+    mHistManager.add("mggReDisp", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+    mHistManager.add("mggMiDisp", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
 
-    mHistManager.add("cluOcc", "Cluster occupancy ", HistType::kTH2F, {cluPhiAxis, cluZAxis});
-    mHistManager.add("cluE", "Cluster energy", HistType::kTH2F, {cluPhiAxis, cluZAxis});
-    mHistManager.add("cluTime", "Cluster time", HistType::kTH2F, {cluPhiAxis, cluZAxis});
+    mHistManager.add("cluOcc", "Cluster occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
+    mHistManager.add("cluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
+    mHistManager.add("cluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
+    mHistManager.add("cluBothOcc", "Cluster with Both occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
+    mHistManager.add("cluE", "Cluster energy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
   }
 
   /// \brief Process PHOS data
@@ -101,10 +112,13 @@ struct phosPi0 {
     }
     uint64_t bcevent = 0;
     for (const auto& clu : clusters) {
-      if (clu.collision().bc().globalBC() != bcevent) {
-        mHistManager.fill(HIST("vertex2"), clu.collision().posZ());
+      if (clu.bc().globalBC() != bcevent) {
+        if (clu.colId() >= 0) {
+          auto coliter = collisions.begin() + clu.colId();
+          mHistManager.fill(HIST("vertex2"), coliter.posZ());
+        }
         mHistManager.fill(HIST("eventsAll"), 0.);
-        bcevent = clu.collision().bc().globalBC();
+        bcevent = clu.bc().globalBC();
       }
 
       mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
@@ -114,7 +128,11 @@ struct phosPi0 {
         continue;
       }
 
-      float cen1 = log(1. + clu.collision_as<o2::aod::Collisions>().numContrib()) / log(2.);
+      float cen1 = 99.;
+      if (clu.colId() >= 0) {
+        auto coliter = collisions.begin() + clu.colId();
+        cen1 = log(1. + coliter.numContrib()) / log(2.);
+      }
       int iCenBin1 = static_cast<int>(cen1 / 10);
       if (iCenBin1 < 0 || iCenBin1 > 9) {
         continue;
@@ -122,10 +140,17 @@ struct phosPi0 {
 
       mHistManager.fill(HIST("cluSp"), clu.e(), clu.mod());
       if (clu.e() > mOccE) {
-        double phi = 6.2831853 + atan2(clu.y(), clu.x()); // Only negative phi from tan2
-        mHistManager.fill(HIST("cluOcc"), phi, clu.z());
-        mHistManager.fill(HIST("cluE"), phi, clu.z(), clu.e());
-        mHistManager.fill(HIST("cluTime"), phi, clu.z(), clu.time());
+        mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
+        if (clu.trackdist() > 2.) {
+          mHistManager.fill(HIST("cluCPVOcc"), clu.x(), clu.z(), clu.mod());
+          if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+            mHistManager.fill(HIST("cluBothOcc"), clu.x(), clu.z(), clu.mod());
+          }
+        }
+        if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+          mHistManager.fill(HIST("cluDispOcc"), clu.x(), clu.z(), clu.mod());
+        }
+        mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
       }
 
       // inv mass
@@ -138,7 +163,11 @@ struct phosPi0 {
             clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
           continue;
         }
-        float cen2 = log(1. + clu2.collision_as<o2::aod::Collisions>().numContrib()) / log(2.);
+        float cen2 = 99.;
+        if (clu2.colId() >= 0) {
+          auto coliter2 = collisions.begin() + clu2.colId();
+          cen2 = log(1. + coliter2.numContrib()) / log(2.);
+        }
         int iCenBin2 = static_cast<int>(cen2 / 10);
         if (iCenBin1 != iCenBin2) {
           continue;
@@ -151,17 +180,46 @@ struct phosPi0 {
         }
         double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
                          pow(clu.py() + clu2.py(), 2));
-        if (clu.collision().bc().globalBC() == clu2.collision().bc().globalBC()) { // Real
+        if (clu.bc().globalBC() == clu2.bc().globalBC()) { // Real
           mHistManager.fill(HIST("mggRe"), m, pt, cen1);
+          if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+            mHistManager.fill(HIST("mggReCPV"), m, pt, cen1);
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
+            mHistManager.fill(HIST("mggReDisp"), m, pt, cen1);
+          }
         } else { // Mixed
-          if (clu2.collision().bc().globalBC() != bcurrent) {
+          if (clu2.bc().globalBC() != bcurrent) {
             --nMix;
-            bcurrent = clu2.collision().bc().globalBC();
+            bcurrent = clu2.bc().globalBC();
           }
           mHistManager.fill(HIST("mggMi"), m, pt, cen1);
+          if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+            mHistManager.fill(HIST("mggMiCPV"), m, pt, cen1);
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
+            mHistManager.fill(HIST("mggMiDisp"), m, pt, cen1);
+          }
         }
       }
     }
+  }
+
+  //_____________________________________________________________________________
+  bool TestLambda(float pt, float l1, float l2)
+  {
+    // Parameterization for full dispersion
+    // Parameterizatino for full dispersion
+    float l2Mean = 1.53126 + 9.50835e+06 / (1. + 1.08728e+07 * pt + 1.73420e+06 * pt * pt);
+    float l1Mean = 1.12365 + 0.123770 * TMath::Exp(-pt * 0.246551) + 5.30000e-03 * pt;
+    float l2Sigma = 6.48260e-02 + 7.60261e+10 / (1. + 1.53012e+11 * pt + 5.01265e+05 * pt * pt) + 9.00000e-03 * pt;
+    float l1Sigma = 4.44719e-04 + 6.99839e-01 / (1. + 1.22497e+00 * pt + 6.78604e-07 * pt * pt) + 9.00000e-03 * pt;
+    float c = -0.35 - 0.550 * TMath::Exp(-0.390730 * pt);
+
+    return 0.5 * (l1 - l1Mean) * (l1 - l1Mean) / l1Sigma / l1Sigma +
+             0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
+             0.5 * c * (l1 - l1Mean) * (l2 - l2Mean) / l1Sigma / l2Sigma <
+           4.;
   }
 };
 
