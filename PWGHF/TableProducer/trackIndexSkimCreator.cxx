@@ -288,10 +288,10 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
 
   using TracksWithSel = soa::Join<aod::BigTracks, aod::TrackSelection>;
 
-  void process(aod::Collisions const& collisions,
-               aod::AmbiguousTracks const& ambitracks,
-               TracksWithSel const& tracks,
-               aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void processAmbTrack(aod::Collisions const& collisions,
+                       aod::AmbiguousTracks const& ambitracks,
+                       TracksWithSel const& tracks,
+                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
 
     o2::dataformats::DCA dcaInfoCov;
@@ -397,6 +397,8 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
 
     } /// end loop on bcs
   }
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorProduceAmbTracks, processAmbTrack, "Activate filling of ambiguous track table", false);
 };
 
 /// Track selection
@@ -2604,6 +2606,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
   }
 
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorProduceAmbTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
 
