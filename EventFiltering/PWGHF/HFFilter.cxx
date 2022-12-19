@@ -151,7 +151,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmHighPt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hMassVsPtB{};
-  std::array<std::shared_ptr<TH2>, kNCharmParticles + 1> hMassVsPtC{};
+  std::array<std::shared_ptr<TH2>, kNCharmParticles + 3> hMassVsPtC{}; // +3 for resonances (D*+, D*0, Ds*+)
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
@@ -192,7 +192,9 @@ struct HfFilter { // Main struct for HF triggers
           hBDTScoreNonPrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreNonPromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT nonprompt score distribution for %s;BDT nonprompt score;counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
         }
       }
-      hMassVsPtC[kNCharmParticles] = registry.add<TH2>("fMassVsPtDStar", "#it{M} vs. #it{p}_{T} distribution of triggered DStar candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {{100, 0., 50.}, {300, 1.60, 2.60}});
+      hMassVsPtC[kNCharmParticles] = registry.add<TH2>("fMassVsPtDStarPlus", "#it{M} vs. #it{p}_{T} distribution of triggered DStarPlus candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {{100, 0., 50.}, {300, 1.60, 2.60}});
+      hMassVsPtC[kNCharmParticles + 1] = registry.add<TH2>("fMassVsPtDStarZero", "#it{M} vs. #it{p}_{T} distribution of triggered DStarZero candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {{100, 0., 50.}, {330, 1.90, 3.00}});
+      hMassVsPtC[kNCharmParticles + 2] = registry.add<TH2>("fMassVsPtDStarS", "#it{M} vs. #it{p}_{T} distribution of triggered DStarS candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {{100, 0., 50.}, {330, 1.90, 3.00}});
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {{100, 0., 50.}, {220, 4.9, 6.0}});
       }
@@ -839,6 +841,11 @@ struct HfFilter { // Main struct for HF triggers
             std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
             auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gammaVec}, std::array{massD0, massGamma});
             if (massGammaCharm < 3.0) { // remove candidates with invariant mass above 3 GeV
+              if (activateQA) {
+                auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, gammaVec);
+                auto ptCand = RecoDecay::pt(pVecReso2Prong);
+                hMassVsPtC[kNCharmParticles + 1]->Fill(ptCand, massGammaCharm);
+              }
               keepEvent[kGammaCharm2P] = true;
             }
           }
@@ -1040,6 +1047,11 @@ struct HfFilter { // Main struct for HF triggers
             std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
             auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massDs, massGamma});
             if (massGammaCharm < 3.) { // remove candidates with invariant mass above some value (TODO: set me as a configurable)
+              if (activateQA) {
+                auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, gammaVec);
+                auto ptCand = RecoDecay::pt(pVecReso3Prong);
+                hMassVsPtC[kNCharmParticles + 2]->Fill(ptCand, massGammaCharm);
+              }
               keepEvent[kGammaCharm3P] = true;
             }
           }
