@@ -56,3 +56,7 @@ o2physics_add_dpl_workflow(qa-k0s-tracking-efficiency
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(monitorfilterbit
+                           SOURCES MonitorFilterBit.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)

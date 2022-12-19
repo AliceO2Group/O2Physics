@@ -14,6 +14,7 @@
 // Author: Raymond Ehlers & Florian Jonas
 
 #include <algorithm>
+#include <iostream>
 #include <cmath>
 
 #include "CCDB/BasicCCDBManager.h"
@@ -26,6 +27,7 @@
 
 #include "PWGJE/DataModel/EMCALClusters.h"
 
+#include "Common/DataModel/EventSelection.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -76,7 +78,6 @@ struct EmcalCorrectionTask {
   OutputObj<TH2I> hCellRowCol{"hCellRowCol"};
   OutputObj<TH1F> hClusterE{"hClusterE"};
   OutputObj<TH2F> hClusterEtaPhi{"hClusterEtaPhi"};
-  OutputObj<TH1F> hCollisionMatching{"hCollisionMatching"};
 
   void init(InitContext const&)
   {
@@ -138,7 +139,6 @@ struct EmcalCorrectionTask {
     hCellRowCol.setObject(new TH2I("hCellRowCol", "hCellRowCol;Column;Row", 97, 0, 97, 600, 0, 600));
     hClusterE.setObject(new TH1F("hClusterE", "hClusterE", 200, 0.0, 100));
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
-    hCollisionMatching.setObject(new TH1F("hCollisionMatching", "hCollisionMatching", 3, -0.5, 2.5)); // 0, no vertex,1 vertex found , 2 multiple vertices found
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
@@ -222,8 +222,6 @@ struct EmcalCorrectionTask {
       float vx = 0, vy = 0, vz = 0;
       bool hasCollision = false;
       if (collisions.size() > 1) {
-        if (i == 0)
-          hCollisionMatching->Fill(2);
         LOG(error) << "More than one collision in the bc. This is not supported.";
       } else {
         // dummy loop to get the first collision
@@ -232,8 +230,6 @@ struct EmcalCorrectionTask {
           vy = col.posY();
           vz = col.posZ();
           hasCollision = true;
-          if (i == 0)
-            hCollisionMatching->Fill(1);
 
           // store positions of all tracks of collision
           auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
@@ -303,15 +299,11 @@ struct EmcalCorrectionTask {
           } // end of cluster loop
         }   // end of collision loop
       }
-      if (!hasCollision) {
-        if (i == 0)
-          hCollisionMatching->Fill(0);
-        // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
-      }
 
       // Store the clusters in the table where a mathcing collision could
       // be identified.
       if (!hasCollision) { // ambiguous
+        // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
         int cellindex = -1;
         clustersAmbiguous.reserve(mAnalysisClusters.size());
         for (const auto& cluster : mAnalysisClusters) {

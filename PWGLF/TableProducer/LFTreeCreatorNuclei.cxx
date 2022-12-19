@@ -59,8 +59,7 @@ struct LfTreeCreatorNuclei {
   }
 
   // track
-  Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
-  Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
+  Configurable<float> yCut{"yMin", 1.f, "Rapidity cut"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};

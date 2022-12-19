@@ -146,9 +146,21 @@ struct DGCandAnalyzer {
     registry.add("nSigmaTOFPtMu", "#nSigmaTOFPtMu", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
     registry.add("nSigmaTOFPtKa", "#nSigmaTOFPtKa", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
     registry.add("nSigmaTOFPtPr", "#nSigmaTOFPtPr", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
+
+    registry.add("2TrackAngle", "#2TrackAngle", {HistType::kTH1F, {{140, -0.2, 3.3}}});
+    registry.add("2TrackAngleIVM", "#2TrackAngleIVM", {HistType::kTH2F, {axisIVM, {140, -0.2, 3.3}}});
+
+    registry.add("BBT0A", "#BBT0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+    registry.add("BBT0C", "#BBT0C", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+    registry.add("BBV0A", "#BBV0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+    registry.add("BBFDDA", "#BBFDDA", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+    registry.add("BBFDDC", "#BBFDDC", {HistType::kTH1F, {{32, -16.5, 15.5}}});
   }
 
-  void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
+  using UDCollisionFull = UDCollisionsFull::iterator;
+
+  void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
   {
     // accept only selected run numbers
     if (!grsel.isGoodRun(dgcand.runNumber())) {
@@ -172,24 +184,43 @@ struct DGCandAnalyzer {
 
     // skip events with too few/many tracks
     if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
-      LOGF(info, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), diffCuts.minNTracks(), diffCuts.maxNTracks());
+      LOGF(debug, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), diffCuts.minNTracks(), diffCuts.maxNTracks());
       return;
     }
 
     // skip events with out-of-range net charge
     auto netChargeValues = diffCuts.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
-      LOGF(info, "Rejected 2: %d not in set.", dgcand.netCharge());
+      LOGF(debug, "Rejected 2: %d not in set.", dgcand.netCharge());
       return;
     }
 
     // skip events with out-of-range rgtrwTOF
     auto rtrwTOF = udhelpers::rPVtrwTOF<false>(dgtracks, dgtracks.size());
     auto minRgtrwTOF = candCase != 1 ? 1.0 : diffCuts.minRgtrwTOF();
-    LOGF(debug, "candCase %i rtrwTOF %f minRgtrwTOF %f", candCase, rtrwTOF, minRgtrwTOF);
     if (rtrwTOF < minRgtrwTOF) {
-      LOGF(info, "Rejected 3: %d below threshold of %d.", rtrwTOF, minRgtrwTOF);
+      LOGF(debug, "Rejected 3: %f below threshold of %f.", rtrwTOF, minRgtrwTOF);
       return;
+    }
+
+    // check FIT information
+    for (auto bit = 15; bit <= 17; bit++) {
+      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
+          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
+          TESTBIT(dgcand.bbFV0Apf(), bit) ||
+          TESTBIT(dgcand.bbFDDApf(), bit) ||
+          TESTBIT(dgcand.bbFDDCpf(), bit)) {
+        return;
+      }
+    }
+
+    // full BBFlag histograms
+    for (auto bit = 0; bit < 33; bit++) {
+      registry.get<TH1>(HIST("BBT0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Apf(), bit));
+      registry.get<TH1>(HIST("BBT0C"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Cpf(), bit));
+      registry.get<TH1>(HIST("BBV0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFV0Apf(), bit));
+      registry.get<TH1>(HIST("BBFDDA"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
+      registry.get<TH1>(HIST("BBFDDC"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
 
     // find track combinations which are compatible with PID cuts
@@ -208,12 +239,38 @@ struct DGCandAnalyzer {
         bcnums.insert(bcnum);
       }
     } else {
-      LOGF(info, "Rejected 4: no IVMs.");
+      LOGF(debug, "Rejected 4: no IVMs.");
     }
 
     // update histograms
     registry.get<TH1>(HIST("nIVMs"))->Fill(nIVMs, 1.);
     for (auto ivm : pidsel.IVMs()) {
+
+      // cut on pt-system
+      if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
+        continue;
+      }
+
+      // applicable to 2-track events - cut on angle between two tracks
+      if (dgcand.numContrib() == 2) {
+        auto ind1 = ivm.trkinds()[0];
+        auto trk1 = dgtracks.rawIteratorAt(ind1);
+        auto v1 = TVector3(trk1.px(), trk1.py(), trk1.pz());
+        auto ind2 = ivm.trkinds()[1];
+        auto trk2 = dgtracks.rawIteratorAt(ind2);
+        auto v2 = TVector3(trk2.px(), trk2.py(), trk2.pz());
+
+        auto angle = v1.Angle(v2);
+        LOGF(debug, "angle %f", angle);
+
+        // cut on angle
+        if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
+          continue;
+        } else {
+          registry.get<TH1>(HIST("2TrackAngle"))->Fill(angle, 1.);
+          registry.get<TH2>(HIST("2TrackAngleIVM"))->Fill(ivm.M(), angle, 1.);
+        }
+      }
 
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
@@ -222,14 +279,10 @@ struct DGCandAnalyzer {
         registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasTPC() * 1.);
         registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTRD() * 1.);
         registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTOF() * 1.);
-        registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
-        registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
-        registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
-        registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
-
-        registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
-
-        registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
+        // registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
+        // registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
+        // registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
+        // registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
 
         registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
 

@@ -87,7 +87,7 @@ struct femtoWorldPairTaskTrackPhi {
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 333, "Particle 1 - PDG code"}; // phi meson (333)
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
   Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
-  Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
+  Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 5.0, "Higher limit for Pt for the second particle"};
   Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
   Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
 
@@ -145,8 +145,9 @@ struct femtoWorldPairTaskTrackPhi {
         if (mom < 2.0) {
           if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma)
             return true;
-        } else if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma2)
+        } else if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma2) {
           return true;
+        }
       } else {
         if (TMath::Abs(nsigmaTPCP) < fNsigma)
           return true;
@@ -166,7 +167,6 @@ struct femtoWorldPairTaskTrackPhi {
           return true;
       }
     }
-
     return false;
   }
   void init(InitContext&)

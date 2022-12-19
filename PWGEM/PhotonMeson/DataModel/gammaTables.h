@@ -13,7 +13,12 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/CaloClusters.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 #include <TMath.h>
+
+#ifndef PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
+#define PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
 
 // todo: declare more columns in this file dynamic or expression, atm I save a lot of redundant information
 namespace o2::aod
@@ -66,7 +71,7 @@ namespace MCParticleTrueIndex
 DECLARE_SOA_INDEX_COLUMN(V0DaughterMcParticle, v0DaughterMcParticle);
 } // namespace MCParticleTrueIndex
 
-//DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
+// DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
 DECLARE_SOA_TABLE(MCParticleIndex, "AOD", "MCPARTICLEINDEX", MCParticleTrueIndex::V0DaughterMcParticleId);
 
 namespace gammarecalculated
@@ -104,7 +109,7 @@ DECLARE_SOA_COLUMN(ConversionX, conversionX, float); //! x of conversion point i
 DECLARE_SOA_COLUMN(ConversionY, conversionY, float); //! y of conversion point in cm
 DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float); //! z of conversion point in cm
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);       //! 2d radius of conversion point
-//DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue);
+// DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue);
 DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueOne, mcDaughterTrueOne, int, McDaughterTrue, "_One"); // this is a reference that points to the entry in the McDaughterTrues table
 DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueTwo, mcDaughterTrueTwo, int, McDaughterTrue, "_Two"); // this is a reference that points to the entry in the McDaughterTrues table
 } // namespace gammamctrue
@@ -133,4 +138,36 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+
+namespace gammacaloreco
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
+DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
+DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
+DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
+DECLARE_SOA_COLUMN(M20, m20, float);                                   //! shower shape short axis
+DECLARE_SOA_COLUMN(NCells, nCells, int);                               //! number of cells in cluster
+DECLARE_SOA_COLUMN(Time, time, float);                                 //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
+DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
+// DECLARE_SOA_INDEX_COLUMN(Calo, calo);                                  //! linked to calo cells
+// DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
+// DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! transverse momentum of a photon candidate 2
+//                               (gammacaloreco::energy * 2.f) / (nexp(gammacaloreco::eta) + nexp(gammacaloreco::eta * -1.f)));
+// DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pz, float E) { return atanh(pz / E); });  //! pseudorapidity of the cluster
+// DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) { return atan2(py, px); }); //! phi angle of the cluster
+} // namespace gammacaloreco
+
+DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //!
+                  o2::soa::Index<>, gammacaloreco::CollisionId, gammacaloreco::ID, gammacaloreco::Energy, gammacaloreco::CoreEnergy,
+                  gammacaloreco::Eta, gammacaloreco::Phi, gammacaloreco::M02, gammacaloreco::M20, gammacaloreco::NCells, gammacaloreco::Time,
+                  gammacaloreco::IsExotic, gammacaloreco::DistanceToBadChannel, gammacaloreco::NLM, gammacaloreco::Definition);
+
 } // namespace o2::aod
+#endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
