@@ -43,10 +43,14 @@ struct MultiplicityQa {
 
   Configurable<int> NBinsMultFV0{"NBinsMultFV0", 1000, "N bins FV0"};
   Configurable<int> NBinsMultFT0{"NBinsMultFT0", 1000, "N bins FT0"};
+  Configurable<int> NBinsMultFT0A{"NBinsMultFT0A", 1000, "N bins FT0A"};
+  Configurable<int> NBinsMultFT0C{"NBinsMultFT0C", 1000, "N bins FT0C"};
   Configurable<int> NBinsMultFDD{"NBinsMultFDD", 1000, "N bins FDD"};
   Configurable<int> NBinsMultNTracks{"NBinsMultNTracks", 1000, "N bins Ntracks"};
   Configurable<float> MaxMultFV0{"MaxMultFV0", 20000, "Max FV0 signal"};
   Configurable<float> MaxMultFT0{"MaxMultFT0", 10000, "Max FT0 signal"};
+  Configurable<float> MaxMultFT0A{"MaxMultFT0A", 10000, "Max FT0A signal"};
+  Configurable<float> MaxMultFT0C{"MaxMultFT0C", 10000, "Max FT0C signal"};
   Configurable<float> MaxMultFDD{"MaxMultFDD", 10000, "Max FDD signal"};
   Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
   Configurable<int> NBinsVertexZ{"NBinsVertexZ", 400, "max vertex Z (cm)"};
@@ -56,6 +60,8 @@ struct MultiplicityQa {
     const AxisSpec axisEvent{10, 0, 10, "Event counter"};
     const AxisSpec axisMultFV0{(int)NBinsMultFV0, 0, MaxMultFV0, "FV0 total amplitude"};
     const AxisSpec axisMultFT0{(int)NBinsMultFT0, 0, MaxMultFT0, "FT0 total amplitude"};
+    const AxisSpec axisMultFT0A{(int)NBinsMultFT0A, 0, MaxMultFT0A, "FT0A total amplitude"};
+    const AxisSpec axisMultFT0C{(int)NBinsMultFT0C, 0, MaxMultFT0C, "FT0C total amplitude"};
     const AxisSpec axisMultFDD{(int)NBinsMultFDD, 0, MaxMultFDD, "FDD total amplitude"};
     const AxisSpec axisMultNTracks{(int)NBinsMultNTracks, 0, MaxMultNTracks, "Track counter"};
     const AxisSpec axisVertexZ{(int)NBinsVertexZ, -20, 20, "Vertex Z (cm)"};
@@ -64,18 +70,18 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hEventCounter", "Event counter", kTH1D, {axisEvent});
     histos.add("multiplicityQa/hRawFV0", "Raw FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hRawFT0", "Raw FT0", kTH1D, {axisMultFT0});
-    histos.add("multiplicityQa/hRawFT0A", "Raw FT0A", kTH1D, {axisMultFT0});
-    histos.add("multiplicityQa/hRawFT0C", "Raw FT0C", kTH1D, {axisMultFT0});
+    histos.add("multiplicityQa/hRawFT0A", "Raw FT0A", kTH1D, {axisMultFT0A});
+    histos.add("multiplicityQa/hRawFT0C", "Raw FT0C", kTH1D, {axisMultFT0C});
     histos.add("multiplicityQa/hRawFDD", "Raw FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hRawNTracksPV", "Raw NTracks", kTH1D, {axisMultNTracks});
     histos.add("multiplicityQa/hZeqFV0", "vtx-z eq FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hZeqFT0", "vtx-z eq FT0", kTH1D, {axisMultFT0});
-    histos.add("multiplicityQa/hZeqFT0A", "vtx-z eq FT0A", kTH1D, {axisMultFT0});
-    histos.add("multiplicityQa/hZeqFT0C", "vtx-z eq FT0C", kTH1D, {axisMultFT0});
+    histos.add("multiplicityQa/hZeqFT0A", "vtx-z eq FT0A", kTH1D, {axisMultFT0A});
+    histos.add("multiplicityQa/hZeqFT0C", "vtx-z eq FT0C", kTH1D, {axisMultFT0C});
     histos.add("multiplicityQa/hZeqFDD", "vtx-z eq FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hZeqNTracksPV", "vtx-z eq NTracks", kTH1D, {axisMultNTracks});
 
-    //Vertex-Z profiles for vertex-Z dependency estimate
+    // Vertex-Z profiles for vertex-Z dependency estimate
     histos.add("multiplicityQa/hVtxZFV0A", "Av FV0A vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZFT0A", "Av FT0A vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZFT0C", "Av FT0C vs vertex Z", kTProfile, {axisVertexZ});

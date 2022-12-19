@@ -1535,6 +1535,12 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
   values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
   values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
+  if (isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
+    values[kU2Q2] = -999.;
+    values[kU3Q3] = -999.;
+    values[kCos2DeltaPhi] = -999.;
+    values[kCos3DeltaPhi] = -999.;
+  }
 }
 
 template <typename T1, typename T2>

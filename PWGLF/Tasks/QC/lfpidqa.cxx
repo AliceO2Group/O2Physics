@@ -46,12 +46,19 @@ struct lfpidqa {
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
                                                    "nsigma/Ka", "nsigma/Pr", "nsigma/De",
                                                    "nsigma/Tr", "nsigma/He", "nsigma/Al"};
+  static constexpr std::string_view hexpected[Np] = {"expected/El", "expected/Mu", "expected/Pi",
+                                                     "expected/Ka", "expected/Pr", "expected/De",
+                                                     "expected/Tr", "expected/He", "expected/Al"};
+
   static constexpr std::string_view hdeltalf[Np] = {"deltalf/El", "deltalf/Mu", "deltalf/Pi",
                                                     "deltalf/Ka", "deltalf/Pr", "deltalf/De",
                                                     "deltalf/Tr", "deltalf/He", "deltalf/Al"};
   static constexpr std::string_view hnsigmalf[Np] = {"nsigmalf/El", "nsigmalf/Mu", "nsigmalf/Pi",
                                                      "nsigmalf/Ka", "nsigmalf/Pr", "nsigmalf/De",
                                                      "nsigmalf/Tr", "nsigmalf/He", "nsigmalf/Al"};
+  static constexpr std::string_view hexpectedlf[Np] = {"expectedlf/El", "expectedlf/Mu", "expectedlf/Pi",
+                                                       "expectedlf/Ka", "expectedlf/Pr", "expectedlf/De",
+                                                       "expectedlf/Tr", "expectedlf/He", "expectedlf/Al"};
 
   // Positive
   static constexpr std::string_view hdeltapos[Np] = {"delta/pos/El", "delta/pos/Mu", "delta/pos/Pi",
@@ -60,12 +67,19 @@ struct lfpidqa {
   static constexpr std::string_view hnsigmapos[Np] = {"nsigma/pos/El", "nsigma/pos/Mu", "nsigma/pos/Pi",
                                                       "nsigma/pos/Ka", "nsigma/pos/Pr", "nsigma/pos/De",
                                                       "nsigma/pos/Tr", "nsigma/pos/He", "nsigma/pos/Al"};
+  static constexpr std::string_view hexpectedpos[Np] = {"expected/pos/El", "expected/pos/Mu", "expected/pos/Pi",
+                                                        "expected/pos/Ka", "expected/pos/Pr", "expected/pos/De",
+                                                        "expected/pos/Tr", "expected/pos/He", "expected/pos/Al"};
+
   static constexpr std::string_view hdeltalfpos[Np] = {"deltalf/pos/El", "deltalf/pos/Mu", "deltalf/pos/Pi",
                                                        "deltalf/pos/Ka", "deltalf/pos/Pr", "deltalf/pos/De",
                                                        "deltalf/pos/Tr", "deltalf/pos/He", "deltalf/pos/Al"};
   static constexpr std::string_view hnsigmalfpos[Np] = {"nsigmalf/pos/El", "nsigmalf/pos/Mu", "nsigmalf/pos/Pi",
                                                         "nsigmalf/pos/Ka", "nsigmalf/pos/Pr", "nsigmalf/pos/De",
                                                         "nsigmalf/pos/Tr", "nsigmalf/pos/He", "nsigmalf/pos/Al"};
+  static constexpr std::string_view hexpectedlfpos[Np] = {"expectedlf/pos/El", "expectedlf/pos/Mu", "expectedlf/pos/Pi",
+                                                          "expectedlf/pos/Ka", "expectedlf/pos/Pr", "expectedlf/pos/De",
+                                                          "expectedlf/pos/Tr", "expectedlf/pos/He", "expectedlf/pos/Al"};
 
   // Negative
   static constexpr std::string_view hdeltaneg[Np] = {"delta/neg/El", "delta/neg/Mu", "delta/neg/Pi",
@@ -74,12 +88,19 @@ struct lfpidqa {
   static constexpr std::string_view hnsigmaneg[Np] = {"nsigma/neg/El", "nsigma/neg/Mu", "nsigma/neg/Pi",
                                                       "nsigma/neg/Ka", "nsigma/neg/Pr", "nsigma/neg/De",
                                                       "nsigma/neg/Tr", "nsigma/neg/He", "nsigma/neg/Al"};
+  static constexpr std::string_view hexpectedneg[Np] = {"expected/neg/El", "expected/neg/Mu", "expected/neg/Pi",
+                                                        "expected/neg/Ka", "expected/neg/Pr", "expected/neg/De",
+                                                        "expected/neg/Tr", "expected/neg/He", "expected/neg/Al"};
+
   static constexpr std::string_view hdeltalfneg[Np] = {"deltalf/neg/El", "deltalf/neg/Mu", "deltalf/neg/Pi",
                                                        "deltalf/neg/Ka", "deltalf/neg/Pr", "deltalf/neg/De",
                                                        "deltalf/neg/Tr", "deltalf/neg/He", "deltalf/neg/Al"};
   static constexpr std::string_view hnsigmalfneg[Np] = {"nsigmalf/neg/El", "nsigmalf/neg/Mu", "nsigmalf/neg/Pi",
                                                         "nsigmalf/neg/Ka", "nsigmalf/neg/Pr", "nsigmalf/neg/De",
                                                         "nsigmalf/neg/Tr", "nsigmalf/neg/He", "nsigmalf/neg/Al"};
+  static constexpr std::string_view hexpectedlfneg[Np] = {"expectedlf/neg/El", "expectedlf/neg/Mu", "expectedlf/neg/Pi",
+                                                          "expectedlf/neg/Ka", "expectedlf/neg/Pr", "expectedlf/neg/De",
+                                                          "expectedlf/neg/Tr", "expectedlf/neg/He", "expectedlf/neg/Al"};
 
   Configurable<uint16_t> minPVcontrib{"minPVcontrib", 0, "Minimum number of PV contributors"};
   Configurable<uint16_t> maxPVcontrib{"maxPVcontrib", 10000, "Maximum number of PV contributors"};
@@ -87,7 +108,7 @@ struct lfpidqa {
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
-  Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
+  Configurable<int> nBinsDelta{"nBinsDelta", 400, "Number of bins for the Delta"};
   Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
   Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
@@ -106,19 +127,26 @@ struct lfpidqa {
       axisTitle = Form("#Delta^{TPC}(%s)", pT[id]);
       const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
       histos.add(hdelta[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
+      const AxisSpec expectedAxis{1000, 0, 10000, Form("Expected(%s)", pT[id])};
+      histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expectedAxis});
 
       histos.addClone(hdelta[id].data(), hdeltapos[id].data());
       histos.addClone(hdelta[id].data(), hdeltaneg[id].data());
       histos.addClone(hnsigma[id].data(), hnsigmapos[id].data());
       histos.addClone(hnsigma[id].data(), hnsigmaneg[id].data());
+      histos.addClone(hexpected[id].data(), hexpectedpos[id].data());
+      histos.addClone(hexpected[id].data(), hexpectedneg[id].data());
 
       histos.addClone(hdelta[id].data(), hdeltalf[id].data());
       histos.addClone(hnsigma[id].data(), hnsigmalf[id].data());
+      histos.addClone(hexpected[id].data(), hexpectedlf[id].data());
 
       histos.addClone(hdelta[id].data(), hdeltalfpos[id].data());
       histos.addClone(hdelta[id].data(), hdeltalfneg[id].data());
       histos.addClone(hnsigma[id].data(), hnsigmalfpos[id].data());
       histos.addClone(hnsigma[id].data(), hnsigmalfneg[id].data());
+      histos.addClone(hexpected[id].data(), hexpectedlfpos[id].data());
+      histos.addClone(hexpected[id].data(), hexpectedlfneg[id].data());
     }
   }
 
@@ -132,12 +160,15 @@ struct lfpidqa {
   {
     histos.fill(HIST(hnsigma[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
     histos.fill(HIST(hdelta[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    histos.fill(HIST(hexpected[id]), track.tpcInnerParam(), o2::aod::pidutils::tpcExpSignal<id>(track));
     if (track.sign() > 0) {
       histos.fill(HIST(hnsigmapos[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
       histos.fill(HIST(hdeltapos[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      histos.fill(HIST(hexpectedpos[id]), track.tpcInnerParam(), o2::aod::pidutils::tpcExpSignal<id>(track));
     } else {
       histos.fill(HIST(hnsigmaneg[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
       histos.fill(HIST(hdeltaneg[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      histos.fill(HIST(hexpectedneg[id]), track.tpcInnerParam(), o2::aod::pidutils::tpcExpSignal<id>(track));
     }
   }
 
@@ -146,12 +177,15 @@ struct lfpidqa {
   {
     histos.fill(HIST(hnsigmalf[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
     histos.fill(HIST(hdeltalf[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+    histos.fill(HIST(hexpectedlf[id]), track.tpcInnerParam(), o2::aod::pidutils::tpcExpSignal<id>(track));
     if (track.sign() > 0) {
       histos.fill(HIST(hnsigmalfpos[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
       histos.fill(HIST(hdeltalfpos[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      histos.fill(HIST(hexpectedlfpos[id]), track.tpcInnerParam(), o2::aod::pidutils::tpcExpSignal<id>(track));
     } else {
       histos.fill(HIST(hnsigmalfneg[id]), track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
       histos.fill(HIST(hdeltalfneg[id]), track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      histos.fill(HIST(hexpectedlfneg[id]), track.tpcInnerParam(), o2::aod::pidutils::tpcExpSignal<id>(track));
     }
   }
 
