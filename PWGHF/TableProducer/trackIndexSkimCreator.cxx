@@ -286,6 +286,8 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
     runNumber = 0;
   }
 
+  void processNoAmbTrack(aod::Collisions const& collisions) {}
+
   using TracksWithSel = soa::Join<aod::BigTracks, aod::TrackSelection>;
 
   void processAmbTrack(aod::Collisions const& collisions,
@@ -398,7 +400,8 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
     } /// end loop on bcs
   }
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorProduceAmbTracks, processAmbTrack, "Activate filling of ambiguous track table", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorProduceAmbTracks, processAmbTrack, "Activate process that fills ambiguous track table", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorProduceAmbTracks, processNoAmbTrack, "Activate process that does not fill ambiguous track table", true);
 };
 
 /// Track selection
@@ -2606,9 +2609,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
   }
 
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorProduceAmbTracks>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorProduceAmbTracks>(cfgc, SetDefaultProcesses{{{"processAmbTrack", false}, {"processNoAmbTrack", true}}}));
+  // workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
+  // workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
 
   const bool doCascades = cfgc.options().get<bool>("doCascades");
   if (doCascades) {
