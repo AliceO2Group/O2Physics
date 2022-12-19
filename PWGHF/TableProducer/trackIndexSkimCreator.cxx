@@ -311,8 +311,8 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
           if (collision.globalIndex() == track.collisionId()) {
             continue;
           }
-          uint64_t mostProbableBC = collision.bc().globalBC();         // BC of the current collision
-          for (auto& bc : ambitrack.bc_as<aod::BCsWithTimestamps>()) { // loop over BC compatible in time with the ambiguous track
+          uint64_t mostProbableBC = collision.bc_as<aod::BCsWithTimestamps>().globalBC(); // BC of the current collision
+          for (auto& bc : ambitrack.bc_as<aod::BCsWithTimestamps>()) {                    // loop over BC compatible in time with the ambiguous track
             if (bc.globalBC() == mostProbableBC) {
               initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
 
@@ -346,7 +346,7 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
       std::vector<int> collIDs = {};
       for (auto& coll : collisions) {
         /// count how many coll. have the current bc as most probable
-        if (bc.globalBC() == coll.bc().globalBC()) {
+        if (bc.globalBC() == coll.bc_as<aod::BCsWithTimestamps>().globalBC()) {
           collIDs.push_back(coll.globalIndex());
         }
       } /// end loop on collisiuons
@@ -2610,8 +2610,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   }
 
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorProduceAmbTracks>(cfgc, SetDefaultProcesses{{{"processAmbTrack", false}, {"processNoAmbTrack", true}}}));
-  // workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
-  // workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
 
   const bool doCascades = cfgc.options().get<bool>("doCascades");
   if (doCascades) {
