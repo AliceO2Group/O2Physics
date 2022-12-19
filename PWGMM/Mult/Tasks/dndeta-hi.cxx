@@ -95,12 +95,10 @@ struct MultiplicityCounter {
       {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}},                                              //
       {"PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                                                                        //
       {"DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                         //
-      {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}},
-      {"FT0A", " ; FT0A (%)", {HistType::kTH1F, {{500,0,1e3}}}}, //
-      {"FT0C", " ; FT0C (%)", {HistType::kTH1F, {{500,0,1e3}}}} //
-    }
-
-  };
+      {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                           //
+      {"FT0A", " ; FT0A (%)", {HistType::kTH1F, {{500, 0, 1e3}}}},                                                                                         //
+      {"FT0C", " ; FT0C (%)", {HistType::kTH1F, {{500, 0, 1e3}}}}                                                                                          //
+    }};
 
   std::vector<int> usedTracksIds;
 
@@ -170,9 +168,9 @@ struct MultiplicityCounter {
     FiTracks const& tracks,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks) // soa::Join<aod::AmbiguousTracks, aod::BestCollisions>
   {
-    
+
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
-    
+
     float multT0A = 0;
     float multT0C = 0;
     if (foundBC.has_ft0()) {
@@ -187,7 +185,7 @@ struct MultiplicityCounter {
     }
     registry.fill(HIST("FT0A"), multT0A);
     registry.fill(HIST("FT0C"), multT0C);
-    
+
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("Events/Selection"), 2.);
