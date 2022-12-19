@@ -97,11 +97,11 @@ struct HfCandidateCreatorOmegac {
   }
 
   void process(SelectedCollisions::iterator const& collision,
-                  aod::BCsWithTimestamps const& bcWithTimeStamps,
-                  aod::CascDataExt const& cascades,
-                  MyTracks const& tracks,
-                  aod::V0Datas const&,
-                  aod::V0sLinked const&)
+               aod::BCsWithTimestamps const& bcWithTimeStamps,
+               aod::CascDataExt const& cascades,
+               MyTracks const& tracks,
+               aod::V0Datas const&,
+               aod::V0sLinked const&)
   {
 
     // set the magnetic field from CCDB
