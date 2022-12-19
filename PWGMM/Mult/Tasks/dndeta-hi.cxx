@@ -34,6 +34,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 enum {
   kECbegin = 0,
@@ -51,7 +52,7 @@ AxisSpec ZAxis = {60, -30, 30, "zaxis"};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec DCAAxis = {601, -3.01, 3.01};
 AxisSpec EtaAxis = {80, -4.0, 4.0, "etaaxis"};
-AxisSpec MultAxis = {301, -0.5, 300.5};
+AxisSpec MultAxis = {1001, -0.5, 1000.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "eventclass"};
@@ -94,12 +95,26 @@ struct MultiplicityCounter {
       {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}},                                              //
       {"PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                                                                        //
       {"DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                         //
-      {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}}                                                                                            //
-    }
-
-  };
+      {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                           //
+      {"Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis}}},                                       //
+      {"FV0A", " ; FV0A (%)", {HistType::kTH1F, {{500, 0, 1e3}}}},                                                                                         //
+      {"FT0A", " ; FT0A (%)", {HistType::kTH1F, {{500, 0, 1e3}}}},                                                                                         //
+      {"FT0C", " ; FT0C (%)", {HistType::kTH1F, {{500, 0, 1e3}}}}                                                                                          //
+    }};
 
   std::vector<int> usedTracksIds;
+
+  void init(InitContext&)
+  {
+    ccdb->setURL(url.value);
+    // Enabling object caching, otherwise each call goes to the CCDB server
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    // Not later than now, will be replaced by the value of the train creation
+    // This avoids that users can replace objects **while** a train is running
+    ccdb->setCreatedNotAfter(nolaterthan.value);
+    LOGF(info, "Getting object %s", path.value.data());
+  }
 
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   void processEventStat(
@@ -150,14 +165,46 @@ struct MultiplicityCounter {
   std::vector<Double_t> tracketas;
   void processCounting(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+    BCsRun3 const& bcs,
+    aod::FT0s const& ft0s,
+    aod::FV0As const& fv0as,
     FiTracks const& tracks,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks) // soa::Join<aod::AmbiguousTracks, aod::BestCollisions>
   {
+
+    const auto& foundBC = collision.foundBC_as<BCsRun3>();
+
+    float multT0A = 0;
+    float multT0C = 0;
+    if (foundBC.has_ft0()) {
+      for (auto amplitude : foundBC.ft0().amplitudeA()) {
+        multT0A += amplitude;
+      }
+      for (auto amplitude : foundBC.ft0().amplitudeC()) {
+        multT0C += amplitude;
+      }
+    } else {
+      multT0A = multT0C = -999;
+    }
+    float multV0A = 0;
+    if (foundBC.has_fv0a()) {
+      for (auto amplitude : foundBC.fv0a().amplitude()) {
+        multV0A += amplitude;
+      }
+    } else {
+      multV0A = -999;
+    }
+
+    registry.fill(HIST("FT0A"), multT0A);
+    registry.fill(HIST("FT0C"), multT0C);
+    registry.fill(HIST("FV0A"), multV0A);
+    registry.fill(HIST("Multiplicity"), multV0A, multT0A, multT0C);
 
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
+
       registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), 50., z);
       usedTracksIds.clear();
 
