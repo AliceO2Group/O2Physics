@@ -134,7 +134,7 @@ struct cascadeBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
   o2::base::Propagator::MatCorrType matCorrCascade;
-  
+
   Filter taggedFilter = aod::casctag::isInteresting > 0;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -565,7 +565,7 @@ struct cascadeBuilder {
     buildStrangenessTables<FullTracksExtIU>(collision, cascades, tracks);
   }
   PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", false);
-  
+
   void processRun3associated(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
@@ -648,9 +648,9 @@ struct cascadeLabelBuilder {
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct cascadeTagBuilder {
   Produces<aod::CascTags> casctags; // MC tags
-  
+
   void init(InitContext const&) {}
-  
+
   void processDoNotBuildTags(aod::Collisions::iterator const& collision)
   {
     // dummy process function - should not be required in the future
@@ -710,7 +710,7 @@ struct cascadeTagBuilder {
       }     // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       int lInteresting = 0;
-      if( TMath::Abs( lPDG ) == 3312 || TMath::Abs( lPDG ) == 3334 )
+      if (TMath::Abs(lPDG) == 3312 || TMath::Abs(lPDG) == 3334)
         lInteresting = 1;
       casctags(lInteresting);
     } // end cascades loop

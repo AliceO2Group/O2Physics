@@ -135,7 +135,7 @@ struct lambdakzeroBuilder {
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
-  
+
   Filter taggedFilter = aod::v0tag::isInteresting > 0;
 
   enum v0step { kV0All = 0,
@@ -555,7 +555,7 @@ struct lambdakzeroBuilder {
     buildStrangenessTables<FullTracksExtIU>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", false);
-  
+
   void processRun3associated(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
@@ -571,32 +571,32 @@ struct lambdakzeroBuilder {
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroLabelBuilder {
   Produces<aod::McV0Labels> v0labels; // MC labels for V0s
-  
+
   void init(InitContext const&) {}
-  
+
   void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(lambdakzeroLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
-  
+
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 labels if requested to do so
   void processBuildV0Labels(aod::Collision const& collision, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
       int lLabel = -1;
-      
+
       auto lNegTrack = v0.negTrack_as<LabeledTracks>();
       auto lPosTrack = v0.posTrack_as<LabeledTracks>();
-      
+
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          
+
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
@@ -608,7 +608,7 @@ struct lambdakzeroLabelBuilder {
       } // end association check
       // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
-               lLabel);
+        lLabel);
     }
   }
   PROCESS_SWITCH(lambdakzeroLabelBuilder, processBuildV0Labels, "Produce V0 MC label tables for analysis", false);
@@ -617,9 +617,9 @@ struct lambdakzeroLabelBuilder {
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroTagBuilder {
   Produces<aod::V0Tags> v0tags; // MC tags
-  
+
   void init(InitContext const&) {}
-  
+
   void processDoNotBuildTags(aod::Collisions::iterator const& collision)
   {
     // dummy process function - should not be required in the future
@@ -638,17 +638,17 @@ struct lambdakzeroTagBuilder {
   {
     for (auto& v0 : v0table) {
       int lPDG = -1;
-      
+
       auto lNegTrack = v0.negTrack_as<LabeledTracks>();
       auto lPosTrack = v0.posTrack_as<LabeledTracks>();
-      
+
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          
+
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
@@ -659,9 +659,9 @@ struct lambdakzeroTagBuilder {
         }
       } // end association check
       // Construct label table (note: this will be joinable with V0s!)
-      
+
       int lInteresting = 0;
-      if( lPDG == 310 || TMath::Abs( lPDG ) == 3122 || TMath::Abs( lPDG ) == 1010010030 )
+      if (lPDG == 310 || TMath::Abs(lPDG) == 3122 || TMath::Abs(lPDG) == 1010010030)
         lInteresting = 1;
       v0tags(lInteresting);
     }
@@ -673,9 +673,8 @@ struct lambdakzeroTagBuilder {
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroV0DataLinkBuilder {
   Produces<aod::V0DataLink> v0dataLink;
-  
+
   void init(InitContext const&) {}
-  
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 -> V0Data link table
@@ -683,11 +682,12 @@ struct lambdakzeroV0DataLinkBuilder {
   {
     std::vector<int> lIndices;
     lIndices.reserve(v0table.size());
-    for (int ii=0; ii<v0table.size(); ii++) lIndices[ii]=-1;
+    for (int ii = 0; ii < v0table.size(); ii++)
+      lIndices[ii] = -1;
     for (auto& v0data : v0datatable) {
-      lIndices[ v0data.v0Id() ] = v0data.globalIndex();
+      lIndices[v0data.v0Id()] = v0data.globalIndex();
     }
-    for (int ii=0; ii<v0table.size(); ii++){
+    for (int ii = 0; ii < v0table.size(); ii++) {
       v0dataLink(lIndices[ii]);
     }
   }
