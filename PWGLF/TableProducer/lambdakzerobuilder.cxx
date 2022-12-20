@@ -666,15 +666,15 @@ struct lambdakzeroTagBuilder {
       } // end association check
       // Construct tag table (note: this will be joinable with V0s!)
       int lInteresting = 0;
-      if( lPDG == 310 && dIfMCgenerateK0Short )
+      if (lPDG == 310 && dIfMCgenerateK0Short)
         lInteresting = 1;
-      if( lPDG == 3122 && dIfMCgenerateLambda )
+      if (lPDG == 3122 && dIfMCgenerateLambda)
         lInteresting = 1;
-      if( lPDG == -3122 && dIfMCgenerateAntiLambda )
+      if (lPDG == -3122 && dIfMCgenerateAntiLambda)
         lInteresting = 1;
-      if( lPDG == 22 && dIfMCgenerateGamma )
+      if (lPDG == 22 && dIfMCgenerateGamma)
         lInteresting = 1;
-      if( lPDG == 1010010030 && dIfMCgenerateHypertriton )
+      if (lPDG == 1010010030 && dIfMCgenerateHypertriton)
         lInteresting = 1;
       v0tags(lInteresting);
     }
