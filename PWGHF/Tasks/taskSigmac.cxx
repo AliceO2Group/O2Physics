@@ -174,46 +174,47 @@ struct HfTaskSc {
       registry.add("MC/reconstructed/hPtGenLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       registry.add("MC/reconstructed/hEtaLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       registry.add("MC/reconstructed/hPhiLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
       /// Reconstructed Λc+ ← Σc0,++ signal
       registry.add("MC/reconstructed/hPtLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       registry.add("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{p}_{T}^{gen}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{360, 0., 36.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       registry.add("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{40, -2., 2.}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
       registry.add("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); origin (1 : prompt, 2: non-prompt); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{72, 0, 2 * M_PI}, {2, 0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
-      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
+      registry.add("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
     }
   }; /// end init
 
   /// @brief Function to determine if the reconstructed candidate Σc0,++ decays into Λc+ → pK-π+, Λc+ → π+K-p or both
   /// @tparam L template for LambdaC daughter of Sc candidate
   /// @tparam S template for Sc candidate
-  /// @param candLambdaC LambdaC daughter of Sc candidate
+  /// @param candidateLc LambdaC daughter of Sc candidate
   /// @param candSc Sc candidate
   /// @return 0: none; 1: only Λc+ → pK-π+ possible; 2: Λc+ → π+K-p possible; 3: both possible
   template <typename L, typename S>
-  int isDecayToPKPiToPiKP(L& candLambdaC, S& candSc)
+  int isDecayToPKPiToPiKP(L& candidateLc, S& candSc)
   {
     int channel = 0;
-    if ((candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
+    if ((candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
       // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       channel += 1;
     }
-    if ((candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
+    if ((candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
       // Λc+ → π+K-p and within the requested mass to build the Σc0,++
       channel += 2;
     }
     return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
   }
 
+  using RecoLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
   /// @brief process function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
   void process(const aod::HfCandSc& candidatesSc,
-               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&, const soa::Join<aod::Tracks, aod::TracksDCA>&)
+               const RecoLc&, const aod::BigTracksExtended&)
   {
 
     /// loop over the candidate Σc0,++
@@ -223,19 +224,19 @@ struct HfTaskSc {
 
       /// get the candidate Λc+ used to build the candidate Σc0,++
       /// and understand which mass hypotheses are possible
-      const auto& candLambdaC = candSc.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-      // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSc);
+      const auto& candidateLc = candSc.prongLc_as<RecoLc>();
+      // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+      // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
       double massSc(-1.), massLambdaC(-1.), deltaMass(-1.);
-      double ptSc(candSc.pt()), ptLambdaC(candLambdaC.pt());
-      double etaSc(candSc.eta()), etaLambdaC(candLambdaC.eta());
-      double phiSc(candSc.phi()), phiLambdaC(candLambdaC.phi());
-      double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+      double ptSc(candSc.pt()), ptLambdaC(candidateLc.pt());
+      double etaSc(candSc.eta()), etaLambdaC(candidateLc.eta());
+      double phiSc(candSc.phi()), phiLambdaC(candidateLc.phi());
+      double ptSoftPi(candSc.prong1_as<aod::BigTracksExtended>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksExtended>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksExtended>().phi());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
-        massSc = invMassScRecoLcToPKPi(candSc);
-        massLambdaC = invMassLcToPKPi(candLambdaC);
+        massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
+        massLambdaC = invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLambdaC;
         /// fill the histograms
         if (chargeSc == 0) {
@@ -288,8 +289,8 @@ struct HfTaskSc {
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
-        massSc = invMassScRecoLcToPiKP(candSc);
-        massLambdaC = invMassLcToPiKP(candLambdaC);
+        massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
+        massLambdaC = invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLambdaC;
         /// fill the histograms
         if (chargeSc == 0) {
@@ -342,7 +343,6 @@ struct HfTaskSc {
       } /// end candidate Λc+ → π+K-p (and charge conjugate)
     }   /// end loop over the candidate Σc0,++
   };    /// end process
-  PROCESS_SWITCH(HfTaskSc, process, "Process data", true);
 
   /// @brief process function to fill the histograms needed in analysis (MC)
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
@@ -484,10 +484,10 @@ struct HfTaskSc {
 
       /// get the candidate Λc+ used to build the Σc0
       /// and understand which mass hypotheses are possible
-      const auto& candLambdaC = candSc.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
-      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candLambdaC, candSc);
+      const auto& candidateLc = candSc.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
+      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
 
-      candLambdaC.flagMcDecayChanRec();
+      //candidateLc.flagMcDecayChanRec();
 
       /// Reconstructed Σc0 signal
       if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
@@ -495,28 +495,28 @@ struct HfTaskSc {
         auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmac0, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = array{candLambdaC.prong0_as<aod::BigTracksMC>(), candLambdaC.prong1_as<aod::BigTracksMC>(), candLambdaC.prong2_as<aod::BigTracksMC>()};
+        auto arrayDaughtersLc = array{candidateLc.prong0_as<aod::BigTracksMC>(), candidateLc.prong1_as<aod::BigTracksMC>(), candidateLc.prong2_as<aod::BigTracksMC>()};
         int8_t sign = 0;
         int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLambdaC = particlesMc.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::BigTracksMC>().mcParticle();
 
-        // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-        // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+        // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+        // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
         double massSc(-1.), massLambdaC(-1.), deltaMass(-1.);
-        double ptSc(candSc.pt()), ptLambdaC(candLambdaC.pt());
-        double etaSc(candSc.eta()), etaLambdaC(candLambdaC.eta());
-        double phiSc(candSc.phi()), phiLambdaC(candLambdaC.phi());
-        double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+        double ptSc(candSc.pt()), ptLambdaC(candidateLc.pt());
+        double etaSc(candSc.eta()), etaLambdaC(candidateLc.eta());
+        double phiSc(candSc.phi()), phiLambdaC(candidateLc.phi());
+        double ptSoftPi(candSc.prong1_as<aod::BigTracksMC>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksMC>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksMC>().phi());
         double ptGenSc(particleSc.pt()), ptGenLambdaC(particleLambdaC.pt()), ptGenSoftPi(particleSoftPi.pt());
         int origin = candSc.originMcRec();
-        auto channel = candLambdaC.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
+        auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
-          massSc = invMassScRecoLcToPKPi(candSc);
-          massLambdaC = invMassLcToPKPi(candLambdaC);
+        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+          massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
+          massLambdaC = invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc0 signal
@@ -555,15 +555,15 @@ struct HfTaskSc {
           registry.fill(HIST("MC/reconstructed/hPtGenLambdaCFromScZeroPlusPlusSig"), ptGenLambdaC, (double)origin, (double)channel);
           registry.fill(HIST("MC/reconstructed/hEtaLambdaCFromScZeroPlusPlusSig"), etaLambdaC, (double)origin, (double)channel);
           registry.fill(HIST("MC/reconstructed/hPhiLambdaCFromScZeroPlusPlusSig"), phiLambdaC, (double)origin, (double)channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig"), deltaMass, ptLambdaC);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSig"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigPrompt"), deltaMass, ptLambdaC, (double)channel);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLambdaCFromScZeroPlusPlusSigNonPrompt"), deltaMass, ptLambdaC, (double)channel); // Λc+ ← Σc0,++ signal
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
-          massSc = invMassScRecoLcToPiKP(candSc);
-          massLambdaC = invMassLcToPiKP(candLambdaC);
+        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+          massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
+          massLambdaC = invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc0 signal
@@ -615,28 +615,28 @@ struct HfTaskSc {
         auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmacPlusPlus, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = array{candLambdaC.prong0_as<aod::BigTracksMC>(), candLambdaC.prong1_as<aod::BigTracksMC>(), candLambdaC.prong2_as<aod::BigTracksMC>()};
+        auto arrayDaughtersLc = array{candidateLc.prong0_as<aod::BigTracksMC>(), candidateLc.prong1_as<aod::BigTracksMC>(), candidateLc.prong2_as<aod::BigTracksMC>()};
         int8_t sign = 0;
         int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLambdaC = particlesMc.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::BigTracksMC>().mcParticle();
 
-        // const int isCandLambdaCpKpi = (candLambdaC.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-        // const int isCandLambdaCpiKp = (candLambdaC.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
+        // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
+        // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
         double massSc(-1.), massLambdaC(-1.), deltaMass(-1.);
-        double ptSc(candSc.pt()), ptLambdaC(candLambdaC.pt());
-        double etaSc(candSc.eta()), etaLambdaC(candLambdaC.eta());
-        double phiSc(candSc.phi()), phiLambdaC(candLambdaC.phi());
-        double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+        double ptSc(candSc.pt()), ptLambdaC(candidateLc.pt());
+        double etaSc(candSc.eta()), etaLambdaC(candidateLc.eta());
+        double phiSc(candSc.phi()), phiLambdaC(candidateLc.phi());
+        double ptSoftPi(candSc.prong1_as<aod::BigTracksMC>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksMC>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksMC>().phi());
         double ptGenSc(particleSc.pt()), ptGenLambdaC(particleLambdaC.pt()), ptGenSoftPi(particleSoftPi.pt());
         int origin = candSc.originMcRec();
-        auto channel = candLambdaC.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
+        auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
-          massSc = invMassScRecoLcToPKPi(candSc);
-          massLambdaC = invMassLcToPKPi(candLambdaC);
+        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+          massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
+          massLambdaC = invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc++ signal
@@ -681,9 +681,9 @@ struct HfTaskSc {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candLambdaC.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
-          massSc = invMassScRecoLcToPiKP(candSc);
-          massLambdaC = invMassLcToPiKP(candLambdaC);
+        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+          massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
+          massLambdaC = invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLambdaC;
 
           /// Fill the histograms for reconstructed Σc++ signal

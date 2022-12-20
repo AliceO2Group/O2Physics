@@ -1783,6 +1783,7 @@ DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
 // specific Σc0,++ candidate properties
 namespace hf_cand_sc
 {
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCand3Prong, ""); //! Index to a Lc prong
 DECLARE_SOA_COLUMN(Charge, charge, int);                                               //! // Σc charge(either 0 or ++)
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPKPiFromPDG, statusSpreadLcMinvPKPiFromPDG, int); //! // Λc Minv(pKpi) spread from PDG Λc mass
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPiKPFromPDG, statusSpreadLcMinvPiKPFromPDG, int); //! // Λc Minv(piKp) spread from PDG Λc mass
@@ -1799,21 +1800,17 @@ enum DecayType { Sc0ToPKPiPi = 0,
 
 /// Σc0,++ → Λc+(→pK-π+) π-,+
 /// @brief Sc inv. mass using reco mass for Lc in pKpi and PDG mass for pion
-template <typename T>
-auto invMassScRecoLcToPKPi(const T& candidate)
+template <typename T, typename U>
+auto invMassScRecoLcToPKPi(const T& candidateSc, const U& candidateLc)
 {
-  //auto candLc = candidate.prongLc_as<aod::HfCand3Prong>();
-  auto candLc = candidate.prongLc();
-  return candidate.m(array{(double) hf_cand_3prong::invMassLcToPKPi(candLc), RecoDecay::getMassPDG(kPiPlus)});
+  return candidateSc.m(array{(double) hf_cand_3prong::invMassLcToPKPi(candidateLc), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 /// @brief Sc inv. mass using reco mass for Lc in piKp and PDG mass for pion
-template <typename T>
-auto invMassScRecoLcToPiKP(const T& candidate)
+template <typename T, typename U>
+auto invMassScRecoLcToPiKP(const T& candidateSc, const U& candidateLc)
 {
-  //auto candLc = candidate.prongLc_as<aod::HfCand3Prong>();
-  auto candLc = candidate.prongLc();
-  return candidate.m(array{(double) hf_cand_3prong::invMassLcToPiKP(candLc), RecoDecay::getMassPDG(kPiPlus)});
+  return candidateSc.m(array{(double) hf_cand_3prong::invMassLcToPiKP(candidateLc), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
@@ -1830,14 +1827,14 @@ auto yScPlusPlus(const T& candidate)
 
 } // namespace hf_cand_sc
 
-namespace hf_track_index
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCand3Prong, ""); //! Index to a Lc prong
-} // namespace hf_track_index
+//namespace hf_track_index
+//{
+//DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCand3Prong, ""); //! Index to a Lc prong
+//} // namespace hf_track_index
 
 // declare dedicated Σc0,++ decay candidate table
 // NB: no topology for Σc0, ++ (strong decay)
-DECLARE_SOA_TABLE(HfCandScBase, "AOD", "HFCANDSc",
+DECLARE_SOA_TABLE(HfCandScBase, "AOD", "HFCANDSCBASE",
                   o2::soa::Index<>,
                   // general columns
                   hf_cand::CollisionId,
@@ -1846,8 +1843,8 @@ DECLARE_SOA_TABLE(HfCandScBase, "AOD", "HFCANDSc",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   // hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   // hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  //hf_cand_sc::Prong0Id, hf_track_index::Prong1Id,
-                  hf_track_index::ProngLcId, hf_track_index::Prong1Id,
+                  //hf_track_index::ProngLcId, hf_track_index::Prong1Id,
+                  hf_cand_sc::ProngLcId, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* Σc0,++ specific columns */
                   hf_cand_sc::Charge,

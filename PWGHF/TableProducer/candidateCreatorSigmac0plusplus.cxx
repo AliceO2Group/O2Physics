@@ -58,6 +58,7 @@ struct candidateCreatorSc0plusplus {
     ////////////////////////////////////////
     /// set the selections for soft pion ///
     ////////////////////////////////////////
+    //softPiCuts.SetPtRange(0.001, 1000.); // pt
     softPiCuts.SetEtaRange(-softPiEta, softPiEta); // eta
     softPiCuts.SetMaxDcaXY(softPidcaXYmax);        // dcaXY
     softPiCuts.SetMaxDcaZ(softPidcaZmax);          // dcaZ
@@ -79,11 +80,12 @@ struct candidateCreatorSc0plusplus {
     softPiCuts.SetRequireHitsInITSLayers(softPiITSHitsMin, set_softPiITSHitMap);
   }
 
+  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
   /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::FullTracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
+  void process(const o2::aod::Collision& collision, const TracksSigmac& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
 
     /// loop over Λc+ → pK-π+ (and charge conj.) candidates
@@ -138,7 +140,7 @@ struct candidateCreatorSc0plusplus {
           continue;
 
         /// determine the Σc candidate charge
-        int chargeLc = candLc.prong0_as<aod::Tracks>().sign() + candLc.prong1_as<aod::Tracks>().sign() + candLc.prong2_as<aod::Tracks>().sign();
+        int chargeLc = candLc.prong0_as<TracksSigmac>().sign() + candLc.prong1_as<TracksSigmac>().sign() + candLc.prong2_as<TracksSigmac>().sign();
         int chargeSoftPi = trackSoftPi.sign();
         int chargeSc = chargeLc + chargeSoftPi;
         if (std::abs(chargeSc) != 0 && std::abs(chargeSc) != 2) {
@@ -175,6 +177,9 @@ struct HfCandidateCreatorScExpressions {
 
 struct candidateSc0plusplusMcMatch {
 
+  Produces<aod::HfCandScMcRec> rowMCMatchScRec;
+  Produces<aod::HfCandScMcGen> rowMCMatchScGen;
+
   /// @brief init function
   void init(InitContext const&) {}
 
@@ -182,15 +187,16 @@ struct candidateSc0plusplusMcMatch {
   using LambdacMCGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using TracksMC = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
+  /// @brief dummy process function, to be run on data
+  /// @param  
+  void process(const aod::Tracks&){}
+
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSc reconstructed Σc0,++ candidates
   /// @param particlesMc table of generaed particles
   void processMC(const aod::HfCandSc& candidatesSc, aod::McParticles const& particlesMc,
                  LambdacMC const&, const TracksMC&, const LambdacMCGen&)
   {
-
-    Produces<aod::HfCandScMcRec> rowMCMatchScRec;
-    Produces<aod::HfCandScMcGen> rowMCMatchScGen;
 
     int indexRec = -1;
     int8_t sign = 0;
@@ -266,6 +272,8 @@ struct candidateSc0plusplusMcMatch {
         // generated Σc0
         for (auto& daughter : particle.daughters_as<LambdacMCGen>()) {
           // look for Λc+ daughter decaying in pK-π+
+          if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
+            continue;
           if (std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi);
@@ -276,6 +284,8 @@ struct candidateSc0plusplusMcMatch {
         // generated Σc++
         for (auto& daughter : particle.daughters_as<LambdacMCGen>()) {
           // look for Λc+ daughter decaying in pK-π+
+          if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
+            continue;
           if (std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sc::DecayType::ScplusplusToPKPiPi);
