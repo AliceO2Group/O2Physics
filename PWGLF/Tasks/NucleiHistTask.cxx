@@ -31,7 +31,7 @@
 #include "Framework/HistogramRegistry.h"
 
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h" 
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::framework;
