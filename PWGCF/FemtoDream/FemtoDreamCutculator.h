@@ -39,7 +39,7 @@ class FemtoDreamCutculator
   /// \param configFile Path to the dpl-config.json file from the femtodream-producer task
   void init(const char* configFile)
   {
-    std::cout << "Welcome to the CutCulator!\n";
+    LOG(info) << "Welcome to the CutCulator!";
 
     boost::property_tree::ptree root;
     try {
@@ -53,7 +53,7 @@ class FemtoDreamCutculator
     for (auto& Producer : ProducerTasks) {
       if (root.count(Producer) > 0) {
         mConfigTree = root.get_child(Producer);
-        std::cout << "Found " << Producer << " in " << configFile << std::endl;
+        LOG(info) << "Found " << Producer << " in " << configFile;
         break;
       }
     }
@@ -186,7 +186,7 @@ class FemtoDreamCutculator
     /// First we check whether the input is actually contained within the options
     bool inputSane = false;
     for (auto sel : selVec) {
-      if (std::abs(sel.getSelectionValue() - input) < std::abs(1.e-6 * input)) {
+      if (std::abs(sel.getSelectionValue() - input) <= std::abs(1.e-6 * input)) {
         inputSane = true;
       }
     }

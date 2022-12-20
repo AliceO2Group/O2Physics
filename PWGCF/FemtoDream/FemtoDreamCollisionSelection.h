@@ -68,7 +68,11 @@ class FemtoDreamCollisionSelection
   /// Print some debug information
   void printCuts()
   {
-    std::cout << "Debug information for FemtoDreamCollisionSelection \n Max. z-vertex: " << mZvtxMax << "\n Check trigger: " << mCheckTrigger << "\n Trigger: " << mTrigger << "\n Check offline: " << mCheckOffline << "\n";
+    LOG(info) << "Debug information for FemtoDreamCollisionSelection";
+    LOG(info) << "Max. z-vertex: " << mZvtxMax;
+    LOG(info) << "Check trigger: " << mCheckTrigger;
+    LOG(info) << "Trigger: " << mTrigger;
+    LOG(info) << " Check offline: " << mCheckOffline;
   }
 
   /// Check whether the collisions fulfills the specified selections

@@ -39,6 +39,6 @@ int main(int argc, char* argv[])
     // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
     cut.analyseCuts();
   } else {
-    std::cout << "The configuration file " << configFileName << " could not be found." << std::endl;
+    LOG(info) << "The configuration file " << configFileName << " could not be found.";
   }
 }
