@@ -715,13 +715,13 @@ struct cascadeTagBuilder {
       }     // end association check
       // Construct tag table (note: this will be joinable with CascDatas)
       int lInteresting = 0;
-      if( lPDG == 3312 && dIfMCgenerateXiMinus )
+      if (lPDG == 3312 && dIfMCgenerateXiMinus)
         lInteresting = 1;
-      if( lPDG == -3312 && dIfMCgenerateXiPlus )
+      if (lPDG == -3312 && dIfMCgenerateXiPlus)
         lInteresting = 1;
-      if( lPDG == 3334 && dIfMCgenerateOmegaMinus )
+      if (lPDG == 3334 && dIfMCgenerateOmegaMinus)
         lInteresting = 1;
-      if( lPDG == -3334 && dIfMCgenerateOmegaPlus )
+      if (lPDG == -3334 && dIfMCgenerateOmegaPlus)
         lInteresting = 1;
       casctags(lInteresting);
     } // end cascades loop
