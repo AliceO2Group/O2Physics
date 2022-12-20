@@ -74,11 +74,22 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+namespace o2::aod
+{
+namespace casctag
+{
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, int); //! will this be built or not?
+}
+DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
+                  casctag::IsInteresting);
+} // namespace o2::aod
+
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
+using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
@@ -123,6 +134,8 @@ struct cascadeBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
   o2::base::Propagator::MatCorrType matCorrCascade;
+
+  Filter taggedFilter = aod::casctag::isInteresting > 0;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -203,11 +216,17 @@ struct cascadeBuilder {
       ccdb->get<TGeoManager>(geoPath);
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3associated == false) {
+      LOGF(fatal, "Neither processRun2, processRun3 nor processRun3associated enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessRun3associated == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3associated at the same time. Please choose one.");
+    }
+    if (doprocessRun3 == true && doprocessRun3associated == true) {
+      LOGF(fatal, "Cannot enable processRun3 and processRun3associated at the same time. Please choose one.");
     }
 
     if (d_UseAutodetectMode) {
@@ -488,20 +507,20 @@ struct cascadeBuilder {
     return true;
   }
 
-  template <class TTracksTo>
-  void buildStrangenessTables(aod::Collision const& collision, aod::Cascades const& cascades, TTracksTo const& tracks)
+  template <class TTracksTo, typename TCascadeObjects>
+  void buildStrangenessTables(aod::Collision const& collision, TCascadeObjects const& cascades, TTracksTo const& tracks)
   {
     statisticsRegistry.eventCounter++;
 
     for (auto& cascade : cascades) {
       // Track casting
       auto bachTrackCast = cascade.template bachelor_as<TTracksTo>();
-      auto v0index = cascade.v0_as<o2::aod::V0sLinked>();
+      auto v0index = cascade.template v0_as<o2::aod::V0sLinked>();
       if (!(v0index.has_v0Data())) {
         // cascdataLink(-1);
         continue; // skip those cascades for which V0 doesn't exist
       }
-      auto v0 = v0index.v0Data_as<V0full>(); // de-reference index to correct v0data in case it exists
+      auto v0 = v0index.template v0Data_as<V0full>(); // de-reference index to correct v0data in case it exists
       //
       bool validCascadeCandidate = buildCascadeCandidate(collision, bachTrackCast, v0);
       if (!validCascadeCandidate)
@@ -534,7 +553,7 @@ struct cascadeBuilder {
     // do v0s, typecase correctly into tracks (Run 2 use case)
     buildStrangenessTables<FullTracksExt>(collision, cascades, tracks);
   }
-  PROCESS_SWITCH(cascadeBuilder, processRun2, "Produce Run 2 V0 tables", true);
+  PROCESS_SWITCH(cascadeBuilder, processRun2, "Produce Run 2 cascade tables", true);
 
   void processRun3(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -545,7 +564,18 @@ struct cascadeBuilder {
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
     buildStrangenessTables<FullTracksExtIU>(collision, cascades, tracks);
   }
-  PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 V0 tables", false);
+  PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", false);
+
+  void processRun3associated(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+  {
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
+    // do v0s, typecase correctly into tracksIU (Run 3 use case)
+    buildStrangenessTables<FullTracksExtIU>(collision, cascades, tracks);
+  }
+  PROCESS_SWITCH(cascadeBuilder, processRun3associated, "Produce Run 3 cascade tables only for MC associated", false);
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -615,6 +645,80 @@ struct cascadeLabelBuilder {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 };
 
+//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+struct cascadeTagBuilder {
+  Produces<aod::CascTags> casctags; // MC tags
+
+  void init(InitContext const&) {}
+
+  void processDoNotBuildTags(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(cascadeTagBuilder, processDoNotBuildTags, "Do not produce MC tag tables", true);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // build cascade tags if requested to do so
+  // WARNING: this is an internal table meant to have the builder
+  // build only associated candidates. It is not, in principle, part
+  // of the main data model for strangeness analyses.
+  //
+  // The main difference:
+  // --- the CascTags table is joinable with cascades (for building)
+  // --- the Casclabels is joinable with CascData (for analysis)
+  void processBuildCascadeTags(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
+  {
+    for (auto& casc : cascades) {
+      // Loop over those that actually have the corresponding V0 associated to them
+      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0.has_v0Data())) {
+        casctags(0);
+        continue; // skip those cascades for which V0 doesn't exist
+      }
+      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
+      int lPDG = -1;
+
+      // Acquire all three daughter tracks, please
+      auto lBachTrack = casc.bachelor_as<LabeledTracks>();
+      auto lNegTrack = v0data.negTrack_as<LabeledTracks>();
+      auto lPosTrack = v0data.posTrack_as<LabeledTracks>();
+
+      // Association check
+      // There might be smarter ways of doing this in the future
+      if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle() && lBachTrack.has_mcParticle()) {
+        auto lMCBachTrack = lBachTrack.mcParticle_as<aod::McParticles>();
+        auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
+        auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
+
+        // Step 1: check if the mother is the same, go up a level
+        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
+          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
+            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
+              if (lNegMother == lPosMother) {
+                // if we got to this level, it means the mother particle exists and is the same
+                // now we have to go one level up and compare to the bachelor mother too
+                for (auto& lV0Mother : lNegMother.mothers_as<aod::McParticles>()) {
+                  for (auto& lBachMother : lMCBachTrack.mothers_as<aod::McParticles>()) {
+                    if (lV0Mother == lBachMother) {
+                      lPDG = lV0Mother.pdgCode();
+                    }
+                  }
+                } // end conditional V0-bach pair
+              }   // end neg = pos mother conditional
+            }
+          } // end loop neg/pos mothers
+        }   // end conditional of mothers existing
+      }     // end association check
+      // Construct label table (note: this will be joinable with CascDatas)
+      int lInteresting = 0;
+      if (TMath::Abs(lPDG) == 3312 || TMath::Abs(lPDG) == 3334)
+        lInteresting = 1;
+      casctags(lInteresting);
+    } // end cascades loop
+  }
+  PROCESS_SWITCH(cascadeTagBuilder, processBuildCascadeTags, "Produce cascade MC tag tables for MC associated building", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+};
+
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
   Spawns<aod::CascDataExt> cascdataext;
@@ -626,5 +730,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
     adaptAnalysisTask<cascadeLabelBuilder>(cfgc),
+    adaptAnalysisTask<cascadeTagBuilder>(cfgc),
     adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }

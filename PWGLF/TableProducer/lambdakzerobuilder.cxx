@@ -74,18 +74,25 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+namespace o2::aod
+{
+namespace v0tag
+{
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, int); //! will this be built or not?
+}
+DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
+                  v0tag::IsInteresting);
+} // namespace o2::aod
+
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
+using FullTracksExtIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 
-//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-// Builder task: rebuilds strangeness candidates
-// The prefilter part skims the list of good V0s to re-reconstruct so that
-// CPU is saved in case there are specific selections that are to be done
 struct lambdakzeroBuilder {
   Produces<aod::StoredV0Datas> v0data;
-  Produces<aod::V0DataLink> v0dataLink;
   Produces<aod::V0Covs> v0covs; // covariances
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -128,6 +135,8 @@ struct lambdakzeroBuilder {
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
+
+  Filter taggedFilter = aod::v0tag::isInteresting > 0;
 
   enum v0step { kV0All = 0,
                 kV0TPCrefit,
@@ -205,11 +214,17 @@ struct lambdakzeroBuilder {
       ccdb->get<TGeoManager>(geoPath);
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3associated == false) {
+      LOGF(fatal, "Neither processRun2, processRun3 nor processRun3associated enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessRun3associated == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3associated at the same time. Please choose one.");
+    }
+    if (doprocessRun3 == true && doprocessRun3associated == true) {
+      LOGF(fatal, "Cannot enable processRun3 and processRun3associated at the same time. Please choose one.");
     }
 
     if (d_UseAutodetectMode) {
@@ -366,6 +381,7 @@ struct lambdakzeroBuilder {
   template <class TTracksTo>
   bool buildV0Candidate(aod::Collision const& collision, TTracksTo const& posTrack, TTracksTo const& negTrack)
   {
+
     // value 0.5: any considered V0
     statisticsRegistry.v0stats[kV0All]++;
     if (tpcrefit) {
@@ -376,11 +392,13 @@ struct lambdakzeroBuilder {
         return false;
       }
     }
+
     // Passes TPC refit
     statisticsRegistry.v0stats[kV0TPCrefit]++;
     if (posTrack.tpcNClsCrossedRows() < mincrossedrows || negTrack.tpcNClsCrossedRows() < mincrossedrows) {
       return false;
     }
+
     // passes crossed rows
     statisticsRegistry.v0stats[kV0CrossedRows]++;
     if (fabs(posTrack.dcaXY()) < dcapostopv || fabs(negTrack.dcaXY()) < dcanegtopv) {
@@ -451,13 +469,12 @@ struct lambdakzeroBuilder {
 
     // Passes radius check
     statisticsRegistry.v0stats[kV0Radius]++;
-
     // Return OK: passed all v0 candidate selecton criteria
     return true;
   }
 
   template <class TTracksTo, typename TV0Objects>
-  void buildStrangenessTables(aod::Collision const& collision, TV0Objects const& V0s, aod::Cascades const& cascades, TTracksTo const& tracks)
+  void buildStrangenessTables(aod::Collision const& collision, TV0Objects const& V0s, TTracksTo const& tracks)
   {
     statisticsRegistry.eventCounter++;
 
@@ -470,7 +487,6 @@ struct lambdakzeroBuilder {
       bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast);
 
       if (!validCandidate) {
-        v0dataLink(-1);
         continue; // doesn't pass selections
       }
 
@@ -486,7 +502,6 @@ struct lambdakzeroBuilder {
              v0candidate.dcaV0dau,
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
-      v0dataLink(v0data.lastIndex());
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
@@ -519,33 +534,43 @@ struct lambdakzeroBuilder {
     resetHistos();
   }
 
-  void processRun2(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
+  void processRun2(aod::Collision const& collision, aod::V0s const& V0s, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     // do v0s, typecase correctly into tracks (Run 2 use case)
-    buildStrangenessTables<FullTracksExt>(collision, V0s, cascades, tracks);
+    buildStrangenessTables<FullTracksExt>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", true);
 
-  void processRun3(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRun3(aod::Collision const& collision, aod::V0s const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildStrangenessTables<FullTracksExtIU>(collision, V0s, cascades, tracks);
+    buildStrangenessTables<FullTracksExtIU>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", false);
+
+  void processRun3associated(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+  {
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
+    // do v0s, typecase correctly into tracksIU (Run 3 use case)
+    buildStrangenessTables<FullTracksExtIU>(collision, V0s, tracks);
+  }
+  PROCESS_SWITCH(lambdakzeroBuilder, processRun3associated, "Produce Run 3 V0 tables only for MC associated", false);
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroLabelBuilder {
   Produces<aod::McV0Labels> v0labels; // MC labels for V0s
-  // for bookkeeping purposes: how many V0s come from same mother etc
 
   void init(InitContext const&) {}
 
@@ -581,12 +606,91 @@ struct lambdakzeroLabelBuilder {
           }
         }
       } // end association check
-      // Construct label table (note: this will be joinable with V0Datas)
+      // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
         lLabel);
     }
   }
-  PROCESS_SWITCH(lambdakzeroLabelBuilder, processBuildV0Labels, "Produce V0 MC label tables", false);
+  PROCESS_SWITCH(lambdakzeroLabelBuilder, processBuildV0Labels, "Produce V0 MC label tables for analysis", false);
+};
+
+//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+struct lambdakzeroTagBuilder {
+  Produces<aod::V0Tags> v0tags; // MC tags
+
+  void init(InitContext const&) {}
+
+  void processDoNotBuildTags(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(lambdakzeroTagBuilder, processDoNotBuildTags, "Do not produce MC tag tables", true);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // build V0 tags if requested to do so
+  // WARNING: this is an internal table meant to have the builder
+  // build only associated candidates. It is not, in principle, part
+  // of the main data model for strangeness analyses.
+  //
+  // The main difference:
+  // --- the V0Tags table is joinable with v0s (for building)
+  // --- the V0labels is joinable with V0Data (for analysis)
+  void processBuildV0Tags(aod::Collision const& collision, aod::V0s const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
+  {
+    for (auto& v0 : v0table) {
+      int lPDG = -1;
+
+      auto lNegTrack = v0.negTrack_as<LabeledTracks>();
+      auto lPosTrack = v0.posTrack_as<LabeledTracks>();
+
+      // Association check
+      // There might be smarter ways of doing this in the future
+      if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
+        auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
+        auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
+        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
+
+          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
+            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
+              if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
+                lPDG = lNegMother.pdgCode();
+              }
+            }
+          }
+        }
+      } // end association check
+      // Construct label table (note: this will be joinable with V0s!)
+
+      int lInteresting = 0;
+      if (lPDG == 310 || TMath::Abs(lPDG) == 3122 || TMath::Abs(lPDG) == 1010010030)
+        lInteresting = 1;
+      v0tags(lInteresting);
+    }
+  }
+  PROCESS_SWITCH(lambdakzeroTagBuilder, processBuildV0Tags, "Produce V0 MC tag tables for MC associated building", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+};
+
+//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+struct lambdakzeroV0DataLinkBuilder {
+  Produces<aod::V0DataLink> v0dataLink;
+
+  void init(InitContext const&) {}
+
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // build V0 -> V0Data link table
+  void process(aod::V0s const& v0table, aod::V0Datas const& v0datatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(v0table.size());
+    for (int ii = 0; ii < v0table.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& v0data : v0datatable) {
+      lIndices[v0data.v0Id()] = v0data.globalIndex();
+    }
+    for (int ii = 0; ii < v0table.size(); ii++) {
+      v0dataLink(lIndices[ii]);
+    }
+  }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 };
 
@@ -601,5 +705,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroLabelBuilder>(cfgc),
+    adaptAnalysisTask<lambdakzeroTagBuilder>(cfgc),
+    adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }
