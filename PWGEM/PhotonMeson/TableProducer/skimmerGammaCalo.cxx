@@ -55,12 +55,13 @@ struct skimmerGammaCalo {
     hCaloClusterFilter->GetXaxis()->SetBinLabel(2, "time cut");
     hCaloClusterFilter->GetXaxis()->SetBinLabel(3, "M02 cut");
     hCaloClusterFilter->GetXaxis()->SetBinLabel(4, "out");
+
+    LOG(info) << "| Timing cut: " << minTime << " < t < " << maxTime << std::endl;
+    LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
   }
 
   void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks)
   {
-    LOG(info) << "| Timing cut: " << minTime << "< t < " << maxTime << std::endl;
-    LOG(info) << "| M02 cut: " << minM02 << "< M02 < " << maxM02 << std::endl;
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 0);
