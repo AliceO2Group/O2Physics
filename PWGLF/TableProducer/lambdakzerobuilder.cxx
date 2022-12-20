@@ -618,6 +618,12 @@ struct lambdakzeroLabelBuilder {
 struct lambdakzeroTagBuilder {
   Produces<aod::V0Tags> v0tags; // MC tags
 
+  Configurable<bool> dIfMCgenerateK0Short{"dIfMCgenerateK0Short", true, "if MC, generate MC true K0Short (yes/no)"};
+  Configurable<bool> dIfMCgenerateLambda{"dIfMCgenerateLambda", true, "if MC, generate MC true Lambda (yes/no)"};
+  Configurable<bool> dIfMCgenerateAntiLambda{"dIfMCgenerateAntiLambda", true, "if MC, generate MC true AntiLambda (yes/no)"};
+  Configurable<bool> dIfMCgenerateGamma{"dIfMCgenerateGamma", false, "if MC, generate MC true gamma (yes/no)"};
+  Configurable<bool> dIfMCgenerateHypertriton{"dIfMCgenerateHypertriton", false, "if MC, generate MC true hypertritons (yes/no)"};
+
   void init(InitContext const&) {}
 
   void processDoNotBuildTags(aod::Collisions::iterator const& collision)
@@ -658,10 +664,17 @@ struct lambdakzeroTagBuilder {
           }
         }
       } // end association check
-      // Construct label table (note: this will be joinable with V0s!)
-
+      // Construct tag table (note: this will be joinable with V0s!)
       int lInteresting = 0;
-      if (lPDG == 310 || TMath::Abs(lPDG) == 3122 || TMath::Abs(lPDG) == 1010010030)
+      if (lPDG == 310 && dIfMCgenerateK0Short)
+        lInteresting = 1;
+      if (lPDG == 3122 && dIfMCgenerateLambda)
+        lInteresting = 1;
+      if (lPDG == -3122 && dIfMCgenerateAntiLambda)
+        lInteresting = 1;
+      if (lPDG == 22 && dIfMCgenerateGamma)
+        lInteresting = 1;
+      if (lPDG == 1010010030 && dIfMCgenerateHypertriton)
         lInteresting = 1;
       v0tags(lInteresting);
     }

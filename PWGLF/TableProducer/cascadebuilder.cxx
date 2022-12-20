@@ -649,6 +649,11 @@ struct cascadeLabelBuilder {
 struct cascadeTagBuilder {
   Produces<aod::CascTags> casctags; // MC tags
 
+  Configurable<bool> dIfMCgenerateXiMinus{"dIfMCgenerateXiMinus", true, "if MC, generate MC true XiMinus (yes/no)"};
+  Configurable<bool> dIfMCgenerateXiPlus{"dIfMCgenerateXiPlus", true, "if MC, generate MC true XiPlus (yes/no)"};
+  Configurable<bool> dIfMCgenerateOmegaMinus{"dIfMCgenerateOmegaMinus", true, "if MC, generate MC true OmegaMinus (yes/no)"};
+  Configurable<bool> dIfMCgenerateOmegaPlus{"dIfMCgenerateOmegaPlus", true, "if MC, generate MC true OmegaPlus (yes/no)"};
+
   void init(InitContext const&) {}
 
   void processDoNotBuildTags(aod::Collisions::iterator const& collision)
@@ -708,9 +713,15 @@ struct cascadeTagBuilder {
           } // end loop neg/pos mothers
         }   // end conditional of mothers existing
       }     // end association check
-      // Construct label table (note: this will be joinable with CascDatas)
+      // Construct tag table (note: this will be joinable with CascDatas)
       int lInteresting = 0;
-      if (TMath::Abs(lPDG) == 3312 || TMath::Abs(lPDG) == 3334)
+      if (lPDG == 3312 && dIfMCgenerateXiMinus)
+        lInteresting = 1;
+      if (lPDG == -3312 && dIfMCgenerateXiPlus)
+        lInteresting = 1;
+      if (lPDG == 3334 && dIfMCgenerateOmegaMinus)
+        lInteresting = 1;
+      if (lPDG == -3334 && dIfMCgenerateOmegaPlus)
         lInteresting = 1;
       casctags(lInteresting);
     } // end cascades loop
