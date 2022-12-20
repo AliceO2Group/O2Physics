@@ -83,7 +83,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hZeqFDD", "vtx-z eq FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hZeqNTracksPV", "vtx-z eq NTracks", kTH1D, {axisMultNTracks});
 
-    //Per BC
+    // Per BC
     histos.add("multiplicityQa/hPerBCRawFV0", "Raw FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hPerBCRawFT0", "Raw FT0", kTH1D, {axisMultFT0});
     histos.add("multiplicityQa/hPerBCRawFT0A", "Raw FT0A", kTH1D, {axisMultFT0A});
@@ -98,7 +98,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hVtxZFDDC", "Av FDDC vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZNTracksPV", "Av NTracks vs vertex Z", kTProfile, {axisVertexZ});
 
-    //profiles of track contributors
+    // profiles of track contributors
     histos.add("multiplicityQa/hNchProfileZeqFV0", "Raw FV0", kTProfile, {axisMultFV0});
     histos.add("multiplicityQa/hNchProfileZeqFT0", "Raw FT0", kTProfile, {axisMultFT0});
     histos.add("multiplicityQa/hNchProfileZeqFT0A", "Raw FT0A", kTProfile, {axisMultFT0A});
@@ -157,7 +157,7 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hZeqFDD"), col.multZeqFDDA() + col.multZeqFDDC());
     histos.fill(HIST("multiplicityQa/hZeqNTracksPV"), col.multZeqNTracksPV());
 
-    //Profiles
+    // Profiles
     histos.fill(HIST("multiplicityQa/hNchProfileZeqFV0"), col.multZeqFV0A(), col.multZeqNTracksPV());
     histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0"), col.multZeqFT0A() + col.multZeqFT0C(), col.multZeqNTracksPV());
     histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0A"), col.multZeqFT0A(), col.multZeqNTracksPV());
@@ -165,7 +165,7 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hNchProfileZeqFDD"), col.multZeqFDDA() + col.multZeqFDDC(), col.multZeqNTracksPV());
   }
   PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
-  
+
   void processBCs(BCsWithRun3Matchings::iterator const& bc,
                   aod::FV0As const&,
                   aod::FT0s const&,
@@ -204,13 +204,12 @@ struct MultiplicityQa {
       }
     }
 
-    //Raw multiplicities per BC
+    // Raw multiplicities per BC
     histos.fill(HIST("multiplicityQa/hPerBCRawFV0"), multFV0A);
-    histos.fill(HIST("multiplicityQa/hPerBCRawFT0"), multFT0A+multFT0C);
+    histos.fill(HIST("multiplicityQa/hPerBCRawFT0"), multFT0A + multFT0C);
     histos.fill(HIST("multiplicityQa/hPerBCRawFT0A"), multFT0A);
     histos.fill(HIST("multiplicityQa/hPerBCRawFT0C"), multFT0C);
-    histos.fill(HIST("multiplicityQa/hPerBCRawFDD"), multFDDA+multFDDC);
-
+    histos.fill(HIST("multiplicityQa/hPerBCRawFDD"), multFDDA + multFDDC);
   }
   PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", true);
 };
