@@ -58,7 +58,7 @@ struct candidateCreatorSc0plusplus {
     ////////////////////////////////////////
     /// set the selections for soft pion ///
     ////////////////////////////////////////
-    //softPiCuts.SetPtRange(0.001, 1000.); // pt
+    // softPiCuts.SetPtRange(0.001, 1000.); // pt
     softPiCuts.SetEtaRange(-softPiEta, softPiEta); // eta
     softPiCuts.SetMaxDcaXY(softPidcaXYmax);        // dcaXY
     softPiCuts.SetMaxDcaZ(softPidcaZmax);          // dcaZ
@@ -189,7 +189,7 @@ struct candidateSc0plusplusMcMatch {
 
   /// @brief dummy process function, to be run on data
   /// @param  
-  void process(const aod::Tracks&){}
+  void process(const aod::Tracks&) {}
 
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSc reconstructed Σc0,++ candidates
