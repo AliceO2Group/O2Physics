@@ -262,7 +262,6 @@ struct lambdakzeroBuilder {
     }
 
     if (d_UseAutodetectMode) {
-      // Checking for subscriptions to:
       double loosest_v0cospa = 100;
       float loosest_dcav0dau = -100;
       float loosest_dcapostopv = 100;
