@@ -728,9 +728,9 @@ struct cascadePreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   ///This process function ensures that all cascades are built. It will simply tag everything as true.
-  void processBuildAll(aod::V0s const& v0table)
+  void processBuildAll(aod::Cascades const& cascades)
   {
-    for (int ii = 0; ii < v0table.size(); ii++)
+    for (int ii = 0; ii < cascades.size(); ii++)
     casctags(true,
              true, true, true, true,
              true, true, true, true);
