@@ -232,7 +232,9 @@ struct phosCalibration {
     // Set number of cells in last TrigRec
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
-      mHistManager.fill(HIST("eventsAll"), 1.);
+      mHistManager.fill(HIST("eventsAll"), phosCellTRs.size());
+    } else {
+      return;
     }
 
     // Clusterize
@@ -321,6 +323,9 @@ struct phosCalibration {
     }
 
     // Make Real and Mixed
+    if (event.size() == 0) { // to avoid overflow at uint type event.size() - 1
+      return;
+    }
     for (size_t i = 0; i < event.size() - 1; i++) {
       int absId1 = event[i].getAbsId();
       int nMix = mMixedEvents; // Number of events to mix
