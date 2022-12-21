@@ -33,6 +33,8 @@
 using namespace o2;
 using namespace o2::framework;
 
+using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+
 struct MultiplicityQa {
   //Raw multiplicities
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -81,6 +83,13 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hZeqFDD", "vtx-z eq FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hZeqNTracksPV", "vtx-z eq NTracks", kTH1D, {axisMultNTracks});
 
+    // Per BC
+    histos.add("multiplicityQa/hPerBCRawFV0", "Raw FV0", kTH1D, {axisMultFV0});
+    histos.add("multiplicityQa/hPerBCRawFT0", "Raw FT0", kTH1D, {axisMultFT0});
+    histos.add("multiplicityQa/hPerBCRawFT0A", "Raw FT0A", kTH1D, {axisMultFT0A});
+    histos.add("multiplicityQa/hPerBCRawFT0C", "Raw FT0C", kTH1D, {axisMultFT0C});
+    histos.add("multiplicityQa/hPerBCRawFDD", "Raw FDD", kTH1D, {axisMultFDD});
+
     // Vertex-Z profiles for vertex-Z dependency estimate
     histos.add("multiplicityQa/hVtxZFV0A", "Av FV0A vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZFT0A", "Av FT0A vs vertex Z", kTProfile, {axisVertexZ});
@@ -88,9 +97,16 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hVtxZFDDA", "Av FDDA vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZFDDC", "Av FDDC vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZNTracksPV", "Av NTracks vs vertex Z", kTProfile, {axisVertexZ});
+
+    // profiles of track contributors
+    histos.add("multiplicityQa/hNchProfileZeqFV0", "Raw FV0", kTProfile, {axisMultFV0});
+    histos.add("multiplicityQa/hNchProfileZeqFT0", "Raw FT0", kTProfile, {axisMultFT0});
+    histos.add("multiplicityQa/hNchProfileZeqFT0A", "Raw FT0A", kTProfile, {axisMultFT0A});
+    histos.add("multiplicityQa/hNchProfileZeqFT0C", "Raw FT0C", kTProfile, {axisMultFT0C});
+    histos.add("multiplicityQa/hNchProfileZeqFDD", "Raw FDD", kTProfile, {axisMultFDD});
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
   {
     histos.fill(HIST("multiplicityQa/hEventCounter"), 0.5);
     if (selection == 7 && !col.sel7()) {
@@ -140,7 +156,62 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hZeqFT0C"), col.multZeqFT0C());
     histos.fill(HIST("multiplicityQa/hZeqFDD"), col.multZeqFDDA() + col.multZeqFDDC());
     histos.fill(HIST("multiplicityQa/hZeqNTracksPV"), col.multZeqNTracksPV());
+
+    // Profiles
+    histos.fill(HIST("multiplicityQa/hNchProfileZeqFV0"), col.multZeqFV0A(), col.multZeqNTracksPV());
+    histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0"), col.multZeqFT0A() + col.multZeqFT0C(), col.multZeqNTracksPV());
+    histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0A"), col.multZeqFT0A(), col.multZeqNTracksPV());
+    histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0C"), col.multZeqFT0C(), col.multZeqNTracksPV());
+    histos.fill(HIST("multiplicityQa/hNchProfileZeqFDD"), col.multZeqFDDA() + col.multZeqFDDC(), col.multZeqNTracksPV());
   }
+  PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
+
+  void processBCs(BCsWithRun3Matchings::iterator const& bc,
+                  aod::FV0As const&,
+                  aod::FT0s const&,
+                  aod::FDDs const&)
+  {
+    float multFV0A = 0.f;
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
+    float multFDDA = 0.f;
+    float multFDDC = 0.f;
+
+    if (bc.has_ft0()) {
+      auto ft0 = bc.ft0();
+      for (auto amplitude : ft0.amplitudeA()) {
+        multFT0A += amplitude;
+      }
+      for (auto amplitude : ft0.amplitudeC()) {
+        multFT0C += amplitude;
+      }
+    }
+
+    if (bc.has_fdd()) {
+      auto fdd = bc.fdd();
+      for (auto amplitude : fdd.chargeA()) {
+        multFDDA += amplitude;
+      }
+      for (auto amplitude : fdd.chargeC()) {
+        multFDDC += amplitude;
+      }
+    }
+    // using FV0 row index from event selection task
+    if (bc.has_fv0a()) {
+      auto fv0a = bc.fv0a();
+      for (auto amplitude : fv0a.amplitude()) {
+        multFV0A += amplitude;
+      }
+    }
+
+    // Raw multiplicities per BC
+    histos.fill(HIST("multiplicityQa/hPerBCRawFV0"), multFV0A);
+    histos.fill(HIST("multiplicityQa/hPerBCRawFT0"), multFT0A + multFT0C);
+    histos.fill(HIST("multiplicityQa/hPerBCRawFT0A"), multFT0A);
+    histos.fill(HIST("multiplicityQa/hPerBCRawFT0C"), multFT0C);
+    histos.fill(HIST("multiplicityQa/hPerBCRawFDD"), multFDDA + multFDDC);
+  }
+  PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

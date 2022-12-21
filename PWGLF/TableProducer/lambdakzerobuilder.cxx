@@ -831,7 +831,6 @@ struct lambdakzeroLabelBuilder {
   }
   PROCESS_SWITCH(lambdakzeroLabelBuilder, processBuildV0Labels, "Produce V0 MC label tables for analysis", false);
 };
-
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroV0DataLinkBuilder {
   Produces<aod::V0DataLink> v0dataLink;

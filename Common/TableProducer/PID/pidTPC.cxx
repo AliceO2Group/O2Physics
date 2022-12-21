@@ -34,7 +34,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,7 +44,7 @@ using namespace o2::track;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Produce TPC PID QA histograms"}}};
+  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}}};
   std::swap(workflowOptions, options);
 }
 
@@ -370,11 +369,4 @@ struct tpcPid {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)};
-  if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tpcPidQa>(cfgc));
-  }
-  return workflow;
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)}; }

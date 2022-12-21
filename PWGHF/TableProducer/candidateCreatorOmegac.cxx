@@ -428,6 +428,14 @@ struct HfCandidateCreatorOmegacMc {
   Produces<aod::HfCandOmegacMCRec> rowMCMatchRec;
   Produces<aod::HfCandOmegacMCGen> rowMCMatchGen;
 
+  void init(InitContext const&) {}
+
+  void processDoNoMc(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(HfCandidateCreatorOmegacMc, processDoNoMc, "Do not run MC process function", true);
+
   void processMc(aod::HfCandOmegac const& candidates,
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
@@ -520,8 +528,7 @@ struct HfCandidateCreatorOmegacMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorOmegac>(cfgc),
     adaptAnalysisTask<HfCandidateCreatorOmegacMc>(cfgc)};
-  return workflow;
 }

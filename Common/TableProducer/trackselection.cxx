@@ -144,8 +144,28 @@ struct TrackSelectionTask {
     }
 
     for (auto& track : tracks) {
+      o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
       filterTable((uint8_t)globalTracksSDD.IsSelected(track),
                   globalTracks.IsSelectedMask(track), filtBit1.IsSelected(track), filtBit2.IsSelected(track), filtBit3.IsSelected(track), filtBit4.IsSelected(track));
+      if (produceFBextendedTable) {
+        filterTableDetail(o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTrackType),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kPtRange),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kEtaRange),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCNCls),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCCrossedRows),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCCrossedRowsOverNCls),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCChi2NDF),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTPCRefit),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSNCls),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSChi2NDF),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSRefit),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kITSHits),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kGoldenChi2),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kDCAxy),
+                          o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kDCAz),
+                          0,
+                          0);
+      }
     }
   }
 };
