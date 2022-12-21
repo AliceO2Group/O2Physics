@@ -84,14 +84,14 @@ DECLARE_SOA_TABLE(HfAmbTrackBase, "AOD", "HFAMBTRACKBASE",                 //!
                   track::Energy<track::Signed1Pt, track::Tgl>,             //!
                   track::Rapidity<track::Signed1Pt, track::Tgl>,           //!
                   track::Sign<track::Signed1Pt>);                          //!
-DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackExt, HfAmbTrackBase, "HFAMBTRACKExt", //! Basic track properties
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackExt, HfAmbTrackBase, "HFAMBTRACKEXT", //! Basic track properties
                            aod::track::Pt,
                            aod::track::P,
                            aod::track::Eta,
                            aod::track::Phi);
 using HfAmbTrack = HfAmbTrackExt;
 
-DECLARE_SOA_TABLE(HfAmbTrackCovBase, "AOD", "HFAMBTRACKCOVBASE",                                       //!
+DECLARE_SOA_TABLE(HfAmbTrackCovBase, "AOD", "HFAMBTRACKCOVBAS",                                       //!
                   track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,     //!
                   track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,        //!
                   track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl //!
