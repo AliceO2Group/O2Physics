@@ -91,13 +91,13 @@ DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackExt, HfAmbTrackBase, "HFAMBTRACKEXT", //! B
                            aod::track::Phi);
 using HfAmbTrack = HfAmbTrackExt;
 
-DECLARE_SOA_TABLE(HfAmbTrackCovBase, "AOD", "HFAMBTRACKCOVBAS",                                       //!
+DECLARE_SOA_TABLE(HfAmbTrackCovBase, "AOD", "HFAMBTRKCOVBASE",                                         //!
                   track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,     //!
                   track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,        //!
                   track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl //!
 );                                                                                                     //!
 
-DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackCovExt, HfAmbTrackCovBase, "HFAMBTRACKCOVEXT", //! Track covariance matrix
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackCovExt, HfAmbTrackCovBase, "HFAMBTRKCOVEXT", //! Track covariance matrix
                            aod::track::CYY,
                            aod::track::CZY,
                            aod::track::CZZ,
