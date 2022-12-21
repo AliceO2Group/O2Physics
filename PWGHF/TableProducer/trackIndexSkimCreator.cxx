@@ -394,6 +394,14 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorProduceAmbTracks, processNoAmbTrack, "Activate process that does not fill ambiguous track table", true);
 };
 
+struct HfTrackIndexSkimCreatorExtendAmbTracks {
+
+  Spawns<aod::HfAmbTrack> rowTrackAmb;
+  Spawns<aod::HfAmbTrackCov> rowTrackAmbCov;
+
+  void init(InitContext const&) {}
+};
+
 /// Track selection
 struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HfSelTrack> rowSelectedTrack;
@@ -1002,9 +1010,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 //____________________________________________________________________________________________________________________________________________
 
 struct HfTrackConcat {
-
-  Spawns<aod::HfAmbTrack> rowTrackAmb;
-  Spawns<aod::HfAmbTrackCov> rowTrackAmbCov;
 
   void init() {}
 
@@ -2622,6 +2627,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   }
 
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorProduceAmbTracks>(cfgc, SetDefaultProcesses{{{"processAmbTrack", false}, {"processNoAmbTrack", true}}}));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorExtendAmbTracks>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackConcat>(cfgc));
+
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
 
