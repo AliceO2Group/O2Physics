@@ -913,7 +913,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   void process(aod::Collisions const& collisions,
                MY_TYPE1 const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps, // for PV refit
-               aod::HfAmbTrackBase const& ambTracks            /// ambiguous tracks + PV contr. propagated to all other compatible collisions
+               aod::HfAmbTrack const& ambTracks                /// ambiguous tracks + PV contr. propagated to all other compatible collisions
 #ifdef MY_DEBUG
                ,
                aod::McParticles& mcParticles
