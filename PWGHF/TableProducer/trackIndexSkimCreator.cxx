@@ -1013,14 +1013,22 @@ struct HfTrackConcat {
 
   using ConcatTrackAmb = soa::Concat<MY_TYPE1, soa::Join<aod::HfAmbTrack, aod::HfAmbTrackCov>>;
 
-  void process(const ConcatTrackAmb& tracks)
-  {
-    LOG(info) << ">>>>> HfTrackConcat::process() entered";
-    LOG(info) << ">>>>> tracks.size()=" << tracks.size();
+  using myAmbTrk = soa::Join<aod::HfAmbTrack, aod::HfAmbTrackCov>;
 
+  void process(const MY_TYPE1& tracks, const myAmbTrk& ambTracks)
+  {
+    std::vector<std::variant<MY_TYPE1::iterator, myAmbTrk::iterator>> allTracks{};
     for (auto& track : tracks) {
-      LOG(info) << ">>>>> track.signed1Pt()=" << track.signed1Pt();
+      std::variant<MY_TYPE1::iterator, myAmbTrk::iterator> a = track;
+      allTracks.push_back(a);
     }
+    for (auto& track : ambTracks) {
+      std::variant<MY_TYPE1::iterator, myAmbTrk::iterator> a = track;
+      allTracks.push_back(a);
+    }
+    LOG(info) << "allTracks.size() = " << allTracks.size();
+    LOG(info) << "tracks.size() = " << tracks.size();
+    LOG(info) << "ambTracks.size() = " << ambTracks.size();
   }
 };
 
