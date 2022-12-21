@@ -72,29 +72,48 @@ DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //!
 
 } // namespace hf_amb_tracks
 
-DECLARE_SOA_TABLE(HfAmbTrack, "AOD", "HFAMBTRACK",                       //!
-                  o2::soa::Index<>, hf_amb_tracks::TrackId,              //!
-                  hf_amb_tracks::CollisionId, hf_amb_tracks::TrackType,  //!
-                  track::X, track::Alpha, track::Y,                      //!
-                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,    //!
-                  hf_amb_tracks::Pt, hf_amb_tracks::P,                   //!
-                  hf_amb_tracks::Eta, hf_amb_tracks::Phi,                //!
-                  hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,             //!
-                  track::Px<track::Signed1Pt, track::Snp, track::Alpha>, //!
-                  track::Py<track::Signed1Pt, track::Snp, track::Alpha>, //!
-                  track::Pz<track::Signed1Pt, track::Tgl>,               //!
-                  track::Energy<track::Signed1Pt, track::Tgl>,           //!
-                  track::Rapidity<track::Signed1Pt, track::Tgl>,         //!
-                  track::Sign<track::Signed1Pt>);                        //!
+DECLARE_SOA_TABLE(HfAmbTrackBase, "AOD", "HFAMBTRACKBASE",                 //!
+                  o2::soa::Index<>, hf_amb_tracks::TrackId,                //!
+                  hf_amb_tracks::CollisionId, hf_amb_tracks::TrackType,    //!
+                  track::X, track::Alpha, track::Y,                        //!
+                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,      //!
+                  hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,               //!
+                  track::Px<track::Signed1Pt, track::Snp, track::Alpha>,   //!
+                  track::Py<track::Signed1Pt, track::Snp, track::Alpha>,   //!
+                  track::Pz<track::Signed1Pt, track::Tgl>,                 //!
+                  track::Energy<track::Signed1Pt, track::Tgl>,             //!
+                  track::Rapidity<track::Signed1Pt, track::Tgl>,           //!
+                  track::Sign<track::Signed1Pt>);                          //!
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackExt, HfAmbTrackBase, "HFAMBTRACKExt", //! Basic track properties
+                           aod::track::Pt,
+                           aod::track::P,
+                           aod::track::Eta,
+                           aod::track::Phi);
+using HfAmbTrack = HfAmbTrackExt;
 
-DECLARE_SOA_TABLE(HfAmbTrackCov, "AOD", "HFAMBTRACKCOV",                                                      //!
-                  track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,            //!
-                  track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,               //!
-                  track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl,       //!
-                  hf_amb_tracks::CYY, hf_amb_tracks::CZY, hf_amb_tracks::CZZ, hf_amb_tracks::CSnpY,           //!
-                  hf_amb_tracks::CSnpZ, hf_amb_tracks::CSnpSnp, hf_amb_tracks::CTglY, hf_amb_tracks::CTglZ,   //!
-                  hf_amb_tracks::CTglSnp, hf_amb_tracks::CTglTgl, hf_amb_tracks::C1PtY, hf_amb_tracks::C1PtZ, //!
-                  hf_amb_tracks::C1PtSnp, hf_amb_tracks::C1PtTgl, hf_amb_tracks::C1Pt21Pt2);                  //!
+DECLARE_SOA_TABLE(HfAmbTrackCovBase, "AOD", "HFAMBTRACKCOVBASE",                                       //!
+                  track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,     //!
+                  track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,        //!
+                  track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl //!
+);                                                                                                     //!
+
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackCovExt, HfAmbTrackCovBase, "HFAMBTRACKCOVEXT", //! Track covariance matrix
+                           aod::track::CYY,
+                           aod::track::CZY,
+                           aod::track::CZZ,
+                           aod::track::CSnpY,
+                           aod::track::CSnpZ,
+                           aod::track::CSnpSnp,
+                           aod::track::CTglY,
+                           aod::track::CTglZ,
+                           aod::track::CTglSnp,
+                           aod::track::CTglTgl,
+                           aod::track::C1PtY,
+                           aod::track::C1PtZ,
+                           aod::track::C1PtSnp,
+                           aod::track::C1PtTgl,
+                           aod::track::C1Pt21Pt2);
+using HfAmbTrackCov = HfAmbTrackCovExt;
 
 namespace hf_sel_track
 {

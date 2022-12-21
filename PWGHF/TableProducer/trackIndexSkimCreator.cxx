@@ -23,7 +23,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-//#include "Common/DataModel/Centrality.h"
+// #include "Common/DataModel/Centrality.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -80,7 +80,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-//#define MY_DEBUG
+// #define MY_DEBUG
 
 #ifdef MY_DEBUG
 using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
@@ -254,8 +254,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
 // Produce table with ambiguous tracks
 struct HfTrackIndexSkimCreatorProduceAmbTracks {
-  Produces<aod::HfAmbTrack> ambTrack;
-  Produces<aod::HfAmbTrackCov> ambTrackCov;
+  Produces<aod::HfAmbTrackBase> ambTrack;
+  Produces<aod::HfAmbTrackCovBase> ambTrackCov;
 
   Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for tracks, for Run3 studies"};
 
@@ -325,15 +325,10 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
               ambTrack(track.globalIndex(), collision.globalIndex(), BIT(hf_amb_tracks::Ambiguous), // fill the tacle with this track, as ambiguous
                        trackParCov.getX(), trackParCov.getAlpha(),
                        trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
-                       trackParCov.getQ2Pt(), trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(),
-                       trackParCov.getPhi(), dcaInfoCov.getY(), dcaInfoCov.getZ());
+                       trackParCov.getQ2Pt(), dcaInfoCov.getY(), dcaInfoCov.getZ());
 
               ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
-                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                          trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
-                          trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
-                          trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
-                          trackParCov.getSigma1Pt2());
+                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             }
           }
         }
@@ -384,14 +379,9 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
               ambTrack(track.globalIndex(), collision.globalIndex(), BIT(hf_amb_tracks::PVContributor), // fill the tacle with this track, as PV contributor
                        trackParCov.getX(), trackParCov.getAlpha(),
                        trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
-                       trackParCov.getQ2Pt(), trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(),
-                       trackParCov.getPhi(), dcaInfoCov.getY(), dcaInfoCov.getZ());
+                       trackParCov.getQ2Pt(), dcaInfoCov.getY(), dcaInfoCov.getZ());
               ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
-                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                          trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
-                          trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
-                          trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
-                          trackParCov.getSigma1Pt2());
+                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             } /// end second loop on collIDs
           }
         } /// end loop on tracks of the current collision
@@ -915,7 +905,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   void process(aod::Collisions const& collisions,
                MY_TYPE1 const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps, // for PV refit
-               aod::HfAmbTrack const& ambTracks                /// ambiguous tracks + PV contr. propagated to all other compatible collisions
+               aod::HfAmbTrackBase const& ambTracks            /// ambiguous tracks + PV contr. propagated to all other compatible collisions
 #ifdef MY_DEBUG
                ,
                aod::McParticles& mcParticles
@@ -1007,6 +997,28 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       rowSelectedAmbTrack(statusProng, ambTrack.px(), ambTrack.py(), ambTrack.pz());
     } /// end loop over ambiguous tracks + PV contr. propagated to all other compatible collisions
   }   /// end process
+};
+
+//____________________________________________________________________________________________________________________________________________
+
+struct HfTrackConcat {
+
+  Spawns<aod::HfAmbTrack> rowTrackAmb;
+  Spawns<aod::HfAmbTrackCov> rowTrackAmbCov;
+
+  void init() {}
+
+  using ConcatTrackAmb = soa::Concat<MY_TYPE1, soa::Join<aod::HfAmbTrack, aod::HfAmbTrackCov>>;
+
+  void process(const ConcatTrackAmb& tracks)
+  {
+    LOG(info) << ">>>>> HfTrackConcat::process() entered";
+    LOG(info) << ">>>>> tracks.size()=" << tracks.size();
+
+    for (auto& track : tracks) {
+      LOG(info) << ">>>>> track.signed1Pt()=" << track.signed1Pt();
+    }
+  }
 };
 
 //____________________________________________________________________________________________________________________________________________
