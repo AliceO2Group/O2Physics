@@ -48,7 +48,7 @@ struct HfTaskSc {
      {"Data/hPtSoftPiScZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
      {"Data/hEtaSoftPiScZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
      {"Data/hPhiSoftPiScZero", "#pi^{#pm} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
-                                                                                                                                                                                      /// Σc++
+                                                                                                                                                                                            /// Σc++
      {"Data/hPtScPlusPlus", "#Sigma_{c}^{++} candidates; #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
      {"Data/hEtaScPlusPlus", "#Sigma_{c}^{++} candidates; #eta(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
      {"Data/hPhiScPlusPlus", "#Sigma_{c}^{++} candidates; #varphi(#Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
@@ -56,7 +56,7 @@ struct HfTaskSc {
      {"Data/hPtSoftPiScPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
      {"Data/hEtaSoftPiScPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
      {"Data/hPhiSoftPiScPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
-                                                                                                                                                                                            /// Σc0,++
+                                                                                                                                                                                                  /// Σc0,++
      {"Data/hPtScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
      {"Data/hEtaScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #eta(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
      {"Data/hPhiScZeroPlusPlus", "#Sigma_{c}^{0,++} candidates; #varphi(#Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
@@ -64,7 +64,7 @@ struct HfTaskSc {
      {"Data/hPtSoftPiScZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{60, 0., 6.}}}}, /// soft π
      {"Data/hEtaSoftPiScZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},                  /// soft π
      {"Data/hPhiSoftPiScZeroPlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#pi^{#pm} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},           /// soft π
-                                                                                                                                                                                                    /// Λc+ ← Σc0
+                                                                                                                                                                                                          /// Λc+ ← Σc0
      {"Data/hPtLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); entries;", {HistType::kTH1D, {{36, 0., 36.}}}},
      {"Data/hEtaLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
      {"Data/hPhiLambdaCFromScZero", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0}); entries;", {HistType::kTH1D, {{72, 0, 2 * M_PI}}}},
@@ -262,7 +262,7 @@ struct HfTaskSc {
           registry.fill(HIST("Data/hEtaLambdaCFromScZeroPlusPlus"), etaLambdaC);
           registry.fill(HIST("Data/hPhiLambdaCFromScZeroPlusPlus"), phiLambdaC);
           registry.fill(HIST("Data/hDeltaMassLambdaCFromScZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
-        } else {                                                                                     /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorScZeroPlusPlus.cxx
+        } else {                                                                                 /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorScZeroPlusPlus.cxx
           registry.fill(HIST("Data/hPtScPlusPlus"), ptSc);
           registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);
           registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);
@@ -316,7 +316,7 @@ struct HfTaskSc {
           registry.fill(HIST("Data/hEtaLambdaCFromScZeroPlusPlus"), etaLambdaC);
           registry.fill(HIST("Data/hPhiLambdaCFromScZeroPlusPlus"), phiLambdaC);
           registry.fill(HIST("Data/hDeltaMassLambdaCFromScZeroPlusPlus"), deltaMass, ptLambdaC); // Λc+ ← Σc0,++
-        } else {                                                                                     /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorScZeroPlusPlus.cxx
+        } else {                                                                                 /// candidates with charge ++ (or --). Possible unexpected candidates with charge + (or -) already discared in HFCandidateCreatorScZeroPlusPlus.cxx
           registry.fill(HIST("Data/hPtScPlusPlus"), ptSc);
           registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);
           registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);
@@ -487,7 +487,7 @@ struct HfTaskSc {
       const auto& candidateLc = candSc.prongLc_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>();
       const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
 
-      //candidateLc.flagMcDecayChanRec();
+      // candidateLc.flagMcDecayChanRec();
 
       /// Reconstructed Σc0 signal
       if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sc::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
