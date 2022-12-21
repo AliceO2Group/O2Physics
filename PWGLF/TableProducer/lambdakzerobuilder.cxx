@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//  Strangeness builder task
+//  Lambdakzero builder task
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
-//  This task loops over a set of V0 and cascade indices and
+//  This task loops over a set of V0 indices and
 //  creates the corresponding analysis tables that contain
 //  the typical information required for analysis.
 //
@@ -615,8 +615,8 @@ struct lambdakzeroPreselector {
   void init(InitContext const&) {}
 
   ///function to check PDG association
-  template <class TTracksTo, typename TV0Objects>
-  void checkPDG(TV0Objects const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
+  template <class TTracksTo, typename TV0Object>
+  void checkPDG(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
   {
     int lPDG = -1;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
@@ -664,8 +664,8 @@ struct lambdakzeroPreselector {
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  template <class TTracksTo, typename TV0Objects>
-  void checkdEdx(TV0Objects const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
+  template <class TTracksTo, typename TV0Object>
+  void checkdEdx(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
@@ -731,13 +731,12 @@ struct lambdakzeroPreselector {
       bool lIsTrueAntiHypertriton=false;
 
       checkPDG<LabeledTracks>(v0, lIsInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
-
       v0tags(lIsInteresting,
              lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
              true, true, true, true, true, true);
     }
   }
-  PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build only MC-associated V0s", false);
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildValiddEdx(aod::Collision const& collision, aod::V0s const& v0table, TracksWithPID const&)
   {
@@ -749,15 +748,14 @@ struct lambdakzeroPreselector {
       bool lIsdEdxAntiLambda=false;
       bool lIsdEdxHypertriton=false;
       bool lIsdEdxAntiHypertriton=false;
-
+      
       checkdEdx<TracksWithPID>(v0, lIsInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-
       v0tags(lIsInteresting,
              true, true, true, true, true, true,
              lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
     }
   }
-  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build only MC-associated V0s", false);
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, TracksWithPIDandLabels const&)
   {
@@ -777,10 +775,9 @@ struct lambdakzeroPreselector {
       bool lIsdEdxAntiLambda=false;
       bool lIsdEdxHypertriton=false;
       bool lIsdEdxAntiHypertriton=false;
-
+      
       checkPDG<TracksWithPIDandLabels>(v0, lIsTrueInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
       checkdEdx<TracksWithPIDandLabels>(v0, lIsdEdxInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-
       v0tags(lIsTrueInteresting*lIsdEdxInteresting,
              lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
              lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
