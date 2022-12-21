@@ -176,7 +176,7 @@ struct lambdakzeroBuilder {
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
 
-  Filter taggedFilter = aod::v0tag::isInteresting > 0;
+  Filter taggedFilter = aod::v0tag::isInteresting == true;
 
   enum v0step { kV0All = 0,
                 kV0TPCrefit,
