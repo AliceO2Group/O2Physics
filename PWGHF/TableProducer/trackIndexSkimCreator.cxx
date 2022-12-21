@@ -1011,8 +1011,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
 struct HfTrackConcat {
 
-  void init() {}
-
   using ConcatTrackAmb = soa::Concat<MY_TYPE1, soa::Join<aod::HfAmbTrack, aod::HfAmbTrackCov>>;
 
   void process(const ConcatTrackAmb& tracks)
