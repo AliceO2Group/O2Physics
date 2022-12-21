@@ -52,7 +52,7 @@ struct HfCandidateSelectorLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
-  using TrksPID = aod::BigTracksPID; //soa::Join<aod::BigTracksPID, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+  using TrksPID = soa::Join<aod::BigTracksPID, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   /*
   /// Selection on goodness of daughter tracks
@@ -233,36 +233,36 @@ struct HfCandidateSelectorLc {
         }
       }
 
-      // if (!usePidBayes) {
+       if (!usePidBayes) {
         // PID non applied
         pidBayesLcToPKPi = 1;
         pidBayesLcToPiKP = 1;
-      // } else {
-      //   int pidBayesTrackPos1Proton = selectorProton.getStatusTrackBayesPID(trackPos1);
-      //   int pidBayesTrackPos2Proton = selectorProton.getStatusTrackBayesPID(trackPos2);
-      //   int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos1);
-      //   int pidBayesTrackPos2Pion = selectorPion.getStatusTrackBayesPID(trackPos2);
-      //   int pidBayesTrackNegKaon = selectorKaon.getStatusTrackBayesPID(trackNeg);
+       } else {
+         int pidBayesTrackPos1Proton = selectorProton.getStatusTrackBayesPID(trackPos1);
+         int pidBayesTrackPos2Proton = selectorProton.getStatusTrackBayesPID(trackPos2);
+         int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos1);
+         int pidBayesTrackPos2Pion = selectorPion.getStatusTrackBayesPID(trackPos2);
+         int pidBayesTrackNegKaon = selectorKaon.getStatusTrackBayesPID(trackNeg);
 
-      //   if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
-      //       pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-      //       pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
-      //     pidBayesLcToPKPi = 1; // accept LcToPKPi
-      //   } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
-      //              pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-      //              pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
-      //     pidBayesLcToPKPi = 0; // exclude LcToPKPi
-      //   }
-      //   if (pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
-      //       pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-      //       pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
-      //     pidBayesLcToPiKP = 1; // accept LcToPiKP
-      //   } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-      //              pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-      //              pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
-      //     pidBayesLcToPiKP = 0; // exclude LcToPiKP
-      //   }
-      // }
+         if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
+             pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+             pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+           pidBayesLcToPKPi = 1; // accept LcToPKPi
+         } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
+                    pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
+                    pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+           pidBayesLcToPKPi = 0; // exclude LcToPKPi
+         }
+         if (pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
+             pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+             pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
+           pidBayesLcToPiKP = 1; // accept LcToPiKP
+         } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
+                    pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
+                    pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
+           pidBayesLcToPiKP = 0; // exclude LcToPiKP
+         }
+       }
 
       if (pidLcToPKPi == 0 && pidLcToPiKP == 0) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
