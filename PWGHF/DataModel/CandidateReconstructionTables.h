@@ -82,38 +82,39 @@ DECLARE_SOA_TABLE_FULL(StoredHfAmbTracks, "HfAmbTracks", "AOD", "HFAMBTRACKS", /
                        track::Pz<track::Signed1Pt, track::Tgl>,                //!
                        track::Energy<track::Signed1Pt, track::Tgl>,            //!
                        track::Rapidity<track::Signed1Pt, track::Tgl>,          //!
-                       track::Sign<track::Signed1Pt>,                          // !
+                       track::Sign<track::Signed1Pt>,                          //!
                        o2::soa::Marker<1>);                                    //!
-DECLARE_SOA_EXTENDED_TABLE(HfAmbTracks, StoredHfAmbTracks, "HFAMBTRACKS",      //! Basic track properties
-                           aod::track::Pt,
-                           aod::track::P,
-                           aod::track::Eta,
-                           aod::track::Phi);
+
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTracks, StoredHfAmbTracks, "HFAMBTRACKS", //! Basic track properties
+                           aod::track::Pt,                                //!
+                           aod::track::P,                                 //!
+                           aod::track::Eta,                               //!
+                           aod::track::Phi);                              //!
 // using HfAmbTracks = HfAmbTracksExt;
 
 DECLARE_SOA_TABLE_FULL(StoredHfAmbTracksCov, "HfAmbTracksCov", "AOD", "HFAMBTRKCOV",                         //!
                        track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,      //!
                        track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,         //!
-                       track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl, // !
+                       track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl, //!
                        o2::soa::Marker<3>                                                                    //!
 );
 
 DECLARE_SOA_EXTENDED_TABLE(HfAmbTracksCov, StoredHfAmbTracksCov, "HFAMBTRKCOV", //! Track covariance matrix
-                           aod::track::CYY,
-                           aod::track::CZY,
-                           aod::track::CZZ,
-                           aod::track::CSnpY,
-                           aod::track::CSnpZ,
-                           aod::track::CSnpSnp,
-                           aod::track::CTglY,
-                           aod::track::CTglZ,
-                           aod::track::CTglSnp,
-                           aod::track::CTglTgl,
-                           aod::track::C1PtY,
-                           aod::track::C1PtZ,
-                           aod::track::C1PtSnp,
-                           aod::track::C1PtTgl,
-                           aod::track::C1Pt21Pt2);
+                           aod::track::CYY,                                     //!
+                           aod::track::CZY,                                     //!
+                           aod::track::CZZ,                                     //!
+                           aod::track::CSnpY,                                   //!
+                           aod::track::CSnpZ,                                   //!
+                           aod::track::CSnpSnp,                                 //!
+                           aod::track::CTglY,                                   //!
+                           aod::track::CTglZ,                                   //!
+                           aod::track::CTglSnp,                                 //!
+                           aod::track::CTglTgl,                                 //!
+                           aod::track::C1PtY,                                   //!
+                           aod::track::C1PtZ,                                   //!
+                           aod::track::C1PtSnp,                                 //!
+                           aod::track::C1PtTgl,                                 //!
+                           aod::track::C1Pt21Pt2);                              //!
 // using HfAmbTracksCov = HfAmbTracksCovExt;
 
 namespace hf_sel_track
@@ -125,18 +126,18 @@ DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
-                  hf_sel_track::IsSelProng,
-                  hf_sel_track::PxProng,
-                  hf_sel_track::PyProng,
-                  hf_sel_track::PzProng,
-                  o2::soa::Marker<1>);
+                  hf_sel_track::IsSelProng,        //!
+                  hf_sel_track::PxProng,           //!
+                  hf_sel_track::PyProng,           //!
+                  hf_sel_track::PzProng,           //!
+                  o2::soa::Marker<1>);             //!
 
 DECLARE_SOA_TABLE(HfSelAmbTrack, "AOD", "HFSELAMBTRACK", //!
-                  hf_sel_track::IsSelProng,
-                  hf_sel_track::PxProng,
-                  hf_sel_track::PyProng,
-                  hf_sel_track::PzProng,
-                  o2::soa::Marker<2>);
+                  hf_sel_track::IsSelProng,              //!
+                  hf_sel_track::PxProng,                 //!
+                  hf_sel_track::PyProng,                 //!
+                  hf_sel_track::PzProng,                 //!
+                  o2::soa::Marker<2>);                   //!
 
 namespace hf_pv_refit_track
 {

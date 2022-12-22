@@ -299,6 +299,12 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
 
+    std::vector<int64_t> collIndices{};
+    std::vector<int64_t> trackIndices{};
+    std::vector<int8_t> trackTypes{};
+    std::vector<float> trackX{}, trackAlpha{}, trackY{}, trackZ{}, trackSnp{}, trackTgl{}, trackSigned1Pt{}, trackDcaXY{}, trackDcaZ{};
+    std::vector<float> trackSigmaY{}, trackSigmaZ{}, trackSigmaSnp{}, trackSigmaTgl{}, trackSigma1Pt{};
+
     /// fill the table with ambiguous tracks
     for (auto& ambitrack : ambitracks) {
       auto track = ambitrack.track_as<TracksWithSel>(); // Obtain the corresponding track
@@ -321,14 +327,24 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
               vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
               o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
 
-              // fill tables
-              ambTrack(track.globalIndex(), collision.globalIndex(), BIT(hf_amb_tracks::Ambiguous), // fill the tacle with this track, as ambiguous
-                       trackParCov.getX(), trackParCov.getAlpha(),
-                       trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
-                       trackParCov.getQ2Pt(), dcaInfoCov.getY(), dcaInfoCov.getZ());
-
-              ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
-                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+              // fill buffer vectors
+              collIndices.push_back(collision.globalIndex());
+              trackIndices.push_back(track.globalIndex());
+              trackTypes.push_back(BIT(hf_amb_tracks::Ambiguous));
+              trackX.push_back(trackParCov.getX());
+              trackAlpha.push_back(trackParCov.getAlpha());
+              trackY.push_back(trackParCov.getY());
+              trackZ.push_back(trackParCov.getZ());
+              trackSnp.push_back(trackParCov.getSnp());
+              trackTgl.push_back(trackParCov.getTgl());
+              trackSigned1Pt.push_back(trackParCov.getQ2Pt());
+              trackDcaXY.push_back(dcaInfoCov.getY());
+              trackDcaZ.push_back(dcaInfoCov.getZ());
+              trackSigmaY.push_back(std::sqrt(trackParCov.getSigmaY2()));
+              trackSigmaZ.push_back(std::sqrt(trackParCov.getSigmaZ2()));
+              trackSigmaSnp.push_back(std::sqrt(trackParCov.getSigmaSnp2()));
+              trackSigmaTgl.push_back(std::sqrt(trackParCov.getSigmaTgl2()));
+              trackSigma1Pt.push_back(std::sqrt(trackParCov.getSigma1Pt2()));
             }
           }
         }
@@ -376,18 +392,42 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
               o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
 
               /// Fill the table with this track propagated to the new collisions
-              ambTrack(track.globalIndex(), collision.globalIndex(), BIT(hf_amb_tracks::PVContributor), // fill the tacle with this track, as PV contributor
-                       trackParCov.getX(), trackParCov.getAlpha(),
-                       trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(),
-                       trackParCov.getQ2Pt(), dcaInfoCov.getY(), dcaInfoCov.getZ());
-              ambTrackCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
-                          std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+              collIndices.push_back(collision.globalIndex());
+              trackIndices.push_back(track.globalIndex());
+              trackTypes.push_back(BIT(hf_amb_tracks::Ambiguous));
+              trackX.push_back(trackParCov.getX());
+              trackAlpha.push_back(trackParCov.getAlpha());
+              trackY.push_back(trackParCov.getY());
+              trackZ.push_back(trackParCov.getZ());
+              trackSnp.push_back(trackParCov.getSnp());
+              trackTgl.push_back(trackParCov.getTgl());
+              trackSigned1Pt.push_back(trackParCov.getQ2Pt());
+              trackDcaXY.push_back(dcaInfoCov.getY());
+              trackDcaZ.push_back(dcaInfoCov.getZ());
+              trackSigmaY.push_back(std::sqrt(trackParCov.getSigmaY2()));
+              trackSigmaZ.push_back(std::sqrt(trackParCov.getSigmaZ2()));
+              trackSigmaSnp.push_back(std::sqrt(trackParCov.getSigmaSnp2()));
+              trackSigmaTgl.push_back(std::sqrt(trackParCov.getSigmaTgl2()));
+              trackSigma1Pt.push_back(std::sqrt(trackParCov.getSigma1Pt2()));
             } /// end second loop on collIDs
           }
         } /// end loop on tracks of the current collision
       }   /// end first loop on collIDs
 
     } /// end loop on bcs
+
+    std::vector<int> sortedIndices(collIndices.size());
+    std::iota(sortedIndices.begin(), sortedIndices.end(), 0);
+    std::sort(sortedIndices.begin(), sortedIndices.end(), [collIndices](int i, int j) { return collIndices[i] < collIndices[j]; });
+
+    for (auto& index : sortedIndices) {
+      ambTrack(trackIndices[index], collIndices[index], trackTypes[index],
+               trackX[index], trackAlpha[index], trackY[index],
+               trackZ[index], trackSnp[index], trackTgl[index],
+               trackSigned1Pt[index], trackDcaXY[index], trackDcaZ[index]);
+      ambTrackCov(trackSigmaY[index], trackSigmaZ[index], trackSigmaSnp[index], trackSigmaTgl[index], trackSigma1Pt[index],
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
   }
 
   PROCESS_SWITCH(HfTrackIndexSkimCreatorProduceAmbTracks, processAmbTrack, "Activate process that fills ambiguous track table", false);
@@ -1005,31 +1045,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       rowSelectedAmbTrack(statusProng, ambTrack.px(), ambTrack.py(), ambTrack.pz());
     } /// end loop over ambiguous tracks + PV contr. propagated to all other compatible collisions
   }   /// end process
-};
-
-//____________________________________________________________________________________________________________________________________________
-
-struct HfTrackConcat {
-
-  using ConcatTrackAmb = soa::Concat<MY_TYPE1, soa::Join<aod::HfAmbTracks, aod::HfAmbTracksCov>>;
-
-  using myAmbTrk = soa::Join<aod::HfAmbTracks, aod::HfAmbTracksCov>;
-
-  void process(const MY_TYPE1& tracks, const myAmbTrk& ambTracks)
-  {
-    std::vector<std::variant<MY_TYPE1::iterator, myAmbTrk::iterator>> allTracks{};
-    for (auto& track : tracks) {
-      std::variant<MY_TYPE1::iterator, myAmbTrk::iterator> a = track;
-      allTracks.push_back(a);
-    }
-    for (auto& track : ambTracks) {
-      std::variant<MY_TYPE1::iterator, myAmbTrk::iterator> a = track;
-      allTracks.push_back(a);
-    }
-    LOG(info) << "allTracks.size() = " << allTracks.size();
-    LOG(info) << "tracks.size() = " << tracks.size();
-    LOG(info) << "ambTracks.size() = " << ambTracks.size();
-  }
 };
 
 //____________________________________________________________________________________________________________________________________________
@@ -2786,8 +2801,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorProduceAmbTracks>(cfgc, SetDefaultProcesses{{{"processAmbTrack", false}, {"processNoAmbTrack", true}}}));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorExtendAmbTracks>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackConcat>(cfgc));
-
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
 
