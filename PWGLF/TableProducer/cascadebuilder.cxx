@@ -622,6 +622,7 @@ struct cascadePreselector {
       lIsXiPlus = false;
       lIsOmegaMinus = false;
       lIsOmegaPlus = false;
+      return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
     int lPDG = -1;
@@ -687,6 +688,7 @@ struct cascadePreselector {
       lIsXiPlus = false;
       lIsOmegaMinus = false;
       lIsOmegaPlus = false;
+      return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
 
