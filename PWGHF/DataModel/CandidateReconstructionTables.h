@@ -43,8 +43,7 @@ namespace hf_amb_tracks
 enum eTrackType { Ambiguous = 0,
                   PVContributor };
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
-DECLARE_SOA_INDEX_COLUMN(Track, track);                           //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int64_t);                    //!
 DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t);                //!
 DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);                          //!
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);                            //!
@@ -72,32 +71,34 @@ DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //!
 
 } // namespace hf_amb_tracks
 
-DECLARE_SOA_TABLE(HfAmbTrackBase, "AOD", "HFAMBTRACKBASE",                 //!
-                  o2::soa::Index<>, hf_amb_tracks::TrackId,                //!
-                  hf_amb_tracks::CollisionId, hf_amb_tracks::TrackType,    //!
-                  track::X, track::Alpha, track::Y,                        //!
-                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,      //!
-                  hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,               //!
-                  track::Px<track::Signed1Pt, track::Snp, track::Alpha>,   //!
-                  track::Py<track::Signed1Pt, track::Snp, track::Alpha>,   //!
-                  track::Pz<track::Signed1Pt, track::Tgl>,                 //!
-                  track::Energy<track::Signed1Pt, track::Tgl>,             //!
-                  track::Rapidity<track::Signed1Pt, track::Tgl>,           //!
-                  track::Sign<track::Signed1Pt>);                          //!
-DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackExt, HfAmbTrackBase, "HFAMBTRACKEXT", //! Basic track properties
+DECLARE_SOA_TABLE_FULL(StoredHfAmbTracks, "HfAmbTracks", "AOD", "HFAMBTRACKS", //!
+                       o2::soa::Index<>, hf_amb_tracks::TrackId,               //!
+                       track::CollisionId, hf_amb_tracks::TrackType,           //!
+                       track::X, track::Alpha, track::Y,                       //!
+                       track::Z, track::Snp, track::Tgl, track::Signed1Pt,     //!
+                       hf_amb_tracks::DCAXY, hf_amb_tracks::DCAZ,              //!
+                       track::Px<track::Signed1Pt, track::Snp, track::Alpha>,  //!
+                       track::Py<track::Signed1Pt, track::Snp, track::Alpha>,  //!
+                       track::Pz<track::Signed1Pt, track::Tgl>,                //!
+                       track::Energy<track::Signed1Pt, track::Tgl>,            //!
+                       track::Rapidity<track::Signed1Pt, track::Tgl>,          //!
+                       track::Sign<track::Signed1Pt>,                          // !
+                       o2::soa::Marker<1>);                                    //!
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTracks, StoredHfAmbTracks, "HFAMBTRACKS",      //! Basic track properties
                            aod::track::Pt,
                            aod::track::P,
                            aod::track::Eta,
                            aod::track::Phi);
-using HfAmbTrack = HfAmbTrackExt;
+// using HfAmbTracks = HfAmbTracksExt;
 
-DECLARE_SOA_TABLE(HfAmbTrackCovBase, "AOD", "HFAMBTRKCOVBASE",                                         //!
-                  track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,     //!
-                  track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,        //!
-                  track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl //!
-);                                                                                                     //!
+DECLARE_SOA_TABLE_FULL(StoredHfAmbTracksCov, "HfAmbTracksCov", "AOD", "HFAMBTRKCOV",                         //!
+                       track::SigmaY, track::SigmaZ, track::SigmaSnp, track::SigmaTgl, track::Sigma1Pt,      //!
+                       track::RhoZY, track::RhoSnpY, track::RhoSnpZ, track::RhoTglY, track::RhoTglZ,         //!
+                       track::RhoTglSnp, track::Rho1PtY, track::Rho1PtZ, track::Rho1PtSnp, track::Rho1PtTgl, // !
+                       o2::soa::Marker<3>                                                                    //!
+);
 
-DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackCovExt, HfAmbTrackCovBase, "HFAMBTRKCOVEXT", //! Track covariance matrix
+DECLARE_SOA_EXTENDED_TABLE(HfAmbTracksCov, StoredHfAmbTracksCov, "HFAMBTRKCOV", //! Track covariance matrix
                            aod::track::CYY,
                            aod::track::CZY,
                            aod::track::CZZ,
@@ -113,28 +114,29 @@ DECLARE_SOA_EXTENDED_TABLE(HfAmbTrackCovExt, HfAmbTrackCovBase, "HFAMBTRKCOVEXT"
                            aod::track::C1PtSnp,
                            aod::track::C1PtTgl,
                            aod::track::C1Pt21Pt2);
-using HfAmbTrackCov = HfAmbTrackCovExt;
+// using HfAmbTracksCov = HfAmbTracksCovExt;
 
 namespace hf_sel_track
 {
-DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int);       //!
-DECLARE_SOA_COLUMN(IsSelProngAmb, isSelProngAmb, int); //!
-DECLARE_SOA_COLUMN(PxProng, pxProng, float);           //!
-DECLARE_SOA_COLUMN(PyProng, pyProng, float);           //!
-DECLARE_SOA_COLUMN(PzProng, pzProng, float);           //!
+DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
+DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
+DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
+DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::IsSelProng,
                   hf_sel_track::PxProng,
                   hf_sel_track::PyProng,
-                  hf_sel_track::PzProng);
+                  hf_sel_track::PzProng,
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfSelAmbTrack, "AOD", "HFSELAMBTRACK", //!
-                  hf_sel_track::IsSelProngAmb,
+                  hf_sel_track::IsSelProng,
                   hf_sel_track::PxProng,
                   hf_sel_track::PyProng,
-                  hf_sel_track::PzProng);
+                  hf_sel_track::PzProng,
+                  o2::soa::Marker<2>);
 
 namespace hf_pv_refit_track
 {

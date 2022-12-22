@@ -254,8 +254,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
 // Produce table with ambiguous tracks
 struct HfTrackIndexSkimCreatorProduceAmbTracks {
-  Produces<aod::HfAmbTrackBase> ambTrack;
-  Produces<aod::HfAmbTrackCovBase> ambTrackCov;
+  Produces<aod::StoredHfAmbTracks> ambTrack;
+  Produces<aod::StoredHfAmbTracksCov> ambTrackCov;
 
   Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for tracks, for Run3 studies"};
 
@@ -396,8 +396,8 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
 
 struct HfTrackIndexSkimCreatorExtendAmbTracks {
 
-  Spawns<aod::HfAmbTrack> rowTrackAmb;
-  Spawns<aod::HfAmbTrackCov> rowTrackAmbCov;
+  Spawns<aod::HfAmbTracks> rowTrackAmb;
+  Spawns<aod::HfAmbTracksCov> rowTrackAmbCov;
 
   void init(InitContext const&) {}
 };
@@ -913,7 +913,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   void process(aod::Collisions const& collisions,
                MY_TYPE1 const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps, // for PV refit
-               aod::HfAmbTrack const& ambTracks                /// ambiguous tracks + PV contr. propagated to all other compatible collisions
+               aod::HfAmbTracks const& ambTracks               /// ambiguous tracks + PV contr. propagated to all other compatible collisions
 #ifdef MY_DEBUG
                ,
                aod::McParticles& mcParticles
@@ -1011,9 +1011,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
 struct HfTrackConcat {
 
-  using ConcatTrackAmb = soa::Concat<MY_TYPE1, soa::Join<aod::HfAmbTrack, aod::HfAmbTrackCov>>;
+  using ConcatTrackAmb = soa::Concat<MY_TYPE1, soa::Join<aod::HfAmbTracks, aod::HfAmbTracksCov>>;
 
-  using myAmbTrk = soa::Join<aod::HfAmbTrack, aod::HfAmbTrackCov>;
+  using myAmbTrk = soa::Join<aod::HfAmbTracks, aod::HfAmbTracksCov>;
 
   void process(const MY_TYPE1& tracks, const myAmbTrk& ambTracks)
   {
@@ -1222,8 +1222,8 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected ia s bitmap with selection outcome
-  template <typename T1, typename T2, typename T3>
-  void is2ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T2& cutStatus, T3& whichHypo, int& isSelected)
+  template <typename TT1, typename TT2, typename T2, typename T3>
+  void is2ProngPreselected(TT1 const& hfTrack0, TT2 const& hfTrack1, T2& cutStatus, T3& whichHypo, int& isSelected, std::array<float, 2> dcaXY)
   {
     /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
     static std::vector<int> massMinIndex;
@@ -1286,10 +1286,7 @@ struct HfTrackIndexSkimCreator {
 
       // imp. par. product cut
       if (debug || TESTBIT(isSelected, iDecay2P)) {
-        auto impParProduct = hfTrack0.dcaXY() * hfTrack1.dcaXY();
-        if (doPvRefit) {
-          impParProduct = hfTrack0.pvRefitDcaXY() * hfTrack1.pvRefitDcaXY();
-        }
+        auto impParProduct = dcaXY[0] * dcaXY[1];
         if (impParProduct > cut2Prong[iDecay2P].get(pTBin, d0d0Index[iDecay2P])) {
           CLRBIT(isSelected, iDecay2P);
           if (debug) {
@@ -1307,8 +1304,8 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected ia s bitmap with selection outcome
-  template <typename T1, typename T2, typename T3>
-  void is3ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T1 const& hfTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
+  template <typename TT1, typename TT2, typename TT3, typename T2, typename T3>
+  void is3ProngPreselected(TT1 const& hfTrack0, TT2 const& hfTrack1, TT3 const& hfTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
     /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
     static std::vector<int> massMinIndex;
@@ -1634,12 +1631,15 @@ struct HfTrackIndexSkimCreator {
     return;
   } /// end of performPvRefitCandProngs function
 
+  using SelectedAmbTracksCov = soa::Join<aod::HfAmbTracks, aod::HfAmbTracksCov, aod::HfSelAmbTrack>;
+
   void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions::iterator const& collision,
     aod::Collisions const&,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     SelectedTracks const& tracks,
-    BigTracks const& tracksUnfiltered)
+    BigTracks const& tracksUnfiltered,
+    SelectedAmbTracksCov const& tracksAmb)
   {
 
     // can be added to run over limited collisions per file - for tesing purposes
@@ -1730,33 +1730,86 @@ struct HfTrackIndexSkimCreator {
     //  return;
     //}
 
+    /// Fill a vector with all tracks and amb. tracks
+    std::vector<std::variant<SelectedTracks::iterator, SelectedAmbTracksCov::iterator>> allTracks{};
+    for (auto& track : tracks) {
+      std::variant<SelectedTracks::iterator, SelectedAmbTracksCov::iterator> trackReg = track;
+      allTracks.push_back(trackReg);
+    }
+    for (auto& track : tracksAmb) {
+      std::variant<SelectedTracks::iterator, SelectedAmbTracksCov::iterator> trackAmb = track;
+      allTracks.push_back(trackAmb);
+    }
+
     // first loop over positive tracks
     // for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
-    for (auto trackPos1 = tracks.begin(); trackPos1 != tracks.end(); ++trackPos1) {
-      if (trackPos1.signed1Pt() < 0) {
+    // for (auto trackPos1 = tracks.begin(); trackPos1 != tracks.end(); ++trackPos1) {
+    for (auto iTrackPos1{0u}; iTrackPos1 < allTracks.size(); ++iTrackPos1) {
+      /// [Pos1] Define variables and objects depending on track type, ie regular or ambiguous
+      SelectedTracks::iterator trackPos1{};
+      SelectedAmbTracksCov::iterator trackAmbPos1{};
+      bool isTrackRegularPos1 = iTrackPos1 < tracks.size();
+      float signed1PtPos1{};
+      int isSelProngPos1{};
+      int64_t globalIndexPos1{};
+      o2::track::TrackParametrizationWithError<float> trackParVarPos1{};
+      if (isTrackRegularPos1) {
+        trackPos1 = std::get<SelectedTracks::iterator>(allTracks[iTrackPos1]);
+        signed1PtPos1 = trackPos1.signed1Pt();
+        isSelProngPos1 = trackPos1.isSelProng();
+        trackParVarPos1 = getTrackParCov(trackPos1);
+        globalIndexPos1 = trackPos1.globalIndex();
+      } else {
+        trackAmbPos1 = std::get<SelectedAmbTracksCov::iterator>(allTracks[iTrackPos1]);
+        signed1PtPos1 = trackAmbPos1.signed1Pt();
+        isSelProngPos1 = trackAmbPos1.isSelProng();
+        trackParVarPos1 = getTrackParCov(trackAmbPos1);
+        globalIndexPos1 = trackAmbPos1.trackId();
+      }
+
+      if (signed1PtPos1 < 0) {
         continue;
       }
-      bool sel2ProngStatusPos = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand2Prong);
-      bool sel3ProngStatusPos1 = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand3Prong);
+      bool sel2ProngStatusPos = TESTBIT(isSelProngPos1, CandidateType::Cand2Prong);
+      bool sel3ProngStatusPos1 = TESTBIT(isSelProngPos1, CandidateType::Cand3Prong);
       if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
         continue;
       }
 
-      auto trackParVarPos1 = getTrackParCov(trackPos1);
-
       // first loop over negative tracks
       // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
-      for (auto trackNeg1 = tracks.begin(); trackNeg1 != tracks.end(); ++trackNeg1) {
-        if (trackNeg1.signed1Pt() > 0) {
+      // for (auto trackNeg1 = tracks.begin(); trackNeg1 != tracks.end(); ++trackNeg1) {
+      for (auto iTrackNeg1{0u}; iTrackNeg1 < allTracks.size(); ++iTrackNeg1) {
+        /// [Neg1] Define variables and objects depending on track type, ie regular or ambiguous
+        SelectedTracks::iterator trackNeg1{};
+        SelectedAmbTracksCov::iterator trackAmbNeg1{};
+        bool isTrackRegularNeg1 = iTrackNeg1 < tracks.size();
+        float signed1PtNeg1{};
+        int isSelProngNeg1{};
+        int64_t globalIndexNeg1{};
+        o2::track::TrackParametrizationWithError<float> trackParVarNeg1{};
+        if (isTrackRegularNeg1) {
+          trackNeg1 = std::get<SelectedTracks::iterator>(allTracks[iTrackNeg1]);
+          signed1PtNeg1 = trackNeg1.signed1Pt();
+          isSelProngNeg1 = trackNeg1.isSelProng();
+          trackParVarNeg1 = getTrackParCov(trackNeg1);
+          globalIndexNeg1 = trackNeg1.globalIndex();
+        } else {
+          trackAmbNeg1 = std::get<SelectedAmbTracksCov::iterator>(allTracks[iTrackNeg1]);
+          signed1PtNeg1 = trackAmbNeg1.signed1Pt();
+          isSelProngNeg1 = trackAmbNeg1.isSelProng();
+          trackParVarNeg1 = getTrackParCov(trackAmbNeg1);
+          globalIndexNeg1 = trackAmbNeg1.trackId();
+        }
+
+        if (signed1PtNeg1 > 0) {
           continue;
         }
-        bool sel2ProngStatusNeg = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand2Prong);
-        bool sel3ProngStatusNeg1 = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand3Prong);
+        bool sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
+        bool sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
         if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
           continue;
         }
-
-        auto trackParVarNeg1 = getTrackParCov(trackNeg1);
 
         int isSelected2ProngCand = n2ProngBit; // bitmap for checking status of two-prong candidates (1 is true, 0 is rejected)
 
@@ -1773,7 +1826,29 @@ struct HfTrackIndexSkimCreator {
 
           // 2-prong preselections
           // TODO: in case of PV refit, the single-track DCA is calculated wrt two different PV vertices (only 1 track excluded)
-          is2ProngPreselected(trackPos1, trackNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand);
+          if (isTrackRegularPos1 && isTrackRegularNeg1) {
+            auto prongDcaXY = std::array{trackPos1.dcaXY(), trackNeg1.dcaXY()};
+            if (doPvRefit) {
+              prongDcaXY[0] = trackPos1.pvRefitDcaXY();
+              prongDcaXY[1] = trackNeg1.pvRefitDcaXY();
+            }
+            is2ProngPreselected(trackPos1, trackNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand, prongDcaXY);
+          } else if (!isTrackRegularPos1 && isTrackRegularNeg1) {
+            auto prongDcaXY = std::array{trackAmbPos1.dcaXY(), trackNeg1.dcaXY()};
+            if (doPvRefit) {
+              prongDcaXY[1] = trackNeg1.pvRefitDcaXY();
+            }
+            is2ProngPreselected(trackAmbPos1, trackNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand, prongDcaXY);
+          } else if (isTrackRegularPos1 && !isTrackRegularNeg1) {
+            auto prongDcaXY = std::array{trackPos1.dcaXY(), trackAmbNeg1.dcaXY()};
+            if (doPvRefit) {
+              prongDcaXY[0] = trackPos1.pvRefitDcaXY();
+            }
+            is2ProngPreselected(trackPos1, trackAmbNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand, prongDcaXY);
+          } else {
+            auto prongDcaXY = std::array{trackAmbPos1.dcaXY(), trackAmbNeg1.dcaXY()};
+            is2ProngPreselected(trackAmbPos1, trackAmbNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand, prongDcaXY);
+          }
 
           // secondary vertex reconstruction and further 2-prong selections
           if (isSelected2ProngCand > 0 && df2.process(trackParVarPos1, trackParVarNeg1) > 0) { // should it be this or > 0 or are they equivalent
@@ -1791,14 +1866,14 @@ struct HfTrackIndexSkimCreator {
             if (doPvRefit) {
               registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
               int nCandContr = 2;
-              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
-              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
+              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexPos1);
+              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexNeg1);
               bool isTrackFirstContr = true;
               bool isTrackSecondContr = true;
               if (trackFirstIt == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [2 Prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [2 Prong] trackPos1 with globalIndex " << globalIndexPos1 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackFirstContr = false;
@@ -1806,7 +1881,7 @@ struct HfTrackIndexSkimCreator {
               if (trackSecondIt == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [2 Prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [2 Prong] trackNeg1 with globalIndex " << globalIndexNeg1 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackSecondContr = false;
@@ -1853,8 +1928,8 @@ struct HfTrackIndexSkimCreator {
 
             if (isSelected2ProngCand > 0) {
               // fill table row
-              rowTrackIndexProng2(trackPos1.globalIndex(),
-                                  trackNeg1.globalIndex(), isSelected2ProngCand);
+              rowTrackIndexProng2(globalIndexPos1,
+                                  globalIndexNeg1, isSelected2ProngCand);
               // fill table row with coordinates of PV refit
               rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
                                pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
@@ -1918,11 +1993,34 @@ struct HfTrackIndexSkimCreator {
           }
           // second loop over positive tracks
           // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
-          for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracks.end(); ++trackPos2) {
-            if (trackPos2.signed1Pt() < 0) {
+          // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracks.end(); ++trackPos2) {
+          for (auto iTrackPos2{iTrackPos1 + 1}; iTrackPos2 < allTracks.size(); ++iTrackPos2) {
+            /// [Pos2] Define variables and objects depending on track type, ie regular or ambiguous
+            SelectedTracks::iterator trackPos2{};
+            SelectedAmbTracksCov::iterator trackAmbPos2{};
+            bool isTrackRegularPos2 = iTrackPos2 < tracks.size();
+            float signed1PtPos2{};
+            int isSelProngPos2{};
+            int64_t globalIndexPos2{};
+            o2::track::TrackParametrizationWithError<float> trackParVarPos2{};
+            if (isTrackRegularPos2) {
+              trackPos2 = std::get<SelectedTracks::iterator>(allTracks[iTrackPos2]);
+              signed1PtPos2 = trackPos2.signed1Pt();
+              isSelProngPos2 = trackPos2.isSelProng();
+              trackParVarPos2 = getTrackParCov(trackPos2);
+              globalIndexPos2 = trackPos2.globalIndex();
+            } else {
+              trackAmbPos2 = std::get<SelectedAmbTracksCov::iterator>(allTracks[iTrackPos2]);
+              signed1PtPos2 = trackAmbPos2.signed1Pt();
+              isSelProngPos2 = trackAmbPos2.isSelProng();
+              trackParVarPos2 = getTrackParCov(trackAmbPos2);
+              globalIndexPos2 = trackAmbPos2.trackId();
+            }
+
+            if (signed1PtPos2 < 0) {
               continue;
             }
-            if (!TESTBIT(trackPos2.isSelProng(), CandidateType::Cand3Prong)) {
+            if (!TESTBIT(isSelProngPos2, CandidateType::Cand3Prong)) {
               continue;
             }
 
@@ -1937,13 +2035,29 @@ struct HfTrackIndexSkimCreator {
             }
 
             // 3-prong preselections
-            is3ProngPreselected(trackPos1, trackNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            if (isTrackRegularPos1 && isTrackRegularNeg1 && isTrackRegularPos2) {
+              is3ProngPreselected(trackPos1, trackNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (!isTrackRegularPos1 && isTrackRegularNeg1 && isTrackRegularPos2) {
+              is3ProngPreselected(trackAmbPos1, trackNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (isTrackRegularPos1 && !isTrackRegularNeg1 && isTrackRegularPos2) {
+              is3ProngPreselected(trackPos1, trackAmbNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (isTrackRegularPos1 && isTrackRegularNeg1 && !isTrackRegularPos2) {
+              is3ProngPreselected(trackPos1, trackNeg1, trackAmbPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (!isTrackRegularPos1 && !isTrackRegularNeg1 && isTrackRegularPos2) {
+              is3ProngPreselected(trackAmbPos1, trackAmbNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (!isTrackRegularPos1 && isTrackRegularNeg1 && !isTrackRegularPos2) {
+              is3ProngPreselected(trackAmbPos1, trackNeg1, trackAmbPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (isTrackRegularPos1 && !isTrackRegularNeg1 && !isTrackRegularPos2) {
+              is3ProngPreselected(trackPos1, trackAmbNeg1, trackAmbPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else {
+              is3ProngPreselected(trackAmbPos1, trackAmbNeg1, trackAmbPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            }
+
             if (!debug && isSelected3ProngCand == 0) {
               continue;
             }
 
             // reconstruct the 3-prong secondary vertex
-            auto trackParVarPos2 = getTrackParCov(trackPos2);
             if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
               continue;
             }
@@ -1963,16 +2077,16 @@ struct HfTrackIndexSkimCreator {
             if (doPvRefit) {
               registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
               int nCandContr = 3;
-              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
-              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
-              auto it_third_trk = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos2.globalIndex());
+              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexPos1);
+              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexNeg1);
+              auto it_third_trk = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexPos2);
               bool isTrackFirstContr = true;
               bool isTrackSecondContr = true;
               bool isTrackThirdContr = true;
               if (trackFirstIt == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << globalIndexPos1 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackFirstContr = false;
@@ -1980,7 +2094,7 @@ struct HfTrackIndexSkimCreator {
               if (trackSecondIt == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << globalIndexNeg1 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackSecondContr = false;
@@ -1988,7 +2102,7 @@ struct HfTrackIndexSkimCreator {
               if (it_third_trk == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [3 prong] trackPos2 with globalIndex " << trackPos2.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [3 prong] trackPos2 with globalIndex " << globalIndexPos2 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackThirdContr = false;
@@ -2054,9 +2168,9 @@ struct HfTrackIndexSkimCreator {
             }
 
             // fill table row
-            rowTrackIndexProng3(trackPos1.globalIndex(),
-                                trackNeg1.globalIndex(),
-                                trackPos2.globalIndex(), isSelected3ProngCand);
+            rowTrackIndexProng3(globalIndexPos1,
+                                globalIndexNeg1,
+                                globalIndexPos2, isSelected3ProngCand);
             // fill table row of coordinates of PV refit
             rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
                              pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
@@ -2120,11 +2234,33 @@ struct HfTrackIndexSkimCreator {
 
           // second loop over negative tracks
           // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
-          for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracks.end(); ++trackNeg2) {
-            if (trackNeg2.signed1Pt() > 0) {
+          // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracks.end(); ++trackNeg2) {
+          for (auto iTrackNeg2{iTrackNeg1 + 1}; iTrackNeg2 < allTracks.size(); ++iTrackNeg2) {
+            /// [Neg2] Define variables and objects depending on track type, ie regular or ambiguous
+            SelectedTracks::iterator trackNeg2{};
+            SelectedAmbTracksCov::iterator trackAmbNeg2{};
+            bool isTrackRegularNeg2 = iTrackNeg2 < tracks.size();
+            float signed1PtNeg2{};
+            int isSelProngNeg2{};
+            int64_t globalIndexNeg2{};
+            o2::track::TrackParametrizationWithError<float> trackParVarNeg2{};
+            if (isTrackRegularNeg2) {
+              trackNeg2 = std::get<SelectedTracks::iterator>(allTracks[iTrackNeg2]);
+              signed1PtNeg2 = trackNeg2.signed1Pt();
+              isSelProngNeg2 = trackNeg2.isSelProng();
+              trackParVarNeg2 = getTrackParCov(trackNeg2);
+              globalIndexNeg2 = trackNeg2.globalIndex();
+            } else {
+              trackAmbNeg2 = std::get<SelectedAmbTracksCov::iterator>(allTracks[iTrackNeg2]);
+              signed1PtNeg2 = trackAmbNeg2.signed1Pt();
+              isSelProngNeg2 = trackAmbNeg2.isSelProng();
+              trackParVarNeg2 = getTrackParCov(trackAmbNeg2);
+              globalIndexNeg2 = trackAmbNeg2.trackId();
+            }
+            if (signed1PtNeg2 > 0) {
               continue;
             }
-            if (!TESTBIT(trackNeg2.isSelProng(), CandidateType::Cand3Prong)) {
+            if (!TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong)) {
               continue;
             }
 
@@ -2139,13 +2275,29 @@ struct HfTrackIndexSkimCreator {
             }
 
             // 3-prong preselections
-            is3ProngPreselected(trackNeg1, trackPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            if (isTrackRegularNeg1 && isTrackRegularPos1 && isTrackRegularNeg2) {
+              is3ProngPreselected(trackNeg1, trackPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (!isTrackRegularNeg1 && isTrackRegularPos1 && isTrackRegularNeg2) {
+              is3ProngPreselected(trackAmbNeg1, trackPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (isTrackRegularNeg1 && !isTrackRegularPos1 && isTrackRegularNeg2) {
+              is3ProngPreselected(trackNeg1, trackAmbPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (isTrackRegularNeg1 && isTrackRegularPos1 && !isTrackRegularNeg2) {
+              is3ProngPreselected(trackNeg1, trackPos1, trackAmbNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (!isTrackRegularNeg1 && !isTrackRegularPos1 && isTrackRegularNeg2) {
+              is3ProngPreselected(trackAmbNeg1, trackAmbPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (!isTrackRegularNeg1 && isTrackRegularPos1 && !isTrackRegularNeg2) {
+              is3ProngPreselected(trackAmbNeg1, trackPos1, trackAmbNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else if (isTrackRegularNeg1 && !isTrackRegularPos1 && !isTrackRegularNeg2) {
+              is3ProngPreselected(trackNeg1, trackAmbPos1, trackAmbNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            } else {
+              is3ProngPreselected(trackAmbNeg1, trackAmbPos1, trackAmbNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            }
+
             if (!debug && isSelected3ProngCand == 0) {
               continue;
             }
 
             // reconstruct the 3-prong secondary vertex
-            auto trackParVarNeg2 = getTrackParCov(trackNeg2);
             if (df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2) == 0) {
               continue;
             }
@@ -2166,16 +2318,16 @@ struct HfTrackIndexSkimCreator {
             if (doPvRefit) {
               registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
               int nCandContr = 3;
-              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
-              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
-              auto it_third_trk = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg2.globalIndex());
+              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexPos1);
+              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexNeg1);
+              auto it_third_trk = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), globalIndexNeg2);
               bool isTrackFirstContr = true;
               bool isTrackSecondContr = true;
               bool isTrackThirdContr = true;
               if (trackFirstIt == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << globalIndexPos1 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackFirstContr = false;
@@ -2183,7 +2335,7 @@ struct HfTrackIndexSkimCreator {
               if (trackSecondIt == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << globalIndexNeg1 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackSecondContr = false;
@@ -2191,7 +2343,7 @@ struct HfTrackIndexSkimCreator {
               if (it_third_trk == vecPvContributorGlobId.end()) {
                 /// This track did not contribute to the original PV refit
                 if (debug) {
-                  LOG(info) << "--- [3 prong] trackNeg2 with globalIndex " << trackNeg2.globalIndex() << " was not a PV contributor";
+                  LOG(info) << "--- [3 prong] trackNeg2 with globalIndex " << globalIndexNeg2 << " was not a PV contributor";
                 }
                 nCandContr--;
                 isTrackThirdContr = false;
@@ -2257,9 +2409,9 @@ struct HfTrackIndexSkimCreator {
             }
 
             // fill table row
-            rowTrackIndexProng3(trackNeg1.globalIndex(),
-                                trackPos1.globalIndex(),
-                                trackNeg2.globalIndex(), isSelected3ProngCand);
+            rowTrackIndexProng3(globalIndexNeg1,
+                                globalIndexPos1,
+                                globalIndexNeg2, isSelected3ProngCand);
             // fill table row of coordinates of PV refit
             rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
                              pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
