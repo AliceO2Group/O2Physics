@@ -185,22 +185,19 @@ namespace femtodreamparticleMC
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,    //! Primary track or V0
-  kDaughter,   //! Particle from a decay
-  kMaterial,   //! Particle from a material
-  kNotPrimary, //! Particle from a material
-  kFake,
-  kDaughterLambda,
-  kDaughterSigmaplus
+  kPrimary,          //! Primary track or V0
+  kDaughter,         //! Particle from a decay
+  kMaterial,         //! Particle from a material
+  kNotPrimary,       //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,             //! particle, that has NOT the PDG code of the current analysed particle
+  kDaughterLambda,   //! Daughter from a Lambda decay
+  kDaughterSigmaplus //! Daughter from a Sigma^plus decay
 };
 
 // DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 // DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
-// DECLARE_SOA_COLUMN(PtTruth, ptTruth, float);                       //! p_T of the generated particle (GeV/c)
-// DECLARE_SOA_COLUMN(EtaTruth, etaTruth, float);                     //! Eta of the generated particle
-// DECLARE_SOA_COLUMN(PhiTruth, phiTruth, float);                     //! Phi of the generated particle
 
 // debug variables
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
