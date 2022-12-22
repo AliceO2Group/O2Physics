@@ -57,8 +57,7 @@ struct MultiplicityQa {
   Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
   Configurable<int> NBinsVertexZ{"NBinsVertexZ", 400, "max vertex Z (cm)"};
   Configurable<bool> useZeqInProfiles{"useZeqInProfiles", true, "use Z-equalized signals in midrap Nch profiles"};
-  
-  
+
   void init(InitContext&)
   {
     const AxisSpec axisEvent{10, 0, 10, "Event counter"};
@@ -160,13 +159,13 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hZeqNTracksPV"), col.multZeqNTracksPV());
 
     // Profiles
-    if(useZeqInProfiles){
+    if (useZeqInProfiles) {
       histos.fill(HIST("multiplicityQa/hNchProfileFV0"), col.multZeqFV0A(), col.multZeqNTracksPV());
       histos.fill(HIST("multiplicityQa/hNchProfileFT0"), col.multZeqFT0A() + col.multZeqFT0C(), col.multZeqNTracksPV());
       histos.fill(HIST("multiplicityQa/hNchProfileFT0A"), col.multZeqFT0A(), col.multZeqNTracksPV());
       histos.fill(HIST("multiplicityQa/hNchProfileFT0C"), col.multZeqFT0C(), col.multZeqNTracksPV());
       histos.fill(HIST("multiplicityQa/hNchProfileFDD"), col.multZeqFDDA() + col.multZeqFDDC(), col.multZeqNTracksPV());
-    }else{
+    } else {
       histos.fill(HIST("multiplicityQa/hNchProfileFV0"), col.multFV0A(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/hNchProfileFT0"), col.multFT0A() + col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/hNchProfileFT0A"), col.multFT0A(), col.multNTracksPV());
