@@ -290,25 +290,25 @@ struct NucleiHistTask {
         Helium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         spectra.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
-/*
-        if (track.centFV0A() > 0.0 && track.centFV0A() < 5.0) {
-          proton_erg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaProton);
-          deuteron_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaDeut);
-          Helium3_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt() * 2.0, nSigmaHe3);
-        }
+        /*
+                if (track.centFV0A() > 0.0 && track.centFV0A() < 5.0) {
+                  proton_erg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaProton);
+                  deuteron_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaDeut);
+                  Helium3_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt() * 2.0, nSigmaHe3);
+                }
 
-        if (track.centFV0A() > 5.0 && track.centFV0A() < 10.0) {
-          proton_erg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaProton);
-          deuteron_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaDeut);
-          Helium3_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt() * 2.0, nSigmaHe3);
-        }
+                if (track.centFV0A() > 5.0 && track.centFV0A() < 10.0) {
+                  proton_erg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaProton);
+                  deuteron_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaDeut);
+                  Helium3_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt() * 2.0, nSigmaHe3);
+                }
 
-        if (track.centFV0A() > 10.0 && track.centFV0A() < 30.0) {
-          proton_erg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaProton);
-          deuteron_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaDeut);
-          Helium3_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt() * 2.0, nSigmaHe3);
-        }
-*/
+                if (track.centFV0A() > 10.0 && track.centFV0A() < 30.0) {
+                  proton_erg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaProton);
+                  deuteron_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaDeut);
+                  Helium3_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt() * 2.0, nSigmaHe3);
+                }
+        */
         /*
                 if (track.isAmbiguous() == 0) {
                   spectra.fill(HIST("histDcaVsPtData_wo_ambiguous_particle"), track.pt(), track.dcaXY());
@@ -331,25 +331,25 @@ struct NucleiHistTask {
         aHelium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         spectra.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
-/*
-        if (track.centFV0A() > 0.0 && track.centFV0A() < 5.0) {
-          aproton_erg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaProton);
-          adeuteron_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaDeut);
-          aHelium3_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt() * 2.0, nSigmaHe3);
-        }
+        /*
+                if (track.centFV0A() > 0.0 && track.centFV0A() < 5.0) {
+                  aproton_erg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaProton);
+                  adeuteron_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt(), nSigmaDeut);
+                  aHelium3_reg.fill(HIST("histTpcNsigmaData_cent_0-5"), track.pt() * 2.0, nSigmaHe3);
+                }
 
-        if (track.centFV0A() > 5.0 && track.centFV0A() < 10.0) {
-          aproton_erg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaProton);
-          adeuteron_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaDeut);
-          aHelium3_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt() * 2.0, nSigmaHe3);
-        }
+                if (track.centFV0A() > 5.0 && track.centFV0A() < 10.0) {
+                  aproton_erg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaProton);
+                  adeuteron_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt(), nSigmaDeut);
+                  aHelium3_reg.fill(HIST("histTpcNsigmaData_cent_5-10"), track.pt() * 2.0, nSigmaHe3);
+                }
 
-        if (track.centFV0A() > 10.0 && track.centFV0A() < 30.0) {
-          aproton_erg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaProton);
-          adeuteron_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaDeut);
-          aHelium3_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt() * 2.0, nSigmaHe3);
-        }
-*/
+                if (track.centFV0A() > 10.0 && track.centFV0A() < 30.0) {
+                  aproton_erg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaProton);
+                  adeuteron_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt(), nSigmaDeut);
+                  aHelium3_reg.fill(HIST("histTpcNsigmaData_cent_10-30"), track.pt() * 2.0, nSigmaHe3);
+                }
+        */
         /*
                 if (track.isAmbiguous()==0) {
                   spectra.fill(HIST("histDcaVsPtData_wo_ambiguous_antiparticle"), track.pt(), track.dcaXY());
