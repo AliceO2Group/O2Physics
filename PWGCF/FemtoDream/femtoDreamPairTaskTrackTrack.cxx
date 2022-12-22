@@ -65,7 +65,6 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
-  // Partition<Join<aod::FemtoDreamParticles, aod::FemtoDreamParticlesMC>> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -81,7 +80,6 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
-  // Partition<Join<aod::FemtoDreamParticles, aod::FemtoDreamParticlesMC>> partsTwoMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -200,7 +198,7 @@ struct femtoDreamPairTaskTrackTrack {
       }
       trackHistoPartOne.fillQA(part);
       if constexpr (isMC) {
-        trackHistoPartOneMC.fillQA(parts.iteratorAt(part.index()));
+        trackHistoPartOneMC.fillQA<true>(partsMC.iteratorAt(part.index()));
         trackHistoPartOneMC.fillQAMC(part, partsMC.iteratorAt(part.index()));
       }
     }
@@ -221,7 +219,7 @@ struct femtoDreamPairTaskTrackTrack {
         }
         trackHistoPartTwo.fillQA(part);
         if constexpr (isMC) {
-          trackHistoPartTwoMC.fillQA(parts.iteratorAt(part.index()));
+          trackHistoPartTwoMC.fillQA<true>(partsMC.iteratorAt(part.index()));
           trackHistoPartTwoMC.fillQAMC(part, partsMC.iteratorAt(part.index()));
         }
       }
@@ -281,8 +279,6 @@ struct femtoDreamPairTaskTrackTrack {
   void processSameEventMC(o2::aod::FemtoDreamCollision& col,
                           aod::FemtoDreamParticles& parts, aod::FemtoDreamParticlesMC& partsMC)
   {
-    // auto slicedPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    // auto slicedPartsTwo = partsTwoMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     doSameEvent<true>(col, parts, partsMC);
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", true);
@@ -299,6 +295,12 @@ struct femtoDreamPairTaskTrackTrack {
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
 
+      /*
+      if constexpr(isMC){
+        auto groupPartsOneMC = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
+        auto groupPartsTwoMC = partsTwoMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
+      }
+      */
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
 
@@ -355,8 +357,8 @@ struct femtoDreamPairTaskTrackTrack {
 
         mixedEventCont.setPair(p1, p2, collision1.multNtrPV());
         if constexpr (isMC) {
-          mixedEventContMC.setPair(partsMC.iteratorAt(p1.index()), partsMC.iteratorAt(p2.index()), collision1.multNtrPV());
-          mixedEventContMC.setPairMC(p1, p2, partsMC.iteratorAt(p1.index()), partsMC.iteratorAt(p2.index()), collision1.multNtrPV());
+          mixedEventContMC.setPair(partsMC.iteratorAt(p1.globalIndex()), partsMC.iteratorAt(p2.globalIndex()), collision1.multNtrPV());
+          mixedEventContMC.setPairMC(p1, p2, partsMC.iteratorAt(p1.globalIndex()), partsMC.iteratorAt(p2.globalIndex()), collision1.multNtrPV());
         }
       }
     }

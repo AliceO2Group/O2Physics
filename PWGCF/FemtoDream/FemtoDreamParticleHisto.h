@@ -74,7 +74,7 @@ class FemtoDreamParticleHisto
   /// Filling of the histograms
   /// \tparam T Data type of the particle
   /// \param part Particle
-  template <typename T>
+  template <bool isMC = false, typename T>
   void fillQA(T const& part)
   {
     if (mHistogramRegistry) {
@@ -83,19 +83,21 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hEta"), part.eta());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPhi"), part.phi());
 
-      /// Particle-type specific histograms
-      if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-        /// Track histograms
-        mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAxy"),
-                                 part.pt(), part.tempFitVar());
-      } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-        /// V0 histograms
-        mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hCPA"),
-                                 part.pt(), part.tempFitVar());
-      } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-        /// Cascade histograms
-      } else {
-        LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
+      if constexpr (!isMC) {
+        /// Particle-type specific histograms
+        if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+          /// Track histograms
+          mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAxy"),
+                                   part.pt(), part.tempFitVar());
+        } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
+          /// V0 histograms
+          mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hCPA"),
+                                   part.pt(), part.tempFitVar());
+        } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
+          /// Cascade histograms
+        } else {
+          LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
+        }
       }
     }
   }

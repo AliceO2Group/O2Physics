@@ -117,6 +117,22 @@ class FemtoDreamContainer
     const float kT = FemtoDreamMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
 
+    /*
+    if(part1.pt()==part2.pt()){
+    std::cout<<"New particle";
+    std::cout<<"particle 1";
+    std::cout<<"pt = "<<part1.pt();
+    std::cout<<"eta = "<<part1.eta();
+    std::cout<<"phi = "<<part1.phi();
+    std::cout<<"particle 2";
+    std::cout<<"pt = "<<part2.pt();
+    std::cout<<"eta = "<<part2.eta();
+    std::cout<<"phi = "<<part2.phi();
+    std::cout<<" ";
+    std::cout<<"kstar = "<<femtoObs;
+    }
+    */
+
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist"), femtoObs);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkT"), kT);
@@ -157,8 +173,54 @@ class FemtoDreamContainer
       femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
       femtoObsMC = FemtoDreamMath::getkstar(partMC1, mMassOne, partMC2, mMassTwo);
     }
-    // const float kT = FemtoDreamMath::getkTMC(part1, mMassOne, part2, mMassTwo);
-    // const float mT = FemtoDreamMath::getmTMC(part1, mMassOne, part2, mMassTwo);
+
+    std::cout << " " << std::endl;
+    std::cout << "New particle" << std::endl;
+    std::cout << "particle 1" << std::endl;
+    std::cout << "reco     -----     sim" << std::endl;
+    std::cout << "pt = " << part1.pt() << " -- pt = " << partMC1.pt() << std::endl;
+    std::cout << "eta = " << part1.eta() << " -- eta = " << partMC1.eta() << std::endl;
+    std::cout << "phi = " << part1.phi() << " -- phi = " << partMC1.phi() << std::endl;
+    std::cout << "CollisionID = " << part1.femtoDreamCollisionId() << " -- CollisionID = " << partMC1.femtoDreamCollisionId() << std::endl;
+    std::cout << "Particle ID= " << part1.index() << " -- Particle ID= " << partMC1.index() << std::endl;
+    std::cout << "Particle ID global= " << part1.globalIndex() << " -- Particle ID global= " << partMC1.globalIndex() << std::endl;
+    if (part1.index() == partMC1.index()) {
+      std::cout << " equal index 1" << std::endl;
+    }
+    std::cout << "  mc PDG: " << partMC1.pdgMCTruth() << std::endl;
+    std::cout << "  mc origin: " << static_cast<int>(partMC1.partOriginMCTruth()) << std::endl;
+
+    std::cout << "### particle 2 ###" << std::endl;
+    std::cout << "reco     -----     sim" << std::endl;
+    std::cout << "pt = " << part2.pt() << " -- pt = " << partMC2.pt() << std::endl;
+    std::cout << "eta = " << part2.eta() << " -- eta = " << partMC2.eta() << std::endl;
+    std::cout << "phi = " << part2.phi() << " -- phi = " << partMC2.phi() << std::endl;
+    std::cout << "CollisionID = " << part2.femtoDreamCollisionId() << " -- CollisionID = " << partMC2.femtoDreamCollisionId() << std::endl;
+    std::cout << "Particle ID= " << part2.index() << " -- Particle ID= " << partMC2.index() << std::endl;
+    std::cout << "Particle ID global= " << part2.globalIndex() << " -- Particle ID global= " << partMC2.globalIndex() << std::endl;
+    if (part2.index() == partMC2.index()) {
+      std::cout << " equal index 2" << std::endl;
+    }
+    std::cout << "  mc PDG: " << partMC2.pdgMCTruth() << std::endl;
+    std::cout << "  mc origin: " << static_cast<int>(partMC2.partOriginMCTruth()) << std::endl;
+    std::cout << "--> kstar = " << femtoObs << " -- kstar truth = " << femtoObsMC << std::endl;
+    if (femtoObs < 0.05 || femtoObsMC < 0.05) {
+      std::cout << "==> zks";
+    }
+    if (part1.femtoDreamCollisionId() != partMC1.femtoDreamCollisionId() || part2.femtoDreamCollisionId() != partMC2.femtoDreamCollisionId()) {
+      std::cout << " necID";
+    }
+    if (part1.index() != partMC1.index() || part2.index() != partMC2.index()) {
+      std::cout << " nei";
+    }
+    if (part1.globalIndex() != partMC1.globalIndex() || part2.globalIndex() != partMC2.globalIndex()) {
+      std::cout << " negi";
+    }
+    std::cout << " " << std::endl;
+    // if( !( (femtoObs<0.01 || femtoObsMC<0.01) && (partMC1.femtoDreamCollisionId()==0 || partMC1.femtoDreamCollisionId()==0 || partMC2.femtoDreamCollisionId()==1 || partMC2.femtoDreamCollisionId()==1) )){
+    //    std::cout<<"zerokstar"<<std::endl;
+    // }
+
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstar_resolution"), femtoObsMC, femtoObs);
     }

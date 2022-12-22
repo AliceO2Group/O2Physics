@@ -183,8 +183,8 @@ struct femtoDreamProducerReducedTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <typename ParticleType>
-  void fillMCParticle(ParticleType const& particle)
+  template <typename ParticleType, typename collidtype>
+  void fillMCParticle(ParticleType const& particle, collidtype collid)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
@@ -214,11 +214,23 @@ struct femtoDreamProducerReducedTask {
       } else {
         particleOrigin = aod::femtodreamparticleMC::ParticleOriginMCTruth::kFake;
       }
-      outputPartsMC(outputCollision.lastIndex(), particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      // outputPartsMC(outputCollision.lastIndex(), particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+
+      /*
+      LOG(info)<<"##### Fill MC #######";
+      LOG(info)<<"Particle Origin "<<particleOrigin;
+      LOG(info)<<"PDG code "<<pdgCode;
+      LOG(info)<<"pt "<<particleMC.pt();
+      LOG(info)<<"eta "<<particleMC.eta();
+      LOG(info)<<"phi "<<particleMC.phi();
+      LOG(info)<<"     Collision ID "<<collid;
+      */
+
+      outputPartsMC(collid, particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       // fill with correct values, this is currently placeholder
       // outputDebugPartsMC(-999);
     } else {
-      outputPartsMC(-999, -999, -999, -999, -999, -999);
+      outputPartsMC(collid, -999, -999, -999, -999, -999);
       // outputDebugPartsMC(-999);
     }
   }
@@ -266,7 +278,18 @@ struct femtoDreamProducerReducedTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
-      outputParts(outputCollision.lastIndex(),
+
+      auto collindex = outputCollision.lastIndex();
+      /*
+      LOG(info)<<" ";
+      LOG(info)<<"--------------- New Particle ---------------";
+      LOG(info)<<"##### Fill Data #######";
+      LOG(info)<<"pt "<<track.pt();
+      LOG(info)<<"eta "<<track.eta();
+      LOG(info)<<"phi "<<track.phi();
+      LOG(info)<<"     Collision ID "<<collindex;
+      */
+      outputParts(collindex,
                   track.pt(),
                   track.eta(),
                   track.phi(),
@@ -276,7 +299,7 @@ struct femtoDreamProducerReducedTask {
                   track.dcaXY(), childIDs, 0, 0);
 
       if constexpr (isMC) {
-        fillMCParticle(track);
+        fillMCParticle(track, collindex);
       }
 
       if (ConfDebugOutput) {
