@@ -13,9 +13,10 @@
 /// \brief FemtoDreamParticleHisto - Histogram class for tracks, V0s and cascades
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
-#define ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
 
+#include <string>
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -102,4 +103,4 @@ class FemtoDreamParticleHisto
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
