@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//  Strangeness builder task
+//  Cascade builder task
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
-//  This task loops over a set of V0 and cascade indices and
+//  This task loops over a set of cascade indices and
 //  creates the corresponding analysis tables that contain
 //  the typical information required for analysis.
 //
@@ -53,6 +53,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DetectorsBase/Propagator.h"
@@ -78,16 +79,45 @@ namespace o2::aod
 {
 namespace casctag
 {
-DECLARE_SOA_COLUMN(IsInteresting, isInteresting, int); //! will this be built or not?
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
+
+// MC association bools
+DECLARE_SOA_COLUMN(IsTrueXiMinus, isTrueXiMinus, bool);       //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueXiPlus, isTrueXiPlus, bool);         //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
+
+// dE/dx compatibility bools
+DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
 }
 DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
-                  casctag::IsInteresting);
+                  casctag::IsInteresting,
+                  casctag::IsTrueXiMinus,
+                  casctag::IsTrueXiPlus,
+                  casctag::IsTrueOmegaMinus,
+                  casctag::IsTrueOmegaPlus,
+                  casctag::IsXiMinusCandidate,
+                  casctag::IsXiPlusCandidate,
+                  casctag::IsOmegaMinusCandidate,
+                  casctag::IsOmegaPlusCandidate);
 } // namespace o2::aod
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
+
+// For MC association in pre-selection
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+
+// For dE/dx association in pre-selection
+using TracksWithPID = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfKa, aod::pidTPCLfPr, aod::pidTPCLfHe>;
+
+// For MC and dE/dx association
+using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfKa, aod::pidTPCLfPr, aod::pidTPCLfHe, aod::McTrackLabels>;
+
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
 
@@ -135,7 +165,7 @@ struct cascadeBuilder {
   o2::base::Propagator::MatCorrType matCorr;
   o2::base::Propagator::MatCorrType matCorrCascade;
 
-  Filter taggedFilter = aod::casctag::isInteresting > 0;
+  Filter taggedFilter = aod::casctag::isInteresting == true;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -216,17 +246,11 @@ struct cascadeBuilder {
       ccdb->get<TGeoManager>(geoPath);
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3associated == false) {
-      LOGF(fatal, "Neither processRun2, processRun3 nor processRun3associated enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
-    }
-    if (doprocessRun2 == true && doprocessRun3associated == true) {
-      LOGF(fatal, "Cannot enable processRun2 and processRun3associated at the same time. Please choose one.");
-    }
-    if (doprocessRun3 == true && doprocessRun3associated == true) {
-      LOGF(fatal, "Cannot enable processRun3 and processRun3associated at the same time. Please choose one.");
     }
 
     if (d_UseAutodetectMode) {
@@ -544,7 +568,7 @@ struct cascadeBuilder {
     resetHistos();
   }
 
-  void processRun2(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
+  void processRun2(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -555,7 +579,7 @@ struct cascadeBuilder {
   }
   PROCESS_SWITCH(cascadeBuilder, processRun2, "Produce Run 2 cascade tables", true);
 
-  void processRun3(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRun3(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -565,17 +589,213 @@ struct cascadeBuilder {
     buildStrangenessTables<FullTracksExtIU>(collision, cascades, tracks);
   }
   PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", false);
+};
 
-  void processRun3associated(aod::Collision const& collision, aod::V0sLinked const& V0s, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+struct cascadePreselector {
+  Produces<aod::CascTags> casctags; // MC tags
+
+  Configurable<bool> dIfMCgenerateXiMinus{"dIfMCgenerateXiMinus", true, "if MC, generate MC true XiMinus (yes/no)"};
+  Configurable<bool> dIfMCgenerateXiPlus{"dIfMCgenerateXiPlus", true, "if MC, generate MC true XiPlus (yes/no)"};
+  Configurable<bool> dIfMCgenerateOmegaMinus{"dIfMCgenerateOmegaMinus", true, "if MC, generate MC true OmegaMinus (yes/no)"};
+  Configurable<bool> dIfMCgenerateOmegaPlus{"dIfMCgenerateOmegaPlus", true, "if MC, generate MC true OmegaPlus (yes/no)"};
+
+  Configurable<bool> ddEdxPreSelectXiMinus{"ddEdxPreSelectXiMinus", true, "pre-select dE/dx compatibility with XiMinus (yes/no)"};
+  Configurable<bool> ddEdxPreSelectXiPlus{"ddEdxPreSelectXiPlus", true, "pre-select dE/dx compatibility with XiPlus (yes/no)"};
+  Configurable<bool> ddEdxPreSelectOmegaMinus{"ddEdxPreSelectOmegaMinus", true, "pre-select dE/dx compatibility with OmegaMinus (yes/no)"};
+  Configurable<bool> ddEdxPreSelectOmegaPlus{"ddEdxPreSelectOmegaPlus", true, "pre-select dE/dx compatibility with OmegaPlus (yes/no)"};
+
+  // dEdx pre-selection compatibility
+  Configurable<float> ddEdxPreSelectionWindow{"ddEdxPreSelectionWindow", 7, "Nsigma window for dE/dx preselection"};
+
+  void init(InitContext const&) {}
+
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// function to check PDG association
+  template <class TTracksTo, typename TCascadeObject>
+  void checkPDG(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
   {
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
+    if (!(v0.has_v0Data())) {
+      lIsInteresting = false;
+      lIsXiMinus = false;
+      lIsXiPlus = false;
+      lIsOmegaMinus = false;
+      lIsOmegaPlus = false;
+      return;
+    }
+    auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
+    int lPDG = -1;
 
-    // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildStrangenessTables<FullTracksExtIU>(collision, cascades, tracks);
+    // Acquire all three daughter tracks, please
+    auto lBachTrack = lCascadeCandidate.template bachelor_as<TTracksTo>();
+    auto lNegTrack = v0data.template negTrack_as<TTracksTo>();
+    auto lPosTrack = v0data.template posTrack_as<TTracksTo>();
+
+    // Association check
+    // There might be smarter ways of doing this in the future
+    if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle() && lBachTrack.has_mcParticle()) {
+      auto lMCBachTrack = lBachTrack.template mcParticle_as<aod::McParticles>();
+      auto lMCNegTrack = lNegTrack.template mcParticle_as<aod::McParticles>();
+      auto lMCPosTrack = lPosTrack.template mcParticle_as<aod::McParticles>();
+
+      // Step 1: check if the mother is the same, go up a level
+      if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
+        for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
+          for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
+            if (lNegMother == lPosMother) {
+              // if we got to this level, it means the mother particle exists and is the same
+              // now we have to go one level up and compare to the bachelor mother too
+              for (auto& lV0Mother : lNegMother.template mothers_as<aod::McParticles>()) {
+                for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
+                  if (lV0Mother == lBachMother) {
+                    lPDG = lV0Mother.pdgCode();
+                  }
+                }
+              } // end conditional V0-bach pair
+            }   // end neg = pos mother conditional
+          }
+        } // end loop neg/pos mothers
+      }   // end conditional of mothers existing
+    }     // end association check
+    // Construct tag table (note: this will be joinable with CascDatas)
+    if (lPDG == 3312 && dIfMCgenerateXiMinus) {
+      lIsXiMinus = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == -3312 && dIfMCgenerateXiPlus) {
+      lIsXiPlus = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == 3334 && dIfMCgenerateOmegaMinus) {
+      lIsOmegaMinus = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == -3334 && dIfMCgenerateOmegaPlus) {
+      lIsOmegaPlus = true;
+      lIsInteresting = true;
+    }
   }
-  PROCESS_SWITCH(cascadeBuilder, processRun3associated, "Produce Run 3 cascade tables only for MC associated", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// function to check early dE/dx selection
+  template <class TTracksTo, typename TCascadeObject>
+  void checkdEdx(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
+  {
+    auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
+    if (!(v0.has_v0Data())) {
+      lIsInteresting = false;
+      lIsXiMinus = false;
+      lIsXiPlus = false;
+      lIsOmegaMinus = false;
+      lIsOmegaPlus = false;
+      return;
+    }
+    auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
+
+    // Acquire all three daughter tracks, please
+    auto lBachTrack = lCascadeCandidate.template bachelor_as<TTracksTo>();
+    auto lNegTrack = v0data.template negTrack_as<TTracksTo>();
+    auto lPosTrack = v0data.template posTrack_as<TTracksTo>();
+
+    // dEdx check with LF PID
+    if (TMath::Abs(lNegTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectXiMinus) {
+      lIsXiMinus = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectXiPlus) {
+      lIsXiPlus = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.template tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectOmegaMinus) {
+      lIsOmegaMinus = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.template tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectOmegaPlus) {
+      lIsOmegaPlus = 1;
+      lIsInteresting = 1;
+    }
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function ensures that all cascades are built. It will simply tag everything as true.
+  void processBuildAll(aod::Cascades const& cascades)
+  {
+    for (int ii = 0; ii < cascades.size(); ii++)
+      casctags(true,
+               true, true, true, true,
+               true, true, true, true);
+  }
+  PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
+  {
+    for (auto& casc : cascades) {
+      bool lIsInteresting = false;
+      bool lIsTrueXiMinus = false;
+      bool lIsTrueXiPlus = false;
+      bool lIsTrueOmegaMinus = false;
+      bool lIsTrueOmegaPlus = false;
+
+      checkPDG<LabeledTracks>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
+      casctags(lIsInteresting,
+               lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
+               true, true, true, true);
+    } // end cascades loop
+  }
+  PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0s const&, TracksWithPID const&)
+  {
+    for (auto& casc : cascades) {
+      bool lIsInteresting = false;
+      bool lIsdEdxXiMinus = false;
+      bool lIsdEdxXiPlus = false;
+      bool lIsdEdxOmegaMinus = false;
+      bool lIsdEdxOmegaPlus = false;
+
+      checkdEdx<TracksWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      casctags(lIsInteresting,
+               true, true, true, true,
+               lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+    }
+  }
+  PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0s const&, TracksWithPIDandLabels const&)
+  {
+    for (auto& casc : cascades) {
+      bool lIsdEdxInteresting = false;
+      bool lIsdEdxXiMinus = false;
+      bool lIsdEdxXiPlus = false;
+      bool lIsdEdxOmegaMinus = false;
+      bool lIsdEdxOmegaPlus = false;
+
+      bool lIsTrueInteresting = false;
+      bool lIsTrueXiMinus = false;
+      bool lIsTrueXiPlus = false;
+      bool lIsTrueOmegaMinus = false;
+      bool lIsTrueOmegaPlus = false;
+
+      checkPDG<TracksWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
+      checkdEdx<TracksWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      casctags(lIsTrueInteresting * lIsdEdxInteresting,
+               lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
+               lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+    }
+  }
+  PROCESS_SWITCH(cascadePreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated cascades with dE/dx preselection", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -645,91 +865,6 @@ struct cascadeLabelBuilder {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 };
 
-//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-struct cascadeTagBuilder {
-  Produces<aod::CascTags> casctags; // MC tags
-
-  Configurable<bool> dIfMCgenerateXiMinus{"dIfMCgenerateXiMinus", true, "if MC, generate MC true XiMinus (yes/no)"};
-  Configurable<bool> dIfMCgenerateXiPlus{"dIfMCgenerateXiPlus", true, "if MC, generate MC true XiPlus (yes/no)"};
-  Configurable<bool> dIfMCgenerateOmegaMinus{"dIfMCgenerateOmegaMinus", true, "if MC, generate MC true OmegaMinus (yes/no)"};
-  Configurable<bool> dIfMCgenerateOmegaPlus{"dIfMCgenerateOmegaPlus", true, "if MC, generate MC true OmegaPlus (yes/no)"};
-
-  void init(InitContext const&) {}
-
-  void processDoNotBuildTags(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function - should not be required in the future
-  }
-  PROCESS_SWITCH(cascadeTagBuilder, processDoNotBuildTags, "Do not produce MC tag tables", true);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  // build cascade tags if requested to do so
-  // WARNING: this is an internal table meant to have the builder
-  // build only associated candidates. It is not, in principle, part
-  // of the main data model for strangeness analyses.
-  //
-  // The main difference:
-  // --- the CascTags table is joinable with cascades (for building)
-  // --- the Casclabels is joinable with CascData (for analysis)
-  void processBuildCascadeTags(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
-  {
-    for (auto& casc : cascades) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        casctags(0);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
-      int lPDG = -1;
-
-      // Acquire all three daughter tracks, please
-      auto lBachTrack = casc.bachelor_as<LabeledTracks>();
-      auto lNegTrack = v0data.negTrack_as<LabeledTracks>();
-      auto lPosTrack = v0data.posTrack_as<LabeledTracks>();
-
-      // Association check
-      // There might be smarter ways of doing this in the future
-      if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle() && lBachTrack.has_mcParticle()) {
-        auto lMCBachTrack = lBachTrack.mcParticle_as<aod::McParticles>();
-        auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
-        auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
-
-        // Step 1: check if the mother is the same, go up a level
-        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
-            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
-              if (lNegMother == lPosMother) {
-                // if we got to this level, it means the mother particle exists and is the same
-                // now we have to go one level up and compare to the bachelor mother too
-                for (auto& lV0Mother : lNegMother.mothers_as<aod::McParticles>()) {
-                  for (auto& lBachMother : lMCBachTrack.mothers_as<aod::McParticles>()) {
-                    if (lV0Mother == lBachMother) {
-                      lPDG = lV0Mother.pdgCode();
-                    }
-                  }
-                } // end conditional V0-bach pair
-              }   // end neg = pos mother conditional
-            }
-          } // end loop neg/pos mothers
-        }   // end conditional of mothers existing
-      }     // end association check
-      // Construct tag table (note: this will be joinable with CascDatas)
-      int lInteresting = 0;
-      if (lPDG == 3312 && dIfMCgenerateXiMinus)
-        lInteresting = 1;
-      if (lPDG == -3312 && dIfMCgenerateXiPlus)
-        lInteresting = 1;
-      if (lPDG == 3334 && dIfMCgenerateOmegaMinus)
-        lInteresting = 1;
-      if (lPDG == -3334 && dIfMCgenerateOmegaPlus)
-        lInteresting = 1;
-      casctags(lInteresting);
-    } // end cascades loop
-  }
-  PROCESS_SWITCH(cascadeTagBuilder, processBuildCascadeTags, "Produce cascade MC tag tables for MC associated building", false);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-};
-
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
   Spawns<aod::CascDataExt> cascdataext;
@@ -740,7 +875,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
+    adaptAnalysisTask<cascadePreselector>(cfgc),
     adaptAnalysisTask<cascadeLabelBuilder>(cfgc),
-    adaptAnalysisTask<cascadeTagBuilder>(cfgc),
     adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }
