@@ -163,6 +163,26 @@ struct straRecoStudy {
       {"h2dOmegaMinusQADCACascToPV", "h2dOmegaMinusQADCACascToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
       {"h2dOmegaMinusQAPointingAngle", "h2dOmegaMinusQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
 
+      // Track quality tests
+      {"h3dTrackPtsK0ShortP", "h3dTrackPtsK0ShortP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsK0ShortN", "h3dTrackPtsK0ShortN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsLambdaP", "h3dTrackPtsLambdaP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsLambdaN", "h3dTrackPtsLambdaN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsAntiLambdaP", "h3dTrackPtsAntiLambdaP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsAntiLambdaN", "h3dTrackPtsAntiLambdaN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsXiMinusP", "h3dTrackPtsXiMinusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsXiMinusN", "h3dTrackPtsXiMinusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsXiMinusB", "h3dTrackPtsXiMinusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsXiPlusP", "h3dTrackPtsXiPlusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsXiPlusN", "h3dTrackPtsXiPlusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsXiPlusB", "h3dTrackPtsXiPlusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsOmegaMinusP", "h3dTrackPtsOmegaMinusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsOmegaMinusN", "h3dTrackPtsOmegaMinusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsOmegaMinusB", "h3dTrackPtsOmegaMinusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsOmegaPlusP", "h3dTrackPtsOmegaPlusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsOmegaPlusN", "h3dTrackPtsOmegaPlusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+      {"h3dTrackPtsOmegaPlusB", "h3dTrackPtsOmegaPlusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"}, {20, -0.500f, 199.5f, "TPC crossed rows"}}}},
+
       {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
     },
   };
@@ -224,7 +244,7 @@ struct straRecoStudy {
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
   }
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
   {
     evselstats[kEvSelAll]++;
     if (event_sel8_selection && !collision.sel8()) {
@@ -244,6 +264,20 @@ struct straRecoStudy {
       auto v0mc = v0.mcParticle();
       if (TMath::Abs(v0mc.y()) > 0.5)
         continue;
+
+      // fill track quality
+      if (v0mc.pdgCode() == 310) {
+        registry.fill(HIST("h3dTrackPtsK0ShortP"), v0.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsK0ShortN"), v0.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+      }
+      if (v0mc.pdgCode() == 3122) {
+        registry.fill(HIST("h3dTrackPtsLambdaP"), v0.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsLambdaN"), v0.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+      }
+      if (v0mc.pdgCode() == -3122) {
+        registry.fill(HIST("h3dTrackPtsAntiLambdaP"), v0.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsAntiLambdaN"), v0.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+      }
 
       if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters)
         continue;
@@ -283,7 +317,19 @@ struct straRecoStudy {
         }
       }
     } // end v0 loop
+    fillHistos();
+    resetHistos();
+  }
+  PROCESS_SWITCH(straRecoStudy, processV0, "Regular V0 analysis", true);
 
+  void processCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  {
+    if (event_sel8_selection && !collision.sel8()) {
+      return;
+    }
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
     for (auto& casc : Cascades) {
       // MC association
       if (!casc.has_mcParticle())
@@ -298,9 +344,30 @@ struct straRecoStudy {
       if (!(v0index.has_v0Data())) {
         continue;
       }
-      auto v0 = v0index.v0Data_as<V0DataLabeled>(); // de-reference index to correct v0data in case it exists
+      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
+
+      if (cascmc.pdgCode() == 3312) {
+        registry.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsXiMinusN"), casc.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsXiMinusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
+      }
+      if (cascmc.pdgCode() == -3312) {
+        registry.fill(HIST("h3dTrackPtsXiPlusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsXiPlusN"), casc.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsXiPlusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
+      }
+      if (cascmc.pdgCode() == 3334) {
+        registry.fill(HIST("h3dTrackPtsOmegaMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsOmegaMinusN"), casc.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsOmegaMinusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
+      }
+      if (cascmc.pdgCode() == -3334) {
+        registry.fill(HIST("h3dTrackPtsOmegaPlusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsOmegaPlusN"), casc.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+        registry.fill(HIST("h3dTrackPtsOmegaPlusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
+      }
 
       if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
         continue;
@@ -350,10 +417,8 @@ struct straRecoStudy {
         }
       }
     }
-    fillHistos();
-    resetHistos();
   }
-  PROCESS_SWITCH(straRecoStudy, processMC, "Regular analysis", false);
+  PROCESS_SWITCH(straRecoStudy, processCascade, "Regular cascade analysis", true);
 
   void processGeneratedReconstructible(soa::Filtered<RecoedMCCollisions>::iterator const& collision, aod::McParticles const& mcParticles)
   {
