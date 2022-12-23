@@ -70,7 +70,7 @@ DECLARE_SOA_TABLE(McCollsExtra, "AOD", "MCCOLLSEXTRA",
 // using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr>;
 using TracksCompleteIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
-using V0MC = soa::Join<aod::V0Datas, aod::McV0Labels>;
+using V0DataLabeled = soa::Join<aod::V0Datas, aod::McV0Labels>;
 using CascMC = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 using RecoedMCCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 
@@ -184,6 +184,9 @@ struct straRecoStudy {
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  Configurable<int> tpcmincrossedrows{"mincrossedrows", 70, "Minimum crossed rows"};
+  Configurable<int> itsminclusters{"itsminclusters", 4, "Minimum ITS clusters"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   enum evselstep { kEvSelAll = 0,
                    kEvSelBool,
@@ -221,7 +224,7 @@ struct straRecoStudy {
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
   }
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0MC> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
   {
     evselstats[kEvSelAll]++;
     if (event_sel8_selection && !collision.sel8()) {
@@ -240,6 +243,11 @@ struct straRecoStudy {
         continue;
       auto v0mc = v0.mcParticle();
       if (TMath::Abs(v0mc.y()) > 0.5)
+        continue;
+
+      if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters)
+        continue;
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows)
         continue;
 
       if (v0mc.pdgCode() == 310) {
@@ -282,6 +290,21 @@ struct straRecoStudy {
         return;
       auto cascmc = casc.mcParticle();
       if (TMath::Abs(cascmc.y()) > 0.5)
+        continue;
+
+      auto bachPartTrack = casc.bachelor_as<TracksCompleteIUMC>();
+
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0index.has_v0Data())) {
+        continue;
+      }
+      auto v0 = v0index.v0Data_as<V0DataLabeled>(); // de-reference index to correct v0data in case it exists
+      auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
+      auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
+
+      if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
+        continue;
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.itsNCls() < tpcmincrossedrows)
         continue;
 
       if (cascmc.pdgCode() == 3312) {
