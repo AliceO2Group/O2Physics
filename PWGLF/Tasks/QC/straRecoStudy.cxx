@@ -244,12 +244,12 @@ struct straRecoStudy {
       auto v0mc = v0.mcParticle();
       if (TMath::Abs(v0mc.y()) > 0.5)
         continue;
-      
-      if(posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters)
+
+      if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters)
         continue;
-      if(posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows)
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows)
         continue;
-      
+
       if (v0mc.pdgCode() == 310) {
         registry.fill(HIST("h2dK0ShortQAV0Radius"), v0.pt(), v0.v0radius());
         registry.fill(HIST("h2dK0ShortQADCAV0Dau"), v0.pt(), v0.dcaV0daughters());
@@ -291,9 +291,9 @@ struct straRecoStudy {
       auto cascmc = casc.mcParticle();
       if (TMath::Abs(cascmc.y()) > 0.5)
         continue;
-      
+
       auto bachPartTrack = casc.bachelor_as<TracksCompleteIUMC>();
-      
+
       auto v0index = casc.v0_as<o2::aod::V0sLinked>();
       if (!(v0index.has_v0Data())) {
         continue;
@@ -301,10 +301,10 @@ struct straRecoStudy {
       auto v0 = v0index.v0Data_as<V0DataLabeled>(); // de-reference index to correct v0data in case it exists
       auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
-      
-      if(posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
+
+      if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
         continue;
-      if(posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.itsNCls() < tpcmincrossedrows)
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.itsNCls() < tpcmincrossedrows)
         continue;
 
       if (cascmc.pdgCode() == 3312) {
