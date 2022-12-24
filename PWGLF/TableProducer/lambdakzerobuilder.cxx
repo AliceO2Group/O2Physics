@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//  Strangeness builder task
+//  Lambdakzero builder task
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
-//  This task loops over a set of V0 and cascade indices and
+//  This task loops over a set of V0 indices and
 //  creates the corresponding analysis tables that contain
 //  the typical information required for analysis.
 //
@@ -53,6 +53,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DetectorsBase/Propagator.h"
@@ -78,17 +79,55 @@ namespace o2::aod
 {
 namespace v0tag
 {
-DECLARE_SOA_COLUMN(IsInteresting, isInteresting, int); //! will this be built or not?
+// Global bool
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
+
+// MC association bools
+DECLARE_SOA_COLUMN(IsTrueGamma, isTrueGamma, bool);                     //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueK0Short, isTrueK0Short, bool);                 //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueLambda, isTrueLambda, bool);                   //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, bool);           //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
+
+// dE/dx compatibility bools
+DECLARE_SOA_COLUMN(IsGammaCandidate, isGammaCandidate, bool);                     //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsK0ShortCandidate, isK0ShortCandidate, bool);                 //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                   //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
 }
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
-                  v0tag::IsInteresting);
+                  v0tag::IsInteresting,
+                  v0tag::IsTrueGamma,
+                  v0tag::IsTrueK0Short,
+                  v0tag::IsTrueLambda,
+                  v0tag::IsTrueAntiLambda,
+                  v0tag::IsTrueHypertriton,
+                  v0tag::IsTrueAntiHypertriton,
+                  v0tag::IsGammaCandidate,
+                  v0tag::IsK0ShortCandidate,
+                  v0tag::IsLambdaCandidate,
+                  v0tag::IsAntiLambdaCandidate,
+                  v0tag::IsHypertritonCandidate,
+                  v0tag::IsAntiHypertritonCandidate);
 } // namespace o2::aod
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
-using FullTracksExtIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
+
+// For MC association in pre-selection
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+
+// For dE/dx association in pre-selection
+using TracksWithPID = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe>;
+
+// For MC and dE/dx association
+using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe, aod::McTrackLabels>;
+
+// Pre-selected V0s
 using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 
 struct lambdakzeroBuilder {
@@ -136,7 +175,7 @@ struct lambdakzeroBuilder {
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
 
-  Filter taggedFilter = aod::v0tag::isInteresting > 0;
+  Filter taggedFilter = aod::v0tag::isInteresting == true;
 
   enum v0step { kV0All = 0,
                 kV0TPCrefit,
@@ -214,21 +253,14 @@ struct lambdakzeroBuilder {
       ccdb->get<TGeoManager>(geoPath);
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3associated == false) {
-      LOGF(fatal, "Neither processRun2, processRun3 nor processRun3associated enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
-    if (doprocessRun2 == true && doprocessRun3associated == true) {
-      LOGF(fatal, "Cannot enable processRun2 and processRun3associated at the same time. Please choose one.");
-    }
-    if (doprocessRun3 == true && doprocessRun3associated == true) {
-      LOGF(fatal, "Cannot enable processRun3 and processRun3associated at the same time. Please choose one.");
-    }
 
     if (d_UseAutodetectMode) {
-      // Checking for subscriptions to:
       double loosest_v0cospa = 100;
       float loosest_dcav0dau = -100;
       float loosest_dcapostopv = 100;
@@ -534,7 +566,7 @@ struct lambdakzeroBuilder {
     resetHistos();
   }
 
-  void processRun2(aod::Collision const& collision, aod::V0s const& V0s, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
+  void processRun2(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -543,9 +575,9 @@ struct lambdakzeroBuilder {
     // do v0s, typecase correctly into tracks (Run 2 use case)
     buildStrangenessTables<FullTracksExt>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", true);
+  PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", false);
 
-  void processRun3(aod::Collision const& collision, aod::V0s const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRun3(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -554,18 +586,203 @@ struct lambdakzeroBuilder {
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
     buildStrangenessTables<FullTracksExtIU>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", false);
+  PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", true);
+};
 
-  void processRun3associated(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+struct lambdakzeroPreselector {
+  Produces<aod::V0Tags> v0tags; // MC tags
+
+  Configurable<bool> dIfMCgenerateK0Short{"dIfMCgenerateK0Short", true, "if MC, generate MC true K0Short (yes/no)"};
+  Configurable<bool> dIfMCgenerateLambda{"dIfMCgenerateLambda", true, "if MC, generate MC true Lambda (yes/no)"};
+  Configurable<bool> dIfMCgenerateAntiLambda{"dIfMCgenerateAntiLambda", true, "if MC, generate MC true AntiLambda (yes/no)"};
+  Configurable<bool> dIfMCgenerateGamma{"dIfMCgenerateGamma", false, "if MC, generate MC true gamma (yes/no)"};
+  Configurable<bool> dIfMCgenerateHypertriton{"dIfMCgenerateHypertriton", false, "if MC, generate MC true hypertritons (yes/no)"};
+  Configurable<bool> dIfMCgenerateAntiHypertriton{"dIfMCgenerateAntiHypertriton", false, "if MC, generate MC true antihypertritons (yes/no)"};
+
+  Configurable<bool> ddEdxPreSelectK0Short{"ddEdxPreSelectK0Short", true, "pre-select dE/dx compatibility with K0Short (yes/no)"};
+  Configurable<bool> ddEdxPreSelectLambda{"ddEdxPreSelectLambda", true, "pre-select dE/dx compatibility with Lambda (yes/no)"};
+  Configurable<bool> ddEdxPreSelectAntiLambda{"ddEdxPreSelectAntiLambda", true, "pre-select dE/dx compatibility with AntiLambda (yes/no)"};
+  Configurable<bool> ddEdxPreSelectGamma{"ddEdxPreSelectGamma", false, "pre-select dE/dx compatibility with gamma (yes/no)"};
+  Configurable<bool> ddEdxPreSelectHypertriton{"ddEdxPreSelectHypertriton", false, "pre-select dE/dx compatibility with hypertritons (yes/no)"};
+  Configurable<bool> ddEdxPreSelectAntiHypertriton{"ddEdxPreSelectAntiHypertriton", false, "pre-select dE/dx compatibility with antihypertritons (yes/no)"};
+
+  // dEdx pre-selection compatibility
+  Configurable<float> ddEdxPreSelectionWindow{"ddEdxPreSelectionWindow", 7, "Nsigma window for dE/dx preselection"};
+
+  void init(InitContext const&) {}
+
+  /// function to check PDG association
+  template <class TTracksTo, typename TV0Object>
+  void checkPDG(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
   {
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    int lPDG = -1;
+    auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
+    auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
 
-    // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildStrangenessTables<FullTracksExtIU>(collision, V0s, tracks);
+    // Association check
+    // There might be smarter ways of doing this in the future
+    if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
+      auto lMCNegTrack = lNegTrack.template mcParticle_as<aod::McParticles>();
+      auto lMCPosTrack = lPosTrack.template mcParticle_as<aod::McParticles>();
+      if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
+
+        for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
+          for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
+            if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
+              lPDG = lNegMother.pdgCode();
+            }
+          }
+        }
+      }
+    } // end association check
+    if (lPDG == 310 && dIfMCgenerateK0Short) {
+      lIsK0Short = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == 3122 && dIfMCgenerateLambda) {
+      lIsLambda = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == -3122 && dIfMCgenerateAntiLambda) {
+      lIsAntiLambda = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == 22 && dIfMCgenerateGamma) {
+      lIsGamma = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == 1010010030 && dIfMCgenerateHypertriton) {
+      lIsHypertriton = true;
+      lIsInteresting = true;
+    }
+    if (lPDG == -1010010030 && dIfMCgenerateAntiHypertriton) {
+      lIsAntiHypertriton = true;
+      lIsInteresting = true;
+    }
   }
-  PROCESS_SWITCH(lambdakzeroBuilder, processRun3associated, "Produce Run 3 V0 tables only for MC associated", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  template <class TTracksTo, typename TV0Object>
+  void checkdEdx(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
+  {
+    auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
+    auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
+
+    // dEdx check with LF PID
+    if (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectGamma) {
+      lIsGamma = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectK0Short) {
+      lIsK0Short = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectLambda) {
+      lIsLambda = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectAntiLambda) {
+      lIsAntiLambda = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectHypertriton) {
+      lIsHypertriton = 1;
+      lIsInteresting = 1;
+    }
+    if (TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
+        ddEdxPreSelectAntiHypertriton) {
+      lIsAntiHypertriton = 1;
+      lIsInteresting = 1;
+    }
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function ensures that all V0s are built. It will simply tag everything as true.
+  void processBuildAll(aod::V0s const& v0table)
+  {
+    for (int ii = 0; ii < v0table.size(); ii++)
+      v0tags(true,
+             true, true, true, true, true, true,
+             true, true, true, true, true, true);
+  }
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildAll, "Switch to build all V0s", true);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
+  {
+    for (auto& v0 : v0table) {
+      bool lIsInteresting = false;
+      bool lIsTrueGamma = false;
+      bool lIsTrueK0Short = false;
+      bool lIsTrueLambda = false;
+      bool lIsTrueAntiLambda = false;
+      bool lIsTrueHypertriton = false;
+      bool lIsTrueAntiHypertriton = false;
+
+      checkPDG<LabeledTracks>(v0, lIsInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
+      v0tags(lIsInteresting,
+             lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
+             true, true, true, true, true, true);
+    }
+  }
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildValiddEdx(aod::Collision const& collision, aod::V0s const& v0table, TracksWithPID const&)
+  {
+    for (auto& v0 : v0table) {
+      bool lIsInteresting = false;
+      bool lIsdEdxGamma = false;
+      bool lIsdEdxK0Short = false;
+      bool lIsdEdxLambda = false;
+      bool lIsdEdxAntiLambda = false;
+      bool lIsdEdxHypertriton = false;
+      bool lIsdEdxAntiHypertriton = false;
+
+      checkdEdx<TracksWithPID>(v0, lIsInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      v0tags(lIsInteresting,
+             true, true, true, true, true, true,
+             lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+    }
+  }
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, TracksWithPIDandLabels const&)
+  {
+    for (auto& v0 : v0table) {
+      bool lIsTrueInteresting = false;
+      bool lIsTrueGamma = false;
+      bool lIsTrueK0Short = false;
+      bool lIsTrueLambda = false;
+      bool lIsTrueAntiLambda = false;
+      bool lIsTrueHypertriton = false;
+      bool lIsTrueAntiHypertriton = false;
+
+      bool lIsdEdxInteresting = false;
+      bool lIsdEdxGamma = false;
+      bool lIsdEdxK0Short = false;
+      bool lIsdEdxLambda = false;
+      bool lIsdEdxAntiLambda = false;
+      bool lIsdEdxHypertriton = false;
+      bool lIsdEdxAntiHypertriton = false;
+
+      checkPDG<TracksWithPIDandLabels>(v0, lIsTrueInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
+      checkdEdx<TracksWithPIDandLabels>(v0, lIsdEdxInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      v0tags(lIsTrueInteresting * lIsdEdxInteresting,
+             lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
+             lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+    }
+  }
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated V0s with dE/dx preselection", false);
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -613,76 +830,6 @@ struct lambdakzeroLabelBuilder {
   }
   PROCESS_SWITCH(lambdakzeroLabelBuilder, processBuildV0Labels, "Produce V0 MC label tables for analysis", false);
 };
-
-//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-struct lambdakzeroTagBuilder {
-  Produces<aod::V0Tags> v0tags; // MC tags
-
-  Configurable<bool> dIfMCgenerateK0Short{"dIfMCgenerateK0Short", true, "if MC, generate MC true K0Short (yes/no)"};
-  Configurable<bool> dIfMCgenerateLambda{"dIfMCgenerateLambda", true, "if MC, generate MC true Lambda (yes/no)"};
-  Configurable<bool> dIfMCgenerateAntiLambda{"dIfMCgenerateAntiLambda", true, "if MC, generate MC true AntiLambda (yes/no)"};
-  Configurable<bool> dIfMCgenerateGamma{"dIfMCgenerateGamma", false, "if MC, generate MC true gamma (yes/no)"};
-  Configurable<bool> dIfMCgenerateHypertriton{"dIfMCgenerateHypertriton", false, "if MC, generate MC true hypertritons (yes/no)"};
-
-  void init(InitContext const&) {}
-
-  void processDoNotBuildTags(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function - should not be required in the future
-  }
-  PROCESS_SWITCH(lambdakzeroTagBuilder, processDoNotBuildTags, "Do not produce MC tag tables", true);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  // build V0 tags if requested to do so
-  // WARNING: this is an internal table meant to have the builder
-  // build only associated candidates. It is not, in principle, part
-  // of the main data model for strangeness analyses.
-  //
-  // The main difference:
-  // --- the V0Tags table is joinable with v0s (for building)
-  // --- the V0labels is joinable with V0Data (for analysis)
-  void processBuildV0Tags(aod::Collision const& collision, aod::V0s const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
-  {
-    for (auto& v0 : v0table) {
-      int lPDG = -1;
-
-      auto lNegTrack = v0.negTrack_as<LabeledTracks>();
-      auto lPosTrack = v0.posTrack_as<LabeledTracks>();
-
-      // Association check
-      // There might be smarter ways of doing this in the future
-      if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
-        auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
-        auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
-        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-
-          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
-            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
-              if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
-                lPDG = lNegMother.pdgCode();
-              }
-            }
-          }
-        }
-      } // end association check
-      // Construct tag table (note: this will be joinable with V0s!)
-      int lInteresting = 0;
-      if (lPDG == 310 && dIfMCgenerateK0Short)
-        lInteresting = 1;
-      if (lPDG == 3122 && dIfMCgenerateLambda)
-        lInteresting = 1;
-      if (lPDG == -3122 && dIfMCgenerateAntiLambda)
-        lInteresting = 1;
-      if (lPDG == 22 && dIfMCgenerateGamma)
-        lInteresting = 1;
-      if (lPDG == 1010010030 && dIfMCgenerateHypertriton)
-        lInteresting = 1;
-      v0tags(lInteresting);
-    }
-  }
-  PROCESS_SWITCH(lambdakzeroTagBuilder, processBuildV0Tags, "Produce V0 MC tag tables for MC associated building", false);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-};
-
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroV0DataLinkBuilder {
   Produces<aod::V0DataLink> v0dataLink;
@@ -717,8 +864,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
+    adaptAnalysisTask<lambdakzeroPreselector>(cfgc),
     adaptAnalysisTask<lambdakzeroLabelBuilder>(cfgc),
-    adaptAnalysisTask<lambdakzeroTagBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }

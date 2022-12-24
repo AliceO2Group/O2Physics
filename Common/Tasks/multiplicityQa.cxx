@@ -56,6 +56,7 @@ struct MultiplicityQa {
   Configurable<float> MaxMultFDD{"MaxMultFDD", 10000, "Max FDD signal"};
   Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
   Configurable<int> NBinsVertexZ{"NBinsVertexZ", 400, "max vertex Z (cm)"};
+  Configurable<bool> useZeqInProfiles{"useZeqInProfiles", true, "use Z-equalized signals in midrap Nch profiles"};
 
   void init(InitContext&)
   {
@@ -99,11 +100,11 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hVtxZNTracksPV", "Av NTracks vs vertex Z", kTProfile, {axisVertexZ});
 
     // profiles of track contributors
-    histos.add("multiplicityQa/hNchProfileZeqFV0", "Raw FV0", kTProfile, {axisMultFV0});
-    histos.add("multiplicityQa/hNchProfileZeqFT0", "Raw FT0", kTProfile, {axisMultFT0});
-    histos.add("multiplicityQa/hNchProfileZeqFT0A", "Raw FT0A", kTProfile, {axisMultFT0A});
-    histos.add("multiplicityQa/hNchProfileZeqFT0C", "Raw FT0C", kTProfile, {axisMultFT0C});
-    histos.add("multiplicityQa/hNchProfileZeqFDD", "Raw FDD", kTProfile, {axisMultFDD});
+    histos.add("multiplicityQa/hNchProfileFV0", "FV0", kTProfile, {axisMultFV0});
+    histos.add("multiplicityQa/hNchProfileFT0", "FT0", kTProfile, {axisMultFT0});
+    histos.add("multiplicityQa/hNchProfileFT0A", "FT0A", kTProfile, {axisMultFT0A});
+    histos.add("multiplicityQa/hNchProfileFT0C", "FT0C", kTProfile, {axisMultFT0C});
+    histos.add("multiplicityQa/hNchProfileFDD", "FDD", kTProfile, {axisMultFDD});
   }
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
@@ -158,11 +159,19 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hZeqNTracksPV"), col.multZeqNTracksPV());
 
     // Profiles
-    histos.fill(HIST("multiplicityQa/hNchProfileZeqFV0"), col.multZeqFV0A(), col.multZeqNTracksPV());
-    histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0"), col.multZeqFT0A() + col.multZeqFT0C(), col.multZeqNTracksPV());
-    histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0A"), col.multZeqFT0A(), col.multZeqNTracksPV());
-    histos.fill(HIST("multiplicityQa/hNchProfileZeqFT0C"), col.multZeqFT0C(), col.multZeqNTracksPV());
-    histos.fill(HIST("multiplicityQa/hNchProfileZeqFDD"), col.multZeqFDDA() + col.multZeqFDDC(), col.multZeqNTracksPV());
+    if (useZeqInProfiles) {
+      histos.fill(HIST("multiplicityQa/hNchProfileFV0"), col.multZeqFV0A(), col.multZeqNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFT0"), col.multZeqFT0A() + col.multZeqFT0C(), col.multZeqNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFT0A"), col.multZeqFT0A(), col.multZeqNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFT0C"), col.multZeqFT0C(), col.multZeqNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFDD"), col.multZeqFDDA() + col.multZeqFDDC(), col.multZeqNTracksPV());
+    } else {
+      histos.fill(HIST("multiplicityQa/hNchProfileFV0"), col.multFV0A(), col.multNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFT0"), col.multFT0A() + col.multFT0C(), col.multNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFT0A"), col.multFT0A(), col.multNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFT0C"), col.multFT0C(), col.multNTracksPV());
+      histos.fill(HIST("multiplicityQa/hNchProfileFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
+    }
   }
   PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
 
