@@ -116,11 +116,11 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hVtxZNTracksPV", "Av NTracks vs vertex Z", kTProfile, {axisVertexZ});
 
     // profiles of track contributors
-    histos.add("multiplicityQa/hNchProfileFV0", "FV0", kTH2F, {axisMultFV02d, axisMultFDD2d});
-    histos.add("multiplicityQa/hNchProfileFT0", "FT0", kTH2F, {axisMultFT02d, axisMultFDD2d});
-    histos.add("multiplicityQa/hNchProfileFT0A", "FT0A", kTH2F, {axisMultFT0A2d, axisMultFDD2d});
-    histos.add("multiplicityQa/hNchProfileFT0C", "FT0C", kTH2F, {axisMultFT0C2d, axisMultFDD2d});
-    histos.add("multiplicityQa/hNchProfileFDD", "FDD", kTH2F, {axisMultFDD2d, axisMultFDD2d});
+    histos.add("multiplicityQa/hNchProfileFV0", "FV0", kTH2F, {axisMultFV02d, axisMultNTracks2d});
+    histos.add("multiplicityQa/hNchProfileFT0", "FT0", kTH2F, {axisMultFT02d, axisMultNTracks2d});
+    histos.add("multiplicityQa/hNchProfileFT0A", "FT0A", kTH2F, {axisMultFT0A2d, axisMultNTracks2d});
+    histos.add("multiplicityQa/hNchProfileFT0C", "FT0C", kTH2F, {axisMultFT0C2d, axisMultNTracks2d});
+    histos.add("multiplicityQa/hNchProfileFDD", "FDD", kTH2F, {axisMultFDD2d, axisMultNTracks2d});
   }
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
