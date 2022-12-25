@@ -63,3 +63,8 @@ o2physics_add_dpl_workflow(qa-cpv
                     SOURCES cpvQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(ft0-qa-ext
+                    SOURCES FT0qaExt.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
