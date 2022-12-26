@@ -52,12 +52,11 @@ AxisSpec ZAxis = {60, -30, 30, "zaxis"};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec DCAAxis = {601, -3.01, 3.01};
 AxisSpec EtaAxis = {80, -4.0, 4.0, "etaaxis"};
-AxisSpec MultAxis = {1001, -0.5, 1000.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "eventclass"};
 AxisSpec TrigClassAxis = {kTrigend - 1, kTrigbegin + 0.5, kTrigend - 0.5, "triggclass"};
-std::vector<double> centBinning = {0., 20, 60., 90., 100};
+std::vector<double> centBinning = {0, 10., 20., 30., 40., 50., 60., 70., 80., 100};
 AxisSpec CentAxis = {centBinning, "centrality"};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
@@ -85,6 +84,11 @@ struct MultiplicityCounter {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
+  Configurable<int> MultBin{"MultBin", 100, "# of Multiplicity bin"};
+  Configurable<double> MultMin{"MultMin", 0, "minimum of Multiplicity bin"};
+  Configurable<double> MultMax{"MultMax", 10000, "maximum of Multiplicity bin"};
+  AxisSpec MultAxis = {MultBin, MultMin, MultMax};
+
   HistogramRegistry registry{
     "registry",
     {
@@ -97,25 +101,25 @@ struct MultiplicityCounter {
       {"DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                         //
       {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                           //
       {"Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis}}},                                       //
-      {"FV0A", " ; FV0A (%)", {HistType::kTH1F, {{500, 0, 1e3}}}},                                                                                         //
-      {"FT0A", " ; FT0A (%)", {HistType::kTH1F, {{500, 0, 1e3}}}},                                                                                         //
-      {"FT0C", " ; FT0C (%)", {HistType::kTH1F, {{500, 0, 1e3}}}}                                                                                          //
+      //{"Centrality", " ; centrality_FT0M (%); centrality_FV0A (%)", {HistType::kTH1F, {CentAxis, CentAxis}}}                                               //
+      {"Centrality", " ; centrality_FT0C (%) ", {HistType::kTH1F, {CentAxis}}},            //
+      {"Centrality_MBAND", " ; centrality_MBAND_FT0C (%) ", {HistType::kTH1F, {CentAxis}}} //
     }};
 
   std::vector<int> usedTracksIds;
-
-  void init(InitContext&)
-  {
-    ccdb->setURL(url.value);
-    // Enabling object caching, otherwise each call goes to the CCDB server
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    // Not later than now, will be replaced by the value of the train creation
-    // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(nolaterthan.value);
-    LOGF(info, "Getting object %s", path.value.data());
-  }
-
+  /*
+    void init(InitContext&)
+    {
+      ccdb->setURL(url.value);
+      // Enabling object caching, otherwise each call goes to the CCDB server
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      // Not later than now, will be replaced by the value of the train creation
+      // This avoids that users can replace objects **while** a train is running
+      ccdb->setCreatedNotAfter(nolaterthan.value);
+      LOGF(info, "Getting object %s", path.value.data());
+    }
+  */
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   void processEventStat(
     FullBCs const& bcs,
@@ -164,7 +168,8 @@ struct MultiplicityCounter {
 
   std::vector<Double_t> tracketas;
   void processCounting(
-    soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+    // soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Ms, o2::aod::CentFV0As>::iterator const& collision,
+    soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs>::iterator const& collision,
     BCsRun3 const& bcs,
     aod::FT0s const& ft0s,
     aod::FV0As const& fv0as,
@@ -195,17 +200,20 @@ struct MultiplicityCounter {
       multV0A = -999;
     }
 
-    registry.fill(HIST("FT0A"), multT0A);
-    registry.fill(HIST("FT0C"), multT0C);
-    registry.fill(HIST("FV0A"), multV0A);
+    auto cent = collision.centFT0C();
+    registry.fill(HIST("Centrality"), cent);
+    // registry.fill(HIST("Centrality"), collision.centFT0M(), collision.centFV0A());
+
     registry.fill(HIST("Multiplicity"), multV0A, multT0A, multT0C);
 
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
+      registry.fill(HIST("Centrality_MBAND"), cent);
+
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
 
-      registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), 50., z);
+      registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), cent, z);
       usedTracksIds.clear();
 
       tracketas.clear();
@@ -227,7 +235,7 @@ struct MultiplicityCounter {
       }
 
       for (auto eta : tracketas) {
-        registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), 50., z, eta);
+        registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), cent, z, eta);
         // registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), 50., z, 1);
       }
     }
