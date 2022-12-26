@@ -102,7 +102,8 @@ struct MultiplicityCounter {
       {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}},                                                                                           //
       {"Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis}}},                                       //
       //{"Centrality", " ; centrality_FT0M (%); centrality_FV0A (%)", {HistType::kTH1F, {CentAxis, CentAxis}}}                                               //
-      {"Centrality", " ; centrality_FT0C (%) ", {HistType::kTHnSparseD, {TrigClassAxis, CentAxis}}} //
+      {"Centrality", " ; centrality_FT0C (%) ", {HistType::kTH1F, {CentAxis}}},            //
+      {"Centrality_MBAND", " ; centrality_MBAND_FT0C (%) ", {HistType::kTH1F, {CentAxis}}} //
     }};
 
   std::vector<int> usedTracksIds;
@@ -200,14 +201,15 @@ struct MultiplicityCounter {
     }
 
     auto cent = collision.centFT0C();
-    registry.fill(HIST("Centrality"), Double_t(kTrigbegin), cent);
+    registry.fill(HIST("Centrality"), cent);
     // registry.fill(HIST("Centrality"), collision.centFT0M(), collision.centFV0A());
 
     registry.fill(HIST("Multiplicity"), multV0A, multT0A, multT0C);
 
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
-      registry.fill(HIST("Centrality"), Double_t(kMBAND), cent);
+      registry.fill(HIST("Centrality_MBAND"), cent);
+
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
 
