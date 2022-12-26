@@ -13,13 +13,15 @@
 // Class for track selection
 //
 
-#ifndef TrackSelection_H
-#define TrackSelection_H
+#ifndef COMMON_CORE_TRACKSELECTION_H_
+#define COMMON_CORE_TRACKSELECTION_H_
 
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
 #include <set>
 #include <vector>
+#include <utility>
+#include <string>
+#include "Framework/Logger.h"
+#include "Framework/DataTypes.h"
 #include "Rtypes.h"
 
 class TrackSelection
@@ -49,7 +51,8 @@ class TrackSelection
   enum GlobalTrackRun3ITSMatching {
     Run3ITSibAny,
     Run3ITSallAny,
-    Run3ITSall7Layers
+    Run3ITSall7Layers,
+    Run3ITSibTwo
   };
 
   static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
@@ -290,4 +293,4 @@ class TrackSelection
   ClassDefNV(TrackSelection, 1);
 };
 
-#endif
+#endif // COMMON_CORE_TRACKSELECTION_H_

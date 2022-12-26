@@ -24,6 +24,7 @@
 #include "Framework/DataTypes.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include <vector>
 #include <array>
@@ -53,6 +54,8 @@ enum HfTriggers {
   kDoubleCharm2P,
   kDoubleCharm3P,
   kDoubleCharmMix,
+  kGammaCharm2P,
+  kGammaCharm3P,
   kNtriggersHF
 };
 
@@ -81,7 +84,7 @@ enum beautyTrackSelection {
   kRegular
 };
 
-static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm"};
+static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm", "softGamma"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
@@ -108,6 +111,7 @@ static const float massB0 = RecoDecay::getMassPDG(521);
 static const float massBs = RecoDecay::getMassPDG(531);
 static const float massLb = RecoDecay::getMassPDG(5122);
 static const float massXib = RecoDecay::getMassPDG(5232);
+static const float massGamma = RecoDecay::getMassPDG(22);
 
 /// Computation of the relative momentum between particle pairs
 /// \param track is a track

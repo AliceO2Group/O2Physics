@@ -110,8 +110,10 @@ struct HfFilterQc { // Main struct for HF trigger QC
     bool hasDoubleCharm2P = filterDecision.hasHfDoubleCharm2P();
     bool hasDoubleCharm3P = filterDecision.hasHfDoubleCharm3P();
     bool hasDoubleCharmMix = filterDecision.hasHfDoubleCharmMix();
-    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix;
-    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix};
+    bool hasHfSoftGamma2P = filterDecision.hasHfSoftGamma2P();
+    bool hasHfSoftGamma3P = filterDecision.hasHfSoftGamma3P();
+    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix || hasHfSoftGamma2P || hasHfSoftGamma3P;
+    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix, hasHfSoftGamma2P, hasHfSoftGamma3P};
 
     std::array<int, kNCharmParticles> nPart{0};
     // Loop over the MC particles

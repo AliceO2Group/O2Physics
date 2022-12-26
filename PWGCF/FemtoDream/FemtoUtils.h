@@ -14,23 +14,16 @@
 ///
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_UTILS_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_UTILS_H_
+#ifndef PWGCF_FEMTODREAM_FEMTOUTILS_H_
+#define PWGCF_FEMTODREAM_FEMTOUTILS_H_
 
+#include <CCDB/BasicCCDBManager.h>
+#include <vector>
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include <CCDB/BasicCCDBManager.h>
-
-#include <vector>
 
 namespace o2::analysis::femtoDream
 {
-
-enum kPIDselection {
-  k3d5sigma = 0,
-  k3sigma = 1,
-  k2d5sigma = 2
-};
 
 enum kDetector {
   kTPC = 0,
@@ -42,15 +35,15 @@ enum kDetector {
 /// \param nSigma number of sigmas for PID
 /// \param vNsigma vector with the number of sigmas of interest
 /// \return kPIDselection corresponding to n-sigma
-kPIDselection getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
+int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 {
-  for (int i = 0; i < (int)vNsigma.size(); i++) {
+  for (std::size_t i = 0; i < vNsigma.size(); i++) {
     if (abs(nSigma - vNsigma[i]) < 1e-3) {
-      return static_cast<kPIDselection>(i);
+      return static_cast<int>(i);
     }
   }
-  LOG(info) << "Invalid value of nSigma: " << nSigma << ". Standard 3 sigma returned." << std::endl;
-  return kPIDselection::k3sigma;
+  LOG(info) << "Invalid value of nSigma: " << nSigma << ". Return the first value of the vector: " << vNsigma[0] << std::endl;
+  return 0;
 }
 
 /// function that checks whether the PID selection specified in the vectors is fulfilled
@@ -64,7 +57,7 @@ kPIDselection getPIDselection(const float nSigma, const std::vector<float>& vNsi
 bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, int nSpecies, float nSigma, const std::vector<float>& vNsigma, const kDetector iDet = kDetector::kTPC)
 {
   bool pidSelection = true;
-  kPIDselection iNsigma = getPIDselection(nSigma, vNsigma);
+  int iNsigma = getPIDselection(nSigma, vNsigma);
   for (auto iSpecies : vSpecies) {
     //\todo we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
     // if (!((pidcut >> it.first) & it.second)) {
@@ -85,7 +78,7 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std:
 /// \param nSigmaTPC Number of TPC sigmas for selection
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled
-bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const momentum, float const pidThresh, std::vector<int> const& vSpecies, int nSpecies, const std::vector<float>& vNsigma = {3.5, 3., 2.5}, const float nSigmaTPC = 3.5, const float nSigmaTPCTOF = 3.5)
+bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const momentum, float const pidThresh, std::vector<int> const& vSpecies, int nSpecies, const std::vector<float>& vNsigma, const float nSigmaTPC, const float nSigmaTPCTOF)
 {
   bool pidSelection = true;
   if (momentum < pidThresh) {
@@ -99,4 +92,4 @@ bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, 
 };
 
 } // namespace o2::analysis::femtoDream
-#endif
+#endif // PWGCF_FEMTODREAM_FEMTOUTILS_H_

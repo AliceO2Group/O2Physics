@@ -102,14 +102,15 @@ struct produceMesonCalo {
     spectra.add("SameEvent_PtMother_PtGamma", "SameEvent_PtMother_PtGamma", defaultPtMotherPtGammaHist, true);
 
     spectra.add("Photon_Eta_Phi", "Photon_Eta_Phi", defaultEtaPhiHist, true);
+
+    LOG(info) << "| Timing cut: " << minTime << "< t < " << maxTime << std::endl;
+    LOG(info) << "| M02 cut: " << minM02 << "< M02 < " << maxM02 << std::endl;
   }
 
   void
     processRec(aod::Collision const&,
                aod::SkimEMCClusters const& caloclusters)
   {
-    LOG(info) << "| Timing cut: " << minTime << "< t < " << maxTime << std::endl;
-    LOG(info) << "| M02 cut: " << minM02 << "< M02 < " << maxM02 << std::endl;
     for (auto& [gamma0, gamma1] :
          combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(caloclusters,
                                                                     caloclusters))) {

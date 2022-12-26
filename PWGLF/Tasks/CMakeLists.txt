@@ -11,6 +11,11 @@
 
 add_subdirectory(QC)
 
+o2physics_add_dpl_workflow(hyperon-reco-test
+                    SOURCES hyperon-reco-test.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(nuclei-batask
                     SOURCES LFNucleiBATask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore

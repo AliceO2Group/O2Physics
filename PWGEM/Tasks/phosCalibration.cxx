@@ -116,6 +116,7 @@ struct phosCalibration {
 
     // Clusters
     mHistManager.add("hSoftClu", "Soft clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
+    mHistManager.add("hSoftCluGood", "Soft clu occupancy per module after bad map", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
     mHistManager.add("hHardClu", "Hard clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
     mHistManager.add("hSpClu", "Spectra", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
     mHistManager.add("hTimeEClu", "Time vs E vs DDL", HistType::kTH3F, {ddlAxis, amplitudeAxisLarge, timeAxis});
@@ -231,7 +232,9 @@ struct phosCalibration {
     // Set number of cells in last TrigRec
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
-      mHistManager.fill(HIST("eventsAll"), 1.);
+      mHistManager.fill(HIST("eventsAll"), phosCellTRs.size());
+    } else {
+      return;
     }
 
     // Clusterize
@@ -278,7 +281,8 @@ struct phosCalibration {
         al1 = tr.getBCData().toLong() % 4 - al1;
         if (al1 < 0)
           al1 += 4;
-        float tcorr = clu.getTime() - al1 * 25.e-9;
+        // remove correction with L1=0 done in Clusterizer and apply correct one
+        float tcorr = clu.getTime() + (tr.getBCData().toLong() % 4 - al1) * 25.e-9;
 
         mHistManager.fill(HIST("hTimeEClu"), ddl, e, tcorr);
         mHistManager.fill(HIST("hSpClu"), e, mod);
@@ -288,6 +292,9 @@ struct phosCalibration {
 
         if (e > 0.5) {
           mHistManager.fill(HIST("hSoftClu"), mod, relid[1], relid[2]);
+          if (badMap->isChannelGood(absId)) {
+            mHistManager.fill(HIST("hSoftCluGood"), mod, relid[1], relid[2]);
+          }
         }
         if (e > 1.5) {
           mHistManager.fill(HIST("hHardClu"), mod, relid[1], relid[2]);
@@ -309,13 +316,16 @@ struct phosCalibration {
         event.back().setAbsId(absId);
         event.back().setBC(tr.getBCData().toLong());
         // SetBadMap
-        //  if(hBadMap[mod-1]->GetBinContent(relid[1],relid[2])>0){
-        //    event.back().setBad() ;
-        //  }
+        if (!badMap->isChannelGood(absId)) {
+          event.back().setBad();
+        }
       }
     }
 
     // Make Real and Mixed
+    if (event.size() == 0) { // to avoid overflow at uint type event.size() - 1
+      return;
+    }
     for (size_t i = 0; i < event.size() - 1; i++) {
       int absId1 = event[i].getAbsId();
       int nMix = mMixedEvents; // Number of events to mix
