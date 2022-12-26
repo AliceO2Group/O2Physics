@@ -9,16 +9,5 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-# add_subdirectory(DataModel)
-add_subdirectory(GenericFramework)
-add_subdirectory(FemtoDream)
-add_subdirectory(FemtoWorld)
-add_subdirectory(FemtoUniverse)
-add_subdirectory(MultiparticleCorrelations)
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
-add_subdirectory(Tutorial)
-add_subdirectory(TwoParticleCorrelations)
-add_subdirectory(JCorran)
+
 
