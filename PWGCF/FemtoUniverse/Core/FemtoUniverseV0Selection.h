@@ -333,7 +333,7 @@ bool FemtoUniverseV0Selection::isSelectedMinimal(C const& col, V const& v0, T co
   const float invMassLambda = v0.mLambda();
   const float invMassAntiLambda = v0.mAntiLambda();
 
-  if ((invMassLambda < fInvMassLowLimit or invMassLambda > fInvMassUpLimit) and (invMassAntiLambda < fInvMassLowLimit or invMassAntiLambda > fInvMassUpLimit)) {
+  if (((invMassLambda < fInvMassLowLimit) || (invMassLambda > fInvMassUpLimit)) && ((invMassAntiLambda < fInvMassLowLimit) || (invMassAntiLambda > fInvMassUpLimit))) {
     return false;
   }
   if (fRejectKaon) {
@@ -463,9 +463,7 @@ std::array<cutContainerType, 5> FemtoUniverseV0Selection::getCutContainer(C cons
     sign = -1.;
   } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
-  }
-  // if it happens that none of these are true, ignore the invariant mass
-  else {
+  } else { // if it happens that none of these are true, ignore the invariant mass
     if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) {
       sign = -1.;
     } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {
