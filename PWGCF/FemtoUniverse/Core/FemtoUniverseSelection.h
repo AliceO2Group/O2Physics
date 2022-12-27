@@ -115,4 +115,4 @@ class FemtoUniverseSelection
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_ */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_

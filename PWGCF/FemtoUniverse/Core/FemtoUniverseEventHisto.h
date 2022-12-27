@@ -56,4 +56,4 @@ class FemtoUniverseEventHisto
 };
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_  */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_

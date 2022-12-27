@@ -140,4 +140,4 @@ class FemtoUniverseMath
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_ */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_"

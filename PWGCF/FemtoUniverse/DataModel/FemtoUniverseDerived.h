@@ -195,4 +195,4 @@ DECLARE_SOA_TABLE(FemtoHashes, "AOD", "HASH", femtohash::FemtoBin);
 using FemtoHash = FemtoHashes::iterator;
 
 } // namespace o2::aod
-#endif /* PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_ */
+#endif // PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_

@@ -28,6 +28,9 @@
 #include "TLorentzVector.h"
 #include "CommonConstants/MathConstants.h"
 
+#include <vector>
+#include <string>
+
 using namespace o2::framework;
 using namespace o2::constants::math;
 
@@ -84,8 +87,8 @@ class FemtoUniverseContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
-    mPhiHigh = 2 * PI + (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiLow = (-(static_cast<int>)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiHigh = 2 * PI + (-(static_cast<int>)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
 
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
@@ -176,4 +179,4 @@ class FemtoUniverseContainer
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_  */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
