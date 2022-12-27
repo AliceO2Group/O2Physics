@@ -206,4 +206,4 @@ class FemtoUniverseDetaDphiStar
 } /* namespace femtoUniverse */
 } /* namespace o2::analysis */
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_  */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_

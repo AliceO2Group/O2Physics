@@ -79,7 +79,7 @@ class FemtoUniverseV0Selection : public FemtoUniverseObjectSelection<float, femt
                                fInvMassUpLimit(1.3),
                                fRejectKaon(false),
                                fInvMassKaonLowLimit(0.48),
-                               fInvMassKaonUpLimit(0.515){};
+                               fInvMassKaonUpLimit(0.515) {}
   /// Initializes histograms for the task
   template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -544,4 +544,4 @@ void FemtoUniverseV0Selection::fillQA(C const& col, V const& v0, T const& posTra
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEV0SELECTION_H_  */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEV0SELECTION_H_

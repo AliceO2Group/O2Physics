@@ -79,9 +79,7 @@ class FemtoUniversePairCleaner
       return false;
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       return true;
-    }
-
-    else {
+    } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
     }
@@ -94,4 +92,4 @@ class FemtoUniversePairCleaner
 };
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_  */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_

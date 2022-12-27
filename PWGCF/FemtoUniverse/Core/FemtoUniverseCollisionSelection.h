@@ -21,8 +21,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
-#include <string>
 #include <iostream>
+#include <string>
 
 using namespace o2::framework;
 
@@ -135,4 +135,4 @@ class FemtoUniverseCollisionSelection
 };
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_ */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_

@@ -89,7 +89,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                   dcaXYMax(-9999999.),
                                   dcaZMax(-9999999.),
                                   dcaMin(9999999.),
-                                  nSigmaPIDMax(9999999.){};
+                                  nSigmaPIDMax(9999999.) {}
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -575,4 +575,4 @@ void FemtoUniverseTrackSelection::fillQA(T const& track)
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_ */
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
