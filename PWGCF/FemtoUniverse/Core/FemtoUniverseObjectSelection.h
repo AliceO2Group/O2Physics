@@ -13,8 +13,8 @@
 /// \brief FemtoUniverseObjectSelection - Parent class of all selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef FEMTOUNIVERSEOBJECTSELECTION_H_
-#define FEMTOUNIVERSEOBJECTSELECTION_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 
@@ -189,4 +189,4 @@ class FemtoUniverseObjectSelection
 } // namespace femtoUniverse
 } // namespace o2::analysis
 
-#endif /* FEMTOUNIVERSEOBJECTSELECTION_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_ */

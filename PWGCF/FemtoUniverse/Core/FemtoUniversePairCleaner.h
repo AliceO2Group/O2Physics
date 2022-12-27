@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSEPAIRCLEANER_H_
-#define FEMTOUNIVERSEPAIRCLEANER_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 #include "Framework/HistogramRegistry.h"
@@ -94,4 +94,4 @@ class FemtoUniversePairCleaner
 };
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSEPAIRCLEANER_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_  */

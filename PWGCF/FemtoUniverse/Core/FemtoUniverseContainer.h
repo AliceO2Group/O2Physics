@@ -15,8 +15,8 @@
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch NOWE
 
-#ifndef FEMTOUNIVERSECONTAINER_H_
-#define FEMTOUNIVERSECONTAINER_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
@@ -176,4 +176,4 @@ class FemtoUniverseContainer
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSECONTAINER_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_  */

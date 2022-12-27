@@ -15,8 +15,8 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSE_UTILS_H_
-#define FEMTOUNIVERSE_UTILS_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEUTILS_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEUTILS_H_
 
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"

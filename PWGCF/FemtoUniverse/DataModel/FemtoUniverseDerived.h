@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef FEMTOUNIVERSEDERIVED_H_
-#define FEMTOUNIVERSEDERIVED_H_
+#ifndef PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_
+#define PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_
 
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
@@ -195,4 +195,4 @@ DECLARE_SOA_TABLE(FemtoHashes, "AOD", "HASH", femtohash::FemtoBin);
 using FemtoHash = FemtoHashes::iterator;
 
 } // namespace o2::aod
-#endif /* FEMTOUNIVERSEDERIVED_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_ */

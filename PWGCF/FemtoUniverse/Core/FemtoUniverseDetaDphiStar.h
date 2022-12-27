@@ -14,8 +14,8 @@
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSEDETADPHISTAR_H_
-#define FEMTOUNIVERSEDETADPHISTAR_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 
@@ -206,4 +206,4 @@ class FemtoUniverseDetaDphiStar
 } /* namespace femtoUniverse */
 } /* namespace o2::analysis */
 
-#endif /* FEMTOUNIVERSEDETADPHISTAR_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_  */

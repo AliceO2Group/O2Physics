@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSEEVENTHISTO_H_
-#define FEMTOUNIVERSEEVENTHISTO_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 #include "Framework/HistogramRegistry.h"
@@ -56,4 +56,4 @@ class FemtoUniverseEventHisto
 };
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSEEVENTHISTO_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_  */
