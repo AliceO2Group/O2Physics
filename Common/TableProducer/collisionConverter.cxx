@@ -26,13 +26,13 @@ struct collisionConverter {
     for (auto& collision : collisionTable) {
       float lYY = collision.covXZ();
       float lXZ = collision.covYY();
-      if(doNotSwap){
+      if (doNotSwap) {
         lYY = collision.covYY();
         lXZ = collision.covXZ();
       };
-      if(lYY<1e-8){
-        //This happened by accident!
-        if(!doNotSwap){
+      if (lYY < 1e-8) {
+        // This happened by accident!
+        if (!doNotSwap) {
           LOGF(info, "Collision converter task found negative YY element!");
           LOGF(info, "This is an indication that you're looping over data");
           LOGF(info, "produced with an O2 version of late December 2022.");
