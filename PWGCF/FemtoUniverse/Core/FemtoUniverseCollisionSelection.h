@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSECOLLISIONSELECTION_H_
-#define FEMTOUNIVERSECOLLISIONSELECTION_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
@@ -135,4 +135,4 @@ class FemtoUniverseCollisionSelection
 };
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSECOLLISIONSELECTION_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_ */

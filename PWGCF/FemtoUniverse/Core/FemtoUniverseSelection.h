@@ -13,8 +13,8 @@
 /// \brief FemtoUniverseSelection - small generic class to do selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef FEMTOUNIVERSESELECTION_H_
-#define FEMTOUNIVERSESELECTION_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_
 
 namespace o2::analysis::femtoUniverse
 {
@@ -115,4 +115,4 @@ class FemtoUniverseSelection
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSESELECTION_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_ */

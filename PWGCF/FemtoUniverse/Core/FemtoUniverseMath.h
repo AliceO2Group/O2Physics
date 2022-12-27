@@ -14,8 +14,8 @@
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSEMATH_H_
-#define FEMTOUNIVERSEMATH_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
@@ -140,4 +140,4 @@ class FemtoUniverseMath
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSEMATH_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_ */

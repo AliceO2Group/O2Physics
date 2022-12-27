@@ -15,8 +15,8 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOUNIVERSETRACKSELECTION_H_
-#define FEMTOUNIVERSETRACKSELECTION_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
@@ -575,4 +575,4 @@ void FemtoUniverseTrackSelection::fillQA(T const& track)
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif /* FEMTOUNIVERSETRACKSELECTION_H_ */
+#endif /* PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_ */
