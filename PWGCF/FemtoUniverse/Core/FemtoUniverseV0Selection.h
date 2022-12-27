@@ -380,7 +380,7 @@ bool FemtoUniverseV0Selection::isSelectedMinimal(C const& col, V const& v0, T co
   // v0
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg) < nSigmaPIDMax and abs(nSigmaPiPos) < nSigmaPIDMax) and !(abs(nSigmaPrPos) < nSigmaPIDMax and abs(nSigmaPiNeg) < nSigmaPIDMax)) {
+  if (!((abs(nSigmaPrNeg) < nSigmaPIDMax) && (abs(nSigmaPiPos) < nSigmaPIDMax)) && !((abs(nSigmaPrPos) < nSigmaPIDMax) && (abs(nSigmaPiNeg) < nSigmaPIDMax))) {
     return false;
   }
 
@@ -406,7 +406,7 @@ void FemtoUniverseV0Selection::fillLambdaQA(C const& col, V const& v0, T const& 
 
   mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaNoCuts"), v0.mLambda());
 
-  if (invMassLambda > fInvMassLowLimit and invMassLambda < fInvMassUpLimit) {
+  if ((invMassLambda > fInvMassLowLimit) && (invMassLambda < fInvMassUpLimit)) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"), v0.mLambda());
   }
 
