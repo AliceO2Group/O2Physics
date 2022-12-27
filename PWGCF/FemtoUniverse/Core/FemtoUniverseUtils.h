@@ -45,7 +45,7 @@ enum kDetector {
 /// \return kPIDselection corresponding to n-sigma
 kPIDselection getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 {
-  for (int i = 0; i < (int)vNsigma.size(); i++) {
+  for (int i = 0; i < (static_cast<int>)vNsigma.size(); i++) {
     if (abs(nSigma - vNsigma[i]) < 1e-3) {
       return static_cast<kPIDselection>(i);
     }
