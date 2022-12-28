@@ -84,7 +84,7 @@ struct preProcessMCcollisions {
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
     histos.add("NTimesCollRecoed", "NTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
   }
-  
+
   void process(aod::McCollisions const& mccollisions, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions)
   {
     for (auto& mccollision : mccollisions) {
@@ -160,7 +160,6 @@ struct straRecoStudy {
 
   Filter preFilterV0 =
     aod::mcv0label::mcParticleId > -1 && nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
-
 
   void init(InitContext const&)
   {
