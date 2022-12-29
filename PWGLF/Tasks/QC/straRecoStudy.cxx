@@ -87,37 +87,38 @@ struct preProcessMCcollisions {
     float nContribsWithTOF;
     float nContribsWithITS;
   };
-  
+
   template <typename T>
-  std::vector<std::size_t> sort_indices(const std::vector<T> &v) {
+  std::vector<std::size_t> sort_indices(const std::vector<T>& v)
+  {
     std::vector<std::size_t> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
     std::stable_sort(idx.begin(), idx.end(),
-         [&v](std::size_t i1, std::size_t i2) {return v[i1] > v[i2];});
+                     [&v](std::size_t i1, std::size_t i2) { return v[i1] > v[i2]; });
     return idx;
   }
-  
+
   void init(InitContext const&)
   {
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
     const AxisSpec axisTrackCount{(int)50, -0.5f, +49.5f, ""};
     histos.add("NTimesCollRecoed", "NTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
-    
-    //A trick to store more information, please
-    histos.add("h2dTrackCounter", "h2dTrackCounter", kTH2D, {axisTrackCount,axisNTimesCollRecoed});
+
+    // A trick to store more information, please
+    histos.add("h2dTrackCounter", "h2dTrackCounter", kTH2D, {axisTrackCount, axisNTimesCollRecoed});
   }
-  
+
   void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks)
   {
     std::vector<collisionStats> collisionStats;
     std::vector<int> collisionNContribs;
     collisionStats.reserve(collisions.size());
-    //collisionNContribs.reserve(collisions.size());
-    for(Int_t ic=0; ic<collisions.size(); ic++){
-      collisionStats[ic].nContribsWithITS=0;
-      collisionStats[ic].nContribsWithTPC=0;
-      collisionStats[ic].nContribsWithTRD=0;
-      collisionStats[ic].nContribsWithTOF=0;
+    // collisionNContribs.reserve(collisions.size());
+    for (Int_t ic = 0; ic < collisions.size(); ic++) {
+      collisionStats[ic].nContribsWithITS = 0;
+      collisionStats[ic].nContribsWithTPC = 0;
+      collisionStats[ic].nContribsWithTRD = 0;
+      collisionStats[ic].nContribsWithTOF = 0;
     }
     histos.fill(HIST("NTimesCollRecoed"), collisions.size());
     int lCollisionIndex = 0;
@@ -125,30 +126,30 @@ struct preProcessMCcollisions {
       collisionNContribs.emplace_back(collision.numContrib());
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : groupedTracks) {
-        if(track.isPVContributor()){
-          if(track.hasITS())
+        if (track.isPVContributor()) {
+          if (track.hasITS())
             collisionStats[lCollisionIndex].nContribsWithITS++;
-          if(track.hasTPC())
+          if (track.hasTPC())
             collisionStats[lCollisionIndex].nContribsWithTPC++;
-          if(track.hasTRD())
+          if (track.hasTRD())
             collisionStats[lCollisionIndex].nContribsWithTRD++;
-          if(track.hasTOF())
+          if (track.hasTOF())
             collisionStats[lCollisionIndex].nContribsWithTOF++;
         }
       }
-      //Increment counter
+      // Increment counter
       lCollisionIndex++;
     }
-    //Collisions now exist, loop over them in NContribs order please
-    lCollisionIndex=0;
+    // Collisions now exist, loop over them in NContribs order please
+    lCollisionIndex = 0;
     auto sortedIndices = sort_indices(collisionNContribs);
-    for (auto ic: sortedIndices) {
-      int lIndexBin = 5*ic;
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin+0, collisions.size(), collisionNContribs[ic]);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin+1, collisions.size(), collisionStats[ic].nContribsWithITS);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin+2, collisions.size(), collisionStats[ic].nContribsWithTPC);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin+3, collisions.size(), collisionStats[ic].nContribsWithTRD);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin+4, collisions.size(), collisionStats[ic].nContribsWithTOF);
+    for (auto ic : sortedIndices) {
+      int lIndexBin = 5 * ic;
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 0, collisions.size(), collisionNContribs[ic]);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 1, collisions.size(), collisionStats[ic].nContribsWithITS);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 2, collisions.size(), collisionStats[ic].nContribsWithTPC);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 3, collisions.size(), collisionStats[ic].nContribsWithTRD);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 4, collisions.size(), collisionStats[ic].nContribsWithTOF);
       lCollisionIndex++;
     }
     mcCollsExtra(collisions.size());
@@ -212,7 +213,6 @@ struct straRecoStudy {
 
   Filter preFilterV0 =
     aod::mcv0label::mcParticleId > -1 && nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
-
 
   void init(InitContext const&)
   {
