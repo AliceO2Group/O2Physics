@@ -77,6 +77,14 @@ using RecoedMCCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 struct preProcessMCcollisions {
   Produces<aod::McCollsExtra> mcCollsExtra;
 
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext const&)
+  {
+    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
+    histos.add("NTimesCollRecoed", "NTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
+  }
+
   void process(aod::McCollisions const& mccollisions, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions)
   {
     for (auto& mccollision : mccollisions) {
@@ -85,10 +93,11 @@ struct preProcessMCcollisions {
       for (auto& collision : collisions) {
         if (collision.has_mcCollision()) {
           if (mccollision.globalIndex() == collision.mcCollision().globalIndex()) {
-            lExists = 1;
+            lExists++;
           }
         }
       }
+      histos.fill(HIST("NTimesCollRecoed"), lExists);
       mcCollsExtra(lExists);
     }
   }
@@ -97,79 +106,11 @@ struct preProcessMCcollisions {
 struct straRecoStudy {
   // one to hold them all
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  //  HistogramRegistry registry{
-  //    "registry",
-  //    {
-  //      // MC generated within reconstructed collisions
-
-  //
-
-  //      // Very simple QA for each variable
-  //      {"h2dK0ShortQAV0Radius", "h2dK0ShortQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dK0ShortQADCAV0Dau", "h2dK0ShortQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dK0ShortQADCAPosToPV", "h2dK0ShortQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dK0ShortQADCANegToPV", "h2dK0ShortQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dK0ShortQADCAToPV", "h2dK0ShortQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 2}}}},
-  //      {"h2dK0ShortQAPointingAngle", "h2dK0ShortQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Very simple QA for each variable
-  //      {"h2dLambdaQAV0Radius", "h2dLambdaQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dLambdaQADCAV0Dau", "h2dLambdaQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dLambdaQADCAPosToPV", "h2dLambdaQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dLambdaQADCANegToPV", "h2dLambdaQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dLambdaQADCAToPV", "h2dLambdaQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 2}}}},
-  //      {"h2dLambdaQAPointingAngle", "h2dLambdaQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Very simple QA for each variable
-  //      {"h2dXiMinusQAV0Radius", "h2dXiMinusQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dXiMinusQACascadeRadius", "h2dXiMinusQACascadeRadius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dXiMinusQADCAV0Dau", "h2dXiMinusQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dXiMinusQADCACascDau", "h2dXiMinusQADCACascDau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dXiMinusQADCAPosToPV", "h2dXiMinusQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQADCANegToPV", "h2dXiMinusQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQADCABachToPV", "h2dXiMinusQADCABachToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQADCACascToPV", "h2dXiMinusQADCACascToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQAPointingAngle", "h2dXiMinusQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Very simple QA for each variable
-  //      {"h2dOmegaMinusQAV0Radius", "h2dOmegaMinusQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dOmegaMinusQACascadeRadius", "h2dOmegaMinusQACascadeRadius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dOmegaMinusQADCAV0Dau", "h2dOmegaMinusQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dOmegaMinusQADCACascDau", "h2dOmegaMinusQADCACascDau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dOmegaMinusQADCAPosToPV", "h2dOmegaMinusQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQADCANegToPV", "h2dOmegaMinusQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQADCABachToPV", "h2dOmegaMinusQADCABachToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQADCACascToPV", "h2dOmegaMinusQADCACascToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQAPointingAngle", "h2dOmegaMinusQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Track quality tests
-  //      {"h3dTrackPtsK0ShortP", "h3dTrackPtsK0ShortP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsK0ShortN", "h3dTrackPtsK0ShortN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsLambdaP", "h3dTrackPtsLambdaP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsLambdaN", "h3dTrackPtsLambdaN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsAntiLambdaP", "h3dTrackPtsAntiLambdaP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsAntiLambdaN", "h3dTrackPtsAntiLambdaN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiMinusP", "h3dTrackPtsXiMinusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiMinusN", "h3dTrackPtsXiMinusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiMinusB", "h3dTrackPtsXiMinusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiPlusP", "h3dTrackPtsXiPlusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiPlusN", "h3dTrackPtsXiPlusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiPlusB", "h3dTrackPtsXiPlusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaMinusP", "h3dTrackPtsOmegaMinusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaMinusN", "h3dTrackPtsOmegaMinusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaMinusB", "h3dTrackPtsOmegaMinusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaPlusP", "h3dTrackPtsOmegaPlusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaPlusN", "h3dTrackPtsOmegaPlusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaPlusB", "h3dTrackPtsOmegaPlusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //
-  //      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
-  //    },
-  //  };
-
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // binning matters
-
+  Configurable<float> MaxPt{"MaxPt", 10, "maximum pT"};
+  Configurable<int> NBinsPt{"NBinsPt", 100, "N bins"};
+  Configurable<int> NBinsPtCoarse{"NBinsPtCoarse", 10, "N bins, coarse"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -219,10 +160,6 @@ struct straRecoStudy {
 
   Filter preFilterV0 =
     aod::mcv0label::mcParticleId > -1 && nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
-
-  Configurable<float> MaxPt{"MaxPt", 10, "maximum pT"};
-  Configurable<int> NBinsPt{"NBinsPt", 100, "N bins"};
-  Configurable<int> NBinsPtCoarse{"NBinsPtCoarse", 10, "N bins, coarse"};
 
   void init(InitContext const&)
   {
