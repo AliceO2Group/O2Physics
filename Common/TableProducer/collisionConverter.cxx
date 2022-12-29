@@ -30,7 +30,7 @@ struct collisionConverter {
         lYY = collision.covYY();
         lXZ = collision.covXZ();
       };
-      if (lYY < 1e-8) {
+      if (lYY < -1e-8) {
         // This happened by accident!
         if (!doNotSwap) {
           LOGF(info, "Collision converter task found negative YY element!");
