@@ -148,13 +148,8 @@ struct preProcessMCcollisions {
         lNumberOfXi++;
     }
 
-    std::vector<collisionStats> collisionStatAggregator;
-    std::vector<collisionStats> collisionStatAggregatorWithXi;
+    std::vector<collisionStats> collisionStatAggregator(collisions.size());
     std::vector<int> collisionNContribs;
-    for (Int_t ic = 0; ic < collisions.size(); ic++) {
-      collisionStats collisionStatistics;
-      collisionStatAggregator.emplace_back(collisionStatistics);
-    }
     histos.fill(HIST("hNTimesCollRecoed"), collisions.size());
     if (lNumberOfXi > 0)
       histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
