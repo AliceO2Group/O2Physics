@@ -81,75 +81,124 @@ struct preProcessMCcollisions {
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
-  struct collisionStats { // This structure is named "myDataType"
-    float nContribsWithTPC;
-    float nContribsWithTRD;
-    float nContribsWithTOF;
-    float nContribsWithITS;
+  struct collisionStats {
+    float nContribsWithTPC = 0;
+    float nContribsWithTRD = 0;
+    float nContribsWithTOF = 0;
+    float nContribsWithITS = 0;
   };
-
+  
   template <typename T>
-  std::vector<std::size_t> sort_indices(const std::vector<T>& v)
-  {
+  std::vector<std::size_t> sort_indices(const std::vector<T> &v) {
     std::vector<std::size_t> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
     std::stable_sort(idx.begin(), idx.end(),
-                     [&v](std::size_t i1, std::size_t i2) { return v[i1] > v[i2]; });
+         [&v](std::size_t i1, std::size_t i2) {return v[i1] > v[i2];});
     return idx;
   }
-
+  
   void init(InitContext const&)
   {
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
     const AxisSpec axisTrackCount{(int)50, -0.5f, +49.5f, ""};
-    histos.add("NTimesCollRecoed", "NTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
+    const AxisSpec axisContributors{(int)200, -0.5f, +199.5f, ""};
+    const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
+    histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
+    histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
+    
+    //A trick to store more information, please
+    histos.add("h2dTrackCounter", "h2dTrackCounter", kTH2D, {axisTrackCount,axisNTimesCollRecoed});
+    histos.add("h2dTrackCounterWithXi", "h2dTrackCounterWithXi", kTH2D, {axisTrackCount,axisNTimesCollRecoed});
+    
+    //Number of contributor distributions - Y offset controls exact case
+    histos.add("h2dNContributors", "h2dNContributors", kTH2D, {axisContributors,axisTwenty});
+    histos.add("h2dNContributorsWithXi", "h2dNContributorsWithXi", kTH2D, {axisContributors,axisTwenty});
+    
+    //Helper to decipher this histogram
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV"); // size 1 = 0
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(3, "Recoed 2 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(4, "Recoed 3 times, Biggest PV"); // size 3 = 3
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(5, "Recoed 3 times, Intermediate PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(6, "Recoed 3 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(7, "Recoed 4 times, Biggest PV"); // size 4 = 6
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(8, "Recoed 4 times, 2nd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(9, "Recoed 4 times, 3rd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
 
-    // A trick to store more information, please
-    histos.add("h2dTrackCounter", "h2dTrackCounter", kTH2D, {axisTrackCount, axisNTimesCollRecoed});
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV"); // size 1 = 0
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(3, "Recoed 2 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(4, "Recoed 3 times, Biggest PV"); // size 3 = 3
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(5, "Recoed 3 times, Intermediate PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(6, "Recoed 3 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(7, "Recoed 4 times, Biggest PV"); // size 4 = 6
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(8, "Recoed 4 times, 2nd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(9, "Recoed 4 times, 3rd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
+
   }
-
-  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks)
+  
+  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles)
   {
-    std::vector<collisionStats> collisionStats;
-    std::vector<int> collisionNContribs;
-    collisionStats.reserve(collisions.size());
-    // collisionNContribs.reserve(collisions.size());
-    for (Int_t ic = 0; ic < collisions.size(); ic++) {
-      collisionStats[ic].nContribsWithITS = 0;
-      collisionStats[ic].nContribsWithTPC = 0;
-      collisionStats[ic].nContribsWithTRD = 0;
-      collisionStats[ic].nContribsWithTOF = 0;
+    int lNumberOfXi = 0;
+    for (auto& mcp : mcParticles) {
+      //mimic triggering strategy precisely
+      if (TMath::Abs(mcp.eta()) < 0.8 && mcp.pdgCode() == 3312)
+        lNumberOfXi++;
     }
-    histos.fill(HIST("NTimesCollRecoed"), collisions.size());
+    
+    std::vector<collisionStats> collisionStatAggregator;
+    std::vector<collisionStats> collisionStatAggregatorWithXi;
+    std::vector<int> collisionNContribs;
+    for(Int_t ic=0; ic<collisions.size(); ic++){
+      collisionStats collisionStatistics;
+      collisionStatAggregator.emplace_back(collisionStatistics);
+    }
+    histos.fill(HIST("hNTimesCollRecoed"), collisions.size());
+    if(lNumberOfXi>0)
+      histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
     int lCollisionIndex = 0;
     for (auto& collision : collisions) {
       collisionNContribs.emplace_back(collision.numContrib());
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : groupedTracks) {
-        if (track.isPVContributor()) {
-          if (track.hasITS())
-            collisionStats[lCollisionIndex].nContribsWithITS++;
-          if (track.hasTPC())
-            collisionStats[lCollisionIndex].nContribsWithTPC++;
-          if (track.hasTRD())
-            collisionStats[lCollisionIndex].nContribsWithTRD++;
-          if (track.hasTOF())
-            collisionStats[lCollisionIndex].nContribsWithTOF++;
+        if(track.isPVContributor()){
+          if(track.hasITS())
+            collisionStatAggregator[lCollisionIndex].nContribsWithITS++;
+          if(track.hasTPC())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTPC++;
+          if(track.hasTRD())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTRD++;
+          if(track.hasTOF())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTOF++;
         }
       }
-      // Increment counter
+      //Increment counter
       lCollisionIndex++;
     }
-    // Collisions now exist, loop over them in NContribs order please
-    lCollisionIndex = 0;
+    //Collisions now exist, loop over them in NContribs order please
+    lCollisionIndex=0;
     auto sortedIndices = sort_indices(collisionNContribs);
-    for (auto ic : sortedIndices) {
-      int lIndexBin = 5 * ic;
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 0, collisions.size(), collisionNContribs[ic]);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 1, collisions.size(), collisionStats[ic].nContribsWithITS);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 2, collisions.size(), collisionStats[ic].nContribsWithTPC);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 3, collisions.size(), collisionStats[ic].nContribsWithTRD);
-      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 4, collisions.size(), collisionStats[ic].nContribsWithTOF);
+    int lYAxisOffset = 0.5*collisions.size()*(collisions.size()-1);
+    for (auto ic: sortedIndices) {
+      int lIndexBin = 7*lCollisionIndex; //use offset to make plot much easier to read
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin+0, collisions.size());
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin+1, collisions.size(), collisionNContribs[ic]);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin+2, collisions.size(), collisionStatAggregator[ic].nContribsWithITS);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin+3, collisions.size(), collisionStatAggregator[ic].nContribsWithTPC);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin+4, collisions.size(), collisionStatAggregator[ic].nContribsWithTRD);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin+5, collisions.size(), collisionStatAggregator[ic].nContribsWithTOF);
+      histos.fill(HIST("h2dNContributors"), collisionNContribs[ic], lYAxisOffset+lCollisionIndex);
+      if(lNumberOfXi>0){
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin+0, collisions.size());
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin+1, collisions.size(), collisionNContribs[ic]);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin+2, collisions.size(), collisionStatAggregator[ic].nContribsWithITS);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin+3, collisions.size(), collisionStatAggregator[ic].nContribsWithTPC);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin+4, collisions.size(), collisionStatAggregator[ic].nContribsWithTRD);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin+5, collisions.size(), collisionStatAggregator[ic].nContribsWithTOF);
+        histos.fill(HIST("h2dNContributorsWithXi"), collisionNContribs[ic], lYAxisOffset+lCollisionIndex);
+      }
       lCollisionIndex++;
     }
     mcCollsExtra(collisions.size());
@@ -213,6 +262,7 @@ struct straRecoStudy {
 
   Filter preFilterV0 =
     aod::mcv0label::mcParticleId > -1 && nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
+
 
   void init(InitContext const&)
   {
