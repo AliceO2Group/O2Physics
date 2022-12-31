@@ -15,6 +15,7 @@
 // Dedicated task to understand reconstruction
 // Special emphasis on PV reconstruction when strangeness is present
 // Tested privately, meant to be used on central MC productions now
+// Extra tests with multiple PV reco / TF awareness and performance
 //
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
@@ -86,6 +87,7 @@ struct preProcessMCcollisions {
     float nContribsWithTRD = 0;
     float nContribsWithTOF = 0;
     float nContribsWithITS = 0;
+    float covTrace = 0;
   };
 
   template <typename T>
@@ -103,6 +105,8 @@ struct preProcessMCcollisions {
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
     const AxisSpec axisTrackCount{(int)50, -0.5f, +49.5f, ""};
     const AxisSpec axisContributors{(int)200, -0.5f, +199.5f, ""};
+    const AxisSpec axisCovariance{(int)400, 0.0f, +0.1f, ""};
+    const AxisSpec axisCovarianceTest{(int)400, -0.05f, +0.05f, ""};
     const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
     histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
@@ -114,6 +118,11 @@ struct preProcessMCcollisions {
     // Number of contributor distributions - Y offset controls exact case
     histos.add("h2dNContributors", "h2dNContributors", kTH2D, {axisContributors, axisTwenty});
     histos.add("h2dNContributorsWithXi", "h2dNContributorsWithXi", kTH2D, {axisContributors, axisTwenty});
+
+    // PV uncertainty estimate: trace of PV covariance matrix
+    histos.add("hCyyTest", "hCyyTest", kTH1F, {axisCovarianceTest});
+    histos.add("h2dCovarianceTrace", "h2dCovarianceTrace", kTH2D, {axisCovariance, axisTwenty});
+    histos.add("h2dCovarianceTraceWithXi", "h2dCovarianceTraceWithXi", kTH2D, {axisCovariance, axisTwenty});
 
     // Helper to decipher this histogram
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV");      // size 1 = 0
@@ -150,12 +159,15 @@ struct preProcessMCcollisions {
 
     std::vector<collisionStats> collisionStatAggregator(collisions.size());
     std::vector<int> collisionNContribs;
+
     histos.fill(HIST("hNTimesCollRecoed"), collisions.size());
     if (lNumberOfXi > 0)
       histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
     int lCollisionIndex = 0;
     for (auto& collision : collisions) {
+      histos.fill(HIST("hCyyTest"), TMath::Sqrt(collision.covYY())); // check for bug
       collisionNContribs.emplace_back(collision.numContrib());
+      collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(collision.covXX() + collision.covYY() + collision.covZZ());
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : groupedTracks) {
         if (track.isPVContributor()) {
@@ -185,6 +197,7 @@ struct preProcessMCcollisions {
       histos.fill(HIST("h2dTrackCounter"), lIndexBin + 4, collisions.size(), collisionStatAggregator[ic].nContribsWithTRD);
       histos.fill(HIST("h2dTrackCounter"), lIndexBin + 5, collisions.size(), collisionStatAggregator[ic].nContribsWithTOF);
       histos.fill(HIST("h2dNContributors"), collisionNContribs[ic], lYAxisOffset + lCollisionIndex);
+      histos.fill(HIST("h2dCovarianceTrace"), collisionStatAggregator[ic].covTrace, lYAxisOffset + lCollisionIndex);
       if (lNumberOfXi > 0) {
         histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 0, collisions.size());
         histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 1, collisions.size(), collisionNContribs[ic]);
@@ -193,6 +206,7 @@ struct preProcessMCcollisions {
         histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 4, collisions.size(), collisionStatAggregator[ic].nContribsWithTRD);
         histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 5, collisions.size(), collisionStatAggregator[ic].nContribsWithTOF);
         histos.fill(HIST("h2dNContributorsWithXi"), collisionNContribs[ic], lYAxisOffset + lCollisionIndex);
+        histos.fill(HIST("h2dCovarianceTraceWithXi"), collisionStatAggregator[ic].covTrace, lYAxisOffset + lCollisionIndex);
       }
       lCollisionIndex++;
     }
