@@ -164,8 +164,8 @@ struct preProcessMCcollisions {
       histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
     int lCollisionIndex = 0;
     for (auto& collision : collisions) {
-      float cyy = TMath::Sign(1,collision.covYY())*TMath::Sqrt( TMath::Abs( collision.covYY() ) );
-      histos.fill(HIST("hCyyTest"), cyy); //check for bug
+      float cyy = TMath::Sign(1, collision.covYY()) * TMath::Sqrt(TMath::Abs(collision.covYY()));
+      histos.fill(HIST("hCyyTest"), cyy); // check for bug
       collisionNContribs.emplace_back(collision.numContrib());
       collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(TMath::Abs(collision.covXX()) + TMath::Abs(collision.covYY()) + TMath::Abs(collision.covZZ()));
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
