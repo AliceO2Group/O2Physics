@@ -15,7 +15,6 @@
 // Dedicated task to understand reconstruction
 // Special emphasis on PV reconstruction when strangeness is present
 // Tested privately, meant to be used on central MC productions now
-// Extra tests with multiple PV reco / TF awareness and performance
 //
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
@@ -165,9 +164,10 @@ struct preProcessMCcollisions {
       histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
     int lCollisionIndex = 0;
     for (auto& collision : collisions) {
-      histos.fill(HIST("hCyyTest"), TMath::Sqrt(collision.covYY())); // check for bug
+      float cyy = TMath::Sign(1, collision.covYY()) * TMath::Sqrt(TMath::Abs(collision.covYY()));
+      histos.fill(HIST("hCyyTest"), cyy); // check for bug
       collisionNContribs.emplace_back(collision.numContrib());
-      collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(collision.covXX() + collision.covYY() + collision.covZZ());
+      collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(TMath::Abs(collision.covXX()) + TMath::Abs(collision.covYY()) + TMath::Abs(collision.covZZ()));
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : groupedTracks) {
         if (track.isPVContributor()) {
