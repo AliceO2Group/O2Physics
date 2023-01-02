@@ -61,7 +61,7 @@ namespace o2::aod
 {
 namespace mccollisionprop
 {
-DECLARE_SOA_COLUMN(HasRecoCollision, hasRecoCollision, int); //! decay position Z
+DECLARE_SOA_COLUMN(HasRecoCollision, hasRecoCollision, int); //! stores N times this PV was recoed
 }
 DECLARE_SOA_TABLE(McCollsExtra, "AOD", "MCCOLLSEXTRA",
                   mccollisionprop::HasRecoCollision);
@@ -77,99 +77,151 @@ using RecoedMCCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 struct preProcessMCcollisions {
   Produces<aod::McCollsExtra> mcCollsExtra;
 
-  void process(aod::McCollisions const& mccollisions, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions)
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+
+  struct collisionStats {
+    float nContribsWithTPC = 0;
+    float nContribsWithTRD = 0;
+    float nContribsWithTOF = 0;
+    float nContribsWithITS = 0;
+    float covTrace = 0;
+  };
+
+  template <typename T>
+  std::vector<std::size_t> sort_indices(const std::vector<T>& v)
   {
-    for (auto& mccollision : mccollisions) {
-      // check if collision successfully reconstructed
-      int lExists = 0;
-      for (auto& collision : collisions) {
-        if (collision.has_mcCollision()) {
-          if (mccollision.globalIndex() == collision.mcCollision().globalIndex()) {
-            lExists = 1;
-          }
+    std::vector<std::size_t> idx(v.size());
+    std::iota(idx.begin(), idx.end(), 0);
+    std::stable_sort(idx.begin(), idx.end(),
+                     [&v](std::size_t i1, std::size_t i2) { return v[i1] > v[i2]; });
+    return idx;
+  }
+
+  void init(InitContext const&)
+  {
+    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
+    const AxisSpec axisTrackCount{(int)50, -0.5f, +49.5f, ""};
+    const AxisSpec axisContributors{(int)200, -0.5f, +199.5f, ""};
+    const AxisSpec axisCovariance{(int)400, 0.0f, +0.1f, ""};
+    const AxisSpec axisCovarianceTest{(int)400, -0.05f, +0.05f, ""};
+    const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
+    histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
+    histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
+
+    // A trick to store more information, please
+    histos.add("h2dTrackCounter", "h2dTrackCounter", kTH2D, {axisTrackCount, axisNTimesCollRecoed});
+    histos.add("h2dTrackCounterWithXi", "h2dTrackCounterWithXi", kTH2D, {axisTrackCount, axisNTimesCollRecoed});
+
+    // Number of contributor distributions - Y offset controls exact case
+    histos.add("h2dNContributors", "h2dNContributors", kTH2D, {axisContributors, axisTwenty});
+    histos.add("h2dNContributorsWithXi", "h2dNContributorsWithXi", kTH2D, {axisContributors, axisTwenty});
+
+    // PV uncertainty estimate: trace of PV covariance matrix
+    histos.add("hCyyTest", "hCyyTest", kTH1F, {axisCovarianceTest});
+    histos.add("h2dCovarianceTrace", "h2dCovarianceTrace", kTH2D, {axisCovariance, axisTwenty});
+    histos.add("h2dCovarianceTraceWithXi", "h2dCovarianceTraceWithXi", kTH2D, {axisCovariance, axisTwenty});
+
+    // Helper to decipher this histogram
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV");      // size 1 = 0
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(3, "Recoed 2 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(4, "Recoed 3 times, Biggest PV"); // size 3 = 3
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(5, "Recoed 3 times, Intermediate PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(6, "Recoed 3 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(7, "Recoed 4 times, Biggest PV"); // size 4 = 6
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(8, "Recoed 4 times, 2nd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(9, "Recoed 4 times, 3rd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
+
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV");      // size 1 = 0
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(3, "Recoed 2 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(4, "Recoed 3 times, Biggest PV"); // size 3 = 3
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(5, "Recoed 3 times, Intermediate PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(6, "Recoed 3 times, Smallest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(7, "Recoed 4 times, Biggest PV"); // size 4 = 6
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(8, "Recoed 4 times, 2nd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(9, "Recoed 4 times, 3rd Biggest PV");
+    histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
+  }
+
+  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles)
+  {
+    int lNumberOfXi = 0;
+    for (auto& mcp : mcParticles) {
+      // mimic triggering strategy precisely
+      if (TMath::Abs(mcp.eta()) < 0.8 && mcp.pdgCode() == 3312)
+        lNumberOfXi++;
+    }
+
+    std::vector<collisionStats> collisionStatAggregator(collisions.size());
+    std::vector<int> collisionNContribs;
+
+    histos.fill(HIST("hNTimesCollRecoed"), collisions.size());
+    if (lNumberOfXi > 0)
+      histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
+    int lCollisionIndex = 0;
+    for (auto& collision : collisions) {
+      float cyy = TMath::Sign(1, collision.covYY()) * TMath::Sqrt(TMath::Abs(collision.covYY()));
+      histos.fill(HIST("hCyyTest"), cyy); // check for bug
+      collisionNContribs.emplace_back(collision.numContrib());
+      collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(TMath::Abs(collision.covXX()) + TMath::Abs(collision.covYY()) + TMath::Abs(collision.covZZ()));
+      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+      for (auto& track : groupedTracks) {
+        if (track.isPVContributor()) {
+          if (track.hasITS())
+            collisionStatAggregator[lCollisionIndex].nContribsWithITS++;
+          if (track.hasTPC())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTPC++;
+          if (track.hasTRD())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTRD++;
+          if (track.hasTOF())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTOF++;
         }
       }
-      mcCollsExtra(lExists);
+      // Increment counter
+      lCollisionIndex++;
     }
+    // Collisions now exist, loop over them in NContribs order please
+    lCollisionIndex = 0;
+    auto sortedIndices = sort_indices(collisionNContribs);
+    int lYAxisOffset = 0.5 * collisions.size() * (collisions.size() - 1);
+    for (auto ic : sortedIndices) {
+      int lIndexBin = 7 * lCollisionIndex; // use offset to make plot much easier to read
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 0, collisions.size());
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 1, collisions.size(), collisionNContribs[ic]);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 2, collisions.size(), collisionStatAggregator[ic].nContribsWithITS);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 3, collisions.size(), collisionStatAggregator[ic].nContribsWithTPC);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 4, collisions.size(), collisionStatAggregator[ic].nContribsWithTRD);
+      histos.fill(HIST("h2dTrackCounter"), lIndexBin + 5, collisions.size(), collisionStatAggregator[ic].nContribsWithTOF);
+      histos.fill(HIST("h2dNContributors"), collisionNContribs[ic], lYAxisOffset + lCollisionIndex);
+      histos.fill(HIST("h2dCovarianceTrace"), collisionStatAggregator[ic].covTrace, lYAxisOffset + lCollisionIndex);
+      if (lNumberOfXi > 0) {
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 0, collisions.size());
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 1, collisions.size(), collisionNContribs[ic]);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 2, collisions.size(), collisionStatAggregator[ic].nContribsWithITS);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 3, collisions.size(), collisionStatAggregator[ic].nContribsWithTPC);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 4, collisions.size(), collisionStatAggregator[ic].nContribsWithTRD);
+        histos.fill(HIST("h2dTrackCounterWithXi"), lIndexBin + 5, collisions.size(), collisionStatAggregator[ic].nContribsWithTOF);
+        histos.fill(HIST("h2dNContributorsWithXi"), collisionNContribs[ic], lYAxisOffset + lCollisionIndex);
+        histos.fill(HIST("h2dCovarianceTraceWithXi"), collisionStatAggregator[ic].covTrace, lYAxisOffset + lCollisionIndex);
+      }
+      lCollisionIndex++;
+    }
+    mcCollsExtra(collisions.size());
   }
 };
 
 struct straRecoStudy {
   // one to hold them all
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  //  HistogramRegistry registry{
-  //    "registry",
-  //    {
-  //      // MC generated within reconstructed collisions
-
-  //
-
-  //      // Very simple QA for each variable
-  //      {"h2dK0ShortQAV0Radius", "h2dK0ShortQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dK0ShortQADCAV0Dau", "h2dK0ShortQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dK0ShortQADCAPosToPV", "h2dK0ShortQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dK0ShortQADCANegToPV", "h2dK0ShortQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dK0ShortQADCAToPV", "h2dK0ShortQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 2}}}},
-  //      {"h2dK0ShortQAPointingAngle", "h2dK0ShortQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Very simple QA for each variable
-  //      {"h2dLambdaQAV0Radius", "h2dLambdaQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dLambdaQADCAV0Dau", "h2dLambdaQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dLambdaQADCAPosToPV", "h2dLambdaQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dLambdaQADCANegToPV", "h2dLambdaQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dLambdaQADCAToPV", "h2dLambdaQADCAToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 2}}}},
-  //      {"h2dLambdaQAPointingAngle", "h2dLambdaQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Very simple QA for each variable
-  //      {"h2dXiMinusQAV0Radius", "h2dXiMinusQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dXiMinusQACascadeRadius", "h2dXiMinusQACascadeRadius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dXiMinusQADCAV0Dau", "h2dXiMinusQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dXiMinusQADCACascDau", "h2dXiMinusQADCACascDau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dXiMinusQADCAPosToPV", "h2dXiMinusQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQADCANegToPV", "h2dXiMinusQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQADCABachToPV", "h2dXiMinusQADCABachToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQADCACascToPV", "h2dXiMinusQADCACascToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dXiMinusQAPointingAngle", "h2dXiMinusQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Very simple QA for each variable
-  //      {"h2dOmegaMinusQAV0Radius", "h2dOmegaMinusQAV0Radius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dOmegaMinusQACascadeRadius", "h2dOmegaMinusQACascadeRadius", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 50}}}},
-  //      {"h2dOmegaMinusQADCAV0Dau", "h2dOmegaMinusQADCAV0Dau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dOmegaMinusQADCACascDau", "h2dOmegaMinusQADCACascDau", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {100, 0, 2}}}},
-  //      {"h2dOmegaMinusQADCAPosToPV", "h2dOmegaMinusQADCAPosToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQADCANegToPV", "h2dOmegaMinusQADCANegToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQADCABachToPV", "h2dOmegaMinusQADCABachToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQADCACascToPV", "h2dOmegaMinusQADCACascToPV", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, -2, 2}}}},
-  //      {"h2dOmegaMinusQAPointingAngle", "h2dOmegaMinusQAPointingAngle", {HistType::kTH2F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0, 1}}}},
-  //
-  //      // Track quality tests
-  //      {"h3dTrackPtsK0ShortP", "h3dTrackPtsK0ShortP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsK0ShortN", "h3dTrackPtsK0ShortN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsLambdaP", "h3dTrackPtsLambdaP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsLambdaN", "h3dTrackPtsLambdaN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsAntiLambdaP", "h3dTrackPtsAntiLambdaP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsAntiLambdaN", "h3dTrackPtsAntiLambdaN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiMinusP", "h3dTrackPtsXiMinusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiMinusN", "h3dTrackPtsXiMinusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiMinusB", "h3dTrackPtsXiMinusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiPlusP", "h3dTrackPtsXiPlusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiPlusN", "h3dTrackPtsXiPlusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsXiPlusB", "h3dTrackPtsXiPlusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaMinusP", "h3dTrackPtsOmegaMinusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaMinusN", "h3dTrackPtsOmegaMinusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaMinusB", "h3dTrackPtsOmegaMinusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaPlusP", "h3dTrackPtsOmegaPlusP", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaPlusN", "h3dTrackPtsOmegaPlusN", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //      {"h3dTrackPtsOmegaPlusB", "h3dTrackPtsOmegaPlusB", {HistType::kTH3F, {{10, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {15, -0.500f, 14.500f, "ITS clusters"},{20, -0.500f, 199.5f, "TPC crossed rows"}}}},
-  //
-  //      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
-  //    },
-  //  };
-
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // binning matters
-
+  Configurable<float> MaxPt{"MaxPt", 10, "maximum pT"};
+  Configurable<int> NBinsPt{"NBinsPt", 100, "N bins"};
+  Configurable<int> NBinsPtCoarse{"NBinsPtCoarse", 10, "N bins, coarse"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -219,10 +271,6 @@ struct straRecoStudy {
 
   Filter preFilterV0 =
     aod::mcv0label::mcParticleId > -1 && nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
-
-  Configurable<float> MaxPt{"MaxPt", 10, "maximum pT"};
-  Configurable<int> NBinsPt{"NBinsPt", 100, "N bins"};
-  Configurable<int> NBinsPtCoarse{"NBinsPtCoarse", 10, "N bins, coarse"};
 
   void init(InitContext const&)
   {
