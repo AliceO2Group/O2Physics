@@ -27,7 +27,6 @@
 #include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
 #include "Index.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TDatabasePDG.h"
 
