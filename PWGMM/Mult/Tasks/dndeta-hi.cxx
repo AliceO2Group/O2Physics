@@ -177,7 +177,7 @@ struct MultiplicityCounter {
     auto z = collision.posZ();
 
     if (!useEvSel || collision.sel8()) {
-      if ( std::abs(z) < 10) {
+      if (std::abs(z) < 10) {
         if (foundBC.has_ft0()) {
           for (auto amplitude : foundBC.ft0().amplitudeA()) {
             multT0A += amplitude;
