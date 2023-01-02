@@ -88,10 +88,6 @@ struct MultiplicityCounter {
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> isMC{"isMC", false, "check if MC"};
 
-  Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
@@ -181,7 +177,7 @@ struct MultiplicityCounter {
     auto z = collision.posZ();
 
     if (!useEvSel || collision.sel8()) {
-      if (z > -10 && z < 10) {
+      if ( std::abs(z) < 10) {
         if (foundBC.has_ft0()) {
           for (auto amplitude : foundBC.ft0().amplitudeA()) {
             multT0A += amplitude;
