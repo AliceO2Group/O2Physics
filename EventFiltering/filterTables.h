@@ -32,7 +32,7 @@ DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
 DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
 DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
 
-DECLARE_SOA_COLUMN(DiffBC, hasDiffBC, bool);   //! diffractive BC
+DECLARE_SOA_COLUMN(DiffBC, hasDiffBC, bool); //! diffractive BC
 
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
