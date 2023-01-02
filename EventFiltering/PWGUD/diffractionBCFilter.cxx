@@ -11,43 +11,8 @@
 // O2 includes
 //
 // \brief A filter task for diffractive BCs
-//
-//        options:
-//
-//               DiffCuts.mNDtcoll(4)
-//               DiffCuts.mMinNTracks(0)
-//               DiffCuts.mMaxNTracks(10000)
-//               DiffCuts.mMinNetCharge(0)
-//               DiffCuts.mMaxNetCharge(0)
-//               DiffCuts.mPidHypo(211)
-//               DiffCuts.mMinPosz(-1000.)
-//               DiffCuts.mMaxPosz(1000.)
-//               DiffCuts.mMinPt(0.)
-//               DiffCuts.mMaxPt(1000.)
-//               DiffCuts.mMinEta(-1.)
-//               DiffCuts.mMaxEta(1.)
-//               DiffCuts.mMinIVM(0.)
-//               DiffCuts.mMaxIVM(1000.)
-//               DiffCuts.mMaxnSigmaTPC(1000.)
-//               DiffCuts.mMaxnSigmaTOF(1000.)
-//               DiffCuts.mFITAmpLimits({0., 0., 0., 0., 0.})
-//
-//        usage: copts="--configuration json://DiffFilterConfig.json -b"
-//               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
-//
-//               o2-analysis-timestamp $copts |
-//               o2-analysis-track-propagation $copts |
-//               o2-analysis-event-selection $copts |
-//               o2-analysis-multiplicity-table $copts |
-//               o2-analysis-trackextension $copts |
-//               o2-analysis-trackselection $copts |
-//               o2-analysis-pid-tpc-full $copts |
-//               o2-analysis-pid-tof-base $copts |
-//               o2-analysis-pid-tof-full $copts |
-//               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
-
 // \author P. Buehler, paul.buehler@oeaw.ac.at
-// \since June 1, 2021
+// \since December, 2022
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -128,7 +93,7 @@ struct tracksWGTInBCs {
           if (atr.bc().size() > 0) {
             auto firstCompatibleBC = atr.bc().begin().globalBC();
             closestBC = (uint64_t)(firstCompatibleBC +
-                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+                                   (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
             // update tracksInBCList
             LOGF(info, "closestBC %d", closestBC);
             tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
@@ -140,12 +105,11 @@ struct tracksWGTInBCs {
           auto col = track.collision_as<CCs>();
           LOGF(info, "  has BC %d", col.has_foundBC());
           closestBC = track.collision_as<CCs>().foundBC_as<BCs>().globalBC();
-          
+
           // update tracksInBCList
           LOGF(info, "closestBC %d", closestBC);
           tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
         }
-
       }
       LOGF(info, "track finished.\n");
     }
@@ -212,8 +176,8 @@ struct tracksWGTInBCs {
           if (aftr.bc().size() > 0) {
             auto firstCompatibleBC = aftr.bc().begin().globalBC();
             closestBC = (uint64_t)(firstCompatibleBC +
-                                  (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
-            
+                                   (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+
             // update fwdTracksWGTInBCList
             LOGF(info, "closestBC %d", closestBC);
             fwdTracksWGTInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
@@ -339,7 +303,7 @@ struct DGBCFilterRun3 {
     for (auto bc : bcs) {
       auto bcnum = bc.globalBC();
       auto ccs = false;
-      
+
       // find BC in TIBCs table
       while (tibc.bcnum() < bcnum && tibc != lasttibc) {
         ++tibc;
@@ -352,7 +316,7 @@ struct DGBCFilterRun3 {
 
         // obtain slice of compatible BCs
         auto bcRange = udhelpers::compatibleBCs(bc, bcnum, diffCuts.minNBCs(), bcs);
-        
+
         // find BC in FTIBCs table
         while (ftibc.bcnum() < bcnum && ftibc != lastftibc) {
           ++ftibc;
@@ -366,7 +330,7 @@ struct DGBCFilterRun3 {
           auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
           isDGBC = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
-      
+
         // save decision
         ccs = (isDGBC == 0);
         if (ccs) {

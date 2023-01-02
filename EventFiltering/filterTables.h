@@ -34,7 +34,6 @@ DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
 
 DECLARE_SOA_COLUMN(DiffBC, hasDiffBC, bool);   //! diffractive BC
 
-
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
 DECLARE_SOA_COLUMN(SingleMuLow, hasSingleMuLow, bool);   //! single muon with low pT trigger
