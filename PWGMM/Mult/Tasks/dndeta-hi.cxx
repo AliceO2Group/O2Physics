@@ -242,10 +242,9 @@ struct MultiplicityCounter {
 
   void processMCCounting(
     soa::Join<MyMCCollisions, aod::McCollisionLabels> const& collisions,
-    aod::McCollisions const&, 
+    aod::McCollisions const&,
     Particles const& mcParticles,
     soa::Filtered<LabeledTracksEx> const&,
-    soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& fullV0s,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
     auto cent = 50.;
@@ -342,8 +341,7 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processMCTrackPt, "MC Tracks Pt gen & Pt rec", false);
 
   void processGen(
-    MyMCCollisions::iterator const& mcCollision,
-    aod::McCollisions const&,
+    aod::McCollisions::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks)
   {
