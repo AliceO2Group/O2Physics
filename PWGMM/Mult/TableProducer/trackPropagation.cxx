@@ -98,11 +98,10 @@ struct AmbiguousTrackPropagation {
 
   void initCCDB(ExtBCs::iterator const& bc)
   {
-    LOG(info) << "INITIALIZING CCDB";
-
     if (runNumber == bc.runNumber()) {
       return;
     }
+    LOG(info) << "INITIALIZING CCDB";
     grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
     LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current()
               << " A for run " << bc.runNumber()

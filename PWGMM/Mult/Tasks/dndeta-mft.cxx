@@ -38,11 +38,11 @@ using namespace o2::framework::expressions;
 
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
-// AxisSpec MultAxis = {301, -0.5, 300.5}; now replaced by a ConfigurableAxis
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec PhiAxis = {600, 0, 2 * M_PI};
 AxisSpec EtaAxis = {18, -4.6, -1.};
 AxisSpec DCAxyAxis = {100, -1, 10};
+AxisSpec CentAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -79,9 +79,9 @@ struct PseudorapidityDensityMFT {
       {"Tracks/Control/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                                    //
                                                                                                                                        //{"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                     //
       {"Tracks/Control/ReassignedDCAXY", "  ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                         //
-                                                                                                                                       //{"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},           //
+                                                                                                                                       //{"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAxyAxis}}},           //
       {"Tracks/Control/ExtraDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}},                                               //
-                                                                                                                                       //{"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                //
+                                                                                                                                       //{"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAxyAxis}}},                //
       {"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                 //
       {"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                          //
       {"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},            //
@@ -142,6 +142,33 @@ struct PseudorapidityDensityMFT {
       if (!histoReweight) {
         LOGF(fatal, "object not found!");
       }
+    }
+    if (doprocessCountingCentrality)
+    {
+      registry.add({"Events/Centrality/Selection", ";status;centrality;events", {HistType::kTH2F, {{4, 0.5, 4.5}, CentAxis}}});
+      auto hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All");
+      x->SetBinLabel(2, "Selected");
+      x->SetBinLabel(3, "Selected INEL>0");
+      x->SetBinLabel(4, "Rejected");
+
+      registry.add({"Events/Centrality/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTH3F, {MultAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/PtEta", " ; p_{T} (GeV/c); #eta; centrality", {HistType::kTH3F, {PtAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
+      //registry.add({"Tracks/Centrality/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
+      //registry.add({"Tracks/Centrality/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
+      //registry.add({"Tracks/Centrality/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ExtraTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ReassignedTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm); centrality", {HistType::kTH3F, {ZAxis, ZAxis, CentAxis}}});
     }
   }
 
@@ -310,6 +337,75 @@ struct PseudorapidityDensityMFT {
     }
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReweight, "Process reco info w reweight", false);
+
+
+  using ExColsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
+
+  void processCountingCentrality(ExColsCent::iterator const& collision,
+                                 aod::MFTTracks const& tracks,
+                                 soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks, aod::BestCollisionsFwd>> const& atracks)
+  {
+    auto c = collision.centFT0C();
+    registry.fill(HIST("Events/Centrality/Selection"), 1., c);
+
+    if (!useEvSel || collision.sel8())
+    {
+      auto z = collision.posZ();
+      registry.fill(HIST("Events/Centrality/Selection"), 2., c);
+      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+      auto Ntrk = perCollisionSample.size() + atracks.size();
+
+      registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrk, z,c);
+
+
+      for (auto& track : atracks) {
+        auto otrack = track.mfttrack(); // original track
+        float ophi = otrack.phi();
+        o2::math_utils::bringTo02Pi(ophi);
+        // if (std::abs(otrack.eta()) < estimatorEta) {
+        //   ++Ntrks;
+        // }
+        registry.fill(HIST("Tracks/Centrality/EtaZvtx"), otrack.eta(), z, c);
+        registry.fill(HIST("Tracks/Centrality/PhiEta"), ophi, otrack.eta(), c);
+        if (!otrack.has_collision()) {
+          registry.fill(HIST("Tracks/Centrality/Control/ExtraTracksEtaZvtx"), otrack.eta(), z, c);
+          registry.fill(HIST("Tracks/Centrality/Control/ExtraTracksPhiEta"), ophi, otrack.eta(), c);
+          registry.fill(HIST("Tracks/Centrality/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+          //registry.fill(HIST("Tracks/Centrality/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ(), c);
+        } else if (otrack.collisionId() != track.bestCollisionId()) {
+          registry.fill(HIST("Tracks/Centrality/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z, c);
+          registry.fill(HIST("Tracks/Centrality/Control/ReassignedTracksPhiEta"), ophi, otrack.eta(), c);
+          registry.fill(HIST("Tracks/Centrality/Control/ReassignedVertexCorr"), otrack.collision_as<ExColsCent>().posZ(), z, c);
+          registry.fill(HIST("Tracks/Centrality/Control/ReassignedDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+          //registry.fill(HIST("Tracks/Centrality/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ(), c);
+        }
+        registry.fill(HIST("Tracks/Centrality/Control/PtEta"), otrack.pt(), otrack.eta(), c);
+        registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+        //registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), otrack.pt(), track.bestDCAZ(), c);
+      }
+      for (auto& track : tracks) {
+        if (std::find(ambTrackIds.begin(), ambTrackIds.end(), track.globalIndex()) != ambTrackIds.end()) {
+          continue;
+        }
+        // if (std::abs(track.eta()) < estimatorEta) {
+        //   ++Ntrks;
+        // }
+        registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
+        registry.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), c);
+        //registry.fill(HIST("Tracks/Centrality/Control/PtEta"), track.pt(), track.eta(), c);
+        //registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), track.pt(), track.bestDCAXY(), c);
+        //registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), track.pt(), track.dcaZ(), c);
+      }
+
+
+    } else {
+      registry.fill(HIST("Events/Centrality/Selection"), 4., c);//rejected events
+    }
+  }
+
+  PROCESS_SWITCH(PseudorapidityDensityMFT, processCountingCentrality, "Count tracks in centrality bins", false);
+
+
 
   using Particles = soa::Filtered<aod::McParticles>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
