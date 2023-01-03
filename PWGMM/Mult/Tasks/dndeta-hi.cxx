@@ -88,7 +88,6 @@ struct MultiplicityCounter {
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> isMC{"isMC", false, "check if MC"};
 
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
   AxisSpec MultAxis = {multBinning, "N"};
   Configurable<bool> CentOn{"CentOn", false, "centrality switch ; watch your ccdb timestamps"}; // on debuging..
