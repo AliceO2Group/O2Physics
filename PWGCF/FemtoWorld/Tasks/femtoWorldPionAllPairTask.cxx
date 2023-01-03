@@ -449,3 +449,11 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   };
   return workflow;
 }
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  WorkflowSpec workflow{
+    adaptAnalysisTask<FemtoWorldPionAllPair>(cfgc),
+  };
+  return workflow;
+}
