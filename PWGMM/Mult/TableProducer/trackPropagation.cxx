@@ -98,8 +98,6 @@ struct AmbiguousTrackPropagation {
 
   void initCCDB(ExtBCs::iterator const& bc)
   {
-    LOG(info) << "INITIALIZING CCDB";
-
     if (runNumber == bc.runNumber()) {
       return;
     }
