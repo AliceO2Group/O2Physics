@@ -21,8 +21,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
-#include <iostream>
 #include <string>
+#include <iostream>
 
 using namespace o2::framework;
 
