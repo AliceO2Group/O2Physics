@@ -89,9 +89,6 @@ struct MultiplicityCounter {
   Configurable<bool> isMC{"isMC", false, "check if MC"};
 
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
   AxisSpec MultAxis = {multBinning, "N"};
   Configurable<bool> CentOn{"CentOn", false, "centrality switch ; watch your ccdb timestamps"}; // on debuging..
