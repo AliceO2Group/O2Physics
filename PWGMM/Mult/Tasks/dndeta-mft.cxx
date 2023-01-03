@@ -126,8 +126,12 @@ struct PseudorapidityDensityMFT {
     if (doprocessGen) {
       registry.add({"EventsNtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen_gt0", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen_gt0t", "; N_{trk}; #it{z}_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       registry.add({"TracksEtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksEtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      registry.add({"TracksEtaZvtxGen_gt0", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      registry.add({"TracksEtaZvtxGen_gt0t", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"TracksPhiZvtxGen", "; #varphi; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {PhiAxis, ZAxis}}}); //
       registry.add({"TracksToPartPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});             //
@@ -161,26 +165,20 @@ struct PseudorapidityDensityMFT {
       }
     }
     if (doprocessCountingCentrality) {
-      registry.add({"Events/Centrality/Selection", ";status;centrality;events", {HistType::kTH2F, {{4, 0.5, 4.5}, CentAxis}}});
+      registry.add({"Events/Centrality/Selection", ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
       auto hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
       auto* x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
-      x->SetBinLabel(3, "Selected INEL>0");
-      x->SetBinLabel(4, "Rejected");
+      x->SetBinLabel(3, "Rejected");
 
       registry.add({"Events/Centrality/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTH3F, {MultAxis, ZAxis, CentAxis}}});
-      registry.add({"Events/Centrality/NtrkZvtx_gt0", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTH3F, {MultAxis, ZAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/EtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/PtEta", " ; p_{T} (GeV/c); #eta; centrality", {HistType::kTH3F, {PtAxis, EtaAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
-      // registry.add({"Tracks/Centrality/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
-      // registry.add({"Tracks/Centrality/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
-      // registry.add({"Tracks/Centrality/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTH3F, {PtAxis, DCAxyAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/ExtraTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
@@ -386,8 +384,7 @@ struct PseudorapidityDensityMFT {
   void processCountingCentrality(ExColsCent::iterator const& collision,
                                  aod::MFTTracks const& tracks,
                                  soa::SmallGroups<soa::Join<aod::AmbiguousMFTTracks,
-                                                            aod::BestCollisionsFwd>> const& atracks,
-                                 FiCentralTracks const& midtracks)
+                                                            aod::BestCollisionsFwd>> const& atracks)
   {
     auto c = collision.centFT0C();
     registry.fill(HIST("Events/Centrality/Selection"), 1., c);
@@ -404,10 +401,7 @@ struct PseudorapidityDensityMFT {
         auto otrack = track.mfttrack(); // original track
         float ophi = otrack.phi();
         o2::math_utils::bringTo02Pi(ophi);
-        if (midtracks.size() > 0) // INEL>0
-        {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtx_gt0"), otrack.eta(), z, c);
-        }
+
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), otrack.eta(), z, c);
         registry.fill(HIST("Tracks/Centrality/PhiEta"), ophi, otrack.eta(), c);
         if (!otrack.has_collision()) {
@@ -430,25 +424,13 @@ struct PseudorapidityDensityMFT {
         if (std::find(ambTrackIds.begin(), ambTrackIds.end(), track.globalIndex()) != ambTrackIds.end()) {
           continue;
         }
-        if (midtracks.size() > 0) // INEL>0
-        {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtx_gt0"), track.eta(), z, c);
-        }
+
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
         registry.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), c);
-        // registry.fill(HIST("Tracks/Centrality/Control/PtEta"), track.pt(), track.eta(), c);
-        // registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), track.pt(), track.bestDCAXY(), c);
-        // registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), track.pt(), track.dcaZ(), c);
-      }
-
-      if (midtracks.size() > 0) // INEL>0
-      {
-        registry.fill(HIST("Events/Centrality/Selection"), 3., c);
-        registry.fill(HIST("Events/Centrality/NtrkZvtx_gt0"), Ntrk, z, c);
       }
 
     } else {
-      registry.fill(HIST("Events/Centrality/Selection"), 4., c); // rejected events
+      registry.fill(HIST("Events/Centrality/Selection"), 3., c); // rejected events
     }
   }
 
@@ -457,8 +439,15 @@ struct PseudorapidityDensityMFT {
   using Particles = soa::Filtered<aod::McParticles>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   Partition<Particles> mcSample = (aod::mcparticle::eta < -2.8f) && (aod::mcparticle::eta > -3.2f);
+  Partition<Particles> mcSampleCentral = nabs(aod::mcparticle::eta) < estimatorEta;
 
-  void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, aod::MFTTracks const& tracks)
+  Preslice<FiCentralTracks> perColCentral = aod::track::collisionId;
+
+  void processGen(aod::McCollisions::iterator const& mcCollision,
+                  o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
+                  Particles const& particles,
+                  aod::MFTTracks const& tracks,
+                  FiCentralTracks const& midtracks)
   {
     registry.fill(HIST("EventEfficiency"), 1.);
 
@@ -477,7 +466,29 @@ struct PseudorapidityDensityMFT {
     }
     registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
 
+    //--------for INEL>0
+    auto perCollisionMCSampleCentral = mcSampleCentral->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto nChargedCentral = 0;
+    for (auto& particle : perCollisionMCSampleCentral) {
+      auto charge = 0.;
+      auto p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
+      }
+      nChargedCentral++;
+    }
+
+    if (nChargedCentral > 0) {
+      registry.fill(HIST("EventEfficiency"), 2.);
+      registry.fill(HIST("EventsNtrkZvtxGen_gt0t"), nCharged, mcCollision.posZ());
+    }
+
+    //-----------
     bool atLeastOne = false;
+    bool atLeastOne_gt0 = false;
     int moreThanOne = 0;
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -488,6 +499,14 @@ struct PseudorapidityDensityMFT {
         auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
 
         registry.fill(HIST("EventEfficiency"), 4.);
+
+        auto perCollisionSampleCentral = midtracks.sliceBy(perColCentral, collision.globalIndex());
+
+        if (perCollisionSampleCentral.size() > 0) {
+          registry.fill(HIST("EventEfficiency"), 5.);
+          atLeastOne_gt0 = true;
+          registry.fill(HIST("EventsNtrkZvtxGen_gt0"), perCollisionSample.size(), collision.posZ());
+        }
 
         registry.fill(HIST("EventsZposDiff"), collision.posZ() - mcCollision.posZ());
         if (useZDiffCut) {
@@ -517,10 +536,17 @@ struct PseudorapidityDensityMFT {
       }
 
       registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+      if (perCollisionMCSampleCentral.size() > 0) {
+        registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
+      }
       if (atLeastOne) {
         registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
         registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
+        if (atLeastOne_gt0) {
+          registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
+        }
       }
+
       registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
       registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(), mcCollision.posZ());
       registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
