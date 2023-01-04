@@ -21,6 +21,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
