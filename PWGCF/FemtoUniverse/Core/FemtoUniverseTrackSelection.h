@@ -18,6 +18,10 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
 
+#include <cmath>
+#include <iostream>
+#include <vector>
+
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 
@@ -27,8 +31,6 @@
 
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
-#include <cmath>
-#include <iostream>
 
 using namespace o2::framework;
 

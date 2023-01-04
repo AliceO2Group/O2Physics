@@ -17,12 +17,12 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 
+#include <string>
+#include <iostream>
+
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
-
-#include <string>
-#include <iostream>
 
 using namespace o2::framework;
 

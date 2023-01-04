@@ -17,10 +17,11 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 
-#include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
-
-#include "Framework/HistogramRegistry.h"
 #include <string>
+#include <vector>
+
+#include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
+#include "Framework/HistogramRegistry.h"
 
 namespace o2::analysis
 {
@@ -199,7 +200,7 @@ class FemtoUniverseDetaDphiStar
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return (dPhiAvg / (float)num);
+    return (dPhiAvg / (static_cast<float>)num);
   }
 };
 

@@ -12,6 +12,8 @@
 #ifndef PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_
 #define PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTOUNIVERSEDERIVED_H_
 
+#include <cmath>
+
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
@@ -20,7 +22,6 @@
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include <cmath>
 
 namespace o2::aod
 {

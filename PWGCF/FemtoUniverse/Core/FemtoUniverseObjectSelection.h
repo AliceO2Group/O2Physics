@@ -16,8 +16,10 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
+#include <algorithm>
+#include <vector>
 
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 
