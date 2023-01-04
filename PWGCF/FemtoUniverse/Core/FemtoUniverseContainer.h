@@ -18,6 +18,9 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 
+#include <vector>
+#include <string>
+
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 
@@ -27,9 +30,6 @@
 
 #include "TLorentzVector.h"
 #include "CommonConstants/MathConstants.h"
-
-#include <vector>
-#include <string>
 
 using namespace o2::framework;
 using namespace o2::constants::math;

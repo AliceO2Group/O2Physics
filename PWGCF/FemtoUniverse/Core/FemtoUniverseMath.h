@@ -17,12 +17,12 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 
+#include <iostream>
+
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
-
-#include <iostream>
 
 namespace o2::analysis::femtoUniverse
 {

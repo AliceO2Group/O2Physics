@@ -18,11 +18,10 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEUTILS_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEUTILS_H_
 
+#include <vector>
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
-#include <CCDB/BasicCCDBManager.h>
-
-#include <vector>
 
 namespace o2::analysis::femtoUniverse
 {
