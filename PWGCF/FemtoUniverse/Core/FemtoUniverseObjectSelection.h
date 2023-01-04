@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <string>
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "ReconstructionDataFormats/PID.h"

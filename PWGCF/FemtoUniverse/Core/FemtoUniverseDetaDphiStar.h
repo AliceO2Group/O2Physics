@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 #include "Framework/HistogramRegistry.h"

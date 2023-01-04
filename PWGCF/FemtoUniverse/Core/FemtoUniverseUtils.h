@@ -18,8 +18,8 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEUTILS_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEUTILS_H_
 
-#include <vector>
 #include <CCDB/BasicCCDBManager.h>
+#include <vector>
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
 
