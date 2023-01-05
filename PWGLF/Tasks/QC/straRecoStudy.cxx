@@ -90,6 +90,11 @@ struct preProcessMCcollisions {
     float deltaXY = -999; // positive def
     float deltaZ = -999;
     float deltaT = -999;
+    float time = -999;
+    float globalBC = -999;
+    float positionX = -999;
+    float positionY = -999;
+    float positionZ = -999;
   };
 
   template <typename T>
@@ -110,11 +115,12 @@ struct preProcessMCcollisions {
     const AxisSpec axisCovariance{(int)400, 0.0f, +0.1f, ""};
     const AxisSpec axisCovarianceTest{(int)400, -0.05f, +0.05f, ""};
     const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
-
+    const AxisSpec axisTwentyWithNegative{(int)20, -10.5, +9.5f, ""};
+    
     const AxisSpec axisPVResolutionXY{(int)400, 0.0f, +0.05f, ""};
     const AxisSpec axisPVResolutionZ{(int)400, -0.1f, +0.1f, ""};
-    const AxisSpec axisPVResolutionT{(int)400, -50000.0f, +0.0f, ""};
-
+    const AxisSpec axisPVResolutionT{(int)4000, -100.0f, +100.0f, ""};
+    
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
     histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
 
@@ -131,14 +137,14 @@ struct preProcessMCcollisions {
     histos.add("h2dCovarianceTrace", "h2dCovarianceTrace", kTH2D, {axisCovariance, axisTwenty});
     histos.add("h2dCovarianceTraceWithXi", "h2dCovarianceTraceWithXi", kTH2D, {axisCovariance, axisTwenty});
 
-    // PV true error: from reco vs MC
+    //PV true error: from reco vs MC
     histos.add("h2dPVResolutionXY", "h2dPVResolutionXY", kTH2D, {axisPVResolutionXY, axisTwenty});
     histos.add("h2dPVResolutionZ", "h2dPVResolutionZ", kTH2D, {axisPVResolutionZ, axisTwenty});
     histos.add("h2dPVResolutionT", "h2dPVResolutionT", kTH2D, {axisPVResolutionT, axisTwenty});
     histos.add("h2dPVResolutionXYWithXi", "h2dPVResolutionXYWithXi", kTH2D, {axisPVResolutionXY, axisTwenty});
     histos.add("h2dPVResolutionZWithXi", "h2dPVResolutionZWithXi", kTH2D, {axisPVResolutionZ, axisTwenty});
     histos.add("h2dPVResolutionTWithXi", "h2dPVResolutionTWithXi", kTH2D, {axisPVResolutionT, axisTwenty});
-
+    
     // Helper to decipher this histogram
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV");      // size 1 = 0
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
@@ -161,9 +167,16 @@ struct preProcessMCcollisions {
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(8, "Recoed 4 times, 2nd Biggest PV");
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(9, "Recoed 4 times, 3rd Biggest PV");
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
+    
+    //Deltas between split vertices
+    histos.add("h2dPVDeltaTime", "h2dPVDeltaTime", kTH2D, {axisPVResolutionT, axisTwenty});
+    histos.add("h2dPVDeltaBCIndex", "h2dPVDeltaBCIndex", kTH2D, {axisTwentyWithNegative, axisTwenty});
+    
+    histos.add("h2dPVDeltaPositionXY", "h2dPVDeltaPositionXY", kTH2D, {axisPVResolutionXY, axisTwenty});
+    histos.add("h2dPVDeltaPositionZ", "h2dPVDeltaPositionZ", kTH2D, {axisPVResolutionZ, axisTwenty});
   }
 
-  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles)
+  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles, aod::BCs const&)
   {
     int lNumberOfXi = 0;
     for (auto& mcp : mcParticles) {
@@ -180,14 +193,20 @@ struct preProcessMCcollisions {
       histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
     int lCollisionIndex = 0;
     for (auto& collision : collisions) {
-      float cyy = TMath::Sign(1, collision.covYY()) * TMath::Sqrt(TMath::Abs(collision.covYY()));
-      histos.fill(HIST("hCyyTest"), cyy); // check for bug
+      float cyy = TMath::Sign(1,collision.covYY())*TMath::Sqrt( TMath::Abs( collision.covYY() ) );
+      histos.fill(HIST("hCyyTest"), cyy); //check for bug
       collisionNContribs.emplace_back(collision.numContrib());
       collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(TMath::Abs(collision.covXX()) + TMath::Abs(collision.covYY()) + TMath::Abs(collision.covZZ()));
-      collisionStatAggregator[lCollisionIndex].deltaXY = TMath::Sqrt(TMath::Power(collision.posX() - mcCollision.posX(), 2) + TMath::Power(collision.posY() - mcCollision.posY(), 2));
+      collisionStatAggregator[lCollisionIndex].deltaXY = TMath::Sqrt( TMath::Power(collision.posX() - mcCollision.posX(), 2) + TMath::Power(collision.posY() - mcCollision.posY(), 2) );
       collisionStatAggregator[lCollisionIndex].deltaZ = collision.posZ() - mcCollision.posZ();
-      collisionStatAggregator[lCollisionIndex].deltaT = (collision.collisionTime() - mcCollision.t()) / 1000;
-
+      collisionStatAggregator[lCollisionIndex].deltaT = (collision.collisionTime() - mcCollision.t())/1000;
+      collisionStatAggregator[lCollisionIndex].time = collision.collisionTime();
+      collisionStatAggregator[lCollisionIndex].globalBC = collision.bc().globalBC();
+      
+      collisionStatAggregator[lCollisionIndex].positionX = collision.posX();
+      collisionStatAggregator[lCollisionIndex].positionY = collision.posY();
+      collisionStatAggregator[lCollisionIndex].positionZ = collision.posZ();
+      
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : groupedTracks) {
         if (track.isPVContributor()) {
@@ -208,6 +227,7 @@ struct preProcessMCcollisions {
     lCollisionIndex = 0;
     auto sortedIndices = sort_indices(collisionNContribs);
     int lYAxisOffset = 0.5 * collisions.size() * (collisions.size() - 1);
+    int firstIndex = sortedIndices[0];
     for (auto ic : sortedIndices) {
       int lIndexBin = 7 * lCollisionIndex; // use offset to make plot much easier to read
       histos.fill(HIST("h2dTrackCounter"), lIndexBin + 0, collisions.size());
@@ -233,6 +253,17 @@ struct preProcessMCcollisions {
         histos.fill(HIST("h2dPVResolutionXYWithXi"), collisionStatAggregator[ic].deltaXY, lYAxisOffset + lCollisionIndex);
         histos.fill(HIST("h2dPVResolutionZWithXi"), collisionStatAggregator[ic].deltaZ, lYAxisOffset + lCollisionIndex);
         histos.fill(HIST("h2dPVResolutionTWithXi"), collisionStatAggregator[ic].deltaT, lYAxisOffset + lCollisionIndex);
+      }
+      
+      if(lCollisionIndex>0){
+        histos.fill(HIST("h2dPVDeltaTime"), collisionStatAggregator[ic].time-collisionStatAggregator[firstIndex].time, lYAxisOffset + lCollisionIndex);
+        histos.fill(HIST("h2dPVDeltaBCIndex"), collisionStatAggregator[ic].globalBC-collisionStatAggregator[firstIndex].globalBC, lYAxisOffset + lCollisionIndex);
+        histos.fill(HIST("h2dPVDeltaPositionZ"), collisionStatAggregator[ic].positionZ-collisionStatAggregator[firstIndex].positionZ, lYAxisOffset + lCollisionIndex);
+        float lDeltaPositionXY = TMath::Sqrt(
+                                             TMath::Power(collisionStatAggregator[ic].positionX-collisionStatAggregator[firstIndex].positionX, 2) +
+                                             TMath::Power(collisionStatAggregator[ic].positionY-collisionStatAggregator[firstIndex].positionY, 2)
+                                             );
+        histos.fill(HIST("h2dPVDeltaPositionXY"), lDeltaPositionXY, lYAxisOffset + lCollisionIndex);
       }
       lCollisionIndex++;
     }
