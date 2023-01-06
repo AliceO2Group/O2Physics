@@ -325,6 +325,8 @@ struct HfCandidateCreatorB0Expressions {
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
+    rowCandidateB0->bindExternalIndices(&tracks);
+
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
