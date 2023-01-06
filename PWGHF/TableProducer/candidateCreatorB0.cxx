@@ -315,7 +315,7 @@ struct HfCandidateCreatorB0 {
   }       // process
 };        // struct
 
-///Extends the base table with expression columns and performs MC matching.
+/// Extends the base table with expression columns and performs MC matching.
 struct HfCandidateCreatorB0Expressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
   Produces<aod::HfCandB0McRec> rowMcMatchRec; // table defined in CandidateReconstructionTables.h
