@@ -8,8 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_DPTDPTFILTER_H
-#define O2_ANALYSIS_DPTDPTFILTER_H
+#ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
+#define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
+
+#include <vector>
+#include <string>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -45,8 +48,9 @@ enum SystemType {
   kPbp,          ///< **Pb-p** system
   kPbPb,         ///< **Pb-Pb** system
   kXeXe,         ///< **Xe-Xe** system
-  kppRun3,
-  knSystems ///< number of handled systems
+  kppRun3,       ///< **p-p Run 3** system
+  kPbPbRun3,     ///< **Pb-Pb Run 3** system
+  knSystems      ///< number of handled systems
 };
 
 /// \enum DataType
@@ -97,23 +101,61 @@ int tracktype = 1;
 int trackonecharge = 1;
 int tracktwocharge = -1;
 
-TrackSelection* globalRun3 = nullptr;
-TrackSelection* globalSDDRun3 = nullptr;
+std::vector<TrackSelection*> trackFilters = {};
+bool dca2Dcut = false;
+float maxDCAz = 1e6f;
+float maxDCAxy = 1e6f;
 
 inline void initializeTrackSelection()
 {
   switch (tracktype) {
-    case 3: /* Run3 track */
-      globalRun3 = new TrackSelection(getGlobalTrackSelection());
+    case 1: { /* Run2 global track */
+      TrackSelection* globalRun2 = new TrackSelection(getGlobalTrackSelection());
+      globalRun2->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+      globalRun2->SetMaxChi2PerClusterTPC(2.5f);
+      TrackSelection* globalSDDRun2 = new TrackSelection(getGlobalTrackSelectionSDD());
+      globalSDDRun2->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+      globalSDDRun2->SetMaxChi2PerClusterTPC(2.5f);
+      trackFilters.push_back(globalRun2);
+      trackFilters.push_back(globalSDDRun2);
+    } break;
+    case 3: { /* Run3 track */
+      TrackSelection* globalRun3 = new TrackSelection(getGlobalTrackSelection());
       globalRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
       globalRun3->ResetITSRequirements();
       globalRun3->SetRequireHitsInITSLayers(1, {0, 1, 2});
-      globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
+      TrackSelection* globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
       globalSDDRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
       globalSDDRun3->ResetITSRequirements();
       globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
       globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
-      break;
+      trackFilters.push_back(globalRun3);
+      trackFilters.push_back(globalSDDRun3);
+    } break;
+    case 5: { /* Run2 TPC only track */
+      TrackSelection* tpcOnly = new TrackSelection;
+      tpcOnly->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+      tpcOnly->SetMinNClustersTPC(50);
+      tpcOnly->SetMaxChi2PerClusterTPC(4);
+      tpcOnly->SetMaxDcaZ(3.2f);
+      maxDCAz = 3.2;
+      tpcOnly->SetMaxDcaXY(2.4f);
+      maxDCAxy = 2.4;
+      dca2Dcut = true;
+      trackFilters.push_back(tpcOnly);
+    } break;
+    case 7: { /* Run3 TPC only track */
+      TrackSelection* tpcOnly = new TrackSelection;
+      tpcOnly->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      tpcOnly->SetMinNClustersTPC(50);
+      tpcOnly->SetMaxChi2PerClusterTPC(4);
+      tpcOnly->SetMaxDcaZ(3.2f);
+      maxDCAz = 3.2;
+      tpcOnly->SetMaxDcaXY(2.4f);
+      maxDCAxy = 2.4;
+      dca2Dcut = true;
+      trackFilters.push_back(tpcOnly);
+    } break;
     default:
       break;
   }
@@ -139,7 +181,7 @@ TDatabasePDG* fPDG = nullptr;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
-  if (triggstr.empty() or triggstr == "MB") {
+  if (triggstr.empty() || triggstr == "MB") {
     return kMB;
   } else if (triggstr == "None") {
     return kNONE;
@@ -152,7 +194,7 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 inline SystemType getSystemType(std::string const& sysstr)
 {
   /* we have to figure out how extract the system type */
-  if (sysstr.empty() or (sysstr == "PbPb")) {
+  if (sysstr.empty() || (sysstr == "PbPb")) {
     return kPbPb;
   } else if (sysstr == "pp") {
     return kpp;
@@ -166,6 +208,8 @@ inline SystemType getSystemType(std::string const& sysstr)
     return kXeXe;
   } else if (sysstr == "ppRun3") {
     return kppRun3;
+  } else if (sysstr == "PbPbRun3") {
+    return kPbPbRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
   }
@@ -178,7 +222,7 @@ inline SystemType getSystemType(std::string const& sysstr)
 inline DataType getDataType(std::string const& datastr)
 {
   /* we have to figure out how extract the type of data*/
-  if (datastr.empty() or (datastr == "data")) {
+  if (datastr.empty() || (datastr == "data")) {
     return kData;
   } else if (datastr == "datanoevsel") {
     return kDataNoEvtSel;
@@ -249,6 +293,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
       }
       break;
     case kppRun3:
+    case kPbPbRun3:
       switch (fTriggerSelection) {
         case kMB:
           if (collision.sel8()) {
@@ -330,6 +375,7 @@ inline float extractMultiplicity(CollisionObject const& collision)
       mult = collision.multFV0M();
       break;
     case kppRun3:
+    case kPbPbRun3:
       /* for the time being let's extract T0M */
       mult = collision.multFT0M();
       break;
@@ -350,7 +396,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
   bool centmultsel = false;
   switch (fCentMultEstimator) {
     case kV0M:
-      if (collision.centRun2V0M() < 100 and 0 < collision.centRun2V0M()) {
+      if (collision.centRun2V0M() < 100 && 0 < collision.centRun2V0M()) {
         centmult = collision.centRun2V0M();
         centmultsel = true;
       }
@@ -417,7 +463,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McColli
 template <>
 inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
-  if (centmult < 100 and 0 < centmult) {
+  if (centmult < 100 && 0 < centmult) {
     return true;
   } else {
     return false;
@@ -435,13 +481,13 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
-  if (zvtxlow < collision.posZ() and collision.posZ() < zvtxup) {
+  if (zvtxlow < collision.posZ() && collision.posZ() < zvtxup) {
     zvtxsel = true;
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  return trigsel and zvtxsel and centmultsel;
+  return trigsel && zvtxsel && centmultsel;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -454,24 +500,20 @@ inline bool matchTrackType(TrackObject const& track)
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
   } else {
-    switch (tracktype) {
-      case 1:
-        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-          return true;
+    for (auto filter : trackFilters) {
+      if (filter->IsSelected(track)) {
+        if (dca2Dcut) {
+          if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
+            return false;
+          } else {
+            return true;
+          }
         } else {
-          return false;
-        }
-        break;
-      case 3: /* Run3 track */
-        if (globalRun3->IsSelected(track) || globalSDDRun3->IsSelected(track)) {
           return true;
-        } else {
-          return false;
         }
-        break;
-      default:
-        return false;
+      }
     }
+    return false;
   }
 }
 
@@ -483,11 +525,11 @@ inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if (matchTrackType(track)) {
-    if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
-      if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
+    if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+      if (((track.sign() > 0) && (trackonecharge > 0)) || ((track.sign() < 0) && (trackonecharge < 0))) {
         asone = uint8_t(true);
       }
-      if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
+      if (((track.sign() > 0) && (tracktwocharge > 0)) || ((track.sign() < 0) && (tracktwocharge < 0))) {
         astwo = uint8_t(true);
       }
     }
@@ -517,15 +559,15 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
   if (particle.isPhysicalPrimary()) {
-    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
     if (useOwnParticleSelection) {
       float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
       float dcaz = TMath::Abs(particle.vz() - collision.posZ());
-      if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
-        if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      if (!((dcaxy < particleMaxDCAxy) && (dcaz < particleMaxDCAZ))) {
+        if ((particle.mcCollisionId() == 0) && traceCollId0) {
           LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
           LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
           LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
@@ -537,16 +579,16 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
         return;
       }
     }
-    if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
-      if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
+    if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
+      if (((charge > 0) && (trackonecharge > 0)) || ((charge < 0) && (trackonecharge < 0))) {
         asone = uint8_t(true);
       }
-      if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
+      if (((charge > 0) && (tracktwocharge > 0)) || ((charge < 0) && (tracktwocharge < 0))) {
         astwo = uint8_t(true);
       }
     }
   } else {
-    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
     }
   }
@@ -556,4 +598,4 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
 } // namespace analysis
 } // namespace o2
 
-#endif // O2_ANALYSIS_DPTDPTFILTER_H
+#endif // PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_

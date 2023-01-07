@@ -389,14 +389,14 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
   }
 
   // cut on dcaXY and dcaZ
-  LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
-  if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
-    return false;
-  }
+  // LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
+  // if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
+  //  return false;
+  //}
 
-  if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
-    return false;
-  }
+  // if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
+  //   return false;
+  // }
 
   // loop over all PIDCuts and apply the ones which apply to this track
   auto pidcuts = mAnaPars.PIDCuts().Cuts();
@@ -408,7 +408,12 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
       continue;
     }
 
-    // check pt
+    // check pt of track
+    if (track.pt() < mAnaPars.minpt() || track.pt() > mAnaPars.maxpt()) {
+      return false;
+    }
+
+    // check pt for pid cut
     LOGF(debug, "pT %f %f %f", track.pt(), pidcut.cutPtMin(), pidcut.cutPtMax());
     if (track.pt() < pidcut.cutPtMin() || track.pt() > pidcut.cutPtMax()) {
       continue;

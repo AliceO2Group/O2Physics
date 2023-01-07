@@ -15,6 +15,9 @@
 /// \brief  Header file for QA tasks of the TPC PID quantities
 ///
 
+#ifndef DPG_TASKS_AOTTRACK_PID_QAPIDTPC_H_
+#define DPG_TASKS_AOTTRACK_PID_QAPIDTPC_H_
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -102,9 +105,9 @@ struct tpcPidQa {
   Configurable<int> nBinsExpSigma{"nBinsExpSigma", 200, "Number of bins for the ExpSigma"};
   Configurable<float> minExpSigma{"minExpSigma", 0.f, "Minimum ExpSigma in range"};
   Configurable<float> maxExpSigma{"maxExpSigma", 200.f, "Maximum ExpSigma in range"};
-  Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
-  Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
-  Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+  Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
+  Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
+  Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
@@ -193,7 +196,7 @@ struct tpcPidQa {
     histos.add(hnsigma_pt_pos_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigma_pt_neg_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
 
-    const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} A.U."};
+    const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} Arb. units"};
     histos.add(hsignal_wTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
   }
 
@@ -204,10 +207,8 @@ struct tpcPidQa {
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
-    const AxisSpec pAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}/z (GeV/#it{c})"};
-    const AxisSpec ptAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}_{T}/z (GeV/#it{c})"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T}/|Z| (GeV/#it{c})"};
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p}/|Z| (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogarithmic();
       pAxis.makeLogarithmic();
@@ -234,9 +235,11 @@ struct tpcPidQa {
     }
     histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
     histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
-    histos.add("event/signedtpcsignal", "", kTH2F, {pAxisPosNeg, dedxAxis});
+    histos.add("event/pos/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
+    histos.add("event/neg/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
     histos.add("event/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
-    histos.add("event/signedtpcsignalvspt", "", kTH2F, {ptAxisPosNeg, dedxAxis});
+    histos.add("event/pos/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
+    histos.add("event/neg/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
     histos.add("event/eta", "", kTH1F, {etaAxis});
     histos.add("event/phi", "", kTH1F, {phiAxis});
     histos.add("event/etaphi", "", kTH2F, {etaAxis, phiAxis});
@@ -317,9 +320,14 @@ struct tpcPidQa {
       histos.fill(HIST("event/trackselection"), 4.f);
       histos.fill(HIST("event/particlehypo"), track.pidForTracking());
       histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
-      histos.fill(HIST("event/signedtpcsignal"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
-      histos.fill(HIST("event/signedtpcsignalvspt"), track.pt() * track.sign(), track.tpcSignal());
+      if (track.sign() > 0) {
+        histos.fill(HIST("event/pos/tpcsignalvspt"), track.pt(), track.tpcSignal());
+        histos.fill(HIST("event/pos/tpcsignal"), track.p(), track.tpcSignal());
+      } else {
+        histos.fill(HIST("event/neg/tpcsignalvspt"), track.pt(), track.tpcSignal());
+        histos.fill(HIST("event/neg/tpcsignal"), track.p(), track.tpcSignal());
+      }
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/phi"), track.phi());
       histos.fill(HIST("event/etaphi"), track.eta(), track.phi());
@@ -465,3 +473,5 @@ struct tpcPidQa {
   makeProcessFunction(aod::pidTPCFullAl, aod::pidTOFFullAl, Alpha);
 #undef makeProcessFunction
 };
+
+#endif // DPG_TASKS_AOTTRACK_PID_QAPIDTPC_H_

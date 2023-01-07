@@ -100,7 +100,7 @@ TrackSelection CreateTPCOnlyTrackCuts(float max_eta, int min_tpc_ncr, float max_
   selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.6f);
   selectedTracks.SetMaxChi2PerClusterTPC(max_chi2_tpc);
   selectedTracks.SetMaxDcaXY(2.4f);
-  selectedTracks.SetMaxDcaZ(3.2f);
+  // selectedTracks.SetMaxDcaZ(3.2f);
   return selectedTracks;
 }
 
@@ -201,7 +201,7 @@ struct ProducePCMPhoton {
     return std::sqrt(RecoDecay::p2(pneg) - dp * dp / momTot2); // qtarm
   }
 
-  float psipairv0(const array<float, 3>& ppos, const array<float, 3>& pneg, const float bz)
+  float psipairv0(const array<float, 3>& ppos, const array<float, 3>& pneg)
   {
     // Following idea to use opening of colinear pairs in magnetic field from e.g. PHENIX to ID conversions.
     float deltat = TMath::ATan(pneg[2] / (TMath::Sqrt(pneg[0] * pneg[0] + pneg[1] * pneg[1]))) - TMath::ATan(ppos[2] / (TMath::Sqrt(ppos[0] * ppos[0] + ppos[1] * ppos[1]))); // difference of angles of the two daughter tracks with z-axis
@@ -233,9 +233,9 @@ struct ProducePCMPhoton {
   };
 
   // Configurables
-  Configurable<double> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<double> maxpsipair{"maxpsipair", 0.5, "maximum psipair for v0"};
-  Configurable<double> minv0cospa{"minv0cospa", 0.9, "minimum V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  Configurable<float> maxpsipair{"maxpsipair", 0.5, "maximum psipair for v0"};
+  Configurable<float> minv0cospa{"minv0cospa", 0.9, "minimum V0 CosPA"};
   Configurable<float> maxdcav0dau{"maxdcav0dau", 1.5, "max DCA between V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
   Configurable<float> v0Rmax{"v0Rmax", 60.0, "v0Rmax"};
@@ -333,7 +333,7 @@ struct ProducePCMPhoton {
       registry.add(Form("h%sV0Pt", pairtype[i].Data()), "pT", HistType::kTH1F, {{1000, 0.0f, 10}});
       registry.add(Form("h%sV0EtaPhi", pairtype[i].Data()), "#eta vs. #varphi", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
       registry.add(Form("h%sV0Radius", pairtype[i].Data()), "hV0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {2500, 0.0f, 250.0f}});
-      registry.add(Form("h%sV0CosPA", pairtype[i].Data()), "hV0CosPA", HistType::kTH1F, {{2000, 0.8f, 1.0f}});
+      registry.add(Form("h%sV0CosPA", pairtype[i].Data()), "hV0CosPA", HistType::kTH1F, {{200, 0.8f, 1.0f}});
       registry.add(Form("h%sDCAxyPosToPV", pairtype[i].Data()), "hDCAxyPosToPV;DCA_{xy} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
       registry.add(Form("h%sDCAxyNegToPV", pairtype[i].Data()), "hDCAxyNegToPV;DCA_{xy} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
       registry.add(Form("h%sDCAzPosToPV", pairtype[i].Data()), "hDCAzPosToPV;DCA_{z} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
@@ -342,6 +342,7 @@ struct ProducePCMPhoton {
       registry.add(Form("h%sV0APplot", pairtype[i].Data()), "hV0APplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add(Form("h%sGammaPsiPair", pairtype[i].Data()), "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{160, 0.0, TMath::PiOver2()}, {100, 0.0f, 0.1f}});
       registry.add(Form("h%sMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
+      registry.add(Form("h%sGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}});
     }
   }
 
@@ -504,51 +505,23 @@ struct ProducePCMPhoton {
 
         float alpha = alphav0(pvec0, pvec1);
         float qtarm = qtarmv0(pvec0, pvec1);
-        float psipair = psipairv0(pvec0, pvec1, d_bz);
+        float psipair = psipairv0(pvec0, pvec1);
+        float mGamma = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
+
+        if (!ele.isAmbiguousTrack() && !pos.isAmbiguousTrack()) {
+          registry.fill(HIST("hNonAmbV0APplot"), alpha, qtarm);
+        } else {
+          registry.fill(HIST("hAmbV0APplot"), alpha, qtarm);
+        }
+
         if (!checkAP(alpha, qtarm)) {
           continue;
         }
 
-        float mGamma = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
-
         if (!ele.isAmbiguousTrack() && !pos.isAmbiguousTrack()) {
-          registry.fill(HIST("hNonAmbV0Pt"), v0pt);
-          registry.fill(HIST("hNonAmbV0EtaPhi"), v0phi, v0eta);
-          registry.fill(HIST("hNonAmbV0CosPA"), v0CosinePA);
-          registry.fill(HIST("hNonAmbDCAV0Dau"), v0dca);
-          if (ele.sign() > 0) {
-            registry.fill(HIST("hNonAmbDCAxyPosToPV"), ele.dcaXY());
-            registry.fill(HIST("hNonAmbDCAzPosToPV"), ele.dcaZ());
-            registry.fill(HIST("hNonAmbDCAxyNegToPV"), pos.dcaXY());
-            registry.fill(HIST("hNonAmbDCAzNegToPV"), pos.dcaZ());
-          } else {
-            registry.fill(HIST("hNonAmbDCAxyPosToPV"), pos.dcaXY());
-            registry.fill(HIST("hNonAmbDCAzPosToPV"), pos.dcaZ());
-            registry.fill(HIST("hNonAmbDCAxyNegToPV"), ele.dcaXY());
-            registry.fill(HIST("hNonAmbDCAzNegToPV"), ele.dcaZ());
-          }
-          registry.fill(HIST("hNonAmbV0Radius"), v0z, v0radius);
-          registry.fill(HIST("hNonAmbV0APplot"), alpha, qtarm);
           registry.fill(HIST("hNonAmbMassGamma"), v0radius, mGamma);
           registry.fill(HIST("hNonAmbGammaPsiPair"), psipair, mGamma);
         } else {
-          registry.fill(HIST("hAmbV0Pt"), v0pt);
-          registry.fill(HIST("hAmbV0EtaPhi"), v0phi, v0eta);
-          registry.fill(HIST("hAmbV0CosPA"), v0CosinePA);
-          registry.fill(HIST("hAmbDCAV0Dau"), v0dca);
-          if (ele.sign() > 0) {
-            registry.fill(HIST("hAmbDCAxyPosToPV"), ele.dcaXY());
-            registry.fill(HIST("hAmbDCAzPosToPV"), ele.dcaZ());
-            registry.fill(HIST("hAmbDCAxyNegToPV"), pos.dcaXY());
-            registry.fill(HIST("hAmbDCAzNegToPV"), pos.dcaZ());
-          } else {
-            registry.fill(HIST("hAmbDCAxyPosToPV"), pos.dcaXY());
-            registry.fill(HIST("hAmbDCAzPosToPV"), pos.dcaZ());
-            registry.fill(HIST("hAmbDCAxyNegToPV"), ele.dcaXY());
-            registry.fill(HIST("hAmbDCAzNegToPV"), ele.dcaZ());
-          }
-          registry.fill(HIST("hAmbV0Radius"), v0z, v0radius);
-          registry.fill(HIST("hAmbV0APplot"), alpha, qtarm);
           registry.fill(HIST("hAmbMassGamma"), v0radius, mGamma);
           registry.fill(HIST("hAmbGammaPsiPair"), psipair, mGamma);
         }
@@ -558,6 +531,30 @@ struct ProducePCMPhoton {
         }
         if (mGamma > v0max_mee) {
           continue;
+        }
+
+        if (!ele.isAmbiguousTrack() && !pos.isAmbiguousTrack()) {
+          registry.fill(HIST("hNonAmbV0Pt"), v0pt);
+          registry.fill(HIST("hNonAmbV0EtaPhi"), v0phi, v0eta);
+          registry.fill(HIST("hNonAmbV0CosPA"), v0CosinePA);
+          registry.fill(HIST("hNonAmbDCAV0Dau"), v0dca);
+          registry.fill(HIST("hNonAmbDCAxyPosToPV"), pos.dcaXY());
+          registry.fill(HIST("hNonAmbDCAzPosToPV"), pos.dcaZ());
+          registry.fill(HIST("hNonAmbDCAxyNegToPV"), ele.dcaXY());
+          registry.fill(HIST("hNonAmbDCAzNegToPV"), ele.dcaZ());
+          registry.fill(HIST("hNonAmbV0Radius"), v0z, v0radius);
+          registry.fill(HIST("hNonAmbGammaRxy"), svpos[0], svpos[1]);
+        } else {
+          registry.fill(HIST("hAmbV0Pt"), v0pt);
+          registry.fill(HIST("hAmbV0EtaPhi"), v0phi, v0eta);
+          registry.fill(HIST("hAmbV0CosPA"), v0CosinePA);
+          registry.fill(HIST("hAmbDCAV0Dau"), v0dca);
+          registry.fill(HIST("hAmbDCAxyPosToPV"), pos.dcaXY());
+          registry.fill(HIST("hAmbDCAzPosToPV"), pos.dcaZ());
+          registry.fill(HIST("hAmbDCAxyNegToPV"), ele.dcaXY());
+          registry.fill(HIST("hAmbDCAzNegToPV"), ele.dcaZ());
+          registry.fill(HIST("hAmbV0Radius"), v0z, v0radius);
+          registry.fill(HIST("hAmbGammaRxy"), svpos[0], svpos[1]);
         }
 
         v0gamma(collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0pt, v0eta, v0phi, mGamma);
@@ -570,7 +567,7 @@ struct ProducePCMPhoton {
     // do nothing
   }
 
-  PROCESS_SWITCH(ProducePCMPhoton, processQA, "Run calo QA", false);
+  PROCESS_SWITCH(ProducePCMPhoton, processQA, "Run PCM QA", false);
   PROCESS_SWITCH(ProducePCMPhoton, processDummy, "Dummy function", true);
 };
 

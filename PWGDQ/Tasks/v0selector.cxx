@@ -227,6 +227,7 @@ struct v0selector {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
       {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hMassGamma", "hMassGamma", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}}}},
+      {"hGammaRxy", "hGammaRxy", {HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}}}},
       {"hMassK0S", "hMassK0S", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.45, 0.55}}}},
       {"hMassLambda", "hMassLambda", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}}}},
       {"hMassAntiLambda", "hAntiMassLambda", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}}}},
@@ -257,8 +258,10 @@ struct v0selector {
   };
 
   // Configurables
-  Configurable<double> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  Configurable<float> v0max_mee{"v0max_mee", 0.06, "max mee for photon"};
+  Configurable<float> maxpsipair{"maxpsipair", 0.3, "max psi_pair for photon"};
+  Configurable<float> v0cospa{"v0cospa", 0.998, "V0 CosPA"};
   Configurable<float> dcav0dau{"dcav0dau", 0.3, "DCA V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
   Configurable<float> v0Rmax{"v0Rmax", 90.0, "v0Rmax"};
@@ -366,13 +369,6 @@ struct v0selector {
         continue;
       }
       if (fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-        continue;
-      }
-
-      if (fabs(V0.posTrack_as<FullTracksExt>().dcaZ()) > 3.2) {
-        continue;
-      }
-      if (fabs(V0.negTrack_as<FullTracksExt>().dcaZ()) > 3.2) {
         continue;
       }
 
@@ -489,11 +485,12 @@ struct v0selector {
 
       if (v0id == kGamma) { // photon conversion
         registry.fill(HIST("hMassGamma"), V0radius, mGamma);
-        if (mGamma < 0.04 && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5) {
+        registry.fill(HIST("hV0PhiV"), phiv, mGamma);
+        registry.fill(HIST("hV0Psi"), psipair, mGamma);
+        if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && psipair < maxpsipair) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
-          registry.fill(HIST("hV0PhiV"), phiv, mGamma);
-          registry.fill(HIST("hV0Psi"), psipair, mGamma);
+          registry.fill(HIST("hGammaRxy"), pos[0], pos[1]);
           v0Gamma(V0.negTrack_as<FullTracksExt>().collisionId(), pt, eta, phi, mGamma);
         }
       } else if (v0id == kK0S) { // K0S-> pi pi
@@ -565,16 +562,6 @@ struct v0selector {
         continue;
       }
       if (fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) > 2.4) {
-        continue;
-      }
-
-      if (fabs(v0.posTrack_as<FullTracksExt>().dcaZ()) > 3.2) {
-        continue;
-      }
-      if (fabs(v0.negTrack_as<FullTracksExt>().dcaZ()) > 3.2) {
-        continue;
-      }
-      if (fabs(casc.bachelor_as<FullTracksExt>().dcaZ()) > 3.2) {
         continue;
       }
 
@@ -781,6 +768,10 @@ struct v0selector {
 };
 
 struct trackPIDQA {
+  Configurable<float> dcamin{"dcamin", 0.0, "dcamin"};
+  Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
 
   // Basic checks
   HistogramRegistry registry{
@@ -844,19 +835,19 @@ struct trackPIDQA {
         continue;
       }
 
-      if (track.tpcNClsCrossedRows() < 100) {
+      if (track.tpcNClsCrossedRows() < mincrossedrows) {
         continue;
       }
 
-      if (track.tpcChi2NCl() > 4.0) {
+      if (track.tpcChi2NCl() > maxchi2tpc) {
         continue;
       }
 
-      if (fabs(track.dcaXY()) > 1.0) {
+      if (fabs(track.dcaXY()) < dcamin) {
         continue;
       }
 
-      if (fabs(track.dcaZ()) > 3.0) {
+      if (fabs(track.dcaXY()) > dcamax) {
         continue;
       }
 
@@ -983,8 +974,8 @@ struct v0gammaQA {
     }
 
     for (auto& [g1, g2] : combinations(v0Gammas, v0Gammas)) {
-      ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.0);
-      ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.0);
+      ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
+      ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
       ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
       registry.fill(HIST("h2MggPt"), v12.M(), v12.Pt());
     } // end of combination

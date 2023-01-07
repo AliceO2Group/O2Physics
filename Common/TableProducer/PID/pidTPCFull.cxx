@@ -34,7 +34,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,7 +44,7 @@ using namespace o2::track;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Produce TPC PID QA histograms"}}};
+  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}}};
   std::swap(workflowOptions, options);
 }
 
@@ -312,8 +311,8 @@ struct tpcPidFull {
       track_properties.clear();
 
       auto stop_network_total = std::chrono::high_resolution_clock::now();
-      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (tracks_size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
-      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
+      LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (tracks_size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
+      LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
@@ -374,11 +373,4 @@ struct tpcPidFull {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tpcPidFull>(cfgc)};
-  if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tpcPidQa>(cfgc));
-  }
-  return workflow;
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPidFull>(cfgc)}; }

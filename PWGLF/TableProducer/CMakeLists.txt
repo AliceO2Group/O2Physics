@@ -11,7 +11,7 @@
 
 
 # General purpose
-o2physics_add_dpl_workflow(lf-tpcpid
+o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
@@ -29,11 +29,6 @@ o2physics_add_dpl_workflow(lambdakzerofinder
 
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(strangenessbuilder
-                    SOURCES strangenessbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 

@@ -14,18 +14,19 @@
 ///
 /// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 
+#include <string>
+
+#include "../filterTables.h"
+#include "../../PWGCF/FemtoDream/FemtoUtils.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "../filterTables.h"
-
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/FemtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
-#include "PWGCF/FemtoDream/FemtoDreamContainer.h"
 #include "PWGCF/FemtoDream/FemtoDreamMath.h"
 #include "PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/FemtoDreamDetaDphiStar.h"
@@ -33,9 +34,6 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-
-#include <string>
-#include <bitset>
 
 namespace
 {
@@ -46,12 +44,6 @@ enum CFTriggers {
   kPLL,
   kLLL,
   kNTriggers
-};
-
-enum kDetector {
-  kTPC = 0,
-  kTPCTOF = 1,
-  kNdetectors = 2
 };
 
 static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
@@ -88,6 +80,13 @@ struct CFFilter {
   Configurable<bool> performCPR{"performCPR", true, "Perform or not the close pair rejection"};
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
+  Configurable<std::vector<float>> ConfPIDnSigmaMax{"PIDnSigmaMax",
+                                                    std::vector<float>{4.f, 3.f},
+                                                    "Vector of all possible nSigma values for Acceptance and Rejection (this needs to be in sync with FemtoDreamProducerTask.ConfTrkPIDnSigmaMax)"};
+  Configurable<int> ConfPIDProtonIndex{"PIDProtonIndex", 2, "Index of Proton PID in ConfTrkTPIDspecies of the FemtoDreamProducerTask"};
+  Configurable<int> ConfPIDIndexMax{"PIDIndexMax", 4, "Number of Indices in ConfTrkTPIDspecies of the FemtoDreamProducerTask"};
+  Configurable<float> ConfPIDThreshold{"PThreshold", 0.75f, "P threshold for TPC/TPC&TOF selection"};
+  Configurable<float> ConfPIDnSigma{"PIDnSigma", 4.f, "nSigma value for Proton PID"};
 
   // Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
   Partition<o2::aod::FemtoDreamParticles> partsProton0Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0); // Consider later: && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
@@ -102,33 +101,6 @@ struct CFFilter {
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTV;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
-
-  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, kDetector iDet = kDetector::kTPC)
-  {
-    bool pidSelection = true;
-    for (auto iSpecies : vSpecies) {
-      int bit_to_check = iSpecies * kDetector::kNdetectors + iDet;
-      if (!(pidcut & (1UL << bit_to_check))) {
-        pidSelection = false;
-      }
-    }
-    return pidSelection;
-  };
-
-  bool isFullPIDSelectedProton(aod::femtodreamparticle::cutContainerType const& pidCut, float const& momentum)
-  {
-    float pidThresh = 0.75;
-    bool pidSelection = false;
-    auto vSpecies = std::vector<int>{0};
-    if (momentum < pidThresh) {
-      /// TPC PID only
-      pidSelection = isPIDSelected(pidCut, vSpecies, kDetector::kTPC);
-    } else {
-      /// TPC + TOF PID
-      pidSelection = isPIDSelected(pidCut, vSpecies, kDetector::kTPCTOF);
-    }
-    return pidSelection;
-  };
 
   void init(o2::framework::InitContext&)
   {
@@ -195,14 +167,28 @@ struct CFFilter {
     int antiprot = 0;
     for (auto p1pt : partsProton0) {
       registry.get<TH1>(HIST("fPtBeforePPP"))->Fill(p1pt.pt());
-      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p())) {
+      if (isFullPIDSelected(p1pt.pidcut(),
+                            p1pt.p(),
+                            ConfPIDThreshold.value,
+                            std::vector<int>{ConfPIDProtonIndex.value},
+                            ConfPIDIndexMax.value,
+                            ConfPIDnSigmaMax.value,
+                            ConfPIDnSigma.value,
+                            ConfPIDnSigma.value)) {
         registry.get<TH1>(HIST("fPtAfterPPP"))->Fill(p1pt.pt());
         prot++;
       }
     }
     for (auto p1pt : partsProton1) {
       registry.get<TH1>(HIST("fPtBeforeAntiPPP"))->Fill(p1pt.pt());
-      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p())) {
+      if (isFullPIDSelected(p1pt.pidcut(),
+                            p1pt.p(),
+                            ConfPIDThreshold.value,
+                            std::vector<int>{ConfPIDProtonIndex.value},
+                            ConfPIDIndexMax.value,
+                            ConfPIDnSigmaMax.value,
+                            ConfPIDnSigma.value,
+                            ConfPIDnSigma.value)) {
         registry.get<TH1>(HIST("fPtAfterAntiPPP"))->Fill(p1pt.pt());
         antiprot++;
       }
@@ -221,7 +207,30 @@ struct CFFilter {
         if (prot >= 3) {
           // test default combinations options
           for (auto& [p1, p2, p3] : combinations(partsProton0, partsProton0, partsProton0)) {
-            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+            if (!isFullPIDSelected(p1.pidcut(),
+                                   p1.p(),
+                                   ConfPIDThreshold.value,
+                                   std::vector<int>{ConfPIDProtonIndex.value},
+                                   ConfPIDIndexMax.value,
+                                   ConfPIDnSigmaMax.value,
+                                   ConfPIDnSigma.value,
+                                   ConfPIDnSigma.value) ||
+                !isFullPIDSelected(p2.pidcut(),
+                                   p2.p(),
+                                   ConfPIDThreshold.value,
+                                   std::vector<int>{ConfPIDProtonIndex.value},
+                                   ConfPIDIndexMax.value,
+                                   ConfPIDnSigmaMax.value,
+                                   ConfPIDnSigma.value,
+                                   ConfPIDnSigma.value) ||
+                !isFullPIDSelected(p3.pidcut(),
+                                   p3.p(),
+                                   ConfPIDThreshold.value,
+                                   std::vector<int>{ConfPIDProtonIndex.value},
+                                   ConfPIDIndexMax.value,
+                                   ConfPIDnSigmaMax.value,
+                                   ConfPIDnSigma.value,
+                                   ConfPIDnSigma.value)) {
               continue;
             }
             // Think if pair cleaning is needed in current framework
@@ -249,7 +258,30 @@ struct CFFilter {
           if (antiprot >= 3) {
             for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
 
-              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+              if (!isFullPIDSelected(p1.pidcut(),
+                                     p1.p(),
+                                     ConfPIDThreshold.value,
+                                     std::vector<int>{ConfPIDProtonIndex.value},
+                                     ConfPIDIndexMax.value,
+                                     ConfPIDnSigmaMax.value,
+                                     ConfPIDnSigma.value,
+                                     ConfPIDnSigma.value) ||
+                  !isFullPIDSelected(p2.pidcut(),
+                                     p2.p(),
+                                     ConfPIDThreshold.value,
+                                     std::vector<int>{ConfPIDProtonIndex.value},
+                                     ConfPIDIndexMax.value,
+                                     ConfPIDnSigmaMax.value,
+                                     ConfPIDnSigma.value,
+                                     ConfPIDnSigma.value) ||
+                  !isFullPIDSelected(p3.pidcut(),
+                                     p3.p(),
+                                     ConfPIDThreshold.value,
+                                     std::vector<int>{ConfPIDProtonIndex.value},
+                                     ConfPIDIndexMax.value,
+                                     ConfPIDnSigmaMax.value,
+                                     ConfPIDnSigma.value,
+                                     ConfPIDnSigma.value)) {
                 continue;
               }
               // Think if pair cleaning is needed in current framework
@@ -286,7 +318,22 @@ struct CFFilter {
               continue;
             }
             for (auto& [p1, p2] : combinations(partsProton0, partsProton0)) {
-              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
+              if (!isFullPIDSelected(p1.pidcut(),
+                                     p1.p(),
+                                     ConfPIDThreshold.value,
+                                     std::vector<int>{ConfPIDProtonIndex.value},
+                                     ConfPIDIndexMax.value,
+                                     ConfPIDnSigmaMax.value,
+                                     ConfPIDnSigma.value,
+                                     ConfPIDnSigma.value) ||
+                  !isFullPIDSelected(p2.pidcut(),
+                                     p2.p(),
+                                     ConfPIDThreshold.value,
+                                     std::vector<int>{ConfPIDProtonIndex.value},
+                                     ConfPIDIndexMax.value,
+                                     ConfPIDnSigmaMax.value,
+                                     ConfPIDnSigma.value,
+                                     ConfPIDnSigma.value)) {
                 continue;
               }
               if (performCPR) {
@@ -318,7 +365,22 @@ struct CFFilter {
                 continue;
               }
               for (auto& [p1, p2] : combinations(partsProton1, partsProton1)) {
-                if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
+                if (!isFullPIDSelected(p1.pidcut(),
+                                       p1.p(),
+                                       ConfPIDThreshold.value,
+                                       std::vector<int>{ConfPIDProtonIndex.value},
+                                       ConfPIDIndexMax.value,
+                                       ConfPIDnSigmaMax.value,
+                                       ConfPIDnSigma.value,
+                                       ConfPIDnSigma.value) ||
+                    !isFullPIDSelected(p2.pidcut(),
+                                       p2.p(),
+                                       ConfPIDThreshold.value,
+                                       std::vector<int>{ConfPIDProtonIndex.value},
+                                       ConfPIDIndexMax.value,
+                                       ConfPIDnSigmaMax.value,
+                                       ConfPIDnSigma.value,
+                                       ConfPIDnSigma.value)) {
                   continue;
                 }
                 if (performCPR) {
@@ -348,7 +410,14 @@ struct CFFilter {
       if (Q3Trigger == 2 || Q3Trigger == 1111) {
         if (partsLambda0.size() >= 2 && prot >= 1) {
           for (auto& p1 : partsProton0) {
-            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p())) {
+            if (!isFullPIDSelected(p1.pidcut(),
+                                   p1.p(),
+                                   ConfPIDThreshold.value,
+                                   std::vector<int>{ConfPIDProtonIndex.value},
+                                   ConfPIDIndexMax.value,
+                                   ConfPIDnSigmaMax.value,
+                                   ConfPIDnSigma.value,
+                                   ConfPIDnSigma.value)) {
               continue;
             }
             for (auto& [partLambda1, partLambda2] : combinations(partsLambda0, partsLambda0)) {
@@ -381,7 +450,14 @@ struct CFFilter {
         if (lowQ3Triplets[2] == 0) { // if at least one triplet found in particles, no need to check antiparticles
           if (partsLambda1.size() >= 2 && antiprot >= 1) {
             for (auto& p1 : partsProton1) {
-              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p())) {
+              if (!isFullPIDSelected(p1.pidcut(),
+                                     p1.p(),
+                                     ConfPIDThreshold.value,
+                                     std::vector<int>{ConfPIDProtonIndex.value},
+                                     ConfPIDIndexMax.value,
+                                     ConfPIDnSigmaMax.value,
+                                     ConfPIDnSigma.value,
+                                     ConfPIDnSigma.value)) {
                 continue;
               }
               for (auto& [partLambda1, partLambda2] : combinations(partsLambda1, partsLambda1)) {

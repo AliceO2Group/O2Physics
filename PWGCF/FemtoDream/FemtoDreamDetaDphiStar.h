@@ -13,12 +13,17 @@
 /// \brief FemtoDreamDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
 
+#include <memory>
+#include <string>
+#include <vector>
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
-#include <string>
+
+using namespace o2;
+using namespace o2::framework;
 
 namespace o2::analysis
 {
@@ -182,7 +187,7 @@ class FemtoDreamDetaDphiStar
     std::vector<float> tmpVec2;
     PhiAtRadiiTPC(part1, tmpVec1);
     PhiAtRadiiTPC(part2, tmpVec2);
-    const int num = tmpVec1.size();
+    int num = tmpVec1.size();
     float dPhiAvg = 0;
     for (int i = 0; i < num; i++) {
       float dphi = tmpVec1.at(i) - tmpVec2.at(i);
@@ -192,11 +197,11 @@ class FemtoDreamDetaDphiStar
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return (dPhiAvg / (float)num);
+    return dPhiAvg / num;
   }
 };
 
 } /* namespace femtoDream */
 } /* namespace o2::analysis */
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_

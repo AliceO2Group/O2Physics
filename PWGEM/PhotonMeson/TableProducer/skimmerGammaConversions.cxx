@@ -26,6 +26,12 @@
 //
 // **************************
 
+// *****revision history*****:
+//
+// adding accesing to ccdb objects for 2022 data taking on 30.11.22 by A. Marin (a.marin@gsi.de)
+//
+// **************************
+
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
@@ -40,7 +46,8 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
 
 #include "DetectorsVertexing/HelixHelper.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
@@ -61,8 +68,9 @@ struct skimmerGammaConversions {
 
   //configurables for CCDB access
   Configurable<std::string> path{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -130,6 +138,7 @@ struct skimmerGammaConversions {
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
     ccdb->setCreatedNotAfter(nolaterthan.value); // was like that in the tutorial efficiencyPerRun
+    ccdb->setFatalWhenNull(false);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -138,11 +147,19 @@ struct skimmerGammaConversions {
     if (runNumber == bc.runNumber()) {
       return;
     }
+    auto run3grp_timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(path.value, bc.timestamp());
-    if (!grpo) {
-      LOGF(fatal, "Efficiency object not found!");
+    o2::parameters::GRPMagField* grpmag = 0x0;
+
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << path << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
     }
-    o2::base::Propagator::initFieldFromGRP(grpo);
     //o2::base::Propagator::Instance()->setMatLUT(lut);
     runNumber = bc.runNumber();
   }
@@ -276,7 +293,7 @@ struct skimmerGammaConversions {
         LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
         lMothersIndeces.push_back(lMother.globalIndex());
       }
-      fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
+      fMotherSizesHisto->Fill(0.5 + static_cast<float>(lMothersIndeces.size()));
       return lMothersIndeces;
     };
 

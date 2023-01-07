@@ -27,6 +27,7 @@ using namespace evsel;
 
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
@@ -238,6 +239,7 @@ struct EventSelectionQaTask {
 
     histos.add("hITStrackBcDiff", "", kTH1F, {axisBcDif});
     histos.add("hTrackBcDiffVsEta", "", kTH2F, {axisEta, axisBcDif});
+    histos.add("hTrackBcDiffVsEtaAll", "", kTH2F, {axisEta, axisBcDif});
 
     histos.add("hNcontribCol", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAcc", "", kTH1F, {axisNcontrib});
@@ -267,7 +269,7 @@ struct EventSelectionQaTask {
   }
 
   void processRun2(
-    soa::Join<aod::Collisions, aod::EvSels> const& cols,
+    ColEvSels const& cols,
     BCsRun2 const& bcs,
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
@@ -449,10 +451,12 @@ struct EventSelectionQaTask {
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
   Preslice<aod::FullTracks> perCollision = aod::track::collisionId;
+  Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
 
   void processRun3(
-    soa::Join<aod::Collisions, aod::EvSels> const& cols,
+    ColEvSels const& cols,
     aod::FullTracks const& tracks,
+    aod::AmbiguousTracks const& ambTracks,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
@@ -462,6 +466,8 @@ struct EventSelectionQaTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
+      int64_t tsSOR = 0;
+      int64_t tsEOR = 0;
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -492,17 +498,26 @@ struct EventSelectionQaTask {
         LOGP(info, "tsOrbitReset={} us", tsOrbitReset);
 
         // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        std::map<std::string, std::string> metadata;
-        metadata["runNumber"] = Form("%d", runNumber);
-        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
-        int64_t tsSOR = grpecs->getTimeStart() * 1000;  // ms -> us
-        int64_t tsEOR = grpecs->getTimeEnd() * 1000;    // ms -> us
-        LOGP(info, "nOrbitsPerTF={} tsSOR={} us tsEOR={} us", nOrbitsPerTF, tsSOR, tsEOR);
+        // std::map<std::string, std::string> metadata;
+        // metadata["runNumber"] = Form("%d", runNumber);
+        // auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
+        // uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
+        // tsSOR = grpecs->getTimeStart();                 // ms
+        // tsEOR = grpecs->getTimeEnd();                   // ms
+
+        // Temporary workaround for 22q (due to ZDC bc shifts)
+        o2::ccdb::CcdbApi ccdb_api;
+        ccdb_api.init("http://alice-ccdb.cern.ch");
+        std::map<string, string> metadataRCT, headers;
+        headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
+        tsSOR = atol(headers["SOR"].c_str());
+        tsEOR = atol(headers["EOR"].c_str());
+        uint32_t nOrbitsPerTF = 128;
+        LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits
-        int64_t orbitSOR = (tsSOR - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        int64_t orbitEOR = (tsEOR - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+        int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+        int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
 
         // adjust to the nearest TF edge
         orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF - 1;
@@ -525,6 +540,13 @@ struct EventSelectionQaTask {
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
       histos.add("hOrbitZDC", "", kTH1F, {axisOrbits});
       histos.add("hOrbitColMC", "", kTH1F, {axisOrbits});
+
+      double minSec = floor(tsSOR / 1000.);
+      double maxSec = ceil(tsEOR / 1000.);
+      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
+      const AxisSpec axisBcDif{200, -100., 100., "collision bc difference"};
+      histos.add("hSecondsTVXvsBcDif", "", kTH2F, {axisSeconds, axisBcDif});
+      histos.add("hSecondsTVXvsBcDifAll", "", kTH2F, {axisSeconds, axisBcDif});
     }
 
     // background studies
@@ -736,7 +758,56 @@ struct EventSelectionQaTask {
       vGlobalBCs[indexBc] = globalBC;
     }
 
-    // std::map<int32_t, std::vector<int32_t>> mapBcsToCollisions;
+    // build map from track index to ambiguous track index
+    std::unordered_map<int32_t, int32_t> mapAmbTrIds;
+    for (const auto& ambTrack : ambTracks) {
+      mapAmbTrIds[ambTrack.trackId()] = ambTrack.globalIndex();
+    }
+
+    // Fill track bc distributions (all tracks including ambiguous)
+    for (const auto& track : tracks) {
+      auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
+      int ambTrId = mapAmbTrIdsIt == mapAmbTrIds.end() ? -1 : mapAmbTrIdsIt->second;
+      int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc().begin().globalIndex();
+      auto bc = bcs.iteratorAt(indexBc);
+      int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+      int indexNearestTVX = indexBc;
+      if (vIsTVX[indexBc]) {
+        indexNearestTVX = indexBc;
+      } else {
+        bool foundNext = 0;
+        int indexNext = indexBc;
+        while (!foundNext && indexNext < nBCs - 1) {
+          if (vIsTVX[++indexNext]) {
+            foundNext = 1;
+          }
+        }
+        bool foundPrev = 0;
+        int indexPrev = indexBc;
+        while (!foundPrev && indexPrev > 0) {
+          if (vIsTVX[--indexPrev]) {
+            foundPrev = 1;
+          }
+        }
+        if (foundNext && foundPrev) {
+          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
+          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
+          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
+        } else if (foundNext) {
+          indexNearestTVX = indexNext;
+        } else if (foundPrev) {
+          indexNearestTVX = indexPrev;
+        }
+      }
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexNearestTVX]);
+      if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
+        continue;
+      histos.fill(HIST("hTrackBcDiffVsEtaAll"), track.eta(), bcDiff);
+      if (track.eta() < -0.2 || track.eta() > 0.2)
+        continue;
+      histos.fill(HIST("hSecondsTVXvsBcDifAll"), bc.timestamp() / 1000., bcDiff);
+    }
 
     // collision-based event selection qa
     for (auto& col : cols) {
@@ -857,6 +928,9 @@ struct EventSelectionQaTask {
         if (track.pt() < 1)
           continue;
         histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+        if (track.eta() < -0.2 || track.eta() > 0.2)
+          continue;
+        histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp() / 1000., bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       }
 
       histos.fill(HIST("hNcontribCol"), nContributors);
@@ -924,9 +998,6 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultZNAcol"), multZNA);
       histos.fill(HIST("hMultZNCcol"), multZNC);
 
-      // map from BCs to Collisions for pileup checks
-      // mapBcsToCollisions[foundBC.globalIndex()].push_back(col.globalIndex());
-
       // filling plots for accepted events
       if (!col.sel8()) {
         continue;
@@ -951,24 +1022,19 @@ struct EventSelectionQaTask {
     } // collisions
 
     // pileup checks
-
-    // for(const auto &entry : mapBcsToCollisions) {
-    //   int32_t bcIndex = entry.first;
-    //   const auto &foundBC = bcs.iteratorAt(bcIndex);
-    //   float multT0M = 0;
-    //   if (foundBC.has_ft0()) {
-    //     for (auto amplitude : foundBC.ft0().amplitudeA()) {
-    //       multT0M += amplitude;
-    //     }
-    //     for (auto amplitude : foundBC.ft0().amplitudeC()) {
-    //       multT0M += amplitude;
-    //     }
-    //   }
-    //   histos.fill(HIST("hMultT0Mall"), multT0M);
-    //   if (entry.second.size()>1) {
-    //     histos.fill(HIST("hMultT0Mpup"), multT0M);
-    //   }
-    // }
+    for (auto const& bc : bcs) {
+      auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
+      if (collisionsGrouped.size() < 2)
+        continue;
+      float multT0M = 0;
+      if (bc.has_ft0()) {
+        for (auto amplitude : bc.ft0().amplitudeA())
+          multT0M += amplitude;
+        for (auto amplitude : bc.ft0().amplitudeC())
+          multT0M += amplitude;
+      }
+      histos.fill(HIST("hMultT0Mpup"), multT0M);
+    }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 

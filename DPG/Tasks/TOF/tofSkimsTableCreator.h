@@ -29,17 +29,22 @@ namespace o2::aod
 {
 namespace tofskims
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //! Index to the collision
 DECLARE_SOA_COLUMN(P, p, float);                             //! Momentum of the track
 DECLARE_SOA_COLUMN(Pt, pt, float);                           //! Pt of the track
 DECLARE_SOA_COLUMN(Eta, eta, float);                         //! Eta of the track
 DECLARE_SOA_COLUMN(Phi, phi, float);                         //! Phi of the track
 DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t); //! Index for mass hypothesis used in tracking see PID.h for definition
+DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);           //! Event time of the track computed with the T0AC
+DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);     //! Resolution of the event time of the track computed with the T0AC
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
 
 } // namespace tofskims
 
 DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF data format. One entry per track.
+                  o2::soa::Index<>,
+                  tofskims::CollisionId,
                   tofskims::P,
                   tofskims::Pt,
                   tofskims::Eta,
@@ -49,6 +54,15 @@ DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF 
                   track::Length,
                   track::TOFChi2,
                   pidtofsignal::TOFSignal,
-                  tofskims::HasTOF<pidtofsignal::TOFSignal>);
+                  pidtofevtime::EvTimeTOF,
+                  pidtofevtime::EvTimeTOFErr,
+                  tofskims::EvTimeT0AC,
+                  tofskims::EvTimeT0ACErr,
+                  pidflags::TOFFlags,
+                  tofskims::HasTOF<pidtofsignal::TOFSignal>,
+                  pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOFT0AC<pidflags::TOFFlags>);
 
 } // namespace o2::aod
