@@ -50,9 +50,14 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 } // namespace
 
 struct femtoWorldPairTaskTrackPhi {
-
   /// Particle selection part
-
+  Configurable<int> ConfTrackChoice{"ConfTrackChoice", 0, "Type of particle (track1): {0:Proton, 1:Pion, 2:Kaon}"};
+  Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 3.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
+  Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 3.0, "TPC Kaon Sigma for momentum < 0.4"};
+  Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
+  Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < 0.5"};
+  Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
+  Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
@@ -132,43 +137,102 @@ struct femtoWorldPairTaskTrackPhi {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // PID for protons
-  bool IsProtonNSigma(float mom, float nsigmaTPCP, float nsigmaTOFP) // from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
+  bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
-    bool fNsigmaTPCTOF = true;
-    bool fNsigmaTPConly = true;
-    double fNsigma = 3.0;
-    double fNsigma2 = 3.0;
+    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
+    //|nsigma_combined| < 3 for p > 0.5
 
-    if (fNsigmaTPCTOF) {
-      if (mom > 0.5) {
-        //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
-        if (mom < 2.0) {
-          if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma)
-            return true;
-        } else if (TMath::Hypot(nsigmaTOFP, nsigmaTPCP) < fNsigma2) {
-          return true;
-        }
-      } else {
-        if (TMath::Abs(nsigmaTPCP) < fNsigma)
-          return true;
-      }
-    } else if (fNsigmaTPConly) {
-      if (TMath::Abs(nsigmaTPCP) < fNsigma)
+    // using configurables:
+    // ConfNsigmaTPCProton -> TPC Kaon Sigma for momentum < 0.5
+    // ConfNsigmaCombinedProton -> TPC and TOF Kaon Sigma (combined) for momentum > 0.5
+
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCPr) < ConfNsigmaTPCProton) {
         return true;
-    } else {
-      if (mom > 0.8 && mom < 2.5) {
-        if (TMath::Abs(nsigmaTPCP) < 3.0 && TMath::Abs(nsigmaTOFP) < 3.0)
-          return true;
-      } else if (mom > 2.5) {
-        if (TMath::Abs(nsigmaTPCP) < 3.0 && TMath::Abs(nsigmaTOFP) < 2.0)
-          return true;
       } else {
-        if (TMath::Abs(nsigmaTPCP) < 3.0)
-          return true;
+        return false;
+      }
+    } else if (mom > 0.4) {
+      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfNsigmaCombinedProton) {
+        return true;
+      } else {
+        return false;
       }
     }
     return false;
   }
+
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
+    //|nsigma_combined| < 3 for p > 0.5
+
+    // using configurables:
+    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
+    // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.5
+    // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.5
+    if (true) {
+      if (mom < 0.5) {
+        if (TMath::Abs(nsigmaTPCK) < ConfNsigmaTPCKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.5) {
+        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfNsigmaCombinedKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
+  {
+    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
+    //|nsigma_combined| < 3 for p > 0.5
+
+    // using configurables:
+    // ConfNsigmaTPCPion -> TPC Kaon Sigma for momentum < 0.5
+    // ConfNsigmaCombinedPion -> TPC and TOF Pion Sigma (combined) for momentum > 0.5
+    if (true) {
+      if (mom < 0.5) {
+        if (TMath::Abs(nsigmaTPCPi) < ConfNsigmaTPCPion) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.5) {
+        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfNsigmaCombinedPion) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool IsParticleNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    switch (ConfTrackChoice) {
+      case 0: // Proton
+        return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+        break;
+      case 1: // Pion
+        return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
+        break;
+      case 2: // Kaon
+        return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+        break;
+      default:
+        return false;
+    }
+    return false;
+  }
+
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
@@ -203,7 +267,7 @@ struct femtoWorldPairTaskTrackPhi {
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (!(IsProtonNSigma(part.p(), part.tpcNSigmaPr(), part.tofNSigmaPr()))) {
+      if (!(IsParticleNSigma(part.p(), part.tpcNSigmaPr(), part.tofNSigmaPr(), part.tpcNSigmaPi(), part.tofNSigmaPi(), part.tpcNSigmaKa(), part.tofNSigmaKa()))) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
@@ -217,7 +281,7 @@ struct femtoWorldPairTaskTrackPhi {
 
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if (!(IsProtonNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr()))) {
+      if (!(IsParticleNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr(), p1.tpcNSigmaPi(), p1.tofNSigmaPi(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
         continue;
       }
       // TODO: Include pairCloseRejection and pairCleaner
@@ -260,7 +324,7 @@ struct femtoWorldPairTaskTrackPhi {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (!(IsProtonNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr()))) {
+        if (!(IsParticleNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr(), p1.tpcNSigmaPi(), p1.tofNSigmaPi(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
           continue;
         }
         // TODO: Include pairCloseRejection and pairCleaner
