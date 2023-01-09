@@ -186,7 +186,7 @@ struct FemtoWorldPionAllPair {
 
   void init(InitContext&)
   {
-    SetChargePair(cfgSignPartOne, cfgSignPartOne);
+    SetChargePair(cfgSignPartOne, cfgSignPartTwo);
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
     trackHistoPartOneFailed.init(&qaRegistry);
