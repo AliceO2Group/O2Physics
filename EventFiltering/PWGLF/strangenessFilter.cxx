@@ -63,24 +63,22 @@ struct strangenessFilter {
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
 
   // Selection criteria for cascades
-  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> v0cospa{"v0cospa", 0.97, "V0 CosPA"}; // is it with respect to Xi decay vertex?
-  Configurable<float> casccospa{"casccospa", 0.995, "V0 CosPA"};
-  Configurable<float> dcav0dau{"dcav0dau", 1.5, "DCA V0 Daughters"};       // is it in sigmas?
-  Configurable<float> dcacascdau{"dcacascdau", 0.8, "DCA Casc Daughters"}; // is it in sigmas?
-  Configurable<float> dcamesontopv{"dcamesontopv", 0.04, "DCA Meson To PV"};
-  Configurable<float> dcabaryontopv{"dcabaryontopv", 0.03, "DCA Baryon To PV"};
-  Configurable<float> dcabachtopv{"dcabachtopv", 0.04, "DCA Bach To PV"};
-  Configurable<float> dcav0topv{"dcav0topv", 0.06, "DCA V0 To PV"};
-  Configurable<float> v0radius{"v0radius", 1.2, "V0 Radius"};
-  Configurable<float> v0radiusupperlimit{"v0radiusupperlimit", 1000, "V0 Radius Upper Limit"};
+  Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range"};
+  Configurable<float> v0cospa{"v0cospa", 0.95, "V0 CosPA"};
+  Configurable<float> casccospa{"casccospa", 0.95, "V0 CosPA"};
+  Configurable<float> dcav0dau{"dcav0dau", 2.0, "DCA V0 Daughters"};
+  Configurable<float> dcacascdau{"dcacascdau", 2.0, "DCA Casc Daughters"};
+  Configurable<float> dcamesontopv{"dcamesontopv", 0.05, "DCA Meson To PV"};
+  Configurable<float> dcabaryontopv{"dcabaryontopv", 0.05, "DCA Baryon To PV"};
+  Configurable<float> dcabachtopv{"dcabachtopv", 0.05, "DCA Bach To PV"};
+  Configurable<float> dcav0topv{"dcav0topv", 0.0, "DCA V0 To PV"};
+  Configurable<float> v0radius{"v0radius", 1.0, "V0 Radius"};
   Configurable<float> cascradius{"cascradius", 0.6, "cascradius"};
-  Configurable<float> cascradiusupperlimit{"cascradiusupperlimit", 1000, "Casc Radius Upper Limit"};
-  Configurable<float> rapidity{"rapidity", 1, "rapidity"};
+  Configurable<float> rapidity{"rapidity", 2, "rapidity"};
   Configurable<float> eta{"eta", 2, "Eta"};
   Configurable<float> minpt{"minpt", 0.5, "minpt"};
-  Configurable<float> etadau{"etadau", 0.8, "EtaDaughters"};
-  Configurable<float> masslambdalimit{"masslambdalimit", 0.01, "masslambdalimit"}; // 0.006 Chiara
+  Configurable<float> etadau{"etadau", 0.9, "EtaDaughters"};
+  Configurable<float> masslambdalimit{"masslambdalimit", 0.02, "masslambdalimit"};
   Configurable<float> omegarej{"omegarej", 0.005, "omegarej"};
   Configurable<float> xirej{"xirej", 0.008, "xirej"}; // merge the two rejection variables into one?
   Configurable<float> ximasswindow{"ximasswindow", 0.075, "Xi Mass Window"};
@@ -151,8 +149,9 @@ struct strangenessFilter {
     QAHistosTriggerParticles.add("hDCAzTrigger", "hDCAzTrigger", HistType::kTH1F, {{400, -0.2, 0.2, "DCAz of trigger particles"}});
 
     EventsvsMultiplicity.add("AllEventsvsMultiplicity", "Multiplicity distribution of all events", HistType::kTH1F, {centAxis});
-    EventsvsMultiplicity.add("OmegaEventsvsMultiplicity", "Multiplicity distribution of events with >= 1 Omega", HistType::kTH1F, {centAxis});
+    EventsvsMultiplicity.add("hadEventsvsMultiplicity", "Multiplicity distribution of events with hight pT hadron", HistType::kTH1F, {centAxis});
     EventsvsMultiplicity.add("hXiEventsvsMultiplicity", "Multiplicity distribution of events with h + Xi", HistType::kTH1F, {centAxis});
+    EventsvsMultiplicity.add("OmegaEventsvsMultiplicity", "Multiplicity distribution of events with >= 1 Omega", HistType::kTH1F, {centAxis});
     EventsvsMultiplicity.add("2XiEventsvsMultiplicity", "Multiplicity distribution of events with >= 2 Xi", HistType::kTH1F, {centAxis});
     EventsvsMultiplicity.add("3XiEventsvsMultiplicity", "Multiplicity distribution of events with >= 3 Xi", HistType::kTH1F, {centAxis});
     EventsvsMultiplicity.add("4XiEventsvsMultiplicity", "Multiplicity distribution of events with >= 4 Xi", HistType::kTH1F, {centAxis});
@@ -307,10 +306,10 @@ struct strangenessFilter {
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
       };
-      if (casc.v0radius() > v0radiusupperlimit || casc.v0radius() < v0radius) {
+      if (casc.v0radius() < v0radius) {
         continue;
       };
-      if (casc.cascradius() > cascradiusupperlimit || casc.cascradius() < cascradius) {
+      if (casc.cascradius() < cascradius) {
         continue;
       };
       if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
@@ -577,11 +576,11 @@ struct strangenessFilter {
         continue;
       };
       hCandidate->Fill(7.5);
-      if (casc.v0radius() > v0radiusupperlimit || casc.v0radius() < v0radius) {
+      if (casc.v0radius() < v0radius) {
         continue;
       };
       hCandidate->Fill(8.5);
-      if (casc.cascradius() > cascradiusupperlimit || casc.cascradius() < cascradius) {
+      if (casc.cascradius() < cascradius) {
         continue;
       };
       hCandidate->Fill(9.5);
@@ -597,7 +596,10 @@ struct strangenessFilter {
         continue;
       };
       hCandidate->Fill(12.5);
-      if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
+      if (casc.sign() < 0 && TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
+        continue;
+      };
+      if (casc.sign() > 0 && TMath::Abs(casc.mAntiLambda() - constants::physics::MassLambda) > masslambdalimit) {
         continue;
       };
       hCandidate->Fill(13.5);
