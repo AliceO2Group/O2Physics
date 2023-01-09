@@ -596,10 +596,7 @@ struct strangenessFilter {
         continue;
       };
       hCandidate->Fill(12.5);
-      if (casc.sign() < 0 && TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
-        continue;
-      };
-      if (casc.sign() > 0 && TMath::Abs(casc.mAntiLambda() - constants::physics::MassLambda) > masslambdalimit) {
+      if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
         continue;
       };
       hCandidate->Fill(13.5);
