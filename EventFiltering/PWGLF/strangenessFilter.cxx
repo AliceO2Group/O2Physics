@@ -87,7 +87,7 @@ struct strangenessFilter {
   Configurable<float> omegamasswindow{"omegamasswindow", 0.075, "Omega Mass Window"}; // merge the two windows variables into one?
   Configurable<int> properlifetimefactor{"properlifetimefactor", 5, "Proper Lifetime cut"};
   Configurable<float> nsigmatpc{"nsigmatpc", 6, "N Sigmas TPC"};
-  Configurable<float> nsigmatof{"nsigmatof", 5, "N Sigmas TOF (OOB condition)"};
+  Configurable<bool> hastof{"hastof", 1, "Has TOF (OOB condition)"};
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
@@ -108,8 +108,7 @@ struct strangenessFilter {
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
     QAHistos.add("hCentrality", "Centrality distribution (V0M)", HistType::kTH1F, {{100, 0, 100, "V0M (%)"}});
-    QAHistos.add("hVtxZBefSel", "Z-Vertex distribution before selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
-    QAHistos.add("hVtxZAfterSel", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
+    QAHistos.add("hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
 
     QAHistos.add("hMassXiBefSel", "#Xi Mass before selections", HistType::kTH1F, {ximassAxis});
     QAHistos.add("hMassXiAfterSel", "#Xi Mass after selections", HistType::kTH1F, {ximassAxis});
@@ -123,16 +122,6 @@ struct strangenessFilter {
     QAHistos.add("hEtaOmega", "eta distribution of selected Omega candidates", HistType::kTH1F, {etaAxis});
     QAHistos.add("hPhiXi", "phi distribution of selected Xi candidates", HistType::kTH1F, {phiAxis});
     QAHistos.add("hPhiOmega", "phi distribution of selected Omega candidates", HistType::kTH1F, {phiAxis});
-
-    // TOF distributions
-    QAHistos.add("hTOFnsigmaV0PiBefSel", "hTOFnsigmaV0PiBefSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaV0PiBefSel"}});
-    QAHistos.add("hTOFnsigmaV0PiAfterSel", "hTOFnsigmaV0PiAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaV0PiAfterSel"}});
-    QAHistos.add("hTOFnsigmaPrBefSel", "hTOFnsigmaPrBefSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaPrBefSel"}});
-    QAHistos.add("hTOFnsigmaPrAfterSel", "hTOFnsigmaPrAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaPrAfterSel"}});
-    QAHistos.add("hTOFnsigmaBachPiBefSel", "hTOFnsigmaBachPiBefSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachPiBefSel"}});
-    QAHistos.add("hTOFnsigmaBachPiAfterSel", "hTOFnsigmaBachPiAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachPiAfterSel"}});
-    QAHistos.add("hTOFnsigmaBachKBefSel", "hTOFnsigmaBachKBefSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachKBefSel"}});
-    QAHistos.add("hTOFnsigmaBachKAfterSel", "hTOFnsigmaBachKAfterSel", HistType::kTH1F, {{100, -10, +10, "TOFnsigmaBachKAfterSel"}});
 
     // topological variables distributions
     QAHistosTopologicalVariables.add("CascCosPA", "CascCosPA", HistType::kTH1F, {{350, 0.65f, 1.0f}});
@@ -178,20 +167,19 @@ struct strangenessFilter {
     hCandidate->GetXaxis()->SetBinLabel(4, "DCA_baryon");
     hCandidate->GetXaxis()->SetBinLabel(5, "TPCNsigma_meson");
     hCandidate->GetXaxis()->SetBinLabel(6, "TPCNsigma_baryon");
-    hCandidate->GetXaxis()->SetBinLabel(7, "TOFNsigma_dau");
-    hCandidate->GetXaxis()->SetBinLabel(8, "TPCNsigma_bach");
-    hCandidate->GetXaxis()->SetBinLabel(9, "Eta_dau");
-    hCandidate->GetXaxis()->SetBinLabel(10, "DCABachToPV");
-    hCandidate->GetXaxis()->SetBinLabel(11, "V0Radius");
-    hCandidate->GetXaxis()->SetBinLabel(12, "CascRadius");
-    hCandidate->GetXaxis()->SetBinLabel(13, "V0CosPA");
-    hCandidate->GetXaxis()->SetBinLabel(14, "DCAV0Dau");
-    hCandidate->GetXaxis()->SetBinLabel(15, "DCACascDau");
-    hCandidate->GetXaxis()->SetBinLabel(16, "MassLambdaLimit");
-    hCandidate->GetXaxis()->SetBinLabel(17, "Eta");
-    hCandidate->GetXaxis()->SetBinLabel(18, "CascCosPA");
-    hCandidate->GetXaxis()->SetBinLabel(19, "DCAV0ToPV");
-    hCandidate->GetXaxis()->SetBinLabel(20, "ProperLifeTime");
+    hCandidate->GetXaxis()->SetBinLabel(7, "Eta_dau");
+    hCandidate->GetXaxis()->SetBinLabel(8, "DCABachToPV");
+    hCandidate->GetXaxis()->SetBinLabel(9, "V0Radius");
+    hCandidate->GetXaxis()->SetBinLabel(10, "CascRadius");
+    hCandidate->GetXaxis()->SetBinLabel(11, "V0CosPA");
+    hCandidate->GetXaxis()->SetBinLabel(12, "DCAV0Dau");
+    hCandidate->GetXaxis()->SetBinLabel(13, "DCACascDau");
+    hCandidate->GetXaxis()->SetBinLabel(14, "MassLambdaLimit");
+    hCandidate->GetXaxis()->SetBinLabel(15, "Eta");
+    hCandidate->GetXaxis()->SetBinLabel(16, "HasTOFOneLeg");
+    hCandidate->GetXaxis()->SetBinLabel(17, "CascCosPA");
+    hCandidate->GetXaxis()->SetBinLabel(18, "DCAV0ToPV");
+    hCandidate->GetXaxis()->SetBinLabel(19, "ProperLifeTime");
   }
 
   // Filters
@@ -200,8 +188,8 @@ struct strangenessFilter {
   // Tables
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFKa>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
@@ -286,16 +274,6 @@ struct strangenessFilter {
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
           continue;
         };
-        QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), posdau.tofNSigmaPi());
-        if (
-          (TMath::Abs(posdau.tofNSigmaPi()) > nsigmatof) &&
-          (TMath::Abs(negdau.tofNSigmaPr()) > nsigmatof) &&
-          (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
-          continue;
-        };
-        QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());
       } else {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
@@ -309,16 +287,6 @@ struct strangenessFilter {
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
-        QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), negdau.tofNSigmaPi());
-        if ( // bachelor to be fixed
-          (TMath::Abs(posdau.tofNSigmaPr()) > nsigmatof) &&
-          (TMath::Abs(negdau.tofNSigmaPi()) > nsigmatof) &&
-          (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
-          continue;
-        };
-        QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());
       }
       // these selection differ for Xi and Omegas:
       if (TMath::Abs(posdau.eta()) > etadau) {
@@ -500,11 +468,10 @@ struct strangenessFilter {
     // all processed events after event selection
     hProcessedEvents->Fill(0.5);
 
-    QAHistos.fill(HIST("hVtxZBefSel"), collision.posZ());
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return;
     }
-    QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
+    QAHistos.fill(HIST("hVtxZ"), collision.posZ());
 
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
     bool keepEvent[6]{false};
@@ -526,13 +493,14 @@ struct strangenessFilter {
 
     for (auto& casc : fullCasc) { // loop over cascades
       triggcounterForEstimates = 0;
-      hCandidate->Fill(0.5);
+
+      hCandidate->Fill(0.5); // All candidates
 
       auto v0index = casc.v0_as<o2::aod::V0sLinked>();
       if (!(v0index.has_v0Data())) {
         continue; // skip those cascades for which V0 doesn't exist
       }
-      hCandidate->Fill(1.5);
+      hCandidate->Fill(1.5);      // V0 exists
       auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachelor = casc.bachelor_as<DaughterTracks>();
       auto posdau = v0.posTrack_as<DaughterTracks>();
@@ -554,40 +522,20 @@ struct strangenessFilter {
       xiproperlifetime = RecoDecay::getMassPDG(3312) * xipos / (xiptotmom + 1e-13);
       omegaproperlifetime = RecoDecay::getMassPDG(3334) * xipos / (xiptotmom + 1e-13);
 
-      if (casc.sign() == 1) {
+      if (casc.sign() > 0) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
           continue;
         };
-        hCandidate->Fill(2.5);
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
         };
-        hCandidate->Fill(3.5);
         if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
-        hCandidate->Fill(4.5);
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
           continue;
         };
-        hCandidate->Fill(5.5);
-        QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), posdau.tofNSigmaPi());
-        QAHistos.fill(HIST("hTOFnsigmaBachPiBefSel"), bachelor.tofNSigmaPi());
-        QAHistos.fill(HIST("hTOFnsigmaBachKBefSel"), bachelor.tofNSigmaKa());
-        if (
-          (TMath::Abs(posdau.tofNSigmaPi()) > nsigmatof) &&
-          (TMath::Abs(negdau.tofNSigmaPr()) > nsigmatof) &&
-          (TMath::Abs(bachelor.tofNSigmaKa()) > nsigmatof) &&
-          (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
-          continue;
-        };
-        hCandidate->Fill(6.5);
-        QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());
-        QAHistos.fill(HIST("hTOFnsigmaBachPiAfterSel"), bachelor.tofNSigmaPi());
-        QAHistos.fill(HIST("hTOFnsigmaBachKAfterSel"), bachelor.tofNSigmaKa());
-      } else {
+      } else if (casc.sign() < 0) {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
         };
@@ -604,23 +552,7 @@ struct strangenessFilter {
           continue;
         };
         hCandidate->Fill(4.5);
-        QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), negdau.tofNSigmaPi());
-        QAHistos.fill(HIST("hTOFnsigmaBachPiBefSel"), bachelor.tofNSigmaPi());
-        if (
-          (TMath::Abs(posdau.tofNSigmaPr()) > nsigmatof) &&
-          (TMath::Abs(negdau.tofNSigmaPi()) > nsigmatof) &&
-          (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
-          continue;
-        };
-        hCandidate->Fill(6.5);
-        QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());
-        QAHistos.fill(HIST("hTOFnsigmaBachPiAfterSel"), bachelor.tofNSigmaPi());
       }
-      // this selection differes for Xi and Omegas:
-
-      hCandidate->Fill(7.5);
       if (TMath::Abs(posdau.eta()) > etadau) {
         continue;
       };
@@ -630,49 +562,56 @@ struct strangenessFilter {
       if (TMath::Abs(bachelor.eta()) > etadau) {
         continue;
       };
-      hCandidate->Fill(8.5);
+      hCandidate->Fill(6.5);
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
       };
-      hCandidate->Fill(9.5);
+      hCandidate->Fill(7.5);
       if (casc.v0radius() > v0radiusupperlimit || casc.v0radius() < v0radius) {
         continue;
       };
-      hCandidate->Fill(10.5);
+      hCandidate->Fill(8.5);
       if (casc.cascradius() > cascradiusupperlimit || casc.cascradius() < cascradius) {
         continue;
-      }; //
-      hCandidate->Fill(11.5);
+      };
+      hCandidate->Fill(9.5);
       if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
         continue;
       };
-      hCandidate->Fill(12.5);
+      hCandidate->Fill(10.5);
       if (casc.dcaV0daughters() > dcav0dau) {
         continue;
       };
-      hCandidate->Fill(13.5);
+      hCandidate->Fill(11.5);
       if (casc.dcacascdaughters() > dcacascdau) {
         continue;
       };
-      hCandidate->Fill(14.5);
+      hCandidate->Fill(12.5);
       if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
         continue;
       };
-      hCandidate->Fill(15.5);
+      hCandidate->Fill(13.5);
       if (TMath::Abs(casc.eta()) > eta) {
         continue;
       };
-      hCandidate->Fill(16.5);
+      hCandidate->Fill(14.5);
+      if (hastof &&
+          !posdau.hasTOF() &&
+          !negdau.hasTOF() &&
+          !bachelor.hasTOF()) {
+        continue;
+      };
+      hCandidate->Fill(15.5);
 
-      // TOREMOVE
+      // Fill selections QA for XiMinus
       if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) {
-        hCandidate->Fill(17.5);
+        hCandidate->Fill(16.5);
         if (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
-          hCandidate->Fill(18.5);
+          hCandidate->Fill(17.5);
           if (xiproperlifetime < properlifetimefactor * ctauxi) {
-            hCandidate->Fill(19.5);
+            hCandidate->Fill(18.5);
             if (TMath::Abs(casc.yXi()) < rapidity) {
-              hCandidate->Fill(20.5);
+              hCandidate->Fill(19.5);
             }
           }
         }
@@ -684,20 +623,20 @@ struct strangenessFilter {
              (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
              (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
-             (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
+             (TMath::Abs(casc.yXi()) < rapidity);
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
                (casc.cascradius() > 24.39) &&
                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
-               (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isOmega = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+               (TMath::Abs(casc.yXi()) < rapidity);
+      isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpc) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
                 (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
-                (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
+                (TMath::Abs(casc.yOmega()) < rapidity);
 
       if (isXi) {
         QAHistos.fill(HIST("hMassXiAfterSel"), casc.mXi());
