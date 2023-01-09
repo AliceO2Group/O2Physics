@@ -76,7 +76,7 @@ struct strangenessFilter {
   Configurable<float> v0radiusupperlimit{"v0radiusupperlimit", 1000, "V0 Radius Upper Limit"};
   Configurable<float> cascradius{"cascradius", 0.6, "cascradius"};
   Configurable<float> cascradiusupperlimit{"cascradiusupperlimit", 1000, "Casc Radius Upper Limit"};
-  Configurable<float> rapidity{"rapidity", 2, "rapidity"};
+  Configurable<float> rapidity{"rapidity", 1, "rapidity"};
   Configurable<float> eta{"eta", 2, "Eta"};
   Configurable<float> minpt{"minpt", 0.5, "minpt"};
   Configurable<float> etadau{"etadau", 0.8, "EtaDaughters"};
@@ -120,8 +120,14 @@ struct strangenessFilter {
     QAHistos.add("hPtOmega", "pt distribution of selected Omega candidates", HistType::kTH1F, {ptAxis});
     QAHistos.add("hEtaXi", "eta distribution of selected Xi candidates", HistType::kTH1F, {etaAxis});
     QAHistos.add("hEtaOmega", "eta distribution of selected Omega candidates", HistType::kTH1F, {etaAxis});
-    QAHistos.add("hPhiXi", "phi distribution of selected Xi candidates", HistType::kTH1F, {phiAxis});
-    QAHistos.add("hPhiOmega", "phi distribution of selected Omega candidates", HistType::kTH1F, {phiAxis});
+    QAHistos.add("hTPCNsigmaBach", "nsigma TPC distribution bachelor", HistType::kTH1F, {{20, -10, 10}});
+    QAHistos.add("hTPCNsigmaPi", "nsigma TPC distribution pi", HistType::kTH1F, {{20, -10, 10}});
+    QAHistos.add("hTPCNsigmaPr", "nsigma TPC distribution proton", HistType::kTH1F, {{20, -10, 10}});
+    QAHistos.add("hHasTOFBach", "bachelor has TOF", HistType::kTH1F, {{2, 0, 2}});
+    QAHistos.add("hHasTOFPos", "pos dau has TOF", HistType::kTH1F, {{2, 0, 2}});
+    QAHistos.add("hHasTOFNeg", "neg dau has TOF", HistType::kTH1F, {{2, 0, 2}});
+    QAHistos.add("hRapXi", "Rap Xi", HistType::kTH1F, {{100, -1, 1}});
+    QAHistos.add("hProperLifetimeXi", "Proper Lifetime Xi", HistType::kTH1F, {{50, 0, 50}});
 
     // topological variables distributions
     QAHistosTopologicalVariables.add("CascCosPA", "CascCosPA", HistType::kTH1F, {{350, 0.65f, 1.0f}});
@@ -526,15 +532,19 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
           continue;
         };
+        hCandidate->Fill(2.5);
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
         };
+        hCandidate->Fill(3.5);
         if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
+        hCandidate->Fill(4.5);
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
           continue;
         };
+        hCandidate->Fill(5.5);
       } else if (casc.sign() < 0) {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
@@ -643,6 +653,19 @@ struct strangenessFilter {
         QAHistos.fill(HIST("hMassXiAfterSelvsPt"), casc.mXi(), casc.pt());
         QAHistos.fill(HIST("hPtXi"), casc.pt());
         QAHistos.fill(HIST("hEtaXi"), casc.eta());
+        QAHistos.fill(HIST("hRapXi"), casc.yXi());
+        QAHistos.fill(HIST("hProperLifetimeXi"), xiproperlifetime);
+        QAHistos.fill(HIST("hTPCNsigmaBach"), bachelor.tpcNSigmaPi());
+        if (casc.sign() > 0) {
+          QAHistos.fill(HIST("hTPCNsigmaPi"), posdau.tpcNSigmaPi());
+          QAHistos.fill(HIST("hTPCNsigmaPr"), negdau.tpcNSigmaPr());
+        } else if (casc.sign() < 0) {
+          QAHistos.fill(HIST("hTPCNsigmaPr"), posdau.tpcNSigmaPr());
+          QAHistos.fill(HIST("hTPCNsigmaPi"), negdau.tpcNSigmaPi());
+        }
+        QAHistos.fill(HIST("hHasTOFBach"), bachelor.hasTOF());
+        QAHistos.fill(HIST("hHasTOFPos"), posdau.hasTOF());
+        QAHistos.fill(HIST("hHasTOFNeg"), negdau.hasTOF());
 
         QAHistosTopologicalVariables.fill(HIST("CascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
         QAHistosTopologicalVariables.fill(HIST("V0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
