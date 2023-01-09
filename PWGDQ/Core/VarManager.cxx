@@ -207,6 +207,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxChi2] = "";
   fgVariableNames[kCentVZERO] = "Centrality VZERO";
   fgVariableUnits[kCentVZERO] = "%";
+  fgVariableNames[kCentFT0C] = "Centrality FT0C";
+  fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
   fgVariableNames[kMCVtxX] = "MC Vtx X";
   fgVariableNames[kMCVtxY] = "MC Vtx Y";
