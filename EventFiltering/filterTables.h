@@ -32,6 +32,8 @@ DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
 DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
 DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
 
+DECLARE_SOA_COLUMN(DiffBC, hasDiffBC, bool); //! diffractive BC
+
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
 DECLARE_SOA_COLUMN(SingleMuLow, hasSingleMuLow, bool);   //! single muon with low pT trigger
@@ -104,9 +106,13 @@ DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
-DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters
+DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters (Collisions)
                   filtering::TwoPi, filtering::FourPi, filtering::TwoK, filtering::FourK);
 using DiffractionFilter = DiffractionFilters::iterator;
+
+DECLARE_SOA_TABLE(DiffractionBCFilters, "AOD", "DiffBCFilters", //! Diffraction filters (BCs)
+                  filtering::DiffBC);
+using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
