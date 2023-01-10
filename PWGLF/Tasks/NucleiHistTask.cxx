@@ -102,14 +102,15 @@ struct NucleiHistTask {
     spectra.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     spectra.add("histDcaVsPtData_particle", "dcaXY vs Pt (particle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra.add("histDcaZVsPtData_particle", "dcaZ vs Pt (particle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    spectra.add("histDcaVsPtData_wo_ambiguous_particle", "dcaXY vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
-    spectra.add("histDcaZVsPtData_wo_ambiguous_particle", "dcaZ vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
     spectra.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra.add("histDcaZVsPtData_antiparticle", "dcaZ vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    spectra.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    
+    spectra.add("histDcaVsPtData_wo_ambiguous_particle", "dcaXY vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
+    spectra.add("histDcaZVsPtData_wo_ambiguous_particle", "dcaZ vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
     spectra.add("histDcaVsPtData_wo_ambiguous_antiparticle", "dcaXY vs Pt (antiparticle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
     spectra.add("histDcaZVsPtData_wo_ambiguous_antiparticle", "dcaZ vs Pt (antiparticle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
-    spectra.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-
+    
     spectra.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     spectra.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     spectra.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
@@ -243,8 +244,6 @@ struct NucleiHistTask {
   Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
-  Configurable<float> reqTPCrefit{"reqTPCrefit", true, "require TPC refit"};
-  Configurable<float> reqITSrefit{"reqITSrefit", true, "require ITS refit"};
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
   Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
   Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};
@@ -278,7 +277,7 @@ struct NucleiHistTask {
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
     
-      if ( TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) ||  track.itsNCls() < minReqClusterITS || track.pt() < pTmin || track.pt() > pTmax) {
+      if ( TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) ||  (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax) {
         continue;
       }
       
