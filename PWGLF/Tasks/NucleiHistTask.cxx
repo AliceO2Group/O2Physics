@@ -37,7 +37,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 namespace o2::aod
 {
 namespace NucleiTableHist
@@ -105,12 +104,12 @@ struct NucleiHistTask {
     spectra.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra.add("histDcaZVsPtData_antiparticle", "dcaZ vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    
+
     spectra.add("histDcaVsPtData_wo_ambiguous_particle", "dcaXY vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
     spectra.add("histDcaZVsPtData_wo_ambiguous_particle", "dcaZ vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
     spectra.add("histDcaVsPtData_wo_ambiguous_antiparticle", "dcaXY vs Pt (antiparticle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
     spectra.add("histDcaZVsPtData_wo_ambiguous_antiparticle", "dcaZ vs Pt (antiparticle) w/o ambiguous", HistType::kTH2F, {ptAxis, {200, -0.1, 0.1, "dca"}});
-    
+
     spectra.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     spectra.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     spectra.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
@@ -238,7 +237,7 @@ struct NucleiHistTask {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -3.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +3.0, "Value of the Nsigma cut"};
-  
+
   // Replacement for globalTrack filter
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
   Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"};
@@ -250,9 +249,8 @@ struct NucleiHistTask {
   Configurable<float> pTmin{"pTmin", 0.1f, "min pT"};
   Configurable<float> pTmax{"pTmax", 1e+10f, "max pT"};
 
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);// && (requireGlobalTrackInFilter());
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta); // && (requireGlobalTrackInFilter());
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>; // aod::ReducedTracks, aod::CentFV0As
 
@@ -271,26 +269,26 @@ struct NucleiHistTask {
     spectra.fill(HIST("histRecVtxZData"), collision.posZ());
 
     for (auto track : tracks) { // start loop over tracks
-    
+
       float TPCnumberCls = track.tpcNClsFound();
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
-    
-      if ( TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) ||  (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax) {
+
+      if (TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax) {
         continue;
       }
-      
+
       if (track.sign() > 0) {
         spectra.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
       }
-      
+
       if (track.sign() < 0) {
         spectra.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
       }
-      
+
       if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
         continue;
       }
@@ -320,7 +318,6 @@ struct NucleiHistTask {
       spectra.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
       spectra.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
       spectra.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
-      
 
       if (track.sign() > 0) {
         proton_erg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaProton);
