@@ -120,11 +120,11 @@ struct preProcessMCcollisions {
     const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
     const AxisSpec axisTwentyWithNegative{(int)20, -10.5, +9.5f, ""};
     const AxisSpec axisTwentyFloatWithNegative{(int)100, -10.0f, +10.0f, ""};
-    
+
     const AxisSpec axisPVResolutionXY{(int)400, 0.0f, +0.05f, ""};
     const AxisSpec axisPVResolutionZ{(int)400, -0.1f, +0.1f, ""};
     const AxisSpec axisPVResolutionT{(int)500, -20.0f, +20.0f, ""};
-    
+
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
     histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
 
@@ -141,14 +141,14 @@ struct preProcessMCcollisions {
     histos.add("h2dCovarianceTrace", "h2dCovarianceTrace", kTH2D, {axisCovariance, axisTwenty});
     histos.add("h2dCovarianceTraceWithXi", "h2dCovarianceTraceWithXi", kTH2D, {axisCovariance, axisTwenty});
 
-    //PV true error: from reco vs MC
+    // PV true error: from reco vs MC
     histos.add("h2dPVResolutionXY", "h2dPVResolutionXY", kTH2D, {axisPVResolutionXY, axisTwenty});
     histos.add("h2dPVResolutionZ", "h2dPVResolutionZ", kTH2D, {axisPVResolutionZ, axisTwenty});
     histos.add("h2dPVResolutionT", "h2dPVResolutionT", kTH2D, {axisPVResolutionT, axisTwenty});
     histos.add("h2dPVResolutionXYWithXi", "h2dPVResolutionXYWithXi", kTH2D, {axisPVResolutionXY, axisTwenty});
     histos.add("h2dPVResolutionZWithXi", "h2dPVResolutionZWithXi", kTH2D, {axisPVResolutionZ, axisTwenty});
     histos.add("h2dPVResolutionTWithXi", "h2dPVResolutionTWithXi", kTH2D, {axisPVResolutionT, axisTwenty});
-    
+
     // Helper to decipher this histogram
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV");      // size 1 = 0
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
@@ -171,12 +171,12 @@ struct preProcessMCcollisions {
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(8, "Recoed 4 times, 2nd Biggest PV");
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(9, "Recoed 4 times, 3rd Biggest PV");
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
-    
-    //Deltas between split vertices
+
+    // Deltas between split vertices
     histos.add("h2dDeltaTimeVsDeltaZ", "h2dDeltaTimeVsDeltaZ", kTH2D, {axisTwentyFloatWithNegative, axisPVResolutionT});
     histos.add("h2dDeltaBCIndexVsDeltaZ", "h2dPVDeltaBCIndexVsDeltaZ", kTH2D, {axisTwentyFloatWithNegative, axisTwentyWithNegative});
-    
-    //Contributors correlation
+
+    // Contributors correlation
     histos.add("h2dNContribCorr1", "h2dNContribCorr1", kTH2D, {axisContributorsTRD, axisContributorsTOF});
     histos.add("h2dNContribCorr2a", "h2dNContribCorr2a", kTH2D, {axisContributorsTRD, axisContributorsTOF});
     histos.add("h2dNContribCorr2b", "h2dNContribCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
@@ -199,21 +199,21 @@ struct preProcessMCcollisions {
       histos.fill(HIST("hNTimesCollWithXiRecoed"), collisions.size());
     int lCollisionIndex = 0;
     for (auto& collision : collisions) {
-      float cyy = TMath::Sign(1,collision.covYY())*TMath::Sqrt( TMath::Abs( collision.covYY() ) );
-      histos.fill(HIST("hCyyTest"), cyy); //check for bug
+      float cyy = TMath::Sign(1, collision.covYY()) * TMath::Sqrt(TMath::Abs(collision.covYY()));
+      histos.fill(HIST("hCyyTest"), cyy); // check for bug
       collisionNContribs.emplace_back(collision.numContrib());
       collisionStatAggregator[lCollisionIndex].covTrace = TMath::Sqrt(TMath::Abs(collision.covXX()) + TMath::Abs(collision.covYY()) + TMath::Abs(collision.covZZ()));
-      collisionStatAggregator[lCollisionIndex].deltaXY = TMath::Sqrt( TMath::Power(collision.posX() - mcCollision.posX(), 2) + TMath::Power(collision.posY() - mcCollision.posY(), 2) );
+      collisionStatAggregator[lCollisionIndex].deltaXY = TMath::Sqrt(TMath::Power(collision.posX() - mcCollision.posX(), 2) + TMath::Power(collision.posY() - mcCollision.posY(), 2));
       collisionStatAggregator[lCollisionIndex].deltaZ = collision.posZ() - mcCollision.posZ();
-      collisionStatAggregator[lCollisionIndex].deltaT = (collision.collisionTime() - mcCollision.t())/1000;
+      collisionStatAggregator[lCollisionIndex].deltaT = (collision.collisionTime() - mcCollision.t()) / 1000;
       collisionStatAggregator[lCollisionIndex].time = collision.collisionTime();
       collisionStatAggregator[lCollisionIndex].timeResolution = collision.collisionTimeRes();
       collisionStatAggregator[lCollisionIndex].globalBC = collision.bc().globalBC();
-      
+
       collisionStatAggregator[lCollisionIndex].positionX = collision.posX();
       collisionStatAggregator[lCollisionIndex].positionY = collision.posY();
       collisionStatAggregator[lCollisionIndex].positionZ = collision.posZ();
-      
+
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : groupedTracks) {
         if (track.isPVContributor()) {
@@ -262,18 +262,18 @@ struct preProcessMCcollisions {
       }
       lCollisionIndex++;
     }
-    //Now do investigation of split-into-two vertices, please - ordered
-    if(collisions.size() == 1){
+    // Now do investigation of split-into-two vertices, please - ordered
+    if (collisions.size() == 1) {
       histos.fill(HIST("h2dNContribCorr1"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRD, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
     }
-    if(collisions.size() == 2){
-      float lDeltaTime = collisionStatAggregator[sortedIndices[0]].time-collisionStatAggregator[sortedIndices[1]].time;
-      float lDeltaNBC = collisionStatAggregator[sortedIndices[0]].globalBC-collisionStatAggregator[sortedIndices[1]].globalBC;
-      float lDeltaZ = collisionStatAggregator[sortedIndices[0]].positionZ-collisionStatAggregator[sortedIndices[1]].positionZ;
+    if (collisions.size() == 2) {
+      float lDeltaTime = collisionStatAggregator[sortedIndices[0]].time - collisionStatAggregator[sortedIndices[1]].time;
+      float lDeltaNBC = collisionStatAggregator[sortedIndices[0]].globalBC - collisionStatAggregator[sortedIndices[1]].globalBC;
+      float lDeltaZ = collisionStatAggregator[sortedIndices[0]].positionZ - collisionStatAggregator[sortedIndices[1]].positionZ;
       histos.fill(HIST("h2dDeltaTimeVsDeltaZ"), lDeltaZ, lDeltaTime);
       histos.fill(HIST("h2dDeltaBCIndexVsDeltaZ"), lDeltaZ, lDeltaNBC);
-      
-      //Correaltion between number of contributors
+
+      // Correaltion between number of contributors
       histos.fill(HIST("h2dNContribCorr2a"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRD, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
       histos.fill(HIST("h2dNContribCorr2b"), collisionStatAggregator[sortedIndices[1]].nContribsWithTRD, collisionStatAggregator[sortedIndices[1]].nContribsWithTOF);
     }
