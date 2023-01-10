@@ -359,7 +359,6 @@ DECLARE_SOA_COLUMN(Vt2, vt2, float); //! Production vertex time
 DECLARE_SOA_COLUMN(IsAmbig1, isAmbig1, int); //!
 DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
 
-
 } // namespace dilepton_track_index
 
 // pair information
@@ -437,7 +436,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::PtMC2, dilepton_track_index::EtaMC2, dilepton_track_index::PhiMC2, dilepton_track_index::EMC2,
                   dilepton_track_index::Vx1, dilepton_track_index::Vy1, dilepton_track_index::Vz1, dilepton_track_index::Vt1,
                   dilepton_track_index::Vx2, dilepton_track_index::Vy2, dilepton_track_index::Vz2, dilepton_track_index::Vt2,
-		  dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2);
+                  dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2);
 
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;

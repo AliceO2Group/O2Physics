@@ -206,7 +206,7 @@ struct TableMakerMC {
       if (fConfigQA) {
         for (auto& cut : fTrackCuts) {
           histClasses += Form("TrackBarrel_%s;", cut.GetName());
-	  if (fIsAmbiguous) {
+          if (fIsAmbiguous) {
             histClasses += Form("Ambiguous_TrackBarrel_%s;", cut.GetName());
           }
         }
@@ -216,14 +216,14 @@ struct TableMakerMC {
     if (enableMuonHistos) {
       if (fDoDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
-	if (fIsAmbiguous) {
+        if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
         }
       }
       if (fConfigQA) {
         for (auto& muonCut : fMuonCuts) {
           histClasses += Form("Muons_%s;", muonCut.GetName());
-	  if (fIsAmbiguous) {
+          if (fIsAmbiguous) {
             histClasses += Form("Ambiguous_Muons_%s;", muonCut.GetName());
           }
         }
@@ -436,7 +436,7 @@ struct TableMakerMC {
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
-	    if (fIsAmbiguous && isAmbiguous == 1) {
+            if (fIsAmbiguous && isAmbiguous == 1) {
               fHistMan->FillHistClass("Ambiguous_TrackBarrel_BeforeCuts", VarManager::fgValues);
             }
           }
@@ -447,7 +447,7 @@ struct TableMakerMC {
               trackTempFilterMap |= (uint8_t(1) << i);
               if (fConfigQA) {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
-		if (fIsAmbiguous && isAmbiguous == 1) {
+                if (fIsAmbiguous && isAmbiguous == 1) {
                   fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", cut.GetName()), VarManager::fgValues);
                 }
               }
@@ -611,7 +611,7 @@ struct TableMakerMC {
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
-	    if (fIsAmbiguous && isAmbiguous == 1) {
+            if (fIsAmbiguous && isAmbiguous == 1) {
               fHistMan->FillHistClass("Ambiguous_Muons_BeforeCuts", VarManager::fgValues);
             }
           }
@@ -621,7 +621,7 @@ struct TableMakerMC {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
               fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-	      if (fIsAmbiguous && isAmbiguous == 1) {
+              if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
               ((TH1I*)fStatsList->At(2))->Fill(float(i));
@@ -912,7 +912,7 @@ struct TableMakerMC {
   }
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
   void processAmbiguousMuonOnly(MyEvents const& collisions, aod::BCs const& bcs,
-              		        soa::Filtered<MyMuons> const& tracksMuon,
+                                soa::Filtered<MyMuons> const& tracksMuon,
                                 aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, ambiTracksFwd);
@@ -920,7 +920,7 @@ struct TableMakerMC {
 
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
   void processAmbiguousBarrelOnly(MyEvents const& collisions, aod::BCs const& bcs,
-   		                  soa::Filtered<MyBarrelTracks> const& tracksBarrel,
+                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel,
                                   aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, ambiTracksMid, nullptr);
@@ -948,7 +948,6 @@ struct TableMakerMC {
   PROCESS_SWITCH(TableMakerMC, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
   PROCESS_SWITCH(TableMakerMC, processAmbiguousMuonOnly, "Build muon-only DQ skimmed data model with QA plots for ambiguous muons", false);
   PROCESS_SWITCH(TableMakerMC, processAmbiguousBarrelOnly, "Build barrel-only DQ skimmed data model with QA plots for ambiguous tracks", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
