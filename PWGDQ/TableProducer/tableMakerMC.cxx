@@ -296,7 +296,7 @@ struct TableMakerMC {
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
     for (auto& collision : collisions) {
-      //TODO: investigate the collisions without corresponding mcCollision
+      // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
         continue;
       }
@@ -388,7 +388,7 @@ struct TableMakerMC {
           // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
           // fill histograms for each of the signals, if found
           if (fConfigQA) {
-            VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+            VarManager::FillTrackMC<gkParticleMCFillMap>(mcTracks, mctrack);
             int j = 0;
             for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
               if (mcflags & (uint16_t(1) << j)) {
@@ -432,7 +432,7 @@ struct TableMakerMC {
             continue;
           }
           auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+          VarManager::FillTrackMC<gkParticleMCFillMap>(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -607,7 +607,7 @@ struct TableMakerMC {
           }
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+          VarManager::FillTrackMC<gkParticleMCFillMap>(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
