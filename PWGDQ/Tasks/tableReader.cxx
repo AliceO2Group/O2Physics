@@ -722,6 +722,7 @@ struct AnalysisSameEventPairing {
 
   Produces<aod::Dileptons> dileptonList;
   Produces<aod::DileptonsExtra> dileptonExtraList;
+  Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
 
   OutputObj<THashList> fOutputList{"output"};
@@ -731,6 +732,7 @@ struct AnalysisSameEventPairing {
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -845,6 +847,9 @@ struct AnalysisSameEventPairing {
     uint32_t dileptonMcDecision = 0; // placeholder, copy of the dqEfficiency.cxx one
     dileptonList.reserve(1);
     dileptonExtraList.reserve(1);
+    if (fConfigFlatTables.value) {
+      dimuonAllList.reserve(1);
+    }
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -877,6 +882,9 @@ struct AnalysisSameEventPairing {
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+        if (fConfigFlatTables.value) {
+          dimuonAllList(event.posX(), event.posY(), event.posZ(), -999., -999., -999., VarManager::fgValues[VarManager::kMass], false, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), 0., 0., t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., t1.isAmbiguous(), t2.isAmbiguous());
+        }
       }
 
       if constexpr (eventHasQvector) {
