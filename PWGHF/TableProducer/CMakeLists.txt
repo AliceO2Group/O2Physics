@@ -208,3 +208,8 @@ o2physics_add_dpl_workflow(track-to-collision-associator
                     SOURCES trackToCollisionAssociator.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(track-to-collision-associator
+                    SOURCES trackToCollisionAssociator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
