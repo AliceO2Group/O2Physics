@@ -115,9 +115,6 @@ struct reso2initializer {
   using ResoV0s = aod::V0Datas;
   using ResoV0sMC = soa::Join<ResoV0s, aod::McV0Labels>;
 
-  Preslice<soa::Filtered<ResoTracks>> tracksbyCollisionID = aod::track::collisionId;
-  Preslice<ResoV0s> v0sbyCollisionID = aod::v0data::collisionId;
-
   template <bool isMC, typename CollisionType, typename TrackType>
   bool IsTrackSelected(CollisionType const& collision, TrackType const& track)
   {
@@ -266,6 +263,7 @@ struct reso2initializer {
       }
       return lMothersPDGs;
     };
+<<<<<<< HEAD
     auto getDaughtersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lDaughtersIndeces{};
       for (auto& lMother : theMcParticle.template daughters_as<aod::McParticles>()) {
@@ -283,6 +281,8 @@ struct reso2initializer {
       return lDaughtersPDGs;
     };
     // ------
+=======
+>>>>>>> revert changes
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
     std::vector<int> daughters = {-1, -1};
