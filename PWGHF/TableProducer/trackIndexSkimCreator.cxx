@@ -394,7 +394,7 @@ struct HfTrackIndexSkimCreatorProduceAmbTracks {
               /// Fill the table with this track propagated to the new collisions
               collIndices.push_back(collision.globalIndex());
               trackIndices.push_back(track.globalIndex());
-              trackTypes.push_back(BIT(hf_amb_tracks::Ambiguous));
+              trackTypes.push_back(BIT(hf_amb_tracks::PVContributor));
               trackX.push_back(trackParCov.getX());
               trackAlpha.push_back(trackParCov.getAlpha());
               trackY.push_back(trackParCov.getY());
