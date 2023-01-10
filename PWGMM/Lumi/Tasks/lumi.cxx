@@ -40,7 +40,6 @@
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "DetectorsBase/GeometryManager.h"
