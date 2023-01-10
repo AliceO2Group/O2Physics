@@ -282,33 +282,40 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   bool isSelectedGamma(const T& gamma, float GammaCosinePA)
   {
-    if (activateQA) hGammaSelected->Fill(0);
+    if (activateQA)
+      hGammaSelected->Fill(0);
     if (std::abs(gamma.eta()) > 0.8) {
-      if (activateQA) hGammaSelected->Fill(1);
+      if (activateQA)
+        hGammaSelected->Fill(1);
       return false;
     }
 
     if (gamma.v0radius() < 0. || gamma.v0radius() > 180.) {
-      if (activateQA) hGammaSelected->Fill(2);
+      if (activateQA)
+        hGammaSelected->Fill(2);
       return false;
     }
 
     if ((std::pow(gamma.alpha() / 0.95, 2) + std::pow(gamma.qtarm() / 0.05, 2)) >= 1) {
-      if (activateQA) hGammaSelected->Fill(3);
+      if (activateQA)
+        hGammaSelected->Fill(3);
       return false;
     }
 
     if (std::abs(gamma.psipair()) > 0.1) {
-      if (activateQA) hGammaSelected->Fill(4);
+      if (activateQA)
+        hGammaSelected->Fill(4);
       return false;
     }
 
     if (GammaCosinePA < 0.85) {
-      if (activateQA) hGammaSelected->Fill(5);
+      if (activateQA)
+        hGammaSelected->Fill(5);
       return false;
     }
 
-    if (activateQA) hGammaSelected->Fill(6);
+    if (activateQA)
+      hGammaSelected->Fill(6);
     return true;
   }
 
