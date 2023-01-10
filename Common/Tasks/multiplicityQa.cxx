@@ -84,6 +84,8 @@ struct MultiplicityQa {
     const AxisSpec axisMultNTracks2d{(int)NBinsMultNTracks2d, 0, MaxMultNTracks, "Track counter"};
 
     const AxisSpec axisVertexZ{(int)NBinsVertexZ, -20, 20, "Vertex Z (cm)"};
+    const AxisSpec axisContributorsTRD{(int)200, -0.5f, +199.5f, "N_{contribs}^{TRD}"};
+    const AxisSpec axisContributorsTOF{(int)200, -0.5f, +199.5f, "N_{contribs}^{TOF}"};
 
     //Base histograms
     histos.add("multiplicityQa/hEventCounter", "Event counter", kTH1D, {axisEvent});
@@ -121,6 +123,9 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hNchProfileFT0A", "FT0A", kTH2F, {axisMultFT0A2d, axisMultNTracks2d});
     histos.add("multiplicityQa/hNchProfileFT0C", "FT0C", kTH2F, {axisMultFT0C2d, axisMultNTracks2d});
     histos.add("multiplicityQa/hNchProfileFDD", "FDD", kTH2F, {axisMultFDD2d, axisMultNTracks2d});
+
+    // Contributors correlation
+    histos.add("h2dNContribCorrAll", "h2dNContribCorrAll", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
@@ -237,6 +242,40 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hPerBCRawFDD"), multFDDA + multFDDC);
   }
   PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", true);
+
+  void processCollisionsPVChecks(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks)
+  {
+    if (selection == 7 && !col.sel7()) {
+      return;
+    }
+
+    if (selection == 8 && !col.sel8()) {
+      return;
+    }
+    if (selection != 7 && selection != 8) {
+      LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8`");
+    }
+
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
+    if (fabs(col.posZ()) > vtxZsel) {
+      return;
+    }
+
+    long NcontribsTOF = 0;
+    long NcontribsTRD = 0;
+    for (auto& track : tracks) {
+      if (track.isPVContributor()) {
+        if (track.hasTRD())
+          NcontribsTRD++;
+        if (track.hasTOF())
+          NcontribsTOF++;
+      }
+    }
+    histos.fill(HIST("h2dNContribCorrAll"), NcontribsTRD, NcontribsTOF);
+  }
+  PROCESS_SWITCH(MultiplicityQa, processCollisionsPVChecks, "do PV contributors check", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
