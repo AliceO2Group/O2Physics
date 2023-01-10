@@ -27,27 +27,30 @@
 
 #include "CommonUtils/NameConf.h"
 
+#include "CommonConstants/GeomConstants.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+
+#include "DetectorsVertexing/PVertexer.h"
+
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+
+#include "DataFormatsParameters/GRPObject.h"
+
+#include "DataFormatsCalibration/MeanVertexObject.h"
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
-
-#include "DetectorsVertexing/PVertexer.h"
 
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-
-#include "DetectorsBase/Propagator.h"
-
-#include "CommonUtils/NameConf.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
 
 namespace o2::aod
 {
