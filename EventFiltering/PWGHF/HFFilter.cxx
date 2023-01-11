@@ -156,6 +156,8 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
+  std::shared_ptr<TH1> hGammaSelected;
+  std::shared_ptr<TH2> hGammaAPbefore, hGammaAPafter;
 
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
@@ -200,6 +202,9 @@ struct HfFilter { // Main struct for HF triggers
       }
       hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
       hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
+      hGammaSelected = registry.add<TH1>("fGammaSelected", "Selections for converted gamma;;counts", HistType::kTH1F, {{7, -0.5, 6.5}});
+      hGammaAPbefore = registry.add<TH2>("fGammaAPbefore", "Armenteros Podolanski plot for converted gamma, before selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {{100, -1., 1.}, {100, 0., .25}});
+      hGammaAPafter = registry.add<TH2>("fGammaAPafter", "Armenteros Podolanski plot for converted gamma, after selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {{100, -1., 1.}, {100, 0., .25}});
     }
 
     ccdb->setURL(url.value);
@@ -280,26 +285,44 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   bool isSelectedGamma(const T& gamma, float GammaCosinePA)
   {
+    if (activateQA) {
+      hGammaSelected->Fill(0);
+      hGammaAPbefore->Fill(gamma.alpha(), gamma.qtarm());
+    }
     if (std::abs(gamma.eta()) > 0.8) {
+      if (activateQA)
+        hGammaSelected->Fill(1);
       return false;
     }
 
     if (gamma.v0radius() < 0. || gamma.v0radius() > 180.) {
+      if (activateQA)
+        hGammaSelected->Fill(2);
       return false;
     }
 
     if ((std::pow(gamma.alpha() / 0.95, 2) + std::pow(gamma.qtarm() / 0.05, 2)) >= 1) {
+      if (activateQA)
+        hGammaSelected->Fill(3);
       return false;
     }
 
     if (std::abs(gamma.psipair()) > 0.1) {
+      if (activateQA)
+        hGammaSelected->Fill(4);
       return false;
     }
 
     if (GammaCosinePA < 0.85) {
+      if (activateQA)
+        hGammaSelected->Fill(5);
       return false;
     }
 
+    if (activateQA) {
+      hGammaSelected->Fill(6);
+      hGammaAPafter->Fill(gamma.alpha(), gamma.qtarm());
+    }
     return true;
   }
 
