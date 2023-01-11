@@ -32,10 +32,13 @@ DECLARE_SOA_COLUMN(Module, mod, uint8_t);                //! module/supermodule 
 DECLARE_SOA_COLUMN(Ncell, ncell, uint8_t);               //! cluster multiplicity
 DECLARE_SOA_COLUMN(X, x, float);                         //! cluster local coordinates
 DECLARE_SOA_COLUMN(Z, z, float);                         //!
+DECLARE_SOA_COLUMN(GlobalX, globalx, float);             //! cluster global coordinates
+DECLARE_SOA_COLUMN(GlobalY, globaly, float);             //! cluster global coordinates
+DECLARE_SOA_COLUMN(GlobalZ, globalz, float);             //! cluster global coordinates
 DECLARE_SOA_COLUMN(Time, time, float);                   //! cluster time (seconds)
 DECLARE_SOA_COLUMN(NLM, nlm, uint8_t);                   //! number of local maxima
-DECLARE_SOA_COLUMN(M02, m02, float);                     //! smaller dispersion axis
-DECLARE_SOA_COLUMN(M20, m20, float);                     //! larger dispersion axis
+DECLARE_SOA_COLUMN(M02, m02, float);                     //! longer dispersion axis
+DECLARE_SOA_COLUMN(M20, m20, float);                     //! shorter dispersion axis
 DECLARE_SOA_COLUMN(TrackDist, trackdist, float);         //! distance to closest track
 DECLARE_SOA_COLUMN(TrackIndex, trackIndex, uint8_t);     //! index of closest track
 DECLARE_SOA_COLUMN(FiredTrigger, firedTrigger, uint8_t); //! Matched with trigger tile
@@ -50,6 +53,7 @@ DECLARE_SOA_TABLE(CaloClusters, "AOD", "CALOCLUSTERS", //!
                   calocluster::Px, calocluster::Py, calocluster::Pz, calocluster::E,
                   calocluster::Module, calocluster::Ncell,
                   calocluster::X, calocluster::Z,
+                  calocluster::GlobalX, calocluster::GlobalY, calocluster::GlobalZ,
                   calocluster::Time, calocluster::NLM, calocluster::M02, calocluster::M20,
                   calocluster::TrackDist, calocluster::TrackIndex, calocluster::FiredTrigger, calocluster::DistBad);
 
