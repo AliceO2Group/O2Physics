@@ -88,7 +88,6 @@ constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | 
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
-constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 constexpr static uint32_t gkMuonFillMapWithAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::AmbiMuon;
 constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 
@@ -388,7 +387,7 @@ struct TableMakerMC {
           // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
           // fill histograms for each of the signals, if found
           if (fConfigQA) {
-            VarManager::FillTrackMC<gkParticleMCFillMap>(mcTracks, mctrack);
+            VarManager::FillTrackMC(mcTracks, mctrack);
             int j = 0;
             for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
               if (mcflags & (uint16_t(1) << j)) {
@@ -432,7 +431,7 @@ struct TableMakerMC {
             continue;
           }
           auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
-          VarManager::FillTrackMC<gkParticleMCFillMap>(mcTracks, mctrack);
+          VarManager::FillTrackMC(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -607,7 +606,7 @@ struct TableMakerMC {
           }
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
-          VarManager::FillTrackMC<gkParticleMCFillMap>(mcTracks, mctrack);
+          VarManager::FillTrackMC(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
@@ -621,14 +620,10 @@ struct TableMakerMC {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
               fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-<<<<<<< HEAD
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
-              ((TH1I*)fStatsList->At(2))->Fill(float(i));
-=======
               (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
->>>>>>> a773096a (PWGDQ: fix old MegaLinter errors)
             }
             i++;
           }

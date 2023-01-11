@@ -423,7 +423,7 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
-  template <uint32_t fillMap, typename U, typename T>
+  template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
@@ -972,7 +972,7 @@ void VarManager::FillTrack(T const& track, float* values)
   FillTrackDerived(values);
 }
 
-template <uint32_t fillMap, typename U, typename T>
+template <typename U, typename T>
 void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
 {
   if (!values) {
@@ -980,25 +980,23 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   }
 
   // Quantities based on the mc particle table
-  if constexpr ((fillMap & ParticleMC) > 0) {
-    values[kMCPdgCode] = track.pdgCode();
-    values[kMCParticleWeight] = track.weight();
-    values[kMCPx] = track.px();
-    values[kMCPy] = track.py();
-    values[kMCPz] = track.pz();
-    values[kMCE] = track.e();
-    values[kMCVx] = track.vx();
-    values[kMCVy] = track.vy();
-    values[kMCVz] = track.vz();
-    values[kMCPt] = track.pt();
-    values[kMCPhi] = track.phi();
-    values[kMCEta] = track.eta();
-    values[kMCY] = track.y();
-    values[kMCParticleGeneratorId] = track.producedByGenerator();
-    if (track.has_mothers()) {
-      auto mother = track.template mothers_first_as<U>();
-      values[kMCMotherPdgCode] = mother.pdgCode();
-    }
+  values[kMCPdgCode] = track.pdgCode();
+  values[kMCParticleWeight] = track.weight();
+  values[kMCPx] = track.px();
+  values[kMCPy] = track.py();
+  values[kMCPz] = track.pz();
+  values[kMCE] = track.e();
+  values[kMCVx] = track.vx();
+  values[kMCVy] = track.vy();
+  values[kMCVz] = track.vz();
+  values[kMCPt] = track.pt();
+  values[kMCPhi] = track.phi();
+  values[kMCEta] = track.eta();
+  values[kMCY] = track.y();
+  values[kMCParticleGeneratorId] = track.producedByGenerator();
+  if (track.has_mothers()) {
+    auto mother = track.template mothers_first_as<U>();
+    values[kMCMotherPdgCode] = mother.pdgCode();
   }
 
   FillTrackDerived(values);
