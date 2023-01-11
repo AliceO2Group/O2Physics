@@ -85,7 +85,7 @@ DECLARE_SOA_COLUMN(PvRefitSigmaXY, pvRefitSigmaXY, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //! 
 DECLARE_SOA_COLUMN(PvRefitDcaXY, pvRefitDcaXY, float);     //!
 DECLARE_SOA_COLUMN(PvRefitDcaZ, pvRefitDcaZ, float);       //!
 } // namespace hf_pv_refit_track
