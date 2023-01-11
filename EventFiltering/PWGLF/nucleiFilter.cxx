@@ -10,22 +10,21 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "../filterTables.h"
-
-#include "Framework/HistogramRegistry.h"
-
 #include <cmath>
 #include <string>
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "../filterTables.h"
 
 using namespace o2;
 using namespace o2::framework;
