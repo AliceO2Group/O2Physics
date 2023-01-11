@@ -16,6 +16,8 @@
 //   The skimmed MC stack includes the MC truth particles corresponding to the list of user specified MC signals (see MCsignal.h)
 //    and the MC truth particles corresponding to the reconstructed tracks selected by the specified track cuts on reconstructed data.
 
+#include <iostream>
+#include "TList.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -37,8 +39,6 @@
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "TList.h"
-#include <iostream>
 
 using std::cout;
 using std::endl;
@@ -88,7 +88,6 @@ constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | 
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
-constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 constexpr static uint32_t gkMuonFillMapWithAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::AmbiMuon;
 constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 
@@ -296,7 +295,7 @@ struct TableMakerMC {
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
     for (auto& collision : collisions) {
-      //TODO: investigate the collisions without corresponding mcCollision
+      // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
         continue;
       }
@@ -329,10 +328,10 @@ struct TableMakerMC {
       // fill stats information, before selections
       for (int i = 0; i < kNaliases; i++) {
         if (triggerAliases & (uint32_t(1) << i)) {
-          ((TH2I*)fStatsList->At(0))->Fill(2.0, float(i));
+          (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
         }
       }
-      ((TH2I*)fStatsList->At(0))->Fill(2.0, float(kNaliases));
+      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
         continue;
@@ -345,10 +344,10 @@ struct TableMakerMC {
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
         if (triggerAliases & (uint32_t(1) << i)) {
-          ((TH2I*)fStatsList->At(0))->Fill(3.0, float(i));
+          (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
         }
       }
-      ((TH2I*)fStatsList->At(0))->Fill(3.0, float(kNaliases));
+      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
 
       event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
       eventExtended(collision.bc().globalBC(), collision.bc().triggerMask(), 0, triggerAliases, VarManager::fgValues[VarManager::kCentVZERO]);
@@ -388,7 +387,7 @@ struct TableMakerMC {
           // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
           // fill histograms for each of the signals, if found
           if (fConfigQA) {
-            VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+            VarManager::FillTrackMC(mcTracks, mctrack);
             int j = 0;
             for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
               if (mcflags & (uint16_t(1) << j)) {
@@ -432,7 +431,7 @@ struct TableMakerMC {
             continue;
           }
           auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+          VarManager::FillTrackMC(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -451,7 +450,7 @@ struct TableMakerMC {
                   fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", cut.GetName()), VarManager::fgValues);
                 }
               }
-              ((TH1I*)fStatsList->At(1))->Fill(float(i));
+              (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -470,7 +469,7 @@ struct TableMakerMC {
             trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
             for (int iv0 = 0; iv0 < 5; iv0++) {
               if (track.pidbit() & (uint8_t(1) << iv0)) {
-                ((TH1I*)fStatsList->At(1))->Fill(fTrackCuts.size() + float(iv0));
+                (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
               }
             }
           }
@@ -574,7 +573,7 @@ struct TableMakerMC {
               if (fConfigQA) {
                 fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               }
-              ((TH1I*)fStatsList->At(2))->Fill(float(i));
+              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -607,7 +606,7 @@ struct TableMakerMC {
           }
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+          VarManager::FillTrackMC(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
@@ -624,7 +623,7 @@ struct TableMakerMC {
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
-              ((TH1I*)fStatsList->At(2))->Fill(float(i));
+              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -666,21 +665,19 @@ struct TableMakerMC {
 
           // update the matching MCH/MFT index
 
-          if (int(muon.trackType()) == 0 || int(muon.trackType()) == 2) { // MCH-MFT or GLB track
+          if (static_cast<int>(muon.trackType()) == 0 || static_cast<int>(muon.trackType()) == 2) { // MCH-MFT or GLB track
             int matchIdx = muon.matchMCHTrackId() - muon.offsets();
             if (newEntryNb.count(matchIdx) > 0) {                                                  // if the key exists which means the match will not get deleted
               newMatchIndex[muon.index()] = newEntryNb[matchIdx];                                  // update the match for this muon to the updated entry of the match
               newMatchIndex[muon.index()] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; // adding the offset of muons, muonBasic.lastIndex() start at -1
-              if (int(muon.trackType()) == 0) {                                                    // for now only do this to global tracks
+              if (static_cast<int>(muon.trackType()) == 0) {                                       // for now only do this to global tracks
                 newMatchIndex[matchIdx] = newEntryNb[muon.index()];                                // add the  updated index of this muon as a match to mch track
                 newMatchIndex[matchIdx] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()];   // adding the offset, muonBasic.lastIndex() start at -1
               }
             } else {
               newMatchIndex[muon.index()] = -1;
             }
-          }
-
-          else if (int(muon.trackType() == 4)) { // an MCH track
+          } else if (static_cast<int>(muon.trackType() == 4)) { // an MCH track
             // in this case the matches should be filled from the other types but we need to check
             if (newMatchIndex.count(muon.index()) == 0) {
               newMatchIndex[muon.index()] = -1;
@@ -749,11 +746,11 @@ struct TableMakerMC {
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
         if (mcflags & (uint16_t(1) << isig)) {
-          ((TH1I*)fStatsList->At(3))->Fill(float(isig));
+          (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
         }
       }
       if (mcflags == 0) {
-        ((TH1I*)fStatsList->At(3))->Fill(float(fMCSignals.size()));
+        (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(fMCSignals.size()));
       }
     } // end loop over labels
 
@@ -930,10 +927,10 @@ struct TableMakerMC {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (bc.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(0.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(0.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(kNaliases));
   }
 
   PROCESS_SWITCH(TableMakerMC, processFull, "Produce both barrel and muon skims", false);

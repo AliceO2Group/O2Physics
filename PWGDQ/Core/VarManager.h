@@ -282,6 +282,9 @@ class VarManager : public TObject
     kMCParticleGeneratorId,
     kNMCParticleVariables,
 
+    // MC mother particle variables
+    kMCMotherPdgCode,
+
     // Pair variables
     kCandidateId,
     kPairType,
@@ -420,6 +423,8 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
+  template <typename U, typename T>
+  static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -855,8 +860,8 @@ void VarManager::FillTrack(T const& track, float* values)
 
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCElectronMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCElectronSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -874,8 +879,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCPionMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCPionSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -893,8 +898,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCProtonMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCProtonSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -963,24 +968,37 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMass] = track.mass();
   }
 
-  if constexpr ((fillMap & ParticleMC) > 0) {
-    values[kMCPdgCode] = track.pdgCode();
-    values[kMCParticleWeight] = track.weight();
-    values[kMCPx] = track.px();
-    values[kMCPy] = track.py();
-    values[kMCPz] = track.pz();
-    values[kMCE] = track.e();
-    values[kMCVx] = track.vx();
-    values[kMCVy] = track.vy();
-    values[kMCVz] = track.vz();
-    values[kMCPt] = track.pt();
-    values[kMCPhi] = track.phi();
-    values[kMCEta] = track.eta();
-    values[kMCY] = track.y();
-    values[kMCParticleGeneratorId] = track.producedByGenerator();
+  // Derived quantities which can be computed based on already filled variables
+  FillTrackDerived(values);
+}
+
+template <typename U, typename T>
+void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
+{
+  if (!values) {
+    values = fgValues;
   }
 
-  // Derived quantities which can be computed based on already filled variables
+  // Quantities based on the mc particle table
+  values[kMCPdgCode] = track.pdgCode();
+  values[kMCParticleWeight] = track.weight();
+  values[kMCPx] = track.px();
+  values[kMCPy] = track.py();
+  values[kMCPz] = track.pz();
+  values[kMCE] = track.e();
+  values[kMCVx] = track.vx();
+  values[kMCVy] = track.vy();
+  values[kMCVz] = track.vz();
+  values[kMCPt] = track.pt();
+  values[kMCPhi] = track.phi();
+  values[kMCEta] = track.eta();
+  values[kMCY] = track.y();
+  values[kMCParticleGeneratorId] = track.producedByGenerator();
+  if (track.has_mothers()) {
+    auto mother = track.template mothers_first_as<U>();
+    values[kMCMotherPdgCode] = mother.pdgCode();
+  }
+
   FillTrackDerived(values);
 }
 
