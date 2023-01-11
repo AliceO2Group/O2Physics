@@ -74,7 +74,7 @@ struct nucleiFilter {
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
-  HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
   {
@@ -84,12 +84,13 @@ struct nucleiFilter {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {centBinning, "V0M (%)"};
 
-    spectra.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
-    spectra.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{600, 0., 3, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-    spectra.add("fTPCcounts", "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
+    qaHists.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
+    qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{600, 0., 3, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+    qaHists.add("fTPCcounts", "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
 
-    auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{4, -0.5, 3.5}}))};
-    for (uint32_t iS{1}; iS <= nucleiNames.size(); ++iS) {
+    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
+    scalers->GetXaxis()->SetBinLabel(0, "Processed events");
+    for (uint32_t iS{2}; iS <= nucleiNames.size() + 1; ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, nucleiNames[iS - 1].data());
     }
   }
@@ -102,7 +103,8 @@ struct nucleiFilter {
     // collision process loop
     bool keepEvent[nNuclei]{false};
     //
-    spectra.fill(HIST("fCollZpos"), collision.posZ());
+    qaHists.fill(HIST("fCollZpos"), collision.posZ());
+    qaHists.fill(HIST("fProcessedEvents"), 0);
     //
     const double bgScalings[nNuclei][2]{
       {charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / masses[0], charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / masses[0]},
@@ -135,14 +137,14 @@ struct nucleiFilter {
       //
       // fill QA histograms
       //
-      spectra.fill(HIST("fTPCsignal"), track.tpcInnerParam(), track.tpcSignal());
-      spectra.fill(HIST("fTPCcounts"), track.tpcInnerParam(), nSigmaTPC[2]);
+      qaHists.fill(HIST("fTPCsignal"), track.tpcInnerParam(), track.tpcSignal());
+      qaHists.fill(HIST("fTPCcounts"), track.tpcInnerParam(), nSigmaTPC[2]);
 
     } // end loop over tracks
     //
     for (int iDecision{0}; iDecision < 4; ++iDecision) {
       if (keepEvent[iDecision]) {
-        spectra.fill(HIST("fProcessedEvents"), iDecision);
+        qaHists.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
     tags(keepEvent[0], keepEvent[1], keepEvent[2]);
