@@ -260,7 +260,7 @@ struct HfFilter { // Main struct for HF triggers
     double kTPCncls = track.tpcNClsFound();
     double kTPCPin = track.tpcInnerParam();
     double kEta = track.eta();
-    double kTPCnSigma;
+    double kTPCnSigma = 0.;
 
     if (chargePar == kKa)
       kTPCnSigma = track.tpcNSigmaKa();
