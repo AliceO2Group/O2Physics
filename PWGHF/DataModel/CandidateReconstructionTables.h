@@ -52,6 +52,16 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::PyProng,
                   hf_sel_track::PzProng);
 
+namespace hf_track_association
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
+} // namespace hf_track_association
+
+DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions
+                  hf_track_association::CollisionId,
+                  hf_track_association::TrackId);
+
 namespace hf_pv_refit_track
 {
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!

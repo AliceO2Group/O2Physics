@@ -18,26 +18,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
-//#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
-
-namespace o2::aod
-{
-namespace hf_track_association
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
-} // namespace hf_track_association
-
-DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions
-                  hf_track_association::CollisionId,
-                  hf_track_association::TrackId);
-} // namespace o2::aod
 
 struct HfTrackToCollisionAssociation {
   Produces<HfTrackAssoc> association;

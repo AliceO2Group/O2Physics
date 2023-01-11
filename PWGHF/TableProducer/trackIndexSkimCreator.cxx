@@ -1311,7 +1311,7 @@ struct HfTrackIndexSkimCreator {
   /// \param vecCandPvContributorGlobId is a vector containing the global indices of daughter tracks that contributed to the original PV refit
   /// \param pvCoord is a vector where to store X, Y and Z values of refitted PV
   /// \param pvCovMatrix is a vector where to store the covariance matrix values of refitted PV
-  void performPvRefitCandProngs(aod::Collision const& collision,
+  void performPvRefitCandProngs(SelectedCollisions::iterator const& collision,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                 std::vector<int64_t> vecPvContributorGlobId,
                                 std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
@@ -1440,12 +1440,15 @@ struct HfTrackIndexSkimCreator {
     return;
   } /// end of performPvRefitCandProngs function
 
+  // define slice of track indices per collisions
+  Preslice<SelectedTracks> tracksPerCollision = aod::track::collisionId; // needed for PV refit
+  Preslice<HfTrackAssoc> trackIndicesPerCollision = aod::track::collisionId;
+
   void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
-    SelectedCollisions::iterator const& collision,
-    aod::Collisions const&,
+    SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
-    SelectedTracks const& tracks,
-    BigTracks const& tracksUnfiltered)
+    HfTrackAssoc const& trackIndices,
+    SelectedTracks const& tracks)
   {
 
     // can be added to run over limited collisions per file - for tesing purposes
@@ -1459,685 +1462,696 @@ struct HfTrackIndexSkimCreator {
     }
     */
 
-    /// retrieve PV contributors for the current collision
-    std::vector<int64_t> vecPvContributorGlobId = {};
-    std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov = {};
-    if (doPvRefit) {
-      const int nTrk = tracksUnfiltered.size();
-      int nContrib = 0;
-      int nNonContrib = 0;
-      for (const auto& trackUnfiltered : tracksUnfiltered) {
-        if (!trackUnfiltered.isPVContributor()) {
-          /// the track did not contribute to fit the primary vertex
-          nNonContrib++;
-          continue;
-        } else {
-          vecPvContributorGlobId.push_back(trackUnfiltered.globalIndex());
-          vecPvContributorTrackParCov.push_back(getTrackParCov(trackUnfiltered));
-          nContrib++;
-          if (debug) {
-            LOG(info) << "---> a contributor! stuff saved";
-            LOG(info) << "vec_contrib size: " << vecPvContributorTrackParCov.size() << ", nContrib: " << nContrib;
+    for (const auto& collision : collisions) {
+
+      /// retrieve PV contributors for the current collision
+      std::vector<int64_t> vecPvContributorGlobId = {};
+      std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov = {};
+      auto groupedTracksUnfiltered = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
+      if (doPvRefit) {
+        const int nTrk = groupedTracksUnfiltered.size();
+        int nContrib = 0;
+        int nNonContrib = 0;
+        for (const auto& trackUnfiltered : groupedTracksUnfiltered) {
+          if (!trackUnfiltered.isPVContributor()) {
+            /// the track did not contribute to fit the primary vertex
+            nNonContrib++;
+            continue;
+          } else {
+            vecPvContributorGlobId.push_back(trackUnfiltered.globalIndex());
+            vecPvContributorTrackParCov.push_back(getTrackParCov(trackUnfiltered));
+            nContrib++;
+            if (debug) {
+              LOG(info) << "---> a contributor! stuff saved";
+              LOG(info) << "vec_contrib size: " << vecPvContributorTrackParCov.size() << ", nContrib: " << nContrib;
+            }
           }
         }
-      }
-      if (debug) {
-        LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
-        if ((uint16_t)vecPvContributorTrackParCov.size() != collision.numContrib() || (uint16_t)nContrib != collision.numContrib()) {
-          LOG(info) << "!!! Some problem here !!! vecPvContributorTrackParCov.size()= " << vecPvContributorTrackParCov.size() << ", nContrib=" << nContrib << ", collision.numContrib()" << collision.numContrib();
-        }
-      }
-    }
-    std::vector<bool> vecPvRefitContributorUsed(vecPvContributorGlobId.size(), true);
-
-    // auto centrality = collision.centV0M(); //FIXME add centrality when option for variations to the process function appears
-
-    int n2ProngBit = BIT(n2ProngDecays) - 1; // bit value for 2-prong candidates where each candidate is one bit and they are all set to 1
-    int n3ProngBit = BIT(n3ProngDecays) - 1; // bit value for 3-prong candidates where each candidate is one bit and they are all set to 1
-
-    bool cutStatus2Prong[n2ProngDecays][nCuts2Prong];
-    bool cutStatus3Prong[n3ProngDecays][nCuts3Prong];
-    int nCutStatus2ProngBit = BIT(nCuts2Prong) - 1; // bit value for selection status for each 2-prong candidate where each selection is one bit and they are all set to 1
-    int nCutStatus3ProngBit = BIT(nCuts3Prong) - 1; // bit value for selection status for each 3-prong candidate where each selection is one bit and they are all set to 1
-
-    int whichHypo2Prong[n2ProngDecays];
-    int whichHypo3Prong[n3ProngDecays];
-
-    // set the magnetic field from CCDB
-    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-
-    // 3-prong vertex fitter
-    o2::vertexing::DCAFitterN<3> df3;
-    df3.setBz(o2::base::Propagator::Instance()->getNominalBz());
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-
-    // used to calculate number of candidiates per event
-    auto nCand2 = rowTrackIndexProng2.lastIndex();
-    auto nCand3 = rowTrackIndexProng3.lastIndex();
-
-    // if there isn't at least a positive and a negative track, continue immediately
-    // if (tracksPos.size() < 1 || tracksNeg.size() < 1) {
-    //  return;
-    //}
-
-    // first loop over positive tracks
-    // for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
-    for (auto trackPos1 = tracks.begin(); trackPos1 != tracks.end(); ++trackPos1) {
-      if (trackPos1.signed1Pt() < 0) {
-        continue;
-      }
-      bool sel2ProngStatusPos = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand2Prong);
-      bool sel3ProngStatusPos1 = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand3Prong);
-      if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
-        continue;
-      }
-
-      auto trackParVarPos1 = getTrackParCov(trackPos1);
-
-      // first loop over negative tracks
-      // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
-      for (auto trackNeg1 = tracks.begin(); trackNeg1 != tracks.end(); ++trackNeg1) {
-        if (trackNeg1.signed1Pt() > 0) {
-          continue;
-        }
-        bool sel2ProngStatusNeg = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand2Prong);
-        bool sel3ProngStatusNeg1 = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand3Prong);
-        if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
-          continue;
-        }
-
-        auto trackParVarNeg1 = getTrackParCov(trackNeg1);
-
-        int isSelected2ProngCand = n2ProngBit; // bitmap for checking status of two-prong candidates (1 is true, 0 is rejected)
-
         if (debug) {
-          for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
-            for (int iCut = 0; iCut < nCuts2Prong; iCut++) {
-              cutStatus2Prong[iDecay2P][iCut] = true;
-            }
+          LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
+          if ((uint16_t)vecPvContributorTrackParCov.size() != collision.numContrib() || (uint16_t)nContrib != collision.numContrib()) {
+            LOG(info) << "!!! Some problem here !!! vecPvContributorTrackParCov.size()= " << vecPvContributorTrackParCov.size() << ", nContrib=" << nContrib << ", collision.numContrib()" << collision.numContrib();
           }
         }
+      }
+      std::vector<bool> vecPvRefitContributorUsed(vecPvContributorGlobId.size(), true);
 
-        // 2-prong vertex reconstruction
-        if (sel2ProngStatusPos && sel2ProngStatusNeg) {
+      // auto centrality = collision.centV0M(); //FIXME add centrality when option for variations to the process function appears
 
-          // 2-prong preselections
-          // TODO: in case of PV refit, the single-track DCA is calculated wrt two different PV vertices (only 1 track excluded)
-          is2ProngPreselected(trackPos1, trackNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand);
+      int n2ProngBit = BIT(n2ProngDecays) - 1; // bit value for 2-prong candidates where each candidate is one bit and they are all set to 1
+      int n3ProngBit = BIT(n3ProngDecays) - 1; // bit value for 3-prong candidates where each candidate is one bit and they are all set to 1
 
-          // secondary vertex reconstruction and further 2-prong selections
-          if (isSelected2ProngCand > 0 && df2.process(trackParVarPos1, trackParVarNeg1) > 0) { // should it be this or > 0 or are they equivalent
-            // get secondary vertex
-            const auto& secondaryVertex2 = df2.getPCACandidate();
-            // get track momenta
-            array<float, 3> pvec0;
-            array<float, 3> pvec1;
-            df2.getTrack(0).getPxPyPzGlo(pvec0);
-            df2.getTrack(1).getPxPyPzGlo(pvec1);
+      bool cutStatus2Prong[n2ProngDecays][nCuts2Prong];
+      bool cutStatus3Prong[n3ProngDecays][nCuts3Prong];
+      int nCutStatus2ProngBit = BIT(nCuts2Prong) - 1; // bit value for selection status for each 2-prong candidate where each selection is one bit and they are all set to 1
+      int nCutStatus3ProngBit = BIT(nCuts3Prong) - 1; // bit value for selection status for each 3-prong candidate where each selection is one bit and they are all set to 1
 
-            /// PV refit excluding the candidate daughters, if contributors
-            array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-            array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
-            if (doPvRefit) {
-              if (fillHistograms) {
-                registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
+      int whichHypo2Prong[n2ProngDecays];
+      int whichHypo3Prong[n3ProngDecays];
+
+      // set the magnetic field from CCDB
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+
+      // 2-prong vertex fitter
+      o2::vertexing::DCAFitterN<2> df2;
+      df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
+      df2.setPropagateToPCA(propagateToPCA);
+      df2.setMaxR(maxR);
+      df2.setMaxDZIni(maxDZIni);
+      df2.setMinParamChange(minParamChange);
+      df2.setMinRelChi2Change(minRelChi2Change);
+      df2.setUseAbsDCA(useAbsDCA);
+
+      // 3-prong vertex fitter
+      o2::vertexing::DCAFitterN<3> df3;
+      df3.setBz(o2::base::Propagator::Instance()->getNominalBz());
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+
+      // used to calculate number of candidiates per event
+      auto nCand2 = rowTrackIndexProng2.lastIndex();
+      auto nCand3 = rowTrackIndexProng3.lastIndex();
+
+      // if there isn't at least a positive and a negative track, continue immediately
+      // if (tracksPos.size() < 1 || tracksNeg.size() < 1) {
+      //  return;
+      //}
+
+      // first loop over positive tracks
+      // for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
+
+      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+
+      for (auto trackIndexPos1 = groupedTrackIndices.begin(); trackIndexPos1 != groupedTrackIndices.end(); ++trackIndexPos1) {
+        auto trackPos1 = trackIndexPos1.track_as<SelectedTracks>();
+
+        if (trackPos1.signed1Pt() < 0) {
+          continue;
+        }
+        bool sel2ProngStatusPos = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand2Prong);
+        bool sel3ProngStatusPos1 = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand3Prong);
+        if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
+          continue;
+        }
+
+        auto trackParVarPos1 = getTrackParCov(trackPos1);
+
+        // first loop over negative tracks
+        // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
+        for (auto trackIndexNeg1 = groupedTrackIndices.begin(); trackIndexNeg1 != groupedTrackIndices.end(); ++trackIndexNeg1) {
+          auto trackNeg1 = trackIndexNeg1.track_as<SelectedTracks>();
+          if (trackNeg1.signed1Pt() > 0) {
+            continue;
+          }
+          bool sel2ProngStatusNeg = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand2Prong);
+          bool sel3ProngStatusNeg1 = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand3Prong);
+          if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
+            continue;
+          }
+
+          auto trackParVarNeg1 = getTrackParCov(trackNeg1);
+
+          int isSelected2ProngCand = n2ProngBit; // bitmap for checking status of two-prong candidates (1 is true, 0 is rejected)
+
+          if (debug) {
+            for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
+              for (int iCut = 0; iCut < nCuts2Prong; iCut++) {
+                cutStatus2Prong[iDecay2P][iCut] = true;
               }
-              int nCandContr = 2;
-              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
-              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
-              bool isTrackFirstContr = true;
-              bool isTrackSecondContr = true;
-              if (trackFirstIt == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [2 Prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackFirstContr = false;
-              }
-              if (trackSecondIt == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [2 Prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackSecondContr = false;
-              }
-              if (nCandContr == 2) {
-                /// Both the daughter tracks were used for the original PV refit, let's refit it after excluding them
-                if (debug) {
-                  LOG(info) << "### [2 Prong] Calling performPvRefitCandProngs for HF 2 prong candidate";
-                }
-                performPvRefitCandProngs((aod::Collision const&)trackPos1.collision(), bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, {trackPos1.globalIndex(), trackNeg1.globalIndex()}, pvRefitCoord2Prong, pvRefitCovMatrix2Prong);
-              } else if (nCandContr == 1) {
-                /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
-                if (debug) {
-                  LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
-                }
+            }
+          }
+
+          // 2-prong vertex reconstruction
+          if (sel2ProngStatusPos && sel2ProngStatusNeg) {
+
+            // 2-prong preselections
+            // TODO: in case of PV refit, the single-track DCA is calculated wrt two different PV vertices (only 1 track excluded)
+            is2ProngPreselected(trackPos1, trackNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand);
+
+            // secondary vertex reconstruction and further 2-prong selections
+            if (isSelected2ProngCand > 0 && df2.process(trackParVarPos1, trackParVarNeg1) > 0) { // should it be this or > 0 or are they equivalent
+              // get secondary vertex
+              const auto& secondaryVertex2 = df2.getPCACandidate();
+              // get track momenta
+              array<float, 3> pvec0;
+              array<float, 3> pvec1;
+              df2.getTrack(0).getPxPyPzGlo(pvec0);
+              df2.getTrack(1).getPxPyPzGlo(pvec1);
+
+              /// PV refit excluding the candidate daughters, if contributors
+              array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+              array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+              if (doPvRefit) {
                 if (fillHistograms) {
-                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
+                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                 }
-                if (isTrackFirstContr && !isTrackSecondContr) {
-                  /// the first daughter is contributor, the second is not
-                  pvRefitCoord2Prong = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
-                  pvRefitCovMatrix2Prong = {trackPos1.pvRefitSigmaX2(), trackPos1.pvRefitSigmaXY(), trackPos1.pvRefitSigmaY2(), trackPos1.pvRefitSigmaXZ(), trackPos1.pvRefitSigmaYZ(), trackPos1.pvRefitSigmaZ2()};
-                } else if (!isTrackFirstContr && isTrackSecondContr) {
-                  ///  the second daughter is contributor, the first is not
-                  pvRefitCoord2Prong = {trackNeg1.pvRefitX(), trackNeg1.pvRefitY(), trackNeg1.pvRefitZ()};
-                  pvRefitCovMatrix2Prong = {trackNeg1.pvRefitSigmaX2(), trackNeg1.pvRefitSigmaXY(), trackNeg1.pvRefitSigmaY2(), trackNeg1.pvRefitSigmaXZ(), trackNeg1.pvRefitSigmaYZ(), trackNeg1.pvRefitSigmaZ2()};
+                int nCandContr = 2;
+                auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
+                auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
+                bool isTrackFirstContr = true;
+                bool isTrackSecondContr = true;
+                if (trackFirstIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [2 Prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackFirstContr = false;
                 }
-              } else {
-                /// 0 contributors among the HF candidate daughters
-                if (fillHistograms) {
+                if (trackSecondIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [2 Prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackSecondContr = false;
+                }
+                if (nCandContr == 2) {
+                  /// Both the daughter tracks were used for the original PV refit, let's refit it after excluding them
+                  if (debug) {
+                    LOG(info) << "### [2 Prong] Calling performPvRefitCandProngs for HF 2 prong candidate";
+                  }
+                  performPvRefitCandProngs(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, {trackPos1.globalIndex(), trackNeg1.globalIndex()}, pvRefitCoord2Prong, pvRefitCovMatrix2Prong);
+                } else if (nCandContr == 1) {
+                  /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
+                  if (debug) {
+                    LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
+                  }
+                  if (fillHistograms) {
+                    registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
+                  }
+                  if (isTrackFirstContr && !isTrackSecondContr) {
+                    /// the first daughter is contributor, the second is not
+                    pvRefitCoord2Prong = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
+                    pvRefitCovMatrix2Prong = {trackPos1.pvRefitSigmaX2(), trackPos1.pvRefitSigmaXY(), trackPos1.pvRefitSigmaY2(), trackPos1.pvRefitSigmaXZ(), trackPos1.pvRefitSigmaYZ(), trackPos1.pvRefitSigmaZ2()};
+                  } else if (!isTrackFirstContr && isTrackSecondContr) {
+                    ///  the second daughter is contributor, the first is not
+                    pvRefitCoord2Prong = {trackNeg1.pvRefitX(), trackNeg1.pvRefitY(), trackNeg1.pvRefitZ()};
+                    pvRefitCovMatrix2Prong = {trackNeg1.pvRefitSigmaX2(), trackNeg1.pvRefitSigmaXY(), trackNeg1.pvRefitSigmaY2(), trackNeg1.pvRefitSigmaXZ(), trackNeg1.pvRefitSigmaYZ(), trackNeg1.pvRefitSigmaZ2()};
+                  }
+                } else {
+                  /// 0 contributors among the HF candidate daughters
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
-                }
-                if (debug) {
-                  LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                  if (debug) {
+                    LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                  }
                 }
               }
-            }
 
-            auto pVecCandProng2 = RecoDecay::pVec(pvec0, pvec1);
-            // 2-prong selections after secondary vertex
-            array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
-            if (doPvRefit) {
-              pvCoord2Prong[0] = pvRefitCoord2Prong[0];
-              pvCoord2Prong[1] = pvRefitCoord2Prong[1];
-              pvCoord2Prong[2] = pvRefitCoord2Prong[2];
-            }
-            is2ProngSelected(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
+              auto pVecCandProng2 = RecoDecay::pVec(pvec0, pvec1);
+              // 2-prong selections after secondary vertex
+              array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
+              if (doPvRefit) {
+                pvCoord2Prong[0] = pvRefitCoord2Prong[0];
+                pvCoord2Prong[1] = pvRefitCoord2Prong[1];
+                pvCoord2Prong[2] = pvRefitCoord2Prong[2];
+              }
+              is2ProngSelected(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
 
-            if (isSelected2ProngCand > 0) {
-              // fill table row
-              rowTrackIndexProng2(trackPos1.globalIndex(),
-                                  trackNeg1.globalIndex(), isSelected2ProngCand);
-              // fill table row with coordinates of PV refit
-              rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
-                               pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
+              if (isSelected2ProngCand > 0) {
+                // fill table row
+                rowTrackIndexProng2(trackPos1.globalIndex(),
+                                    trackNeg1.globalIndex(), isSelected2ProngCand);
+                // fill table row with coordinates of PV refit
+                rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
+                                 pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
 
-              if (debug) {
-                int Prong2CutStatus[n2ProngDecays];
-                for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
-                  Prong2CutStatus[iDecay2P] = nCutStatus2ProngBit;
-                  for (int iCut = 0; iCut < nCuts2Prong; iCut++) {
-                    if (!cutStatus2Prong[iDecay2P][iCut]) {
-                      CLRBIT(Prong2CutStatus[iDecay2P], iCut);
+                if (debug) {
+                  int Prong2CutStatus[n2ProngDecays];
+                  for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
+                    Prong2CutStatus[iDecay2P] = nCutStatus2ProngBit;
+                    for (int iCut = 0; iCut < nCuts2Prong; iCut++) {
+                      if (!cutStatus2Prong[iDecay2P][iCut]) {
+                        CLRBIT(Prong2CutStatus[iDecay2P], iCut);
+                      }
+                    }
+                  }
+                  rowProng2CutStatus(Prong2CutStatus[0], Prong2CutStatus[1], Prong2CutStatus[2]); // FIXME when we can do this by looping over n2ProngDecays
+                }
+
+                // fill histograms
+                if (fillHistograms) {
+                  registry.fill(HIST("hVtx2ProngX"), secondaryVertex2[0]);
+                  registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
+                  registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
+                  array<array<float, 3>, 2> arrMom = {pvec0, pvec1};
+                  for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
+                    if (TESTBIT(isSelected2ProngCand, iDecay2P)) {
+                      if (whichHypo2Prong[iDecay2P] == 1 || whichHypo2Prong[iDecay2P] == 3) {
+                        auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
+                        switch (iDecay2P) {
+                          case hf_cand_2prong::DecayType::D0ToPiK:
+                            registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
+                            break;
+                          case hf_cand_2prong::DecayType::JpsiToEE:
+                            registry.fill(HIST("hMassJpsiToEE"), mass2Prong);
+                            break;
+                          case hf_cand_2prong::DecayType::JpsiToMuMu:
+                            registry.fill(HIST("hMassJpsiToMuMu"), mass2Prong);
+                            break;
+                        }
+                      }
+                      if (whichHypo2Prong[iDecay2P] >= 2) {
+                        auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][1]);
+                        if (iDecay2P == hf_cand_2prong::DecayType::D0ToPiK) {
+                          registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
+                        }
+                      }
                     }
                   }
                 }
-                rowProng2CutStatus(Prong2CutStatus[0], Prong2CutStatus[1], Prong2CutStatus[2]); // FIXME when we can do this by looping over n2ProngDecays
+              }
+            }
+          }
+
+          // 3-prong vertex reconstruction
+          if (do3Prong == 1) {
+            if (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1) {
+              continue;
+            }
+
+            if (tracks.size() < 2) {
+              continue;
+            }
+            // second loop over positive tracks
+            // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
+            for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
+              auto trackPos2 = trackIndexPos2.track_as<SelectedTracks>();
+              if (trackPos2.signed1Pt() < 0) {
+                continue;
+              }
+              if (!TESTBIT(trackPos2.isSelProng(), CandidateType::Cand3Prong)) {
+                continue;
+              }
+
+              int isSelected3ProngCand = n3ProngBit;
+
+              if (debug) {
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
+                    cutStatus3Prong[iDecay3P][iCut] = true;
+                  }
+                }
+              }
+
+              // 3-prong preselections
+              is3ProngPreselected(trackPos1, trackNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+              if (!debug && isSelected3ProngCand == 0) {
+                continue;
+              }
+
+              // reconstruct the 3-prong secondary vertex
+              auto trackParVarPos2 = getTrackParCov(trackPos2);
+              if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
+                continue;
+              }
+              // get secondary vertex
+              const auto& secondaryVertex3 = df3.getPCACandidate();
+              // get track momenta
+              array<float, 3> pvec0;
+              array<float, 3> pvec1;
+              array<float, 3> pvec2;
+              df3.getTrack(0).getPxPyPzGlo(pvec0);
+              df3.getTrack(1).getPxPyPzGlo(pvec1);
+              df3.getTrack(2).getPxPyPzGlo(pvec2);
+
+              /// PV refit excluding the candidate daughters, if contributors
+              array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+              array<float, 6> pvRefitCovMatrix3Prong2Pos1Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+              if (doPvRefit) {
+                if (fillHistograms) {
+                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
+                }
+                int nCandContr = 3;
+                auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
+                auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
+                auto trackThirdIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos2.globalIndex());
+                bool isTrackFirstContr = true;
+                bool isTrackSecondContr = true;
+                bool isTrackThirdContr = true;
+                if (trackFirstIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackFirstContr = false;
+                }
+                if (trackSecondIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackSecondContr = false;
+                }
+                if (trackThirdIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [3 prong] trackPos2 with globalIndex " << trackPos2.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackThirdContr = false;
+                }
+
+                // Fill a vector with global ID of candidate daughters that are contributors
+                std::vector<int64_t> vecCandPvContributorGlobId = {};
+                if (isTrackFirstContr) {
+                  vecCandPvContributorGlobId.push_back(trackPos1.globalIndex());
+                }
+                if (isTrackSecondContr) {
+                  vecCandPvContributorGlobId.push_back(trackNeg1.globalIndex());
+                }
+                if (isTrackThirdContr) {
+                  vecCandPvContributorGlobId.push_back(trackPos2.globalIndex());
+                }
+
+                if (nCandContr == 3 || nCandContr == 2) {
+                  /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
+                  if (debug) {
+                    LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
+                  }
+                  performPvRefitCandProngs(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, vecCandPvContributorGlobId, pvRefitCoord3Prong2Pos1Neg, pvRefitCovMatrix3Prong2Pos1Neg);
+                } else if (nCandContr == 1) {
+                  /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
+                  if (debug) {
+                    LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
+                  }
+                  if (fillHistograms) {
+                    registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
+                  }
+                  if (isTrackFirstContr && !isTrackSecondContr && !isTrackThirdContr) {
+                    /// the first daughter is contributor, the second and the third are not
+                    pvRefitCoord3Prong2Pos1Neg = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
+                    pvRefitCovMatrix3Prong2Pos1Neg = {trackPos1.pvRefitSigmaX2(), trackPos1.pvRefitSigmaXY(), trackPos1.pvRefitSigmaY2(), trackPos1.pvRefitSigmaXZ(), trackPos1.pvRefitSigmaYZ(), trackPos1.pvRefitSigmaZ2()};
+                  } else if (!isTrackFirstContr && isTrackSecondContr && !isTrackThirdContr) {
+                    /// the second daughter is contributor, the first and the third are not
+                    pvRefitCoord3Prong2Pos1Neg = {trackNeg1.pvRefitX(), trackNeg1.pvRefitY(), trackNeg1.pvRefitZ()};
+                    pvRefitCovMatrix3Prong2Pos1Neg = {trackNeg1.pvRefitSigmaX2(), trackNeg1.pvRefitSigmaXY(), trackNeg1.pvRefitSigmaY2(), trackNeg1.pvRefitSigmaXZ(), trackNeg1.pvRefitSigmaYZ(), trackNeg1.pvRefitSigmaZ2()};
+                  } else if (!isTrackFirstContr && !isTrackSecondContr && isTrackThirdContr) {
+                    /// the third daughter is contributor, the first and the second are not
+                    pvRefitCoord3Prong2Pos1Neg = {trackPos2.pvRefitX(), trackPos2.pvRefitY(), trackPos2.pvRefitZ()};
+                    pvRefitCovMatrix3Prong2Pos1Neg = {trackPos2.pvRefitSigmaX2(), trackPos2.pvRefitSigmaXY(), trackPos2.pvRefitSigmaY2(), trackPos2.pvRefitSigmaXZ(), trackPos2.pvRefitSigmaYZ(), trackPos2.pvRefitSigmaZ2()};
+                  }
+                } else {
+                  /// 0 contributors among the HF candidate daughters
+                  if (fillHistograms) {
+                    registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
+                  }
+                  if (debug) {
+                    LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                  }
+                }
+              }
+
+              auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
+              // 3-prong selections after secondary vertex
+              array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
+              if (doPvRefit) {
+                pvCoord3Prong2Pos1Neg[0] = pvRefitCoord3Prong2Pos1Neg[0];
+                pvCoord3Prong2Pos1Neg[1] = pvRefitCoord3Prong2Pos1Neg[1];
+                pvCoord3Prong2Pos1Neg[2] = pvRefitCoord3Prong2Pos1Neg[2];
+              }
+              is3ProngSelected(pVecCandProng3Pos, secondaryVertex3, pvCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
+              if (!debug && isSelected3ProngCand == 0) {
+                continue;
+              }
+
+              // fill table row
+              rowTrackIndexProng3(trackPos1.globalIndex(),
+                                  trackNeg1.globalIndex(),
+                                  trackPos2.globalIndex(), isSelected3ProngCand);
+              // fill table row of coordinates of PV refit
+              rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
+                               pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
+
+              if (debug) {
+                int Prong3CutStatus[n3ProngDecays];
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  Prong3CutStatus[iDecay3P] = nCutStatus3ProngBit;
+                  for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
+                    if (!cutStatus3Prong[iDecay3P][iCut]) {
+                      CLRBIT(Prong3CutStatus[iDecay3P], iCut);
+                    }
+                  }
+                }
+                rowProng3CutStatus(Prong3CutStatus[0], Prong3CutStatus[1], Prong3CutStatus[2], Prong3CutStatus[3]); // FIXME when we can do this by looping over n3ProngDecays
               }
 
               // fill histograms
               if (fillHistograms) {
-                registry.fill(HIST("hVtx2ProngX"), secondaryVertex2[0]);
-                registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
-                registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
-                array<array<float, 3>, 2> arrMom = {pvec0, pvec1};
-                for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
-                  if (TESTBIT(isSelected2ProngCand, iDecay2P)) {
-                    if (whichHypo2Prong[iDecay2P] == 1 || whichHypo2Prong[iDecay2P] == 3) {
-                      auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
-                      switch (iDecay2P) {
-                        case hf_cand_2prong::DecayType::D0ToPiK:
-                          registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
+                registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
+                registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
+                registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
+                array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
+                    if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
+                      auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
+                      switch (iDecay3P) {
+                        case hf_cand_3prong::DecayType::DplusToPiKPi:
+                          registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                           break;
-                        case hf_cand_2prong::DecayType::JpsiToEE:
-                          registry.fill(HIST("hMassJpsiToEE"), mass2Prong);
+                        case hf_cand_3prong::DecayType::DsToKKPi:
+                          registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
                           break;
-                        case hf_cand_2prong::DecayType::JpsiToMuMu:
-                          registry.fill(HIST("hMassJpsiToMuMu"), mass2Prong);
+                        case hf_cand_3prong::DecayType::LcToPKPi:
+                          registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::XicToPKPi:
+                          registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
                           break;
                       }
                     }
-                    if (whichHypo2Prong[iDecay2P] >= 2) {
-                      auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][1]);
-                      if (iDecay2P == hf_cand_2prong::DecayType::D0ToPiK) {
-                        registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
+                    if (whichHypo3Prong[iDecay3P] >= 2) {
+                      auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
+                      switch (iDecay3P) {
+                        case hf_cand_3prong::DecayType::DsToKKPi:
+                          registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::LcToPKPi:
+                          registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::XicToPKPi:
+                          registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
+                          break;
                       }
                     }
                   }
                 }
               }
             }
-          }
-        }
 
-        // 3-prong vertex reconstruction
-        if (do3Prong == 1) {
-          if (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1) {
-            continue;
-          }
+            // second loop over negative tracks
+            // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
+            for (auto trackIndexNeg2 = trackIndexNeg1 + 1; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
+              auto trackNeg2 = trackIndexNeg2.track_as<SelectedTracks>();
 
-          if (tracks.size() < 2) {
-            continue;
-          }
-          // second loop over positive tracks
-          // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
-          for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracks.end(); ++trackPos2) {
-            if (trackPos2.signed1Pt() < 0) {
-              continue;
-            }
-            if (!TESTBIT(trackPos2.isSelProng(), CandidateType::Cand3Prong)) {
-              continue;
-            }
+              if (trackNeg2.signed1Pt() > 0) {
+                continue;
+              }
+              if (!TESTBIT(trackNeg2.isSelProng(), CandidateType::Cand3Prong)) {
+                continue;
+              }
 
-            int isSelected3ProngCand = n3ProngBit;
+              int isSelected3ProngCand = n3ProngBit;
 
-            if (debug) {
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
-                  cutStatus3Prong[iDecay3P][iCut] = true;
+              if (debug) {
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
+                    cutStatus3Prong[iDecay3P][iCut] = true;
+                  }
                 }
               }
-            }
 
-            // 3-prong preselections
-            is3ProngPreselected(trackPos1, trackNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
-            if (!debug && isSelected3ProngCand == 0) {
-              continue;
-            }
+              // 3-prong preselections
+              is3ProngPreselected(trackNeg1, trackPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+              if (!debug && isSelected3ProngCand == 0) {
+                continue;
+              }
 
-            // reconstruct the 3-prong secondary vertex
-            auto trackParVarPos2 = getTrackParCov(trackPos2);
-            if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
-              continue;
-            }
-            // get secondary vertex
-            const auto& secondaryVertex3 = df3.getPCACandidate();
-            // get track momenta
-            array<float, 3> pvec0;
-            array<float, 3> pvec1;
-            array<float, 3> pvec2;
-            df3.getTrack(0).getPxPyPzGlo(pvec0);
-            df3.getTrack(1).getPxPyPzGlo(pvec1);
-            df3.getTrack(2).getPxPyPzGlo(pvec2);
+              // reconstruct the 3-prong secondary vertex
+              auto trackParVarNeg2 = getTrackParCov(trackNeg2);
+              if (df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2) == 0) {
+                continue;
+              }
 
-            /// PV refit excluding the candidate daughters, if contributors
-            array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-            array<float, 6> pvRefitCovMatrix3Prong2Pos1Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
-            if (doPvRefit) {
+              // get secondary vertex
+              const auto& secondaryVertex3 = df3.getPCACandidate();
+              // get track momenta
+              array<float, 3> pvec0;
+              array<float, 3> pvec1;
+              array<float, 3> pvec2;
+              df3.getTrack(0).getPxPyPzGlo(pvec0);
+              df3.getTrack(1).getPxPyPzGlo(pvec1);
+              df3.getTrack(2).getPxPyPzGlo(pvec2);
+
+              /// PV refit excluding the candidate daughters, if contributors
+              array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+              array<float, 6> pvRefitCovMatrix3Prong1Pos2Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+              if (doPvRefit) {
+                if (fillHistograms) {
+                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
+                }
+                int nCandContr = 3;
+                auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
+                auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
+                auto trackThirdIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg2.globalIndex());
+                bool isTrackFirstContr = true;
+                bool isTrackSecondContr = true;
+                bool isTrackThirdContr = true;
+                if (trackFirstIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackFirstContr = false;
+                }
+                if (trackSecondIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackSecondContr = false;
+                }
+                if (trackThirdIt == vecPvContributorGlobId.end()) {
+                  /// This track did not contribute to the original PV refit
+                  if (debug) {
+                    LOG(info) << "--- [3 prong] trackNeg2 with globalIndex " << trackNeg2.globalIndex() << " was not a PV contributor";
+                  }
+                  nCandContr--;
+                  isTrackThirdContr = false;
+                }
+
+                // Fill a vector with global ID of candidate daughters that are contributors
+                std::vector<int64_t> vecCandPvContributorGlobId = {};
+                if (isTrackFirstContr) {
+                  vecCandPvContributorGlobId.push_back(trackPos1.globalIndex());
+                }
+                if (isTrackSecondContr) {
+                  vecCandPvContributorGlobId.push_back(trackNeg1.globalIndex());
+                }
+                if (isTrackThirdContr) {
+                  vecCandPvContributorGlobId.push_back(trackNeg2.globalIndex());
+                }
+
+                if (nCandContr == 3 || nCandContr == 2) {
+                  /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
+                  if (debug) {
+                    LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
+                  }
+                  performPvRefitCandProngs(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, vecCandPvContributorGlobId, pvRefitCoord3Prong1Pos2Neg, pvRefitCovMatrix3Prong1Pos2Neg);
+                } else if (nCandContr == 1) {
+                  /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
+                  if (debug) {
+                    LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
+                  }
+                  if (fillHistograms) {
+                    registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
+                  }
+                  if (isTrackFirstContr && !isTrackSecondContr && !isTrackThirdContr) {
+                    /// the first daughter is contributor, the second and the third are not
+                    pvRefitCoord3Prong1Pos2Neg = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
+                    pvRefitCovMatrix3Prong1Pos2Neg = {trackPos1.pvRefitSigmaX2(), trackPos1.pvRefitSigmaXY(), trackPos1.pvRefitSigmaY2(), trackPos1.pvRefitSigmaXZ(), trackPos1.pvRefitSigmaYZ(), trackPos1.pvRefitSigmaZ2()};
+                  } else if (!isTrackFirstContr && isTrackSecondContr && !isTrackThirdContr) {
+                    /// the second daughter is contributor, the first and the third are not
+                    pvRefitCoord3Prong1Pos2Neg = {trackNeg1.pvRefitX(), trackNeg1.pvRefitY(), trackNeg1.pvRefitZ()};
+                    pvRefitCovMatrix3Prong1Pos2Neg = {trackNeg1.pvRefitSigmaX2(), trackNeg1.pvRefitSigmaXY(), trackNeg1.pvRefitSigmaY2(), trackNeg1.pvRefitSigmaXZ(), trackNeg1.pvRefitSigmaYZ(), trackNeg1.pvRefitSigmaZ2()};
+                  } else if (!isTrackFirstContr && !isTrackSecondContr && isTrackThirdContr) {
+                    /// the third daughter is contributor, the first and the second are not
+                    pvRefitCoord3Prong1Pos2Neg = {trackNeg2.pvRefitX(), trackNeg2.pvRefitY(), trackNeg2.pvRefitZ()};
+                    pvRefitCovMatrix3Prong1Pos2Neg = {trackNeg2.pvRefitSigmaX2(), trackNeg2.pvRefitSigmaXY(), trackNeg2.pvRefitSigmaY2(), trackNeg2.pvRefitSigmaXZ(), trackNeg2.pvRefitSigmaYZ(), trackNeg2.pvRefitSigmaZ2()};
+                  }
+                } else {
+                  /// 0 contributors among the HF candidate daughters
+                  if (fillHistograms) {
+                    registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
+                  }
+                  if (debug) {
+                    LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                  }
+                }
+              }
+
+              auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
+              // 3-prong selections after secondary vertex
+              array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
+              if (doPvRefit) {
+                pvCoord3Prong1Pos2Neg[0] = pvRefitCoord3Prong1Pos2Neg[0];
+                pvCoord3Prong1Pos2Neg[1] = pvRefitCoord3Prong1Pos2Neg[1];
+                pvCoord3Prong1Pos2Neg[2] = pvRefitCoord3Prong1Pos2Neg[2];
+              }
+              is3ProngSelected(pVecCandProng3Neg, secondaryVertex3, pvCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
+              if (!debug && isSelected3ProngCand == 0) {
+                continue;
+              }
+
+              // fill table row
+              rowTrackIndexProng3(trackNeg1.globalIndex(),
+                                  trackPos1.globalIndex(),
+                                  trackNeg2.globalIndex(), isSelected3ProngCand);
+              // fill table row of coordinates of PV refit
+              rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
+                               pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
+
+              if (debug) {
+                int Prong3CutStatus[n3ProngDecays];
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  Prong3CutStatus[iDecay3P] = nCutStatus3ProngBit;
+                  for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
+                    if (!cutStatus3Prong[iDecay3P][iCut]) {
+                      CLRBIT(Prong3CutStatus[iDecay3P], iCut);
+                    }
+                  }
+                }
+                rowProng3CutStatus(Prong3CutStatus[0], Prong3CutStatus[1], Prong3CutStatus[2], Prong3CutStatus[3]); // FIXME when we can do this by looping over n3ProngDecays
+              }
+
+              // fill histograms
               if (fillHistograms) {
-                registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
-              }
-              int nCandContr = 3;
-              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
-              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
-              auto it_third_trk = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos2.globalIndex());
-              bool isTrackFirstContr = true;
-              bool isTrackSecondContr = true;
-              bool isTrackThirdContr = true;
-              if (trackFirstIt == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackFirstContr = false;
-              }
-              if (trackSecondIt == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackSecondContr = false;
-              }
-              if (it_third_trk == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [3 prong] trackPos2 with globalIndex " << trackPos2.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackThirdContr = false;
-              }
-
-              // Fill a vector with global ID of candidate daughters that are contributors
-              std::vector<int64_t> vecCandPvContributorGlobId = {};
-              if (isTrackFirstContr) {
-                vecCandPvContributorGlobId.push_back(trackPos1.globalIndex());
-              }
-              if (isTrackSecondContr) {
-                vecCandPvContributorGlobId.push_back(trackNeg1.globalIndex());
-              }
-              if (isTrackThirdContr) {
-                vecCandPvContributorGlobId.push_back(trackPos2.globalIndex());
-              }
-
-              if (nCandContr == 3 || nCandContr == 2) {
-                /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
-                if (debug) {
-                  LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
-                }
-                performPvRefitCandProngs((aod::Collision const&)trackPos1.collision(), bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, vecCandPvContributorGlobId, pvRefitCoord3Prong2Pos1Neg, pvRefitCovMatrix3Prong2Pos1Neg);
-              } else if (nCandContr == 1) {
-                /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
-                if (debug) {
-                  LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
-                }
-                if (fillHistograms) {
-                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
-                }
-                if (isTrackFirstContr && !isTrackSecondContr && !isTrackThirdContr) {
-                  /// the first daughter is contributor, the second and the third are not
-                  pvRefitCoord3Prong2Pos1Neg = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
-                  pvRefitCovMatrix3Prong2Pos1Neg = {trackPos1.pvRefitSigmaX2(), trackPos1.pvRefitSigmaXY(), trackPos1.pvRefitSigmaY2(), trackPos1.pvRefitSigmaXZ(), trackPos1.pvRefitSigmaYZ(), trackPos1.pvRefitSigmaZ2()};
-                } else if (!isTrackFirstContr && isTrackSecondContr && !isTrackThirdContr) {
-                  /// the second daughter is contributor, the first and the third are not
-                  pvRefitCoord3Prong2Pos1Neg = {trackNeg1.pvRefitX(), trackNeg1.pvRefitY(), trackNeg1.pvRefitZ()};
-                  pvRefitCovMatrix3Prong2Pos1Neg = {trackNeg1.pvRefitSigmaX2(), trackNeg1.pvRefitSigmaXY(), trackNeg1.pvRefitSigmaY2(), trackNeg1.pvRefitSigmaXZ(), trackNeg1.pvRefitSigmaYZ(), trackNeg1.pvRefitSigmaZ2()};
-                } else if (!isTrackFirstContr && !isTrackSecondContr && isTrackThirdContr) {
-                  /// the third daughter is contributor, the first and the second are not
-                  pvRefitCoord3Prong2Pos1Neg = {trackPos2.pvRefitX(), trackPos2.pvRefitY(), trackPos2.pvRefitZ()};
-                  pvRefitCovMatrix3Prong2Pos1Neg = {trackPos2.pvRefitSigmaX2(), trackPos2.pvRefitSigmaXY(), trackPos2.pvRefitSigmaY2(), trackPos2.pvRefitSigmaXZ(), trackPos2.pvRefitSigmaYZ(), trackPos2.pvRefitSigmaZ2()};
-                }
-              } else {
-                /// 0 contributors among the HF candidate daughters
-                if (fillHistograms) {
-                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
-                }
-                if (debug) {
-                  LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
-                }
-              }
-            }
-
-            auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
-            // 3-prong selections after secondary vertex
-            array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
-            if (doPvRefit) {
-              pvCoord3Prong2Pos1Neg[0] = pvRefitCoord3Prong2Pos1Neg[0];
-              pvCoord3Prong2Pos1Neg[1] = pvRefitCoord3Prong2Pos1Neg[1];
-              pvCoord3Prong2Pos1Neg[2] = pvRefitCoord3Prong2Pos1Neg[2];
-            }
-            is3ProngSelected(pVecCandProng3Pos, secondaryVertex3, pvCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
-            if (!debug && isSelected3ProngCand == 0) {
-              continue;
-            }
-
-            // fill table row
-            rowTrackIndexProng3(trackPos1.globalIndex(),
-                                trackNeg1.globalIndex(),
-                                trackPos2.globalIndex(), isSelected3ProngCand);
-            // fill table row of coordinates of PV refit
-            rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
-                             pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
-
-            if (debug) {
-              int Prong3CutStatus[n3ProngDecays];
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                Prong3CutStatus[iDecay3P] = nCutStatus3ProngBit;
-                for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
-                  if (!cutStatus3Prong[iDecay3P][iCut]) {
-                    CLRBIT(Prong3CutStatus[iDecay3P], iCut);
-                  }
-                }
-              }
-              rowProng3CutStatus(Prong3CutStatus[0], Prong3CutStatus[1], Prong3CutStatus[2], Prong3CutStatus[3]); // FIXME when we can do this by looping over n3ProngDecays
-            }
-
-            // fill histograms
-            if (fillHistograms) {
-              registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
-              registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
-              registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-              array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
-                  if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
-                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
-                    switch (iDecay3P) {
-                      case hf_cand_3prong::DecayType::DplusToPiKPi:
-                        registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::DsToKKPi:
-                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::LcToPKPi:
-                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::XicToPKPi:
-                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
-                        break;
+                registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
+                registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
+                registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
+                array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
+                    if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
+                      auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
+                      switch (iDecay3P) {
+                        case hf_cand_3prong::DecayType::DplusToPiKPi:
+                          registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::DsToKKPi:
+                          registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::LcToPKPi:
+                          registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::XicToPKPi:
+                          registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
+                          break;
+                      }
                     }
-                  }
-                  if (whichHypo3Prong[iDecay3P] >= 2) {
-                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
-                    switch (iDecay3P) {
-                      case hf_cand_3prong::DecayType::DsToKKPi:
-                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::LcToPKPi:
-                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::XicToPKPi:
-                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
-                        break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // second loop over negative tracks
-          // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
-          for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracks.end(); ++trackNeg2) {
-            if (trackNeg2.signed1Pt() > 0) {
-              continue;
-            }
-            if (!TESTBIT(trackNeg2.isSelProng(), CandidateType::Cand3Prong)) {
-              continue;
-            }
-
-            int isSelected3ProngCand = n3ProngBit;
-
-            if (debug) {
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
-                  cutStatus3Prong[iDecay3P][iCut] = true;
-                }
-              }
-            }
-
-            // 3-prong preselections
-            is3ProngPreselected(trackNeg1, trackPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
-            if (!debug && isSelected3ProngCand == 0) {
-              continue;
-            }
-
-            // reconstruct the 3-prong secondary vertex
-            auto trackParVarNeg2 = getTrackParCov(trackNeg2);
-            if (df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2) == 0) {
-              continue;
-            }
-
-            // get secondary vertex
-            const auto& secondaryVertex3 = df3.getPCACandidate();
-            // get track momenta
-            array<float, 3> pvec0;
-            array<float, 3> pvec1;
-            array<float, 3> pvec2;
-            df3.getTrack(0).getPxPyPzGlo(pvec0);
-            df3.getTrack(1).getPxPyPzGlo(pvec1);
-            df3.getTrack(2).getPxPyPzGlo(pvec2);
-
-            /// PV refit excluding the candidate daughters, if contributors
-            array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-            array<float, 6> pvRefitCovMatrix3Prong1Pos2Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
-            if (doPvRefit) {
-              if (fillHistograms) {
-                registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
-              }
-              int nCandContr = 3;
-              auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
-              auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
-              auto it_third_trk = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg2.globalIndex());
-              bool isTrackFirstContr = true;
-              bool isTrackSecondContr = true;
-              bool isTrackThirdContr = true;
-              if (trackFirstIt == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackFirstContr = false;
-              }
-              if (trackSecondIt == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackSecondContr = false;
-              }
-              if (it_third_trk == vecPvContributorGlobId.end()) {
-                /// This track did not contribute to the original PV refit
-                if (debug) {
-                  LOG(info) << "--- [3 prong] trackNeg2 with globalIndex " << trackNeg2.globalIndex() << " was not a PV contributor";
-                }
-                nCandContr--;
-                isTrackThirdContr = false;
-              }
-
-              // Fill a vector with global ID of candidate daughters that are contributors
-              std::vector<int64_t> vecCandPvContributorGlobId = {};
-              if (isTrackFirstContr) {
-                vecCandPvContributorGlobId.push_back(trackPos1.globalIndex());
-              }
-              if (isTrackSecondContr) {
-                vecCandPvContributorGlobId.push_back(trackNeg1.globalIndex());
-              }
-              if (isTrackThirdContr) {
-                vecCandPvContributorGlobId.push_back(trackNeg2.globalIndex());
-              }
-
-              if (nCandContr == 3 || nCandContr == 2) {
-                /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
-                if (debug) {
-                  LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
-                }
-                performPvRefitCandProngs((aod::Collision const&)trackPos1.collision(), bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, vecCandPvContributorGlobId, pvRefitCoord3Prong1Pos2Neg, pvRefitCovMatrix3Prong1Pos2Neg);
-              } else if (nCandContr == 1) {
-                /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
-                if (debug) {
-                  LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
-                }
-                if (fillHistograms) {
-                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
-                }
-                if (isTrackFirstContr && !isTrackSecondContr && !isTrackThirdContr) {
-                  /// the first daughter is contributor, the second and the third are not
-                  pvRefitCoord3Prong1Pos2Neg = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
-                  pvRefitCovMatrix3Prong1Pos2Neg = {trackPos1.pvRefitSigmaX2(), trackPos1.pvRefitSigmaXY(), trackPos1.pvRefitSigmaY2(), trackPos1.pvRefitSigmaXZ(), trackPos1.pvRefitSigmaYZ(), trackPos1.pvRefitSigmaZ2()};
-                } else if (!isTrackFirstContr && isTrackSecondContr && !isTrackThirdContr) {
-                  /// the second daughter is contributor, the first and the third are not
-                  pvRefitCoord3Prong1Pos2Neg = {trackNeg1.pvRefitX(), trackNeg1.pvRefitY(), trackNeg1.pvRefitZ()};
-                  pvRefitCovMatrix3Prong1Pos2Neg = {trackNeg1.pvRefitSigmaX2(), trackNeg1.pvRefitSigmaXY(), trackNeg1.pvRefitSigmaY2(), trackNeg1.pvRefitSigmaXZ(), trackNeg1.pvRefitSigmaYZ(), trackNeg1.pvRefitSigmaZ2()};
-                } else if (!isTrackFirstContr && !isTrackSecondContr && isTrackThirdContr) {
-                  /// the third daughter is contributor, the first and the second are not
-                  pvRefitCoord3Prong1Pos2Neg = {trackNeg2.pvRefitX(), trackNeg2.pvRefitY(), trackNeg2.pvRefitZ()};
-                  pvRefitCovMatrix3Prong1Pos2Neg = {trackNeg2.pvRefitSigmaX2(), trackNeg2.pvRefitSigmaXY(), trackNeg2.pvRefitSigmaY2(), trackNeg2.pvRefitSigmaXZ(), trackNeg2.pvRefitSigmaYZ(), trackNeg2.pvRefitSigmaZ2()};
-                }
-              } else {
-                /// 0 contributors among the HF candidate daughters
-                if (fillHistograms) {
-                  registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
-                }
-                if (debug) {
-                  LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
-                }
-              }
-            }
-
-            auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
-            // 3-prong selections after secondary vertex
-            array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
-            if (doPvRefit) {
-              pvCoord3Prong1Pos2Neg[0] = pvRefitCoord3Prong1Pos2Neg[0];
-              pvCoord3Prong1Pos2Neg[1] = pvRefitCoord3Prong1Pos2Neg[1];
-              pvCoord3Prong1Pos2Neg[2] = pvRefitCoord3Prong1Pos2Neg[2];
-            }
-            is3ProngSelected(pVecCandProng3Neg, secondaryVertex3, pvCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
-            if (!debug && isSelected3ProngCand == 0) {
-              continue;
-            }
-
-            // fill table row
-            rowTrackIndexProng3(trackNeg1.globalIndex(),
-                                trackPos1.globalIndex(),
-                                trackNeg2.globalIndex(), isSelected3ProngCand);
-            // fill table row of coordinates of PV refit
-            rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
-                             pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
-
-            if (debug) {
-              int Prong3CutStatus[n3ProngDecays];
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                Prong3CutStatus[iDecay3P] = nCutStatus3ProngBit;
-                for (int iCut = 0; iCut < nCuts3Prong; iCut++) {
-                  if (!cutStatus3Prong[iDecay3P][iCut]) {
-                    CLRBIT(Prong3CutStatus[iDecay3P], iCut);
-                  }
-                }
-              }
-              rowProng3CutStatus(Prong3CutStatus[0], Prong3CutStatus[1], Prong3CutStatus[2], Prong3CutStatus[3]); // FIXME when we can do this by looping over n3ProngDecays
-            }
-
-            // fill histograms
-            if (fillHistograms) {
-              registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
-              registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
-              registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-              array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
-                  if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
-                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
-                    switch (iDecay3P) {
-                      case hf_cand_3prong::DecayType::DplusToPiKPi:
-                        registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::DsToKKPi:
-                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::LcToPKPi:
-                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::XicToPKPi:
-                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
-                        break;
-                    }
-                  }
-                  if (whichHypo3Prong[iDecay3P] >= 2) {
-                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
-                    switch (iDecay3P) {
-                      case hf_cand_3prong::DecayType::DsToKKPi:
-                        registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::LcToPKPi:
-                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
-                        break;
-                      case hf_cand_3prong::DecayType::XicToPKPi:
-                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
-                        break;
+                    if (whichHypo3Prong[iDecay3P] >= 2) {
+                      auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
+                      switch (iDecay3P) {
+                        case hf_cand_3prong::DecayType::DsToKKPi:
+                          registry.fill(HIST("hMassDsToKKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::LcToPKPi:
+                          registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::XicToPKPi:
+                          registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
+                          break;
+                      }
                     }
                   }
                 }
@@ -2146,18 +2160,19 @@ struct HfTrackIndexSkimCreator {
           }
         }
       }
-    }
 
-    auto nTracks = tracks.size();                      // number of tracks passing 2 and 3 prong selection in this collision
-    nCand2 = rowTrackIndexProng2.lastIndex() - nCand2; // number of 2-prong candidates in this collision
-    nCand3 = rowTrackIndexProng3.lastIndex() - nCand3; // number of 3-prong candidates in this collision
+      int nTracks = 0;
+      // auto nTracks = trackIndicesPerCollision.lastIndex() - trackIndicesPerCollision.firstIndex(); // number of tracks passing 2 and 3 prong selection in this collision
+      nCand2 = rowTrackIndexProng2.lastIndex() - nCand2; // number of 2-prong candidates in this collision
+      nCand3 = rowTrackIndexProng3.lastIndex() - nCand3; // number of 3-prong candidates in this collision
 
-    if (fillHistograms) {
-      registry.fill(HIST("hNTracks"), nTracks);
-      registry.fill(HIST("hNCand2Prong"), nCand2);
-      registry.fill(HIST("hNCand3Prong"), nCand3);
-      registry.fill(HIST("hNCand2ProngVsNTracks"), nTracks, nCand2);
-      registry.fill(HIST("hNCand3ProngVsNTracks"), nTracks, nCand3);
+      if (fillHistograms) {
+        registry.fill(HIST("hNTracks"), nTracks);
+        registry.fill(HIST("hNCand2Prong"), nCand2);
+        registry.fill(HIST("hNCand3Prong"), nCand3);
+        registry.fill(HIST("hNCand2ProngVsNTracks"), nTracks, nCand2);
+        registry.fill(HIST("hNCand3ProngVsNTracks"), nTracks, nCand3);
+      }
     }
   }
 };
