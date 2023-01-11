@@ -860,8 +860,8 @@ void VarManager::FillTrack(T const& track, float* values)
 
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCElectronMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCElectronSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -879,8 +879,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCPionMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCPionSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -898,8 +898,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCProtonMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCProtonSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
