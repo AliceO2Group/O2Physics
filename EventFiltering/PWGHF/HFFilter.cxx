@@ -140,7 +140,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
-  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   // array of ONNX config and BDT thresholds
   std::array<std::string, kNCharmParticles> onnxFiles;
@@ -262,12 +262,12 @@ struct HfFilter { // Main struct for HF triggers
     double kEta = track.eta();
     double kTPCnSigma;
 
-    if(chargePar == kKa)
-        kTPCnSigma = track.tpcNSigmaKa();
-    if(chargePar == kPi)
-        kTPCnSigma = track.tpcNSigmaPi();
-    if(chargePar == kPr)
-        kTPCnSigma = track.tpcNSigmaPr();
+    if (chargePar == kKa)
+      kTPCnSigma = track.tpcNSigmaKa();
+    if (chargePar == kPi)
+      kTPCnSigma = track.tpcNSigmaPi();
+    if (chargePar == kPr)
+      kTPCnSigma = track.tpcNSigmaPr();
 
     int binTPCncls = calibMean->GetXaxis()->FindBin(kTPCncls);
     binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -376,9 +376,8 @@ struct HfFilter { // Main struct for HF triggers
     float NSigmaTOF = track.tofNSigmaPr();
     float NSigma;
 
-    if(fConfigComputeTPCpostCalib)
-    {
-        NSigmaTPC = GetPostTPCCalib(mapProtonMean, mapProtonSigma, track, kPr);
+    if (fConfigComputeTPCpostCalib) {
+      NSigmaTPC = GetPostTPCCalib(mapProtonMean, mapProtonSigma, track, kPr);
     }
 
     if (femtoProtonOnlyTOF) {
@@ -408,9 +407,8 @@ struct HfFilter { // Main struct for HF triggers
     float NSigmaTPC = track.tpcNSigmaPr();
     float NSigmaTOF = track.tofNSigmaPr();
 
-    if(fConfigComputeTPCpostCalib)
-    {
-        NSigmaTPC = GetPostTPCCalib(mapProtonMean, mapProtonSigma, track, kPr);
+    if (fConfigComputeTPCpostCalib) {
+      NSigmaTPC = GetPostTPCCalib(mapProtonMean, mapProtonSigma, track, kPr);
     }
 
     if (std::abs(NSigmaTPC) > nsigmaTPCProtonLc) {
@@ -432,9 +430,8 @@ struct HfFilter { // Main struct for HF triggers
     float NSigmaTPC = track.tpcNSigmaKa();
     float NSigmaTOF = track.tofNSigmaKa();
 
-    if(fConfigComputeTPCpostCalib)
-    {
-        NSigmaTPC = GetPostTPCCalib(mapPionMean, mapPionSigma, track, kKa); // use pion correction map for kaon for the moment
+    if (fConfigComputeTPCpostCalib) {
+      NSigmaTPC = GetPostTPCCalib(mapPionMean, mapPionSigma, track, kKa); // use pion correction map for kaon for the moment
     }
 
     if (std::abs(NSigmaTPC) > nsigmaTPCKaon3Prong) {
@@ -466,12 +463,11 @@ struct HfFilter { // Main struct for HF triggers
     float NSigmaKaTPCNeg = trackNeg.tpcNSigmaKa();
     float NSigmaKaTOFNeg = trackNeg.tofNSigmaKa();
 
-    if(fConfigComputeTPCpostCalib)
-    {
-        NSigmaPiTPCPos = GetPostTPCCalib(mapPionMean, mapPionSigma, trackPos, kPi);
-        NSigmaPiTPCNeg = GetPostTPCCalib(mapPionMean, mapPionSigma, trackNeg, kPi);
-        NSigmaKaTPCPos = GetPostTPCCalib(mapPionMean, mapPionSigma, trackPos, kKa); // use pion correction map for kaon for the moment
-        NSigmaKaTPCNeg = GetPostTPCCalib(mapPionMean, mapPionSigma, trackNeg, kKa); // use pion correction map for kaon for the moment
+    if (fConfigComputeTPCpostCalib) {
+      NSigmaPiTPCPos = GetPostTPCCalib(mapPionMean, mapPionSigma, trackPos, kPi);
+      NSigmaPiTPCNeg = GetPostTPCCalib(mapPionMean, mapPionSigma, trackNeg, kPi);
+      NSigmaKaTPCPos = GetPostTPCCalib(mapPionMean, mapPionSigma, trackPos, kKa); // use pion correction map for kaon for the moment
+      NSigmaKaTPCNeg = GetPostTPCCalib(mapPionMean, mapPionSigma, trackNeg, kKa); // use pion correction map for kaon for the moment
     }
 
     if ((std::abs(NSigmaPiTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaPiTOFPos) <= nsigmaTPCPionKaonDzero)) && (std::abs(NSigmaKaTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaKaTOFNeg) <= nsigmaTPCPionKaonDzero))) {
@@ -761,7 +757,7 @@ struct HfFilter { // Main struct for HF triggers
       mapPionMean = (TH3F*)calibList->FindObject("mean_map_pion");
       mapPionSigma = (TH3F*)calibList->FindObject("sigma_map_pion");
       mapProtonMean = (TH3F*)calibList->FindObject("mean_map_proton");
-      mapProtonSigma =(TH3F*)calibList->FindObject("sigma_map_proton");
+      mapProtonSigma = (TH3F*)calibList->FindObject("sigma_map_proton");
 
       fCurrentRun = bc.runNumber();
     }

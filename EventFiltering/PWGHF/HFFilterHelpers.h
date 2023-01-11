@@ -85,7 +85,7 @@ enum beautyTrackSelection {
 };
 
 enum PIDSpecies {
-  kEl= 0,
+  kEl = 0,
   kKa,
   kPi,
   kPr
