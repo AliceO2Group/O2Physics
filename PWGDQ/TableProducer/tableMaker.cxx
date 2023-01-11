@@ -339,9 +339,7 @@ struct TableMaker {
           if (fIsAmbiguous) {
             isAmbiguous = 0;
             for (auto& ambiTrackMid : ambiTracksMid) {
-              auto ambiTrack = ambiTrackMid.template track_as<MyBarrelTracks>();
-              auto ambiTrackWithCov = ambiTrackMid.template track_as<MyBarrelTracksWithCov>();
-              if (ambiTrack.globalIndex() == track.globalIndex() || ambiTrackWithCov.globalIndex() == track.globalIndex()) {
+              if (ambiTrackMid.trackId() == track.globalIndex()) {
                 isAmbiguous = 1;
                 break;
               }
@@ -466,9 +464,7 @@ struct TableMaker {
           if (fIsAmbiguous) {
             isAmbiguous = 0;
             for (auto& ambiTrackFwd : ambiTracksFwd) {
-              auto ambiMuon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
-              auto ambiMuonWithCov = ambiTrackFwd.template fwdtrack_as<MyMuonsWithCov>();
-              if (ambiMuon.globalIndex() == muon.globalIndex() || ambiMuonWithCov.globalIndex() == muon.globalIndex()) {
+              if (ambiTrackFwd.fwdtrackId() == muon.globalIndex()) {
                 isAmbiguous = 1;
                 break;
               }
