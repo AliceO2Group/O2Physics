@@ -10,8 +10,10 @@
 // or submit itself to any jurisdiction.
 
 /// \brief skim cluster information to write photon cluster table in AO2D.root
-/// dependencies: emcal-correction-task
+/// dependencies: skimmergammacalo, skimmergammaconversions
 /// \author marvin.hemmer@cern.ch
+
+// TODO: add o2::aod::EMCALClusterCell and o2::aod::EMCALMatchedTrack to this for cell and track matching
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -28,13 +30,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct skimmerGammaCalo {
+struct skimmerGamma {
 
-  Preslice<o2::aod::EMCALClusterCells> CellperCluster = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALMatchedTracks> MTperCluster = o2::aod::emcalclustercell::emcalclusterId;
-
-  Produces<aod::SkimEMCClusters> tableGammaEMCReco;
-  Produces<aod::SkimEMCCells> tableCellEMCReco;
+  Produces<aod::SkimGammas> tableGammaReco;
 
   // Configurable for histograms
   Configurable<int> nBinsE{"nBinsE", 200, "N bins in E histo"};
@@ -48,8 +46,7 @@ struct skimmerGammaCalo {
   HistogramRegistry historeg{
     "historeg",
     {{"hCaloClusterEIn", "hCaloClusterEIn", {HistType::kTH1F, {{nBinsE, 0., 100.}}}},
-     {"hCaloClusterEOut", "hCaloClusterEOut", {HistType::kTH1F, {{nBinsE, 0., 100.}}}},
-     {"hMTEtaPhi", "hMTEtaPhi", {HistType::kTH2F, {{160, -0.8, 0.8}, {360, -1. * M_PI, 1. * M_PI}}}}}};
+     {"hCaloClusterEOut", "hCaloClusterEOut", {HistType::kTH1F, {{nBinsE, 0., 100.}}}}}};
 
   void init(o2::framework::InitContext&)
   {
@@ -63,46 +60,33 @@ struct skimmerGammaCalo {
     LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
   }
 
-  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::Tracks const& tracks)
+  void processRec(aod::Collision const&, aod::SkimEMCClusters const& caloclusters)
   {
-    for (const auto& emccluster : emcclusters) {
-      historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
+    for (const auto& calocluster : caloclusters) { // loop of EMC clusters
+      historeg.fill(HIST("hCaloClusterEIn"), calocluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 0);
 
-      if (emccluster.time() > maxTime || emccluster.time() < minTime) {
+      if (calocluster.time() > maxTime || calocluster.time() < minTime) {
         historeg.fill(HIST("hCaloClusterFilter"), 1);
         continue;
       }
-      if (emccluster.m02() > maxM02 || emccluster.m02() < minM02) {
+      if (calocluster.m02() > maxM02 || calocluster.m02() < minM02) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
       }
 
-      auto groupedCells = emcclustercells.sliceBy(CellperCluster, emccluster.globalIndex());
-
-      for (const auto& emcclustercell : groupedCells) {
-        tableCellEMCReco(emcclustercell.emcalclusterId(), emcclustercell.caloId());
-      }
-
-      auto groupedMTs = emcmatchedtracks.sliceBy(MTperCluster, emccluster.globalIndex());
-      for (const auto& emcmatchedtrack : groupedMTs) {
-        historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track().eta(), emccluster.phi() - emcmatchedtrack.track().phi());
-      }
-
-      historeg.fill(HIST("hCaloClusterEOut"), emccluster.energy());
+      historeg.fill(HIST("hCaloClusterEOut"), calocluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 3);
 
-      tableGammaEMCReco(emccluster.collisionId(), emccluster.id(),
-                        emccluster.energy(), emccluster.coreEnergy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
-                        emccluster.m20(), emccluster.nCells(), emccluster.time(), emccluster.isExotic(), emccluster.distanceToBadChannel(), emccluster.nlm(),
-                        emccluster.definition());
-    }
+      tableGammaReco(calocluster.collisionId(), 1,
+                     calocluster.energy(), calocluster.eta(), calocluster.phi(), calocluster.globalIndex());
+    } // end loop of EMC clusters
   }
-  PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
+  PROCESS_SWITCH(skimmerGamma, processRec, "process only reconstructed info", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<skimmerGammaCalo>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<skimmerGamma>(cfgc)};
   return workflow;
 }

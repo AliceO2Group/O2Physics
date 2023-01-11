@@ -262,8 +262,7 @@ DECLARE_SOA_COLUMN(Definition, definition, int);                       //! clust
 // DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pz, float E) { return atanh(pz / E); });  //! pseudorapidity of the cluster
 // DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) { return atan2(py, px); }); //! phi angle of the cluster
 } // namespace gammacaloreco
-
-DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //!
+DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimmed EMCal clusters
                   o2::soa::Index<>, gammacaloreco::CollisionId, gammacaloreco::ID, gammacaloreco::Energy, gammacaloreco::CoreEnergy,
                   gammacaloreco::Eta, gammacaloreco::Phi, gammacaloreco::M02, gammacaloreco::M20, gammacaloreco::NCells, gammacaloreco::Time,
                   gammacaloreco::IsExotic, gammacaloreco::DistanceToBadChannel, gammacaloreco::NLM, gammacaloreco::Definition);
@@ -305,6 +304,28 @@ DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
                   phoscluster::Phi<phoscluster::X, phoscluster::Y>);
 using PHOSCluster = PHOSClusters::iterator;
 
+using SkimEMCCluster = SkimEMCClusters::iterator;
+
+namespace gammacellsreco
+{
+DECLARE_SOA_INDEX_COLUMN(SkimEMCCluster, skimEMCCluster); //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(Calo, calo);                     //! bunch crossing ID used as index for ambiguous clusters
+} // namespace gammacellsreco
+
+DECLARE_SOA_TABLE(SkimEMCCells, "AOD", "SKIMEMCCELLS",                                         //! table of link between skimmed EMCal clusters and their cells
+                  o2::soa::Index<>, gammacellsreco::SkimEMCClusterId, gammacellsreco::CaloId); //!
+
+namespace gammareco
+{
+DECLARE_SOA_COLUMN(Method, method, int); //! gamma type: 0 == PCM, 1 == EMCal, 2 == PHOS
+// DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPCM, skimmedPCM, int, NOT YET IMPLEMENTED?, ""); // reference to the gamma in the skimmed PCM table
+DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedEMC, skimmedEMC, int, SkimEMCClusters, ""); // reference to the gamma in the skimmed EMCal table
+// DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPHOS, skimmedPHOS, int, NOT YET IMPLEMENTED, ""); // reference to the gamma in the skimmed PHOS table
+} // namespace gammareco
+DECLARE_SOA_TABLE(SkimGammas, "AOD", "SKIMGAMMAS", //! table of all gamma candidates (PCM, EMCal and PHOS) after cuts
+                  o2::soa::Index<>, gammacaloreco::CollisionId, gammareco::Method,
+                  gammacaloreco::Energy, gammacaloreco::Eta, gammacaloreco::Phi,
+                  gammareco::SkimmedEMCId);
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
