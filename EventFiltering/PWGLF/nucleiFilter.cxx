@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -32,38 +33,44 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-float rapidity(float pt, float eta, float m)
-{
-  return std::asinh(pt / std::hypot(m, pt) * std::sinh(eta));
-}
 
-static constexpr int nNuclei{4};
+static constexpr int nNuclei{3};
 static constexpr int nCutsPID{5};
 static constexpr std::array<float, nNuclei> masses{
   constants::physics::MassDeuteron, constants::physics::MassTriton,
-  constants::physics::MassHelium3, constants::physics::MassAlpha};
-static constexpr std::array<int, nNuclei> charges{1, 1, 2, 2};
-static const std::vector<std::string> nucleiNames{"H2", "H3", "He3", "He4"};
+  constants::physics::MassHelium3};
+static constexpr std::array<int, nNuclei> charges{1, 1, 2};
+static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
+static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
+constexpr double betheBlochDefault[nNuclei][6]{
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static constexpr float cutsPID[nNuclei][nCutsPID]{
   {-3.f, +3.f, -4.f, +4.f, 1.0f},    /*H2*/
   {-3.f, +3.f, -4.f, +4.f, 1.6f},    /*H3*/
   {-5.f, +5.f, -4.f, +4.f, 14000.f}, /*He3*/
-  {-5.f, +5.f, -4.f, +4.f, 14000.f}  /*He4*/
 };
+constexpr double bbMomScalingDefault[nNuclei][2]{
+  {1., 1.},
+  {1., 1.},
+  {1., 1.}};
+static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 } // namespace
 
 struct nucleiFilter {
 
   Produces<aod::NucleiFilters> tags;
 
-  Configurable<float> yMin{"yMin", -0.8, "Maximum rapidity"};
-  Configurable<float> yMax{"yMax", 0.8, "Minimum rapidity"};
   Configurable<float> yBeam{"yBeam", 0., "Beam rapidity"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 1.f, "Eta range for tracks"};
+
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
@@ -97,18 +104,24 @@ struct nucleiFilter {
     //
     spectra.fill(HIST("fCollZpos"), collision.posZ());
     //
+    const double bgScalings[nNuclei][2]{
+      {charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / masses[0], charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / masses[0]},
+      {charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / masses[1], charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / masses[1]},
+      {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
     for (auto& track : tracks) { // start loop over tracks
 
-      const float nSigmaTPC[nNuclei]{
-        track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()};
+      float nSigmaTPC[nNuclei]{
+        track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
       const float nSigmaTOF[nNuclei]{
-        track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()};
+        track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
+      const int iC{track.sign() < 0};
 
       for (int iN{0}; iN < nNuclei; ++iN) {
-        float y{rapidity(track.pt() * charges[iN], track.eta(), masses[iN])};
-        if (y < yMin + yBeam || y > yMax + yBeam) {
-          continue;
+        if (cfgBetheBlochParams->get(iN, 5u) > 0.f) {
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
+          double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
+          nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
           continue;
@@ -123,7 +136,7 @@ struct nucleiFilter {
       // fill QA histograms
       //
       spectra.fill(HIST("fTPCsignal"), track.tpcInnerParam(), track.tpcSignal());
-      spectra.fill(HIST("fTPCcounts"), track.tpcInnerParam(), track.tpcNSigmaHe());
+      spectra.fill(HIST("fTPCcounts"), track.tpcInnerParam(), nSigmaTPC[2]);
 
     } // end loop over tracks
     //
@@ -132,7 +145,7 @@ struct nucleiFilter {
         spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
-    tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3]);
+    tags(keepEvent[0], keepEvent[1], keepEvent[2]);
   }
 };
 

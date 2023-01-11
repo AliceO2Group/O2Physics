@@ -23,8 +23,7 @@ namespace filtering
 {
 DECLARE_SOA_COLUMN(H2, hasH2, bool);   //!
 DECLARE_SOA_COLUMN(H3, hasH3, bool);   //!
-DECLARE_SOA_COLUMN(He3, hasHe3, bool); //!
-DECLARE_SOA_COLUMN(He4, hasHe4, bool); //!
+DECLARE_SOA_COLUMN(He, hasHe, bool);   //!
 
 // diffraction
 DECLARE_SOA_COLUMN(TwoPi, has2pi, bool);  //! Double Gap events, DG, 2 pion
@@ -102,7 +101,7 @@ DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decis
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::H2, filtering::H3, filtering::He3, filtering::He4);
+                  filtering::H2, filtering::H3, filtering::He);
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
