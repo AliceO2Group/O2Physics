@@ -84,6 +84,7 @@ struct preProcessMCcollisions {
   struct collisionStats {
     float nContribsWithTPC = 0;
     float nContribsWithTRD = 0;
+    float nContribsWithTRDNoTOF = 0;
     float nContribsWithTOF = 0;
     float nContribsWithITS = 0;
     float covTrace = 0;
@@ -91,6 +92,7 @@ struct preProcessMCcollisions {
     float deltaZ = -999;
     float deltaT = -999;
     float time = -999;
+    float timeResolution = -999;
     float globalBC = -999;
     float positionX = -999;
     float positionY = -999;
@@ -112,14 +114,17 @@ struct preProcessMCcollisions {
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
     const AxisSpec axisTrackCount{(int)50, -0.5f, +49.5f, ""};
     const AxisSpec axisContributors{(int)200, -0.5f, +199.5f, ""};
+    const AxisSpec axisContributorsTRD{(int)200, -0.5f, +199.5f, "N_{contribs}^{TRD}"};
+    const AxisSpec axisContributorsTOF{(int)200, -0.5f, +199.5f, "N_{contribs}^{TOF}"};
     const AxisSpec axisCovariance{(int)400, 0.0f, +0.1f, ""};
     const AxisSpec axisCovarianceTest{(int)400, -0.05f, +0.05f, ""};
     const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
     const AxisSpec axisTwentyWithNegative{(int)20, -10.5, +9.5f, ""};
+    const AxisSpec axisTwentyFloatWithNegative{(int)100, -10.0f, +10.0f, ""};
 
     const AxisSpec axisPVResolutionXY{(int)400, 0.0f, +0.05f, ""};
     const AxisSpec axisPVResolutionZ{(int)400, -0.1f, +0.1f, ""};
-    const AxisSpec axisPVResolutionT{(int)4000, -100.0f, +100.0f, ""};
+    const AxisSpec axisPVResolutionT{(int)500, -20.0f, +20.0f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
     histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
@@ -169,11 +174,20 @@ struct preProcessMCcollisions {
     histos.get<TH2>(HIST("h2dNContributorsWithXi"))->GetYaxis()->SetBinLabel(10, "Recoed 4 times, Smallest PV");
 
     // Deltas between split vertices
-    histos.add("h2dPVDeltaTime", "h2dPVDeltaTime", kTH2D, {axisPVResolutionT, axisTwenty});
-    histos.add("h2dPVDeltaBCIndex", "h2dPVDeltaBCIndex", kTH2D, {axisTwentyWithNegative, axisTwenty});
+    histos.add("h2dDeltaTimeVsDeltaZ", "h2dDeltaTimeVsDeltaZ", kTH2D, {axisTwentyFloatWithNegative, axisPVResolutionT});
+    histos.add("h2dDeltaBCIndexVsDeltaZ", "h2dPVDeltaBCIndexVsDeltaZ", kTH2D, {axisTwentyFloatWithNegative, axisTwentyWithNegative});
 
-    histos.add("h2dPVDeltaPositionXY", "h2dPVDeltaPositionXY", kTH2D, {axisPVResolutionXY, axisTwenty});
-    histos.add("h2dPVDeltaPositionZ", "h2dPVDeltaPositionZ", kTH2D, {axisPVResolutionZ, axisTwenty});
+    // Contributors correlation
+    histos.add("h2dNContribCorrAll", "h2dNContribCorrAll", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+    histos.add("h2dNContribCorr1", "h2dNContribCorr1", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+    histos.add("h2dNContribCorr2a", "h2dNContribCorr2a", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+    histos.add("h2dNContribCorr2b", "h2dNContribCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+
+    // Contributors correlation - TRD without TOF vs TOF
+    histos.add("h2dNContribSpecialCorrAll", "h2dNContribSpecialCorrAll", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+    histos.add("h2dNContribSpecialCorr1", "h2dNContribSpecialCorr1", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+    histos.add("h2dNContribSpecialCorr2a", "h2dNContribSpecialCorr2a", kTH2D, {axisContributorsTRD, axisContributorsTOF});
+    histos.add("h2dNContribSpecialCorr2b", "h2dNContribSpecialCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
   void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles, aod::BCs const&)
@@ -201,6 +215,7 @@ struct preProcessMCcollisions {
       collisionStatAggregator[lCollisionIndex].deltaZ = collision.posZ() - mcCollision.posZ();
       collisionStatAggregator[lCollisionIndex].deltaT = (collision.collisionTime() - mcCollision.t()) / 1000;
       collisionStatAggregator[lCollisionIndex].time = collision.collisionTime();
+      collisionStatAggregator[lCollisionIndex].timeResolution = collision.collisionTimeRes();
       collisionStatAggregator[lCollisionIndex].globalBC = collision.bc().globalBC();
 
       collisionStatAggregator[lCollisionIndex].positionX = collision.posX();
@@ -216,6 +231,8 @@ struct preProcessMCcollisions {
             collisionStatAggregator[lCollisionIndex].nContribsWithTPC++;
           if (track.hasTRD())
             collisionStatAggregator[lCollisionIndex].nContribsWithTRD++;
+          if (track.hasTRD() && !track.hasTOF())
+            collisionStatAggregator[lCollisionIndex].nContribsWithTRDNoTOF++;
           if (track.hasTOF())
             collisionStatAggregator[lCollisionIndex].nContribsWithTOF++;
         }
@@ -227,8 +244,9 @@ struct preProcessMCcollisions {
     lCollisionIndex = 0;
     auto sortedIndices = sort_indices(collisionNContribs);
     int lYAxisOffset = 0.5 * collisions.size() * (collisions.size() - 1);
-    int firstIndex = sortedIndices[0];
     for (auto ic : sortedIndices) {
+      histos.fill(HIST("h2dNContribCorrAll"), collisionStatAggregator[ic].nContribsWithTRD, collisionStatAggregator[ic].nContribsWithTOF);
+      histos.fill(HIST("h2dNContribSpecialCorrAll"), collisionStatAggregator[ic].nContribsWithTRDNoTOF, collisionStatAggregator[ic].nContribsWithTOF);
       int lIndexBin = 7 * lCollisionIndex; // use offset to make plot much easier to read
       histos.fill(HIST("h2dTrackCounter"), lIndexBin + 0, collisions.size());
       histos.fill(HIST("h2dTrackCounter"), lIndexBin + 1, collisions.size(), collisionNContribs[ic]);
@@ -254,17 +272,25 @@ struct preProcessMCcollisions {
         histos.fill(HIST("h2dPVResolutionZWithXi"), collisionStatAggregator[ic].deltaZ, lYAxisOffset + lCollisionIndex);
         histos.fill(HIST("h2dPVResolutionTWithXi"), collisionStatAggregator[ic].deltaT, lYAxisOffset + lCollisionIndex);
       }
-
-      if (lCollisionIndex > 0) {
-        histos.fill(HIST("h2dPVDeltaTime"), collisionStatAggregator[ic].time - collisionStatAggregator[firstIndex].time, lYAxisOffset + lCollisionIndex);
-        histos.fill(HIST("h2dPVDeltaBCIndex"), collisionStatAggregator[ic].globalBC - collisionStatAggregator[firstIndex].globalBC, lYAxisOffset + lCollisionIndex);
-        histos.fill(HIST("h2dPVDeltaPositionZ"), collisionStatAggregator[ic].positionZ - collisionStatAggregator[firstIndex].positionZ, lYAxisOffset + lCollisionIndex);
-        float lDeltaPositionXY = TMath::Sqrt(
-          TMath::Power(collisionStatAggregator[ic].positionX - collisionStatAggregator[firstIndex].positionX, 2) +
-          TMath::Power(collisionStatAggregator[ic].positionY - collisionStatAggregator[firstIndex].positionY, 2));
-        histos.fill(HIST("h2dPVDeltaPositionXY"), lDeltaPositionXY, lYAxisOffset + lCollisionIndex);
-      }
       lCollisionIndex++;
+    }
+    // Now do investigation of split-into-two vertices, please - ordered
+    if (collisions.size() == 1) {
+      histos.fill(HIST("h2dNContribCorr1"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRD, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
+      histos.fill(HIST("h2dNContribSpecialCorr1"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRDNoTOF, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
+    }
+    if (collisions.size() == 2) {
+      float lDeltaTime = collisionStatAggregator[sortedIndices[0]].time - collisionStatAggregator[sortedIndices[1]].time;
+      float lDeltaNBC = collisionStatAggregator[sortedIndices[0]].globalBC - collisionStatAggregator[sortedIndices[1]].globalBC;
+      float lDeltaZ = collisionStatAggregator[sortedIndices[0]].positionZ - collisionStatAggregator[sortedIndices[1]].positionZ;
+      histos.fill(HIST("h2dDeltaTimeVsDeltaZ"), lDeltaZ, lDeltaTime);
+      histos.fill(HIST("h2dDeltaBCIndexVsDeltaZ"), lDeltaZ, lDeltaNBC);
+
+      // Correaltion between number of contributors
+      histos.fill(HIST("h2dNContribCorr2a"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRD, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
+      histos.fill(HIST("h2dNContribCorr2b"), collisionStatAggregator[sortedIndices[1]].nContribsWithTRD, collisionStatAggregator[sortedIndices[1]].nContribsWithTOF);
+      histos.fill(HIST("h2dNContribSpecialCorr2a"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRDNoTOF, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
+      histos.fill(HIST("h2dNContribSpecialCorr2b"), collisionStatAggregator[sortedIndices[1]].nContribsWithTRDNoTOF, collisionStatAggregator[sortedIndices[1]].nContribsWithTOF);
     }
     mcCollsExtra(collisions.size());
   }
@@ -293,6 +319,9 @@ struct straRecoStudy {
   Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
   Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
   Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  Configurable<float> maxV0Radius{"maxV0Radius", 200, "maxV0Radius"};
+  Configurable<float> maxCascRadius{"maxCascRadius", 200, "maxCascRadius"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
@@ -484,7 +513,7 @@ struct straRecoStudy {
         histos.fill(HIST("h2dLambdaQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())));
       }
 
-      if (v0.v0radius() > v0setting_radius) {
+      if (v0.v0radius() > v0setting_radius && v0.v0radius() < maxV0Radius) {
         if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
           if (v0.dcaV0daughters() < v0setting_dcav0dau) {
             //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -580,21 +609,23 @@ struct straRecoStudy {
         histos.fill(HIST("h2dOmegaMinusQAPointingAngle"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())));
       }
 
-      if (casc.v0radius() > v0setting_radius && casc.cascradius() > cascadesetting_cascradius) {
-        if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
-          if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadesetting_cospa) {
-            if (casc.dcaV0daughters() < v0setting_dcav0dau) {
-              //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-              // Fill invariant masses
-              if (cascmc.pdgCode() == 3312)
-                histos.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
-              if (cascmc.pdgCode() == -3312)
-                histos.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
-              if (cascmc.pdgCode() == 3334)
-                histos.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
-              if (cascmc.pdgCode() == -3334)
-                histos.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
-              //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+      if (casc.v0radius() < maxV0Radius && casc.cascradius() < maxCascRadius) {
+        if (casc.v0radius() > v0setting_radius && casc.cascradius() > cascadesetting_cascradius) {
+          if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+            if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadesetting_cospa) {
+              if (casc.dcaV0daughters() < v0setting_dcav0dau) {
+                //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+                // Fill invariant masses
+                if (cascmc.pdgCode() == 3312)
+                  histos.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
+                if (cascmc.pdgCode() == -3312)
+                  histos.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
+                if (cascmc.pdgCode() == 3334)
+                  histos.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
+                if (cascmc.pdgCode() == -3334)
+                  histos.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
+                //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+              }
             }
           }
         }
