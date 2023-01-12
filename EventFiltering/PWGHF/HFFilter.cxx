@@ -203,8 +203,8 @@ struct HfFilter { // Main struct for HF triggers
       hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
       hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
       hGammaSelected = registry.add<TH1>("fGammaSelected", "Selections for converted gamma;;counts", HistType::kTH1F, {{7, -0.5, 6.5}});
-      hGammaEtabefore = registry.add<TH1>("fGammaEtaBefore", "#eta of converted gamma before selections;;counts", HistType::kTH1F, {{100, -1.5, 1.5}});
-      hGammaEtaafter = registry.add<TH1>("hGammaEtaAfter", "#eta of converted gamma after selections;;counts", HistType::kTH1F, {{100, -1.5, 1.5}});
+      hGammaEtaBefore = registry.add<TH1>("fGammaEtaBefore", "#eta of converted gamma before selections;;counts", HistType::kTH1F, {{100, -1.5, 1.5}});
+      hGammaEtaAfter = registry.add<TH1>("hGammaEtaAfter", "#eta of converted gamma after selections;;counts", HistType::kTH1F, {{100, -1.5, 1.5}});
       hGammaAPbefore = registry.add<TH2>("fGammaAPbefore", "Armenteros Podolanski plot for converted gamma, before selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {{100, -1., 1.}, {100, 0., .25}});
       hGammaAPafter = registry.add<TH2>("fGammaAPafter", "Armenteros Podolanski plot for converted gamma, after selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {{100, -1., 1.}, {100, 0., .25}});
     }
