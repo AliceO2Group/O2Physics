@@ -24,10 +24,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-//#include <TF1.h>
-//#include <TH2F.h>
+
 #include <TGraph.h>
-//#include <TRandom.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -399,7 +397,7 @@ struct flatenictyFV0 {
     float minEtaFV0 = 2.2;
     float detaFV0 = (maxEtaFV0 - minEtaFV0) / 5.0;
 
-    const int nCells = 48; // 48 sectors in FV0
+    int nCells = 48; // 48 sectors in FV0
     float amp_channel[nCells];
     for (int iCell = 0; iCell < nCells; ++iCell) {
       amp_channel[iCell] = 0.0;
