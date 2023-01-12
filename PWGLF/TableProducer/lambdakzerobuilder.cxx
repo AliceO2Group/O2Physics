@@ -62,14 +62,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-#include "TFile.h"
-#include "TH2F.h"
-#include "TProfile.h"
-#include "TLorentzVector.h"
-#include "Math/Vector4D.h"
-#include "TPDGCode.h"
-#include "TDatabasePDG.h"
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -139,7 +131,7 @@ struct lambdakzeroBuilder {
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   // use auto-detect configuration
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
 
   // Topological selection criteria
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
