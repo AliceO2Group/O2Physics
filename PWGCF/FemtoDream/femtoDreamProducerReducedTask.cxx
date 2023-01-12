@@ -69,7 +69,6 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or Run2"};    // Choose if running on converted data or Run3
-  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
   // Event cuts
   FemtoDreamCollisionSelection colCuts;
@@ -142,7 +141,7 @@ struct femtoDreamProducerReducedTask {
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
-  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
+  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc, bool isMC)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run
@@ -151,7 +150,7 @@ struct femtoDreamProducerReducedTask {
     auto timestamp = bc.timestamp();
     float output = -999;
 
-    if (ConfIsRun3 && !ConfIsMC) {
+    if (ConfIsRun3 && !isMC) {
       static o2::parameters::GRPMagField* grpo = nullptr;
       if (grpo == nullptr) {
         grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
@@ -166,7 +165,7 @@ struct femtoDreamProducerReducedTask {
       output = 0.1 * (NominalL3Field);
     }
 
-    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+    if (!ConfIsRun3 || (ConfIsRun3 && isMC)) {
 
       static o2::parameters::GRPObject* grpo = nullptr;
       if (grpo == nullptr) {
@@ -311,7 +310,7 @@ struct femtoDreamProducerReducedTask {
   void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>(), false);
     // fill the tables
     fillCollisionsAndTracks<false>(col, tracks);
   }
@@ -323,7 +322,7 @@ struct femtoDreamProducerReducedTask {
                  aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>(), true);
     // fill the tables
     fillCollisionsAndTracks<true>(col, tracks);
   }
