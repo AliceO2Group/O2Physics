@@ -369,7 +369,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      ccdb->setFatalWhenNull(false);
 
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
