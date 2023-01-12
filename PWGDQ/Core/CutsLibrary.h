@@ -1228,7 +1228,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kMuonPDca, 0.0, 324.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
     cut->AddCut(VarManager::kMuonChi2, 0.0, 1e6);
     cut->AddCut(VarManager::kMuonChi2MatchMCHMID, 0.0, 1e6); // matching MCH-MID
-    cut->AddCut(VarManager::kMuonChi2MatchMFTMCH, 0.0, 1e6); // matching MFT-MCH
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0.0, 1e6); // matching MFT-MCH
     return cut;
   }
 
