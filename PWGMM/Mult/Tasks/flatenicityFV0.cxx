@@ -591,7 +591,8 @@ struct flatenictyFV0 {
       float flatenicity_ft0 = (flatenicity_t0a + flatenicity_t0c) / 2.0;
       estimator[4] = 1.0 - flatenicity_ft0;
       estimator[5] = combined_estimator6;
-      estimator[6] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
+      float flatenicity_ft0v0 = (flatenicity_fv0 + flatenicity_t0c) / 2.0;
+      estimator[6] = 1.0 - flatenicity_ft0v0;
       estimator[7] = ptT;
       static_for<0, 7>([&](auto i) {
         constexpr int index = i.value;
