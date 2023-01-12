@@ -398,11 +398,11 @@ struct flatenictyFV0 {
     float detaFV0 = (maxEtaFV0 - minEtaFV0) / 5.0;
 
     const int nCells = 48; // 48 sectors in FV0
-    float ampchannel[nCells];
+    float ampchannel[48];
     for (int iCell = 0; iCell < nCells; ++iCell) {
       ampchannel[iCell] = 0.0;
     }
-    float ampchannelBefore[nCells];
+    float ampchannelBefore[48];
     for (int iCell = 0; iCell < nCells; ++iCell) {
       ampchannelBefore[iCell] = 0.0;
     }
