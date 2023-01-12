@@ -860,8 +860,8 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
 
       // 2-prong with Gamma (conversion photon)
-      if (!keepEvent[kGammaCharm2P] && isCharmTagged) {
-        for (auto& gamma : theV0s) {
+      for (auto& gamma : theV0s) {
+        if (!keepEvent[kGammaCharm2P] && isCharmTagged) {
           float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
           bool isGamma = isSelectedGamma(gamma, V0CosinePA);
           if (isGamma) {
@@ -1066,8 +1066,8 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
 
       // 3-prong with Gamma (conversion photon)
-      if (!keepEvent[kGammaCharm3P] && isCharmTagged[kDs - 1]) {
-        for (auto& gamma : theV0s) {
+      for (auto& gamma : theV0s) {
+        if (!keepEvent[kGammaCharm3P] && isCharmTagged[kDs - 1]) {
           float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
           bool isGamma = isSelectedGamma(gamma, V0CosinePA);
           if (isGamma) {
