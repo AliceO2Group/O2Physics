@@ -397,14 +397,14 @@ struct flatenictyFV0 {
     float minEtaFV0 = 2.2;
     float detaFV0 = (maxEtaFV0 - minEtaFV0) / 5.0;
 
-    int nCells = 48; // 48 sectors in FV0
-    float amp_channel[nCells];
+    const int nCells = 48; // 48 sectors in FV0
+    float ampchannel[nCells];
     for (int iCell = 0; iCell < nCells; ++iCell) {
-      amp_channel[iCell] = 0.0;
+      ampchannel[iCell] = 0.0;
     }
-    float amp_channelBefore[nCells];
+    float ampchannelBefore[nCells];
     for (int iCell = 0; iCell < nCells; ++iCell) {
-      amp_channelBefore[iCell] = 0.0;
+      ampchannelBefore[iCell] = 0.0;
     }
 
     if (collision.has_foundFV0()) {
@@ -427,7 +427,7 @@ struct flatenictyFV0 {
         } else {
           phiv0 = ((2.0 * channelv0phi) + 1 - 64.0) * 2.0 * M_PI / (32.0);
         }
-        amp_channelBefore[channelv0phi] = ampl_ch;
+        ampchannelBefore[channelv0phi] = ampl_ch;
         if (applyCalibCh) {
           ampl_ch *= calib[channelv0phi];
         }
@@ -437,7 +437,7 @@ struct flatenictyFV0 {
           sumAmpFV01to4Ch += ampl_ch;
         }
         flatenicity.fill(HIST("fEtaPhiFv0"), phiv0, etav0, ampl_ch);
-        amp_channel[channelv0phi] = ampl_ch;
+        ampchannel[channelv0phi] = ampl_ch;
         if (channelv0 < innerFV0) {
           RhoLattice[channelv0phi] = ampl_ch;
         } else {
@@ -610,9 +610,9 @@ struct flatenictyFV0 {
       }
 
       for (int iCh = 0; iCh < 48; ++iCh) {
-        flatenicity.fill(HIST("hAmpV0VsCh"), iCh, amp_channel[iCh]);
+        flatenicity.fill(HIST("hAmpV0VsCh"), iCh, ampchannel[iCh]);
         flatenicity.fill(HIST("hAmpV0VsChBeforeCalibration"), iCh,
-                         amp_channelBefore[iCh]);
+                         ampchannelBefore[iCh]);
       }
       flatenicity.fill(HIST("fMultFv0"), sumAmpFV0);
       flatenicity.fill(HIST("hFlatFT0CvsFlatFT0A"), flatenicity_t0c, flatenicity_t0a);
