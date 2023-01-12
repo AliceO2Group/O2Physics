@@ -289,7 +289,7 @@ struct HfFilter { // Main struct for HF triggers
   {
     if (activateQA) {
       hGammaSelected->Fill(0);
-      hGammaEtabefore->Fill(gamma.eta());
+      hGammaEtaBefore->Fill(gamma.eta());
       hGammaAPbefore->Fill(gamma.alpha(), gamma.qtarm());
     }
     if (std::abs(gamma.eta()) > 0.8) {
