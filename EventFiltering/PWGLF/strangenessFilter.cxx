@@ -57,9 +57,9 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTopologicalVariables{"QAHistosTopologicalVariables", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 8, 0., 8.)};
+  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 9, 0., 9.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
-  OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of tracks with pT higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
+  OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
 
   // Selection criteria for cascades
@@ -104,6 +104,7 @@ struct strangenessFilter {
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
+    AxisSpec ptTriggAxis = {150, 0.0f, 15.0f, "#it{p}_{T} (GeV/#it{c})"};
 
     QAHistos.add("hCentrality", "Centrality distribution (V0M)", HistType::kTH1F, {{100, 0, 100, "V0M (%)"}});
     QAHistos.add("hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
@@ -118,9 +119,13 @@ struct strangenessFilter {
     QAHistos.add("hPtOmega", "pt distribution of selected Omega candidates", HistType::kTH1F, {ptAxis});
     QAHistos.add("hEtaXi", "eta distribution of selected Xi candidates", HistType::kTH1F, {etaAxis});
     QAHistos.add("hEtaOmega", "eta distribution of selected Omega candidates", HistType::kTH1F, {etaAxis});
-    QAHistos.add("hTPCNsigmaBach", "nsigma TPC distribution bachelor", HistType::kTH1F, {{20, -10, 10}});
-    QAHistos.add("hTPCNsigmaPi", "nsigma TPC distribution pi", HistType::kTH1F, {{20, -10, 10}});
-    QAHistos.add("hTPCNsigmaPr", "nsigma TPC distribution proton", HistType::kTH1F, {{20, -10, 10}});
+    QAHistos.add("hTPCNsigmaBachPi", "nsigma TPC distribution bachelor pion", HistType::kTH1F, {{60, -10, 10}});
+    QAHistos.add("hTPCNsigmaBachKa", "nsigma TPC distribution bachelor kaon", HistType::kTH1F, {{60, -10, 10}});
+    QAHistos.add("hTPCNsigmaPi", "nsigma TPC distribution pi", HistType::kTH1F, {{60, -10, 10}});
+    QAHistos.add("hTPCNsigmaPr", "nsigma TPC distribution proton", HistType::kTH1F, {{60, -10, 10}});
+    QAHistos.add("hHasTOFBachBefSel", "bachelor has TOF", HistType::kTH1F, {{2, 0, 2}});
+    QAHistos.add("hHasTOFPosBefSel", "pos dau has TOF", HistType::kTH1F, {{2, 0, 2}});
+    QAHistos.add("hHasTOFNegBefSel", "neg dau has TOF", HistType::kTH1F, {{2, 0, 2}});
     QAHistos.add("hHasTOFBach", "bachelor has TOF", HistType::kTH1F, {{2, 0, 2}});
     QAHistos.add("hHasTOFPos", "pos dau has TOF", HistType::kTH1F, {{2, 0, 2}});
     QAHistos.add("hHasTOFNeg", "neg dau has TOF", HistType::kTH1F, {{2, 0, 2}});
@@ -135,19 +140,27 @@ struct strangenessFilter {
     QAHistosTopologicalVariables.add("DCAV0Daughters", "DCAV0Daughters", HistType::kTH1F, {{110, 0.0f, 2.2f}});
     QAHistosTopologicalVariables.add("DCACascDaughters", "DCACascDaughters", HistType::kTH1F, {{110, 0.0f, 2.2f}});
     QAHistosTopologicalVariables.add("DCAV0ToPV", "DCAV0ToPV", HistType::kTH1F, {{220, 0.0f, 2.2f}});
-    QAHistosTopologicalVariables.add("DCABachToPV", "DCABachToPV", HistType::kTH1F, {{40, 0.0f, 0.2f}});
-    QAHistosTopologicalVariables.add("DCAPosToPV", "DCAPosToPV", HistType::kTH1F, {{40, 0.0f, 0.2f}});
-    QAHistosTopologicalVariables.add("DCANegToPV", "DCANegToPV", HistType::kTH1F, {{40, 0.0f, 0.2f}});
+    QAHistosTopologicalVariables.add("DCABachToPV", "DCABachToPV", HistType::kTH1F, {{400, 0.0f, 2.0f}});
+    QAHistosTopologicalVariables.add("DCAPosToPV", "DCAPosToPV", HistType::kTH1F, {{400, 0.0f, 2.0f}});
+    QAHistosTopologicalVariables.add("DCANegToPV", "DCANegToPV", HistType::kTH1F, {{400, 0.0f, 2.0f}});
     QAHistosTopologicalVariables.add("InvMassLambda", "InvMassLambda", HistType::kTH1F, {{200, 1.07f, 1.17f}});
 
     // trigger particles QA
-    QAHistosTriggerParticles.add("hTriggeredParticles", "Distribution of #tracks w/ pt > pt,trigg,min", HistType::kTH1F, {{20, 0.5, 20.5, "Trigger counter"}});
+    QAHistosTriggerParticles.add("hTriggeredParticles", "Distribution of #tracks w/ pt > pt,trigg,min in hXi events", HistType::kTH1F, {{20, 0.5, 20.5, "Trigger counter"}});
     QAHistosTriggerParticles.add("hPtTrigger", "hPtTrigger", HistType::kTH1F, {{300, 0, 30, "Pt of trigger particles"}});
-    QAHistosTriggerParticles.add("hEtaTrigger", "hEtaTrigger", HistType::kTH1F, {{100, -1, 1, "Eta of trigger particles"}});
-    QAHistosTriggerParticles.add("hPhiTrigger", "hPhiTrigger", HistType::kTH1F, {{100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "Phi of trigger particles"}});
-    QAHistosTriggerParticles.add("hDCAxyTrigger", "hDCAxyTrigger", HistType::kTH1F, {{400, -0.2, 0.2, "DCAxy of trigger particles"}});
-    QAHistosTriggerParticles.add("hDCAzTrigger", "hDCAzTrigger", HistType::kTH1F, {{400, -0.2, 0.2, "DCAz of trigger particles"}});
+    QAHistosTriggerParticles.add("hEtaTrigger", "hEtaTrigger", HistType::kTH2F, {{180, -1.4, 1.4, "Eta of trigger particles"}, {ptTriggAxis}});
+    QAHistosTriggerParticles.add("hPhiTrigger", "hPhiTrigger", HistType::kTH2F, {{100, 0, 2 * TMath::Pi(), "Phi of trigger particles"}, {ptTriggAxis}});
+    QAHistosTriggerParticles.add("hDCAxyTrigger", "hDCAxyTrigger", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy of trigger particles"}, {ptTriggAxis}});
+    QAHistosTriggerParticles.add("hDCAzTrigger", "hDCAzTrigger", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz of trigger particles"}, {ptTriggAxis}});
 
+    QAHistosTriggerParticles.add("hTriggeredParticlesAllEv", "Distribution of #tracks w/ pt > pt,trigg,min", HistType::kTH1F, {{20, 0.5, 20.5, "Trigger counter"}});
+    QAHistosTriggerParticles.add("hPtTriggerAllEv", "hPtTriggerAllEv", HistType::kTH1F, {{300, 0, 30, "Pt of trigger particles"}});
+    QAHistosTriggerParticles.add("hEtaTriggerAllEv", "hEtaTriggerAllEv", HistType::kTH2F, {{180, -1.4, 1.4, "Eta of trigger particles"}, {ptTriggAxis}});
+    QAHistosTriggerParticles.add("hPhiTriggerAllEv", "hPhiTriggerAllEv", HistType::kTH2F, {{100, 0, 2 * TMath::Pi(), "Phi of trigger particles"}, {ptTriggAxis}});
+    QAHistosTriggerParticles.add("hDCAxyTriggerAllEv", "hDCAxyTriggerAllEv", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy of trigger particles"}, {ptTriggAxis}});
+    QAHistosTriggerParticles.add("hDCAzTriggerAllEv", "hDCAzTriggerAllEv", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz of trigger particles"}, {ptTriggAxis}});
+
+    // multiplicity histos
     EventsvsMultiplicity.add("AllEventsvsMultiplicity", "Multiplicity distribution of all events", HistType::kTH1F, {centAxis});
     EventsvsMultiplicity.add("hadEventsvsMultiplicity", "Multiplicity distribution of events with hight pT hadron", HistType::kTH1F, {centAxis});
     EventsvsMultiplicity.add("hXiEventsvsMultiplicity", "Multiplicity distribution of events with h + Xi", HistType::kTH1F, {centAxis});
@@ -158,20 +171,21 @@ struct strangenessFilter {
     EventsvsMultiplicity.add("SingleXiEventsvsMultiplicity", "Multiplicity distribution of events with 1 Xi (R > 24.39 cm)", HistType::kTH1F, {centAxis});
 
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
-    hProcessedEvents->GetXaxis()->SetBinLabel(2, "#Omega");
-    hProcessedEvents->GetXaxis()->SetBinLabel(3, "high-#it{p}_{T} hadron - #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(4, "2#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(5, "3#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(6, "4#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(7, "#Xi-YN");
-    hProcessedEvents->GetXaxis()->SetBinLabel(8, "#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events w/ high-#it{p}_{T} hadron");
+    hProcessedEvents->GetXaxis()->SetBinLabel(3, "#Omega");
+    hProcessedEvents->GetXaxis()->SetBinLabel(4, "high-#it{p}_{T} hadron - #Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(5, "2#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(6, "3#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(7, "4#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(8, "#Xi-YN");
+    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Xi");
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
     hCandidate->GetXaxis()->SetBinLabel(3, "DCA_meson");
     hCandidate->GetXaxis()->SetBinLabel(4, "DCA_baryon");
-    hCandidate->GetXaxis()->SetBinLabel(5, "TPCNsigma_meson");
-    hCandidate->GetXaxis()->SetBinLabel(6, "TPCNsigma_baryon");
+    hCandidate->GetXaxis()->SetBinLabel(5, "TPCNsigma_pion");
+    hCandidate->GetXaxis()->SetBinLabel(6, "TPCNsigma_proton");
     hCandidate->GetXaxis()->SetBinLabel(7, "Eta_dau");
     hCandidate->GetXaxis()->SetBinLabel(8, "DCABachToPV");
     hCandidate->GetXaxis()->SetBinLabel(9, "V0Radius");
@@ -193,8 +207,8 @@ struct strangenessFilter {
   // Tables
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
@@ -366,6 +380,7 @@ struct strangenessFilter {
         QAHistosTopologicalVariables.fill(HIST("DCAPosToPV"), TMath::Abs(casc.dcapostopv()));
         QAHistosTopologicalVariables.fill(HIST("DCANegToPV"), TMath::Abs(casc.dcanegtopv()));
         QAHistosTopologicalVariables.fill(HIST("InvMassLambda"), casc.mLambda());
+
         // Count number of Xi candidates
         xicounter++;
 
@@ -400,10 +415,10 @@ struct strangenessFilter {
       for (auto track : tracks) { // start loop over tracks
         triggcounter++;
         QAHistosTriggerParticles.fill(HIST("hPtTrigger"), track.pt());
-        QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi());
-        QAHistosTriggerParticles.fill(HIST("hEtaTrigger"), track.eta());
-        QAHistosTriggerParticles.fill(HIST("hDCAxyTrigger"), track.dcaXY());
-        QAHistosTriggerParticles.fill(HIST("hDCAzTrigger"), track.dcaZ());
+        QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi(), track.pt());
+        QAHistosTriggerParticles.fill(HIST("hEtaTrigger"), track.eta(), track.pt());
+        QAHistosTriggerParticles.fill(HIST("hDCAxyTrigger"), track.dcaXY(), track.pt());
+        QAHistosTriggerParticles.fill(HIST("hDCAzTrigger"), track.dcaZ(), track.pt());
         keepEvent[1] = true;
       } // end loop over tracks
       QAHistosTriggerParticles.fill(HIST("hTriggeredParticles"), triggcounter);
@@ -431,27 +446,27 @@ struct strangenessFilter {
 
     // Fill centrality dependent histos
     if (keepEvent[0]) {
-      hProcessedEvents->Fill(1.5);
+      hProcessedEvents->Fill(2.5);
       EventsvsMultiplicity.fill(HIST("OmegaEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[1]) {
-      hProcessedEvents->Fill(2.5);
+      hProcessedEvents->Fill(3.5);
       EventsvsMultiplicity.fill(HIST("hXiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[2]) {
-      hProcessedEvents->Fill(3.5);
+      hProcessedEvents->Fill(4.5);
       EventsvsMultiplicity.fill(HIST("2XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[3]) {
-      hProcessedEvents->Fill(4.5);
+      hProcessedEvents->Fill(5.5);
       EventsvsMultiplicity.fill(HIST("3XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[4]) {
-      hProcessedEvents->Fill(5.5);
+      hProcessedEvents->Fill(6.5);
       EventsvsMultiplicity.fill(HIST("4XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[5]) {
-      hProcessedEvents->Fill(6.5);
+      hProcessedEvents->Fill(7.5);
       EventsvsMultiplicity.fill(HIST("SingleXiEventsvsMultiplicity"), collision.centRun2V0M());
     }
 
@@ -494,6 +509,7 @@ struct strangenessFilter {
     int xicounterYN = 0;
     int omegacounter = 0;
     int triggcounter = 0;
+    int triggcounterAllEv = 0;
     int triggcounterForEstimates = 0;
 
     for (auto& casc : fullCasc) { // loop over cascades
@@ -518,6 +534,20 @@ struct strangenessFilter {
       // QA
       QAHistos.fill(HIST("hMassXiBefSel"), casc.mXi());
       QAHistos.fill(HIST("hMassOmegaBefSel"), casc.mOmega());
+
+      // QA PID
+      QAHistos.fill(HIST("hTPCNsigmaBachPi"), bachelor.tpcNSigmaPi());
+      QAHistos.fill(HIST("hTPCNsigmaBachKa"), bachelor.tpcNSigmaKa());
+      if (casc.sign() > 0) {
+        QAHistos.fill(HIST("hTPCNsigmaPi"), posdau.tpcNSigmaPi());
+        QAHistos.fill(HIST("hTPCNsigmaPr"), negdau.tpcNSigmaPr());
+      } else if (casc.sign() < 0) {
+        QAHistos.fill(HIST("hTPCNsigmaPr"), posdau.tpcNSigmaPr());
+        QAHistos.fill(HIST("hTPCNsigmaPi"), negdau.tpcNSigmaPi());
+      }
+      QAHistos.fill(HIST("hHasTOFBachBefSel"), bachelor.hasTOF());
+      QAHistos.fill(HIST("hHasTOFPosBefSel"), posdau.hasTOF());
+      QAHistos.fill(HIST("hHasTOFNegBefSel"), negdau.hasTOF());
 
       // Position
       xipos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
@@ -553,14 +583,14 @@ struct strangenessFilter {
           continue;
         };
         hCandidate->Fill(3.5);
-        if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
-          continue;
-        };
-        hCandidate->Fill(5.5);
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
         hCandidate->Fill(4.5);
+        if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
+          continue;
+        };
+        hCandidate->Fill(5.5);
       }
       if (TMath::Abs(posdau.eta()) > etadau) {
         continue;
@@ -654,14 +684,6 @@ struct strangenessFilter {
         QAHistos.fill(HIST("hEtaXi"), casc.eta());
         QAHistos.fill(HIST("hRapXi"), casc.yXi());
         QAHistos.fill(HIST("hProperLifetimeXi"), xiproperlifetime);
-        QAHistos.fill(HIST("hTPCNsigmaBach"), bachelor.tpcNSigmaPi());
-        if (casc.sign() > 0) {
-          QAHistos.fill(HIST("hTPCNsigmaPi"), posdau.tpcNSigmaPi());
-          QAHistos.fill(HIST("hTPCNsigmaPr"), negdau.tpcNSigmaPr());
-        } else if (casc.sign() < 0) {
-          QAHistos.fill(HIST("hTPCNsigmaPr"), posdau.tpcNSigmaPr());
-          QAHistos.fill(HIST("hTPCNsigmaPi"), negdau.tpcNSigmaPi());
-        }
         QAHistos.fill(HIST("hHasTOFBach"), bachelor.hasTOF());
         QAHistos.fill(HIST("hHasTOFPos"), posdau.hasTOF());
         QAHistos.fill(HIST("hHasTOFNeg"), negdau.hasTOF());
@@ -682,8 +704,9 @@ struct strangenessFilter {
         xicounter++;
 
         // Plot for estimates
-        if (tracks.size() > 0)
+        if (tracks.size() > 0) {
           triggcounterForEstimates++;
+        }
         if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
@@ -714,15 +737,28 @@ struct strangenessFilter {
       ThrdPt[i] = (float)i;
     }
 
+    // QA tracks
+    if (tracks.size() > 0)
+      hProcessedEvents->Fill(1.5);
+    for (auto track : tracks) { // start loop over tracks
+      triggcounterAllEv++;
+      QAHistosTriggerParticles.fill(HIST("hPtTriggerAllEv"), track.pt());
+      QAHistosTriggerParticles.fill(HIST("hPhiTriggerAllEv"), track.phi(), track.pt());
+      QAHistosTriggerParticles.fill(HIST("hEtaTriggerAllEv"), track.eta(), track.pt());
+      QAHistosTriggerParticles.fill(HIST("hDCAxyTriggerAllEv"), track.dcaXY(), track.pt());
+      QAHistosTriggerParticles.fill(HIST("hDCAzTriggerAllEv"), track.dcaZ(), track.pt());
+    } // end loop over tracks
+    QAHistosTriggerParticles.fill(HIST("hTriggeredParticlesAllEv"), triggcounterAllEv);
+
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
         triggcounter++;
         QAHistosTriggerParticles.fill(HIST("hPtTrigger"), track.pt());
-        QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi());
-        QAHistosTriggerParticles.fill(HIST("hEtaTrigger"), track.eta());
-        QAHistosTriggerParticles.fill(HIST("hDCAxyTrigger"), track.dcaXY());
-        QAHistosTriggerParticles.fill(HIST("hDCAzTrigger"), track.dcaZ());
+        QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi(), track.pt());
+        QAHistosTriggerParticles.fill(HIST("hEtaTrigger"), track.eta(), track.pt());
+        QAHistosTriggerParticles.fill(HIST("hDCAxyTrigger"), track.dcaXY(), track.pt());
+        QAHistosTriggerParticles.fill(HIST("hDCAzTrigger"), track.dcaZ(), track.pt());
         for (int i = 0; i < 11; i++) {
           if (track.pt() > ThrdPt[i])
             EvtwhMinPt[i] = 1;
@@ -759,25 +795,25 @@ struct strangenessFilter {
 
     // Fill centrality dependent histos
     if (keepEvent[0]) {
-      hProcessedEvents->Fill(1.5);
-    }
-    if (keepEvent[1]) {
       hProcessedEvents->Fill(2.5);
     }
-    if (keepEvent[2]) {
+    if (keepEvent[1]) {
       hProcessedEvents->Fill(3.5);
     }
-    if (keepEvent[3]) {
+    if (keepEvent[2]) {
       hProcessedEvents->Fill(4.5);
     }
-    if (keepEvent[4]) {
+    if (keepEvent[3]) {
       hProcessedEvents->Fill(5.5);
     }
-    if (keepEvent[5]) {
+    if (keepEvent[4]) {
       hProcessedEvents->Fill(6.5);
     }
-    if (xicounter > 0) {
+    if (keepEvent[5]) {
       hProcessedEvents->Fill(7.5);
+    }
+    if (xicounter > 0) {
+      hProcessedEvents->Fill(8.5);
     }
 
     // Filling the table
