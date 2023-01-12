@@ -71,6 +71,7 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
+    CollisionCentRun3 = BIT(10),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -139,6 +140,7 @@ class VarManager : public TObject
     kVtxCovZZ,
     kVtxChi2,
     kCentVZERO,
+    kCentFT0C,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -578,6 +580,10 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionCent) > 0) {
     values[kCentVZERO] = event.centRun2V0M();
+  }
+
+  if constexpr ((fillMap & CollisionCentRun3) > 0) {
+    values[kCentFT0C] = event.centFT0C();
   }
 
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
