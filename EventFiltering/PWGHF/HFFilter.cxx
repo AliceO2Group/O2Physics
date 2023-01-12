@@ -156,7 +156,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
-  std::shared_ptr<TH1> hGammaSelected, hGammaEtabefore, hGammaEtaafter;
+  std::shared_ptr<TH1> hGammaSelected, hGammaEtaBefore, hGammaEtaAfter;
   std::shared_ptr<TH2> hGammaAPbefore, hGammaAPafter;
 
   // ONNX
