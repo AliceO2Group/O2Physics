@@ -324,7 +324,7 @@ struct HfFilter { // Main struct for HF triggers
 
     if (activateQA) {
       hGammaSelected->Fill(6);
-      hGammaEtaafter->Fill(gamma.eta());
+      hGammaEtaAfter->Fill(gamma.eta());
       hGammaAPafter->Fill(gamma.alpha(), gamma.qtarm());
     }
     return true;
