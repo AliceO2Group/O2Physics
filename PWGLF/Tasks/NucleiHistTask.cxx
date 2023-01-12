@@ -37,7 +37,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 namespace o2::aod
 {
 namespace NucleiTableHist
@@ -90,12 +89,11 @@ struct NucleiHistTask {
 
   void init(o2::framework::InitContext&)
   {
-  
+
     if (doprocessData == true && doprocessDataCent == true) {
       LOG(fatal) << "Can't enable processData and processDataCent in the same time, pick one!";
     }
-    
-    
+
     std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
 
@@ -112,12 +110,12 @@ struct NucleiHistTask {
     spectra.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra.add("histDcaZVsPtData_antiparticle", "dcaZ vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    
+
     spectra.add("histDcaVsPtData_wo_ambiguous_particle", "dcaXY vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra.add("histDcaZVsPtData_wo_ambiguous_particle", "dcaZ vs Pt (particle) w/o ambiguous", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra.add("histDcaVsPtData_wo_ambiguous_antiparticle", "dcaXY vs Pt (antiparticle) w/o ambiguous", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra.add("histDcaZVsPtData_wo_ambiguous_antiparticle", "dcaZ vs Pt (antiparticle) w/o ambiguous", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    
+
     spectra.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     spectra.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     spectra.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
@@ -138,7 +136,7 @@ struct NucleiHistTask {
     proton_erg.add("histChi2TPC", "chi^2 TPC vs Pt (p)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     proton_erg.add("histChi2ITS", "chi^2 ITS vs Pt (p)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
 
-    proton_erg.add("histTpcNsigmaData_cent", "n-sigma TPC (p) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"},centralityAxis});
+    proton_erg.add("histTpcNsigmaData_cent", "n-sigma TPC (p) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"}, centralityAxis});
 
     // histograms for antiProton
     aproton_erg.add("histKeepEventData", "skimming histogram (antip)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -155,7 +153,7 @@ struct NucleiHistTask {
     aproton_erg.add("histChi2TPC", "chi^2 TPC vs Pt (antip)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     aproton_erg.add("histChi2ITS", "chi^2 ITS vs Pt (antip)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
 
-    aproton_erg.add("histTpcNsigmaData_cent", "n-sigma TPC (antip) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"},centralityAxis});
+    aproton_erg.add("histTpcNsigmaData_cent", "n-sigma TPC (antip) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"}, centralityAxis});
 
     // histograms for Deuterons
     deuteron_reg.add("histKeepEventData", "skimming histogram (d)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -171,8 +169,8 @@ struct NucleiHistTask {
     deuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     deuteron_reg.add("histChi2TPC", "chi^2 TPC vs Pt (d)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     deuteron_reg.add("histChi2ITS", "chi^2 ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
-    
-    deuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (d) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"},centralityAxis});
+
+    deuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (d) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"}, centralityAxis});
 
     // histograms for antiDeuterons
     adeuteron_reg.add("histKeepEventData", "skimming histogram (antid)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -189,7 +187,7 @@ struct NucleiHistTask {
     adeuteron_reg.add("histChi2TPC", "chi^2 TPC vs Pt (antid)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     adeuteron_reg.add("histChi2ITS", "chi^2 ITS vs Pt (antid)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
 
-    adeuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antid) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"},centralityAxis});
+    adeuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antid) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"}, centralityAxis});
 
     // histograms for Helium-3
     Helium3_reg.add("histKeepEventData", "skimming histogram (He-3)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -206,7 +204,7 @@ struct NucleiHistTask {
     Helium3_reg.add("histChi2TPC", "chi^2 TPC vs Pt (He-3)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     Helium3_reg.add("histChi2ITS", "chi^2 ITS vs Pt (He-3)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
 
-    Helium3_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (He-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"},centralityAxis});
+    Helium3_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (He-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"}, centralityAxis});
 
     // histograms for antiHelium-3
     aHelium3_reg.add("histKeepEventData", "skimming histogram (antiHe-3)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -223,7 +221,7 @@ struct NucleiHistTask {
     aHelium3_reg.add("histChi2TPC", "chi^2 TPC vs Pt (antiHe-3)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     aHelium3_reg.add("histChi2ITS", "chi^2 ITS vs Pt (antiHe-3)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
 
-    aHelium3_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antiHe-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"},centralityAxis});
+    aHelium3_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antiHe-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p} (a. u.)"}, centralityAxis});
   }
 
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
@@ -233,7 +231,7 @@ struct NucleiHistTask {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -3.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +3.0, "Value of the Nsigma cut"};
-  
+
   // Replacement for globalTrack filter
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
   Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"};
@@ -261,26 +259,26 @@ struct NucleiHistTask {
     spectra.fill(HIST("histRecVtxZData"), event.posZ());
 
     for (auto track : tracks) { // start loop over tracks
-    
+
       float TPCnumberCls = track.tpcNClsFound();
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
-    
-      if ( TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) ||  (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax) {
+
+      if (TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax) {
         continue;
       }
-      
+
       if (track.sign() > 0) {
         spectra.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
       }
-      
+
       if (track.sign() < 0) {
         spectra.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
         spectra.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
       }
-      
+
       if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
         continue;
       }
@@ -310,7 +308,6 @@ struct NucleiHistTask {
       spectra.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
       spectra.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
       spectra.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
-      
 
       if (track.sign() > 0) {
         proton_erg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaProton);
@@ -330,7 +327,7 @@ struct NucleiHistTask {
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
           spectra.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-         }
+        }
       }
 
       if (track.sign() < 0) {
@@ -573,25 +570,25 @@ struct NucleiHistTask {
     Helium3_reg.fill(HIST("histKeepEventData"), keepEvent_He3);
     aHelium3_reg.fill(HIST("histKeepEventData"), keepEvent_antiHe3);
   }
-  
-//****************************************************************************************************
-  
+
+  //****************************************************************************************************
+
   template <typename CollisionType, typename TracksType>
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
-  
+
     for (auto track : tracks) { // start loop over tracks
-      
+
       float TPCnumberCls = track.tpcNClsFound();
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
-    
+
       // track cuts
-      if ( TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) ||  (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
-        continue;  
+      if (TPCnumberCls < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS || (track.pt()) < pTmin || (track.pt()) > pTmax || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
+        continue;
       }
-      
+
       // cut on rapidity
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
@@ -606,60 +603,53 @@ struct NucleiHistTask {
           lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax) {
         continue;
       }
-      
+
       // fill centrality histograms
       float nSigmaProton = track.tpcNSigmaPr();
       float nSigmaDeut = track.tpcNSigmaDe();
       float nSigmaHe3 = track.tpcNSigmaHe();
-      
+
       if (track.sign() > 0) {
-      
+
         proton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), nSigmaProton, event.centFT0C());
         deuteron_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), nSigmaDeut, event.centFT0C());
         Helium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, nSigmaHe3, event.centFT0C());
-        
       }
-         
+
       if (track.sign() < 0) {
-      
+
         aproton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), nSigmaProton, event.centFT0C());
         adeuteron_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), nSigmaDeut, event.centFT0C());
         aHelium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, nSigmaHe3, event.centFT0C());
-        
-      
       }
     }
   }
 
-//****************************************************************************************************
+  //****************************************************************************************************
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
-  
+
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
 
   using EventCandidatesCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>; // aod::CentFV0As, aod::CentFT0Cs
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>; // aod::ReducedTracks
 
+  void processData(EventCandidates::iterator const& event, TrackCandidates const& tracks)
+  {
+    fillHistograms(event, tracks);
+  }
+  PROCESS_SWITCH(NucleiHistTask, processData, "process data", true);
 
-
-  void processData(EventCandidates::iterator const& event, TrackCandidates const& tracks) 
-       {
-         fillHistograms(event, tracks);
-       }
-       PROCESS_SWITCH(NucleiHistTask, processData, "process data", true);
-
-  void processDataCent(EventCandidatesCent::iterator const& event, TrackCandidates const& tracks) 
-       {
-         fillHistograms(event, tracks);
-         fillCentHistorgrams(event, tracks);
-       }
-       PROCESS_SWITCH(NucleiHistTask, processDataCent, "process data with centralities", false);
-
+  void processDataCent(EventCandidatesCent::iterator const& event, TrackCandidates const& tracks)
+  {
+    fillHistograms(event, tracks);
+    fillCentHistorgrams(event, tracks);
+  }
+  PROCESS_SWITCH(NucleiHistTask, processDataCent, "process data with centralities", false);
 };
 //****************************************************************************************************
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
