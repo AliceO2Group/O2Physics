@@ -119,10 +119,10 @@ struct strangenessFilter {
     QAHistos.add("hPtOmega", "pt distribution of selected Omega candidates", HistType::kTH1F, {ptAxis});
     QAHistos.add("hEtaXi", "eta distribution of selected Xi candidates", HistType::kTH1F, {etaAxis});
     QAHistos.add("hEtaOmega", "eta distribution of selected Omega candidates", HistType::kTH1F, {etaAxis});
-    QAHistos.add("hTPCNsigmaBachPi", "nsigma TPC distribution bachelor pion", HistType::kTH1F, {{60, -10, 10}});
-    QAHistos.add("hTPCNsigmaBachKa", "nsigma TPC distribution bachelor kaon", HistType::kTH1F, {{60, -10, 10}});
-    QAHistos.add("hTPCNsigmaPi", "nsigma TPC distribution pi", HistType::kTH1F, {{60, -10, 10}});
-    QAHistos.add("hTPCNsigmaPr", "nsigma TPC distribution proton", HistType::kTH1F, {{60, -10, 10}});
+    QAHistos.add("hTPCNsigmaBachPi", "nsigma TPC distribution bachelor pion", HistType::kTH2F, {{60, -10, 10}, {ptAxis}});
+    QAHistos.add("hTPCNsigmaBachKa", "nsigma TPC distribution bachelor kaon", HistType::kTH2F, {{60, -10, 10}, {ptAxis}});
+    QAHistos.add("hTPCNsigmaPi", "nsigma TPC distribution pi", HistType::kTH2F, {{60, -10, 10}, {ptAxis}});
+    QAHistos.add("hTPCNsigmaPr", "nsigma TPC distribution proton", HistType::kTH2F, {{60, -10, 10}, {ptAxis}});
     QAHistos.add("hHasTOFBachBefSel", "bachelor has TOF", HistType::kTH1F, {{2, 0, 2}});
     QAHistos.add("hHasTOFPosBefSel", "pos dau has TOF", HistType::kTH1F, {{2, 0, 2}});
     QAHistos.add("hHasTOFNegBefSel", "neg dau has TOF", HistType::kTH1F, {{2, 0, 2}});
@@ -482,6 +482,7 @@ struct strangenessFilter {
 
   void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
+
     if (sel8 && !collision.sel8()) {
       return;
     }
@@ -536,14 +537,14 @@ struct strangenessFilter {
       QAHistos.fill(HIST("hMassOmegaBefSel"), casc.mOmega());
 
       // QA PID
-      QAHistos.fill(HIST("hTPCNsigmaBachPi"), bachelor.tpcNSigmaPi());
-      QAHistos.fill(HIST("hTPCNsigmaBachKa"), bachelor.tpcNSigmaKa());
+      QAHistos.fill(HIST("hTPCNsigmaBachPi"), bachelor.tpcNSigmaPi(), bachelor.pt());
+      QAHistos.fill(HIST("hTPCNsigmaBachKa"), bachelor.tpcNSigmaKa(), bachelor.pt());
       if (casc.sign() > 0) {
-        QAHistos.fill(HIST("hTPCNsigmaPi"), posdau.tpcNSigmaPi());
-        QAHistos.fill(HIST("hTPCNsigmaPr"), negdau.tpcNSigmaPr());
+        QAHistos.fill(HIST("hTPCNsigmaPi"), posdau.tpcNSigmaPi(), posdau.pt());
+        QAHistos.fill(HIST("hTPCNsigmaPr"), negdau.tpcNSigmaPr(), negdau.pt());
       } else if (casc.sign() < 0) {
-        QAHistos.fill(HIST("hTPCNsigmaPr"), posdau.tpcNSigmaPr());
-        QAHistos.fill(HIST("hTPCNsigmaPi"), negdau.tpcNSigmaPi());
+        QAHistos.fill(HIST("hTPCNsigmaPr"), posdau.tpcNSigmaPr(), posdau.pt());
+        QAHistos.fill(HIST("hTPCNsigmaPi"), negdau.tpcNSigmaPi(), negdau.pt());
       }
       QAHistos.fill(HIST("hHasTOFBachBefSel"), bachelor.hasTOF());
       QAHistos.fill(HIST("hHasTOFPosBefSel"), posdau.hasTOF());
