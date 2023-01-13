@@ -47,7 +47,7 @@ struct QaEfficiency {
   Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
   // Particle only selection
   Configurable<bool> doUnId{"do-un-id", true, "Flag to run without PDG code"};
-  Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of pions"};
+  Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of electrons"};
   Configurable<bool> doMu{"do-mu", false, "Flag to run with the PDG code of muons"};
   Configurable<bool> doPi{"do-pi", false, "Flag to run with the PDG code of pions"};
   Configurable<bool> doKa{"do-ka", false, "Flag to run with the PDG code of kaons"};
