@@ -416,7 +416,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         h->Sumw2();
       }
       if (fVariableNames[varX][0]) {
-        h->GetXaxis()->SetTitle(Form("%s (%s)", fVariableNames[varX].Data(),
+        h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
                                      (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
@@ -426,11 +426,11 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         MakeAxisLabels(h->GetXaxis(), xLabels);
       }
       if (fVariableNames[varY][0]) {
-        h->GetYaxis()->SetTitle(Form("%s (%s)", fVariableNames[varY].Data(),
+        h->GetYaxis()->SetTitle(Form("%s %s", fVariableNames[varY].Data(),
                                      (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
       if (fVariableNames[varY][0] && isProfile) {
-        h->GetYaxis()->SetTitle(Form("<%s> (%s)", fVariableNames[varY].Data(),
+        h->GetYaxis()->SetTitle(Form("<%s> %s", fVariableNames[varY].Data(),
                                      (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
 
