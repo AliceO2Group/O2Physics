@@ -139,8 +139,8 @@ struct HfFilter { // Main struct for HF triggers
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
   Configurable<bool> computeTPCPostCalib{"computeTPCPostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
-  int currentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  Configurable<string> ccdbPathTPC{"ccdbPathTPC", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  int currentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
   // array of ONNX config and BDT thresholds
   std::array<std::string, kNCharmParticles> onnxFiles;
@@ -161,10 +161,10 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
 
   // Histogram of TPC postcalibration map for pion and proton
-  TH3F* hMapPionMean;
-  TH3F* hMapPionSigma;
-  TH3F* hMapProtonMean;
-  TH3F* hMapProtonSigma;
+  TH3F* hMapPionMean = new TH3F("hMapPionMean", "Map of TPC pion mean; TPCncls; Pin; Eta", 160, 0., 160, 100, 0., 5, 100, -0.8, 0.8);
+  TH3F* hMapPionSigma = new TH3F("hMapPionSigma", "Map of TPC pion sigma; TPCncls; Pin; Eta", 160, 0., 160, 100, 0., 5, 100, -0.8, 0.8);
+  TH3F* hMapProtonMean = new TH3F("hMapProtonMean", "Map of TPC proton mean; TPCncls; Pin; Eta", 160, 0., 160, 100, 0., 5, 100, -0.8, 0.8);
+  TH3F* hMapProtonSigma = new TH3F("hMapProtonSigma", "Map of TPC proton Sigma; TPCncls; Pin; Eta", 160, 0., 160, 100, 0., 5, 100, -0.8, 0.8);
 
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
@@ -255,35 +255,35 @@ struct HfFilter { // Main struct for HF triggers
   double getTPCPostCalib(const TH3F* hCalibMean, const TH3F* hCalibSigma, const T& track, const int pidSpecies)
   {
 
-    auto kTPCncls = track.tpcNClsFound();
+    auto kTPCNCls = track.tpcNClsFound();
     auto kTPCPin = track.tpcInnerParam();
     auto kEta = track.eta();
-    auto kTPCnSigma = 0.;
+    auto kTPCNSigma = 0.;
 
     if (pidSpecies == kKa)
-      kTPCnSigma = track.tpcNSigmaKa();
+      kTPCNSigma = track.tpcNSigmaKa();
     else if (pidSpecies == kPi)
-      kTPCnSigma = track.tpcNSigmaPi();
+      kTPCNSigma = track.tpcNSigmaPi();
     else if (pidSpecies == kPr)
-      kTPCnSigma = track.tpcNSigmaPr();
+      kTPCNSigma = track.tpcNSigmaPr();
     else
       LOG(fatal) << "Wrong PID Species be selected, please check!";
 
-    auto binTPCncls = hCalibMean->GetXaxis()->FindBin(kTPCncls);
-    binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-    binTPCncls = (binTPCncls > hCalibMean->GetXaxis()->GetNbins() ? hCalibMean->GetXaxis()->GetNbins() : binTPCncls);
+    auto binTPCNCls = hCalibMean->GetXaxis()->FindBin(kTPCNCls);
+    binTPCNCls = (binTPCNCls == 0 ? 1 : binTPCNCls);
+    binTPCNCls = std::min(hCalibMean->GetXaxis()->GetNbins(), binTPCNCls);
     auto binPin = hCalibMean->GetYaxis()->FindBin(kTPCPin);
     binPin = (binPin == 0 ? 1 : binPin);
-    binPin = (binPin > hCalibMean->GetYaxis()->GetNbins() ? hCalibMean->GetYaxis()->GetNbins() : binPin);
+    binPin = std::min(hCalibMean->GetYaxis()->GetNbins(), binPin);
     auto binEta = hCalibMean->GetZaxis()->FindBin(kEta);
     binEta = (binEta == 0 ? 1 : binEta);
-    binEta = (binEta > hCalibMean->GetZaxis()->GetNbins() ? hCalibMean->GetZaxis()->GetNbins() : binEta);
+    binEta = std::min(hCalibMean->GetZaxis()->GetNbins(), binEta);
 
-    auto mean = hCalibMean->GetBinContent(binTPCncls, binPin, binEta);
-    auto width = hCalibSigma->GetBinContent(binTPCncls, binPin, binEta);
-    auto kTPCnSigma_Corr = (kTPCnSigma - mean) / width;
+    auto mean = hCalibMean->GetBinContent(binTPCNCls, binPin, binEta);
+    auto width = hCalibSigma->GetBinContent(binTPCNCls, binPin, binEta);
+    auto kTPCNSigmaCorr = (kTPCNSigma - mean) / width;
 
-    return kTPCnSigma_Corr;
+    return kTPCNSigmaCorr;
   }
 
   /// Single-track cuts for bachelor track of beauty candidates
@@ -752,12 +752,17 @@ struct HfFilter { // Main struct for HF triggers
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (computeTPCPostCalib && currentRun != bc.runNumber()) {
 
-      auto calibList = ccdb->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+      auto calibList = ccdb->getForTimeStamp<TList>(ccdbPathTPC.value, bc.timestamp());
 
-      hMapPionMean = (TH3F*)calibList->FindObject("mean_map_pion");
-      hMapPionSigma = (TH3F*)calibList->FindObject("sigma_map_pion");
-      hMapProtonMean = (TH3F*)calibList->FindObject("mean_map_proton");
-      hMapProtonSigma = (TH3F*)calibList->FindObject("sigma_map_proton");
+      if (!calibList->FindObject("mean_map_pion") || !calibList->FindObject("sigma_map_pion") || !calibList->FindObject("mean_map_proton") || !calibList->FindObject("sigma_map_proton"))
+        LOG(fatal) << "Can not find histograms!";
+      else {
+
+        hMapPionMean = (TH3F*)calibList->FindObject("mean_map_pion");
+        hMapPionSigma = (TH3F*)calibList->FindObject("sigma_map_pion");
+        hMapProtonMean = (TH3F*)calibList->FindObject("mean_map_proton");
+        hMapProtonSigma = (TH3F*)calibList->FindObject("sigma_map_proton");
+      }
 
       currentRun = bc.runNumber();
     }
