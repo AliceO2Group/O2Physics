@@ -20,6 +20,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -60,7 +61,7 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
 struct PseudorapidityDensityMFT {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
 

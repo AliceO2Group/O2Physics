@@ -25,6 +25,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/RuntimeError.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "Index.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
@@ -82,7 +83,7 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
 struct MultiplicityCounter {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
