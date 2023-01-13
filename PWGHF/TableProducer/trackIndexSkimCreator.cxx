@@ -369,6 +369,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
+
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(ccdbPathGeo);
@@ -1003,16 +1004,15 @@ struct HfTrackIndexSkimCreator {
       registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
       registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
       registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
-
-      ccdb->setURL(ccdbUrl);
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-      if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(ccdbPathGeo);
-      }
-      runNumber = 0;
     }
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
   }
 
   /// Method to perform selections for 2-prong candidates before vertex reconstruction
