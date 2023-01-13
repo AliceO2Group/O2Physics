@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
+#include <iostream>
+#include <chrono>
+#include "bestCollisionTable.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -25,10 +29,6 @@
 #include "Index.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TDatabasePDG.h"
-#include "bestCollisionTable.h"
-#include <chrono>
-#include <cmath>
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
