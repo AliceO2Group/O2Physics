@@ -353,7 +353,7 @@ struct flatenictyFV0 {
     float ampl6[nEta6] = {0, 0};
 
     // V0A signal and flatenicity calculation
-    float flatenicity_fv0;
+    float flattenicity_fv0;
     float calib[48] = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
     // calibration T0C
     float calibT0C[28] = {0.949829, 1.05408, 1.00681, 1.00724, 0.990663, 0.973571, 0.9855, 1.03726, 1.02526, 1.00467, 0.983008, 0.979349, 0.952352, 0.985775, 1.013, 1.01721, 0.993948, 0.996421, 0.971871, 1.02921, 0.989641, 1.01885, 1.01259, 0.929502, 1.03969, 1.02496, 1.01385, 1.01711};
@@ -444,7 +444,7 @@ struct flatenictyFV0 {
           RhoLattice[channelv0phi] = ampl_ch / 2.0; // two channels per bin
         }
       }
-      flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
+      flattenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
       flatenicity.fill(HIST("hAmpV0vsVtxBeforeCalibration"), vtxZ, sumAmpFV0);
       if (applyCalibVtx) {
         sumAmpFV0 *= gVtx[0]->Eval(vtxZ);
@@ -586,12 +586,12 @@ struct flatenictyFV0 {
       flatenicity.fill(HIST("hEv"), 4);
       estimator[0] = multGlob;
       estimator[1] = sumAmpFV0;
-      estimator[2] = 1.0 - flatenicity_fv0;
+      estimator[2] = 1.0 - flattenicity_fv0;
       estimator[3] = combined_estimator5;
       float flatenicity_ft0 = (flatenicity_t0a + flatenicity_t0c) / 2.0;
       estimator[4] = 1.0 - flatenicity_ft0;
       estimator[5] = combined_estimator6;
-      float flatenicity_ft0v0 = (flatenicity_fv0 + flatenicity_t0c) / 2.0;
+      float flatenicity_ft0v0 = (flattenicity_fv0 + flatenicity_t0c) / 2.0;
       estimator[6] = 1.0 - flatenicity_ft0v0;
       estimator[7] = ptT;
       static_for<0, 7>([&](auto i) {
