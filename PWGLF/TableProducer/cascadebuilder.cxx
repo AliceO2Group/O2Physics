@@ -233,13 +233,13 @@ struct cascadeBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if(useMatCorrType == 1){
+    if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(geoPath);
       }
     }
-    if(useMatCorrType == 2){
+    if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
@@ -415,7 +415,7 @@ struct cascadeBuilder {
         d_bz = d_bz_input;
       }
     }
-    if( useMatCorrType == 2 )
+    if (useMatCorrType == 2)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
