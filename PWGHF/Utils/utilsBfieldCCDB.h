@@ -26,7 +26,7 @@
 /// \param lut is a pointer to the o2::base::MatLayerCylSet object
 /// \param isRun2 tells whether we are analysing Run2 converted data or not (different GRP object type)
 void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string const& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
               bool isRun2)
 {
 
