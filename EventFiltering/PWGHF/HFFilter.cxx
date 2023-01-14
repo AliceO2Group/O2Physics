@@ -260,13 +260,13 @@ struct HfFilter { // Main struct for HF triggers
     auto eta = track.eta();
     auto tpcNSigma = 0.;
 
-    if (pidSpecies == kKa)
+    if (pidSpecies == kKa) {
       tpcNSigma = track.tpcNSigmaKa();
-    else if (pidSpecies == kPi)
+    } else if (pidSpecies == kPi) {
       tpcNSigma = track.tpcNSigmaPi();
-    else if (pidSpecies == kPr)
+    } else if (pidSpecies == kPr) {
       tpcNSigma = track.tpcNSigmaPr();
-    else {
+    } else {
       LOG(fatal) << "Wrong PID Species be selected, please check!";
     }
     auto binTPCNCls = hCalibMean->GetXaxis()->FindBin(tpcNCls);
@@ -281,9 +281,8 @@ struct HfFilter { // Main struct for HF triggers
 
     auto mean = hCalibMean->GetBinContent(binTPCNCls, binPin, binEta);
     auto width = hCalibSigma->GetBinContent(binTPCNCls, binPin, binEta);
-    auto tpcNSigmaCorr = (tpcNSigma - mean) / width;
 
-    return tpcNSigmaCorr;
+    return (tpcNSigma - mean) / width;
   }
 
   /// Single-track cuts for bachelor track of beauty candidates
@@ -764,12 +763,6 @@ struct HfFilter { // Main struct for HF triggers
 
       if (!hMapPionMean || !hMapPionSigma || !hMapProtonMean || !hMapProtonSigma) {
         LOG(fatal) << "Can not find histograms!";
-      } else {
-
-        hMapPionMean = (TH3F*)calibList->FindObject("mean_map_pion");
-        hMapPionSigma = (TH3F*)calibList->FindObject("sigma_map_pion");
-        hMapProtonMean = (TH3F*)calibList->FindObject("mean_map_proton");
-        hMapProtonSigma = (TH3F*)calibList->FindObject("sigma_map_proton");
       }
 
       currentRun = bc.runNumber();
