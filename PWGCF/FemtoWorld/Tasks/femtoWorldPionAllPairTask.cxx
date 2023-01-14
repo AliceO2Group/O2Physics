@@ -66,8 +66,8 @@ struct FemtoWorldPionAllPair {
     ChargePair.push_back(cut2);
   }
 
-  Configurable<int> cfgSignPartOne{"cfgSignPartOne", PlusSign, "Sign of Firts particle"};
-  Configurable<int> cfgSignPartTwo{"cfgSignPartTwo", MinusSign, "Sign of Second particle"};
+  Configurable<int> cfgSignPartOne{"cfgSignPartOne", static_cast<int>(PlusSign), "Sign of Firts particle"};
+  Configurable<int> cfgSignPartTwo{"cfgSignPartTwo", static_cast<int>(PlusSign), "Sign of Second particle"};
 
   std::vector<int> ChargePair;
   /// Particle selection part
@@ -258,13 +258,13 @@ struct FemtoWorldPionAllPair {
     for (auto& part : groupPartsOne) {
       if ((part.p() > 0.50)) {
 
-        float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion()) + TMath::Sq(part.tofNSigmaPion()));
+        float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPi()) + TMath::Sq(part.tofNSigmaPi()));
         if (!IsPionNSigma(NSigmaPion)) {
           continue;
         }
 
       } else if ((part.p() <= 0.50)) {
-        float NSigmaPion = part.tpcNSigmaPion();
+        float NSigmaPion = part.tpcNSigmaPi();
         if (!IsPionNSigma(NSigmaPion)) {
           continue;
         }
@@ -279,13 +279,13 @@ struct FemtoWorldPionAllPair {
       for (auto& part : groupPartsTwo) {
         if ((part.p() > 0.50)) {
 
-          float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion()) + TMath::Sq(part.tofNSigmaPion()));
+          float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPi()) + TMath::Sq(part.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion)) {
             continue;
           }
 
         } else if ((part.p() <= 0.50)) {
-          float NSigmaPion = part.tpcNSigmaPion();
+          float NSigmaPion = part.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion)) {
             continue;
           }
@@ -297,29 +297,29 @@ struct FemtoWorldPionAllPair {
         trackHistoPartTwoFailed.fillQA(part);
       }
     }
-    if ((ChargePair[0] == PlusSign && ChargePair[1] == MinusSign) || (ChargePair[0] == MinusSign && ChargePair[1] == PlusSign)) { // Unlike Sign Condition
+    if ((ChargePair[0] == static_cast<int>(PlusSign) && ChargePair[1] == static_cast<int>(MinusSign)) || (ChargePair[0] == static_cast<int>(MinusSign) && ChargePair[1] == static_cast<int>(PlusSign))) { // Unlike Sign Condition
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
         if ((p1.p() > 0.50)) {
-          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
+          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
 
         } else if ((p1.p() <= 0.50)) {
-          float NSigmaPion1 = p1.tpcNSigmaPion();
+          float NSigmaPion1 = p1.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
         }
         if ((p2.p() > 0.50)) {
-          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
+          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
 
         } else if ((p2.p() <= 0.50)) {
-          float NSigmaPion2 = p2.tpcNSigmaPion();
+          float NSigmaPion2 = p2.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
@@ -336,29 +336,30 @@ struct FemtoWorldPionAllPair {
 
         sameEventCont.setPair(p1, p2, multCol);
       }
-    } else if ((ChargePair[0] == PlusSign && ChargePair[1] == PlusSign) || (ChargePair[0] == MinusSign && ChargePair[1] == MinusSign)) { // Like Sign Condition
+    } else if ((ChargePair[0] == static_cast<int>(PlusSign) && ChargePair[1] == static_cast<int>(PlusSign)) || (ChargePair[0] == static_cast<int>(MinusSign) && ChargePair[1] == static_cast<int>(MinusSign))) { // Like Sign Condition
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
 
         if ((p1.p() > 0.50)) {
-          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
+          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
 
         } else if ((p1.p() <= 0.50)) {
-          float NSigmaPion1 = p1.tpcNSigmaPion();
+          float NSigmaPion1 = p1.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
         }
         if ((p2.p() > 0.50)) {
-          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
+          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
 
         } else if ((p2.p() <= 0.50)) {
-          float NSigmaPion2 = p2.tpcNSigmaPion();
+          float NSigmaPion2 = p2.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
@@ -405,25 +406,25 @@ struct FemtoWorldPionAllPair {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
         if ((p1.p() > 0.50)) {
-          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
+          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
 
         } else if ((p1.p() <= 0.50)) {
-          float NSigmaPion1 = p1.tpcNSigmaPion();
+          float NSigmaPion1 = p1.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
         }
         if ((p2.p() > 0.50)) {
-          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
+          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
 
         } else if ((p2.p() <= 0.50)) {
-          float NSigmaPion2 = p2.tpcNSigmaPion();
+          float NSigmaPion2 = p2.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
@@ -441,14 +442,6 @@ struct FemtoWorldPionAllPair {
 
   PROCESS_SWITCH(FemtoWorldPionAllPair, processMixedEvent, "Enable processing mixed events", true);
 };
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoWorldPionAllPair>(cfgc),
-  };
-  return workflow;
-}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

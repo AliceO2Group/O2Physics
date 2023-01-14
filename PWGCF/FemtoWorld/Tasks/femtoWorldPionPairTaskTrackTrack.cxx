@@ -235,13 +235,13 @@ struct femtoWorldPionPairTaskTrackTrack {
     for (auto& part : groupPartsOne) {
       if ((part.p() > 0.50)) {
 
-        float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion()) + TMath::Sq(part.tofNSigmaPion()));
+        float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPi()) + TMath::Sq(part.tofNSigmaPi()));
         if (!IsPionNSigma(NSigmaPion)) {
           continue;
         }
 
       } else if ((part.p() <= 0.50)) {
-        float NSigmaPion = part.tpcNSigmaPion();
+        float NSigmaPion = part.tpcNSigmaPi();
         if (!IsPionNSigma(NSigmaPion)) {
           continue;
         }
@@ -256,13 +256,13 @@ struct femtoWorldPionPairTaskTrackTrack {
       for (auto& part : groupPartsTwo) {
         if ((part.p() > 0.50)) {
 
-          float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPion()) + TMath::Sq(part.tofNSigmaPion()));
+          float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPi()) + TMath::Sq(part.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion)) {
             continue;
           }
 
         } else if ((part.p() <= 0.50)) {
-          float NSigmaPion = part.tpcNSigmaPion();
+          float NSigmaPion = part.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion)) {
             continue;
           }
@@ -278,25 +278,25 @@ struct femtoWorldPionPairTaskTrackTrack {
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
 
       if ((p1.p() > 0.50)) {
-        float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
+        float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
         if (!IsPionNSigma(NSigmaPion1)) {
           continue;
         }
 
       } else if ((p1.p() <= 0.50)) {
-        float NSigmaPion1 = p1.tpcNSigmaPion();
+        float NSigmaPion1 = p1.tpcNSigmaPi();
         if (!IsPionNSigma(NSigmaPion1)) {
           continue;
         }
       }
       if ((p2.p() > 0.50)) {
-        float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
+        float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
         if (!IsPionNSigma(NSigmaPion2)) {
           continue;
         }
 
       } else if ((p2.p() <= 0.50)) {
-        float NSigmaPion2 = p2.tpcNSigmaPion();
+        float NSigmaPion2 = p2.tpcNSigmaPi();
         if (!IsPionNSigma(NSigmaPion2)) {
           continue;
         }
@@ -342,25 +342,25 @@ struct femtoWorldPionPairTaskTrackTrack {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
         if ((p1.p() > 0.50)) {
-          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPion()) + TMath::Sq(p1.tofNSigmaPion()));
+          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
 
         } else if ((p1.p() <= 0.50)) {
-          float NSigmaPion1 = p1.tpcNSigmaPion();
+          float NSigmaPion1 = p1.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion1)) {
             continue;
           }
         }
         if ((p2.p() > 0.50)) {
-          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPion()) + TMath::Sq(p2.tofNSigmaPion()));
+          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }
 
         } else if ((p2.p() <= 0.50)) {
-          float NSigmaPion2 = p2.tpcNSigmaPion();
+          float NSigmaPion2 = p2.tpcNSigmaPi();
           if (!IsPionNSigma(NSigmaPion2)) {
             continue;
           }

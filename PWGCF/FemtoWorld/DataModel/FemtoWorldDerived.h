@@ -107,8 +107,6 @@ DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                        
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCNSigmaKaon, tpcNSigmaKaon, float);                                 //! TPCNSigmaKaon
 DECLARE_SOA_COLUMN(TOFNSigmaKaon, tofNSigmaKaon, float);                                 //! TOFNSigmaKaon
-DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcNSigmaPion, float);                                 //! TPCNSigmaPion
-DECLARE_SOA_COLUMN(TOFNSigmaPion, tofNSigmaPion, float);                                 //! TOFNSigmaPion
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
@@ -150,8 +148,6 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::TPCChi2NCl,
                   femtoworldparticle::TPCNSigmaKaon,
                   femtoworldparticle::TOFNSigmaKaon,
-                  femtoworldparticle::TPCNSigmaPion,
-                  femtoworldparticle::TOFNSigmaPion,
                   femtoworldparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtoworldparticle::TPCNClsCrossedRows,
