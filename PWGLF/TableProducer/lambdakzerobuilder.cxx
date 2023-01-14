@@ -131,7 +131,7 @@ struct lambdakzeroBuilder {
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   // use auto-detect configuration
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
 
   // Topological selection criteria
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
@@ -240,9 +240,15 @@ struct lambdakzeroBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false) {
@@ -396,7 +402,8 @@ struct lambdakzeroBuilder {
         d_bz = d_bz_input;
       }
     }
-    o2::base::Propagator::Instance()->setMatLUT(lut);
+    if (useMatCorrType == 2)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
