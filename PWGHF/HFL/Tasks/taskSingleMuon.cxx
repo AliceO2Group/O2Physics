@@ -124,7 +124,7 @@ struct HfTaskSingleMuonEventSelection {
     runEventSel<gEventFillMap>(event, bcs);
   }
   PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMc, "run event selection with MC data", false);
-  
+
   void processNoEventSelection(MyCollisions::iterator const& event, aod::BCs const& bcs)
   {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
