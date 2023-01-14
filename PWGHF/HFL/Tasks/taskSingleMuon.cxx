@@ -287,7 +287,7 @@ struct HfTaskSingleMuonSelection {
 
   void processDummy(MyEventsSelected&)
   {
-    //do nothing
+    // do nothing
   }
 
   void processMuon(MyEventsSelected::iterator const& event, aod::BCs const& bcs,
