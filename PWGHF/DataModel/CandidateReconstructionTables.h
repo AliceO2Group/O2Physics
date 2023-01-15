@@ -40,13 +40,15 @@ DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
 
 namespace hf_sel_track
 {
-DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
-DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
-DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
-DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
+DECLARE_SOA_COLUMN(IsSelProngAllColls, isSelProngAllColls, std::vector<int>); //!
+DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int);                              //!
+DECLARE_SOA_COLUMN(PxProng, pxProng, float);                                  //!
+DECLARE_SOA_COLUMN(PyProng, pyProng, float);                                  //!
+DECLARE_SOA_COLUMN(PzProng, pzProng, float);                                  //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
+                  hf_sel_track::IsSelProngAllColls,
                   hf_sel_track::IsSelProng,
                   hf_sel_track::PxProng,
                   hf_sel_track::PyProng,
@@ -54,13 +56,17 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
 
 namespace hf_track_association
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                      //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);                              //! Track index
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(CompatibleColl, compatibleColl); //! Track index
 } // namespace hf_track_association
 
 DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions
                   hf_track_association::CollisionId,
                   hf_track_association::TrackId);
+
+DECLARE_SOA_TABLE(HfTrackCompColls, "AOD", "HFTRKCOMPCOLLS", //! Table with vectors of collision indices stored per track
+                  hf_track_association::CompatibleCollIds);
 
 namespace hf_pv_refit_track
 {
