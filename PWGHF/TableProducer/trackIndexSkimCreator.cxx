@@ -83,14 +83,12 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #ifdef MY_DEBUG
 using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
-using MyTracks = soa::Join<aod::BigTracks, aod::HfSelTrack, aod::TracksDCA, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
 using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
-using MyTracks = soa::Join<aod::BigTracks, aod::HfSelTrack, aod::TracksDCA>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -2344,9 +2342,13 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfTrackCompColls>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   // Partition<MyTracks> selectedTracks = aod::hf_sel_track::isSelProng >= 4;
+
+  Preslice<SelectedTracks> tracksPerCollision = aod::track::collisionId; // needed for PV refit
+  Preslice<HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
 
   // histograms
   HistogramRegistry registry{"registry"};
@@ -2376,191 +2378,203 @@ struct HfTrackIndexSkimCreatorCascades {
 
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do v0", true);
 
-  void processCascades(SelectedCollisions::iterator const& collision,
+  void processCascades(SelectedCollisions const& collisions,
                        aod::BCsWithTimestamps const&,
                        // soa::Filtered<aod::V0Datas> const& V0s,
                        aod::V0Datas const& V0s,
-                       MyTracks const& tracks
+                       HfTrackAssoc const& trackIndices,
+                       SelectedTracks const& tracks
 #ifdef MY_DEBUG
                        ,
                        aod::McParticles& mcParticles
 #endif
                        ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
+    for (const auto& collision : collisions) {
+      // set the magnetic field from CCDB
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
-    // set the magnetic field from CCDB
-    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, nullptr, isRun2);
+      // Define o2 fitter, 2-prong
+      o2::vertexing::DCAFitterN<2> fitter;
+      fitter.setBz(o2::base::Propagator::Instance()->getNominalBz());
+      fitter.setPropagateToPCA(propagateToPCA);
+      fitter.setMaxR(maxR);
+      fitter.setMinParamChange(minParamChange);
+      fitter.setMinRelChi2Change(minRelChi2Change);
+      // fitter.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
+      // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
+      fitter.setUseAbsDCA(useAbsDCA);
 
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(o2::base::Propagator::Instance()->getNominalBz());
-    fitter.setPropagateToPCA(propagateToPCA);
-    fitter.setMaxR(maxR);
-    fitter.setMinParamChange(minParamChange);
-    fitter.setMinRelChi2Change(minRelChi2Change);
-    // fitter.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
-    // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
-    fitter.setUseAbsDCA(useAbsDCA);
+      // fist we loop over the bachelor candidate
 
-    // fist we loop over the bachelor candidate
+      auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
-    // for (const auto& bach : selectedTracks) {
-    for (const auto& bach : tracks) {
+      // for (const auto& bach : selectedTracks) {
+      for (const auto& bachIdx : groupedBachTrackIndices) {
+        auto bach = bachIdx.track_as<SelectedTracks>();
 
-      MY_DEBUG_MSG(1, printf("\n"); LOG(info) << "Bachelor loop");
+        MY_DEBUG_MSG(1, printf("\n"); LOG(info) << "Bachelor loop");
 #ifdef MY_DEBUG
-      auto indexBach = bach.mcParticleId();
-      bool isProtonFromLc = isProtonFromLcFunc(indexBach, indexProton);
+        auto indexBach = bach.mcParticleId();
+        bool isProtonFromLc = isProtonFromLcFunc(indexBach, indexProton);
 #endif
-      // selections on the bachelor
-      // pT cut
-      if (bach.isSelProng() < 4) {
-        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to HFsel");
-        continue;
-      }
+        // selections on the bachelor
 
-      if (tpcRefitBach) {
-        if (!(bach.trackType() & o2::aod::track::TPCrefit)) {
-          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to TPCrefit");
+        // // retrieve the selection flag that corresponds to this collision
+        int isSelProngBach = bach.isSelProng();
+        for (auto iCollId{0u}; iCollId < bach.compatibleCollIds().size(); ++iCollId) {
+          if (bach.compatibleCollIds()[iCollId] == collision.globalIndex()) {
+            isSelProngBach = bach.isSelProngAllColls()[iCollId];
+            break;
+          }
+        }
+
+        // pT cut
+        if (!TESTBIT(isSelProngBach, CandidateType::CandV0bachelor)) {
+          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to HFsel");
           continue;
         }
-      }
-      if (bach.tpcNClsCrossedRows() < nCrossedRowsMinBach) {
-        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to minNUmberOfCrossedRows " << bach.tpcNClsCrossedRows() << " (cut " << nCrossedRowsMinBach << ")");
-        continue;
-      }
-      MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "KEPT! proton from Lc with daughters " << indexBach);
-
-      auto trackBach = getTrackParCov(bach);
-      // now we loop over the V0s
-      for (const auto& v0 : V0s) {
-        MY_DEBUG_MSG(1, LOG(info) << "*** Checking next K0S");
-        // selections on the V0 daughters
-        const auto& trackV0DaughPos = v0.posTrack_as<MyTracks>();
-        const auto& trackV0DaughNeg = v0.negTrack_as<MyTracks>();
-#ifdef MY_DEBUG
-        auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
-        auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
-        bool isK0SfromLc = isK0SfromLcFunc(indexV0DaughPos, indexV0DaughNeg, indexK0Spos, indexK0Sneg);
-
-        bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
-#endif
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S from Lc found, trackV0DaughPos --> " << indexV0DaughPos << ", trackV0DaughNeg --> " << indexV0DaughNeg);
-
-        MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc,
-                     LOG(info) << "ACCEPTED!!!";
-                     LOG(info) << "proton belonging to a Lc found: label --> " << indexBach;
-                     LOG(info) << "K0S belonging to a Lc found: trackV0DaughPos --> " << indexV0DaughPos << ", trackV0DaughNeg --> " << indexV0DaughNeg);
-
-        MY_DEBUG_MSG(isLc, LOG(info) << "Combination of K0S and p which correspond to a Lc found!");
-
-        if (tpcRefitV0Daugh) {
-          if (!(trackV0DaughPos.trackType() & o2::aod::track::TPCrefit) ||
-              !(trackV0DaughNeg.trackType() & o2::aod::track::TPCrefit)) {
-            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to TPCrefit");
+        if (tpcRefitBach) {
+          if (!(bach.trackType() & o2::aod::track::TPCrefit)) {
+            MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to TPCrefit");
             continue;
           }
         }
-        if (trackV0DaughPos.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh ||
-            trackV0DaughNeg.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minCrossedRows");
+        if (bach.tpcNClsCrossedRows() < nCrossedRowsMinBach) {
+          MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to minNUmberOfCrossedRows " << bach.tpcNClsCrossedRows() << " (cut " << nCrossedRowsMinBach << ")");
           continue;
         }
-        //
-        // if (trackV0DaughPos.dcaXY() < dcaXYPosToPvMin ||   // to the filters?
-        //     trackV0DaughNeg.dcaXY() < dcaXYNegToPvMin) {
-        //   continue;
-        // }
-        //
-        if (trackV0DaughPos.pt() < ptMinV0Daugh || // to the filters? I can't for now, it is not in the tables
-            trackV0DaughNeg.pt() < ptMinV0Daugh) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMinV0Daugh << ")");
-          continue;
+        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "KEPT! proton from Lc with daughters " << indexBach);
+
+        auto trackBach = getTrackParCov(bach);
+        // now we loop over the V0s
+        for (const auto& v0 : V0s) {
+          MY_DEBUG_MSG(1, LOG(info) << "*** Checking next K0S");
+          // selections on the V0 daughters
+          const auto& trackV0DaughPos = v0.posTrack_as<SelectedTracks>();
+          const auto& trackV0DaughNeg = v0.negTrack_as<SelectedTracks>();
+#ifdef MY_DEBUG
+          auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
+          auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
+          bool isK0SfromLc = isK0SfromLcFunc(indexV0DaughPos, indexV0DaughNeg, indexK0Spos, indexK0Sneg);
+
+          bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
+#endif
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S from Lc found, trackV0DaughPos --> " << indexV0DaughPos << ", trackV0DaughNeg --> " << indexV0DaughNeg);
+
+          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc,
+                       LOG(info) << "ACCEPTED!!!";
+                       LOG(info) << "proton belonging to a Lc found: label --> " << indexBach;
+                       LOG(info) << "K0S belonging to a Lc found: trackV0DaughPos --> " << indexV0DaughPos << ", trackV0DaughNeg --> " << indexV0DaughNeg);
+
+          MY_DEBUG_MSG(isLc, LOG(info) << "Combination of K0S and p which correspond to a Lc found!");
+
+          if (tpcRefitV0Daugh) {
+            if (!(trackV0DaughPos.trackType() & o2::aod::track::TPCrefit) ||
+                !(trackV0DaughNeg.trackType() & o2::aod::track::TPCrefit)) {
+              MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to TPCrefit");
+              continue;
+            }
+          }
+          if (trackV0DaughPos.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh ||
+              trackV0DaughNeg.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh) {
+            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minCrossedRows");
+            continue;
+          }
+          //
+          // if (trackV0DaughPos.dcaXY() < dcaXYPosToPvMin ||   // to the filters?
+          //     trackV0DaughNeg.dcaXY() < dcaXYNegToPvMin) {
+          //   continue;
+          // }
+          //
+          if (trackV0DaughPos.pt() < ptMinV0Daugh || // to the filters? I can't for now, it is not in the tables
+              trackV0DaughNeg.pt() < ptMinV0Daugh) {
+            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMinV0Daugh << ")");
+            continue;
+          }
+          if (std::abs(trackV0DaughPos.eta()) > etaMaxV0Daugh || // to the filters? I can't for now, it is not in the tables
+              std::abs(trackV0DaughNeg.eta()) > etaMaxV0Daugh) {
+            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to eta --> pos " << trackV0DaughPos.eta() << ", neg " << trackV0DaughNeg.eta() << " (cut " << etaMaxV0Daugh << ")");
+            continue;
+          }
+
+          // V0 invariant mass selection
+          if (std::abs(v0.mK0Short() - massK0s) > cutInvMassV0) {
+            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to invMass --> " << v0.mK0Short() - massK0s << " (cut " << cutInvMassV0 << ")");
+            continue; // should go to the filter, but since it is a dynamic column, I cannot use it there
+          }
+
+          // V0 cosPointingAngle selection
+          if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cpaV0Min) {
+            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cpaV0Min << ")");
+            continue;
+          }
+
+          const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
+
+          // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
+          // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
+          mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
+          if ((cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutInvMassCascLc)) {
+            MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")");
+            continue;
+          }
+
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "KEPT! K0S from Lc with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg);
+
+          auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos);
+          trackParCovV0DaughPos.propagateTo(v0.posX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
+          auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg);
+          trackParCovV0DaughNeg.propagateTo(v0.negX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
+          std::array<float, 3> pVecV0 = {0., 0., 0.};
+          std::array<float, 3> pVecBach = {0., 0., 0.};
+
+          const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+          // we build the neutral track to then build the cascade
+          auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg, {0, 0}, {0, 0}); // build the V0 track
+
+          // now we find the DCA between the V0 and the bachelor, for the cascade
+          int nCand2 = fitter.process(trackV0, trackBach);
+          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "Fitter result = " << nCand2 << " proton = " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
+          MY_DEBUG_MSG(isLc, LOG(info) << "Fitter result for true Lc = " << nCand2);
+          if (nCand2 == 0) {
+            continue;
+          }
+          fitter.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
+          fitter.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
+          fitter.getTrack(1).getPxPyPzGlo(pVecBach);
+
+          // cascade candidate pT cut
+          auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
+          if (ptCascCand < ptCascCandMin) {
+            MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to pt cut: " << ptCascCand << " (cut " << ptCascCandMin << ")");
+            continue;
+          }
+
+          // invariant mass
+          // re-calculate invariant masses with updated momenta, to fill the histogram
+          mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
+
+          std::array<float, 3> posCasc = {0., 0., 0.};
+          const auto& cascVtx = fitter.getPCACandidate();
+          for (int i = 0; i < 3; i++) {
+            posCasc[i] = cascVtx[i];
+          }
+
+          // fill table row
+          rowTrackIndexCasc(bach.globalIndex(),
+                            v0.v0Id());
+          // fill histograms
+          if (fillHistograms) {
+            MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
+            registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
+            registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
+            registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
+            registry.fill(HIST("hMassLcToPK0S"), mass2K0sP);
+          }
         }
-        if (std::abs(trackV0DaughPos.eta()) > etaMaxV0Daugh || // to the filters? I can't for now, it is not in the tables
-            std::abs(trackV0DaughNeg.eta()) > etaMaxV0Daugh) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to eta --> pos " << trackV0DaughPos.eta() << ", neg " << trackV0DaughNeg.eta() << " (cut " << etaMaxV0Daugh << ")");
-          continue;
-        }
-
-        // V0 invariant mass selection
-        if (std::abs(v0.mK0Short() - massK0s) > cutInvMassV0) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to invMass --> " << v0.mK0Short() - massK0s << " (cut " << cutInvMassV0 << ")");
-          continue; // should go to the filter, but since it is a dynamic column, I cannot use it there
-        }
-
-        // V0 cosPointingAngle selection
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cpaV0Min) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cpaV0Min << ")");
-          continue;
-        }
-
-        const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
-
-        // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
-        // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
-        mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
-        if ((cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutInvMassCascLc)) {
-          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")");
-          continue;
-        }
-
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "KEPT! K0S from Lc with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg);
-
-        auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos);
-        trackParCovV0DaughPos.propagateTo(v0.posX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
-        auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg);
-        trackParCovV0DaughNeg.propagateTo(v0.negX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
-        std::array<float, 3> pVecV0 = {0., 0., 0.};
-        std::array<float, 3> pVecBach = {0., 0., 0.};
-
-        const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-        // we build the neutral track to then build the cascade
-        auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg, {0, 0}, {0, 0}); // build the V0 track
-
-        // now we find the DCA between the V0 and the bachelor, for the cascade
-        int nCand2 = fitter.process(trackV0, trackBach);
-        MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "Fitter result = " << nCand2 << " proton = " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
-        MY_DEBUG_MSG(isLc, LOG(info) << "Fitter result for true Lc = " << nCand2);
-        if (nCand2 == 0) {
-          continue;
-        }
-        fitter.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
-        fitter.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
-        fitter.getTrack(1).getPxPyPzGlo(pVecBach);
-
-        // cascade candidate pT cut
-        auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
-        if (ptCascCand < ptCascCandMin) {
-          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to pt cut: " << ptCascCand << " (cut " << ptCascCandMin << ")");
-          continue;
-        }
-
-        // invariant mass
-        // re-calculate invariant masses with updated momenta, to fill the histogram
-        mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
-
-        std::array<float, 3> posCasc = {0., 0., 0.};
-        const auto& cascVtx = fitter.getPCACandidate();
-        for (int i = 0; i < 3; i++) {
-          posCasc[i] = cascVtx[i];
-        }
-
-        // fill table row
-        rowTrackIndexCasc(bach.globalIndex(),
-                          v0.v0Id());
-        // fill histograms
-        if (fillHistograms) {
-          MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
-          registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
-          registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
-          registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
-          registry.fill(HIST("hMassLcToPK0S"), mass2K0sP);
-        }
-
-      } // loop over V0s
-
+      }
     } // loop over tracks
   }   // process
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim also V0", false);
