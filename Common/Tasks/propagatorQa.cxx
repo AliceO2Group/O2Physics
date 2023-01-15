@@ -34,10 +34,10 @@ using namespace o2::framework::expressions;
 
 struct propagatorQa {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  
+
   int mRunNumber;
   float d_bz;
-  
+
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
   Configurable<int> NbinsDCA{"NbinsDCA", 2000, "NbinsDCA"};
@@ -45,7 +45,7 @@ struct propagatorQa {
   Configurable<float> maxXtoConsider{"maxXtoConsider", 10000, "max X to consider"};
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  
+
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -54,7 +54,7 @@ struct propagatorQa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   o2::track::TrackPar lTrackParametrization;
-  
+
   void init(InitContext& context)
   {
     mRunNumber = 0;
@@ -64,13 +64,13 @@ struct propagatorQa {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    
-    //output objects
+
+    // output objects
     const AxisSpec axisX{(int)NbinsX, 0.0f, +250.0f, "X value"};
     const AxisSpec axisDCAxy{(int)NbinsDCA, -windowDCA, windowDCA, "DCA_{xy} (cm)"};
     const AxisSpec axisPt{(int)NbinsPt, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    
-    //All tracks
+
+    // All tracks
     histos.add("hTrackX", "hTrackX", kTH1F, {axisX});
     histos.add("hUpdateRadii", "hUpdateRadii", kTH1F, {axisX});
     histos.add("hdcaXYall", "hdcaXYall", kTH1F, {axisDCAxy});
@@ -82,8 +82,8 @@ struct propagatorQa {
     histos.add("hCircleDCAVsDCA", "hCircleDCAVsDCA", kTH2F, {axisDCAxy, axisDCAxy});
     histos.add("hDeltaDCAs", "hDeltaDCAs", kTH1F, {axisDCAxy});
     histos.add("hDeltaDCAsVsPt", "hDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
-    
-    //Primaries
+
+    // Primaries
     histos.add("hPrimaryTrackX", "hPrimaryTrackX", kTH1F, {axisX});
     histos.add("hPrimaryUpdateRadii", "hPrimaryUpdateRadii", kTH1F, {axisX});
     histos.add("hPrimarydcaXYall", "hPrimarydcaXYall", kTH1F, {axisDCAxy});
@@ -95,12 +95,12 @@ struct propagatorQa {
     histos.add("hPrimaryCircleDCAVsDCA", "hPrimaryCircleDCAVsDCA", kTH2F, {axisDCAxy, axisDCAxy});
     histos.add("hPrimaryDeltaDCAs", "hPrimaryDeltaDCAs", kTH1F, {axisDCAxy});
     histos.add("hPrimaryDeltaDCAsVsPt", "hPrimaryDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
-    
-    //Used in vertexer
+
+    // Used in vertexer
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
   }
-  
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -139,13 +139,13 @@ struct propagatorQa {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    
+
     for (auto& track : tracks) {
-      if (!track.has_mcParticle() )
+      if (!track.has_mcParticle())
         continue;
       auto mctrack = track.mcParticle();
       bool lIsPrimary = mctrack.isPhysicalPrimary();
-      
+
       if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
         continue;
 
@@ -154,9 +154,9 @@ struct propagatorQa {
       lTrackParametrization.getXYZGlo(pos);
       float lRadiusOfLastUpdate = TMath::Sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
       float lDCA = track.dcaXY();
-      
+
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-      //Simple snippet for analytical DCA (no e-loss)
+      // Simple snippet for analytical DCA (no e-loss)
       // |<----L---->|
       // |<-R->|<-d->|
       // *-----)     X
@@ -168,12 +168,11 @@ struct propagatorQa {
       lTrackParametrization.getCircleParams(d_bz, lCircle, sna, csa);
       float lR = lCircle.rC;
       float lL = TMath::Sqrt(
-                             TMath::Power(lCircle.xC-collision.posX(), 2)+
-                             TMath::Power(lCircle.yC-collision.posY(), 2)
-                             );
-      float lCircleDCA = lTrackParametrization.getSign()*(lL-lR); //signed dca
+        TMath::Power(lCircle.xC - collision.posX(), 2) +
+        TMath::Power(lCircle.yC - collision.posY(), 2));
+      float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-      
+
       histos.fill(HIST("hUpdateRadii"), lRadiusOfLastUpdate);
       histos.fill(HIST("hTrackX"), lTrackParametrization.getX());
       histos.fill(HIST("hdcaXYall"), lDCA);
@@ -185,8 +184,8 @@ struct propagatorQa {
       histos.fill(HIST("hCircleDCAVsDCA"), lDCA, lCircleDCA);
       histos.fill(HIST("hDeltaDCAs"), lCircleDCA - lDCA);
       histos.fill(HIST("hDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
-      
-      if( lIsPrimary ){
+
+      if (lIsPrimary) {
         histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
         histos.fill(HIST("hPrimaryTrackX"), lTrackParametrization.getX());
         histos.fill(HIST("hPrimarydcaXYall"), lDCA);
