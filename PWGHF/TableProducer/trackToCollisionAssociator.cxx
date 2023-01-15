@@ -28,14 +28,23 @@ using namespace o2::aod;
 
 struct HfTrackToCollisionAssociation {
   Produces<HfTrackAssoc> association;
+  Produces<HfTrackCompColls> reverseIndices;
+
+  Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 3.f, "number of sigmas for time compatibility"};
 
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
 
-  void process(Collisions const& collisions,
-               soa::Filtered<TracksWithSel> const& tracks,
-               BCs const& bcs)
+  void processAssocWithTime(Collisions const& collisions,
+                            TracksWithSel const& tracksUnfiltered,
+                            soa::Filtered<TracksWithSel> const& tracks,
+                            BCs const& bcs)
   {
+    std::vector<int>** collsPerTrack = new std::vector<int>*[tracksUnfiltered.size()];
+    memset(collsPerTrack, 0x0, sizeof(collsPerTrack) * tracksUnfiltered.size());
+
+    // loop over collisions to find time-compatible tracks
+    float nSigmaForTimeCompat2 = nSigmaForTimeCompat * nSigmaForTimeCompat;
     auto trackBegin = tracks.begin();
     const auto bOffsetMax = 241;
     for (const auto& collision : collisions) {
@@ -48,7 +57,17 @@ struct HfTrackToCollisionAssociation {
           continue;
         }
         int64_t bcOffset = (int64_t)track.collision().bc().globalBC() - (int64_t)collBC;
-        float deltaTime = track.trackTime() - collTime + bcOffset * 25.f;
+        float trackTime{0.};
+        float trackTimeRes2{0.};
+        if (track.isPVContributor()) {
+          trackTime = track.collision().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
+          trackTimeRes2 = 25.f;                          // 1 BC
+        } else {
+          trackTime = track.trackTime();
+          trackTimeRes2 = track.trackTimeRes() * track.trackTimeRes();
+        }
+        float deltaTime = trackTime - collTime + bcOffset * 25.f;
+        float sigmaTimeRes2 = collTimeRes2 + trackTimeRes2;
         LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, track.collision().bc().globalBC(), deltaTime);
         if (!iteratorMoved && bcOffset > -bOffsetMax) {
           trackBegin.setCursor(track.filteredIndex());
@@ -58,15 +77,65 @@ struct HfTrackToCollisionAssociation {
           LOGP(debug, "Stopping iterator {}", track.globalIndex());
           break;
         }
-        float sigmaTimeRes2 = collTimeRes2 + track.trackTimeRes() * track.trackTimeRes();
-        if (deltaTime * deltaTime < 9 * sigmaTimeRes2) {
-          LOGP(debug, "Filling track id {} for coll id {}", track.globalIndex(), collision.globalIndex());
-          association(collision.globalIndex(), track.globalIndex());
+        if (deltaTime * deltaTime < nSigmaForTimeCompat2 * sigmaTimeRes2) {
+          auto collIdx = collision.globalIndex();
+          auto trackIdx = track.globalIndex();
+          LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
+          if (collsPerTrack[trackIdx] == nullptr) {
+            collsPerTrack[trackIdx] = new std::vector<int>;
+          }
+          collsPerTrack[trackIdx]->push_back(collIdx);
+          association(collIdx, trackIdx);
         }
       }
     }
-    LOGP(info, "Table association size {}, table track size {}", association.lastIndex(), tracks.size());
+
+    // create reverse index track to collisions
+    std::vector<int> empty{};
+    for (const auto& track : tracksUnfiltered) {
+      LOGP(debug, "Track id {}", track.globalIndex());
+      if (collsPerTrack[track.globalIndex()] == nullptr) {
+        reverseIndices(empty);
+      } else {
+        // for (const auto& collId : *collsPerTrack[track.globalIndex()]) {
+        //   LOGP(info, "  -> Coll id {}", collId);
+        // }
+        reverseIndices(*collsPerTrack[track.globalIndex()]);
+      }
+    }
+
+    for (int iTrack{0u}; iTrack < tracksUnfiltered.size(); ++iTrack) {
+      delete collsPerTrack[iTrack];
+    }
+    delete[] collsPerTrack;
   }
+
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
+
+  Preslice<Tracks> perCollision = o2::aod::track::collisionId;
+
+  void processStandardAssoc(Collisions const& collisions,
+                            Tracks const& tracks)
+  {
+    for (const auto& collision : collisions) { // we do it for all tracks, to be compatible with Run2 analyses
+      uint64_t collIdx = collision.globalIndex();
+      auto tracksPerCollision = tracks.sliceBy(perCollision, collIdx);
+      for (const auto& track : tracksPerCollision) {
+        association(collIdx, track.globalIndex());
+      }
+    }
+
+    std::vector<int> empty{};
+    for (const auto& track : tracks) {
+      if (!track.has_collision()) {
+        reverseIndices(empty);
+      } else {
+        reverseIndices(std::vector<int>{track.collisionId()});
+      }
+    }
+  }
+
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", true);
 };
 
 //________________________________________________________________________________________________________________________
