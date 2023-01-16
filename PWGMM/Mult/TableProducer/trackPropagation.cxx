@@ -90,10 +90,6 @@ struct AmbiguousTrackPropagation {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
-    }
   }
 
   void initCCDB(ExtBCs::iterator const& bc)
