@@ -232,7 +232,7 @@ struct DQEventQvector {
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runFillQvector(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracks1)
+  void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const& bcs, TTracks const& tracks1)
   {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<TEventFillMap>(collision);
@@ -340,19 +340,19 @@ struct DQEventQvector {
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 2
-  void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
+  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
   {
     runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks);
   }
