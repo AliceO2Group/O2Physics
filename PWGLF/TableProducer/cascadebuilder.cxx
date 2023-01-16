@@ -120,7 +120,7 @@ struct cascadeBuilder {
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
 
   // Configurables related to table creation
   Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -233,9 +233,15 @@ struct cascadeBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false) {
@@ -409,7 +415,8 @@ struct cascadeBuilder {
         d_bz = d_bz_input;
       }
     }
-    o2::base::Propagator::Instance()->setMatLUT(lut);
+    if (useMatCorrType == 2)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);

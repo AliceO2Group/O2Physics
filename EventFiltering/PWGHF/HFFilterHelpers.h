@@ -84,6 +84,12 @@ enum beautyTrackSelection {
   kRegular
 };
 
+enum PIDSpecies {
+  kEl = 0,
+  kKa,
+  kPi,
+  kPr
+};
 static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm", "softGamma"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};

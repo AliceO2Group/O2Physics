@@ -43,14 +43,14 @@ struct multFilter {
   // my track selection, discussed with Mesut and Matia
   TrackSelection myTrackSelection();
   // event selection cuts
-  Configurable<float> selHTrkMult{"selHTrkMult", 45., "global trk multiplicity threshold"};
+  Configurable<float> selHTrkMult{"selHTrkMult", 30., "global trk multiplicity threshold"};
   Configurable<float> selHMFv0{"selHMFv0", 33559.5, "FV0-amplitude threshold"};
   Configurable<float> sel1Ffv0{"sel1Ffv0", 0.93, "1-flatenicity FV0  threshold"};
-  Configurable<float> sel1Mft0{"sel1Mft0", 116.0, "FT0 mult threshold"};
-  Configurable<float> sel1Fft0{"sel1Fft0", 0.85, "1-flatenicity FT0 threshold"};
-  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 202.0, "FT0C+FV0 mult threshold"};
-  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.892, "1-flatenicity FT0C+FV0 threshold"};
-  Configurable<float> selPtTrig{"selPtTrig", 11., "track pT leading threshold"};
+  Configurable<float> sel1Mft0{"sel1Mft0", 112.0, "FT0 mult threshold"};
+  Configurable<float> sel1Fft0{"sel1Fft0", 0.845, "1-flatenicity FT0 threshold"};
+  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 187.0, "FT0C+FV0 mult threshold"};
+  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.885, "1-flatenicity FT0C+FV0 threshold"};
+  Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
 
   Produces<aod::MultFilters> tags;
 
@@ -72,9 +72,9 @@ struct multFilter {
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[8] = {100, 500, 102, 500, 102, 500, 102, 150};
+    int nBinsEst[8] = {100, 1000, 102, 700, 102, 700, 102, 150};
     float lowEdgeEst[8] = {-0.5, -0.5, -0.01, -0.5, -0.01, -0.5, -0.01, .0};
-    float upEdgeEst[8] = {99.5, 49999.5, 1.01, 499.5, 1.01, 499.5, 1.01, 150.0};
+    float upEdgeEst[8] = {99.5, 99999.5, 1.01, 699.5, 1.01, 699.5, 1.01, 150.0};
 
     // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -187,6 +187,7 @@ struct multFilter {
     return flat;
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  //  void process(aod::Collision const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
 
     bool keepEvent[kNtriggersMM]{false};

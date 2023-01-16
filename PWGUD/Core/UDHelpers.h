@@ -102,35 +102,43 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   // range of BCs to consider
   uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
   uint64_t maxBC = meanBC + (uint64_t)deltaBC;
-  LOGF(debug, "  minBC %llu maxBC %llu", minBC, maxBC);
+  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
 
   // find slice of BCs table with BC in [minBC, maxBC]
+  int64_t minBCId = bcIter.globalIndex();
   int64_t maxBCId = bcIter.globalIndex();
-  int64_t minBCId = bcs.size() - 1;
-  int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
-    LOGF(debug, "  UP  globalIndex %i globalBC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    if (bcIter.globalBC() >= minBC && bcIter.globalIndex() < minBCId) {
+
+  // lower limit
+  if (bcIter.globalBC() < minBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
+      ++bcIter;
       minBCId = bcIter.globalIndex();
     }
-    maxBCId = bcIter.globalIndex();
-    ++bcIter;
-    ++moveCount;
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > minBC) {
+      --bcIter;
+      minBCId = bcIter.globalIndex();
+    }
   }
 
-  bcIter.moveByIndex(-moveCount); // Move back to original position
-  while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
-    LOGF(debug, "  DOWN globalIndex %i globalBC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    if (bcIter.globalBC() <= maxBC && bcIter.globalIndex() > maxBCId) {
+  // upper limit limit
+  if (bcIter.globalBC() < maxBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() < maxBC) {
+      ++bcIter;
       maxBCId = bcIter.globalIndex();
     }
-    minBCId = bcIter.globalIndex();
-    --bcIter;
+
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
+      --bcIter;
+      maxBCId = bcIter.globalIndex();
+    }
   }
-  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
+  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
 
   T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
   bcs.copyIndexBindings(slice);
+  LOGF(debug, "  size of slice %d", slice.size());
   return slice;
 }
 
@@ -349,6 +357,13 @@ bool cleanFDD(T& bc, float limitA, float limitC)
 }
 
 // -----------------------------------------------------------------------------
+// FIT amplitude limits
+//  lims[0]: FV0A
+//  lims[1]: FT0A
+//  lims[2]: FT0C
+//  lims[3]: FDDA
+//  lims[4]: FDDC
+
 template <typename T>
 bool cleanFIT(T& bc, std::vector<float> lims)
 {

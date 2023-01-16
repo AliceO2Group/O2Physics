@@ -18,6 +18,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "Index.h"
 #include "TDatabasePDG.h"
@@ -54,7 +55,7 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 struct MultiplicityCounter {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
