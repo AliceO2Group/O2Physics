@@ -768,7 +768,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   } /// end of performPvRefitTrack function
 
   /// Partition for PV contributors
-  using TracksWithAssoc = soa::Join<TracksWithSelAndDCA, HfTrackCompColls>;
+  using TracksWithAssoc = soa::Join<TracksWithSelAndDCA, HfCompColls>;
   Partition<TracksWithAssoc> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
 
   void process(aod::Collisions const& collisions,
@@ -952,7 +952,7 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, n3ProngDecays> pTBins3Prong;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfTrackCompColls>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfCompColls>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   Filter filterSelectTracks = aod::hf_sel_track::isSelProng > 0;
@@ -1584,13 +1584,11 @@ struct HfTrackIndexSkimCreator {
         }
 
         // // retrieve the selection flag that corresponds to this collision
-        int isSelProngPos1 = trackPos1.isSelProng();
-        for (auto iCollId{0u}; iCollId < trackPos1.compatibleCollIds().size(); ++iCollId) {
-          if (trackPos1.compatibleCollIds()[iCollId] == collision.globalIndex()) {
-            isSelProngPos1 = trackPos1.isSelProngAllColls()[iCollId];
-            break;
-          }
-        }
+        // auto isSelProngPos1 = getSelFlagForCollision(trackPos1, collision.globalIndex());
+        const auto thisCollId = collision.globalIndex();
+        const auto compCollsIdsPos1 = trackPos1.compatibleCollIds();
+        const auto iCollIdPos1 = std::distance(compCollsIdsPos1.begin(), std::find_if(compCollsIdsPos1.begin(), compCollsIdsPos1.end(), [thisCollId](auto& collId) { return collId == thisCollId; }));
+        auto isSelProngPos1 = trackPos1.isSelProngAllColls()[iCollIdPos1];
 
         bool sel2ProngStatusPos = TESTBIT(isSelProngPos1, CandidateType::Cand2Prong);
         bool sel3ProngStatusPos1 = TESTBIT(isSelProngPos1, CandidateType::Cand3Prong);
@@ -1616,13 +1614,9 @@ struct HfTrackIndexSkimCreator {
           }
 
           // retrieve the selection flag that corresponds to this collision
-          int isSelProngNeg1 = trackNeg1.isSelProng();
-          for (auto iCollId{0u}; iCollId < trackNeg1.compatibleCollIds().size(); ++iCollId) {
-            if (trackNeg1.compatibleCollIds()[iCollId] == collision.globalIndex()) {
-              isSelProngNeg1 = trackNeg1.isSelProngAllColls()[iCollId];
-              break;
-            }
-          }
+          const auto compCollsIdsNeg1 = trackNeg1.compatibleCollIds();
+          const auto iCollIdNeg1 = std::distance(compCollsIdsNeg1.begin(), std::find_if(compCollsIdsNeg1.begin(), compCollsIdsNeg1.end(), [thisCollId](auto& collId) { return collId == thisCollId; }));
+          auto isSelProngNeg1 = trackNeg1.isSelProngAllColls()[iCollIdNeg1];
 
           bool sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
           bool sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
@@ -1810,13 +1804,10 @@ struct HfTrackIndexSkimCreator {
               }
 
               // retrieve the selection flag that corresponds to this collision
-              int isSelProngPos2 = trackPos2.isSelProng();
-              for (auto iCollId{0u}; iCollId < trackPos2.compatibleCollIds().size(); ++iCollId) {
-                if (trackPos2.compatibleCollIds()[iCollId] == collision.globalIndex()) {
-                  isSelProngPos2 = trackPos2.isSelProngAllColls()[iCollId];
-                  break;
-                }
-              }
+              const auto compCollsIdsPos2 = trackPos2.compatibleCollIds();
+              const auto iCollIdPos2 = std::distance(compCollsIdsPos2.begin(), std::find_if(compCollsIdsPos2.begin(), compCollsIdsPos2.end(), [thisCollId](auto& collId) { return collId == thisCollId; }));
+              auto isSelProngPos2 = trackPos2.isSelProngAllColls()[iCollIdPos2];
+
               if (!TESTBIT(isSelProngPos2, CandidateType::Cand3Prong)) {
                 continue;
               }
@@ -2036,13 +2027,9 @@ struct HfTrackIndexSkimCreator {
                 continue;
               }
 
-              int isSelProngNeg2 = trackNeg2.isSelProng();
-              for (auto iCollId{0u}; iCollId < trackNeg2.compatibleCollIds().size(); ++iCollId) {
-                if (trackNeg2.compatibleCollIds()[iCollId] == collision.globalIndex()) {
-                  isSelProngNeg2 = trackNeg2.isSelProngAllColls()[iCollId];
-                  break;
-                }
-              }
+              const auto compCollsIdsNeg2 = trackNeg2.compatibleCollIds();
+              const auto iCollIdNeg2 = std::distance(compCollsIdsNeg2.begin(), std::find_if(compCollsIdsNeg2.begin(), compCollsIdsNeg2.end(), [thisCollId](auto& collId) { return collId == thisCollId; }));
+              auto isSelProngNeg2 = trackNeg2.isSelProngAllColls()[iCollIdNeg2];
 
               if (!TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong)) {
                 continue;
@@ -2342,7 +2329,7 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfTrackCompColls>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfCompColls>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   // Partition<MyTracks> selectedTracks = aod::hf_sel_track::isSelProng >= 4;
@@ -2408,7 +2395,8 @@ struct HfTrackIndexSkimCreatorCascades {
 
       // fist we loop over the bachelor candidate
 
-      auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      const auto thisCollId = collision.globalIndex();
+      auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       // for (const auto& bach : selectedTracks) {
       for (const auto& bachIdx : groupedBachTrackIndices) {
@@ -2422,13 +2410,9 @@ struct HfTrackIndexSkimCreatorCascades {
         // selections on the bachelor
 
         // // retrieve the selection flag that corresponds to this collision
-        int isSelProngBach = bach.isSelProng();
-        for (auto iCollId{0u}; iCollId < bach.compatibleCollIds().size(); ++iCollId) {
-          if (bach.compatibleCollIds()[iCollId] == collision.globalIndex()) {
-            isSelProngBach = bach.isSelProngAllColls()[iCollId];
-            break;
-          }
-        }
+        const auto compCollsIdsBach = bach.compatibleCollIds();
+        const auto iCollIdBach = std::distance(compCollsIdsBach.begin(), std::find_if(compCollsIdsBach.begin(), compCollsIdsBach.end(), [thisCollId](auto& collId) { return collId == thisCollId; }));
+        auto isSelProngBach = bach.isSelProngAllColls()[iCollIdBach];
 
         // pT cut
         if (!TESTBIT(isSelProngBach, CandidateType::CandV0bachelor)) {
