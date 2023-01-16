@@ -9,12 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
+#include <Math/Vector4D.h>
+#include <TFile.h>
+#include <TLorentzVector.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TPDGCode.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/DataModel/PIDResponse.h"
@@ -32,18 +43,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Index.h"
 
-#include <TFile.h>
-#include <TLorentzVector.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 
 using namespace o2;
 using namespace o2::framework;
