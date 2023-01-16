@@ -44,7 +44,7 @@ struct HfTrackToCollisionAssociation {
     memset(collsPerTrack, 0x0, sizeof(collsPerTrack) * tracksUnfiltered.size());
 
     // loop over collisions to find time-compatible tracks
-    float nSigmaForTimeCompat2 = nSigmaForTimeCompat * nSigmaForTimeCompat;
+    const float nSigmaForTimeCompat2 = nSigmaForTimeCompat * nSigmaForTimeCompat;
     auto trackBegin = tracks.begin();
     const auto bOffsetMax = 241;
     for (const auto& collision : collisions) {
