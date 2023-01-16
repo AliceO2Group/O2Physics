@@ -9,11 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <array>
 #include <cmath>
-#include <chrono>
-#include <cstdlib>
-#include <iostream>
 
 #include <Math/Vector4D.h>
 #include <TFile.h>
