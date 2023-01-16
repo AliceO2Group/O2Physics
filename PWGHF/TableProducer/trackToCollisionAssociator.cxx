@@ -56,7 +56,7 @@ struct HfTrackToCollisionAssociation {
         if (!track.has_collision()) {
           continue;
         }
-        int64_t bcOffset = (int64_t)track.collision().bc().globalBC() - (int64_t)collBC;
+        const int64_t bcOffset = (int64_t)track.collision().bc().globalBC() - (int64_t)collBC;
         float trackTime{0.};
         float trackTimeRes2{0.};
         if (track.isPVContributor()) {
