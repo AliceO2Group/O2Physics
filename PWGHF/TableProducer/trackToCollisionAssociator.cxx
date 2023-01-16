@@ -118,7 +118,7 @@ struct HfTrackToCollisionAssociation {
                             Tracks const& tracks)
   {
     for (const auto& collision : collisions) { // we do it for all tracks, to be compatible with Run2 analyses
-      uint64_t collIdx = collision.globalIndex();
+      const uint64_t collIdx = collision.globalIndex();
       auto tracksPerCollision = tracks.sliceBy(perCollision, collIdx);
       for (const auto& track : tracksPerCollision) {
         association(collIdx, track.globalIndex());
