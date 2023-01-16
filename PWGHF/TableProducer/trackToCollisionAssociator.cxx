@@ -48,8 +48,8 @@ struct HfTrackToCollisionAssociation {
     auto trackBegin = tracks.begin();
     const auto bOffsetMax = 241;
     for (const auto& collision : collisions) {
-      float collTime = collision.collisionTime();
-      float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
+      const float collTime = collision.collisionTime();
+      const float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.bc().globalBC();
       bool iteratorMoved = false;
       for (auto track = trackBegin; track != tracks.end(); ++track) {
