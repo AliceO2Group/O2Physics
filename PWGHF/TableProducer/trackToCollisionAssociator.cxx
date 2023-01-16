@@ -78,8 +78,8 @@ struct HfTrackToCollisionAssociation {
           break;
         }
         if (deltaTime * deltaTime < nSigmaForTimeCompat2 * sigmaTimeRes2) {
-          auto collIdx = collision.globalIndex();
-          auto trackIdx = track.globalIndex();
+          const auto collIdx = collision.globalIndex();
+          const auto trackIdx = track.globalIndex();
           LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
           if (collsPerTrack[trackIdx] == nullptr) {
             collsPerTrack[trackIdx] = new std::vector<int>;
