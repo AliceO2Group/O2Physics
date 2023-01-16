@@ -21,7 +21,6 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-
 #include "bestCollisionTable.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/RecoDecay.h"
