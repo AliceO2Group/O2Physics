@@ -83,7 +83,7 @@ struct HfTrackToCollisionAssociation {
         if (!iteratorMoved && bcOffset > -bOffsetMax) {
           trackBegin.setCursor(track.filteredIndex());
           iteratorMoved = true;
-          LOGP(debug, "Moving iterator begin {}", track.globalIndex());
+          LOGP(debug, "Moving iterator begin {}", track.globalIndex()); 
         } else if (bcOffset > bOffsetMax) {
           LOGP(debug, "Stopping iterator {}", track.globalIndex());
           break;
