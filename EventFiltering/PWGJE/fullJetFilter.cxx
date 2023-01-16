@@ -8,7 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
+
+// Full Jet Filter
+// Author: Gijs van Weelden
+
+#include <cmath>
+#include <string>
+#include <TMath.h>
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -16,6 +22,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -25,36 +32,24 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
 
-// FIXME: Make these paths non-global!
-#include "/Users/gijsvanweelden/alice/O2/DataFormats/Detectors/EMCAL/include/DataFormatsEMCAL/AnalysisCluster.h"
-#include "/Users/gijsvanweelden/alice/O2/DataFormats/Detectors/EMCAL/include/DataFormatsEMCAL/Cluster.h"
+#include "DataformatsEMCAL/Cluster.h"
+#include "DataformatsEMCAL/AnalysisCluster.h"
 
 #include "../filterTables.h"
-
-#include "Framework/HistogramRegistry.h"
-
-#include <cmath>
-#include <string>
-#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
-static const std::vector<std::string> matchInfoNames {"Patch", "MatchedJet"}; //{"MB", "Patch", "MatchedJet"};
-
 struct fullJetFilter {
-  enum { //kMinimumBias = 0,
-    kPatch = 0,
-    kMatchedJet,
+  enum {
+    kJetFullHighPt = 0,
     kCategories };
 
-  OutputObj<TH1I> hProcessedEvents{"hProcessedEvents"};
-  OutputObj<TH2F> hClusterComparison{"hClusterComparison"};
+  Produces<aod::FullJetFilters> tags;
 
-  OutputObj<TH1F> hCellAmp{"hCellAmp"};
-  OutputObj<TH1F> hCellMaxAmp{"hCellMaxAmp"};
+  OutputObj<TH1I> hProcessedEvents{"hProcessedEvents"};
 
   // MB histograms
   OutputObj<TH1I> hNMBEvents{"hNMBEvents"};
@@ -68,8 +63,8 @@ struct fullJetFilter {
 
   // EMCAL histograms
   OutputObj<TH1I> hNEmcEvents{"hNEmcEvents"};
-  OutputObj<TH1I> hNEmcJets{"hNEmcJets"};
-  OutputObj<TH1I> hNEmcClusters{"hNEmcClusters"};
+  // OutputObj<TH1I> hNEmcJets{"hNEmcJets"};
+  // OutputObj<TH1I> hNEmcClusters{"hNEmcClusters"};
   OutputObj<TH1F> hEmcJetPt{"hEmcJetPt"};
   OutputObj<TH2F> hEmcJetEtaPhi{"hEmcJetEtaPhi"};
   OutputObj<TH1F> hEmcClusterPt{"hEmcClusterPt"};
@@ -108,23 +103,7 @@ struct fullJetFilter {
     Float_t kMinEta = -1.;
     Float_t kMaxEta =  1.;
 
-    // Misc. histograms
-    hCellAmp.setObject(
-      new TH1F("hCellAmp",
-               "Emc cell amp;amp",
-               10*nPtBins, kMinPt, kMaxPt
-               ));
-    hCellMaxAmp.setObject(
-      new TH1F("hCellMaxAmp",
-               "Highest amp emc cell;amp",
-               10*nPtBins, kMinPt, kMaxPt
-               ));
-    hClusterComparison.setObject(
-      new TH2F("hClusterComparison",
-               "MB jet cluster/event cluster spectra;#it{p}_{T}^{jet cl} (GeV);#it{p}_{T}^{evt cl} (GeV)",
-               nPtBins, kMinPt, kMaxPt/2, nPtBins, kMinPt, kMaxPt/2
-               ));
-
+    hProcessedEvents.setObject( new TH1I("hProcessedEvents",";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
     // MB histograms
     hNMBEvents.setObject( new TH1I("hNMBEvents", "Number of events", 1, 0, 1));
     hNMBJets.setObject( new TH1I("hNMBJets", "Number of jets per event", 100, 0, 100));
@@ -157,8 +136,8 @@ struct fullJetFilter {
 
     // EMCAL histograms
     hNEmcEvents.setObject( new TH1I("hNEmcEvents", "Number of events where EMCAL is live", 1, 0, 1));
-    hNEmcJets.setObject( new TH1I("hNEmcJets", "Number of jets per emc event", 100, 0, 100));
-    hNEmcClusters.setObject( new TH1I("hNEmcClusters", "Number of clusters per emc event", 100, 0, 100));
+    // hNEmcJets.setObject( new TH1I("hNEmcJets", "Number of jets per emc event", 100, 0, 100));
+    // hNEmcClusters.setObject( new TH1I("hNEmcClusters", "Number of clusters per emc event", 100, 0, 100));
     hEmcJetPt.setObject(
       new TH1F("hEmcJetPt",
                "Emc jet #it{p}_{T};#it{p}_{T}",
@@ -228,35 +207,38 @@ struct fullJetFilter {
     return false;
   }
 
+  // TODO: Not quite sure how to implement this yet
+  Bool_t isEvtSelected(double const& jetpt, double const& jeteta, double const& jetphi,
+                       double const& cluspt, double const& cluseta, double const& clusphi
+                       ){
+    if (jetpt > 0 && cluspt >= 0){
+      return true;
+    }
+    return false;
+  }
+
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
 
-  // In the backend, the process function matches the tables via their shared identifiers. Here: the bcID
-  // This means we only get events that also have cells
-  // We can circumvent this by using two process functions: one that knows about the cells and one that doesn't
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::Jets const& jets,
                selectedClusters const& clusters
                )
   {
     bool keepEvent[kCategories]{false};
-
-    double L0emcal = 2.5, L1emcal = 19; // EMCAL hardware JE trigger thresholds
     double maxJetPt = -1., maxClusterPt = -1., maxSelectedJetPt = -1.;
-    // maxJetClusterPt = -1., maxCellAmp = -1.;
     int nJets = jets.size(), nClusters = clusters.size();
 
     hNMBEvents->Fill(0.5); // All events, not just ones with jets and clusters
     hNMBJets->Fill(nJets);
     hNMBClusters->Fill(nClusters);
 
-    // /*
     for (const auto& jet : jets){
       hMBJetPt->Fill(jet.pt());
       hMBJetEtaPhi->Fill(jet.eta(), jet.phi());
       if (jet.pt() > maxJetPt){
         maxJetPt = jet.pt();
       }
-      if (nClusters > 0){
+      if (collision.alias()[kTVXinEMC]){
         hEmcJetPt->Fill(jet.pt());
         hEmcJetEtaPhi->Fill(jet.eta(), jet.phi());
         if (isJetInEmcal(jet)){
@@ -264,8 +246,7 @@ struct fullJetFilter {
         }
       }
     }
-    // */
-    // /*
+
     for (const auto& cluster : clusters){
       double clusterPt = cluster.energy() / std::cosh(cluster.eta());
       hMBClusterPt->Fill(clusterPt);
@@ -276,15 +257,13 @@ struct fullJetFilter {
       hEmcClusterPt->Fill(clusterPt);
       hEmcClusterEtaPhi->Fill(cluster.eta(), cluster.phi());
     }
-    // */
 
-    // /*
     hMBMaxSpectrum->Fill(maxJetPt, maxClusterPt);
-    // double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
-    if (nClusters > 0){
+    if (collision.alias()[kTVXinEMC]){
       hNEmcEvents->Fill(0.5);
       hEmcMaxSpectrum->Fill(maxJetPt, maxClusterPt);
-      if (maxSelectedJetPt >= 0 && maxClusterPt >= 0){
+      if (isEvtSelected(maxSelectedJetPt, -1, -1, maxClusterPt, -1, -1)){
+        keepEvent[kJetFullHighPt] = true;
         hNSelectedEvents->Fill(0.5);
         hSelectedMaxSpectrum->Fill(maxSelectedJetPt, maxClusterPt);
         for (const auto& jet : jets){
@@ -300,48 +279,13 @@ struct fullJetFilter {
         }
       }
     }
-    // */
 
-    /*
-    // For now, use events with a cluster as nEmcEvents
-    if (nClusters > 0){
-      hNEmcEvents->Fill(0.5);
-      hEmcMaxSpectrum->Fill(maxJetPt, maxClusterPt);
-      if (maxSelectedJetPt >= 0 && maxSelectedClusterPt >= 0){
-        hNSelectedEvents->Fill(0.5);
-        hSelectedMaxSpectrum->Fill(maxSelectedJetPt, maxSelectedClusterPt);
-      }
-      // TODO: enforce EMCAL geometry on jets here?
-      for (const auto& jet : jets){
-        hEmcJetPt->Fill(jet.pt());
-        hEmcJetEtaPhi->Fill(jet.eta(), jet.phi());
-        if (maxJetPt >= 0 && maxClusterPt >= 0){
-          if (isJetInEmcal(jet)){
-            hSelectedJetPt->Fill(jet.pt());
-            hSelectedJetEtaPhi->Fill(jet.eta(), jet.phi());
-          }
-        }
-      }
-      for (const auto& cluster : clusters){
-        double clusterPt = cluster.energy() / std::cosh(cluster.eta());
-        hEmcClusterPt->Fill(clusterPt);
-        hEmcClusterEtaPhi->Fill(cluster.eta(), cluster.phi());
-        if (maxJetPt >= 0 && maxClusterPt >= 0){
-          hSelectedClusterPt->Fill(clusterPt);
-          hSelectedClusterEtaPhi->Fill(cluster.eta(), cluster.phi());
-        }
-      }
-    }
-    // */
-
-    // /*
     for (int iDecision{0}; iDecision < kCategories; iDecision++){
       if (keepEvent[iDecision]) {
         hProcessedEvents->Fill(iDecision);
       }
     }
-    // */
-    // tags(keepEvent[0], keepEvent[1]);
+    tags(collision, keepEvent[0]);
   } // process()
 };
 
