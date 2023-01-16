@@ -66,7 +66,7 @@ struct HfTrackToCollisionAssociation {
           trackTime = track.trackTime();
           trackTimeRes2 = track.trackTimeRes() * track.trackTimeRes();
         }
-        float deltaTime = trackTime - collTime + bcOffset * 25.f;
+        const float deltaTime = trackTime - collTime + bcOffset * 25.f;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes2;
         LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, track.collision().bc().globalBC(), deltaTime);
         if (!iteratorMoved && bcOffset > -bOffsetMax) {
