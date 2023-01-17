@@ -241,6 +241,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kRap] = "";
   fgVariableNames[kMass] = "mass";
   fgVariableUnits[kMass] = "GeV/c2";
+  fgVariableNames[kDeltaPtotTracks] = "#it{p}_{Tot}^{#mu+} - #it{p}_{Tot}^{#mu-}";
+  fgVariableUnits[kDeltaPtotTracks] = "GeV/c";
   fgVariableNames[kCharge] = "charge";
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";
