@@ -86,8 +86,8 @@ struct MultiplicityQa {
     const AxisSpec axisMultNTracks2d{(int)NBinsMultNTracks2d, 0, MaxMultNTracks, "Track counter"};
 
     const AxisSpec axisVertexZ{(int)NBinsVertexZ, -20, 20, "Vertex Z (cm)"};
-    const AxisSpec axisContributorsTRD{(int)NBinsNContributors, -0.5f, MaxNContributors-0.5f, "N_{contribs}^{TRD}"};
-    const AxisSpec axisContributorsTOF{(int)NBinsNContributors, -0.5f, MaxNContributors-0.5f, "N_{contribs}^{TOF}"};
+    const AxisSpec axisContributorsTRD{(int)NBinsNContributors, -0.5f, MaxNContributors - 0.5f, "N_{contribs}^{TRD}"};
+    const AxisSpec axisContributorsTOF{(int)NBinsNContributors, -0.5f, MaxNContributors - 0.5f, "N_{contribs}^{TOF}"};
 
     //Base histograms
     histos.add("multiplicityQa/hEventCounter", "Event counter", kTH1D, {axisEvent});
@@ -126,7 +126,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hNchProfileFT0C", "FT0C", kTH2F, {axisMultFT0C2d, axisMultNTracks2d});
     histos.add("multiplicityQa/hNchProfileFDD", "FDD", kTH2F, {axisMultFDD2d, axisMultNTracks2d});
 
-    //Contributors correlation
+    // Contributors correlation
     histos.add("h2dNContribCorrAll", "h2dNContribCorrAll", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
@@ -257,7 +257,7 @@ struct MultiplicityQa {
     if (selection != 7 && selection != 8) {
       LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8`");
     }
-    
+
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
