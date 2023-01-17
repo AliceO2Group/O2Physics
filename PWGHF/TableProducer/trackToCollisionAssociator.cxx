@@ -31,6 +31,7 @@ struct HfTrackToCollisionAssociation {
   Produces<HfCompColls> reverseIndices;
 
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 3.f, "number of sigmas for time compatibility"};
+  Configurable<float> timeMargin{"timeMargin", 0., "time margin in ns added to uncertainty because of uncalibrated TPC"};
 
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
@@ -43,7 +44,6 @@ struct HfTrackToCollisionAssociation {
     std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
 
     // loop over collisions to find time-compatible tracks
-    const float nSigmaForTimeCompat2 = nSigmaForTimeCompat * nSigmaForTimeCompat;
     auto trackBegin = tracks.begin();
     const auto bOffsetMax = 241; // 6 mus (ITS)
     for (const auto& collision : collisions) {
@@ -57,16 +57,16 @@ struct HfTrackToCollisionAssociation {
         }
         const int64_t bcOffset = (int64_t)track.collision().bc().globalBC() - (int64_t)collBC;
         float trackTime{0.};
-        float trackTimeRes2{0.};
+        float trackTimeRes{0.};
         if (track.isPVContributor()) {
           trackTime = track.collision().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
-          trackTimeRes2 = 625.f;                         // 1 BC
+          trackTimeRes = 25.f;                           // 1 BC
         } else {
           trackTime = track.trackTime();
-          trackTimeRes2 = track.trackTimeRes() * track.trackTimeRes();
+          trackTimeRes = track.trackTimeRes();
         }
         const float deltaTime = trackTime - collTime + bcOffset * 25.f;
-        float sigmaTimeRes2 = collTimeRes2 + trackTimeRes2;
+        float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
         LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, track.collision().bc().globalBC(), deltaTime);
         // optimization to avoid looping over the full track list each time. This assumes that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)
         if (!iteratorMoved && bcOffset > -bOffsetMax) {
@@ -77,7 +77,17 @@ struct HfTrackToCollisionAssociation {
           LOGP(debug, "Stopping iterator {}", track.globalIndex());
           break;
         }
-        if (deltaTime * deltaTime < ((track.isPVContributor() || TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) ? 1.f : nSigmaForTimeCompat2) * sigmaTimeRes2) {
+
+        float thresholdTime = 0.;
+        if (track.isPVContributor()) {
+          thresholdTime = trackTimeRes;
+        } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
+          thresholdTime = std::sqrt(sigmaTimeRes2) + timeMargin;
+        } else {
+          thresholdTime = nSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + timeMargin;
+        }
+
+        if (std::abs(deltaTime) < thresholdTime) {
           const auto collIdx = collision.globalIndex();
           const auto trackIdx = track.globalIndex();
           LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
