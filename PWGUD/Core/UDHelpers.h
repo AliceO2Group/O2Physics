@@ -115,17 +115,17 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
       minBCId = bcIter.globalIndex();
     }
   } else {
-    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > minBC) {
-      --bcIter;
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
       minBCId = bcIter.globalIndex();
+      --bcIter;
     }
   }
 
   // upper limit limit
   if (bcIter.globalBC() < maxBC) {
-    while (bcIter != bcs.end() && bcIter.globalBC() < maxBC) {
-      ++bcIter;
+    while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
       maxBCId = bcIter.globalIndex();
+      ++bcIter;
     }
 
   } else {
