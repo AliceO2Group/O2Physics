@@ -66,7 +66,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC;
 
     // loop over all tracks and fill tracksInBCList
-    LOGF(info, "Number of barrel tracks: %d", tracks.size());
+    LOGF(debug, "Number of barrel tracks: %d", tracks.size());
     for (auto const& track : tracks) {
       registry.get<TH1>(HIST("barrelTracks"))->Fill(0., 1.);
       auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
@@ -77,25 +77,25 @@ struct tracksWGTInBCs {
       }
 
       // only consider tracks with good timing
-      LOGF(info, "Track time %f resolution %f", track.trackTime(), track.trackTimeRes());
+      LOGF(debug, "Track time %f resolution %f", track.trackTime(), track.trackTimeRes());
       if (track.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
         registry.get<TH1>(HIST("barrelTracks"))->Fill(3., 1.);
 
         // get first compatible BC
         // auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
-        LOGF(info, "Size of ambTracksSlice %d", ambTracksSlice.size());
+        LOGF(debug, "Size of ambTracksSlice %d", ambTracksSlice.size());
         if (ambTracksSlice.size() > 0) {
           registry.get<TH1>(HIST("barrelTracks"))->Fill(4., 1.);
 
           // compute the BC closest in time
           auto atr = ambTracksSlice.begin();
-          LOGF(info, "  Number of BCs %d", atr.bc().size());
+          LOGF(debug, "  Number of BCs %d", atr.bc().size());
           if (atr.bc().size() > 0) {
             auto firstCompatibleBC = atr.bc().begin().globalBC();
             closestBC = (uint64_t)(firstCompatibleBC +
                                    (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
             // update tracksInBCList
-            LOGF(info, "closestBC %d", closestBC);
+            LOGF(debug, "closestBC %d", closestBC);
             tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
           }
         } else {
@@ -103,15 +103,15 @@ struct tracksWGTInBCs {
 
           // this track is not ambiguous, has hence a unique association to a collision/BC
           auto col = track.collision_as<CCs>();
-          LOGF(info, "  has BC %d", col.has_foundBC());
+          LOGF(debug, "  has BC %d", col.has_foundBC());
           closestBC = track.collision_as<CCs>().foundBC_as<BCs>().globalBC();
 
           // update tracksInBCList
-          LOGF(info, "closestBC %d", closestBC);
+          LOGF(debug, "closestBC %d", closestBC);
           tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
         }
       }
-      LOGF(info, "track finished.\n");
+      LOGF(debug, "track finished.\n");
     }
 
     // fill tracksWGTInBCs
@@ -149,7 +149,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all forward tracks and fill fwdTracksWGTInBCList
-    LOGF(info, "Number of forward tracks: %d", fwdTracks.size());
+    LOGF(debug, "Number of forward tracks: %d", fwdTracks.size());
     for (auto const& fwdTrack : fwdTracks) {
       registry.get<TH1>(HIST("forwardTracks"))->Fill(0., 1.);
       auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
@@ -160,26 +160,26 @@ struct tracksWGTInBCs {
       }
 
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
-      LOGF(info, "FwdTrack time %f resolution %f", fwdTrack.trackTime(), fwdTrack.trackTimeRes());
+      LOGF(debug, "FwdTrack time %f resolution %f", fwdTrack.trackTime(), fwdTrack.trackTimeRes());
       if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
         registry.get<TH1>(HIST("forwardTracks"))->Fill(3., 1.);
 
         // get first compatible BC
         // auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
-        LOGF(info, "Size of ambFwdTracksSlice %d", ambFwdTracksSlice.size());
+        LOGF(debug, "Size of ambFwdTracksSlice %d", ambFwdTracksSlice.size());
         if (ambFwdTracksSlice.size() > 0) {
           registry.get<TH1>(HIST("forwardTracks"))->Fill(4., 1.);
 
           // compute the BC closest in time
           auto aftr = ambFwdTracksSlice.begin();
-          LOGF(info, "  Number of BCs %d", aftr.bc().size());
+          LOGF(debug, "  Number of BCs %d", aftr.bc().size());
           if (aftr.bc().size() > 0) {
             auto firstCompatibleBC = aftr.bc().begin().globalBC();
             closestBC = (uint64_t)(firstCompatibleBC +
                                    (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
 
             // update fwdTracksWGTInBCList
-            LOGF(info, "closestBC %d", closestBC);
+            LOGF(debug, "closestBC %d", closestBC);
             fwdTracksWGTInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
           }
         } else {
@@ -187,15 +187,15 @@ struct tracksWGTInBCs {
 
           // this track is not ambiguous, has hence a unique association to a collision/BC
           auto col = fwdTrack.collision_as<CCs>();
-          LOGF(info, "  has BC %d", col.has_foundBC());
+          LOGF(debug, "  has BC %d", col.has_foundBC());
           closestBC = col.foundBC_as<BCs>().globalBC();
 
           // update fwdTracksWGTInBCList
-          LOGF(info, "closestBC %d", closestBC);
+          LOGF(debug, "closestBC %d", closestBC);
           fwdTracksWGTInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
         }
       }
-      LOGF(info, "FwdTrack finished.\n");
+      LOGF(debug, "FwdTrack finished.\n");
     }
 
     // fill fwdTracksWGTInBCs
