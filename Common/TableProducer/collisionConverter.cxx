@@ -31,10 +31,10 @@ struct collisionConverter {
     const AxisSpec axisCYYdebug{(int)nbins, -1.0f, +1.0f, ""};
     histos.add("hCYY", "hCYY", kTH1F, {axisCYYdebug});
   }
-  
+
   void process(aod::Collisions_000 const& collisionTable)
   {
-    float negtolerance = -1.0f*tolerance;
+    float negtolerance = -1.0f * tolerance;
     for (auto& collision : collisionTable) {
       float lYY = collision.covXZ();
       float lXZ = collision.covYY();
@@ -59,7 +59,7 @@ struct collisionConverter {
           LOGF(info, "This program will now crash. Please adjust your settings!");
           LOGF(fatal, "FATAL: please set doNotSwap to true!");
         }
-        if(!debug){
+        if (!debug) {
           LOGF(info, "Collision converter task found negative YY element!");
           LOGF(info, "CYY = %.10f, exceeds tolerance of %.10f", lYY, negtolerance);
           LOGF(info, "You're running with 'doNotSwap' enabled, but the ");
