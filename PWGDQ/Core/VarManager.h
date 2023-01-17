@@ -315,6 +315,7 @@ class VarManager : public TObject
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
+    kDeltaPtotTracks,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -1031,6 +1032,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
