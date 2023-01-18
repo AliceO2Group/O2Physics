@@ -48,7 +48,10 @@ struct CreateTableMc {
   void processML(MyCollisionML const& collision, BigTracksML const& tracks, aod::McParticles const& mctracks)
   {
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
+      if (!track.has_mcParticle()) {
+        continue;
+      }
+      const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
       pidTracksTableML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),
                        track.tofSignal(), track.beta(),
@@ -72,7 +75,10 @@ struct CreateTableMc {
   void processAll(MyCollision const& collision, BigTracks const& tracks, aod::McParticles const& mctracks)
   {
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
+      if (!track.has_mcParticle()) {
+        continue;
+      }
+      const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
       pidTracksTable(collision.centRun2V0M(),
                      collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
