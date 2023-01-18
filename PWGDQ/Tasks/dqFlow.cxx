@@ -268,14 +268,14 @@ struct DQEventQvector {
 
     float l_Random = fRndm->Rndm(); // used only to compute correlators
     bool fillFlag = kFALSE;         // could be used later
-    for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+    for (uint64_t l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       if constexpr (eventHasCentRun2) {
         FillFC(corrconfigs.at(l_ind), VarManager::fgValues[VarManager::kCentVZERO], l_Random, fillFlag);
       }
       if constexpr (eventHasCentRun3) {
         FillFC(corrconfigs.at(l_ind), VarManager::fgValues[VarManager::kCentFT0C], l_Random, fillFlag);
       }
-    };
+    }
 
     // Define quantities needed for the different eta regions
     uint8_t nentriesN = 0.0;
