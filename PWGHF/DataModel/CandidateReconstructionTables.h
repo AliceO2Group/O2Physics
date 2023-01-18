@@ -70,12 +70,12 @@ DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-co
                   hf_track_association::CollisionId,
                   hf_track_association::TrackId);
 
-<<<<<<< HEAD
 DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
                   hf_track_association::TrackType);
 
-=======
->>>>>>> Implement Jan's and Anton's suggestions
+DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
+                  hf_track_association::TrackType);
+
 DECLARE_SOA_TABLE(HfCompColls, "AOD", "HFCOMPCOLLS", //! Table with vectors of collision indices stored per track
                   hf_track_association::CompatibleCollIds);
 
