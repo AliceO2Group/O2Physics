@@ -50,8 +50,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-
 #include "DataFormatsCalibration/MeanVertexObject.h"
 
 namespace o2::aod {
