@@ -28,17 +28,19 @@ using namespace o2::aod;
 
 struct HfTrackToCollisionAssociation {
   Produces<HfTrackAssoc> association;
+  Produces<HfTrackAssocExtra> associationExtra;
   Produces<HfCompColls> reverseIndices;
 
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 3.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0., "time margin in ns added to uncertainty because of uncalibrated TPC"};
 
-  using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
+  using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
+  using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
   void processAssocWithTime(Collisions const& collisions,
                             TracksWithSel const& tracksUnfiltered,
-                            soa::Filtered<TracksWithSel> const& tracks,
+                            TracksWithSelFilter const& tracks,
                             BCs const& bcs)
   {
     std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
@@ -116,7 +118,122 @@ struct HfTrackToCollisionAssociation {
     }
   }
 
-  PROCESS_SWITCH(HfTrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", true);
+
+  Partition<TracksWithSel> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+
+  void processAssocWithAmb(Collisions const& collisions,
+                           TracksWithSel const& tracksUnfiltered,
+                           TracksWithSelFilter const& tracks,
+                           AmbiguousTracks const& ambTracks,
+                           BCs const& bcs)
+  {
+    std::vector<uint64_t> collIds{}, trackIds{}, trackTypes{};
+    std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
+
+    // associate collisions with tracks as default in the AO2Ds
+    for (const auto& track : tracks) {
+      const auto trackId = track.globalIndex();
+      const auto collId = track.collisionId();
+      collIds.push_back(collId);
+      trackIds.push_back(trackId);
+      trackTypes.push_back(hf_track_association::eTrackType::Regular);
+      if (collsPerTrack[trackId] == nullptr) {
+        collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
+      }
+      collsPerTrack[trackId].get()->push_back(collId);
+    }
+
+    // associate collisions with ambiguous tracks as in the AO2Ds
+    for (const auto& ambTrack : ambTracks) {
+      auto track = ambTrack.track_as<TracksWithSel>();
+      if (!track.isGlobalTrackWoDCA()) {
+        continue;
+      }
+
+      for (const auto& collision : collisions) {
+        const auto collId = collision.globalIndex();
+        if (collId == track.collisionId()) {
+          continue;
+        }
+        const uint64_t mostProbableBc = collision.bc().globalBC();
+        for (const auto& bc : ambTrack.bc()) {
+          if (bc.globalBC() == mostProbableBc) {
+            const uint64_t trackId = track.globalIndex();
+            collIds.push_back(collId);
+            trackIds.push_back(trackId);
+            trackTypes.push_back(hf_track_association::eTrackType::Ambiguous);
+            if (collsPerTrack[trackId] == nullptr) {
+              collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
+            }
+            collsPerTrack[trackId].get()->push_back(collId);
+          }
+        }
+      }
+    }
+
+    // associate collisions with PV contributors in in-bunch pileup events
+    for (auto& bc : bcs) {
+      std::vector<uint64_t> repeatCollIds{};
+      for (const auto& collision : collisions) {
+        /// count how many coll. have the current bc as most probable
+        if (bc.globalBC() == collision.bc().globalBC()) {
+          repeatCollIds.push_back(collision.globalIndex());
+        }
+      } /// end loop on collisiuons
+
+      /// we do not want bcs with only 1 coll
+      if (repeatCollIds.size() < 2) {
+        continue;
+      }
+
+      for (const auto& repCollId : repeatCollIds) {
+        const auto& pvContrPerCollision = pvContributors->sliceByCached(aod::track::collisionId, repCollId);
+        for (const auto& pvContr : pvContrPerCollision) {
+          if (pvContr.isGlobalTrackWoDCA()) {
+            for (const auto& repCollId2 : repeatCollIds) {
+              if (repCollId2 != repCollId) {
+                const uint64_t trackId = pvContr.globalIndex();
+                collIds.push_back(repCollId);
+                trackIds.push_back(trackId);
+                trackTypes.push_back(hf_track_association::eTrackType::PVContributor);
+                if (collsPerTrack[trackId] == nullptr) {
+                  collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
+                }
+                collsPerTrack[trackId].get()->push_back(repCollId);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    std::vector<uint64_t> sortedCollIds(collIds.size());
+    std::iota(sortedCollIds.begin(), sortedCollIds.end(), 0);
+    std::sort(sortedCollIds.begin(), sortedCollIds.end(), [collIds](uint64_t i, uint64_t j) { return collIds[i] < collIds[j]; });
+
+    for (const auto& index : sortedCollIds) {
+      association(collIds[index], trackIds[index]);
+      associationExtra(trackTypes[index]);
+    }
+
+    // create reverse index track to collisions
+    std::vector<int> empty{};
+    for (const auto& track : tracksUnfiltered) {
+
+      const auto trackId = track.globalIndex();
+      if (collsPerTrack[trackId] == nullptr) {
+        reverseIndices(empty);
+      } else {
+        // for (const auto& collId : *collsPerTrack[trackId]) {
+        //   LOGP(info, "  -> Coll id {}", collId);
+        // }
+        reverseIndices(*collsPerTrack[trackId].get());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processAssocWithAmb, "Use track-to-collision association based on ambiguous tracks", false);
 
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
 
@@ -141,7 +258,7 @@ struct HfTrackToCollisionAssociation {
     }
   }
 
-  PROCESS_SWITCH(HfTrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", true);
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", false);
 };
 
 //________________________________________________________________________________________________________________________

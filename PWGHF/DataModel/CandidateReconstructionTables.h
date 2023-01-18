@@ -56,14 +56,23 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
 
 namespace hf_track_association
 {
+
+enum eTrackType { Regular = 0,
+                  Ambiguous,
+                  PVContributor };
+
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                      //! Collision index
 DECLARE_SOA_INDEX_COLUMN(Track, track);                              //! Track index
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(CompatibleColl, compatibleColl); //! Track index
+DECLARE_SOA_COLUMN(TrackType, trackType, int);                       //! Track type
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(CompatibleColl, compatibleColl); //! Vector of compatible collisions
 } // namespace hf_track_association
 
 DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions
                   hf_track_association::CollisionId,
                   hf_track_association::TrackId);
+
+DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
+                  hf_track_association::TrackType);
 
 DECLARE_SOA_TABLE(HfCompColls, "AOD", "HFCOMPCOLLS", //! Table with vectors of collision indices stored per track
                   hf_track_association::CompatibleCollIds);
