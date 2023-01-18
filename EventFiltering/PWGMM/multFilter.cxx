@@ -55,7 +55,7 @@ struct multFilter {
   Produces<aod::MultFilters> tags;
 
   // acceptance cuts
-  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f, "Eta range for tracks"};
+  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
 
   HistogramRegistry multiplicity{"multiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -84,6 +84,11 @@ struct multFilter {
     multiplicity.add("hAmpT0CVsCh", "", HistType::kTH2F, {{28, -0.5, 27.5, "ch"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
     multiplicity.add("hFT0C", "FT0C", HistType::kTH1F, {{600, -0.5, 599.5, "FT0C amplitudes"}});
     multiplicity.add("hFT0A", "FT0A", HistType::kTH1F, {{600, -0.5, 599.5, "FT0A amplitudes"}});
+    multiplicity.add("hT0C_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
+    multiplicity.add("hT0A_time", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
+    multiplicity.add("hT0Cafter_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
+    multiplicity.add("hT0Aafter_time", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
+
     multiplicity.add("hAmpT0AvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
     multiplicity.add("hAmpT0CvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
 
@@ -187,13 +192,28 @@ struct multFilter {
     return flat;
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
-  //  void process(aod::Collision const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
 
     bool keepEvent[kNtriggersMM]{false};
     auto vtxZ = collision.posZ();
     multiplicity.fill(HIST("fProcessedEvents"), 0);
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
+
+    bool isOkTimeFT0 = false;
+    if (collision.has_foundFT0()) {
+      auto ft0 = collision.foundFT0();
+      float t0_a = ft0.timeA();
+      float t0_c = ft0.timeC();
+      if (abs(t0_a) < 1. && abs(t0_c) < 1.) {
+        isOkTimeFT0 = true;
+      }
+      multiplicity.fill(HIST("hT0C_time"), t0_c);
+      multiplicity.fill(HIST("hT0A_time"), t0_a);
+    }
+    if (!isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
+      return;
+    }
+
     // global observables
     int multTrack = 0;
     float flPt = 0; // leading pT
@@ -240,9 +260,13 @@ struct multFilter {
     for (int iCh = 0; iCh < nCellsT0C; iCh++) {
       RhoLatticeT0C[iCh] = 0.0;
     }
-
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
+      float t0_a = ft0.timeA();
+      float t0_c = ft0.timeC();
+      multiplicity.fill(HIST("hT0Cafter_time"), t0_c);
+      multiplicity.fill(HIST("hT0Aafter_time"), t0_a);
+
       for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
         float amplitude = ft0.amplitudeA()[i_a];
         uint8_t channel = ft0.channelA()[i_a];
@@ -275,6 +299,10 @@ struct multFilter {
 
     for (auto& track : tracks) {
       if (!myTrackSelection().IsSelected(track)) {
+        continue;
+      }
+      // Has this track contributed to the collision vertex fit
+      if (!track.isPVContributor()) {
         continue;
       }
       float eta_a = track.eta();
