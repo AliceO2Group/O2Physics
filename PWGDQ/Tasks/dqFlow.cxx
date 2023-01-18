@@ -94,22 +94,19 @@ struct DQEventQvector {
 
   // Access to the efficiencies and acceptances from CCDB
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> fConfigEfficiency{"cfgEfficiency", "", "CCDB path to efficiency object"};
-  Configurable<std::string> fConfigAcceptance{"cfgAcceptance", "", "CCDB path to acceptance object"};
-  Configurable<std::string> fConfigURL{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-  Configurable<std::string> fConfigCCDBPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
+  Configurable<std::string> fConfigEfficiency{"ccdb-path-efficiency", "Users/r/rcaron/efficiency", "CCDB path to efficiency object"};
+  Configurable<std::string> fConfigAcceptance{"ccdb-path-acceptance", "", "CCDB path to acceptance or GFWWeights object"};
+  Configurable<std::string> fConfigURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
-  // Configurables for FlowContainer (e.g charged particles pt-differential v22, v23, ...)
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
+  // Configurables for FlowContainer (e.g charged particles pt-differential v2{2}, v2{3}, ...)
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
-  AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
 
   // Define the filter for barrel tracks and forward tracks
   Filter trackFilter = (nabs(aod::track::eta) <= fConfigCutEtaMax) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter fwdFilter = (aod::fwdtrack::eta < -2.45f) && (aod::fwdtrack::eta > -3.6f);
 
-  // Histograms used for NUA weight corrections
+  // Histograms used for optionnal efficiency and non-uniform acceptance corrections
   struct Config {
     TH1D* mEfficiency = nullptr;
     GFWWeights* mAcceptance = nullptr;
@@ -119,7 +116,7 @@ struct DQEventQvector {
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
   OutputObj<THashList> fOutputList{"outputQA"};
-  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")}; // Need to add a dictionary for FlowContainer output
+  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
 
   // Define global variables for generic framework
   GFW* fGFW = new GFW();
@@ -159,11 +156,11 @@ struct DQEventQvector {
     // Global effiencies
     if (fConfigEfficiency.value.empty() == false) {
       cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(fConfigEfficiency.value, fConfigNoLaterThan.value);
-      if (cfg.mEfficiency) {
-        LOGF(info, "Loaded efficiency histogram %s (%p)", fConfigEfficiency.value.c_str(), (void*)cfg.mEfficiency);
-      } else {
-        LOGF(info, "Could not load efficiency histogram from %s (%p)", fConfigEfficiency.value.c_str(), (void*)cfg.mEfficiency);
-      }
+    }
+
+    // Global acceptance or GFWeights to correct for NUA in the track loop
+    if (fConfigAcceptance.value.empty() == false) {
+      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, fConfigNoLaterThan.value);
     }
 
     // Reference flow
@@ -183,7 +180,7 @@ struct DQEventQvector {
     fGFW->AddRegion("refN", 7, pows, fConfigCutEtaMin, fConfigEtaLimitMin, 1, 1);
     fGFW->AddRegion("refP", 7, pows, fConfigEtaLimitMax, fConfigCutEtaMax, 1, 1);
     fGFW->AddRegion("full", 7, powsFull, fConfigCutEtaMin, fConfigCutEtaMax, 1, 2);
-
+    // Defined the different charged particle correlations
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -191,12 +188,11 @@ struct DQEventQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
   }
 
-  // TODO: make available the flowcontainer output (add a dictionary somewhere...)
   // Fill the FlowContainer
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag)
   {
     // Calculate the correlations from the GFW
-    double dnx, dny, valx, valy;
+    double dnx, dny, valx;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
     dny = fGFW->Calculate(corrconf, 0, kTRUE).Im();
     if (dnx == 0) {
@@ -210,7 +206,6 @@ struct DQEventQvector {
         if (dny == 0) {
           return;
         }
-        valy = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dny;
       }
       return;
     }
@@ -224,6 +219,7 @@ struct DQEventQvector {
       }
       valx = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
       if (TMath::Abs(valx) < 1) {
+        // Fill the charged particle correlation vs pT profiles
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, valx, 1., rndm);
       }
       return;
@@ -232,31 +228,26 @@ struct DQEventQvector {
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const& bcs, TTracks const& tracks1)
+  void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracks1)
   {
+    // Fill the event properties within the VarManager
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<TEventFillMap>(collision);
 
-    // TODO: properly access to config files from ccdb using bc.timestamp()
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-
-    if (fConfigAcceptance.value.empty() == false) {
-      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, bc.timestamp());
-      if (cfg.mAcceptance) {
-        LOGF(info, "Loaded acceptance histogram from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mAcceptance);
-      } else {
-        LOGF(warning, "Could not load acceptance histogram from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mAcceptance);
-      }
-    }
+    // TODO: bc that could be used later to get timestamp for acceptance/GFWWeights
+    // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    // if (fConfigAcceptance.value.empty() == false) { cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, bc.timestamp());}
 
     fGFW->Clear();
 
-    // acceptance and efficiency weights
+    constexpr bool eventHasCentRun2 = ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0);
+    constexpr bool eventHasCentRun3 = ((TEventFillMap & VarManager::ObjTypes::CollisionCentRun3) > 0);
+
+    // Acceptance and efficiency weights
     float weff = 1.0, wacc = 1.0;
 
     // Fill the GFW object in the track loop
     for (auto& track : tracks1) {
-
       if (cfg.mEfficiency) {
         weff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
       } else {
@@ -269,15 +260,11 @@ struct DQEventQvector {
       if (cfg.mAcceptance) {
         wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), collision.posZ());
       } else {
-        wacc = 1;
+        wacc = 1.0;
       }
-
-      // Fill the GFW for each track to compute Q vector
-      fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 3); // using default values for ptin=0 and mask=3
+      // Fill the GFW for each track to compute Q vector and correction using weights
+      fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 3); // using default values for ptin = 0 and mask = 3
     }
-
-    constexpr bool eventHasCentRun2 = ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0);
-    constexpr bool eventHasCentRun3 = ((TEventFillMap & VarManager::ObjTypes::CollisionCentRun3) > 0);
 
     float l_Random = fRndm->Rndm(); // used only to compute correlators
     bool fillFlag = kFALSE;         // could be used later
@@ -363,8 +350,8 @@ struct DQEventQvector {
     // do nothing
   }
 
-  PROCESS_SWITCH(DQEventQvector, processBarrelQvectorRun2, "Run q-vector task on barrel tracks for Run2", false);
-  PROCESS_SWITCH(DQEventQvector, processBarrelQvector, "Run q-vector task on barrel tracks for Run3", false);
+    PROCESS_SWITCH(DQEventQvector, processBarrelQvectorRun2, "Run q-vector task on barrel tracks for Run2", false);
+    PROCESS_SWITCH(DQEventQvector, processBarrelQvector, "Run q-vector task on barrel tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processForwardQvector, "Run q-vector task on forward tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processDummy, "Dummy function", false);
 };
