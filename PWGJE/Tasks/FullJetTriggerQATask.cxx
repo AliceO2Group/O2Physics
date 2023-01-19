@@ -27,8 +27,6 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
 
 #include "EventFiltering/filterTables.h"
 
