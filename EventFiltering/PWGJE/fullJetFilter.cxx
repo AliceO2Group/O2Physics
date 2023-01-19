@@ -80,22 +80,14 @@ struct fullJetFilter {
 
     hProcessedEvents.setObject(new TH1I("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
 
-    hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", "Emc Clusters;#it{p}_{T};#eta",
-                                        nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
-    hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", "Emc Clusters;#it{p}_{T};#phi",
-                                        nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
-    hSelectedClusterPtEta.setObject(new TH2F("hSelectedClusterPtEta", "Selected Clusters;#it{p}_{T};#eta",
-                                             nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
-    hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", "Selected Clusters;#it{p}_{T};#phi",
-                                             nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
-    hEmcJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta",
-                                    nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
-    hEmcJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi",
-                                    nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
-    hSelectedJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta",
-                                         nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
-    hSelectedJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi",
-                                         nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", "Emc Clusters;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", "Emc Clusters;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedClusterPtEta.setObject(new TH2F("hSelectedClusterPtEta", "Selected Clusters;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", "Selected Clusters;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hEmcJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
+    hEmcJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
+    hSelectedJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
   } // init()
 
   // Declare filters
@@ -105,7 +97,7 @@ struct fullJetFilter {
   Bool_t isJetInEmcal(aod::Jet const& jet)
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
-    double R = jet.r() * 1e-2; // Jet R is saved as round(100*R)
+    double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
     if ((jet.eta() >= emcalEtaMin + R) && (jet.eta() <= emcalEtaMax - R) && (jet.phi() >= emcalPhiMin + R) && (jet.phi() <= emcalPhiMax - R)) {
       return true;
     }
