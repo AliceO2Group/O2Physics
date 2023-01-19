@@ -2236,8 +2236,11 @@ struct HfTrackIndexSkimCreatorCascades {
   // histograms
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const&)
+  void init(InitContext const& context)
   {
+    if (!(context.mOptions.get<bool>("processCascades"))) {
+      return;
+    }
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
