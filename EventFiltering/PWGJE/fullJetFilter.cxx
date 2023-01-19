@@ -32,8 +32,6 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
 
-#include "DataformatsEMCAL/AnalysisCluster.h"
-
 #include "../filterTables.h"
 
 using namespace o2;
