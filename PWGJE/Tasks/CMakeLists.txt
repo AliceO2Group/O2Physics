@@ -32,7 +32,7 @@ if(FastJet_FOUND)
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-full-trigger-qa
-        SOURCES jettriggerqa.cxx
+        SOURCES FullJetTriggerQATask.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-matching-hf-qa
