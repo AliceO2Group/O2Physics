@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
+#define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
 
 // a) Called directly in init(...);
 // b) Called directly in process(...);
@@ -1292,8 +1294,8 @@ void SetWeightsHist(TH1D* const hist, const char* variable)
 
   // Finally:
   hist->SetDirectory(0);
-  pw_a.fWeightsHist[ppe] = (TH1D*)hist->Clone(); // use eventually this line
-  // fWeightsHist = (TH1D*)hist->Clone();
+  pw_a.fWeightsHist[ppe] = reinterpret_cast<TH1D*>(hist->Clone()); // use eventually this line
+  // fWeightsHist = reinterpret_cast<TH1D*>(hist->Clone());
   if (!pw_a.fWeightsHist[ppe]) {
     cout << __LINE__ << endl;
     exit(1);
@@ -1386,12 +1388,12 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
     exit(1);
   }
 
-  hist = (TH1D*)(weightsFile->Get("phi_Task=>0.0-5.0_clone_96"));
+  hist = reinterpret_cast<TH1D*>(weightsFile->Get("phi_Task=>0.0-5.0_clone_96"));
 
-  // hist = (TH1D*)(weightsFile->Get(Form("%s_%s",variable,fTaskName.Data()))); // 20220712 this was the original line, instead of thew one above, which is there temporarily
+  // hist = reinterpret_cast<TH1D*>(weightsFile->Get(Form("%s_%s",variable,fTaskName.Data()))); // 20220712 this was the original line, instead of thew one above, which is there temporarily
 
   if (!hist) {
-    hist = (TH1D*)(weightsFile->Get(Form("%s", variable)));
+    hist = reinterpret_cast<TH1D*>(weightsFile->Get(Form("%s", variable)));
   } // yes, for some simple tests I can have only histogram named e.g. 'phi'
   // if(!hist){Red(Form("%s_%s",variable,fTaskName.Data())); cout<<__LINE__<<endl;exit(1);}
   hist->SetDirectory(0);
@@ -1437,3 +1439,7 @@ void Blue(const char* text)
   cout << "\n\033[1;34m" << text << "\033[0m\n"
        << endl;
 }
+
+//============================================================
+
+#endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_

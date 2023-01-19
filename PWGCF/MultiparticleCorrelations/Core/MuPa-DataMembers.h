@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
+#define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 
 // Remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
@@ -105,3 +107,5 @@ struct NestedLoops_Arrays {
 TList* fResultsList = NULL;        //!<! list to hold all results
 TProfile* fResultsFlagsPro = NULL; //!<! profile to hold all flags for results
 TH1D* fResultsHist = NULL;         //!<! example histogram to store some results
+
+#endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
