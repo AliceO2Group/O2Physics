@@ -8,8 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGUD_CORE_DGCUTPARHOLDERLINKDEF_H_
+#define PWGUD_CORE_DGCUTPARHOLDERLINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 #pragma link C++ class DGCutparHolder + ;
+
+#endif // PWGUD_CORE_DGCUTPARHOLDERLINKDEF_H_

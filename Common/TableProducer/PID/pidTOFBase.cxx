@@ -29,7 +29,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 
@@ -41,7 +40,7 @@ using namespace o2::track;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Produce TOF PID QA histograms for TOF event time"}},
+  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}},
                                        {"evtime", VariantType::Int, 1, {"Produce the table for the Event Time"}}};
   std::swap(workflowOptions, options);
 }
@@ -307,8 +306,8 @@ struct tofEventTime {
       // Compute the TOF event time
       const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, response, diamond);
 
-      float t0AC[2] = {.0f, 999.f};                                       // Value and error of T0A or T0C or T0AC
-      float t0TOF[2] = {evTimeTOF.mEventTime, evTimeTOF.mEventTimeError}; // Value and error of TOF
+      float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
+      float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
 
       uint8_t flags = 0;
       int nGoodTracksForTOF = 0;
@@ -415,8 +414,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     return workflow;
   }
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
-  if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tofPidCollisionTimeQa>(cfgc));
-  }
   return workflow;
 }

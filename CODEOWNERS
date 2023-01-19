@@ -12,7 +12,7 @@
 # @alibuild has to be in each line to allow self approval of PRs
 
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
-/Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
+/Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
 /DPG @alibuild @chiarazampolli @noferini
@@ -41,5 +41,5 @@
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
 /PWGMM/UE @alibuild @aalkin @aortizve
 /PWGUD @alibuild @pbuehler
-/PWGJE @alibuild @lhavener @maoyx @nzardosh
+/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk
 /Tools/PIDML @alibuild @saganatt

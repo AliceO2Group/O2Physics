@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_EVENTSELECTION_H_
-#define O2_ANALYSIS_EVENTSELECTION_H_
+#ifndef COMMON_DATAMODEL_EVENTSELECTION_H_
+#define COMMON_DATAMODEL_EVENTSELECTION_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -67,21 +67,22 @@ DECLARE_SOA_INDEX_COLUMN_FULL(FoundBC, foundBC, int, BCs, "_foundBC");      //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFT0, foundFT0, int, FT0s, "_foundFT0");  //! FT0 entry index in FT0s table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0"); //! FV0 entry index in FV0As table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! FDD entry index in FDDs table (-1 if doesn't exist)
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");  //! ZDC entry index in ZDCs table (-1 if doesn't exist)
 } // namespace evsel
 DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::Alias, evsel::Selection,
                   evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
                   evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
                   evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::NTracklets,
-                  evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId);
+                  evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
 using EvSel = EvSels::iterator;
 
 DECLARE_SOA_TABLE(BcSels, "AOD", "BCSEL", //!
                   evsel::Alias, evsel::Selection,
                   evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
                   evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
-                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId);
+                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
 using BcSel = BcSels::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_EVENTSELECTION_H_
+#endif // COMMON_DATAMODEL_EVENTSELECTION_H_

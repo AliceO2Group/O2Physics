@@ -31,6 +31,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
 #include "DetectorsVertexing/PVertexer.h"
@@ -39,15 +40,17 @@
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 
+#include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 
-#include "CommonUtils/NameConf.h"
+#include "CommonConstants/GeomConstants.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "CCDB/CcdbApi.h"
+
+#include "DataFormatsCalibration/MeanVertexObject.h"
 
 namespace o2::aod
 {
@@ -79,7 +82,7 @@ using namespace o2::framework::expressions;
 struct lumiTask {
   Produces<o2::aod::EventInfo> rowEventInfo;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  const char* ccdbpath_grp = "GLO/GRP/GRP";
+  const char* ccdbpath_grp = "GLO/Config/GRPMagField";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   int mRunNumber;
 

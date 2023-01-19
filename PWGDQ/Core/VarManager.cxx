@@ -17,7 +17,7 @@ ClassImp(VarManager);
 
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
-bool VarManager::fgUsedVars[VarManager::kNVars] = {kFALSE};
+bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
@@ -25,6 +25,8 @@ o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
+std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
+bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -110,6 +112,7 @@ void VarManager::FillTrackDerived(float* values)
     values[kP] = values[kPt] * std::cosh(values[kEta]);
   }
 }
+
 //_________________________________________________________________________________________________________________________________________________________________________________
 float VarManager::GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period)
 {
@@ -204,6 +207,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxChi2] = "";
   fgVariableNames[kCentVZERO] = "Centrality VZERO";
   fgVariableUnits[kCentVZERO] = "%";
+  fgVariableNames[kCentFT0C] = "Centrality FT0C";
+  fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
   fgVariableNames[kMCVtxX] = "MC Vtx X";
   fgVariableNames[kMCVtxY] = "MC Vtx Y";
@@ -236,6 +241,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kRap] = "";
   fgVariableNames[kMass] = "mass";
   fgVariableUnits[kMass] = "GeV/c2";
+  fgVariableNames[kDeltaPtotTracks] = "#it{p}_{Tot}^{#mu+} - #it{p}_{Tot}^{#mu-}";
+  fgVariableUnits[kDeltaPtotTracks] = "GeV/c";
   fgVariableNames[kCharge] = "charge";
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";
@@ -449,6 +456,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhiSym] = "rad.";
   fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
+  fgVariableNames[kPsiPair] = "#Psi_{pair}";
+  fgVariableUnits[kPsiPair] = "rad.";
+  fgVariableNames[kDeltaPhiPair] = "#Delta#phi";
+  fgVariableUnits[kDeltaPhiPair] = "rad.";
   fgVariableNames[kQuadDCAabsXY] = "DCA_{xy}^{quad}";
   fgVariableUnits[kQuadDCAabsXY] = "cm";
   fgVariableNames[kQuadDCAsigXY] = "DCA_{xy}^{quad}";

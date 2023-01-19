@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-/// \file HFFilterTables.h
+/// \file HFFilterHelpers.h
 /// \brief Header file with definition of variables, methods, and tables used in the HFFilter.cxx task
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
@@ -18,12 +18,25 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
+#ifndef O2_ANALYSIS_HF_FILTER_HELPERS_H_
+#define O2_ANALYSIS_HF_FILTER_HELPERS_H_
+
+#include "Framework/DataTypes.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/Core/RecoDecay.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include <vector>
+#include <array>
+#include <string>
+#include <cmath>
+
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/RecoDecay.h"
+// CCDB
+#include "CCDB/CcdbApi.h"
 
 namespace o2::aod
 {
@@ -41,6 +54,8 @@ enum HfTriggers {
   kDoubleCharm2P,
   kDoubleCharm3P,
   kDoubleCharmMix,
+  kGammaCharm2P,
+  kGammaCharm3P,
   kNtriggersHF
 };
 
@@ -69,7 +84,13 @@ enum beautyTrackSelection {
   kRegular
 };
 
-static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm"};
+enum PIDSpecies {
+  kEl = 0,
+  kKa,
+  kPi,
+  kPr
+};
+static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm", "softGamma"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
@@ -96,6 +117,7 @@ static const float massB0 = RecoDecay::getMassPDG(521);
 static const float massBs = RecoDecay::getMassPDG(531);
 static const float massLb = RecoDecay::getMassPDG(5122);
 static const float massXib = RecoDecay::getMassPDG(5232);
+static const float massGamma = RecoDecay::getMassPDG(22);
 
 /// Computation of the relative momentum between particle pairs
 /// \param track is a track
@@ -103,7 +125,7 @@ static const float massXib = RecoDecay::getMassPDG(5232);
 /// \param CharmCandMomentum is the three momentum of a charm candidate
 /// \param CharmMass is the mass of the charm hadron
 /// \return relative momentum of pair
-template <typename T> // template <typename T, typename C>
+template <typename T>
 float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 {
   ROOT::Math::PxPyPzMVector part1(track.px(), track.py(), track.pz(), massProton);
@@ -119,9 +141,124 @@ float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmC
   return kStar;
 } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
+/// Computation of the number of candidates in an event that do not share daughter tracks
+/// \return 0 or 1 in case of less than 2 independent candidates in a single event, 2 otherwise
+template <typename T>
+int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
+{
+  if (indices.size() < 2) {
+    return indices.size();
+  }
+
+  std::vector<int> numIndependentCand{};
+  for (auto iCand{0u}; iCand < indices.size(); ++iCand) {
+    int nIndependent = 0;
+    for (auto iCandSecond{0u}; iCandSecond < indices.size(); ++iCandSecond) {
+      if (iCand == iCandSecond) {
+        continue;
+      } else {
+        bool hasOverlap = false;
+        for (auto idxFirst{0u}; idxFirst < indices[iCand].size(); ++idxFirst) {
+          for (auto idxSecond{0u}; idxSecond < indices[iCandSecond].size(); ++idxSecond) {
+            if (indices[iCand][idxFirst] == indices[iCandSecond][idxSecond]) {
+              hasOverlap = true;
+              break;
+            }
+          }
+        }
+        if (!hasOverlap) {
+          nIndependent++;
+        }
+      }
+    }
+    numIndependentCand.push_back(nIndependent);
+  }
+  std::sort(numIndependentCand.begin(), numIndependentCand.end());
+
+  if (numIndependentCand.back() == 0) {
+    return numIndependentCand.back();
+  }
+
+  return 2;
+}
+
+/// ML helper methods
+
+/// Iinitialisation of ONNX session
+/// \param onnxFile is the onnx file name
+/// \param partName is the particle name
+/// \param env is the ONNX environment
+/// \param sessionOpt is the ONNX session options
+/// \param inputShapes is the input shape
+/// \param dataType is the data type (1=float, 11=double)
+/// \param loadModelsFromCCDB is the flag to decide whether the ONNX file is read from CCDB or not
+/// \param ccdbApi is the CCDB API
+/// \param mlModelPathCCDB is the model path in CCDB
+/// \param timestampCCDB is the CCDB timestamp
+/// \return the pointer to the ONNX Ort::Experimental::Session
+Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, long timestampCCDB)
+{
+  // hard coded, we do not let the user change this
+  sessionOpt.SetIntraOpNumThreads(1);
+  sessionOpt.SetInterOpNumThreads(1);
+  Ort::Experimental::Session* session = nullptr;
+
+  std::map<std::string, std::string> metadata;
+  bool retrieveSuccess = true;
+  if (loadModelsFromCCDB && timestampCCDB > 0) {
+    retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB + partName, ".", metadata, timestampCCDB, false, onnxFile);
+  }
+  if (retrieveSuccess) {
+    session = new Ort::Experimental::Session{env, onnxFile, sessionOpt};
+    inputShapes = session->GetInputShapes();
+    if (inputShapes[0][0] < 0) {
+      LOGF(warning, Form("Model for %s with negative input shape likely because converted with hummingbird, setting it to 1.", partName.data()));
+      inputShapes[0][0] = 1;
+    }
+
+    Ort::TypeInfo typeInfo = session->GetInputTypeInfo(0);
+    auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
+    dataType = tensorInfo.GetElementType();
+  } else {
+    LOG(fatal) << "Error encountered while fetching/loading the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
+  }
+
+  return session;
+};
+
+/// Iinitialisation of ONNX session
+/// \param inputFeatures is the vector with input features
+/// \param session is the ONNX Ort::Experimental::Session
+/// \param inputShapes is the input shape
+/// \return the array with the three output scores
+template <typename T>
+std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::vector<int64_t>>& inputShapes)
+{
+  std::array<T, 3> scores{-1., 2., 2.};
+  std::vector<Ort::Value> inputTensor{};
+  inputTensor.push_back(Ort::Experimental::Value::CreateTensor<T>(inputFeatures.data(), inputFeatures.size(), inputShapes[0]));
+
+  // double-check the dimensions of the input tensor
+  if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
+    assert(inputTensor[0].IsTensor() && inputTensor[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapes[0]);
+  }
+  try {
+    auto outputTensor = session->Run(session->GetInputNames(), inputTensor, session->GetOutputNames());
+    assert(outputTensor.size() == session->GetOutputNames().size() && outputTensor[1].IsTensor());
+    auto typeInfo = outputTensor[1].GetTensorTypeAndShapeInfo();
+    assert(typeInfo.GetElementCount() == 3); // we need multiclass
+    scores[0] = outputTensor[1].GetTensorMutableData<T>()[0];
+    scores[1] = outputTensor[1].GetTensorMutableData<T>()[1];
+    scores[2] = outputTensor[1].GetTensorMutableData<T>()[2];
+  } catch (const Ort::Exception& exception) {
+    LOG(error) << "Error running model inference: " << exception.what();
+  }
+
+  return scores;
+};
 } // namespace hffilters
 
-// definition of tables
+/// definition of tables
 
 namespace extra2Prong
 {
@@ -284,3 +421,5 @@ DECLARE_SOA_TABLE(HFOptimisationTreeFemto, "AOD", "HFOPTIMTREEF", //!
 DECLARE_SOA_TABLE(HFOptimisationTreeCollisions, "AOD", "HFOPTIMTREECOLL", //!
                   hfoptimisationTree::CollisionIndex)
 } // namespace o2::aod
+
+#endif // O2_ANALYSIS_HF_FILTER_HELPERS_

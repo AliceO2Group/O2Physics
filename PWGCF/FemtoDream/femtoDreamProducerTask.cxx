@@ -353,8 +353,15 @@ struct femtoDreamProducerTask {
   {
 
     const auto vtxZ = col.posZ();
-    const auto mult = col.multFV0M();
+    const auto multNtr = col.multNTracksPV();
     const auto spher = colCuts.computeSphericity(col, tracks);
+    /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+    int mult = 0;
+    if (ConfIsRun3) {
+      mult = col.multFV0M();
+    } else {
+      mult = 0.5 * (col.multFV0M());
+    }
 
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
@@ -362,13 +369,13 @@ struct femtoDreamProducerTask {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, spher, mMagField);
+        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
       }
       return;
     }
 
     colCuts.fillQA(col);
-    outputCollision(vtxZ, mult, spher, mMagField);
+    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index

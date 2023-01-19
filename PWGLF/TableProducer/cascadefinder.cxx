@@ -269,6 +269,16 @@ struct cascadefinder {
             }
             fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
 
+            // Calculate DCAxy of the cascade (with bending)
+            auto lCascadeTrack = fitterCasc.createParentTrackPar();
+            lCascadeTrack.setAbsCharge(-1);                // to be sure
+            lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+            gpu::gpustd::array<float, 2> dcaInfo;
+            dcaInfo[0] = 999;
+            dcaInfo[1] = 999;
+
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo);
+
             lNCand++;
             // If we got here, it means this is a good candidate!
             cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
@@ -279,7 +289,8 @@ struct cascadefinder {
                      fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
-                     t0id.dcaXY());
+                     t0id.dcaXY(),
+                     dcaInfo[0]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -341,6 +352,16 @@ struct cascadefinder {
             }
             fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
 
+            // Calculate DCAxy of the cascade (with bending)
+            auto lCascadeTrack = fitterCasc.createParentTrackPar();
+            lCascadeTrack.setAbsCharge(+1);                // to be sure
+            lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+            gpu::gpustd::array<float, 2> dcaInfo;
+            dcaInfo[0] = 999;
+            dcaInfo[1] = 999;
+
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo);
+
             lNCand++;
             // If we got here, it means this is a good candidate!
             cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
@@ -351,7 +372,8 @@ struct cascadefinder {
                      fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
-                     t0id.dcaXY());
+                     t0id.dcaXY(),
+                     dcaInfo[0]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed

@@ -17,15 +17,18 @@
 ///
 /// \brief    A class for loading an ONNX neural network and evaluating it for the TPC PID response
 ///
+
+// C++ and system includes
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #include <vector>
 
+// ROOT includes
 #include "TSystem.h"
 
 // O2 includes
 #include "Framework/Logger.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
 #include "ReconstructionDataFormats/PID.h"
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
 namespace o2::pid::tpc
 {
@@ -40,7 +43,8 @@ std::string Network::printShape(const std::vector<int64_t>& v)
 }
 
 Network::Network(std::string path,
-                 bool enableOptimization = true)
+                 bool enableOptimization = true,
+                 int numThreads = 0)
 {
 
   /*
@@ -57,6 +61,10 @@ Network::Network(std::string path,
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
   if (enableOptimization) {
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+  if (numThreads > 0) {
+    // Setting the number of threads, potentially try: unsigned int nThreads = std::thread::hardware_concurrency();
+    sessionOptions.SetIntraOpNumThreads(numThreads);
   }
 
   mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
@@ -81,17 +89,18 @@ Network::Network(std::string path,
 } // Network::Network(std::string, bool)
 
 Network::Network(std::string path,
-                 unsigned long start,
-                 unsigned long end,
-                 bool enableOptimization = true)
+                 uint64_t start,
+                 uint64_t end,
+                 bool enableOptimization = true,
+                 int numThreads = 0)
 {
 
   /*
   Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
   - Input:
     -- path:                std::string   ; Local path to the model file;
-    -- start:               unsigned long ; Timestamp validity of model (start)
-    -- pathAlien:           unsigned long ; Timestamp validity of model (end)
+    -- start:               uint64_t ; Timestamp validity of model (start)
+    -- pathAlien:           uint64_t ; Timestamp validity of model (end)
     -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
   */
 
@@ -100,6 +109,10 @@ Network::Network(std::string path,
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
   if (enableOptimization) {
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+  if (numThreads > 0) {
+    // Setting the number of threads, potentially try: unsigned int nThreads = std::thread::hardware_concurrency();
+    sessionOptions.SetIntraOpNumThreads(numThreads);
   }
 
   mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
@@ -125,7 +138,7 @@ Network::Network(std::string path,
 
   LOG(info) << "--- Network initialized! ---";
 
-} // Network::Network(std::string, unsigned long, unsigned long, bool)
+} // Network::Network(std::string, uint64_t, uint64_t, bool)
 
 Network& Network::operator=(Network& inst)
 {

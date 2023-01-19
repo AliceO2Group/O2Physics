@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(task-correlation-d-dbar
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-correlation-d0-hadrons
+                    SOURCES taskCorrelationD0Hadrons.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-correlation-dplus-hadrons
                     SOURCES taskCorrelationDplusHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing

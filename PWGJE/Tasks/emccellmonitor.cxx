@@ -49,6 +49,7 @@ struct CellMonitor {
   o2::framework::Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0., "Minimum cell amplitude for histograms."};
   o2::framework::Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50, "Min. cell time of main bunch selection"};
   o2::framework::Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100, "Max. cell time of main bunch selection"};
+  o2::framework::Configurable<double> mMinCellAmplitudeTimeHists{"minCellAmplitudeTimeHists", 0, "Min. cell amplitude used for time distribution"};
   o2::framework::Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID to be excluded"};
   o2::framework::Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID to be included"};
 
@@ -157,13 +158,15 @@ struct CellMonitor {
         continue;
       mHistManager.fill(HIST("cellAmplitudeCut"), cell.amplitude(), cell.cellNumber());
       mHistManager.fill(HIST("cellFrequency"), cell.cellNumber());
-      mHistManager.fill(HIST("cellTime"), cell.time(), cell.cellNumber());
-      if (cell.time() > mMinCellTimeMain && cell.time() < mMaxCellTimeMain) {
-        mHistManager.fill(HIST("cellTimeMain"), cell.time(), cell.cellNumber());
+      if (cell.amplitude() >= mMinCellAmplitudeTimeHists) {
+        mHistManager.fill(HIST("cellTime"), cell.time(), cell.cellNumber());
+        if (cell.time() > mMinCellTimeMain && cell.time() < mMaxCellTimeMain) {
+          mHistManager.fill(HIST("cellTimeMain"), cell.time(), cell.cellNumber());
+        }
+        mHistManager.fill(HIST("celTimeBC"), cellIR.bc, cell.time());
       }
 
       mHistManager.fill(HIST("cellAmplitudeBC"), cellIR.bc, cell.amplitude());
-      mHistManager.fill(HIST("celTimeBC"), cellIR.bc, cell.time());
 
       // Get Cell index in eta-phi of sm
       auto [supermodule, module, phiInModule, etaInModule] = mGeometry->GetCellIndex(cell.cellNumber());

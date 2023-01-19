@@ -35,6 +35,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "string"
+#include "vector"
 
 using namespace o2;
 using namespace o2::framework;
@@ -56,10 +57,6 @@ struct qaEventTrack {
 
   // options to select specific events
   Configurable<bool> selectGoodEvents{"selectGoodEvents", true, "select good events"};
-  // selection specific to the table creation workflow
-  Configurable<float> selectMaxVtxZ{"selectMaxVtxZ", 100.f, "Derived data option: select collision in a given Z window"};
-  Configurable<int> targetNumberOfEvents{"targetNumberOfEvents", 10000000, "Derived data option: target number of collisions, if the target is met, future collisions will be skipped"};
-  Configurable<float> fractionOfSampledEvents{"fractionOfSampledEvents", 1.f, "Derived data option: fraction of events to sample"};
 
   // options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -76,6 +73,7 @@ struct qaEventTrack {
 
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
@@ -89,14 +87,14 @@ struct qaEventTrack {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
-  using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection>;
+  using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackIUTable> tracksIUFiltered = (trackSelection.node() == 0) ||
                                              ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                              ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                                              ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                              ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                                              ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
+  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackTableData> tracksFilteredCorrIU = (trackSelection.node() == 0) ||
                                                    ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                                    ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
@@ -122,6 +120,7 @@ struct qaEventTrack {
       return;
     }
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
+    const AxisSpec axisInvPt{100, 0, 100, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
     const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
@@ -139,7 +138,7 @@ struct qaEventTrack {
     const AxisSpec axisParSnp{11, -0.1, 0.1, "snp"};
     const AxisSpec axisParTgl{200, -1., 1., "tgl"};
 
-    const AxisSpec axisDeltaPt{100, -0.5, 0.5, "#it{p}_{T, rec} - #it{p}_{T, gen}"};
+    const AxisSpec axisDeltaPt{binsDeltaPt, "#it{p}_{T, rec} - #it{p}_{T, gen}"};
     const AxisSpec axisDeltaEta{100, -0.1, 0.1, "#eta_{rec} - #eta_{gen}"};
     const AxisSpec axisDeltaPhi{100, -0.1, 0.1, "#varphi_{rec} - #varphi_{gen}"};
 
@@ -155,7 +154,9 @@ struct qaEventTrack {
     histos.add("Events/posYvsNContrib", "", kTH2D, {axisVertexPosY, axisVertexNumContrib});
     histos.add("Events/posZvsNContrib", "", kTH2D, {axisVertexPosZ, axisVertexNumContrib});
     histos.add("Events/nContrib", "", kTH1D, {axisVertexNumContrib});
+    histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
+    histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -165,12 +166,13 @@ struct qaEventTrack {
     histos.add("Events/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
     histos.add("Events/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
 
+    histos.add("Events/nFilteredTracks", "", kTH1D, {axisTrackMultiplicity});
     histos.add("Events/nTracks", "", kTH1D, {axisTrackMultiplicity});
 
-    if (doprocessMC) {
-      histos.add("Events/resoX", ";X_{Rec} - X_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
-      histos.add("Events/resoY", ";Y_{Rec} - Y_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
-      histos.add("Events/resoZ", ";Z_{Rec} - Z_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
+    if (doprocessMC || doprocessRun2ConvertedMC) {
+      histos.add<TH2>("Events/resoX", ";X_{Rec} - X_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
+      histos.add<TH2>("Events/resoY", ";Y_{Rec} - Y_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
+      histos.add<TH2>("Events/resoZ", ";Z_{Rec} - Z_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
     }
 
     auto trackRecoEffHist = histos.add<TH1>("Tracks/recoEff", "", kTH1D, {{2, 0.5, 2.5}});
@@ -185,8 +187,10 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/etavsphi", "#eta vs #varphi", kTH2F, {axisEta, axisPhi});
     histos.add("Tracks/Kine/etavspt", "#eta vs #it{p}_{T}", kTH2F, {axisPt, axisEta});
     histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
-    if (doprocessMC) {
-      histos.add("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
+    if (doprocessMC || doprocessRun2ConvertedMC) {
+      histos.add<TH2>("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
+      histos.add<TH2>("Tracks/Kine/resoInvPt", "", kTH2D, {axisDeltaPt, axisInvPt})->GetXaxis()->SetTitle("1/#it{p}_{T}_{rec} - 1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
+      histos.add<TH2>("Tracks/Kine/ptVsptmc", "", kTH2D, {axisPt, axisPt})->GetXaxis()->SetTitle("#it{p}_{T}_{gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
@@ -843,14 +847,14 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     return;
   }
 
-  int nTracks = 0;
+  int nFilteredTracks = 0;
   for (const auto& track : tracks) {
     histos.fill(HIST("Tracks/selection"), 1.f);
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
     histos.fill(HIST("Tracks/selection"), 2.f);
-    ++nTracks;
+    ++nFilteredTracks;
     if (track.passedTrackType()) {
       histos.fill(HIST("Tracks/selection"), 3.f);
     }
@@ -990,7 +994,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Events/posZvsNContrib"), collision.posZ(), collision.numContrib());
 
   histos.fill(HIST("Events/nContrib"), collision.numContrib());
-  histos.fill(HIST("Events/nContribVsMult"), collision.numContrib(), nTracks);
+  histos.fill(HIST("Events/nContribVsFilteredMult"), collision.numContrib(), nFilteredTracks);
+  histos.fill(HIST("Events/nContribVsMult"), collision.numContrib(), tracksUnfiltered.size());
   histos.fill(HIST("Events/vertexChi2"), collision.chi2());
 
   histos.fill(HIST("Events/covXX"), collision.covXX());
@@ -1000,7 +1005,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Events/covYZ"), collision.covYZ());
   histos.fill(HIST("Events/covZZ"), collision.covZZ());
 
-  histos.fill(HIST("Events/nTracks"), nTracks);
+  histos.fill(HIST("Events/nFilteredTracks"), nFilteredTracks);
+  histos.fill(HIST("Events/nTracks"), tracksUnfiltered.size());
 
   // vertex resolution
   if constexpr (IS_MC) {
@@ -1016,6 +1022,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Tracks/recoEff"), 2, tracks.size());
 
   // unfiltered track related histograms
+  int nPvContrWithTOF = 0;
+  int nPvContrWithTRD = 0;
   for (const auto& trackUnfiltered : tracksUnfiltered) {
     // fill ITS variables
     int itsNhits = 0;
@@ -1034,7 +1042,19 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     if (!trkHasITS) {
       histos.fill(HIST("Tracks/ITS/itsHitsUnfiltered"), -1, itsNhits);
     }
+
+    /// look for PV contributors and check correlation between TRD and TOF
+    /// to check if TRD time shift creates issues or not
+    if (trackUnfiltered.isPVContributor()) {
+      if (trackUnfiltered.hasTOF()) {
+        nPvContrWithTOF++;
+      }
+      if (trackUnfiltered.hasTRD()) {
+        nPvContrWithTRD++;
+      }
+    }
   }
+  histos.fill(HIST("Events/nContribWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
 
   // track related histograms
   for (const auto& track : tracks) {
@@ -1104,6 +1124,10 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         // resolution plots
         auto particle = track.mcParticle();
         histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
+        if (particle.pt() > 0.f) {
+          histos.fill(HIST("Tracks/Kine/resoInvPt"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
+        }
+        histos.fill(HIST("Tracks/Kine/ptVsptmc"), particle.pt(), track.pt());
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
       }

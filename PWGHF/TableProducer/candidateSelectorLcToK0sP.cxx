@@ -20,6 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Common/Core/TrackSelectorPID.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
@@ -33,10 +34,10 @@ using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 if (condition) {
   cmd;
 }
-using MyBigTracks = soa::Join<aod::BigTracksPID, aod::McTrackLabels>;
+using MyBigTracks = soa::Join<aod::BigTracksPID, aod::pidBayesPr, aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesKa, aod::pidBayesPi, aod::McTrackLabels>;
 #else
 #define MY_DEBUG_MSG(condition, cmd)
-using MyBigTracks = aod::BigTracksPID;
+using MyBigTracks = soa::Join<aod::BigTracksPID, aod::pidBayesPr, aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesKa, aod::pidBayesPi>;
 #endif
 
 struct HfCandidateSelectorLcToK0sP {
@@ -45,11 +46,16 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // PID
-  Configurable<double> ptPidTpcApplyMin{"ptPidTpcApplyMin", 4., "Lower bound of track pT to apply TPC PID"};
-  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0., "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 100., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
-  Configurable<double> pPidCombMax{"pPidCombMax", 4., "Upper bound of track p to use TOF + TPC Bayes PID"};
+  Configurable<bool> usePidBach{"usePidBach", true, "Use PID on bachelor track"};
+  Configurable<double> pPidThreshold{"pPidThreshold", 1.0, "Threshold to switch between low and high p TrackSelectors"};
+  Configurable<double> nSigmaTpcMaxLowP{"nSigmaTpcMaxLowP", 2.0, "Max nSigam in TPC for bachelor at low p"};
+  Configurable<double> nSigmaTpcMaxHighP{"nSigmaTpcMaxHighP", 9999., "Max nSigam in TPC for bachelor at high p"};
+  Configurable<double> nSigmaTofMaxLowP{"nSigmaTofMaxLowP", 9999., "Max nSigam in TOF for bachelor at low p"};
+  Configurable<double> nSigmaTofMaxHighP{"nSigmaTofMaxHighP", 3.0, "Max nSigam in TOF for bachelor at high p"};
+  Configurable<bool> requireTofLowP{"requireTofLowP", false, "require TOF information for bachelor at low p"};
+  Configurable<bool> requireTofHighP{"requireTofHighP", true, "require TOF information for bachelor at high p"};
+  Configurable<double> probBayesMinLowP{"probBayesMinLowP", -1., "min. Bayes probability for bachelor at low p [%]"};
+  Configurable<double> probBayesMinHighP{"probBayesMinHighP", -1., "min. Bayes probability for bachelor at high p [%]"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
@@ -144,155 +150,42 @@ struct HfCandidateSelectorLcToK0sP {
     return true;
   }
 
-  /// Check if track is ok for TPC PID
-  /// \param track is the track
-  /// \note function to be expanded
-  /// \return true if track is ok for TPC PID
   template <typename T>
-  bool validTPCPID(const T& track)
+  bool selectionPID(const T& track)
   {
-    if (track.pt() < ptPidTpcMin || track.pt() >= ptPidTpcMax) {
-      LOG(debug) << "Bachelor pt is " << track.pt() << ", we trust TPC PID in [" << ptPidTpcMin << ", " << ptPidTpcMax << "]";
-      return false;
-    }
-    return true;
-  }
+    TrackSelectorPID selectorProton[2] = {TrackSelectorPID(kProton), TrackSelectorPID(kProton)};
+    selectorProton[0].setRangeNSigmaTPC(-nSigmaTpcMaxLowP, nSigmaTpcMaxLowP);
+    selectorProton[1].setRangeNSigmaTPC(-nSigmaTpcMaxHighP, nSigmaTpcMaxHighP);
+    selectorProton[0].setRangeNSigmaTOF(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
+    selectorProton[1].setRangeNSigmaTOF(-nSigmaTofMaxHighP, nSigmaTofMaxHighP);
+    selectorProton[0].setProbBayesMin(probBayesMinLowP);
+    selectorProton[1].setProbBayesMin(probBayesMinHighP);
+    bool requireTof[2] = {requireTofLowP, requireTofHighP};
 
-  /// Check if we will use TPC PID
-  /// \param track is the track
-  /// \note function to be expanded
-  /// \return true if track is ok for TPC PID
-  template <typename T>
-  bool applyTPCPID(const T& track)
-  {
-    if (track.pt() < ptPidTpcApplyMin) {
-      LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << ptPidTpcApplyMin;
-      return false;
-    }
-    LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << ptPidTpcApplyMin;
-    return true;
-  }
-
-  /// Check if track is ok for TOF PID
-  /// \param track is the track
-  /// \note function to be expanded
-  /// \return true if track is ok for TOF PID
-  template <typename T>
-  bool validCombPID(const T& track)
-  {
-    if (track.pt() > pPidCombMax) { // is the pt sign used for the charge? If it is always positive, we should remove the abs
-      return false;
-    }
-    return true;
-  }
-
-  /// Check if track is compatible with given TPC Nsigma cut for a given flavour hypothesis
-  /// \param track is the track
-  /// \param nPDG is the flavour hypothesis PDG number
-  /// \param nSigmaCut is the nsigma threshold to test against
-  /// \note nPDG=211 pion  nPDG=321 kaon
-  /// \return true if track satisfies TPC PID hypothesis for given Nsigma cut
-  template <typename T>
-  bool selectionPIDTPC(const T& track, double nSigmaCut)
-  {
-    double nSigma = 100.0; // arbitrarily large value
-    nSigma = track.tpcNSigmaPr();
-    LOG(debug) << "nSigma for bachelor = " << nSigma << ", cut at " << nSigmaCut;
-    return std::abs(nSigma) < nSigmaCut;
-  }
-
-  /*
-  /// Check if track is compatible with given TOF NSigma cut for a given flavour hypothesis
-  /// \param track is the track
-  /// \param nPDG is the flavour hypothesis PDG number
-  /// \param nSigmaCut is the nSigma threshold to test against
-  /// \note nPDG=211 pion  nPDG=321 kaon
-  /// \return true if track satisfies TOF PID hypothesis for given NSigma cut
-  template <typename T>
-  bool selectionPIDTOF(const T& track, int nPDG, double nSigmaCut)
-  {
-    double nSigma = 100.0; //arbitarily large value
-    nPDG = TMath::Abs(nPDG);
-    if (nPDG == 111) {
-      nSigma = track.tofNSigmaPi();
-    } else if (nPDG == 321) {
-      nSigma = track.tofNSigmaKa();
+    int whichSelector;
+    if (track.p() < pPidThreshold) {
+      whichSelector = 0;
     } else {
-      return false;
+      whichSelector = 1;
     }
-    return nSigma < nSigmaCut;
-  }
-  */
-
-  /// PID selection on daughter track
-  /// \param track is the daughter track
-  /// \param nPDG is the PDG code of the flavour hypothesis
-  /// \note nPDG=211 pion  nPDG=321 kaon
-  /// \return 1 if successful PID match, 0 if successful PID rejection, -1 if no PID info
-  template <typename T>
-  int selectionPID(const T& track)
-  {
-    int statusTPC = -1;
-    //    int statusTOF = -1;
-
-    if (!applyTPCPID(track)) {
-      // we do not apply TPC PID in this range
-      return 1;
-    }
-
-    if (validTPCPID(track)) {
-      LOG(debug) << "We check the TPC PID now";
-      if (!selectionPIDTPC(track, nSigmaTpcMax)) {
-        statusTPC = 0;
-        /*
-        if (!selectionPIDTPC(track, nPDG, nSigmaTpcCombinedMax)) {
-          statusTPC = 0; //rejected by PID
-        } else {
-          statusTPC = 1; //potential to be acceepted if combined with TOF
-        }
+    int pidProtonTPC = selectorProton[whichSelector].getStatusTrackPIDTPC(track);
+    int pidProtonBayes = selectorProton[whichSelector].getStatusTrackBayesProbPID(track);
+    int pidProtonTOF = -1;
+    if (!track.hasTOF()) {
+      if (requireTof[whichSelector]) {
+        pidProtonTOF = TrackSelectorPID::Status::PIDRejected;
       } else {
-        statusTPC = 2; //positive PID
-      }
-  */
-      } else {
-        statusTPC = 1;
-      }
-    }
-
-    return statusTPC;
-    /*
-    if (validTofPid(track)) {
-      if (!selectionPIDTOF(track, nPDG, nSigmaTofMax)) {
-        if (!selectionPIDTOF(track, nPDG, nSigmaTofCombinedMax)) {
-          statusTOF = 0; //rejected by PID
-        } else {
-          statusTOF = 1; //potential to be acceepted if combined with TOF
-        }
-      } else {
-        statusTOF = 2; //positive PID
+        pidProtonTOF = TrackSelectorPID::Status::PIDAccepted;
       }
     } else {
-      statusTOF = -1; //no PID info
+      pidProtonTOF = selectorProton[whichSelector].getStatusTrackPIDTOF(track);
     }
-
-    if (statusTPC == 2 || statusTOF == 2) {
-      return 1; //what if we have 2 && 0 ?
-    } else if (statusTPC == 1 && statusTOF == 1) {
-      return 1;
-    } else if (statusTPC == 0 || statusTOF == 0) {
-      return 0;
-    } else {
-      return -1;
-    }
-      */
+    return ((pidProtonTPC == TrackSelectorPID::Status::PIDAccepted) && (pidProtonTOF == TrackSelectorPID::Status::PIDAccepted) && (pidProtonBayes == TrackSelectorPID::Status::PIDAccepted));
   }
 
   void process(aod::HfCandCascade const& candidates, MyBigTracks const& tracks)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
-    // bool topolLc = 0;
-    int pidProton = -1;
-    // int pidLc = -1;
 
     for (const auto& candidate : candidates) {               // looping over cascade candidates
       const auto& bach = candidate.prong0_as<MyBigTracks>(); // bachelor track
@@ -307,15 +200,6 @@ struct HfCandidateSelectorLcToK0sP {
       // MY_DEBUG_MSG(isLc != 1, printf("\n"); LOG(info) << "In selector: wrong Lc found: proton --> " << indexBach << ", posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
 
       statusLc = 0;
-      /* // not needed for the Lc
-      if (!(candidate.hfflag() & 1 << D0ToPiK)) {
-        hfSelD0Candidate(statusLc);
-        continue;
-      }
-      */
-
-      // topolLc = true;
-      pidProton = -1;
 
       // daughter track validity selection
       LOG(debug) << "daughterSelection(bach) = " << daughterSelection(bach);
@@ -334,15 +218,16 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      pidProton = selectionPID(bach);
-
-      LOG(debug) << "pidProton = " << pidProton;
-
-      if (pidProton == 1) {
-        statusLc = 1;
+      if (usePidBach) {
+        LOG(debug) << "selectionPID(bach) = " << selectionPID(bach);
+        if (!selectionPID(bach)) {
+          MY_DEBUG_MSG(isLc, LOG(info) << "In selector: Lc rejected due to PID selection on bachelor");
+          hfSelLcToK0sPCandidate(statusLc);
+          continue;
+        }
       }
 
-      MY_DEBUG_MSG(isLc && pidProton != 1, LOG(info) << "In selector: Lc rejected due to PID selections on bachelor");
+      statusLc = 1;
       MY_DEBUG_MSG(isLc && pidProton == 1, LOG(info) << "In selector: Lc ACCEPTED");
 
       hfSelLcToK0sPCandidate(statusLc);

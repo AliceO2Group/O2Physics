@@ -111,15 +111,6 @@ void DGPIDCuts::setPIDCuts(std::vector<float> PIDCutValues)
 
 // =============================================================================
 // DGAnaparHolder
-DGAnaparHolder::DGAnaparHolder()
-{
-}
-
-DGAnaparHolder::DGAnaparHolder(int nCombine, std::vector<float> DGPIDs, std::vector<float> DGPIDCutValues) : mNCombine{nCombine}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
-{
-  makeUniquePermutations();
-}
-
 DGAnaparHolder::~DGAnaparHolder()
 {
   mDGPIDs.clear();
@@ -132,6 +123,8 @@ void DGAnaparHolder::Print()
 {
   LOGF(info, "  DGAnaparHolder");
   LOGF(info, "    nCombine:    %i", mNCombine);
+  LOGF(info, "    max dcaxy:   %f", mMaxDCAxy);
+  LOGF(info, "    max dcaz:    %f", mMaxDCAz);
   LOGF(info, "    net charges");
   for (auto ch : mNetCharges) {
     LOGF(info, "      %i", ch);
@@ -396,22 +389,14 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
   }
 
   // cut on dcaXY and dcaZ
-  if (track.dcaXY() < -0.1 || track.dcaXY() > 0.1) {
-    return false;
-  }
+  // LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
+  // if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
+  //  return false;
+  //}
 
-  if (track.dcaZ() < -0.2 || track.dcaZ() > 0.2) {
-    return false;
-  }
-
-  // cut on dcaXY and dcaZ
-  if (track.dcaXY() < -0.1 || track.dcaXY() > 0.1) {
-    return false;
-  }
-
-  if (track.dcaZ() < -0.2 || track.dcaZ() > 0.2) {
-    return false;
-  }
+  // if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
+  //   return false;
+  // }
 
   // loop over all PIDCuts and apply the ones which apply to this track
   auto pidcuts = mAnaPars.PIDCuts().Cuts();
@@ -423,7 +408,12 @@ bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
       continue;
     }
 
-    // check pt
+    // check pt of track
+    if (track.pt() < mAnaPars.minpt() || track.pt() > mAnaPars.maxpt()) {
+      return false;
+    }
+
+    // check pt for pid cut
     LOGF(debug, "pT %f %f %f", track.pt(), pidcut.cutPtMin(), pidcut.cutPtMax());
     if (track.pt() < pidcut.cutPtMin() || track.pt() > pidcut.cutPtMax()) {
       continue;

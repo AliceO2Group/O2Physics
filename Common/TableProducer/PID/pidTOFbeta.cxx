@@ -12,8 +12,7 @@
 ///
 /// \file   pidTOFbeta.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Task to produce TOF beta tables
-///         QA histograms for the TOF PID can be produced by adding `--add-qa 1` to the workflow
+/// \brief  Task to produce TOF beta and TOF mass tables
 ///
 
 // O2 includes
@@ -21,7 +20,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "pidTOFBase.h"
 #include "TableHelper.h"
-#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::pid;
@@ -31,7 +29,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Produce TOF PID QA histograms"}}};
+  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}}};
   std::swap(workflowOptions, options);
 }
 
@@ -84,9 +82,5 @@ struct tofPidBeta {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tofPidBeta>(cfgc)};
-  if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tofPidBetaQa>(cfgc));
-  }
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<tofPidBeta>(cfgc)};
 }
