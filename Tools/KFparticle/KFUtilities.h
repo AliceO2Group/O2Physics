@@ -14,8 +14,8 @@
 ///
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 
-#ifndef O2_ANALYSIS_KFUTILITIES_H_
-#define O2_ANALYSIS_KFUTILITIES_H_
+#ifndef TOOLS_KFPARTICLE_KFUTILITIES_H_
+#define TOOLS_KFPARTICLE_KFUTILITIES_H_
 
 #ifndef HomogeneousField
 #define HomogeneousField
@@ -98,14 +98,16 @@ float cpaFromKF(KFParticle kfp, KFParticle PV)
 
   float ptimesv2 = (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 
-  if (ptimesv2 <= 0)
+  if (ptimesv2 <= 0) {
     return 0.;
-  else {
+  } else {
     double cos = (v[0] * p[0] + v[1] * p[1] + v[2] * p[2]) / sqrt(ptimesv2);
-    if (cos > 1.0)
+    if (cos > 1.0) {
       cos = 1.0;
-    if (cos < -1.0)
+    }
+    if (cos < -1.0) {
       cos = -1.0;
+    }
     return cos;
   }
 }
@@ -231,4 +233,4 @@ float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
   return l_particle / dl_particle;
 }
 
-#endif // O2_ANALYSIS_KFUTILITIES_H_
+#endif  // TOOLS_KFPARTICLE_KFUTILITIES_H_
