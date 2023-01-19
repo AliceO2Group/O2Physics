@@ -2258,15 +2258,15 @@ struct HfTrackIndexSkimCreatorCascades {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do cascades", true);
 
   void processCascades(SelectedCollisions::iterator const& collision,
-               aod::BCsWithTimestamps const&,
-               // soa::Filtered<aod::V0Datas> const& V0s,
-               aod::V0Datas const& V0s,
-               MyTracks const& tracks
+                       aod::BCsWithTimestamps const&,
+                       // soa::Filtered<aod::V0Datas> const& V0s,
+                       aod::V0Datas const& V0s,
+                       MyTracks const& tracks
 #ifdef MY_DEBUG
-               ,
-               aod::McParticles& mcParticles
+                       ,
+                       aod::McParticles& mcParticles
 #endif
-               ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
+                       ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
 
     // set the magnetic field from CCDB
@@ -2297,7 +2297,7 @@ struct HfTrackIndexSkimCreatorCascades {
       // selections on the bachelor
       // pT cut
       if (bach.isSelProng() < 4) {
-        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton rejected due to HFsel");
+        MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << ": rejected due to HFsel");
         continue;
       }
 
@@ -2328,7 +2328,6 @@ struct HfTrackIndexSkimCreatorCascades {
         bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
 #endif
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S from Lc found, trackV0DaughPos --> " << indexV0DaughPos << ", trackV0DaughNeg --> " << indexV0DaughNeg);
-        LOG(info) << "*** Checking next K0S";
 
         MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc,
                      LOG(info) << "ACCEPTED!!!";
@@ -2347,7 +2346,6 @@ struct HfTrackIndexSkimCreatorCascades {
         if (trackV0DaughPos.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh ||
             trackV0DaughNeg.tpcNClsCrossedRows() < nCrossedRowsMinV0Daugh) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minCrossedRows");
-        LOG(info) << "K0S with daughters rejected due to minCrossedRows";
           continue;
         }
         //
@@ -2359,27 +2357,23 @@ struct HfTrackIndexSkimCreatorCascades {
         if (trackV0DaughPos.pt() < ptMinV0Daugh || // to the filters? I can't for now, it is not in the tables
             trackV0DaughNeg.pt() < ptMinV0Daugh) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMinV0Daugh << ")");
-        LOG(info) << "K0S with daughters rejected due to minPt --> pos " << trackV0DaughPos.pt() << ", neg " << trackV0DaughNeg.pt() << " (cut " << ptMinV0Daugh << ")";
           continue;
         }
         if (std::abs(trackV0DaughPos.eta()) > etaMaxV0Daugh || // to the filters? I can't for now, it is not in the tables
             std::abs(trackV0DaughNeg.eta()) > etaMaxV0Daugh) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to eta --> pos " << trackV0DaughPos.eta() << ", neg " << trackV0DaughNeg.eta() << " (cut " << etaMaxV0Daugh << ")");
-        LOG(info) << "K0S with daughters rejected due to eta --> pos " << trackV0DaughPos.eta() << ", neg " << trackV0DaughNeg.eta() << " (cut " << etaMaxV0Daugh << ")";
           continue;
         }
 
         // V0 invariant mass selection
         if (std::abs(v0.mK0Short() - massK0s) > cutInvMassV0) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to invMass --> " << v0.mK0Short() - massK0s << " (cut " << cutInvMassV0 << ")");
-          LOG(info) << "K0S with daughters  rejected due to invMass --> " << v0.mK0Short() - massK0s << " (cut " << cutInvMassV0 << ")";
           continue; // should go to the filter, but since it is a dynamic column, I cannot use it there
         }
 
         // V0 cosPointingAngle selection
         if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cpaV0Min) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cpaV0Min << ")");
-          LOG(info) << "K0S with daughters rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cpaV0Min << ")";
           continue;
         }
 
@@ -2390,11 +2384,10 @@ struct HfTrackIndexSkimCreatorCascades {
         mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
         if ((cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutInvMassCascLc)) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")");
-          LOG(info) << "True Lc from proton  rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")";
           continue;
         }
 
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "KEPT 1! K0S from Lc with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg);
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "KEPT! K0S from Lc with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg);
 
         auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos);
         trackParCovV0DaughPos.propagateTo(v0.posX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
@@ -2412,7 +2405,6 @@ struct HfTrackIndexSkimCreatorCascades {
         MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "Fitter result = " << nCand2 << " proton = " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
         MY_DEBUG_MSG(isLc, LOG(info) << "Fitter result for true Lc = " << nCand2);
         if (nCand2 == 0) {
-          LOG(info) << "rejected because nCand2==0";
           continue;
         }
         fitter.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
@@ -2423,7 +2415,6 @@ struct HfTrackIndexSkimCreatorCascades {
         auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
         if (ptCascCand < ptCascCandMin) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to pt cut: " << ptCascCand << " (cut " << ptCascCandMin << ")");
-          LOG(info) << "True Lc from proton  rejected due to pt cut: " << ptCascCand << " (cut " << ptCascCandMin << ")";
           continue;
         }
 
@@ -2443,7 +2434,6 @@ struct HfTrackIndexSkimCreatorCascades {
         // fill histograms
         if (fillHistograms) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
-          LOG(info) << "KEPT 2! True Lc from proton";
           registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
           registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
           registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
@@ -2471,7 +2461,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
-  //workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
 
   return workflow;
 }
