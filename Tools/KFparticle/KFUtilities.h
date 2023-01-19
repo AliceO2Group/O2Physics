@@ -128,14 +128,16 @@ float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 
   float ptimesv2 = (p[0] * p[0] + p[1] * p[1]) * (v[0] * v[0] + v[1] * v[1]);
 
-  if (ptimesv2 <= 0)
+  if (ptimesv2 <= 0) {
     return 0.;
-  else {
+  } else {
     double cos = (v[0] * p[0] + v[1] * p[1]) / sqrt(ptimesv2);
-    if (cos > 1.0)
+    if (cos > 1.0) {
       cos = 1.0;
-    if (cos < -1.0)
+    }
+    if (cos < -1.0) {
       cos = -1.0;
+    }
     return cos;
   }
 }
@@ -233,4 +235,4 @@ float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
   return l_particle / dl_particle;
 }
 
-#endif  // TOOLS_KFPARTICLE_KFUTILITIES_H_
+#endif // TOOLS_KFPARTICLE_KFUTILITIES_H_
