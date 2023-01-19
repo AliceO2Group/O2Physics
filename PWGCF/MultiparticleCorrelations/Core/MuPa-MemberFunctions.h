@@ -26,6 +26,7 @@
 // void BookQvectorHistograms()
 // void BookCorrelationsHistograms()
 // void BookWeightsHistograms()
+// void BookNestedLoopsHistograms()
 // void BookResultsHistograms()
 
 // b) Called directly in process(...):
@@ -35,11 +36,18 @@
 // void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t ba); // reco or sim, before or after particle cuts
 // Bool_t ParticleCuts(aod::Track const& track)
 // void CalculateCorrelations();
+// void CalculateNestedLoops(); // calculate all standard isotropic correlations with nested loops
+// Double_t CalculateCustomNestedLoop(TArrayI *harmonics); // calculate nested loop for the specified harmonics
+
+// *) Called after all events are processed (former "Terminate()"):
+// void ComparisonNestedLoopsVsCorrelations();
 
 // *) Q-vectors:
-// TComplex Q(Int_t n, Int_t p);
-// TComplex One(Int_t n1);
-// TComplex Two(Int_t n1, Int_t n2);
+// TComplex Q(Int_t n, Int_t p)
+// TComplex One(Int_t n1)
+// TComplex Two(Int_t n1, Int_t n2)
+// TComplex Three(Int_t n1, Int_t n2, Int_t n3)
+// TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
 // ... TBI 20220809 port the rest ...
 // void ResetQ(); // reset the components of generic Q-vectors
 
@@ -91,6 +99,12 @@ void DefaultConfiguration()
 
   // task->SetCalculateCorrelations(kTRUE);
   fCalculateCorrelations = kTRUE;
+
+  // task->SetCalculateNestedLoops(kFALSE);
+  fCalculateNestedLoops = kFALSE;
+
+  // task->SetCalculateCustomNestedLoop(kFALSE); // independent e-b-e cross-check with custom nested loop
+  fCalculateCustomNestedLoop = kFALSE;
 
 } // void DefaultConfiguration()
 
@@ -210,6 +224,7 @@ void BookAndNestAllLists()
   // *) Correlations;
   // *) Q-vectors;
   // *) Particle weights;
+  // *) Nested loops;
   // *) Results.
 
   if (fVerbose) {
@@ -251,6 +266,12 @@ void BookAndNestAllLists()
   fWeightsList->SetName("Weights");
   fWeightsList->SetOwner(kTRUE);
   fBaseList->Add(fWeightsList);
+
+  // *) Nested loops:
+  fNestedLoopsList = new TList();
+  fNestedLoopsList->SetName("NestedLoops");
+  fNestedLoopsList->SetOwner(kTRUE);
+  fBaseList->Add(fNestedLoopsList);
 
   // *) Results:
   fResultsList = new TList();
@@ -481,10 +502,10 @@ void BookWeightsHistograms()
   // c) Histograms:
   for (Int_t w = 0; w < eWeights_N; w++) // use weights [phi,pt,eta]
   {
-    //if(!fUseWeights[w]){continue;}
+    // if(!fUseWeights[w]){continue;}
     if (!pw_a.fWeightsHist[w]) // yes, because these histos are cloned from the external ones, see SetWeightsHist(TH1D* const hist, const char *variable)
     {
-      //pw_a.fWeightsHist[w] = new TH1D(Form("fWeightsHist[%d]",w),"",(Int_t)fKinematicsBins[w][0],fKinematicsBins[w][1],fKinematicsBins[w][2]);
+      // pw_a.fWeightsHist[w] = new TH1D(Form("fWeightsHist[%d]",w),"",(Int_t)fKinematicsBins[w][0],fKinematicsBins[w][1],fKinematicsBins[w][2]);
       pw_a.fWeightsHist[w] = new TH1D(Form("fWeightsHist[%d]", w), "", 200, -100., 100.);
       pw_a.fWeightsHist[w]->SetTitle(Form("Particle weights for %s", sWeights[w].Data()));
       pw_a.fWeightsHist[w]->SetStats(kFALSE);
@@ -496,6 +517,107 @@ void BookWeightsHistograms()
   } // for(Int_t w=0;w<eWeights_N;w++) // use weights [phi,pt,eta]
 
 } // void BookWeightsHistograms()
+
+//============================================================
+
+void BookNestedLoopsHistograms()
+{
+  // Book all nested loops histograms.
+
+  // a) Book the profile holding flags;
+  // *) ...
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  fNestedLoopsFlagsPro = new TProfile("fNestedLoopsFlagsPro", "flags for nested loops", 2, 0., 2.);
+  fNestedLoopsFlagsPro->SetStats(kFALSE);
+  fNestedLoopsFlagsPro->GetXaxis()->SetLabelSize(0.05);
+  fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateNestedLoops");
+  fNestedLoopsFlagsPro->Fill(0.5, fCalculateNestedLoops);
+  fNestedLoopsFlagsPro->Fill(1.5, fCalculateCustomNestedLoop);
+  fNestedLoopsList->Add(fNestedLoopsFlagsPro);
+
+  if (!(fCalculateNestedLoops || fCalculateCustomNestedLoop)) {
+    return;
+  }
+
+  const Int_t iMaxSize = 2e4;
+  nl_a.ftaNestedLoops[0] = new TArrayD(iMaxSize); // ebe container for azimuthal angles
+  nl_a.ftaNestedLoops[1] = new TArrayD(iMaxSize); // ebe container for particle weights (product of all)
+
+  // TBI 20220823 port here if(fCalculatePtCorrelations) { ... } and if(fCalculateEtaCorrelations) { ... }
+
+  if (!fCalculateNestedLoops) {
+    return;
+  }
+
+  // b) Common local labels (keep 'em in sync with BookCorrelationsHistograms())
+  TString oVariable[4] = {"#varphi_{1}-#varphi_{2}", "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
+                          "#varphi_{1}+#varphi_{2}+#varphi_{3}-#varphi_{4}-#varphi_{5}-#varphi_{6}",
+                          "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-#varphi_{7}-#varphi_{8}"};
+
+  /*
+  Int_t vvvariableNBins[5] = {1,(Int_t)fMultiplicityBins[0],(Int_t)fCentralityBins[0],
+                              fUseCustomKineDependenceBins[PTq] ? fKineDependenceBins[PTq]->GetSize()-1 : (Int_t)fKinematicsBins[PT][0],
+                              fUseCustomKineDependenceBins[ETAq] ? fKineDependenceBins[ETAq]->GetSize()-1 : (Int_t)fKinematicsBins[ETA][0]};
+  Double_t vvvariableMinMax[5][2] = { {0.,1.}, // integrated
+                                      {fMultiplicityBins[1],fMultiplicityBins[2]}, // multiplicity
+                                      {fCentralityBins[1],fCentralityBins[2]}, // centrality
+                                      {fKinematicsBins[PT][1],fKinematicsBins[PT][2]},
+                                      {fKinematicsBins[ETA][1],fKinematicsBins[ETA][2]}
+                                    };
+  */
+
+  TString vvVariable[3] = {"integrated", "multiplicity", "centrality"};
+
+  for (Int_t k = 0; k < 4; k++) // order [2p=0,4p=1,6p=2,8p=3]
+  {
+    for (Int_t n = 0; n < 6; n++) // harmonic [n=1,n=2,...,n=6]
+    {
+      for (Int_t v = 0; v < 3; v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality]
+      {
+
+        // if(PTKINE == v  && !fCalculatePtCorrelations){continue;}
+        // if(ETAKINE == v  && !fCalculateEtaCorrelations){continue;}
+
+        /*
+        // per demand, custom meeting for kine dependence:
+        if(PTKINE == v  && fUseCustomKineDependenceBins[PTq])
+        {
+         fNestedLoopsPro[k][n][v] = new TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),fKineDependenceBins[PTq]->GetSize()-1,fKineDependenceBins[PTq]->GetArray());
+        }
+        else if(ETAKINE == v  && fUseCustomKineDependenceBins[ETAq])
+        {
+         fNestedLoopsPro[k][n][v] = new TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),fKineDependenceBins[ETAq]->GetSize()-1,fKineDependenceBins[ETAq]->GetArray());
+        }
+        else
+        {
+        */
+        // the default binning:
+        // fNestedLoopsPro[k][n][v] = new TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),vvvariableNBins[v],vvvariableMinMax[v][0],vvvariableMinMax[v][1]);
+        nl_a.fNestedLoopsPro[k][n][v] = new TProfile(Form("fNestedLoopsPro[%d][%d][%d]", k, n, v), Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1), oVariable[k].Data()), 2000, 0., 2000.);
+        // } // else
+        nl_a.fNestedLoopsPro[k][n][v]->SetStats(kFALSE);
+        nl_a.fNestedLoopsPro[k][n][v]->Sumw2();
+        nl_a.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle(vvVariable[v].Data());
+        // fNestedLoopsPro[k][n][v]->SetFillColor(colorsW[v]-10);
+        // fNestedLoopsPro[k][n][v]->SetLineColor(colorsW[v]);
+        /*
+        if(fUseFixedNumberOfRandomlySelectedParticles && 1==v) // just a warning for the meaning of multiplicity in this special case
+        {
+         nl_a.fNestedLoopsPro[k][n][1]->GetXaxis()->SetTitle("WARNING: for each multiplicity, fFixedNumberOfRandomlySelectedParticles is selected randomly in Q-vector");
+        }
+        */
+
+        fNestedLoopsList->Add(nl_a.fNestedLoopsPro[k][n][v]);
+      } // for(Int_t v=0;v<5;v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality]
+    }   // for(Int_t n=0;n<6;n++) // harmonic [n=1,n=2,...,n=6]
+  }     // for(Int_t n=0;n<6;n++) // harmonics [n=1,n=2,...,n=6]
+
+} // void BookNestedLoopsHistograms()
 
 //============================================================
 
@@ -530,22 +652,18 @@ void ResetEventByEventQuantities()
 {
   // Reset all global event-by-event quantities here:
 
-  // a) Multiplicities;
-  // b) Centrality;
-  // c) Q-vectors;
-  // d) Reset ebe containers for nested loops;
-  // e) Fisher-Yates algorithm.
+  // a) Event-by-event quantities;
+  // b) Q-vectors;
+  // c) Reset ebe containers for nested loops;
+  // d) Fisher-Yates algorithm.
 
   if (fVerbose) {
     Green(__PRETTY_FUNCTION__);
   }
 
-  // a) Multiplicities:
-  //fMultiplicity = 0.;
-  //fSelectedParticles = 0;
-
-  // b) Centrality:
-  //fCentrality = 0.;
+  // a) Event-by-event quantities:
+  fSelectedTracks = 0;
+  fCentrality = 0;
 
   // c) Q-vectors:
   if (fCalculateQvector) {
@@ -557,6 +675,19 @@ void ResetEventByEventQuantities()
       }
     }
   } // if(fCalculateQvector)
+
+  // d) Reset ebe containers for nested loops:
+  if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
+    if (nl_a.ftaNestedLoops[0]) {
+      nl_a.ftaNestedLoops[0]->Reset();
+    }
+    if (nl_a.ftaNestedLoops[1]) {
+      nl_a.ftaNestedLoops[1]->Reset();
+    }
+
+    // TBI 20220803 port still if(fCalculatePtCorrelations){...} and if(fCalculateEtaCorrelations){...}
+
+  } // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
 
   // ... TBI 20220809 port the rest ...
 
@@ -666,11 +797,11 @@ void CalculateCorrelations()
   for (Int_t h = 1; h <= gMaxHarmonic; h++) // harmonic
   {
     // 2p:
-    //if(fSelectedParticles<2){return;}
-    //if(fVerbose){cout<<Form("   => CalculateCorrelations(void), 2p, h = %d .... ",h)<<endl;}
+    // if(fSelectedParticles<2){return;}
+    // if(fVerbose){cout<<Form("   => CalculateCorrelations(void), 2p, h = %d .... ",h)<<endl;}
     TComplex two = Two(h, -h);
     Double_t twoC = two.Re(); // cos
-    //Double_t twoS = two.Im(); // sin
+    // Double_t twoS = two.Im(); // sin
     Double_t wTwo = Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI 20220809 add support for other weights
     if (wTwo > 0.0) {
       twoC /= wTwo;
@@ -712,9 +843,9 @@ void CalculateCorrelations()
       c_a.fCorrelationsPro[0][h - 1][0]->Fill(0.5, twoC, wTwo);
     }
     // vs. multiplicity:
-    //if(c_a.fCorrelationsPro[0][h-1][1]){c_a.fCorrelationsPro[0][h-1][1]->Fill(fSelectedParticles+0.5,twoC,wTwo);}
+    // if(c_a.fCorrelationsPro[0][h-1][1]){c_a.fCorrelationsPro[0][h-1][1]->Fill(fSelectedParticles+0.5,twoC,wTwo);}
     // vs. centrality:
-    //if(c_a.fCorrelationsPro[0][h-1][2]){c_a.fCorrelationsPro[0][h-1][2]->Fill(fCentrality,twoC,wTwo);}
+    // if(c_a.fCorrelationsPro[0][h-1][2]){c_a.fCorrelationsPro[0][h-1][2]->Fill(fCentrality,twoC,wTwo);}
 
     // ... TBI 20220809 port the rest ...
 
@@ -724,6 +855,332 @@ void CalculateCorrelations()
   ResetQ();
 
 } // void CalculateCorrelations()
+
+//============================================================
+
+void CalculateNestedLoops()
+{
+  // Calculate correlations with nested loops.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  cout << "fSelectedTracks = " << fSelectedTracks << endl;
+  Int_t nParticles = fSelectedTracks;
+
+  /* TBI 20220823 enable the lines below eventually
+  if(fUseFixedNumberOfRandomlySelectedParticles)
+  {
+   nParticles = 0;
+   for(Int_t i=0;i<ftaNestedLoops[0]->GetSize();i++)
+   {
+    if(TMath::Abs(ftaNestedLoops[0]->GetAt(i)) > 0. && TMath::Abs(ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
+   }
+  }
+   cout<<"nParticles = "<<nParticles<<endl;
+  */
+
+  // 2p:
+  if (nParticles < 2) {
+    return;
+  }
+  cout << "      CalculateNestedLoops(void), 2-p correlations .... " << endl;
+  for (int i1 = 0; i1 < nParticles; i1++) {
+    Double_t dPhi1 = nl_a.ftaNestedLoops[0]->GetAt(i1);
+    Double_t dW1 = nl_a.ftaNestedLoops[1]->GetAt(i1);
+    for (int i2 = 0; i2 < nParticles; i2++) {
+      if (i2 == i1) {
+        continue;
+      }
+      Double_t dPhi2 = nl_a.ftaNestedLoops[0]->GetAt(i2);
+      Double_t dW2 = nl_a.ftaNestedLoops[1]->GetAt(i2);
+      for (int h = 0; h < 6; h++) // TBI 20220823 hardcoded "h<6"
+      {
+        // fill cos, 2p, integreated:
+        if (nl_a.fNestedLoopsPro[0][h][0]) {
+          nl_a.fNestedLoopsPro[0][h][0]->Fill(0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+        }
+        // fill cos, 2p, vs. M:
+        if (nl_a.fNestedLoopsPro[0][h][1]) {
+          nl_a.fNestedLoopsPro[0][h][1]->Fill(fSelectedTracks + 0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+        }
+        // fill cos, 2p, vs. centrality:
+        if (nl_a.fNestedLoopsPro[0][h][2]) {
+          nl_a.fNestedLoopsPro[0][h][2]->Fill(fCentrality, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+        }
+      } // for(int h=1; h<=6; h++)
+    }   // for(int i2=0; i2<nTracks; i2++)
+  }     // for(int i1=0; i1<nTracks; i1++)
+
+  /* TBI 20220823 enable eventually
+   // 4p:
+   if(nParticles<4){return;}
+   cout<<"      CalculateNestedLoops(void), 4-p correlations .... "<<endl;
+   for(int i1=0; i1<nParticles; i1++)
+   {
+    Double_t dPhi1 = ftaNestedLoops[0]->GetAt(i1);
+    Double_t dW1 = ftaNestedLoops[1]->GetAt(i1);
+    for(int i2=0; i2<nParticles; i2++)
+    {
+     if(i2==i1){continue;}
+     Double_t dPhi2 = ftaNestedLoops[0]->GetAt(i2);
+     Double_t dW2 = ftaNestedLoops[1]->GetAt(i2);
+     for(int i3=0; i3<nParticles; i3++)
+     {
+      if(i3==i1||i3==i2){continue;}
+      Double_t dPhi3 = ftaNestedLoops[0]->GetAt(i3);
+      Double_t dW3 = ftaNestedLoops[1]->GetAt(i3);
+      for(int i4=0; i4<nParticles; i4++)
+      {
+       if(i4==i1||i4==i2||i4==i3){continue;}
+       Double_t dPhi4 = ftaNestedLoops[0]->GetAt(i4);
+       Double_t dW4 = ftaNestedLoops[1]->GetAt(i4);
+       for(int h=0; h<6; h++)
+       {
+        // fill cos, 4p, integreated:
+        if(fNestedLoopsPro[1][h][0]){fNestedLoopsPro[1][h][0]->Fill(0.5,TMath::Cos((h+1.)*(dPhi1+dPhi2-dPhi3-dPhi4)),dW1*dW2*dW3*dW4);}
+        // fill cos, 4p, all harmonics, vs. M:
+        if(fNestedLoopsPro[1][h][1]){fNestedLoopsPro[1][h][1]->Fill(fSelectedTracks+0.5,TMath::Cos((h+1.)*(dPhi1+dPhi2-dPhi3-dPhi4)),dW1*dW2*dW3*dW4);}
+        // fill cos, 4p, all harmonics, vs. centrality:
+        if(fNestedLoopsPro[1][h][1]){fNestedLoopsPro[1][h][2]->Fill(fCentrality,TMath::Cos((h+1.)*(dPhi1+dPhi2-dPhi3-dPhi4)),dW1*dW2*dW3*dW4);}
+       } // for(int h=0; h<6; h++)
+      } // for(int i4=0; i4<nParticles; i4++)
+     } // for(int i3=0; i3<nParticles; i3++)
+    } // for(int i2=0; i2<nTracks; i2++)
+   } // for(int i1=0; i1<nTracks; i1++)
+
+   // 6p:
+   if(nParticles<6){return;}
+   cout<<"      CalculateNestedLoops(void), 6-p correlations .... "<<endl;
+   for(int i1=0; i1<nParticles; i1++)
+   {
+    Double_t dPhi1 = ftaNestedLoops[0]->GetAt(i1);
+    Double_t dW1 = ftaNestedLoops[1]->GetAt(i1);
+    for(int i2=0; i2<nParticles; i2++)
+    {
+     if(i2==i1){continue;}
+     Double_t dPhi2 = ftaNestedLoops[0]->GetAt(i2);
+     Double_t dW2 = ftaNestedLoops[1]->GetAt(i2);
+     for(int i3=0; i3<nParticles; i3++)
+     {
+      if(i3==i1||i3==i2){continue;}
+      Double_t dPhi3 = ftaNestedLoops[0]->GetAt(i3);
+      Double_t dW3 = ftaNestedLoops[1]->GetAt(i3);
+      for(int i4=0; i4<nParticles; i4++)
+      {
+       if(i4==i1||i4==i2||i4==i3){continue;}
+       Double_t dPhi4 = ftaNestedLoops[0]->GetAt(i4);
+       Double_t dW4 = ftaNestedLoops[1]->GetAt(i4);
+       for(int i5=0; i5<nParticles; i5++)
+       {
+        if(i5==i1||i5==i2||i5==i3||i5==i4){continue;}
+        Double_t dPhi5 = ftaNestedLoops[0]->GetAt(i5);
+        Double_t dW5 = ftaNestedLoops[1]->GetAt(i5);
+        for(int i6=0; i6<nParticles; i6++)
+        {
+         if(i6==i1||i6==i2||i6==i3||i6==i4||i6==i5){continue;}
+         Double_t dPhi6 = ftaNestedLoops[0]->GetAt(i6);
+         Double_t dW6 = ftaNestedLoops[1]->GetAt(i6);
+         for(int h=0; h<6; h++)
+         {
+          // fill cos, 6p, integreated:
+          if(fNestedLoopsPro[2][h][0]){fNestedLoopsPro[2][h][0]->Fill(0.5,TMath::Cos((h+1.)*(dPhi1+dPhi2+dPhi3-dPhi4-dPhi5-dPhi6)),dW1*dW2*dW3*dW4*dW5*dW6);}
+          // fill cos, 6p, all harmonics, vs. M:
+          if(fNestedLoopsPro[2][h][1]){fNestedLoopsPro[2][h][1]->Fill(fSelectedTracks+0.5,TMath::Cos((h+1.)*(dPhi1+dPhi2+dPhi3-dPhi4-dPhi5-dPhi6)),dW1*dW2*dW3*dW4*dW5*dW6);}
+          // fill cos, 6p, all harmonics, vs. M:
+          if(fNestedLoopsPro[2][h][1]){fNestedLoopsPro[2][h][2]->Fill(fCentrality,TMath::Cos((h+1.)*(dPhi1+dPhi2+dPhi3-dPhi4-dPhi5-dPhi6)),dW1*dW2*dW3*dW4*dW5*dW6);}
+         } // for(int h=0; h<6; h++)
+        } // if(i6==i1||i6==i2||i6==i3||i6==i4||i6==i5){continue;}
+       } // if(i5==i1||i5==i2||i5==i3||i5==i4){continue;}
+      } // for(int i4=0; i4<nParticles; i4++)
+     } // for(int i3=0; i3<nParticles; i3++)
+    } // for(int i2=0; i2<nTracks; i2++)
+   } // for(int i1=0; i1<nTracks; i1++)
+
+   // 8p:
+   if(nParticles<8){return;}
+   cout<<"      CalculateNestedLoops(void), 8-p correlations .... "<<endl;
+   for(int i1=0; i1<nParticles; i1++)
+   {
+    Double_t dPhi1 = ftaNestedLoops[0]->GetAt(i1);
+    Double_t dW1 = ftaNestedLoops[1]->GetAt(i1);
+    for(int i2=0; i2<nParticles; i2++)
+    {
+     if(i2==i1){continue;}
+     Double_t dPhi2 = ftaNestedLoops[0]->GetAt(i2);
+     Double_t dW2 = ftaNestedLoops[1]->GetAt(i2);
+     for(int i3=0; i3<nParticles; i3++)
+     {
+      if(i3==i1||i3==i2){continue;}
+      Double_t dPhi3 = ftaNestedLoops[0]->GetAt(i3);
+      Double_t dW3 = ftaNestedLoops[1]->GetAt(i3);
+      for(int i4=0; i4<nParticles; i4++)
+      {
+       if(i4==i1||i4==i2||i4==i3){continue;}
+       Double_t dPhi4 = ftaNestedLoops[0]->GetAt(i4);
+       Double_t dW4 = ftaNestedLoops[1]->GetAt(i4);
+       for(int i5=0; i5<nParticles; i5++)
+       {
+        if(i5==i1||i5==i2||i5==i3||i5==i4){continue;}
+        Double_t dPhi5 = ftaNestedLoops[0]->GetAt(i5);
+        Double_t dW5 = ftaNestedLoops[1]->GetAt(i5);
+        for(int i6=0; i6<nParticles; i6++)
+        {
+         if(i6==i1||i6==i2||i6==i3||i6==i4||i6==i5){continue;}
+         Double_t dPhi6 = ftaNestedLoops[0]->GetAt(i6);
+         Double_t dW6 = ftaNestedLoops[1]->GetAt(i6);
+         for(int i7=0; i7<nParticles; i7++)
+         {
+          if(i7==i1||i7==i2||i7==i3||i7==i4||i7==i5||i7==i6){continue;}
+          Double_t dPhi7 = ftaNestedLoops[0]->GetAt(i7);
+          Double_t dW7 = ftaNestedLoops[1]->GetAt(i7);
+          for(int i8=0; i8<nParticles; i8++)
+          {
+           if(i8==i1||i8==i2||i8==i3||i8==i4||i8==i5||i8==i6||i8==i7){continue;}
+           Double_t dPhi8 = ftaNestedLoops[0]->GetAt(i8);
+           Double_t dW8 = ftaNestedLoops[1]->GetAt(i8);
+           for(int h=0; h<6; h++)
+           {
+            // fill cos, 8p, integreated:
+            if(fNestedLoopsPro[3][h][0]){fNestedLoopsPro[3][h][0]->Fill(0.5,TMath::Cos((h+1.)*(dPhi1+dPhi2+dPhi3+dPhi4-dPhi5-dPhi6-dPhi7-dPhi8)),dW1*dW2*dW3*dW4*dW5*dW6*dW7*dW8);}
+            // fill cos, 8p, all harmonics, vs. M:
+            if(fNestedLoopsPro[3][h][1]){fNestedLoopsPro[3][h][1]->Fill(fSelectedTracks+0.5,TMath::Cos((h+1.)*(dPhi1+dPhi2+dPhi3+dPhi4-dPhi5-dPhi6-dPhi7-dPhi8)),dW1*dW2*dW3*dW4*dW5*dW6*dW7*dW8);}
+            // fill cos, 8p, all harmonics, vs. M:
+            if(fNestedLoopsPro[3][h][2]){fNestedLoopsPro[3][h][2]->Fill(fCentrality,TMath::Cos((h+1.)*(dPhi1+dPhi2+dPhi3+dPhi4-dPhi5-dPhi6-dPhi7-dPhi8)),dW1*dW2*dW3*dW4*dW5*dW6*dW7*dW8);}
+           } // for(int h=0; h<6; h++)
+          } // for(int i8=0; i8<nParticles; i8++)
+         } // for(int i7=0; i7<nParticles; i7++)
+        } // for(int i6=0; i6<nParticles; i6++)
+       } // for(int i5=0; i5<nParticles; i6++)
+      } // for(int i4=0; i4<nParticles; i4++)
+     } // for(int i3=0; i3<nParticles; i3++)
+    } // for(int i2=0; i2<nParticles; i2++)
+   } // for(int i1=0; i1<nParticles; i1++)
+
+  */
+
+} // void CalculateNestedLoops()
+
+//============================================================
+
+void ComparisonNestedLoopsVsCorrelations()
+{
+  // Make a ratio fNestedLoopsPro[....]/fCorrelationsPro[....]. If results are the same, these ratios must be 1.
+
+  // a) Integrated comparison;
+  // b) Comparison vs. multiplicity;
+  // c) Comparison vs. centrality;
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  Int_t nBinsQV = -44;
+  Int_t nBinsNL = -44;
+  Double_t valueQV = 0.;
+  Double_t valueNL = 0.;
+
+  // a) Integrated comparison:
+  nBinsQV = c_a.fCorrelationsPro[0][0][0]->GetNbinsX();
+  nBinsNL = nl_a.fNestedLoopsPro[0][0][0]->GetNbinsX();
+  if (nBinsQV != nBinsNL) {
+    cout << __LINE__ << endl;
+    exit(1);
+  }
+  cout << endl;
+  cout << "   [0] : integrated" << endl;
+  for (Int_t o = 0; o < 4; o++) {
+    cout << Form("   ==== <<%d>>-particle correlations ====", 2 * (o + 1)) << endl;
+    for (Int_t h = 0; h < 6; h++) {
+      for (Int_t b = 1; b <= nBinsQV; b++) {
+        if (c_a.fCorrelationsPro[o][h][0]) {
+          valueQV = c_a.fCorrelationsPro[o][h][0]->GetBinContent(b);
+        }
+        if (nl_a.fNestedLoopsPro[o][h][0]) {
+          valueNL = nl_a.fNestedLoopsPro[o][h][0]->GetBinContent(b);
+        }
+        if (TMath::Abs(valueQV) > 0. && TMath::Abs(valueNL) > 0.) {
+          cout << Form("   h=%d, Q-vectors:    ", h + 1) << valueQV << endl;
+          cout << Form("   h=%d, Nested loops: ", h + 1) << valueNL << endl;
+          if (TMath::Abs(valueQV - valueNL) > 1.e-5) {
+            cout << Form("[%d][%d][%d]", o, h, 0) << endl;
+            cout << __LINE__ << endl;
+            exit(1);
+          }
+        } // if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
+      }   // for(Int_t b=1;b<=nBinsQV;b++)
+    }     // for(Int_t h=0;h<6;h++)
+    cout << endl;
+  } // for(Int_t o=0;o<4;o++)
+
+  /* TBI 20220803 enable the rest below eventually
+
+   cout<<endl;
+
+   // b) Comparison vs. multiplicity:
+   nBinsQV = fCorrelationsPro[0][0][1]->GetNbinsX();
+   nBinsNL = fNestedLoopsPro[0][0][1]->GetNbinsX();
+   if(nBinsQV != nBinsNL){cout<<__LINE__<<endl; exit(1);}
+   cout<<endl;
+   cout<<"   [1] : vs. multiplicity"<<endl;
+   for(Int_t o=0;o<4;o++)
+   {
+    cout<<Form("   ==== <<%d>>-particle correlations ====",2*(o+1))<<endl;
+    for(Int_t h=0;h<6;h++)
+    {
+     for(Int_t b=1;b<=nBinsQV;b++)
+     {
+      if(fCorrelationsPro[o][h][1]){valueQV = fCorrelationsPro[o][h][1]->GetBinContent(b);}
+      if(fNestedLoopsPro[o][h][1]){valueNL = fNestedLoopsPro[o][h][1]->GetBinContent(b);}
+      if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
+      {
+       cout<<Form("   h=%d, b=%d, Q-vectors:    ",h+1,b)<<valueQV<<endl;
+       cout<<Form("   h=%d, b=%d, Nested loops: ",h+1,b)<<valueNL<<endl;
+       if(TMath::Abs(valueQV-valueNL)>1.e-5)
+       {
+        cout<<Form("[%d][%d][%d]",o,h,1)<<endl; cout<<__LINE__<<endl; exit(1);
+       }
+      } // if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
+     } // for(Int_t b=1;b<=nBinsQV;b++)
+    } // for(Int_t h=0;h<6;h++)
+    cout<<endl;
+   } // for(Int_t o=0;o<4;o++)
+
+   cout<<endl;
+
+   // c) Comparison vs. centrality:
+   nBinsQV = fCorrelationsPro[0][0][2]->GetNbinsX();
+   nBinsNL = fNestedLoopsPro[0][0][2]->GetNbinsX();
+   if(nBinsQV != nBinsNL){cout<<__LINE__<<endl; exit(1);}
+   cout<<endl;
+   cout<<"   [2] : vs. centrality"<<endl;
+   for(Int_t o=0;o<4;o++)
+   {
+    cout<<Form("   ==== <<%d>>-particle correlations ====",2*(o+1))<<endl;
+    for(Int_t h=0;h<6;h++)
+    {
+     for(Int_t b=1;b<=nBinsQV;b++)
+     {
+      if(fCorrelationsPro[o][h][2]){valueQV = fCorrelationsPro[o][h][2]->GetBinContent(b);}
+      if(fNestedLoopsPro[o][h][2]){valueNL = fNestedLoopsPro[o][h][2]->GetBinContent(b);}
+      if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
+      {
+       cout<<Form("   h=%d, b=%d, Q-vectors:    ",h+1,b)<<valueQV<<endl;
+       cout<<Form("   h=%d, b=%d, Nested loops: ",h+1,b)<<valueNL<<endl;
+       if(TMath::Abs(valueQV-valueNL)>1.e-5)
+       {
+        cout<<Form("[%d][%d][%d]",o,h,2)<<endl; cout<<__LINE__<<endl; exit(1);
+       }
+      } // if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
+     } // for(Int_t b=1;b<=nBinsQV;b++)
+    } // for(Int_t h=0;h<6;h++)
+    cout<<endl;
+   } // for(Int_t o=0;o<4;o++)
+
+  */
+
+} // void ComparisonNestedLoopsVsCorrelations()
 
 //============================================================
 
@@ -764,7 +1221,27 @@ TComplex Two(Int_t n1, Int_t n2)
 
 //============================================================
 
-// ... TBI 20220809 ... port the rest
+TComplex Three(Int_t n1, Int_t n2, Int_t n3)
+{
+  // Generic three-particle correlation <exp[i(n1*phi1+n2*phi2+n3*phi3)]>.
+
+  TComplex three = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) - Q(n1 + n2, 2) * Q(n3, 1) - Q(n2, 1) * Q(n1 + n3, 2) - Q(n1, 1) * Q(n2 + n3, 2) + 2. * Q(n1 + n2 + n3, 3);
+
+  return three;
+
+} // TComplex Three(Int_t n1, Int_t n2, Int_t n3)
+
+//============================================================
+
+TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
+{
+  // Generic four-particle correlation <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4)]>.
+
+  TComplex four = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
+
+  return four;
+
+} // TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
 
 //============================================================
 
@@ -816,7 +1293,7 @@ void SetWeightsHist(TH1D* const hist, const char* variable)
   // Finally:
   hist->SetDirectory(0);
   pw_a.fWeightsHist[ppe] = (TH1D*)hist->Clone(); // use eventually this line
-  //fWeightsHist = (TH1D*)hist->Clone();
+  // fWeightsHist = (TH1D*)hist->Clone();
   if (!pw_a.fWeightsHist[ppe]) {
     cout << __LINE__ << endl;
     exit(1);
@@ -856,7 +1333,7 @@ TH1D* GetWeightsHist(const char* variable)
 
   // Finally:
   return pw_a.fWeightsHist[ppe]; // use eventually this line
-                                 //return fWeightsHist;
+                                 // return fWeightsHist;
 
 } // TH1D* GetWeightsHist(const char *variable)
 
@@ -896,7 +1373,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
  */
 
   // d) Access the external ROOT file and fetch the desired histogram with weights:
-  //TFile *weightsFile = TFile::Open(filePath,"READ");
+  // TFile *weightsFile = TFile::Open(filePath,"READ");
   TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
   if (!alien) {
     cout << __LINE__ << endl;
@@ -911,12 +1388,12 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
 
   hist = (TH1D*)(weightsFile->Get("phi_Task=>0.0-5.0_clone_96"));
 
-  //hist = (TH1D*)(weightsFile->Get(Form("%s_%s",variable,fTaskName.Data()))); // 20220712 this was the original line, instead of thew one above, which is there temporarily
+  // hist = (TH1D*)(weightsFile->Get(Form("%s_%s",variable,fTaskName.Data()))); // 20220712 this was the original line, instead of thew one above, which is there temporarily
 
   if (!hist) {
     hist = (TH1D*)(weightsFile->Get(Form("%s", variable)));
   } // yes, for some simple tests I can have only histogram named e.g. 'phi'
-  //if(!hist){Red(Form("%s_%s",variable,fTaskName.Data())); cout<<__LINE__<<endl;exit(1);}
+  // if(!hist){Red(Form("%s_%s",variable,fTaskName.Data())); cout<<__LINE__<<endl;exit(1);}
   hist->SetDirectory(0);
   hist->SetTitle(filePath);
 
