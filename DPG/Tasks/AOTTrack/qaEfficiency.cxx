@@ -593,7 +593,7 @@ struct QaEfficiency {
     if (!doprocessMC && !doprocessMCWithoutCollisions) {
       return;
     }
-    if (doprocessMC && processMCWithoutCollisions) {
+    if (doprocessMC && doprocessMCWithoutCollisions) {
       LOG(fatal) << "Both processMC and processMCWithoutCollisions are set to true. Please set only one of them to true.";
     }
 
