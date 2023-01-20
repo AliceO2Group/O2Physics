@@ -376,6 +376,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("lmee")) {
         hm->AddHistogram(histClass, "QuadDCAabsXY", "", false, 100, -0.0, 1.0, VarManager::kQuadDCAabsXY);
+        hm->AddHistogram(histClass, "QuadDCAsigXY", "", false, 100, -0.0, 1.0, VarManager::kQuadDCAsigXY);
+        hm->AddHistogram(histClass, "Mass_Pt_QuadDCAsigXY", "", false, 500, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, -0.0, 1.0, VarManager::kQuadDCAsigXY);
       }
       if (subGroupStr.Contains("vertexing")) {
         hm->AddHistogram(histClass, "Lxy", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxy);
