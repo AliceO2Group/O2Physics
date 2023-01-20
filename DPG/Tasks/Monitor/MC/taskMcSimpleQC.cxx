@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Simple QC task to run 
+/// \brief Simple QC task to run
 /// \author Fabrizio Grosa, fabrizio.grosa@cern.ch (CERN)
 
 #include "Framework/AnalysisDataModel.h"
@@ -68,7 +68,7 @@ struct mcSimpleQc {
       uint nTracks{0u}, nAmbTracks{0u};
       for (const auto& track : tracksPerCollision) {
         nTracks++;
-        for (const auto& ambTrack: ambTracks) {
+        for (const auto& ambTrack : ambTracks) {
           if (ambTrack.trackId() == track.globalIndex()) {
             nAmbTracks++;
             break;
@@ -76,14 +76,12 @@ struct mcSimpleQc {
         }
       }
       registry.fill(HIST("histNumGlobalTracks"), nTracks);
-      registry.fill(HIST("histFracAmbiguousTracks"), float(nAmbTracks)/nTracks);
+      registry.fill(HIST("histFracAmbiguousTracks"), float(nAmbTracks) / nTracks);
     }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<mcSimpleQc>(cfgc),
-  };
+  return WorkflowSpec{adaptAnalysisTask<mcSimpleQc>(cfgc)};
 }
