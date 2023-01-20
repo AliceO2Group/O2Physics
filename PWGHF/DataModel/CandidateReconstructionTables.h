@@ -47,7 +47,6 @@ DECLARE_SOA_COLUMN(PzProng, pzProng, float);                  //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
-                  hf_sel_track::IsSelProngAllColls,
                   hf_sel_track::IsSelProng,
                   hf_sel_track::PxProng,
                   hf_sel_track::PyProng,
