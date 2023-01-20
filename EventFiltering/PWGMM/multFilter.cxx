@@ -211,6 +211,7 @@ struct multFilter {
       multiplicity.fill(HIST("hT0A_time"), t0_a);
     }
     if (!isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
+      tags(false, false, false, false, false, false, false, false);
       return;
     }
 
