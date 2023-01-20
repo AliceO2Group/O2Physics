@@ -219,7 +219,7 @@ struct strangenessFilter {
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
     bool keepEvent[6]{false};
-    
+
     if (kint7 && !collision.alias()[kINT7]) {
       strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
@@ -242,8 +242,6 @@ struct strangenessFilter {
     QAHistos.fill(HIST("hCentrality"), collision.centRun2V0M());
     EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centRun2V0M());
     hProcessedEvents->Fill(0.5);
-
-
 
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -491,7 +489,7 @@ struct strangenessFilter {
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
     bool keepEvent[6]{false};
-   
+
     if (sel8 && !collision.sel8()) {
       strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
