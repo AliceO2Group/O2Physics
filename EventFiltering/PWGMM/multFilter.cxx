@@ -210,9 +210,6 @@ struct multFilter {
       multiplicity.fill(HIST("hT0C_time"), t0_c);
       multiplicity.fill(HIST("hT0A_time"), t0_a);
     }
-    if (!isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
-      return;
-    }
 
     // global observables
     int multTrack = 0;
@@ -264,9 +261,10 @@ struct multFilter {
       auto ft0 = collision.foundFT0();
       float t0_a = ft0.timeA();
       float t0_c = ft0.timeC();
-      multiplicity.fill(HIST("hT0Cafter_time"), t0_c);
-      multiplicity.fill(HIST("hT0Aafter_time"), t0_a);
-
+      if (isOkTimeFT0) {
+        multiplicity.fill(HIST("hT0Cafter_time"), t0_c);
+        multiplicity.fill(HIST("hT0Aafter_time"), t0_a);
+      }
       for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
         float amplitude = ft0.amplitudeA()[i_a];
         uint8_t channel = ft0.channelA()[i_a];
@@ -375,6 +373,12 @@ struct multFilter {
     estimator[5] = combined_estimator6;
     estimator[6] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
     estimator[7] = flPt;
+
+    if (!isOkTimeFT0) {
+      for (int i_e = 1; i_e < 7; ++i_e) {
+        estimator[i_e] = 0;
+      }
+    }
 
     static_for<0, 7>([&](auto i) {
       constexpr int index = i.value;
