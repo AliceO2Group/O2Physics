@@ -217,26 +217,31 @@ struct strangenessFilter {
 
   void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
+    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
+    bool keepEvent[6]{false};
+
     if (kint7 && !collision.alias()[kINT7]) {
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
     }
     if (sel7 && !collision.sel7()) {
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
     }
     if (sel8 && !collision.sel8()) {
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
     }
 
-    if (TMath::Abs(collision.posZ()) > cutzvertex)
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
+    }
 
     QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
     QAHistos.fill(HIST("hCentrality"), collision.centRun2V0M());
     EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centRun2V0M());
     hProcessedEvents->Fill(0.5);
-
-    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
-    bool keepEvent[6]{false};
 
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -482,20 +487,21 @@ struct strangenessFilter {
 
   void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
+    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
+    bool keepEvent[6]{false};
 
     if (sel8 && !collision.sel8()) {
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
     }
     // all processed events after event selection
     hProcessedEvents->Fill(0.5);
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
     }
     QAHistos.fill(HIST("hVtxZ"), collision.posZ());
-
-    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
-    bool keepEvent[6]{false};
 
     // constants
     const float ctauxi = 4.91;     // from PDG
