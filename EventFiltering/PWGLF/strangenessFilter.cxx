@@ -62,7 +62,7 @@ struct strangenessFilter {
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
 
-  //our track selection
+  // our track selection
   TrackSelection myTrackSelection();
 
   // Selection criteria for cascades
@@ -418,9 +418,9 @@ struct strangenessFilter {
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
-	if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
-	  continue;
-	}
+        if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+          continue;
+        }
         triggcounter++;
         QAHistosTriggerParticles.fill(HIST("hPtTrigger"), track.pt());
         QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi(), track.pt());
@@ -713,12 +713,13 @@ struct strangenessFilter {
         xicounter++;
 
         // Plot for estimates
-	for (auto track : tracks) { // start loop over tracks
-	  if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
-	    continue;
-	  }
+        for (auto track : tracks) { // start loop over tracks
+          if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+            continue;
+          }
           triggcounterForEstimates++;
-	  if (triggcounterForEstimates>0) break;
+          if (triggcounterForEstimates > 0)
+            break;
         }
         if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
@@ -762,15 +763,16 @@ struct strangenessFilter {
       QAHistosTriggerParticles.fill(HIST("hDCAxyTriggerAllEv"), track.dcaXY(), track.pt());
       QAHistosTriggerParticles.fill(HIST("hDCAzTriggerAllEv"), track.dcaZ(), track.pt());
     } // end loop over tracks
-    if (triggcounterAllEv>0) hProcessedEvents->Fill(1.5);
+    if (triggcounterAllEv > 0)
+      hProcessedEvents->Fill(1.5);
     QAHistosTriggerParticles.fill(HIST("hTriggeredParticlesAllEv"), triggcounterAllEv);
 
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
-	if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
-	  continue;
-	}
+        if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+          continue;
+        }
         triggcounter++;
         QAHistosTriggerParticles.fill(HIST("hPtTrigger"), track.pt());
         QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi(), track.pt());
@@ -844,18 +846,18 @@ struct strangenessFilter {
 TrackSelection strangenessFilter::myTrackSelection()
 {
   TrackSelection selectedTracks;
-  selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); 
+  selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
   selectedTracks.SetPtRange(hMinPt, 1e10f);
   selectedTracks.SetEtaRange(-hEta, hEta);
   selectedTracks.SetRequireITSRefit(true);
   selectedTracks.SetRequireTPCRefit(true);
-  selectedTracks.SetRequireGoldenChi2(false); 
+  selectedTracks.SetRequireGoldenChi2(false);
   selectedTracks.SetMinNCrossedRowsTPC(70);
   selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
   selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); //one hit in any of the first three layers of IB
+  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any of the first three layers of IB
   selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  //selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+  // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
   selectedTracks.SetMaxDcaXY(1.f);
   selectedTracks.SetMaxDcaZ(2.f);
 
