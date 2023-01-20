@@ -78,8 +78,17 @@ function(o2physics_add_library baseTargetName)
   o2physics_name_target(${baseTargetName} NAME targetName)
   set(target ${targetName})
 
+  # If -DSTANDALONE_EXECUTABLES is passed to cmake,
+  # we only build object libraries so that each executable
+  # is fully selfcontained for what concerns O2Physics
+  # code and can be deployed with a simple cp, reusing
+  # a compatible O2 environment
+  if (STANDALONE_EXECUTABLES)
+    add_library(${target} OBJECT ${A_SOURCES})
+  else()
+    add_library(${target} ${A_SOURCES})
+  endif()
   # define the target and its O2Physics:: alias
-  add_library(${target} ${A_SOURCES})
   add_library(O2Physics::${baseTargetName} ALIAS ${target})
 
   # set the export name so that packages using O2Physics can reference the target as

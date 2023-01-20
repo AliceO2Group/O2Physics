@@ -141,7 +141,7 @@ function(add_root_dictionary target)
       --rootmap_file ${rootmapFile}
       --dictionary_file ${dictionaryFile}
       --ld_library_path ${LD_LIBRARY_PATH}
-      --rootmap_library_name $<TARGET_FILE_NAME:${target}>
+      --rootmap_library_name $<TARGET_PROPERTY:${target},OUTPUT_NAME>
       --include_dirs -I$<JOIN:${includeDirs},$<SEMICOLON>-I>
       $<$<BOOL:${prop}>:--compile_defs>
       $<$<BOOL:${prop}>:-D$<JOIN:${prop},$<SEMICOLON>-D>>
