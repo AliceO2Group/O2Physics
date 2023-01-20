@@ -38,6 +38,15 @@ struct HfTrackToCollisionAssociation {
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
+  void init(InitContext const&)
+  {
+    std::array<int, 3> doProcess = {doprocessAssocWithTime, doprocessAssocWithAmb, doprocessStandardAssoc};
+    int doProcessSum = std::accumulate(doProcess.begin(), doProcess.end(), 0);
+    if (doProcessSum != 1) {
+      LOGP(fatal, "Exactly one process function should be enabled! Exit");
+    }
+  }
+
   void processAssocWithTime(Collisions const& collisions,
                             TracksWithSel const& tracksUnfiltered,
                             TracksWithSelFilter const& tracks,
@@ -194,13 +203,13 @@ struct HfTrackToCollisionAssociation {
             for (const auto& repCollId2 : repeatCollIds) {
               if (repCollId2 != repCollId) {
                 const uint64_t trackId = pvContr.globalIndex();
-                collIds.push_back(repCollId);
+                collIds.push_back(repCollId2);
                 trackIds.push_back(trackId);
                 trackTypes.push_back(hf_track_association::eTrackType::PVContributor);
                 if (collsPerTrack[trackId] == nullptr) {
                   collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
                 }
-                collsPerTrack[trackId].get()->push_back(repCollId);
+                collsPerTrack[trackId].get()->push_back(repCollId2);
               }
             }
           }
