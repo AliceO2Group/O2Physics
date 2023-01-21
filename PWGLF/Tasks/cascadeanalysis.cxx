@@ -357,7 +357,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2, "Process Run 2 data", false);
 
-  void processRun3VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void processRun3VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   //process function subscribing to Run 3-like analysis objects
   {
     //Run 3 event selection criteria
@@ -366,7 +366,7 @@ struct cascadeAnalysis {
     }
     //fill cascade information with tracksIU typecast (Run 3)
     for (auto& casc : Cascades) {
-      processCascadeCandidate<FullTracksExtIU>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+      processCascadeCandidate<FullTracksExtIU>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M());
     }
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3VsMultiplicity, "Process Run 3 data vs multiplicity", false);
