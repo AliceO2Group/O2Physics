@@ -9,7 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
@@ -22,6 +21,11 @@ o2physics_add_dpl_workflow(lambdakzerobuilder
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdakzerolabelbuilder
+                    SOURCES lambdakzerolabelbuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambdakzerofinder
                     SOURCES lambdakzerofinder.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
@@ -30,6 +34,11 @@ o2physics_add_dpl_workflow(lambdakzerofinder
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadelabelbuilder
+                    SOURCES cascadelabelbuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascadefinder
