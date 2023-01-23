@@ -21,7 +21,7 @@
 /EventFiltering @alibuild @mpuccio
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera
 /EventFiltering/PWGUD @alibuild @pbuehler
-/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95
 /EventFiltering/PWGCF @alibuild @lauraser
 /EventFiltering/PWGMM @alibuild @aortizve
 /EventFiltering/PWGJE @alibuild @fkrizek
