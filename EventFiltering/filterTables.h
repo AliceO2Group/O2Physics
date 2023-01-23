@@ -144,7 +144,6 @@ DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
 using JetFilter = JetFilters::iterator;
 
 DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
-                  filtering::CollisionId,
                   filtering::JetFullHighPt);
 
 using FullJetFilter = FullJetFilters::iterator;
