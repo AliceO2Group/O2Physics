@@ -26,6 +26,7 @@
 #include <TObject.h>
 #include <TString.h>
 #include "TRandom.h"
+#include "TH3F.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
@@ -40,17 +41,14 @@
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "DetectorsVertexing/FwdDCAFitterN.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using std::cout;
 using std::endl;
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 using Vec3D = ROOT::Math::SVector<double, 3>;
-
-// TODO: create an array holding these constants for all needed particles or check for a place where these are already defined
-static const float fgkElectronMass = 0.000511; // GeV
-static const float fgkMuonMass = 0.105658;     // GeV
-static const float fgkKaonMass = 0.493677;     // GeV
+using namespace o2::constants::physics;
 
 //_________________________________________________________________________
 class VarManager : public TObject
@@ -70,6 +68,7 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
+    CollisionCentRun3 = BIT(10),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -138,6 +137,7 @@ class VarManager : public TObject
     kVtxCovZZ,
     kVtxChi2,
     kCentVZERO,
+    kCentFT0C,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -281,6 +281,9 @@ class VarManager : public TObject
     kMCParticleGeneratorId,
     kNMCParticleVariables,
 
+    // MC mother particle variables
+    kMCMotherPdgCode,
+
     // Pair variables
     kCandidateId,
     kPairType,
@@ -312,6 +315,7 @@ class VarManager : public TObject
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
+    kDeltaPtotTracks,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -331,6 +335,16 @@ class VarManager : public TObject
 
     kNVars
   }; // end of Variables enumeration
+
+  enum CalibObjects {
+    kTPCElectronMean = 0,
+    kTPCElectronSigma,
+    kTPCPionMean,
+    kTPCPionSigma,
+    kTPCProtonMean,
+    kTPCProtonSigma,
+    kNCalibObjects
+  };
 
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
@@ -409,6 +423,8 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
+  template <typename U, typename T>
+  static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -425,6 +441,30 @@ class VarManager : public TObject
   static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
+
+  static void SetCalibrationObject(CalibObjects calib, TObject* obj)
+  {
+    fgCalibs[calib] = obj;
+    // Check whether all the needed objects for TPC postcalibration are available
+    if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
+      fgRunTPCPostCalibration[0] = true;
+    }
+    if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
+      fgRunTPCPostCalibration[1] = true;
+    }
+    if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
+      fgRunTPCPostCalibration[3] = true;
+    }
+  }
+  static TObject* GetCalibrationObject(CalibObjects calib)
+  {
+    auto obj = fgCalibs.find(calib);
+    if (obj == fgCalibs.end()) {
+      return 0x0;
+    } else {
+      return obj->second;
+    }
+  }
 
  public:
   VarManager();
@@ -452,10 +492,13 @@ class VarManager : public TObject
   static o2::vertexing::FwdDCAFitterN<2> fgFitterTwoProngFwd;
   static o2::vertexing::FwdDCAFitterN<3> fgFitterThreeProngFwd;
 
+  static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
+  static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
+
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 1)
+  ClassDef(VarManager, 2)
 };
 
 template <typename T, typename U, typename V>
@@ -478,11 +521,6 @@ void VarManager::FillEvent(T const& event, float* values)
 {
   if (!values) {
     values = fgValues;
-  }
-
-  if constexpr ((fillMap & BC) > 0) {
-    values[kRunNo] = event.bc().runNumber(); // accessed via Collisions table
-    values[kBC] = event.bc().globalBC();
   }
 
   if constexpr ((fillMap & CollisionTimestamp) > 0) {
@@ -540,6 +578,10 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionCent) > 0) {
     values[kCentVZERO] = event.centRun2V0M();
+  }
+
+  if constexpr ((fillMap & CollisionCentRun3) > 0) {
+    values[kCentFT0C] = event.centFT0C();
   }
 
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
@@ -800,7 +842,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the dalitz selections
   if constexpr ((fillMap & DalitzBits) > 0) {
     for (int i = 0; i < 8; i++) {
-      values[kIsDalitzLeg + i] = bool(track.dalitzBits() & (uint8_t(1) << i));
+      values[kIsDalitzLeg + i] = static_cast<bool>(track.dalitzBits() & (uint8_t(1) << i));
     }
   }
 
@@ -811,6 +853,72 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
     values[kTPCnSigmaPr] = track.tpcNSigmaPr();
+
+    // TODO: This part is deprecated and should be removed soon. It performs TPC postcalibration based on some
+    //      hardcoded parameterization.
+    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
+      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
+      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
+    }
+
+    // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
+    if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronSigma]);
+
+      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
+      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
+      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+    }
+    // compute TPC postcalibrated pion nsigma if required
+    if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionSigma]);
+
+      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
+      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
+      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+    }
+    // compute TPC postcalibrated proton nsigma if required
+    if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonSigma]);
+
+      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
+      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
+      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+    }
     values[kTOFnSigmaEl] = track.tofNSigmaEl();
     values[kTOFnSigmaMu] = track.tofNSigmaMu();
     values[kTOFnSigmaPi] = track.tofNSigmaPi();
@@ -833,11 +941,6 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
-    }
-    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
-      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
-      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
-      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
     }
   }
 
@@ -869,24 +972,37 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMass] = track.mass();
   }
 
-  if constexpr ((fillMap & ParticleMC) > 0) {
-    values[kMCPdgCode] = track.pdgCode();
-    values[kMCParticleWeight] = track.weight();
-    values[kMCPx] = track.px();
-    values[kMCPy] = track.py();
-    values[kMCPz] = track.pz();
-    values[kMCE] = track.e();
-    values[kMCVx] = track.vx();
-    values[kMCVy] = track.vy();
-    values[kMCVz] = track.vz();
-    values[kMCPt] = track.pt();
-    values[kMCPhi] = track.phi();
-    values[kMCEta] = track.eta();
-    values[kMCY] = track.y();
-    values[kMCParticleGeneratorId] = track.producedByGenerator();
+  // Derived quantities which can be computed based on already filled variables
+  FillTrackDerived(values);
+}
+
+template <typename U, typename T>
+void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
+{
+  if (!values) {
+    values = fgValues;
   }
 
-  // Derived quantities which can be computed based on already filled variables
+  // Quantities based on the mc particle table
+  values[kMCPdgCode] = track.pdgCode();
+  values[kMCParticleWeight] = track.weight();
+  values[kMCPx] = track.px();
+  values[kMCPy] = track.py();
+  values[kMCPz] = track.pz();
+  values[kMCE] = track.e();
+  values[kMCVx] = track.vx();
+  values[kMCVy] = track.vy();
+  values[kMCVz] = track.vz();
+  values[kMCPt] = track.pt();
+  values[kMCPhi] = track.phi();
+  values[kMCEta] = track.eta();
+  values[kMCY] = track.y();
+  values[kMCParticleGeneratorId] = track.producedByGenerator();
+  if (track.has_mothers()) {
+    auto mother = track.template mothers_first_as<U>();
+    values[kMCMotherPdgCode] = mother.pdgCode();
+  }
+
   FillTrackDerived(values);
 }
 
@@ -897,15 +1013,15 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -916,6 +1032,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
@@ -954,13 +1073,6 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
 
     float bz = fgFitterTwoProngBarrel.getBz();
-
-    // ordering of tracks, so v1 has larger momentum
-    if (v1.P() < v2.P()) {
-      ROOT::Math::PtEtaPhiMVector v3 = v1;
-      v1 = v2;
-      v2 = v3;
-    }
 
     // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
     // vector product of pep X pem
@@ -1022,15 +1134,15 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -1050,15 +1162,15 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   // TODO : implement resolution smearing.
@@ -1141,8 +1253,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     return;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   Vec3D secondaryVertex;
   float bz = 0;
   std::array<float, 3> pvec0;
@@ -1174,8 +1286,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
     } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
       // Get pca candidate from forward DCA fitter
-      m1 = fgkMuonMass;
-      m2 = fgkMuonMass;
+      m1 = MassMuon;
+      m2 = MassMuon;
 
       secondaryVertex = fgFitterTwoProngFwd.getPCACandidate();
       bz = fgFitterTwoProngFwd.getBz();
@@ -1243,8 +1355,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   int procCodeJpsi = 0;
 
   if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
-    mlepton = fgkMuonMass;
-    mtrack = fgkMuonMass;
+    mlepton = MassMuon;
+    mtrack = MassMuon;
 
     double chi21 = lepton1.chi2();
     double chi22 = lepton2.chi2();
@@ -1272,8 +1384,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
     procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
   } else if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
-    mlepton = fgkElectronMass;
-    mtrack = fgkKaonMass;
+    mlepton = MassElectron;
+    mtrack = MassKaonCharged;
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
     std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
                                          lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
@@ -1425,15 +1537,15 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   // Fill dilepton information
@@ -1448,6 +1560,12 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
   values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
   values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
+  if (isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
+    values[kU2Q2] = -999.;
+    values[kU3Q3] = -999.;
+    values[kCos2DeltaPhi] = -999.;
+    values[kCos3DeltaPhi] = -999.;
+  }
 }
 
 template <typename T1, typename T2>

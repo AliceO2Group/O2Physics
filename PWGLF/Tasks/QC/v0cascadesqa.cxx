@@ -49,18 +49,20 @@ using std::array;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra>;                       //, aod::McTrackLabels>; aod::pidTPCPi, aod::pidTPCPr
 using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>; // aod::pidTPCPi, aod::pidTPCPr
-using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
+using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::pidTOFKa, aod::pidTPCKa>;
 
 struct v0cascadesQA {
 
   // configurable event properties
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> doextraanalysis{"doextraanalysis", 0, "Add extra histograms"};
 
   // configurable binning of histograms
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0CosPA{"binV0CosPA", {200, 0.8f, 1.0f}, ""};
+  ConfigurableAxis binV0PA{"binV0PA", {1000, 0.f, 1.0f}, ""};
   ConfigurableAxis binV0Radius{"binV0Radius", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0DecayLength{"binV0DecayLength", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binV0DCANegToPV{"binV0DCANegToPV", {100, -1.0f, 1.0f}, ""};
@@ -85,11 +87,15 @@ struct v0cascadesQA {
   ConfigurableAxis binRadius{"binRadius", {100, 0.0f, 50.0f}, ""};
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
+  ConfigurableAxis binInvMassCasc{"binInvMassCasc", {1000, 0.f, 1.0f}, ""};
+
+  OutputObj<TH1F> V0SelectionSummary{TH1F("V0SelectionSummary", "V0SelectionSummary; Selections; Cut", 10, 0., 10.)};
 
   HistogramRegistry histos_eve{
     "histos-eve",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hEventCounterMC", "hEventCounterMC", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -105,11 +111,12 @@ struct v0cascadesQA {
   HistogramRegistry histos_Casc{
     "histos-Casc",
     {
-      {"QA_XinusCandidates", "QA_XinusCandidates", {HistType::kTH1F, {{10, 0.f, 10.f}}}},
+      {"CascSelectionSummary", "CascSelectionSummary", {HistType::kTH1F, {{10, 0.f, 10.f}}}},
+      {"QA_XiMinusCandidates", "QA_XiMinusCandidates", {HistType::kTH1F, {{10, 0.f, 10.f}}}},
       {"XiProgSelections", "XiProgSelections", {HistType::kTH2F, {{30, 0.5f, 30.5f}, {2, -2, 2}}}},
       {"OmegaProgSelections", "OmegaProgSelections", {HistType::kTH2F, {{30, 0.5f, 30.5f}, {2, -2, 2}}}},
       {"CascCosPA", "CascCosPA", {HistType::kTH2F, {{200, 0.6f, 1.0f}, {2, -2, 2}}}},
-      {"V0CosPA", "V0CosPA", {HistType::kTH2F, {{150, 0.7f, 1.0f}, {2, -2, 2}}}},
+      {"V0CosPA", "V0CosPA", {HistType::kTH2F, {{300, 0.7f, 1.0f}, {2, -2, 2}}}},
       {"V0CosPAToXi", "V0CosPAToXi", {HistType::kTH2F, {{100, 0.9f, 1.0f}, {2, -2, 2}}}},
       {"CascDecayLength", "CascDecayLength", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {2, -2, 2}}}},
       {"CascDecayLengthXi", "CascDecayLengthXi", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {2, -2, 2}}}},
@@ -145,10 +152,11 @@ struct v0cascadesQA {
     const AxisSpec axisPt{binPt, "p_{T} (GeV/c)"};
     const AxisSpec axisPtsmall{binPtsmall, "p_{T} (GeV/c)"};
     const AxisSpec axisV0CosPA{binV0CosPA, "V0 Cos(PA)"};
+    const AxisSpec axisV0PA{binV0PA, "Pointing Angle"};
     const AxisSpec axisV0Radius{binV0Radius, "V0 Radius (cm)"};
     const AxisSpec axisV0DecayLength{binV0DecayLength, "V0 Decay Length (cm)"};
     const AxisSpec axisV0DCANegToPV{binV0DCANegToPV, "V0 DCA Neg To PV (cm)"};
-    const AxisSpec axisV0DCAPosToPV{binV0DCAPosToPV, "V0 DCA Neg To PV (cm)"};
+    const AxisSpec axisV0DCAPosToPV{binV0DCAPosToPV, "V0 DCA Pos To PV (cm)"};
     const AxisSpec axisV0DCAV0Dau{binV0DCAV0Dau, "V0 DCA V0 Daughters (cm)"};
     const AxisSpec axisCtauK0s{binCtauK0s, "K0s c#tau (cm)"};
     const AxisSpec axisCtauLambda{binCtauLambda, "Lambda c#tau (cm)"};
@@ -162,6 +170,7 @@ struct v0cascadesQA {
     const AxisSpec axisInvMassK0S{binInvMassK0S, "InvMass K0s"};
     const AxisSpec axisInvMassLambda{binInvMassLambda, "InvMass Lambda"};
     const AxisSpec axisInvMassAntiLambda{binInvMassAntiLambda, "InvMass AntiLambda"};
+    const AxisSpec axisInvMassCasc{binInvMassCasc, "InvMass Cascades"};
     const AxisSpec axisResponsePionFromLambda{binResponsePionFromLambda, "Response Pion From Lambda"};
     const AxisSpec axisResponseProtonFromLambda{binResponseProtonFromLambda, "Response Proton From Lambda"};
     const AxisSpec axisEta{binEta, "Eta"};
@@ -190,24 +199,29 @@ struct v0cascadesQA {
     histos_V0.add("InvMassAntiLambda", "InvMassAntiLambda", kTH2F, {axisPt, axisInvMassAntiLambda});
     histos_V0.add("ResponsePionFromLambda", "ResponsePionFromLambda", kTH2F, {axisPt, axisResponsePionFromLambda});
     histos_V0.add("ResponseProtonFromLambda", "ResponseProtonFromLambda", kTH2F, {axisPt, axisResponseProtonFromLambda});
-    histos_V0.add("InvMassK0S_Radius", "InvMassK0S_Radius", kTH2F, {axisRadius, axisInvMassK0S});
-    histos_V0.add("InvMassLambda_Radius", "InvMassLambda_Radius", kTH2F, {axisRadius, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambda_Radius", "InvMassAntiLambda_Radius", kTH2F, {axisRadius, axisInvMassAntiLambda});
-    histos_V0.add("InvMassK0S_EtaDaughters", "InvMassK0S_EtaDaughters", kTH3F, {axisEta, axisEta, axisInvMassK0S});
-    histos_V0.add("InvMassLambda_EtaDaughters", "InvMassLambda_EtaDaughters", kTH3F, {axisEta, axisEta, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambda_EtaDaughters", "InvMassAntiLambda_EtaDaughters", kTH3F, {axisEta, axisEta, axisInvMassAntiLambda});
-    histos_V0.add("InvMassK0S_Ctau", "InvMassK0S_Ctau", kTH2F, {axisCtauK0s, axisInvMassK0S});
-    histos_V0.add("InvMassLambda_Ctau", "InvMassLambda_Ctau", kTH2F, {axisCtauLambda, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", kTH2F, {axisCtauAntiLambda, axisInvMassAntiLambda});
-    histos_V0.add("InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", kTH3F, {axisPhi, axisPhi, axisInvMassK0S});
-    histos_V0.add("InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", kTH3F, {axisPhi, axisPhi, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", kTH3F, {axisPhi, axisPhi, axisInvMassAntiLambda});
-    histos_V0.add("InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassK0S});
-    histos_V0.add("InvMassLambda_ITSMapDaughters", "InvMassLambda_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambda_ITSMapDaughters", "InvMassAntiLambda_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassAntiLambda});
-    histos_V0.add("InvMassK0S_PtRadius", "InvMassK0S_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassK0S});
-    histos_V0.add("InvMassLambda_PtRadius", "InvMassLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassLambda});
-    histos_V0.add("InvMassAntiLambda_PtRadius", "InvMassAntiLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassAntiLambda});
+    if (doextraanalysis) {
+      histos_V0.add("InvMassK0S_Radius", "InvMassK0S_Radius", kTH2F, {axisRadius, axisInvMassK0S});
+      histos_V0.add("InvMassLambda_Radius", "InvMassLambda_Radius", kTH2F, {axisRadius, axisInvMassLambda});
+      histos_V0.add("InvMassAntiLambda_Radius", "InvMassAntiLambda_Radius", kTH2F, {axisRadius, axisInvMassAntiLambda});
+      histos_V0.add("InvMassK0S_EtaDaughters", "InvMassK0S_EtaDaughters", kTH3F, {axisEta, axisEta, axisInvMassK0S});
+      histos_V0.add("InvMassLambda_EtaDaughters", "InvMassLambda_EtaDaughters", kTH3F, {axisEta, axisEta, axisInvMassLambda});
+      histos_V0.add("InvMassAntiLambda_EtaDaughters", "InvMassAntiLambda_EtaDaughters", kTH3F, {axisEta, axisEta, axisInvMassAntiLambda});
+      histos_V0.add("InvMassK0S_Ctau", "InvMassK0S_Ctau", kTH2F, {axisCtauK0s, axisInvMassK0S});
+      histos_V0.add("InvMassLambda_Ctau", "InvMassLambda_Ctau", kTH2F, {axisCtauLambda, axisInvMassLambda});
+      histos_V0.add("InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", kTH2F, {axisCtauAntiLambda, axisInvMassAntiLambda});
+      histos_V0.add("InvMassK0S_PhiDaughters", "InvMassK0S_PhiDaughters", kTH3F, {axisPhi, axisPhi, axisInvMassK0S});
+      histos_V0.add("InvMassLambda_PhiDaughters", "InvMassLambda_PhiDaughters", kTH3F, {axisPhi, axisPhi, axisInvMassLambda});
+      histos_V0.add("InvMassAntiLambda_PhiDaughters", "InvMassAntiLambda_PhiDaughters", kTH3F, {axisPhi, axisPhi, axisInvMassAntiLambda});
+      histos_V0.add("InvMassK0S_ITSMapDaughters", "InvMassK0S_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassK0S});
+      histos_V0.add("InvMassLambda_ITSMapDaughters", "InvMassLambda_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassLambda});
+      histos_V0.add("InvMassAntiLambda_ITSMapDaughters", "InvMassAntiLambda_ITSMapDaughters", kTH3F, {axisITSMapDaughters, axisITSMapDaughters, axisInvMassAntiLambda});
+      histos_V0.add("InvMassK0S_PtRadius", "InvMassK0S_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassK0S});
+      histos_V0.add("InvMassLambda_PtRadius", "InvMassLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassLambda});
+      histos_V0.add("InvMassAntiLambda_PtRadius", "InvMassAntiLambda_PtRadius", kTH3F, {axisPtsmall, axisRadiussmall, axisInvMassAntiLambda});
+    }
+    histos_V0.add("InvMassK0SVsPtVsPA", "InvMassK0SVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassK0S});
+    histos_V0.add("InvMassLambdaVsPtVsPA", "InvMassLambdaVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassLambda});
+    histos_V0.add("InvMassAntiLambdaVsPtVsPA", "InvMassAntiLambdaVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassAntiLambda});
 
     if (isMC) {
       histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100, 0, 10}, {100, 0.f, 50.f}}});
@@ -221,6 +235,11 @@ struct v0cascadesQA {
       histos_Casc.add("InvMassOmegaPlusTrue", "InvMassOmegaPlusTrue", {HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0.f, 50.f}, {80, 1.63f, 1.71f}}});
       histos_Casc.add("InvMassOmegaMinusTrue", "InvMassOmegaMinusTrue", {HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0.f, 50.f}, {80, 1.63f, 1.71f}}});
     }
+
+    histos_Casc.add("InvMassXiMinusVsPtVsPA", "InvMassXiMinusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
+    histos_Casc.add("InvMassXiPlusVsPtVsPA", "InvMassXiPlusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
+    histos_Casc.add("InvMassOmegaMinusVsPtVsPA", "InvMassOmegaMinusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
+    histos_Casc.add("InvMassOmegaPlusVsPtVsPA", "InvMassOmegaPlusVsPtVsPA", kTH3F, {axisPt, axisV0PA, axisInvMassCasc});
   }
 
   ///////////////////////////////////////////////////
@@ -243,11 +262,27 @@ struct v0cascadesQA {
   ////////// Collision QA - MC //////////
   ///////////////////////////////////////
 
-  void processMcEvent(soa::Join<aod::McCollisions, aod::EvSels>::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
   {
-    if (sel8 && !mcCollision.sel8()) {
+    histos_eve.fill(HIST("hEventCounterMC"), 0.5);
+
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if (sel8 && !collision.sel8()) {
+        continue;
+      }
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
+
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
+
+    histos_eve.fill(HIST("hEventCounterMC"), 1.5);
 
     double posx = mcCollision.posX();
     double posy = mcCollision.posY();
@@ -302,16 +337,47 @@ struct v0cascadesQA {
   Configurable<float> V0_dcapostopv{"V0_dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> V0_dcanegtopv{"V0_dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> V0_radius{"V0_radius", 5, "v0radius"};
+  Configurable<float> NSigmaV0Pion{"NSigmaV0Pion", 6, "NSigmaV0Pion"};
+  Configurable<float> NSigmaV0Proton{"NSigmaV0Proton", 6, "NSigmaV0Proton"};
+
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
+  int ncoll = 0;
 
-  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MyTracks const& tracks, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
   {
     if (sel8 && !collision.sel8()) {
       return;
     }
 
+    if (ncoll == 0) {
+      V0SelectionSummary->SetBinContent(1, V0_rapidity);
+      V0SelectionSummary->SetBinContent(2, V0_cosPA);
+      V0SelectionSummary->SetBinContent(3, V0_dcav0dau);
+      V0SelectionSummary->SetBinContent(4, V0_dcapostopv);
+      V0SelectionSummary->SetBinContent(5, V0_dcanegtopv);
+      V0SelectionSummary->SetBinContent(6, V0_radius);
+      V0SelectionSummary->SetBinContent(7, NSigmaV0Pion);
+      V0SelectionSummary->SetBinContent(8, NSigmaV0Proton);
+      V0SelectionSummary->SetBinContent(9, lifetimecut->get("lifetimecutLambda"));
+      V0SelectionSummary->SetBinContent(10, lifetimecut->get("lifetimecutK0S"));
+
+      V0SelectionSummary->GetXaxis()->SetBinLabel(1, "rapidity");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(2, "cosPA");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(3, "dcav0dau");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(4, "dcapostopv");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(5, "dcanegtopv");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(6, "radius");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(7, "NSigmaV0Pion");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(8, "NSigmaV0Proton");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(9, "lifetimecutLambda");
+      V0SelectionSummary->GetXaxis()->SetBinLabel(10, "lifetimecutK0S");
+    }
+    ncoll++;
+
     for (auto& v0 : fullV0s) {
+
+      // fillV0s<DaughterTracks>(v0, collision.posX(), collision.posY(), collision.posZ());
 
       auto posdau = v0.posTrack_as<DaughterTracks>();
       auto negdau = v0.negTrack_as<DaughterTracks>();
@@ -338,47 +404,70 @@ struct v0cascadesQA {
       float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0);
       float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
 
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA) {
-        if (v0.v0radius() > V0_radius && v0.dcaV0daughters() < V0_dcav0dau && TMath::Abs(v0.dcapostopv()) > V0_dcapostopv && TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
-          if (TMath::Abs(v0.yK0Short()) < V0_rapidity && CtauK0s < lifetimecut->get("lifetimecutK0S")) { // that s what we have in lambdakzeroanalysis ; discuss with nicolo chiara if we want to have more like in th aliphysics macro or none like in David's O2 QA
-            histos_V0.fill(HIST("CtauK0s"), CtauK0s);
-            histos_V0.fill(HIST("DecayLengthK0s"), decayLength);
-            histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
+      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA &&
+          v0.v0radius() > V0_radius &&
+          v0.dcaV0daughters() < V0_dcav0dau &&
+          TMath::Abs(v0.dcapostopv()) > V0_dcapostopv && TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
+
+        // K0Short
+        if (TMath::Abs(v0.yK0Short()) < V0_rapidity &&
+            CtauK0s < lifetimecut->get("lifetimecutK0S") &&
+            TMath::Abs(posdau.tpcNSigmaPi()) < NSigmaV0Pion && TMath::Abs(negdau.tpcNSigmaPi()) < NSigmaV0Pion) {
+
+          histos_V0.fill(HIST("CtauK0s"), CtauK0s);
+          histos_V0.fill(HIST("DecayLengthK0s"), decayLength);
+          histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
+          histos_V0.fill(HIST("InvMassK0SVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mK0Short());
+          histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+          if (doextraanalysis) {
             histos_V0.fill(HIST("InvMassK0S_Radius"), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_PtRadius"), v0.pt(), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
-            histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
             histos_V0.fill(HIST("InvMassK0S_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mK0Short());
           }
+        }
 
-          if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
-            histos_V0.fill(HIST("DecayLengthLambda"), decayLength);
-            histos_V0.fill(HIST("CtauLambda"), CtauLambda);
-            histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda());
+        // Lambda
+        if (TMath::Abs(v0.yLambda()) < V0_rapidity &&
+            CtauLambda < lifetimecut->get("lifetimecutLambda") &&
+            TMath::Abs(posdau.tpcNSigmaPr()) < NSigmaV0Proton && TMath::Abs(negdau.tpcNSigmaPi()) < NSigmaV0Pion) {
+
+          histos_V0.fill(HIST("DecayLengthLambda"), decayLength);
+          histos_V0.fill(HIST("CtauLambda"), CtauLambda);
+          histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda());
+          histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mLambda());
+          histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+          if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - RecoDecay::getMassPDG(310)) > 0.012 && TMath::Abs(v0.mAntiLambda() - RecoDecay::getMassPDG(3122)) > 0.08 && TMath::Abs(v0.mLambda() - RecoDecay::getMassPDG(3122)) < 0.002) {
+            histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
+            histos_V0.fill(HIST("ResponseProtonFromLambda"), v0.pt(), posdau.tpcNSigmaPr());
+          }
+          if (doextraanalysis) {
             histos_V0.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_Ctau"), CtauLambda, v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mLambda());
             histos_V0.fill(HIST("InvMassLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mLambda());
-            histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-            if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - RecoDecay::getMassPDG(310)) > 0.012 && TMath::Abs(v0.mAntiLambda() - RecoDecay::getMassPDG(3122)) > 0.08 && TMath::Abs(v0.mLambda() - RecoDecay::getMassPDG(3122)) < 0.002) {
-              histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
-              histos_V0.fill(HIST("ResponseProtonFromLambda"), v0.pt(), posdau.tpcNSigmaPr());
-            }
             histos_V0.fill(HIST("InvMassLambda_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mLambda());
           }
+        }
 
-          if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
-            histos_V0.fill(HIST("DecayLengthAntiLambda"), decayLength);
-            histos_V0.fill(HIST("CtauAntiLambda"), CtauLambda);
-            histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda());
+        // AntiLambda
+        if (TMath::Abs(v0.yLambda()) < V0_rapidity &&
+            CtauLambda < lifetimecut->get("lifetimecutLambda") &&
+            TMath::Abs(posdau.tpcNSigmaPi()) < NSigmaV0Pion && TMath::Abs(negdau.tpcNSigmaPr()) < NSigmaV0Proton) {
+
+          histos_V0.fill(HIST("DecayLengthAntiLambda"), decayLength);
+          histos_V0.fill(HIST("CtauAntiLambda"), CtauLambda);
+          histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda());
+          histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mAntiLambda());
+          histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+          if (doextraanalysis) {
             histos_V0.fill(HIST("InvMassAntiLambda_Radius"), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_Ctau"), CtauLambda, v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
-            histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
             histos_V0.fill(HIST("InvMassAntiLambda_ITSMapDaughters"), posITSNhits, negITSNhits, v0.mAntiLambda());
           }
         }
@@ -391,13 +480,22 @@ struct v0cascadesQA {
   ////////// V0 QA - MC //////////
   ////////////////////////////////
 
-  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MyTracksMC const& tracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, aod::McParticles const&, MyTracksMC const& tracks)
   {
     if (sel8 && !collision.sel8()) {
       return;
     }
 
     for (auto& v0 : fullV0s) {
+
+      if (!v0.has_mcParticle()) {
+        continue;
+      }
+      auto v0mcparticle = v0.mcParticle();
+      Int_t lPDG = 0;
+      if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
+        lPDG = v0mcparticle.pdgCode();
+      }
 
       float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0);
       float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
@@ -408,56 +506,20 @@ struct v0cascadesQA {
           TMath::Abs(v0.dcapostopv()) > V0_dcapostopv &&
           TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
 
-        auto reconegtrack = v0.negTrack_as<MyTracksMC>();
-        auto recopostrack = v0.posTrack_as<MyTracksMC>();
-        if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle()) {
-          continue;
+        // K0Short
+        if (lPDG == 310) {
+          if (TMath::Abs(v0.yK0Short()) < V0_rapidity && CtauK0s < lifetimecut->get("lifetimecutK0S")) {
+            histos_V0.fill(HIST("InvMassK0STrue"), v0.pt(), v0.v0radius(), v0.mK0Short());
+          }
         }
-
-        auto mcnegtrack = reconegtrack.mcParticle_as<aod::McParticles>();
-        auto mcpostrack = recopostrack.mcParticle_as<aod::McParticles>();
-        if (!mcnegtrack.has_mothers() || !mcpostrack.has_mothers()) {
-          continue;
+        if (lPDG == 3122) {
+          if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
+            histos_V0.fill(HIST("InvMassLambdaTrue"), v0.pt(), v0.v0radius(), v0.mLambda());
+          }
         }
-
-        for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-          for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-
-            bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
-
-            bool isK0sV0 = MomIsPrimary &&
-                           particleMotherOfNeg == particleMotherOfPos &&
-                           particleMotherOfNeg.pdgCode() == 310 &&
-                           mcnegtrack.pdgCode() == -211 &&
-                           mcpostrack.pdgCode() == +211;
-
-            bool isLambdaV0 = MomIsPrimary &&
-                              particleMotherOfNeg == particleMotherOfPos &&
-                              particleMotherOfNeg.pdgCode() == 3122 &&
-                              mcnegtrack.pdgCode() == -211 &&
-                              mcpostrack.pdgCode() == 2212;
-
-            bool isAntiLambdaV0 = MomIsPrimary &&
-                                  particleMotherOfNeg == particleMotherOfPos &&
-                                  particleMotherOfNeg.pdgCode() == -3122 &&
-                                  mcpostrack.pdgCode() == 211 &&
-                                  mcnegtrack.pdgCode() == -2212;
-
-            if (isK0sV0) {
-              if (TMath::Abs(v0.yK0Short()) < V0_rapidity && CtauK0s < lifetimecut->get("lifetimecutK0S")) {
-                histos_V0.fill(HIST("InvMassK0STrue"), v0.pt(), v0.v0radius(), v0.mK0Short());
-              }
-            }
-            if (isLambdaV0) {
-              if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
-                histos_V0.fill(HIST("InvMassLambdaTrue"), v0.pt(), v0.v0radius(), v0.mLambda());
-              }
-            }
-            if (isAntiLambdaV0) {
-              if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
-                histos_V0.fill(HIST("InvMassAntiLambdaTrue"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
-              }
-            }
+        if (lPDG == -3122) {
+          if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
+            histos_V0.fill(HIST("InvMassAntiLambdaTrue"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
           }
         }
       }
@@ -480,6 +542,9 @@ struct v0cascadesQA {
   Configurable<float> Casc_dcanegtopv{"Casc_dcanegtopv", 0.1, "DCA Neg To PV"};      // AliAnalysisTaskStrAODqa:    if( fCasc_charge<0 &&(fCasc_DcaPosToPV < 0.11 || fCasc_DcaNegToPV < 0.3)) return kFALSE;  different scale
   Configurable<float> Casc_v0radius{"Casc_v0radius", 0.9, "v0 radius"};              // AliAnalysisTaskStrAODqa: 5.
   Configurable<float> Casc_cascradius{"Casc_cascradius", 1.0, "cascade radius"};     // AliAnalysisTaskStrAODqa: 1.
+  Configurable<float> NSigmaCascPion{"NSigmaCascPion", 6, "NSigmaCascPion"};
+  Configurable<float> NSigmaCascProton{"NSigmaCascProton", 6, "NSigmaCascProton"};
+  Configurable<float> NSigmaCascKaon{"NSigmaCascKaon", 6, "NSigmaCascKaon"};
 
   // additional AliAnalysisTaskStrAODqa.cxx cuts not present here
   //  if( fCasc_LeastCRaws<70 ) return kFALSE; //assume LeastCRows
@@ -496,13 +561,23 @@ struct v0cascadesQA {
   // if( (part==5) && (TMath::Abs(fCasc_NSigPosPion)>3 || TMath::Abs(fCasc_NSigNegProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
   // if( (part==6) && (TMath::Abs(fCasc_NSigNegPion)>3 || TMath::Abs(fCasc_NSigPosProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
 
-  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0Datas const& fullV0s)
+  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
   {
     if (sel8 && !collision.sel8()) {
       return;
     }
 
     for (auto& casc : Cascades) {
+
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0index.has_v0Data())) {
+        continue; // skip those cascades for which V0 doesn't exist
+      }
+      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
+      auto bachelor = casc.bachelor_as<DaughterTracks>();
+      auto posdau = v0.posTrack_as<DaughterTracks>();
+      auto negdau = v0.negTrack_as<DaughterTracks>();
+
       // histos_Casc.fill(HIST("XiProgSelections"), );
       // histos_Casc.fill(HIST("OmegaProgSelections"), );
       histos_Casc.fill(HIST("CascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
@@ -550,20 +625,28 @@ struct v0cascadesQA {
           TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
           casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
         if (casc.sign() < 0) {
-          if (TMath::Abs(casc.yXi()) < Casc_rapidity) {
-            histos_Casc.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi());
-            histos_Casc.fill(HIST("InvMassXiMinus_Radius"), casc.cascradius(), casc.mXi());
-          }
-          if (TMath::Abs(casc.yOmega()) < Casc_rapidity) {
-            histos_Casc.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega());
+          if (TMath::Abs(posdau.tpcNSigmaPr()) < NSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < NSigmaCascPion) {
+            if (TMath::Abs(casc.yXi()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < NSigmaCascPion) {
+              histos_Casc.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi());
+              histos_Casc.fill(HIST("InvMassXiMinus_Radius"), casc.cascradius(), casc.mXi());
+              histos_Casc.fill(HIST("InvMassXiMinusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mXi());
+            }
+            if (TMath::Abs(casc.yOmega()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < NSigmaCascKaon) {
+              histos_Casc.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega());
+              histos_Casc.fill(HIST("InvMassOmegaMinusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mOmega());
+            }
           }
         } else {
-          if (TMath::Abs(casc.yXi()) < Casc_rapidity) {
-            histos_Casc.fill(HIST("InvMassXiPlus"), casc.pt(), casc.mXi());
-            histos_Casc.fill(HIST("InvMassXiPlus_Radius"), casc.cascradius(), casc.mXi());
-          }
-          if (TMath::Abs(casc.yOmega()) < Casc_rapidity) {
-            histos_Casc.fill(HIST("InvMassOmegaPlus"), casc.pt(), casc.mOmega());
+          if (TMath::Abs(posdau.tpcNSigmaPi()) < NSigmaCascPion && TMath::Abs(negdau.tpcNSigmaPr()) < NSigmaCascProton) {
+            if (TMath::Abs(casc.yXi()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < NSigmaCascPion) {
+              histos_Casc.fill(HIST("InvMassXiPlus"), casc.pt(), casc.mXi());
+              histos_Casc.fill(HIST("InvMassXiPlus_Radius"), casc.cascradius(), casc.mXi());
+              histos_Casc.fill(HIST("InvMassXiPlusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mXi());
+            }
+            if (TMath::Abs(casc.yOmega()) < Casc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < NSigmaCascKaon) {
+              histos_Casc.fill(HIST("InvMassOmegaPlus"), casc.pt(), casc.mOmega());
+              histos_Casc.fill(HIST("InvMassOmegaPlusVsPtVsPA"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())), casc.mOmega());
+            }
           }
         }
       }
@@ -583,7 +666,7 @@ struct v0cascadesQA {
 
     for (auto& casc : Cascades) {
 
-      histos_Casc.fill(HIST("QA_XinusCandidates"), 0.5);
+      histos_Casc.fill(HIST("QA_XiMinusCandidates"), 0.5);
 
       if (casc.v0radius() > Casc_v0radius &&
           casc.cascradius() > Casc_cascradius &&
@@ -593,7 +676,7 @@ struct v0cascadesQA {
           TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
           casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
 
-        histos_Casc.fill(HIST("QA_XinusCandidates"), 1.5);
+        histos_Casc.fill(HIST("QA_XiMinusCandidates"), 1.5);
 
         auto v0index = casc.v0_as<o2::aod::V0sLinked>();
         if (!(v0index.has_v0Data())) {
@@ -607,7 +690,7 @@ struct v0cascadesQA {
         if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle() || !recobachelor.has_mcParticle()) {
           continue;
         }
-        histos_Casc.fill(HIST("QA_XinusCandidates"), 2.5);
+        histos_Casc.fill(HIST("QA_XiMinusCandidates"), 2.5);
 
         auto mcnegtrack = reconegtrack.mcParticle_as<aod::McParticles>();
         auto mcpostrack = recopostrack.mcParticle_as<aod::McParticles>();
@@ -615,7 +698,7 @@ struct v0cascadesQA {
         if (!mcnegtrack.has_mothers() || !mcpostrack.has_mothers() || !bachelor.has_mothers()) {
           continue;
         }
-        histos_Casc.fill(HIST("QA_XinusCandidates"), 3.5);
+        histos_Casc.fill(HIST("QA_XiMinusCandidates"), 3.5);
 
         for (auto& particleMotherOfBach : bachelor.mothers_as<aod::McParticles>()) {
           for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
@@ -663,7 +746,7 @@ struct v0cascadesQA {
                                           mcpostrack.pdgCode() == 211;
 
                 if (isXiMinusCascade) {
-                  histos_Casc.fill(HIST("QA_XinusCandidates"), 8.5);
+                  histos_Casc.fill(HIST("QA_XiMinusCandidates"), 8.5);
                   if (TMath::Abs(casc.yXi()) < Casc_rapidity) {
                     histos_Casc.fill(HIST("InvMassXiMinusTrue"), casc.pt(), casc.cascradius(), casc.mXi());
                   }
@@ -689,20 +772,20 @@ struct v0cascadesQA {
 
                 // QA section - XiMinus
                 if (MomOfBachIsPrimary && !(MomOfNegIsPrimary) && !(MomOfPosIsPrimary)) {
-                  histos_Casc.fill(HIST("QA_XinusCandidates"), 4.5);
+                  histos_Casc.fill(HIST("QA_XiMinusCandidates"), 4.5);
                 }
                 if ((particleMotherOfNeg.pdgCode() == particleMotherOfPos.pdgCode())) {
-                  histos_Casc.fill(HIST("QA_XinusCandidates"), 5.5);
+                  histos_Casc.fill(HIST("QA_XiMinusCandidates"), 5.5);
                 }
                 if ((particleMotherOfV0 == particleMotherOfBach)) {
-                  histos_Casc.fill(HIST("QA_XinusCandidates"), 6.5);
+                  histos_Casc.fill(HIST("QA_XiMinusCandidates"), 6.5);
                 }
                 if (particleMotherOfBach.pdgCode() == 3312 &&
                     bachelor.pdgCode() == -211 &&
                     particleMotherOfNeg.pdgCode() == 3122 &&
                     mcnegtrack.pdgCode() == -211 &&
                     mcpostrack.pdgCode() == 2212) {
-                  histos_Casc.fill(HIST("QA_XinusCandidates"), 7.5);
+                  histos_Casc.fill(HIST("QA_XiMinusCandidates"), 7.5);
                 }
               }
             }

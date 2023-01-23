@@ -20,6 +20,12 @@
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 
+#include <cmath>
+
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TObjArray.h>
+
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -34,11 +40,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
-
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,8 +59,7 @@ struct LfTreeCreatorNuclei {
   }
 
   // track
-  Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
-  Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
+  Configurable<float> yCut{"yMin", 1.f, "Rapidity cut"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -133,6 +133,7 @@ struct LfTreeCreatorNuclei {
         track.sign(),
         track.tpcNClsCrossedRows(),
         track.tpcCrossedRowsOverFindableCls(),
+        track.tpcNClsFound(),
         track.tpcChi2NCl(),
         track.itsChi2NCl());
 

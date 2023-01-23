@@ -190,7 +190,7 @@ struct lmeelfcocktail {
   void processCocktail(aod::McCollision const&, aod::McParticles const& mcParticles)
   {
 
-    double fwEffpT, fd1origpt, fd1origp, fd1origeta, fd1origphi, fd2origpt, fd2origp, fd2origeta, fd2origphi, feeorigpt, feeorigp, feeorigm, feeorigeta, feeorigphi, feeorigphiv, fpairDCA, fd1DCA, fd2DCA, fd1pt, fd1p, fd1eta, fd1phi, fd2pt, fd2p, fd2eta, fd2phi, feept, feemt, feep, feem, feeeta, feephi, feephiv, fmotherpt, fmothermt, fmotherp, fmotherm, fmothereta, fmotherphi, fID, fweight, fwMultpT, fwMultpT2, fwMultmT, fwMultmT2;
+    double fwEffpT, fd1origpt, fd1origp, fd1origeta, fd1origphi, fd2origpt, fd2origp, fd2origeta, fd2origphi, feeorigpt, feeorigp, feeorigm, feeorigeta, feeorigphi, feeorigphiv, fpairDCA, fd1DCA = 0., fd2DCA = 0., fd1pt, fd1p, fd1eta, fd1phi, fd2pt, fd2p, fd2eta, fd2phi, feept, feemt, feep, feem, feeeta, feephi, feephiv, fmotherpt, fmothermt, fmotherp, fmotherm, fmothereta, fmotherphi, fID, fweight, fwMultpT, fwMultpT2, fwMultmT, fwMultmT2;
     bool fpass;
 
     Partition<aod::McParticles> Mothers = ((aod::mcparticle::pdgCode == 111) || (aod::mcparticle::pdgCode == 221) || (aod::mcparticle::pdgCode == 331) || (aod::mcparticle::pdgCode == 113) || (aod::mcparticle::pdgCode == 223) || (aod::mcparticle::pdgCode == 333) || (aod::mcparticle::pdgCode == 443));

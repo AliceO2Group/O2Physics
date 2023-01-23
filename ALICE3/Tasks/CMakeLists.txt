@@ -16,7 +16,7 @@ o2physics_add_dpl_workflow(alice3-qa-multiplicity
 
 o2physics_add_dpl_workflow(alice3-qa-singleparticle
                     SOURCES alice3-qa-singleparticle.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-lutmaker

@@ -13,8 +13,10 @@
 /// \brief FemtoDreamSelection - small generic class to do selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_
+
+#include <cmath>
 
 namespace o2::analysis::femtoDream
 {
@@ -115,4 +117,4 @@ class FemtoDreamSelection
 
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_

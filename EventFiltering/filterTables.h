@@ -23,14 +23,15 @@ namespace filtering
 {
 DECLARE_SOA_COLUMN(H2, hasH2, bool);   //!
 DECLARE_SOA_COLUMN(H3, hasH3, bool);   //!
-DECLARE_SOA_COLUMN(He3, hasHe3, bool); //!
-DECLARE_SOA_COLUMN(He4, hasHe4, bool); //!
+DECLARE_SOA_COLUMN(He, hasHe, bool);   //!
 
 // diffraction
 DECLARE_SOA_COLUMN(TwoPi, has2pi, bool);  //! Double Gap events, DG, 2 pion
 DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
 DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
 DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
+
+DECLARE_SOA_COLUMN(DiffBC, hasDiffBC, bool); //! diffractive BC
 
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
@@ -49,6 +50,8 @@ DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);               //! 3-prong cha
 DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);   //! at least two 2-prong charm-hadron candidates
 DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);   //! at least two 3-prong charm-hadron candidates
 DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool); //! at least one 2-prong and one 3-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfSoftGamma2P, hasHfSoftGamma2P, bool);       //! soft gamma with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfSoftGamma3P, hasHfSoftGamma3P, bool);       //! soft gamma with 3-prong charm hadron
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -98,13 +101,17 @@ DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decis
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::H2, filtering::H3, filtering::He3, filtering::He4);
+                  filtering::H2, filtering::H3, filtering::He);
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
-DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters
+DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters (Collisions)
                   filtering::TwoPi, filtering::FourPi, filtering::TwoK, filtering::FourK);
 using DiffractionFilter = DiffractionFilters::iterator;
+
+DECLARE_SOA_TABLE(DiffractionBCFilters, "AOD", "DiffBCFilters", //! Diffraction filters (BCs)
+                  filtering::DiffBC);
+using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
@@ -113,7 +120,7 @@ using DqFilter = DqFilters::iterator;
 
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
-                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix);
+                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix, filtering::HfSoftGamma2P, filtering::HfSoftGamma3P);
 
 using HfFilter = HfFilters::iterator;
 

@@ -32,6 +32,8 @@ struct HfTaskMuonCharmBeautySeparation {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
     AxisSpec dcaxAxis = {1000, -5.0, 5.0, "DCA {x or y} (cm)"};
+    AxisSpec dcaAxis = {1000, 0.0, 100.0, "DCA {xy} (cm)"};
+    AxisSpec zvtxAxis = {400, -20.0, 20.0, "zvtx (cm)"};
     AxisSpec etaRecoAxis = {150, -5, -2, "#eta_{Reco}"};
     AxisSpec rAbsAxis = {100, 0, 100, "R_{abs}"};
     AxisSpec pdcaAxis = {450, 0, 450, "p_{DCA}"};
@@ -39,14 +41,13 @@ struct HfTaskMuonCharmBeautySeparation {
     AxisSpec chi2MCHMFTAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MFT"};
     AxisSpec chi2MCHMIDAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MID"};
 
-    HistogramConfigSpec HistVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, etaRecoAxis, chi2MCHMFTAxis, chi2GlobalAxis, chi2MCHMIDAxis, rAbsAxis, pdcaAxis}});
+    HistogramConfigSpec HistVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, dcaxAxis, dcaAxis, zvtxAxis}});
     registry.add("hBasicDist", "", HistVariable);
-    HistogramConfigSpec HistTrackType({HistType::kTH1F, {trackTypeAxis}});
-    registry.add("hTrackType", "", HistTrackType);
-
-    registry.add("hDcaXMuonType0", " dca x", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    registry.add("hDcaYMuonType0", " dca y", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    registry.add("hDcaXYMuonType0", " dca xy", {HistType::kTH1F, {{1000, 0.0, 10.0}}});
+    registry.add("hTrackType", "hTrackType", {HistType::kTH1F, {trackTypeAxis}});
+    registry.add("hZvtx", "Zvtx in cm", {HistType::kTH1F, {zvtxAxis}});
+    registry.add("hZvtx_WithMuons", "Zvtx with muons", {HistType::kTH1F, {zvtxAxis}});
+    registry.add("hSign", "Sign of the track eletric charge", {HistType::kTH1F, {{5, -2.5, 2.5}}});
+    registry.add("hForwardMultiplicity", "Multiplicity in forward direction", {HistType::kTH1F, {{20, 0, 20}}});
   }
 
   void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
@@ -54,35 +55,32 @@ struct HfTaskMuonCharmBeautySeparation {
     auto pt = 0.;
     auto dcax = 0.;
     auto dcay = 0.;
-    auto eta = 0.;
-    auto chi2MatchMCHMFT = 0.;
-    auto chi2MatchMCHMID = 0.;
-    auto chi2Global = 0.;
-    auto rAbs = 0.;
-    auto pDca = 0.;
+    auto dca = 0.;
+    auto chargeSign = 0.;
+    auto zvtx = 0.;
+    auto nFwdTracks = 0.;
+    zvtx = collision.posZ();
+
+    registry.fill(HIST("hZvtx"), zvtx);
 
     for (auto const& muon : tracks) {
       registry.fill(HIST("hTrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {
-
+          nFwdTracks++;
           pt = muon.pt();
           dcax = muon.fwdDcaX();
           dcay = muon.fwdDcaY();
-          eta = muon.eta();
-          chi2MatchMCHMFT = muon.chi2MatchMCHMFT();
-          chi2MatchMCHMID = muon.chi2MatchMCHMID();
-          chi2Global = muon.chi2();
-          rAbs = muon.rAtAbsorberEnd();
-          pDca = muon.pDca();
-
-          registry.fill(HIST("hBasicDist"), pt, dcax, eta, chi2MatchMCHMFT, chi2Global, chi2MatchMCHMID, rAbs, pDca);
-          registry.fill(HIST("hDcaXMuonType0"), dcax);
-          registry.fill(HIST("hDcaYMuonType0"), dcay);
-          registry.fill(HIST("hDcaXYMuonType0"), std::sqrt(dcax * dcax + dcay * dcay));
+          dca = std::sqrt(dcax * dcax + dcay * dcay);
+          chargeSign = muon.sign();
+          registry.fill(HIST("hBasicDist"), pt, dcax, dcay, dca, zvtx);
+          registry.fill(HIST("hSign"), chargeSign);
         }
       }
     }
+    registry.fill(HIST("hForwardMultiplicity"), nFwdTracks);
+    if (nFwdTracks > 0)
+      registry.fill(HIST("hZvtx_WithMuons"), zvtx);
   }
 };
 

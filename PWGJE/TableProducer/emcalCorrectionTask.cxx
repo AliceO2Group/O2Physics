@@ -14,6 +14,7 @@
 // Author: Raymond Ehlers & Florian Jonas
 
 #include <algorithm>
+#include <iostream>
 #include <cmath>
 
 #include "CCDB/BasicCCDBManager.h"
@@ -26,6 +27,7 @@
 
 #include "PWGJE/DataModel/EMCALClusters.h"
 
+#include "Common/DataModel/EventSelection.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -297,13 +299,11 @@ struct EmcalCorrectionTask {
           } // end of cluster loop
         }   // end of collision loop
       }
-      if (!hasCollision) {
-        LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
-      }
 
       // Store the clusters in the table where a mathcing collision could
       // be identified.
       if (!hasCollision) { // ambiguous
+        // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
         int cellindex = -1;
         clustersAmbiguous.reserve(mAnalysisClusters.size());
         for (const auto& cluster : mAnalysisClusters) {

@@ -38,22 +38,24 @@ struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
   // vertexing
-  Configurable<double> bz{"bz", 20., "magnetic field"};
+  Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
+  Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions, for Run3 studies"};
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
+  Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
+  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
+  Configurable<double> invMassWindowB0{"invMassWindowB0", 0.3, "invariant-mass window for B0 candidates"};
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
-  double massDPi = 0.;
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD); // FIXME
+  double massB0 = RecoDecay::getMassPDG(pdg::Code::kB0);
+  double massDPi{0.};
 
   OutputObj<TH1F> hMassDToPiKPi{TH1F("hMassB0ToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD{TH1F("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
@@ -63,11 +65,35 @@ struct HfCandidateCreatorB0 {
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
+  /// Single-track cuts for pions on dcaXY
+  /// \param track is a track
+  /// \return true if track passes all cuts
+  template <typename T>
+  bool isSelectedTrackDCA(const T& track)
+  {
+    auto pTBinTrack = findBin(binsPtPion, track.pt());
+    if (pTBinTrack == -1) {
+      return false;
+    }
+
+    if (std::abs(track.dcaXY()) < cutsTrackPionDCA->get(pTBinTrack, "min_dcaxytoprimary")) {
+      return false; // minimum DCAxy
+    }
+    if (std::abs(track.dcaXY()) > cutsTrackPionDCA->get(pTBinTrack, "max_dcaxytoprimary")) {
+      return false; // maximum DCAxy
+    }
+    return true;
+  }
+
+  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+
+  Filter filterSelectTracks = (!usePionIsGlobalTrackWoDCA) || ((usePionIsGlobalTrackWoDCA) && requireGlobalTrackWoDCAInFilter());
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
+
   void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<
-                 aod::HfCand3Prong,
-                 aod::HfSelDplusToPiKPi>> const& dCands,
-               aod::BigTracks const& tracks)
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& dCands,
+               TracksWithSel const&,
+               soa::Filtered<TracksWithSel> const& tracksPion)
   {
     // Initialise fitter for B vertex (2-prong vertex filter)
     o2::vertexing::DCAFitterN<2> df2;
@@ -94,20 +120,17 @@ struct HfCandidateCreatorB0 {
       if (!TESTBIT(dCand.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (dCand.isSelDplusToPiKPi() >= selectionFlagD) {
-        hMassDToPiKPi->Fill(invMassDplusToPiKPi(dCand), dCand.pt());
-      }
+      hMassDToPiKPi->Fill(invMassDplusToPiKPi(dCand), dCand.pt());
       hPtD->Fill(dCand.pt());
       hCPAD->Fill(dCand.cpa());
 
       // track0 <-> pi, track1 <-> K, track2 <-> pi
-      auto track0 = dCand.prong0_as<aod::BigTracks>();
-      auto track1 = dCand.prong1_as<aod::BigTracks>();
-      auto track2 = dCand.prong2_as<aod::BigTracks>();
+      auto track0 = dCand.prong0_as<TracksWithSel>();
+      auto track1 = dCand.prong1_as<TracksWithSel>();
+      auto track2 = dCand.prong2_as<TracksWithSel>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
-      auto collision = track0.collision();
 
       // reconstruct 3-prong secondary vertex (D±)
       if (df3.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
@@ -127,19 +150,18 @@ struct HfCandidateCreatorB0 {
       auto trackParVarD = o2::dataformats::V0(df3.getPCACandidatePos(), pVecD, df3.calcPCACovMatrixFlat(),
                                               trackParVarPiK, trackParVar2, {0, 0}, {0, 0});
 
-      int index0D = track0.globalIndex();
-      int index1D = track1.globalIndex();
-      int index2D = track2.globalIndex();
-      // int charge = track0.sign() + track1.sign() + track2.sign();
+      int index0D = dCand.prong0Id();
+      int index1D = dCand.prong1Id();
+      int index2D = dCand.prong2Id();
 
       // loop on D-
       // D- → π- K+ π-
       // we don't have direct access to D sign so we use the sign of the daughters (the pion track0 here)
       if (track0.sign() < 0) {
         // loop over pions
-        for (auto const& trackPion : tracks) {
+        for (auto const& trackPion : tracksPion) {
           // minimum pT selection
-          if (trackPion.pt() < ptPionMin) {
+          if (trackPion.pt() < ptPionMin || !isSelectedTrackDCA(trackPion)) {
             continue;
           }
           // we reject pions that are D daughters
@@ -161,6 +183,14 @@ struct HfCandidateCreatorB0 {
             continue;
           }
 
+          // calculate invariant mass
+          massDPi = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
+          if (std::abs(massDPi - massB0) > invMassWindowB0) {
+            continue;
+          }
+
+          hMassB0ToDPi->Fill(massDPi);
+
           // calculate relevant properties
           const auto& secondaryVertexB0 = df2.getPCACandidate();
           auto chi2PCA = df2.getChi2AtPCACandidate();
@@ -201,12 +231,6 @@ struct HfCandidateCreatorB0 {
                            dCand.globalIndex(), trackPion.globalIndex(),
                            hfFlag);
 
-          // calculate invariant mass
-          auto arrayMomenta = array{pVecD, pVecPion};
-          massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
-          if (dCand.isSelDplusToPiKPi() > 0) {
-            hMassB0ToDPi->Fill(massDPi);
-          }
         } // pi+ loop
       }   // if D-
 
@@ -215,9 +239,9 @@ struct HfCandidateCreatorB0 {
       // we now loop on the D+
       if (track0.sign() > 0) {
         // loop over pions
-        for (auto const& trackPion : tracks) {
+        for (auto const& trackPion : tracksPion) {
           // minimum pT selection
-          if (trackPion.pt() < ptPionMin) {
+          if (trackPion.pt() < ptPionMin || !isSelectedTrackDCA(trackPion)) {
             continue;
           }
           // we reject pions that are D daughters
@@ -239,6 +263,13 @@ struct HfCandidateCreatorB0 {
             continue;
           }
 
+          // calculate invariant mass
+          massDPi = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
+          hMassB0ToDPi->Fill(massDPi);
+          if (std::abs(massDPi - massB0) > invMassWindowB0) {
+            continue;
+          }
+
           // calculate relevant properties
           const auto& secondaryVertexB0 = df2.getPCACandidate();
           auto chi2PCA = df2.getChi2AtPCACandidate();
@@ -278,36 +309,24 @@ struct HfCandidateCreatorB0 {
                            std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
                            dCand.globalIndex(), trackPion.globalIndex(),
                            hfFlag);
-
-          // calculate invariant mass
-          auto arrayMomenta = array{pVecD, pVecPion};
-          massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
-          if (dCand.isSelDplusToPiKPi() > 0) {
-            hMassB0ToDPi->Fill(massDPi);
-          }
         } // pi- loop
       }   // if D+
     }     // D loop
   }       // process
 };        // struct
 
-/// Extends the base table with expression columns.
+/// Extends the base table with expression columns and performs MC matching.
 struct HfCandidateCreatorB0Expressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
-
-  void init(InitContext const&) {}
-};
-
-/// Performs MC matching.
-struct HfCandidateCreatorB0Mc {
   Produces<aod::HfCandB0McRec> rowMcMatchRec; // table defined in CandidateReconstructionTables.h
   Produces<aod::HfCandB0McGen> rowMcMatchGen; // table defined in CandidateReconstructionTables.h
 
-  void processMc(aod::HfCandB0 const& candidates,
-                 aod::HfCand3Prong const&,
+  void processMc(aod::HfCand3Prong const&,
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
+    rowCandidateB0->bindExternalIndices(&tracks);
+
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
@@ -315,7 +334,8 @@ struct HfCandidateCreatorB0Mc {
     int8_t debug = 0;
 
     // Match reconstructed candidates.
-    for (auto const& candidate : candidates) {
+    // Spawned table can be used directly
+    for (auto const& candidate : *rowCandidateB0) {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -334,7 +354,7 @@ struct HfCandidateCreatorB0Mc {
       if (indexRec > -1) {
         // D- → π- K+ π-
         // Printf("Checking D- → π- K+ π-");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD, pdg::Code::kDMinus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 1);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD, pdg::Code::kDMinus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         } else {
@@ -362,7 +382,7 @@ struct HfCandidateCreatorB0Mc {
       rowMcMatchGen(flag, origin);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorB0Mc, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorB0Expressions, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -370,6 +390,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{
     adaptAnalysisTask<HfCandidateCreatorB0>(cfgc),
     adaptAnalysisTask<HfCandidateCreatorB0Expressions>(cfgc)};
-  workflow.push_back(adaptAnalysisTask<HfCandidateCreatorB0Mc>(cfgc));
+
   return workflow;
 }

@@ -46,14 +46,15 @@ struct tofSpectra {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
+  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
   ConfigurableAxis binsnsigmaTPC{"binsnsigmaTPC", {200, -10, 10}, "Binning of the nsigmaTPC axis"};
   ConfigurableAxis binsnsigmaTOF{"binsnsigmaTOF", {200, -10, 10}, "Binning of the nsigmaTOF axis"};
   ConfigurableAxis binsdeltaTPC{"binsdeltaTPC", {500, -1000, 1000}, "Binning of the nsigmaTPC axis"};
   ConfigurableAxis binsdeltaTOF{"binsdeltaTOF", {500, -1000, 1000}, "Binning of the nsigmaTOF axis"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Multiplicity"};
-  ConfigurableAxis binsMultPercentile{"binsMultPercentile", {100, 0, 100}, "Multiplicity percentile"};
-  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
+  ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
+  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -117,90 +118,6 @@ struct tofSpectra {
     if (doprocessLfFullAl) {
       LOG(info) << "Enabling process function processLfFullAl";
     }
-    // Tiny
-    if (doprocessTinyEl) {
-      LOG(info) << "Enabling process function processTinyEl";
-    }
-    if (doprocessTinyMu) {
-      LOG(info) << "Enabling process function processTinyMu";
-    }
-    if (doprocessTinyPi) {
-      LOG(info) << "Enabling process function processTinyPi";
-    }
-    if (doprocessTinyKa) {
-      LOG(info) << "Enabling process function processTinyKa";
-    }
-    if (doprocessTinyPr) {
-      LOG(info) << "Enabling process function processTinyPr";
-    }
-    if (doprocessTinyDe) {
-      LOG(info) << "Enabling process function processTinyDe";
-    }
-    if (doprocessTinyTr) {
-      LOG(info) << "Enabling process function processTinyTr";
-    }
-    if (doprocessTinyHe) {
-      LOG(info) << "Enabling process function processTinyHe";
-    }
-    if (doprocessTinyAl) {
-      LOG(info) << "Enabling process function processTinyAl";
-    }
-    // LF Tiny
-    if (doprocessLfTinyEl) {
-      LOG(info) << "Enabling process function processLfTinyEl";
-    }
-    if (doprocessLfTinyMu) {
-      LOG(info) << "Enabling process function processLfTinyMu";
-    }
-    if (doprocessLfTinyPi) {
-      LOG(info) << "Enabling process function processLfTinyPi";
-    }
-    if (doprocessLfTinyKa) {
-      LOG(info) << "Enabling process function processLfTinyKa";
-    }
-    if (doprocessLfTinyPr) {
-      LOG(info) << "Enabling process function processLfTinyPr";
-    }
-    if (doprocessLfTinyDe) {
-      LOG(info) << "Enabling process function processLfTinyDe";
-    }
-    if (doprocessLfTinyTr) {
-      LOG(info) << "Enabling process function processLfTinyTr";
-    }
-    if (doprocessLfTinyHe) {
-      LOG(info) << "Enabling process function processLfTinyHe";
-    }
-    if (doprocessLfTinyAl) {
-      LOG(info) << "Enabling process function processLfTinyAl";
-    }
-    // Checking consistency
-    if (doprocessFullEl == true && doprocessTinyEl == true) {
-      LOGF(fatal, "Cannot enable processFullEl and processTinyEl at the same time. Please choose one.");
-    }
-    if (doprocessFullMu == true && doprocessTinyMu == true) {
-      LOGF(fatal, "Cannot enable processFullMu and processTinyMu at the same time. Please choose one.");
-    }
-    if (doprocessFullPi == true && doprocessTinyPi == true) {
-      LOGF(fatal, "Cannot enable processFullPi and processTinyPi at the same time. Please choose one.");
-    }
-    if (doprocessFullKa == true && doprocessTinyKa == true) {
-      LOGF(fatal, "Cannot enable processFullKa and processTinyKa at the same time. Please choose one.");
-    }
-    if (doprocessFullPr == true && doprocessTinyPr == true) {
-      LOGF(fatal, "Cannot enable processFullPr and processTinyPr at the same time. Please choose one.");
-    }
-    if (doprocessFullDe == true && doprocessTinyDe == true) {
-      LOGF(fatal, "Cannot enable processFullDe and processTinyDe at the same time. Please choose one.");
-    }
-    if (doprocessFullTr == true && doprocessTinyTr == true) {
-      LOGF(fatal, "Cannot enable processFullTr and processTinyTr at the same time. Please choose one.");
-    }
-    if (doprocessFullHe == true && doprocessTinyHe == true) {
-      LOGF(fatal, "Cannot enable processFullHe and processTinyHe at the same time. Please choose one.");
-    }
-    if (doprocessFullAl == true && doprocessTinyAl == true) {
-      LOGF(fatal, "Cannot enable processFullAl and processTinyAl at the same time. Please choose one.");
-    }
 
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
@@ -211,37 +128,54 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Ev. sel. passed");
     h->GetXaxis()->SetBinLabel(3, "posZ passed");
+
+    histos.add("track/trdSignal", "", HistType::kTH2F, {pAxis, {1000, 0, 1000, "TRD signal (a.u.)"}});
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1F, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "Eta passed");
     h->GetXaxis()->SetBinLabel(3, "Quality passed");
     h->GetXaxis()->SetBinLabel(4, "TOF passed");
 
-    histos.add("Mult/FV0M", "MultFV0M", HistType::kTH1F, {{binsMultPercentile, "MultFV0M"}});
-    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1F, {{binsMultPercentile, "MultFT0M"}});
-    histos.add("Mult/FDDM", "MultFDDM", HistType::kTH1F, {{binsMultPercentile, "MultFDDM"}});
+    histos.add("Centrality/FT0M", "FT0M", HistType::kTH1F, {{binsPercentile, "Centrality FT0M"}});
+    histos.add("Centrality/FT0A", "FT0A", HistType::kTH1F, {{binsPercentile, "Centrality FT0A"}});
+    histos.add("Centrality/FT0C", "FT0C", HistType::kTH1F, {{binsPercentile, "Centrality FT0C"}});
+
+    histos.add("Mult/FV0M", "MultFV0M", HistType::kTH1F, {{binsMultiplicity, "MultFV0M"}});
+    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1F, {{binsMultiplicity, "MultFT0M"}});
+    histos.add("Mult/FDDM", "MultFDDM", HistType::kTH1F, {{binsMultiplicity, "MultFDDM"}});
 
     histos.add("Mult/Tracklets", "MultTracklets", HistType::kTH1F, {{binsMultiplicity, "MultTracklets"}});
     histos.add("Mult/TPC", "MultTPC", HistType::kTH1F, {{binsMultiplicity, "MultTPC"}});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1F, {{binsMultiplicity, "MultNTracksPV"}});
     histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1F, {{binsMultiplicity, "MultNTracksPVeta1"}});
 
-    // histos.add("electronbeta/hp_El", "", kTH1F, {pAxis});
-    // histos.add("electronbeta/hpt_El", "", kTH1F, {ptAxis});
-    // histos.add("electronbeta/hlength_El", ";Track Length (cm);Tracks", kTH1D, {{100, 0, 1000}});
-    // histos.add("electronbeta/htime_El", ";TOF Time (ns);Tracks", kTH1D, {{1000, 0, 600}});
-    // histos.add("electronbeta/hp_beta_El", ";#it{p} (GeV/#it{c});#beta - #beta_{e};Tracks", kTH2D, {pAxis, {100, -0.01, 0.01}});
-    // histos.add("electronbeta/hp_betasigma_El", ";#it{p} (GeV/#it{c});(#beta - #beta_{e})/#sigma;Tracks", kTH2D, {pAxis, {100, -5, 5}});
-
     const AxisSpec dcaXyAxis{600, -3.005, 2.995, "DCA_{xy} (cm)"};
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{600, -3.005, 2.995, "DCA_{z} (cm)"};
 
+    // 4 detectors
+    histos.add("Data/pos/pt/its_tpc_trd_tof", "pos ITS-TPC-TRD-TOF", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/its_tpc_trd_tof", "neg ITS-TPC-TRD-TOF", kTH1F, {ptAxis});
+
+    // 3 detectors
+    histos.add("Data/pos/pt/its_tpc_trd", "pos ITS-TPC-TRD", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/its_tpc_trd", "neg ITS-TPC-TRD", kTH1F, {ptAxis});
+
     histos.add("Data/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH1F, {ptAxis});
     histos.add("Data/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH1F, {ptAxis});
 
+    histos.add("Data/pos/pt/tpc_trd_tof", "pos TPC-TRD-TOF", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/tpc_trd_tof", "neg TPC-TRD-TOF", kTH1F, {ptAxis});
+
+    histos.add("Data/pos/pt/its_trd_tof", "pos ITS-TRD-TOF", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/its_trd_tof", "neg ITS-TRD-TOF", kTH1F, {ptAxis});
+
+    // 2 detectors
     histos.add("Data/pos/pt/its_tpc", "pos ITS-TPC", kTH1F, {ptAxis});
     histos.add("Data/neg/pt/its_tpc", "neg ITS-TPC", kTH1F, {ptAxis});
+
+    histos.add("Data/pos/pt/trd_tof", "pos TRD-TOF", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/trd_tof", "neg TRD-TOF", kTH1F, {ptAxis});
 
     histos.add("Data/pos/pt/tpc_tof", "pos TPC-TOF", kTH1F, {ptAxis});
     histos.add("Data/neg/pt/tpc_tof", "neg TPC-TOF", kTH1F, {ptAxis});
@@ -249,11 +183,11 @@ struct tofSpectra {
     histos.add("Data/pos/pt/its_tof", "pos ITS-TOF", kTH1F, {ptAxis});
     histos.add("Data/neg/pt/its_tof", "neg ITS-TOF", kTH1F, {ptAxis});
 
-    histos.add("Data/pos/pt/tpc", "pos TPC", kTH1F, {ptAxis});
-    histos.add("Data/neg/pt/tpc", "neg TPC", kTH1F, {ptAxis});
+    histos.add("Data/pos/pt/tpc_trd", "pos TPC-TRD", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/tpc_trd", "neg TPC-TRD", kTH1F, {ptAxis});
 
-    histos.add("Data/pos/pt/its", "pos ITS", kTH1F, {ptAxis});
-    histos.add("Data/neg/pt/its", "neg ITS", kTH1F, {ptAxis});
+    histos.add("Data/pos/pt/its_trd", "pos ITS-TRD", kTH1F, {ptAxis});
+    histos.add("Data/neg/pt/its_trd", "neg ITS-TRD", kTH1F, {ptAxis});
 
     if (doprocessMC) {
       histos.add("MC/fake/pos", "Fake positive tracks", kTH1F, {ptAxis});
@@ -265,55 +199,55 @@ struct tofSpectra {
       switch (i) {
         case 0:
         case Np:
-          if (doprocessFullEl == false && doprocessLfFullEl == false && doprocessTinyEl == false && doprocessLfTinyEl == false) {
+          if (doprocessFullEl == false && doprocessLfFullEl == false) {
             continue;
           }
           break;
         case 1:
         case Np + 1:
-          if (doprocessFullMu == false && doprocessLfFullMu == false && doprocessTinyMu == false && doprocessLfTinyMu == false) {
+          if (doprocessFullMu == false && doprocessLfFullMu == false) {
             continue;
           }
           break;
         case 2:
         case Np + 2:
-          if (doprocessFullPi == false && doprocessLfFullPi == false && doprocessTinyPi == false && doprocessLfTinyPi == false) {
+          if (doprocessFullPi == false && doprocessLfFullPi == false) {
             continue;
           }
           break;
         case 3:
         case Np + 3:
-          if (doprocessFullKa == false && doprocessLfFullKa == false && doprocessTinyKa == false && doprocessLfTinyKa == false) {
+          if (doprocessFullKa == false && doprocessLfFullKa == false) {
             continue;
           }
           break;
         case 4:
         case Np + 4:
-          if (doprocessFullPr == false && doprocessLfFullPr == false && doprocessTinyPr == false && doprocessLfTinyPr == false) {
+          if (doprocessFullPr == false && doprocessLfFullPr == false) {
             continue;
           }
           break;
         case 5:
         case Np + 5:
-          if (doprocessFullDe == false && doprocessLfFullDe == false && doprocessTinyDe == false && doprocessLfTinyDe == false) {
+          if (doprocessFullDe == false && doprocessLfFullDe == false) {
             continue;
           }
           break;
         case 6:
         case Np + 6:
-          if (doprocessFullTr == false && doprocessLfFullTr == false && doprocessTinyTr == false && doprocessLfTinyTr == false) {
+          if (doprocessFullTr == false && doprocessLfFullTr == false) {
             continue;
           }
           break;
         case 7:
         case Np + 7:
-          if (doprocessFullHe == false && doprocessLfFullHe == false && doprocessTinyHe == false && doprocessLfTinyHe == false) {
+          if (doprocessFullHe == false && doprocessLfFullHe == false) {
             continue;
           }
           break;
         case 8:
         case Np + 8:
-          if (doprocessFullAl == false && doprocessLfFullAl == false && doprocessTinyAl == false && doprocessLfTinyAl == false) {
+          if (doprocessFullAl == false && doprocessLfFullAl == false) {
             continue;
           }
           break;
@@ -327,29 +261,29 @@ struct tofSpectra {
       histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
 
       switch (multiplicityEstimator) {
-        case 0:
+        case 0: // No multiplicity
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH2F, {ptAxis, nsigmaTOFAxis});
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH2F, {ptAxis, nsigmaTPCAxis});
           histos.add(hdeltatof[i].data(), pTCharge[i], kTH2F, {ptAxis, deltaTOFAxis});
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2F, {ptAxis, deltaTPCAxis});
           break;
         case 1: // MultFV0M
-          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultPercentile, "MultFV0M"}});
-          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultPercentile, "MultFV0M"}});
-          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultPercentile, "MultFV0M"}});
-          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultPercentile, "MultFV0M"}});
+          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultFV0M"}});
+          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultFV0M"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultFV0M"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultFV0M"}});
           break;
         case 2: // MultFT0M
-          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultPercentile, "MultFT0M"}});
-          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultPercentile, "MultFT0M"}});
-          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultPercentile, "MultFT0M"}});
-          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultPercentile, "MultFT0M"}});
+          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultFT0M"}});
+          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultFT0M"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultFT0M"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultFT0M"}});
           break;
         case 3: // MultFDDM
-          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultPercentile, "MultFDDM"}});
-          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultPercentile, "MultFDDM"}});
-          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultPercentile, "MultFDDM"}});
-          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultPercentile, "MultFDDM"}});
+          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultFDDM"}});
+          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultFDDM"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultFDDM"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultFDDM"}});
           break;
         case 4: // MultTracklets
           histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsMultiplicity, "MultTracklets"}});
@@ -374,6 +308,12 @@ struct tofSpectra {
           histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
           histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsMultiplicity, "MultNTracksPVeta1"}});
+          break;
+        case 8: // Centrality FT0C
+          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTOFAxis, {binsPercentile, "Centrality FT0C"}});
+          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, {binsPercentile, "Centrality FT0C"}});
+          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTOFAxis, {binsPercentile, "Centrality FT0C"}});
+          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3F, {ptAxis, deltaTPCAxis, {binsPercentile, "Centrality FT0C"}});
           break;
         default:
           LOG(fatal) << "Unrecognized option for multiplicity " << multiplicityEstimator;
@@ -439,6 +379,9 @@ struct tofSpectra {
       case 7: // MultNTracksPVeta1
         multiplicity = collision.multNTracksPVeta1();
         break;
+      case 8: // Centrality FT0C
+        multiplicity = collision.centFT0C();
+        break;
     }
 
     if (multiplicityEstimator == 0) {
@@ -474,6 +417,19 @@ struct tofSpectra {
 
     if (!track.hasTOF()) {
       return;
+    }
+
+    if (track.hasTRD() && lastRequiredTrdCluster > 0) {
+      int lastLayer = 0;
+      for (int l = 7; l >= 0; l--) {
+        if (track.trdPattern() & (1 << l)) {
+          lastLayer = l;
+          break;
+        }
+      }
+      if (lastLayer < lastRequiredTrdCluster) {
+        return;
+      }
     }
 
     if (multiplicityEstimator == 0) {
@@ -561,7 +517,10 @@ struct tofSpectra {
       histos.fill(HIST("event/vertexz"), collision.posZ());
 
       if constexpr (fillMultiplicity) {
-        // histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A() + collision.multZeqFV0C());
+        // histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+        // histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
+        histos.fill(HIST("Centrality/FT0C"), collision.centFT0C());
+
         histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A());
         histos.fill(HIST("Mult/FT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
         histos.fill(HIST("Mult/FDDM"), collision.multZeqFDDA() + collision.multZeqFDDC());
@@ -594,52 +553,89 @@ struct tofSpectra {
       histos.fill(HIST("tracksel"), 3);
     }
     if constexpr (fillHistograms) {
-      if (track.sign() > 0) {
-        if (track.hasITS() && track.hasTPC()) {
-          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-        } else if (track.hasTPC()) {
-          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
-        } else if (track.hasITS()) {
-          histos.fill(HIST("Data/pos/pt/its"), track.pt());
-        }
-      } else {
-        if (track.hasITS() && track.hasTPC()) {
-          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-        } else if (track.hasTPC()) {
-          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
-        } else if (track.hasITS()) {
-          histos.fill(HIST("Data/neg/pt/its"), track.pt());
+      if (track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_trd_tof"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc_trd_tof"), track.pt());
         }
       }
-    }
-    if (!track.hasTOF()) {
-      return true; // Keeping tracks without TOF, discarding them later
-    }
-
-    if constexpr (fillHistograms) {
-      if (track.sign() > 0) {
-        if (track.hasITS() && track.hasTPC()) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-        } else if (track.hasTPC()) {
-          histos.fill(HIST("Data/pos/pt/tpc_tof"), track.pt());
-        } else if (track.hasITS()) {
-          histos.fill(HIST("Data/pos/pt/its_tof"), track.pt());
+      if (track.hasITS() && track.hasTPC() && track.hasTRD()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_trd"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc_trd"), track.pt());
         }
-      } else {
-        if (track.hasITS() && track.hasTPC()) {
+      }
+      if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+        } else {
           histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-        } else if (track.hasTPC()) {
+        }
+      }
+      if (track.hasITS() && track.hasTRD() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_trd_tof"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_trd_tof"), track.pt());
+        }
+      }
+      if (track.hasTPC() && track.hasTRD() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc_trd_tof"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/tpc_trd_tof"), track.pt());
+        }
+      }
+      if (track.hasITS() && track.hasTPC()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+        }
+      }
+      if (track.hasTRD() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/trd_tof"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/trd_tof"), track.pt());
+        }
+      }
+      if (track.hasTPC() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc_tof"), track.pt());
+        } else {
           histos.fill(HIST("Data/neg/pt/tpc_tof"), track.pt());
-        } else if (track.hasITS()) {
+        }
+      }
+      if (track.hasITS() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tof"), track.pt());
+        } else {
           histos.fill(HIST("Data/neg/pt/its_tof"), track.pt());
         }
       }
+      if (track.hasTPC() && track.hasTRD()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc_trd"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/tpc_trd"), track.pt());
+        }
+      }
+      if (track.hasITS() && track.hasTRD()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_trd"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_trd"), track.pt());
+        }
+      }
     }
-
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  // using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
@@ -653,16 +649,6 @@ struct tofSpectra {
       if (!isTrackSelected<true>(track)) {
         continue;
       }
-
-      //
-      // if (TMath::Abs(track.separationbetael() < 1.f)) {
-      //   histos.fill(HIST("electronbeta/hp_El"), track.p());
-      //   histos.fill(HIST("electronbeta/hpt_El"), track.pt());
-      //   histos.fill(HIST("electronbeta/hlength_El"), track.length());
-      //   histos.fill(HIST("electronbeta/htime_El"), track.tofSignal() / 1000);
-      //   histos.fill(HIST("electronbeta/hp_beta_El"), track.p(), track.diffbetael());
-      //   histos.fill(HIST("electronbeta/hp_betasigma_El"), track.p(), track.separationbetael());
-      // }
     }
   } // end of the process function
 
@@ -698,20 +684,6 @@ struct tofSpectra {
   makeProcessFunctionFull(Al, Alpha);
 #undef makeProcessFunctionFull
 
-// Tiny tables
-#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(Tiny, inputPid, particleId, false, TOF, TPC)
-
-  makeProcessFunctionTiny(El, Electron);
-  makeProcessFunctionTiny(Mu, Muon);
-  makeProcessFunctionTiny(Pi, Pion);
-  makeProcessFunctionTiny(Ka, Kaon);
-  makeProcessFunctionTiny(Pr, Proton);
-  makeProcessFunctionTiny(De, Deuteron);
-  makeProcessFunctionTiny(Tr, Triton);
-  makeProcessFunctionTiny(He, Helium3);
-  makeProcessFunctionTiny(Al, Alpha);
-#undef makeProcessFunctionTiny
-
 // Full LF tables
 #define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, TOFFull, TPCLfFull)
 
@@ -726,20 +698,6 @@ struct tofSpectra {
   makeProcessFunctionFull(Al, Alpha);
 #undef makeProcessFunctionFull
 
-// Tiny tables
-#define makeProcessFunctionTiny(inputPid, particleId) makeProcessFunction(LfTiny, inputPid, particleId, false, TOF, TPCLf)
-
-  makeProcessFunctionTiny(El, Electron);
-  makeProcessFunctionTiny(Mu, Muon);
-  makeProcessFunctionTiny(Pi, Pion);
-  makeProcessFunctionTiny(Ka, Kaon);
-  makeProcessFunctionTiny(Pr, Proton);
-  makeProcessFunctionTiny(De, Deuteron);
-  makeProcessFunctionTiny(Tr, Triton);
-  makeProcessFunctionTiny(He, Helium3);
-  makeProcessFunctionTiny(Al, Alpha);
-#undef makeProcessFunctionTiny
-
   template <std::size_t i, typename T1, typename T2>
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)
   {
@@ -747,55 +705,55 @@ struct tofSpectra {
     switch (i) {
       case 0:
       case Np:
-        if (doprocessFullEl == false && doprocessTinyEl == false) {
+        if (doprocessFullEl == false && doprocessLfFullEl == false) {
           return;
         }
         break;
       case 1:
       case Np + 1:
-        if (doprocessFullMu == false && doprocessTinyMu == false) {
+        if (doprocessFullMu == false && doprocessLfFullMu == false) {
           return;
         }
         break;
       case 2:
       case Np + 2:
-        if (doprocessFullPi == false && doprocessTinyPi == false) {
+        if (doprocessFullPi == false && doprocessLfFullPi == false) {
           return;
         }
         break;
       case 3:
       case Np + 3:
-        if (doprocessFullKa == false && doprocessTinyKa == false) {
+        if (doprocessFullKa == false && doprocessLfFullKa == false) {
           return;
         }
         break;
       case 4:
       case Np + 4:
-        if (doprocessFullPr == false && doprocessTinyPr == false) {
+        if (doprocessFullPr == false && doprocessLfFullPr == false) {
           return;
         }
         break;
       case 5:
       case Np + 5:
-        if (doprocessFullDe == false && doprocessTinyDe == false) {
+        if (doprocessFullDe == false && doprocessLfFullDe == false) {
           return;
         }
         break;
       case 6:
       case Np + 6:
-        if (doprocessFullTr == false && doprocessTinyTr == false) {
+        if (doprocessFullTr == false && doprocessLfFullTr == false) {
           return;
         }
         break;
       case 7:
       case Np + 7:
-        if (doprocessFullHe == false && doprocessTinyHe == false) {
+        if (doprocessFullHe == false && doprocessLfFullHe == false) {
           return;
         }
         break;
       case 8:
       case Np + 8:
-        if (doprocessFullAl == false && doprocessTinyAl == false) {
+        if (doprocessFullAl == false && doprocessLfFullAl == false) {
           return;
         }
         break;
@@ -849,6 +807,20 @@ struct tofSpectra {
         }
       } else {
         histos.fill(HIST(hpt_num_prm[i]), track.pt());
+
+        if (track.hasTRD() && lastRequiredTrdCluster > 0) {
+          int lastLayer = 0;
+          for (int l = 7; l >= 0; l--) {
+            if (track.trdPattern() & (1 << l)) {
+              lastLayer = l;
+              break;
+            }
+          }
+          if (lastLayer < lastRequiredTrdCluster) {
+            continue;
+          }
+        }
+
         if (track.hasTOF()) {
           histos.fill(HIST(hpt_numtof_prm[i]), track.pt());
         }

@@ -14,7 +14,6 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TOF split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
-///         QA histograms for the TOF PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
 // O2 includes
@@ -26,7 +25,6 @@
 // O2Physics includes
 #include "TableHelper.h"
 #include "pidTOFBase.h"
-#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -36,7 +34,7 @@ using namespace o2::track;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Produce TOF PID QA histograms"}}};
+  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}}};
   std::swap(workflowOptions, options);
 }
 
@@ -384,10 +382,5 @@ struct tofPidFull {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tofPidFull>(cfgc)};
-  if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tofPidQa>(cfgc));
-  }
-
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<tofPidFull>(cfgc)};
 }

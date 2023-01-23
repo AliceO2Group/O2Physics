@@ -191,9 +191,12 @@ struct BcSelectionTask {
   {
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-
-      // TODO: fill fired aliases for run3
+      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       int32_t alias[kNaliases] = {0};
+      uint64_t triggerMask = bc.triggerMask();
+      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+        alias[al.first] |= (triggerMask & al.second) > 0;
+      }
       alias[kALL] = 1;
 
       // get timing info from ZDC, FV0, FT0 and FDD

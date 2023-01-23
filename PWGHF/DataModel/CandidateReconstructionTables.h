@@ -15,8 +15,8 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
-#define O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
+#define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
 #include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
@@ -1182,6 +1182,146 @@ DECLARE_SOA_TABLE(HfCandXiccMcGen, "AOD", "HFCANDXICCMCGEN", //!
                   hf_cand_xicc::FlagMcMatchGen,
                   hf_cand_xicc::OriginMcGen);
 
+// specific Omegac candidate properties
+namespace hf_cand_omegac
+{
+// Data processing results:
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(XDecayVtxOmegac, xDecayVtxOmegac, float);
+DECLARE_SOA_COLUMN(YDecayVtxOmegac, yDecayVtxOmegac, float);
+DECLARE_SOA_COLUMN(ZDecayVtxOmegac, zDecayVtxOmegac, float);
+DECLARE_SOA_COLUMN(XDecayVtxCascade, xDecayVtxCascade, float);
+DECLARE_SOA_COLUMN(YDecayVtxCascade, yDecayVtxCascade, float);
+DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
+DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
+DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
+DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int);
+DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
+DECLARE_SOA_COLUMN(Chi2PCAV0, chi2PcaV0, float);
+DECLARE_SOA_COLUMN(Chi2PCACascade, chi2PcaCascade, float);
+DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float);
+DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
+DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
+DECLARE_SOA_COLUMN(PxCascAtProd, pxCascAtProd, float);
+DECLARE_SOA_COLUMN(PyCascAtProd, pyCascAtProd, float);
+DECLARE_SOA_COLUMN(PzCascAtProd, pzCascAtProd, float);
+DECLARE_SOA_COLUMN(PxPrimaryPiAtProd, pxPrimaryPiAtProd, float);
+DECLARE_SOA_COLUMN(PyPrimaryPiAtProd, pyPrimaryPiAtProd, float);
+DECLARE_SOA_COLUMN(PzPrimaryPiAtProd, pzPrimaryPiAtProd, float);
+DECLARE_SOA_COLUMN(PxLambdaAtProd, pxLambdaAtProd, float);
+DECLARE_SOA_COLUMN(PyLambdaAtProd, pyLambdaAtProd, float);
+DECLARE_SOA_COLUMN(PzLambdaAtProd, pzLambdaAtProd, float);
+DECLARE_SOA_COLUMN(PxPiFromCascAtProd, pxPiFromCascAtProd, float);
+DECLARE_SOA_COLUMN(PyPiFromCascAtProd, pyPiFromCascAtProd, float);
+DECLARE_SOA_COLUMN(PzPiFromCascAtProd, pzPiFromCascAtProd, float);
+DECLARE_SOA_COLUMN(PxPosV0DauAtProd, pxPosV0DauAtProd, float);
+DECLARE_SOA_COLUMN(PyPosV0DauAtProd, pyPosV0DauAtProd, float);
+DECLARE_SOA_COLUMN(PzPosV0DauAtProd, pzPosV0DauAtProd, float);
+DECLARE_SOA_COLUMN(PxNegV0DauAtProd, pxNegV0DauAtProd, float);
+DECLARE_SOA_COLUMN(PyNegV0DauAtProd, pyNegV0DauAtProd, float);
+DECLARE_SOA_COLUMN(PzNegV0DauAtProd, pzNegV0DauAtProd, float);
+DECLARE_SOA_COLUMN(ImpactParCascXY, impactParCascXY, float);
+DECLARE_SOA_COLUMN(ImpactParPrimaryPiXY, impactParPrimaryPiXY, float);
+DECLARE_SOA_COLUMN(ImpactParV0XY, impactParV0XY, float);
+DECLARE_SOA_COLUMN(ImpactParCascZ, impactParCascZ, float);
+DECLARE_SOA_COLUMN(ImpactParPrimaryPiZ, impactParPrimaryPiZ, float);
+DECLARE_SOA_COLUMN(ImpactParV0Z, impactParV0Z, float);
+DECLARE_SOA_COLUMN(ErrImpactParCascXY, errImpactParCascXY, float);
+DECLARE_SOA_COLUMN(ErrImpactParPrimaryPiXY, errImpactParPrimaryPiXY, float);
+DECLARE_SOA_COLUMN(ErrImpactParV0XY, errImpactParV0XY, float);
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);
+DECLARE_SOA_INDEX_COLUMN(V0, v0);
+DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primaryPi, int, Tracks, "_primarypi");
+DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactParOmegacXY, float);
+DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactParOmegacZ, float);
+DECLARE_SOA_COLUMN(PtPrimaryPi, ptPrimaryPi, double);
+DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
+DECLARE_SOA_COLUMN(InvMassAntiLambda, invMassAntiLambda, double);
+DECLARE_SOA_COLUMN(InvMassOmegac, invMassOmegac, double);
+DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
+DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
+DECLARE_SOA_COLUMN(CosPAOmegac, cosPAOmegac, double);
+DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, double);
+DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, double);
+DECLARE_SOA_COLUMN(CosPAXYOmegac, cosPAXYOmegac, double);
+DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, double);
+DECLARE_SOA_COLUMN(CTauOmegac, ctauOmegac, double);
+DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, double);
+DECLARE_SOA_COLUMN(CTauV0, ctauV0, double);
+DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
+DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
+DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
+DECLARE_SOA_COLUMN(EtaPiFromOme, etaPiFromOme, double);
+DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, double);
+DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
+DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
+DECLARE_SOA_COLUMN(MyMassLambda, myMassLambda, double); // mass of the lambda re-computed within the task candidateCreatorOmegac.cxx (not from LF table)
+DECLARE_SOA_COLUMN(MassCascadeNotFixed, massCascadeNotFixed, double);
+DECLARE_SOA_COLUMN(MassOmegacNotFixed, massOmegacNotFixed, double);
+DECLARE_SOA_COLUMN(XVtxCascLF, xVtxCascLF, double);
+DECLARE_SOA_COLUMN(YVtxCascLF, yVtxCascLF, double);
+DECLARE_SOA_COLUMN(ZVtxCascLF, zVtxCascLF, double);
+DECLARE_SOA_COLUMN(MassCascLF, massCascLF, double);
+DECLARE_SOA_COLUMN(DcaXYToPVPrimaryPi, dcaXYToPVPrimaryPi, double);
+DECLARE_SOA_COLUMN(DcaXYToPVCascDau, dcaXYToPVCascdau, double);
+DECLARE_SOA_COLUMN(DcaXYToPVV0Dau0, dcaXYToPVV0dau0, double);
+DECLARE_SOA_COLUMN(DcaXYToPVV0Dau1, dcaXYToPVV0dau1, double);
+DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, double);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, double);
+DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, double);
+
+// MC matching result:
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+
+// mapping of decay types
+enum DecayType { OmegacToXiPi = 0 };
+
+} // end of namespace hf_cand_omegac
+
+// declare dedicated Omegac candidate table
+DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEC",
+                  o2::soa::Index<>,
+                  hf_cand_omegac::CollisionId, collision::PosX, collision::PosY, collision::PosZ,
+                  hf_cand_omegac::XDecayVtxOmegac, hf_cand_omegac::YDecayVtxOmegac, hf_cand_omegac::ZDecayVtxOmegac,
+                  hf_cand_omegac::XDecayVtxCascade, hf_cand_omegac::YDecayVtxCascade, hf_cand_omegac::ZDecayVtxCascade,
+                  hf_cand_omegac::XDecayVtxV0, hf_cand_omegac::YDecayVtxV0, hf_cand_omegac::ZDecayVtxV0,
+                  hf_cand_omegac::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
+                  hf_cand_omegac::Chi2PCAOmegac, hf_cand_omegac::Chi2PCAV0, hf_cand_omegac::Chi2PCACascade,
+                  hf_cand_omegac::PxOmegac, hf_cand_omegac::PyOmegac, hf_cand_omegac::PzOmegac,
+                  hf_cand_omegac::PxCascAtProd, hf_cand_omegac::PyCascAtProd, hf_cand_omegac::PzCascAtProd,
+                  hf_cand_omegac::PxPrimaryPiAtProd, hf_cand_omegac::PyPrimaryPiAtProd, hf_cand_omegac::PzPrimaryPiAtProd,
+                  hf_cand_omegac::PxLambdaAtProd, hf_cand_omegac::PyLambdaAtProd, hf_cand_omegac::PzLambdaAtProd,
+                  hf_cand_omegac::PxPiFromCascAtProd, hf_cand_omegac::PyPiFromCascAtProd, hf_cand_omegac::PzPiFromCascAtProd,
+                  hf_cand_omegac::PxPosV0DauAtProd, hf_cand_omegac::PyPosV0DauAtProd, hf_cand_omegac::PzPosV0DauAtProd,
+                  hf_cand_omegac::PxNegV0DauAtProd, hf_cand_omegac::PyNegV0DauAtProd, hf_cand_omegac::PzNegV0DauAtProd,
+                  hf_cand_omegac::ImpactParCascXY, hf_cand_omegac::ImpactParPrimaryPiXY, hf_cand_omegac::ImpactParCascZ, hf_cand_omegac::ImpactParPrimaryPiZ,
+                  hf_cand_omegac::ImpactParV0XY, hf_cand_omegac::ImpactParV0Z,
+                  hf_cand_omegac::ErrImpactParCascXY, hf_cand_omegac::ErrImpactParPrimaryPiXY, hf_cand_omegac::ErrImpactParV0XY,
+                  hf_cand_omegac::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_omegac::CascadeId, hf_cand_omegac::PrimaryPiId, cascdata::BachelorId,
+                  hf_cand_omegac::ImpactParOmegacXY, hf_cand_omegac::ImpactParOmegacZ,
+                  hf_cand_omegac::PtPrimaryPi,
+                  hf_cand_omegac::InvMassLambda, hf_cand_omegac::InvMassAntiLambda, hf_cand_omegac::InvMassCascade, hf_cand_omegac::InvMassOmegac,
+                  hf_cand_omegac::CosPAV0, hf_cand_omegac::CosPAOmegac, hf_cand_omegac::CosPACasc, hf_cand_omegac::CosPAXYV0, hf_cand_omegac::CosPAXYOmegac, hf_cand_omegac::CosPAXYCasc,
+                  hf_cand_omegac::CTauOmegac, hf_cand_omegac::CTauCascade, hf_cand_omegac::CTauV0,
+                  hf_cand_omegac::EtaV0PosDau, hf_cand_omegac::EtaV0NegDau, hf_cand_omegac::EtaPiFromCasc, hf_cand_omegac::EtaPiFromOme,
+                  hf_cand_omegac::EtaOmegac, hf_cand_omegac::EtaCascade, hf_cand_omegac::EtaV0,
+                  hf_cand_omegac::MyMassLambda, hf_cand_omegac::MassCascadeNotFixed, hf_cand_omegac::MassOmegacNotFixed,
+                  hf_cand_omegac::XVtxCascLF, hf_cand_omegac::YVtxCascLF, hf_cand_omegac::ZVtxCascLF, hf_cand_omegac::MassCascLF,
+                  hf_cand_omegac::DcaXYToPVPrimaryPi, hf_cand_omegac::DcaXYToPVV0Dau0, hf_cand_omegac::DcaXYToPVV0Dau1, hf_cand_omegac::DcaXYToPVCascDau,
+                  hf_cand_omegac::DcaCascDau, hf_cand_omegac::DcaV0Dau, hf_cand_omegac::DcaOmegacDau, hf_track_index::HFflag);
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfCandOmegacMCRec, "AOD", "HFCANDOMECMCREC", //!
+                  hf_cand_omegac::FlagMcMatchRec,
+                  hf_cand_omegac::DebugMcRec);
+
+// table with results of generator level MC matching
+DECLARE_SOA_TABLE(HfCandOmegacMCGen, "AOD", "HFCANDOMECMCGEN", //!
+                  hf_cand_omegac::FlagMcMatchGen);
+
 // specific chic candidate properties
 namespace hf_cand_chic
 {
@@ -1463,4 +1603,4 @@ DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::OriginMcGen);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_CANDIDATERECONSTRUCTIONTABLES_H_
+#endif // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_

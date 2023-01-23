@@ -15,8 +15,12 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 #include "FemtoDreamObjectSelection.h"
 #include "FemtoDreamTrackSelection.h"
@@ -25,8 +29,6 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
-
-#include <iostream>
 
 using namespace o2::framework;
 
@@ -81,7 +83,7 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
                             fRejectKaon(false),
                             fInvMassKaonLowLimit(0.48),
                             fInvMassKaonUpLimit(0.515),
-                            nSigmaPIDOffsetTPC(0.){};
+                            nSigmaPIDOffsetTPC(0.) {}
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -347,7 +349,7 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   const float invMassLambda = v0.mLambda();
   const float invMassAntiLambda = v0.mAntiLambda();
 
-  if ((invMassLambda < fInvMassLowLimit or invMassLambda > fInvMassUpLimit) and (invMassAntiLambda < fInvMassLowLimit or invMassAntiLambda > fInvMassUpLimit)) {
+  if ((invMassLambda < fInvMassLowLimit || invMassLambda > fInvMassUpLimit) && (invMassAntiLambda < fInvMassLowLimit || invMassAntiLambda > fInvMassUpLimit)) {
     return false;
   }
   if (fRejectKaon) {
@@ -394,7 +396,10 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   // v0
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax and abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) and !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax and abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
+  if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+        abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
+      !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+        abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
     return false;
   }
 
@@ -420,7 +425,7 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0, T const& pos
 
   mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaNoCuts"), v0.mLambda());
 
-  if (invMassLambda > fInvMassLowLimit and invMassLambda < fInvMassUpLimit) {
+  if (invMassLambda > fInvMassLowLimit && invMassLambda < fInvMassUpLimit) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"), v0.mLambda());
   }
 
@@ -477,9 +482,8 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
     sign = -1.;
   } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
-  }
-  // if it happens that none of these are true, ignore the invariant mass
-  else {
+  } else {
+    // if it happens that none of these are true, ignore the invariant mass
     if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = -1.;
     } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
@@ -558,4 +562,4 @@ void FemtoDreamV0Selection::fillQA(C const& col, V const& v0, T const& posTrack,
 
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_

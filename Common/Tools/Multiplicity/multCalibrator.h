@@ -54,6 +54,9 @@ class multCalibrator : public TNamed
     lNDesiredBoundaries = lNB;
   }
 
+  void SetAnchorPointRaw(Float_t lRaw) { fAnchorPointValue = lRaw; }
+  void SetAnchorPointPercentage(Float_t lPer) { fAnchorPointPercentage = lPer; }
+
   void SetStandardAdaptiveBoundaries();   //standard adaptive (pp-like)
   void SetStandardOnePercentBoundaries(); //standard 1% (Pb-Pb like)
 
@@ -61,11 +64,11 @@ class multCalibrator : public TNamed
   Bool_t Calibrate();
 
   //Aux function. Keep public, accessible outside as rather useful utility
-  TH1F* GetCalibrationHistogram(TH1D* histoRaw, TString lHistoName = "hCalib");
+  TH1F* GetCalibrationHistogram(TH1* histoRaw, TString lHistoName = "hCalib");
 
   //Auxiliary functions
-  Double_t GetRawMax(TH1D* histo);
-  Double_t GetBoundaryForPercentile(TH1D* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate);
+  Double_t GetRawMax(TH1* histo);
+  Double_t GetBoundaryForPercentile(TH1* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate);
 
   //Precision bookkeeping
   TH1D* GetPrecisionHistogram() { return fPrecisionHistogram; }; //gets precision histogram from current object
@@ -95,6 +98,10 @@ class multCalibrator : public TNamed
   TString fInputFileName;  // Filename for TTree object for calibration purposes
   TString fBufferFileName; // Filename for TTree object (buffer file)
   TString fOutputFileName; // Filename for calibration OADB output
+
+  // Anchor point functionality
+  Float_t fAnchorPointValue;      // AP value (raw estimator)
+  Float_t fAnchorPointPercentage; // AP percentage
 
   // TList object for storing histograms
   TList* fCalibHists;
