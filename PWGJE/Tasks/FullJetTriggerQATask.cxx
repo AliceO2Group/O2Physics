@@ -111,7 +111,7 @@ struct JetTriggerQA {
     hClusterPtPhi.setObject(new TH2F("hClusterPtPhi", "Cluster #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hJetPtTrackPt.setObject(new TH2F("hJetPtTrackPt", "Jets;#it{p}_{T};#it{p}_{T}^{track}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
     hJetPtClusterPt.setObject(new TH2F("hJetPtClusterPt", "Jets;#it{p}_{T};#it{p}_{T}^{clus}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
-    hJetPtPtd.setObject(new TH2F("hJetPtPtd", "Jets;#it{p}_{T};ptD", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
+    hJetPtPtd.setObject(new TH2F("hJetPtPtd", "Jets;#it{p}_{T};ptD", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
     hJetPtChargeFrag.setObject(new TH2F("hJetPtChargeFrag", "Jets;#it{p}_{T};z", nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
     hJetPtNEF.setObject(new TH2F("hJetPtNEF", "Jets;#it{p}_{T};NEF", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
     hJetPtZTheta.setObject(new TH2F("hJetPtZTheta", "Jets;#it{p}_{T};z#theta", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
@@ -126,7 +126,7 @@ struct JetTriggerQA {
     hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", "Selected Cluster #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetPtTrackPt.setObject(new TH2F("hSelectedJetPtTrackPt", "Selected Jets;#it{p}_{T};#it{p}_{T}^{track}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
     hSelectedJetPtClusterPt.setObject(new TH2F("hSelectedJetPtClusterPt", "Selected Jets;#it{p}_{T};#it{p}_{T}^{clus}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
-    hSelectedJetPtPtd.setObject(new TH2F("hSelectedJetPtPtd", "Jets;#it{p}_{T};ptD", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
+    hSelectedJetPtPtd.setObject(new TH2F("hSelectedJetPtPtd", "Jets;#it{p}_{T};ptD", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
     hSelectedJetPtChargeFrag.setObject(new TH2F("hSelectedJetPtChargeFrag", "Jets;#it{p}_{T};z", nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
     hSelectedJetPtNEF.setObject(new TH2F("hSelectedJetPtNEF", "Jets;#it{p}_{T};NEF", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
     hSelectedJetPtZTheta.setObject(new TH2F("hSelectedJetPtZTheta", "Jets;#it{p}_{T};z#theta", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
@@ -137,13 +137,19 @@ struct JetTriggerQA {
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  double check_dphi(double dphi) {
+    if (dphi > TMath::Pi()) dphi -= TMath::Pi();
+    else if (dphi <= TMath::Pi()) dphi += TMath::Pi();
+    return dphi;
+  }
+
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision,
                aod::Jets const& jets,
                aod::JetTrackConstituents const& jetTrackConstituents,
                aod::JetClusterConstituents const& jetClusterConstituents,
                aod::Tracks const& tracks,
-               selectedClusters const& clusters,
-               aod::FullJetFilters const& fullJetFilters)
+               selectedClusters const& clusters
+               )
   {
     hProcessedEvents->Fill(0);
     if (!collision.alias()[kTVXinEMC]) {
@@ -152,10 +158,8 @@ struct JetTriggerQA {
     hProcessedEvents->Fill(1);
 
     bool isEvtSelected = false;
-    for (const auto& obj : fullJetFilters) {
-      if (obj.hasJetFullHighPt()) {
-        isEvtSelected = true;
-      }
+    if (collision.hasJetFullHighPt()){
+      isEvtSelected = true;
     }
     if (isEvtSelected) {
       hProcessedEvents->Fill(2);
@@ -174,7 +178,9 @@ struct JetTriggerQA {
         auto chargeFrag = trackList.track().px() * jet.px() + trackList.track().py() * jet.py() + trackList.track().pz() * jet.pz();
         chargeFrag /= (jet.p() * jet.p());
         auto z = trackPt / jetPt;
-        auto dR = TMath::Sqrt(TMath::Power(jet.phi() - trackList.track().phi(), 2) + TMath::Power(jet.eta() - trackList.track().eta(), 2));
+        auto dphi = jet.phi() - trackList.track().phi();
+        dphi = check_dphi(dphi);
+        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - trackList.track().eta(), 2));
         zTheta += z * dR / jetR;
         zSqTheta += z * z * dR / jetR;
         zThetaSq += z * dR * dR / (jetR * jetR);
@@ -192,7 +198,9 @@ struct JetTriggerQA {
         auto clusterPt = clusterList.cluster().energy() / std::cosh(clusterList.cluster().eta());
         neutralEnergyFraction += clusterList.cluster().energy();
         auto z = clusterPt / jetPt;
-        auto dR = TMath::Sqrt(TMath::Power(jet.phi() - clusterList.cluster().phi(), 2) + TMath::Power(jet.eta() - clusterList.cluster().eta(), 2));
+        auto dphi = jet.phi() - clusterList.cluster().phi();
+        dphi = check_dphi(dphi);
+        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - clusterList.cluster().eta(), 2));
         zTheta += z * dR / jetR;
         zSqTheta += z * z * dR / jetR;
         zThetaSq += z * dR * dR / (jetR * jetR);
