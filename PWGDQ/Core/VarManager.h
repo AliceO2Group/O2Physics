@@ -317,7 +317,6 @@ class VarManager : public TObject
     kDeltaPhiPair,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
-    kQuadDCAabsXYZ,
     kQuadDCAsigXYZ,
     kCosPointingAngle,
     kImpParXYJpsi,
@@ -1084,7 +1083,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsXYZ] || fgUsedVars[kQuadDCAsigXYZ]) {
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAsigXYZ]) {
       // Quantities based on the barrel tables
       double dca1XY = t1.dcaXY();
       double dca2XY = t2.dcaXY();
@@ -1097,8 +1096,19 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
       values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
-      values[kQuadDCAabsXYZ] = std::sqrt((dca1XY * dca1XY + dca1Z * dca1Z + dca2XY * dca2XY + dca2Z * dca2Z) / 2);
-      values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXY * dca1sigXY + dca1sigZ * dca1sigZ + dca2sigXY * dca2sigXY + dca2sigZ * dca2sigZ) / 2);
+
+      double det1 = t1.cZY * t1.cZZ - t1.cZY * t1.cZY;
+      double det2 = t2.cZY * t2.cZZ - t2.cZY * t2.cZY;
+      if ((det1 < 0) || (det2 < 0)) {
+        values[kQuadDCAsigXYZ] = -999;
+      }else{
+        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+      }
+        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
     }
   }
   if (fgUsedVars[kPairPhiv]) {
