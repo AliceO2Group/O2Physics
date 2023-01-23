@@ -1091,24 +1091,23 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       double dca2Z = t2.dcaZ();
       double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
       double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
-      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
-      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
 
       values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
 
-      double det1 = t1.cZY * t1.cZZ - t1.cZY * t1.cZY;
-      double det2 = t2.cZY * t2.cZZ - t2.cZY * t2.cZY;
+      double det1 = t1.cZY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cZY() * t2.cZZ() - t2.cZY() * t2.cZY();
       if ((det1 < 0) || (det2 < 0)) {
         values[kQuadDCAsigXYZ] = -999;
-      }else{
+      } else {
         double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
         double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
 
         double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
         double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
-      }
+
         values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+      }
     }
   }
   if (fgUsedVars[kPairPhiv]) {
