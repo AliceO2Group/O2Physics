@@ -101,8 +101,7 @@ struct fullJetFilter {
     return false;
   }
 
-  Bool_t isEvtSelected(double const& jetpt, double const& jeteta, double const& jetphi,
-                       double const& cluspt, double const& cluseta, double const& clusphi)
+  Bool_t isEvtSelected(double const& jetpt, double const& jeteta, double const& jetphi, double const& cluspt, double const& cluseta, double const& clusphi)
   {
     if (jetpt > f_jetPtMin && cluspt >= f_clusterPtMin) {
       return true;
@@ -110,14 +109,13 @@ struct fullJetFilter {
     return false;
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               aod::Jets const& jets,
-               selectedClusters const& clusters)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Jets const& jets, selectedClusters const& clusters)
   {
     bool keepEvent[kCategories]{false};
     double maxClusterPt = -1., maxSelectedJetPt = -1.;
 
     if (!collision.alias()[kTVXinEMC]) {
+      tags(keepEvent[0]);
       return; // Skip events where EMCAL is not live
     }
 
@@ -159,7 +157,7 @@ struct fullJetFilter {
         hProcessedEvents->Fill(iDecision);
       }
     }
-    tags(collision, keepEvent[0]);
+    tags(keepEvent[0]);
   } // process()
 };
 
