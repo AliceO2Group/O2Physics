@@ -62,6 +62,9 @@ struct strangenessFilter {
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
 
+  // our track selection
+  TrackSelection myTrackSelection();
+
   // Selection criteria for cascades
   Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range"};
   Configurable<float> v0cospa{"v0cospa", 0.95, "V0 CosPA"};
@@ -84,6 +87,7 @@ struct strangenessFilter {
   Configurable<float> ximasswindow{"ximasswindow", 0.075, "Xi Mass Window"};
   Configurable<float> omegamasswindow{"omegamasswindow", 0.075, "Omega Mass Window"}; // merge the two windows variables into one?
   Configurable<int> properlifetimefactor{"properlifetimefactor", 5, "Proper Lifetime cut"};
+  Configurable<float> lowerradiusXiYN{"lowerradiusXiYN", 24.39, "Cascade lower radius for single Xi trigger"};
   Configurable<float> nsigmatpc{"nsigmatpc", 6, "N Sigmas TPC"};
   Configurable<bool> hastof{"hastof", 1, "Has TOF (OOB condition)"};
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
@@ -94,6 +98,7 @@ struct strangenessFilter {
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
   Configurable<float> hMinPt{"hMinPt", 1.0f, "Min pt for trigger particles"};
+  Configurable<bool> isTrackFilter{"isTrackFilter", 1, "Apply track myTrackSelections"};
 
   void init(o2::framework::InitContext&)
   {
@@ -202,13 +207,13 @@ struct strangenessFilter {
   }
 
   // Filters
-  Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (!globaltrk || requireGlobalTrackInFilter());
+  Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt);
 
   // Tables
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
@@ -355,7 +360,7 @@ struct strangenessFilter {
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
-               (casc.cascradius() > 24.39) &&
+               (casc.cascradius() > lowerradiusXiYN) &&
                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
@@ -418,6 +423,9 @@ struct strangenessFilter {
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
+        if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+          continue;
+        }
         triggcounter++;
         QAHistosTriggerParticles.fill(HIST("hPtTrigger"), track.pt());
         QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi(), track.pt());
@@ -671,7 +679,7 @@ struct strangenessFilter {
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity);
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
-               (casc.cascradius() > 24.39) &&
+               (casc.cascradius() > lowerradiusXiYN) &&
                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
@@ -711,8 +719,13 @@ struct strangenessFilter {
         xicounter++;
 
         // Plot for estimates
-        if (tracks.size() > 0) {
+        for (auto track : tracks) { // start loop over tracks
+          if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+            continue;
+          }
           triggcounterForEstimates++;
+          if (triggcounterForEstimates > 0)
+            break;
         }
         if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
@@ -745,9 +758,10 @@ struct strangenessFilter {
     }
 
     // QA tracks
-    if (tracks.size() > 0)
-      hProcessedEvents->Fill(1.5);
     for (auto track : tracks) { // start loop over tracks
+      if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+        continue;
+      }
       triggcounterAllEv++;
       QAHistosTriggerParticles.fill(HIST("hPtTriggerAllEv"), track.pt());
       QAHistosTriggerParticles.fill(HIST("hPhiTriggerAllEv"), track.phi(), track.pt());
@@ -755,11 +769,16 @@ struct strangenessFilter {
       QAHistosTriggerParticles.fill(HIST("hDCAxyTriggerAllEv"), track.dcaXY(), track.pt());
       QAHistosTriggerParticles.fill(HIST("hDCAzTriggerAllEv"), track.dcaZ(), track.pt());
     } // end loop over tracks
+    if (triggcounterAllEv > 0)
+      hProcessedEvents->Fill(1.5);
     QAHistosTriggerParticles.fill(HIST("hTriggeredParticlesAllEv"), triggcounterAllEv);
 
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
+        if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+          continue;
+        }
         triggcounter++;
         QAHistosTriggerParticles.fill(HIST("hPtTrigger"), track.pt());
         QAHistosTriggerParticles.fill(HIST("hPhiTrigger"), track.phi(), track.pt());
@@ -829,6 +848,27 @@ struct strangenessFilter {
   //
   PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);
 };
+
+TrackSelection strangenessFilter::myTrackSelection()
+{
+  TrackSelection selectedTracks;
+  selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+  selectedTracks.SetPtRange(hMinPt, 1e10f);
+  selectedTracks.SetEtaRange(-hEta, hEta);
+  selectedTracks.SetRequireITSRefit(true);
+  selectedTracks.SetRequireTPCRefit(true);
+  selectedTracks.SetRequireGoldenChi2(false);
+  selectedTracks.SetMinNCrossedRowsTPC(70);
+  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any of the first three layers of IB
+  selectedTracks.SetMaxChi2PerClusterITS(36.f);
+  // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+  selectedTracks.SetMaxDcaXY(1.f);
+  selectedTracks.SetMaxDcaZ(2.f);
+
+  return selectedTracks;
+}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
