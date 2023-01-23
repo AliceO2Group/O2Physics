@@ -137,9 +137,13 @@ struct JetTriggerQA {
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
 
-  double check_dphi(double dphi) {
-    if (dphi > TMath::Pi()) dphi -= TMath::Pi();
-    else if (dphi <= TMath::Pi()) dphi += TMath::Pi();
+  double check_dphi(double dphi)
+  {
+    if (dphi > TMath::Pi()) {
+      dphi -= TMath::Pi();
+    } else if (dphi <= -1 * TMath::Pi()) {
+      dphi += TMath::Pi();
+    }
     return dphi;
   }
 
@@ -148,8 +152,7 @@ struct JetTriggerQA {
                aod::JetTrackConstituents const& jetTrackConstituents,
                aod::JetClusterConstituents const& jetClusterConstituents,
                aod::Tracks const& tracks,
-               selectedClusters const& clusters
-               )
+               selectedClusters const& clusters)
   {
     hProcessedEvents->Fill(0);
     if (!collision.alias()[kTVXinEMC]) {
@@ -158,7 +161,7 @@ struct JetTriggerQA {
     hProcessedEvents->Fill(1);
 
     bool isEvtSelected = false;
-    if (collision.hasJetFullHighPt()){
+    if (collision.hasJetFullHighPt()) {
       isEvtSelected = true;
     }
     if (isEvtSelected) {
