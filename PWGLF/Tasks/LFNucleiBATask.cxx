@@ -308,7 +308,6 @@ struct LFNucleiBATask {
     histos.add<TH2>("tracks/h2TOFbetaVsP", "#TOF beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
     histos.add<TH2>("tracks/h2withTPCProtonCutTOFbetaVsP", "#TOF beta (with N_{#sigma(TPC(p))} cut) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (with N_{#sigma(TPC(p))} cut)", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
 
-
     //  TPCExpSignal histograms
     histos.add<TH2>("tracks/proton/h2ProtonTPCExpSignalDiffVsPt", "TPC <-dE/dX> - Exp <-dE/dX> (p) vs #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); TPC <-dE/dX> ExpDiff (p)", HistType::kTH2F, {{ptAxis}, {16000, -800, 800.}});
     histos.add<TH2>("tracks/proton/h2antiProtonTPCExpSignalDiffVsPt", "TPC <-dE/dX> - Exp <-dE/dX> (#bar{p}) vs #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); TPC <-dE/dX> ExpDiff (#bar{p})", HistType::kTH2F, {{ptAxis}, {16000, -800, 800.}});
@@ -334,7 +333,6 @@ struct LFNucleiBATask {
     histos.add<TH2>("tracks/proton/h2antiProtonTOFbetaVsP", "#TOF beta (#bar{p}) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (#bar{p})", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
     histos.add<TH2>("tracks/deuteron/h2DeuteronTOFbetaVsP", "#TOF beta (d) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (d)", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
     histos.add<TH2>("tracks/deuteron/h2antiDeuteronTOFbetaVsP", "#TOF beta (#bar{d}) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (#bar{d})", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
-
 
     //  TOFExpSignal histograms
     histos.add<TH2>("tracks/proton/h2ProtonTOFExpSignalDiffVsPt", "TOF t - t_{exp}(p) vs #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); TOF t - t_{exp} (p)", HistType::kTH2F, {{ptAxis}, {2000, -25000, 25000}});
@@ -1042,12 +1040,16 @@ struct LFNucleiBATask {
 
       if (track.hasTOF()) {
         histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-        if (std::abs(track.tpcNSigmaPr()) <ProtonNsigmaTPCcutInTOFbeta) {
+        if (std::abs(track.tpcNSigmaPr()) < ProtonNsigmaTPCcutInTOFbeta) {
           histos.fill(HIST("tracks/h2withTPCProtonCutTOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-          if(std::abs(track.tofNSigmaPr()) < nsigmaTOFcut && track.sign() > 0)histos.fill(HIST("tracks/proton/h2ProtonTOFbetaVsP"), track.p(), track.beta());
-          if(std::abs(track.tofNSigmaPr()) < nsigmaTOFcut && track.sign() < 0)histos.fill(HIST("tracks/proton/h2antiProtonTOFbetaVsP"), track.p(), track.beta());
-          if(std::abs(track.tofNSigmaDe()) < nsigmaTOFcut && track.sign() > 0)histos.fill(HIST("tracks/deuteron/h2DeuteronTOFbetaVsP"), track.p(), track.beta());
-          if(std::abs(track.tofNSigmaDe()) < nsigmaTOFcut && track.sign() < 0)histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFbetaVsP"), track.p(), track.beta());
+          if (std::abs(track.tofNSigmaPr()) < nsigmaTOFcut && track.sign() > 0)
+            histos.fill(HIST("tracks/proton/h2ProtonTOFbetaVsP"), track.p(), track.beta());
+          if (std::abs(track.tofNSigmaPr()) < nsigmaTOFcut && track.sign() < 0)
+            histos.fill(HIST("tracks/proton/h2antiProtonTOFbetaVsP"), track.p(), track.beta());
+          if (std::abs(track.tofNSigmaDe()) < nsigmaTOFcut && track.sign() > 0)
+            histos.fill(HIST("tracks/deuteron/h2DeuteronTOFbetaVsP"), track.p(), track.beta());
+          if (std::abs(track.tofNSigmaDe()) < nsigmaTOFcut && track.sign() < 0)
+            histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFbetaVsP"), track.p(), track.beta());
         }
 
         if (track.sign() > 0) {
