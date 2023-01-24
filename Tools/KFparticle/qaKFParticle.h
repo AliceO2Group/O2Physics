@@ -60,8 +60,6 @@ DECLARE_SOA_COLUMN(DCADPVXY, distdpvxy, float);
 DECLARE_SOA_COLUMN(Chi2Topo, chi2topo, float);
 DECLARE_SOA_COLUMN(PartSource, source, float);
 
-
-
 DECLARE_SOA_COLUMN(PtDTopo, ptdtopo, float);
 DECLARE_SOA_COLUMN(MassTopo, masstopo, float);
 DECLARE_SOA_COLUMN(CosPaTopo, cospatopo, float);

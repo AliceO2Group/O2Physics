@@ -230,7 +230,6 @@ struct qaKFParticle {
     }
     /// Reject collisions with negative covariance matrix elemts on the digonal
     if (collision.covXX() < 0. || collision.covYY() < 0. || collision.covZZ() < 0.) {
-      // cout << "Cov < 0! === CovXX = " << collision.covXX() << ", CovYY = " << collision.covYY() << ", CovZZ = " << collision.covZZ() << endl;
       histos.fill(HIST("DZeroCandTopo/Selections"), 2.f);
       return false;
     }
@@ -239,10 +238,11 @@ struct qaKFParticle {
 
   /// Function for single track selection
   template <typename T>
-  bool isSelectedTracks(const T& track1) {
+  bool isSelectedTracks(const T& track1)
+  {
     if (track1.p() < d_pTMin) {
-        histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
-        return false;
+      histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
+      return false;
     }
     /// Eta range
     if (abs(track1.eta()) > d_etaRange) {
@@ -253,7 +253,8 @@ struct qaKFParticle {
   }
 
   template <typename T1, typename T2>
-  void fillHistograms(const T1& kfpTrackPi, const T2& KFPion, const T2& KFPV) {
+  void fillHistograms(const T1& kfpTrackPi, const T2& KFPion, const T2& KFPV)
+  {
     /// fill daughter track parameters
     histos.fill(HIST("Tracks/x"), kfpTrackPi.GetX());
     histos.fill(HIST("Tracks/y"), kfpTrackPi.GetY());
@@ -266,7 +267,6 @@ struct qaKFParticle {
     histos.fill(HIST("Tracks/dcaToPV"), KFPion.GetDistanceFromVertex(KFPV));
     histos.fill(HIST("Tracks/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
     histos.fill(HIST("Tracks/deviationPiToPV"), KFPion.GetDeviationFromVertex(KFPV));
-
   }
 
   /// Process function for data
@@ -341,7 +341,7 @@ struct qaKFParticle {
       /// Set magnetic field for KF vertexing
       KFParticle::SetField(magneticField);
     }
-        /// Remove Collisions without a MC Collision
+    /// Remove Collisions without a MC Collision
     if (!collision.has_mcCollision()) {
       return;
     }
@@ -394,45 +394,46 @@ struct qaKFParticle {
       auto mcCollID_recoColl = track.collision_as<CollisionTableMC>().mcCollisionId();
       auto mcCollID_particle = particle.mcCollisionId();
       bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
-      // if (!indexMatchOK) {
-      histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
-      const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
-      int i=0;
-      std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
-      float min = 100;
-      for (auto matchedCollision : matchedCollisions) {
-        dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
-        if (i==0) {min = dcaZ[i];}  
-        if(i>0) {
-          // cout << "more than one collision matches! " << i << endl; 
-          if (dcaZ[i] < dcaZ[i-1]) {
+      if (!indexMatchOK) {
+        histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
+        const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
+        int i = 0;
+        std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
+        float min = 100;
+        for (auto matchedCollision : matchedCollisions) {
+          dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
+          if (i == 0) {
             min = dcaZ[i];
           }
+          if (i > 0) {
+            // cout << "more than one collision matches! " << i << endl;
+            if (dcaZ[i] < dcaZ[i - 1]) {
+              min = dcaZ[i];
+            }
+          }
+
+          i = i + 1;
         }
-        
-        i=i+1;
-      }
-      if (min > 10.) {histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);}
-      int j=0;
-      for (auto matchedCollision : matchedCollisions) {
-        if (i==1) {
-          kfpVertex = createKFPVertexFromCollision(matchedCollision);
-          KFParticle KFPVNew(kfpVertex);
-          KFPV = KFPVNew;
+        if (min > 10.) {
+          histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);
         }
-        if(i>1) {
-            // cout << "Collision " << j << ":" << endl;
-            // cout << "pos Z difference: " <<  abs(matchedCollision.posZ() - collMC.posZ()) << endl;
-            if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+        int j = 0;
+        for (auto matchedCollision : matchedCollisions) {
+          if (i == 1) {
             kfpVertex = createKFPVertexFromCollision(matchedCollision);
             KFParticle KFPVNew(kfpVertex);
             KFPV = KFPVNew;
-            // cout << "Vertex was reset to this collision!" << endl;
+          }
+          if (i > 1) {
+            if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+              kfpVertex = createKFPVertexFromCollision(matchedCollision);
+              KFParticle KFPVNew(kfpVertex);
+              KFPV = KFPVNew;
             }
+          }
+          j = j + 1;
         }
-        j=j+1;
       }
-      // }
 
       /// Remove fake tracks
       if (!track.has_mcParticle()) {
@@ -445,17 +446,14 @@ struct qaKFParticle {
         continue;
       }
 
-
       KFPTrack kfpTrack;
       kfpTrack = createKFPTrackFromTrack(track);
       KFParticle KFParticleTrack(kfpTrack, 211);
 
       fillHistograms(kfpTrack, KFParticleTrack, KFPV);
-      
+
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCBeforeReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPVDefault));
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCAfterReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPV));
-   
-     
     }
   }
   PROCESS_SWITCH(qaKFParticle, processMC, "process mc", false);

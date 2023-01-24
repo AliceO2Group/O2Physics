@@ -138,8 +138,6 @@ struct qaKFParticle {
   /// Table to be produced
   Produces<o2::aod::TreeKF> rowKF;
 
-  int source = 0;
-
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
                              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
                              bool isRun3)
@@ -318,7 +316,6 @@ struct qaKFParticle {
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(4), "Wrong PV");
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(5), "DCA Z > 10cm");
 
-
     if (writeQAHistograms) {
       histos.add("DZeroCandGeo/X", "X [cm]", kTH1D, {axisParX});
       histos.add("DZeroCandGeo/Y", "Y [cm]", kTH1D, {axisParY});
@@ -337,7 +334,7 @@ struct qaKFParticle {
       histos.add("DZeroCandGeo/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
       histos.add("DZeroCandGeo/dcaDToPV", "distance to PV", kTH1D, {{100, -0.01, 0.01}});
       histos.add("DZeroCandGeo/deviationDToPV", "deviation to PV", kTH1D, {{200, 0., 5.}});
-      histos.add("DZeroCandGeo/dcaDToPVXY", "distance to PV in xy plane", kTH1D, {{100,-0.02, 0.02}});
+      histos.add("DZeroCandGeo/dcaDToPVXY", "distance to PV in xy plane", kTH1D, {{100, -0.02, 0.02}});
       histos.add("DZeroCandGeo/deviationDToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 5.}});
 
       histos.add("DZeroCandTopoAtSV/X", "X [cm]", kTH1D, {axisParX});
@@ -372,7 +369,6 @@ struct qaKFParticle {
     }
     /// Reject collisions with negative covariance matrix elemts on the digonal
     if (collision.covXX() < 0. || collision.covYY() < 0. || collision.covZZ() < 0.) {
-      // cout << "Cov < 0! === CovXX = " << collision.covXX() << ", CovYY = " << collision.covYY() << ", CovZZ = " << collision.covZZ() << endl;
       histos.fill(HIST("DZeroCandTopo/Selections"), 2.f);
       return false;
     }
@@ -381,10 +377,11 @@ struct qaKFParticle {
 
   /// Function for single track selection
   template <typename T>
-  bool isSelectedTracks(const T& track1, const T& track2) {
+  bool isSelectedTracks(const T& track1, const T& track2)
+  {
     if (track1.p() < d_pTMin) {
-        histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
-        return false;
+      histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
+      return false;
     }
     if (track2.p() < d_pTMin) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
@@ -428,7 +425,8 @@ struct qaKFParticle {
   }
 
   template <typename T>
-  bool isSelectedDaughters(const T& KFPion, const T& KFKaon, const T& KFDZero, const T& KFPV) {
+  bool isSelectedDaughters(const T& KFPion, const T& KFKaon, const T& KFDZero, const T& KFPV)
+  {
     /// distance 3D daughter tracks at the secondary vertex
     if (KFPion.GetDistanceFromParticle(KFKaon) > d_dist3DSVDau) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 11.f);
@@ -455,7 +453,8 @@ struct qaKFParticle {
   }
 
   template <typename T>
-  bool isSelectedDoGeo(const T& KFDZero, const T& KFPV) {
+  bool isSelectedDoGeo(const T& KFDZero, const T& KFPV)
+  {
     /// Pt selection
     if (KFDZero.GetPt() < d_pTMinD0 || KFDZero.GetPt() > d_pTMaxD0) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 17.f);
@@ -475,7 +474,8 @@ struct qaKFParticle {
   }
 
   template <typename T>
-  bool isSelectedDoTopo(const T& KFDZero_PV, const T& KFPion, const T& KFKaon, const T& KFDZero_DecayVtx, const T& KFPV) {
+  bool isSelectedDoTopo(const T& KFDZero_PV, const T& KFPion, const T& KFKaon, const T& KFDZero_DecayVtx, const T& KFPV)
+  {
     /// cosine theta star of the pion from D0
     if (cosThetaStarFromKF(0, 421, 211, 321, KFDZero_PV, KFPion, KFKaon) > d_cosThetaStarPi) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 12.f);
@@ -523,7 +523,8 @@ struct qaKFParticle {
   }
 
   template <typename T1, typename T2>
-  void fillHistograms(const T1& kfpTrackPi, const T1& kfpTrackKa, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV,  const T2& KFDZero_DecayVtx) {
+  void fillHistograms(const T1& kfpTrackPi, const T1& kfpTrackKa, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV, const T2& KFDZero_DecayVtx)
+  {
     /// fill daughter track parameters
     histos.fill(HIST("TracksKFPi/x"), kfpTrackPi.GetX());
     histos.fill(HIST("TracksKFPi/y"), kfpTrackPi.GetY());
@@ -569,7 +570,7 @@ struct qaKFParticle {
     histos.fill(HIST("DZeroCandTopo/Chi2"), KFDZero_PV.GetChi2());
     histos.fill(HIST("DZeroCandTopo/NDF"), KFDZero_PV.GetNDF());
     float chi2topo = KFDZero_PV.GetChi2() / KFDZero_PV.GetNDF();
-    histos.fill(HIST("DZeroCandTopo/Chi2OverNDF"),chi2topo);
+    histos.fill(HIST("DZeroCandTopo/Chi2OverNDF"), chi2topo);
     histos.fill(HIST("DZeroCandTopo/p"), KFDZero_PV.GetP());
     histos.fill(HIST("DZeroCandTopo/pt"), KFDZero_PV.GetPt());
     histos.fill(HIST("DZeroCandTopo/eta"), KFDZero_PV.GetEta());
@@ -631,8 +632,9 @@ struct qaKFParticle {
     }
   }
   template <typename T1, typename T2, typename T3>
-  void writeVarTree(const T1& kfpTrackPi, const T1& kfpTrackKa, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV,  const T2& KFDZero_DecayVtx, float nSigmaPosPi, float nSigmaNegPi, float nSigmaPosKa, float nSigmaNegKa, const T3& track1) {
-  
+  void writeVarTree(const T1& kfpTrackPi, const T1& kfpTrackKa, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV, const T2& KFDZero_DecayVtx, float nSigmaPosPi, float nSigmaNegPi, float nSigmaPosKa, float nSigmaNegKa, const T3& track1, const int source)
+  {
+
     float d0pid0ka = KFPion.GetDistanceFromVertexXY(KFPV) * KFKaon.GetDistanceFromVertexXY(KFPV);
     float chi2geo = KFDZero.GetChi2() / KFDZero.GetNDF();
     float normdecayLength = KFDZero_PV.GetDecayLength() / KFDZero_PV.GetErrDecayLength();
@@ -646,9 +648,9 @@ struct qaKFParticle {
               KFKaon.GetPt(),
               KFPion.GetDistanceFromVertexXY(KFPV),
               KFKaon.GetDistanceFromVertexXY(KFPV),
-              nSigmaPosPi, 
+              nSigmaPosPi,
               nSigmaNegPi,
-              nSigmaPosKa, 
+              nSigmaPosKa,
               nSigmaNegKa,
               KFPion.GetDistanceFromVertexXY(KFDZero),
               KFKaon.GetDistanceFromVertexXY(KFDZero),
@@ -749,6 +751,7 @@ struct qaKFParticle {
       float nSigmaNegPi = 0;
       float nSigmaPosKa = 0;
       float nSigmaNegKa = 0;
+      int source = 0;
 
       /// At the moment pT independent TPC selection. Add a minimum and Maximum momentum
       /// Apply TPC+TOF at higher momenta (TOF still uncalibrated for LHC22f).
@@ -789,7 +792,7 @@ struct qaKFParticle {
           histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackPosKa.GetPt(), nSigmaPosKa);
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0 = true;
-          source = 1; 
+          source = 1;
           kfpTrackPosPi = createKFPTrackFromTrack(track2);
           kfpTrackNegKa = createKFPTrackFromTrack(track1);
           nSigmaPosPi = track2.tpcNSigmaPi();
@@ -822,7 +825,7 @@ struct qaKFParticle {
         KFDZero.Construct(D0Daughters, NDaughters);
         histos.fill(HIST("DZeroCandTopo/Selections"), 10.f);
         /// Apply daughter selection
-        if (!isSelectedDaughters(KFPosPion, KFNegKaon,KFDZero,  KFPV)) {
+        if (!isSelectedDaughters(KFPosPion, KFNegKaon, KFDZero, KFPV)) {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
@@ -844,8 +847,8 @@ struct qaKFParticle {
         }
 
         fillHistograms(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx);
-        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1);
-      }      
+        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1, source);
+      }
       if (CandD0bar) {
         KFParticle KFDZeroBar;
         const KFParticle* D0BarDaughters[2] = {&KFNegPion, &KFPosKaon};
@@ -874,7 +877,7 @@ struct qaKFParticle {
           }
         }
         fillHistograms(kfpTrackNegPi, kfpTrackPosKa, KFNegPion, KFPosKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx);
-        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1);
+        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1, source);
       }
     }
   }
@@ -894,7 +897,7 @@ struct qaKFParticle {
       /// Set magnetic field for KF vertexing
       KFParticle::SetField(magneticField);
     }
-        /// Remove Collisions without a MC Collision
+    /// Remove Collisions without a MC Collision
     if (!collision.has_mcCollision()) {
       return;
     }
@@ -952,40 +955,40 @@ struct qaKFParticle {
       if (!indexMatchOK) {
         histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
         const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
-        int i=0;
+        int i = 0;
         std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
         float min = 100;
         for (auto matchedCollision : matchedCollisions) {
           dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
-          if (i==0) {min = dcaZ[i];}  
-          if(i>0) {
-            cout << "more than one collision matches! " << i << endl; 
-            if (dcaZ[i] < dcaZ[i-1]) {
+          if (i == 0) {
+            min = dcaZ[i];
+          }
+          if (i > 0) {
+            if (dcaZ[i] < dcaZ[i - 1]) {
               min = dcaZ[i];
             }
           }
-          
-          i=i+1;
+
+          i = i + 1;
         }
-        if (min > 10.) {histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);}
-        int j=0;
+        if (min > 10.) {
+          histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);
+        }
+        int j = 0;
         for (auto matchedCollision : matchedCollisions) {
-          if (i==1) {
+          if (i == 1) {
             kfpVertex = createKFPVertexFromCollision(matchedCollision);
             KFParticle KFPVNew(kfpVertex);
             KFPV = KFPVNew;
           }
-          if(i>1) {
-             cout << "Collision " << j << ":" << endl;
-             cout << "pos Z difference: " <<  abs(matchedCollision.posZ() - collMC.posZ()) << endl;
-             if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+          if (i > 1) {
+            if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
               kfpVertex = createKFPVertexFromCollision(matchedCollision);
               KFParticle KFPVNew(kfpVertex);
               KFPV = KFPVNew;
-              cout << "Vertex was reset to this collision!" << endl;
-             }
+            }
           }
-          j=j+1;
+          j = j + 1;
         }
       }
 
@@ -1002,16 +1005,19 @@ struct qaKFParticle {
 
       int8_t sign = 0;
       int8_t flag = RecoDecay::OriginType::None;
-      source = 0;
+      int sourceD0 = 0;
+      int sourceD0Bar = 0;
 
       auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{track1, track2}, 421, array{211, -321}, true, &sign);
       if (indexRec > -1) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
         flag = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         if (flag == RecoDecay::OriginType::Prompt) {
-          source |= kPrompt;
+          sourceD0 |= kPrompt;
+          sourceD0Bar |= kPrompt;
         } else if (flag == RecoDecay::OriginType::NonPrompt) {
-          source |= kNonPrompt;
+          sourceD0 |= kNonPrompt;
+          sourceD0Bar |= kNonPrompt;
         }
         if (flag != RecoDecay::OriginType::Prompt && flag != RecoDecay::OriginType::NonPrompt) {
           continue;
@@ -1020,13 +1026,10 @@ struct qaKFParticle {
         continue;
       }
 
-
-
       histos.fill(HIST("Tracks/dcaXYToPV"), track1.dcaXY());
       histos.fill(HIST("Tracks/dcaXYToPV"), track2.dcaXY());
       histos.fill(HIST("Tracks/dcaZToPV"), track1.dcaZ());
       histos.fill(HIST("Tracks/dcaZToPV"), track2.dcaZ());
-
 
       KFPTrack kfpTrackPosPi;
       KFPTrack kfpTrackNegPi;
@@ -1050,7 +1053,7 @@ struct qaKFParticle {
           particle1 = track1.mcParticle();
           particle2 = track2.mcParticle();
           if (pdgMother == -421) {
-            source |= kReflection;
+            sourceD0 |= kReflection;
           }
           kfpTrackPosPi = createKFPTrackFromTrack(track1);
           kfpTrackNegKa = createKFPTrackFromTrack(track2);
@@ -1061,7 +1064,7 @@ struct qaKFParticle {
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0bar = true;
           if (pdgMother == 421) {
-            source |= kReflection;
+            sourceD0Bar |= kReflection;
           }
           kfpTrackNegPi = createKFPTrackFromTrack(track1);
           kfpTrackPosKa = createKFPTrackFromTrack(track2);
@@ -1077,7 +1080,7 @@ struct qaKFParticle {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0bar = true;
           if (pdgMother == 421) {
-            source |= kReflection;
+            sourceD0Bar |= kReflection;
           }
           kfpTrackNegPi = createKFPTrackFromTrack(track2);
           kfpTrackPosKa = createKFPTrackFromTrack(track1);
@@ -1088,7 +1091,7 @@ struct qaKFParticle {
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0 = true;
           if (pdgMother == -421) {
-            source |= kReflection;
+            sourceD0 |= kReflection;
           }
           kfpTrackPosPi = createKFPTrackFromTrack(track2);
           kfpTrackNegKa = createKFPTrackFromTrack(track1);
@@ -1110,9 +1113,7 @@ struct qaKFParticle {
       KFParticle KFPosKaon(kfpTrackPosKa, 321);
       KFParticle KFNegKaon(kfpTrackNegKa, 321);
 
-      
-
-     int NDaughters = 2;
+      int NDaughters = 2;
 
       if (CandD0) {
         KFParticle KFDZero;
@@ -1147,8 +1148,8 @@ struct qaKFParticle {
         histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment"), KFPosPion.GetDistanceFromVertex(KFPV));
         histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment"), KFNegKaon.GetDistanceFromVertex(KFPVDefault));
         histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment"), KFNegKaon.GetDistanceFromVertex(KFPV));
-        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1);
-      }      
+        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1, sourceD0);
+      }
       if (CandD0bar) {
         KFParticle KFDZeroBar;
         const KFParticle* D0BarDaughters[2] = {&KFNegPion, &KFPosKaon};
@@ -1181,7 +1182,7 @@ struct qaKFParticle {
         histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment"), KFNegPion.GetDistanceFromVertex(KFPV));
         histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment"), KFPosKaon.GetDistanceFromVertex(KFPVDefault));
         histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment"), KFPosKaon.GetDistanceFromVertex(KFPV));
-        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1);
+        writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, nSigmaPosPi, nSigmaNegPi, nSigmaPosKa, nSigmaNegKa, track1, sourceD0Bar);
       }
     }
   }
