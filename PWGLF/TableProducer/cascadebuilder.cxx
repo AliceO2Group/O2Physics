@@ -101,9 +101,6 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 
-// For MC association in pre-selection
-using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-
 // For dE/dx association in pre-selection
 using TracksWithPID = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfKa, aod::pidTPCLfPr, aod::pidTPCLfHe>;
 
@@ -112,6 +109,9 @@ using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidT
 
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
+
+// For MC association in pre-selection
+using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
@@ -797,73 +797,6 @@ struct cascadePreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 };
 
-//*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-struct cascadeLabelBuilder {
-  Produces<aod::McCascLabels> casclabels; // MC labels for cascades
-  // for bookkeeping purposes: how many V0s come from same mother etc
-
-  void init(InitContext const&) {}
-
-  void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function - should not be required in the future
-  }
-  PROCESS_SWITCH(cascadeLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
-
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  // build cascade labels if requested to do so
-  void processBuildCascadeLabels(aod::Collision const& collision, aod::CascDataExt const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
-  {
-    for (auto& casc : casctable) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        casclabels(-1);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
-      int lLabel = -1;
-
-      // Acquire all three daughter tracks, please
-      auto lBachTrack = casc.bachelor_as<LabeledTracks>();
-      auto lNegTrack = v0data.negTrack_as<LabeledTracks>();
-      auto lPosTrack = v0data.posTrack_as<LabeledTracks>();
-
-      // Association check
-      // There might be smarter ways of doing this in the future
-      if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle() && lBachTrack.has_mcParticle()) {
-        auto lMCBachTrack = lBachTrack.mcParticle_as<aod::McParticles>();
-        auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
-        auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
-
-        // Step 1: check if the mother is the same, go up a level
-        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
-            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
-              if (lNegMother == lPosMother) {
-                // if we got to this level, it means the mother particle exists and is the same
-                // now we have to go one level up and compare to the bachelor mother too
-                for (auto& lV0Mother : lNegMother.mothers_as<aod::McParticles>()) {
-                  for (auto& lBachMother : lMCBachTrack.mothers_as<aod::McParticles>()) {
-                    if (lV0Mother == lBachMother) {
-                      lLabel = lV0Mother.globalIndex();
-                    }
-                  }
-                } // end conditional V0-bach pair
-              }   // end neg = pos mother conditional
-            }
-          } // end loop neg/pos mothers
-        }   // end conditional of mothers existing
-      }     // end association check
-      // Construct label table (note: this will be joinable with CascDatas)
-      casclabels(
-        lLabel);
-    } // end casctable loop
-  }
-  PROCESS_SWITCH(cascadeLabelBuilder, processBuildCascadeLabels, "Produce cascade MC label tables", false);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-};
-
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
   Spawns<aod::CascDataExt> cascdataext;
@@ -875,6 +808,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
     adaptAnalysisTask<cascadePreselector>(cfgc),
-    adaptAnalysisTask<cascadeLabelBuilder>(cfgc),
     adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }
