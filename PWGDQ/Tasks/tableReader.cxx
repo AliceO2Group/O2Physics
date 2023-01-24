@@ -53,7 +53,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "CCDB/BasicCCDBManager.h"
 
 #ifndef HomogeneousField
 #define HomogeneousField
