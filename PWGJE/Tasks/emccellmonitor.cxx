@@ -69,7 +69,7 @@ struct CellMonitor {
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     auto nCells = mGeometry->GetNCells();
     LOG(info) << "Setting up histos for " << nCells << " cells";
-    int ntimeMain = int(mMaxCellTimeMain - mMinCellTimeMain);
+    int ntimeMain = static_cast<int>(mMaxCellTimeMain - mMinCellTimeMain);
     LOG(info) << "Creating histogram for main bunch time range " << mMinCellTimeMain << " ns to " << mMaxCellTimeMain << " ns with " << ntimeMain << " bins";
 
     const o2Axis cellAxis{nCells, -0.5, nCells - 0.5, "cellID", "Cell abs. ID"},
@@ -102,6 +102,9 @@ struct CellMonitor {
       mHistManager.add(Form("cellCountSM/cellCountSM%d", ism), Form("Count rate per cell for SM %d; col; row", ism), o2HistType::kTH2F, {colAxis, rowAxis});
       mHistManager.add(Form("cellAmplitudeTime/cellAmpTimeCorrSM%d", ism), Form("Correlation between cell amplitude and time in Supermodule %d", ism), o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge});
     }
+    for (int ibc = 0; ibc < 4; ++ibc) {
+      mHistManager.add(Form("cellTimeBC/cellTimeBC%d", ibc), Form("Time distribution for BC mod %d", ibc), o2HistType::kTH2F, {timeAxisLarge, cellAxis});
+    }
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
       std::string token;
@@ -133,6 +136,7 @@ struct CellMonitor {
     eventIR.setFromLong(bc.globalBC());
     mHistManager.fill(HIST("eventsAll"), 1);
     mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+    auto bcMod4 = eventIR.bc % 4;
     if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
       return;
     }
@@ -164,6 +168,7 @@ struct CellMonitor {
           mHistManager.fill(HIST("cellTimeMain"), cell.time(), cell.cellNumber());
         }
         mHistManager.fill(HIST("celTimeBC"), cellIR.bc, cell.time());
+        fillHistTimeBCMod(bcMod4, cell.time(), cell.cellNumber());
       }
 
       mHistManager.fill(HIST("cellAmplitudeBC"), cellIR.bc, cell.amplitude());
@@ -244,7 +249,25 @@ struct CellMonitor {
         break;
       default:
         break;
-    };
+    }
+  }
+
+  void fillHistTimeBCMod(int bcMod4, int cellAbsID, double cellTime)
+  {
+    switch (bcMod4) {
+      case 0:
+        bcmodHistHelper<0>(cellAbsID, cellTime);
+        break;
+      case 1:
+        bcmodHistHelper<1>(cellAbsID, cellTime);
+        break;
+      case 2:
+        bcmodHistHelper<2>(cellAbsID, cellTime);
+        break;
+      case 3:
+        bcmodHistHelper<3>(cellAbsID, cellTime);
+        break;
+    }
   }
 
   template <int supermoduleID>
@@ -256,6 +279,13 @@ struct CellMonitor {
     mHistManager.fill(HIST(cellAmpHistSM[supermoduleID]), col, row);
     mHistManager.fill(HIST(cellCountHistSM[supermoduleID]), col, row, amplitude);
     mHistManager.fill(HIST(cellAmpTimeHist[supermoduleID]), celltime, amplitude);
+  }
+
+  template <int bcMod>
+  void bcmodHistHelper(int cellAbsID, double celltime)
+  {
+    static constexpr std::string_view timeHistBC[4] = {"cellTimeBC/cellTimeBC0", "cellTimeBC/cellTimeBC1", "cellTimeBC/cellTimeBC2", "cellTimeBC/cellTimeBC3"};
+    mHistManager.fill(HIST(timeHistBC[bcMod]), celltime, cellAbsID);
   }
 
   /// \brief Check if a cell is masked
