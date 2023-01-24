@@ -66,9 +66,9 @@ using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, ao
                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::DalitzBits>;
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
-using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter, aod::Mults>;
+using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::Mults>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
 
@@ -318,7 +318,7 @@ struct TableMaker {
     fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
 
     // create the event tables
-    event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+    event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.multNTracksPV(), collision.collisionTime(), collision.collisionTimeRes());
     eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO]);
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
