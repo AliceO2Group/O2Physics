@@ -435,7 +435,7 @@ struct AnalysisSameEventPairing {
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-        if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0 ) { // for skimmed DQ model
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) { // for skimmed DQ model
           if ((*sig).CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
