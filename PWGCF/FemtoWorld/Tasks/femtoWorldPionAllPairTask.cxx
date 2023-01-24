@@ -15,7 +15,6 @@
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 /// \author Deependra Sharma, IITB, deependra.sharma@cern.ch
 
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -44,9 +43,8 @@ using FemtoWorldParticlesMerged = aod::FemtoWorldParticles;
 using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
 } // namespace o2::aod
 
-
-struct FemtoWorldIdenticalPionPair{
-    // Configurables for cuts
+struct FemtoWorldIdenticalPionPair {
+  // Configurables for cuts
   // First particle
   Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
   Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
@@ -68,17 +66,16 @@ struct FemtoWorldIdenticalPionPair{
   Configurable<int> cfgSignPartOne{"cfgSignPartOne", 1, "Sign of Firts particle"};
   Configurable<int> cfgSignPartTwo{"cfgSignPartTwo", 1, "Sign of Second particle"};
 
-
   /// Partition for particle 1
-  Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                         // particle type cut
-                                                       && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1)                    // simple pT cuts
-                                                       && (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1)                // Eta cuts
-                                                       && (nabs(o2::aod::track::dcaXY) < cfgDcaXYPart1) && (nabs(o2::aod::track::dcaZ) < cfgDcaZPart1)                       // DCA cuts for XY and Z
-                                                       && (aod::femtoworldparticle::tpcNClsFound > (uint8_t)cfgTpcClPart1)                                                   // Number of found TPC clusters
-                                                       && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart1)                                         // Crossed rows TPC
+  Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                          // particle type cut
+                                                       && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1)                     // simple pT cuts
+                                                       && (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1)                 // Eta cuts
+                                                       && (nabs(o2::aod::track::dcaXY) < cfgDcaXYPart1) && (nabs(o2::aod::track::dcaZ) < cfgDcaZPart1)                        // DCA cuts for XY and Z
+                                                       && (aod::femtoworldparticle::tpcNClsFound > (uint8_t)cfgTpcClPart1)                                                    // Number of found TPC clusters
+                                                       && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart1)                                          // Crossed rows TPC
                                                        && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart1); //&& // chi2 cuts
 
-    /// Histogramming for particle 1
+  /// Histogramming for particle 1
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
   /// Histogramming for particle 2
@@ -117,8 +114,8 @@ struct FemtoWorldIdenticalPionPair{
 
   void init(InitContext&)
   {
-    qaRegistry.add("ChargeInfo/TrackOne","Sign of track one",kTH1F,{{4,-2,2}});
-    qaRegistry.add("ChargeInfo/TrackTwo","Sign of track two",kTH1F,{{4,-2,2}});
+    qaRegistry.add("ChargeInfo/TrackOne", "Sign of track one", kTH1F, {{4, -2, 2}});
+    qaRegistry.add("ChargeInfo/TrackTwo", "Sign of track two", kTH1F, {{4, -2, 2}});
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
@@ -143,147 +140,148 @@ struct FemtoWorldIdenticalPionPair{
     return false;
   }
 
-  void processSameEvent(o2::aod::FemtoWorldCollision& col, o2::aod::FemtoWorldParticlesMerged& parts){
+  void processSameEvent(o2::aod::FemtoWorldCollision& col, o2::aod::FemtoWorldParticlesMerged& parts)
+  {
 
-        auto groupPartsOne=partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
 
-        // auto groupPartsOne=groupParts.sliceByCached(aod::femtoworldparticle::sign,cfgSignPartOne);
-        // auto groupPartsTwo=groupParts.sliceByCached(aod::femtoworldparticle::sign,cfgSignPartTwo);
+    // auto groupPartsOne=groupParts.sliceByCached(aod::femtoworldparticle::sign,cfgSignPartOne);
+    // auto groupPartsTwo=groupParts.sliceByCached(aod::femtoworldparticle::sign,cfgSignPartTwo);
 
+    const auto& magFieldTesla = col.magField();
+    const int multCol = col.multV0M();
+    eventHisto.fillQA(col);
+    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
 
-        const auto& magFieldTesla = col.magField();
-        const int multCol = col.multV0M();
-        eventHisto.fillQA(col);
-        MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
+    /// Histogramming same event
+    for (auto& part : groupPartsOne) {
+      if ((part.p() > 0.50)) {
 
-        /// Histogramming same event
-        for (auto& part : groupPartsOne) {
-        if ((part.p() > 0.50)) {
-
-            float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPi()) + TMath::Sq(part.tofNSigmaPi()));
-            if (!IsPionNSigma(NSigmaPion)) {
-            continue;
-            }
-
-        } else if ((part.p() <= 0.50)) {
-            float NSigmaPion = part.tpcNSigmaPi();
-            if (!IsPionNSigma(NSigmaPion)) {
-            continue;
-            }
-        }
-        
-        if(part.sign()==cfgSignPartOne){
-            qaRegistry.fill(HIST("ChargeInfo/TrackOne"),part.sign());
-            trackHistoPartOne.fillQA(part);
-        } 
-        if(part.sign()==cfgSignPartTwo){
-            qaRegistry.fill(HIST("ChargeInfo/TrackTwo"),part.sign());
-            trackHistoPartTwo.fillQA(part);
-        } 
-        
+        float NSigmaPion = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(part.tpcNSigmaPi()) + TMath::Sq(part.tofNSigmaPi()));
+        if (!IsPionNSigma(NSigmaPion)) {
+          continue;
         }
 
-        // Pair Correlation
-        for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
-            if((p1.sign()!=cfgSignPartOne)||(p2.sign()!=cfgSignPartTwo)) continue;
-            if ((p1.p() > 0.50)) {
-                float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
-                if (!IsPionNSigma(NSigmaPion1)) {
-                    continue;
-                }
-
-            } else if ((p1.p() <= 0.50)) {
-                float NSigmaPion1 = p1.tpcNSigmaPi();
-                if (!IsPionNSigma(NSigmaPion1)) {
-                    continue;
-                }
-            }
-            if ((p2.p() > 0.50)) {
-                float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
-                if (!IsPionNSigma(NSigmaPion2)) {
-                    continue;
-                }
-
-            } else if ((p2.p() <= 0.50)) {
-                float NSigmaPion2 = p2.tpcNSigmaPi();
-                if (!IsPionNSigma(NSigmaPion2)) {
-                    continue;
-                }
-            }
-            if (ConfIsCPR) {
-                if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
-                    continue;
-                }
-            }
-            // track cleaning
-            if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-                continue;
-            }
-
-            sameEventCont.setPair(p1, p2, multCol);
+      } else if ((part.p() <= 0.50)) {
+        float NSigmaPion = part.tpcNSigmaPi();
+        if (!IsPionNSigma(NSigmaPion)) {
+          continue;
         }
-        
+      }
+
+      if (part.sign() == cfgSignPartOne) {
+        qaRegistry.fill(HIST("ChargeInfo/TrackOne"), part.sign());
+        trackHistoPartOne.fillQA(part);
+      }
+      if (part.sign() == cfgSignPartTwo) {
+        qaRegistry.fill(HIST("ChargeInfo/TrackTwo"), part.sign());
+        trackHistoPartTwo.fillQA(part);
+      }
     }
 
-    PROCESS_SWITCH(FemtoWorldIdenticalPionPair, processSameEvent, "Enable processing same event", true);
-
-    /// This function processes the mixed event
-    void processMixedEvent(o2::aod::FemtoWorldCollisions& cols, o2::aod::FemtoWorldParticlesMerged& parts){
-        for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
-
-            MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multV0M()}));
-
-            auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
-            auto groupPartsTwo = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
-
-            const auto& magFieldTesla1 = collision1.magField();
-            const auto& magFieldTesla2 = collision2.magField();
-
-            if (magFieldTesla1 != magFieldTesla2) {
-                continue;
-            }
-
-            /// \todo before mixing we should check whether both collisions contain a pair of particles!
-            // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
-
-            for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-                if((p1.sign()!=cfgSignPartOne)||(p2.sign()!=cfgSignPartTwo)) continue;
-
-                if ((p1.p() > 0.50)) {
-                    float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
-                    if (!IsPionNSigma(NSigmaPion1)) {
-                        continue;
-                    }
-
-                } else if ((p1.p() <= 0.50)) {
-                    float NSigmaPion1 = p1.tpcNSigmaPi();
-                    if (!IsPionNSigma(NSigmaPion1)) {
-                        continue;
-                    }
-                }
-                if ((p2.p() > 0.50)) {
-                    float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
-                    if (!IsPionNSigma(NSigmaPion2)) {
-                        continue;
-                    }
-
-                } else if ((p2.p() <= 0.50)) {
-                    float NSigmaPion2 = p2.tpcNSigmaPi();
-                    if (!IsPionNSigma(NSigmaPion2)) {
-                        continue;
-                    }
-                }
-
-                if (ConfIsCPR) {
-                    if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
-                        continue;
-                    }
-                }
-                mixedEventCont.setPair(p1, p2, collision1.multV0M());
-            }
+    // Pair Correlation
+    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
+      if ((p1.sign() != cfgSignPartOne) || (p2.sign() != cfgSignPartTwo))
+        continue;
+      if ((p1.p() > 0.50)) {
+        float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
+        if (!IsPionNSigma(NSigmaPion1)) {
+          continue;
         }
+
+      } else if ((p1.p() <= 0.50)) {
+        float NSigmaPion1 = p1.tpcNSigmaPi();
+        if (!IsPionNSigma(NSigmaPion1)) {
+          continue;
+        }
+      }
+      if ((p2.p() > 0.50)) {
+        float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
+        if (!IsPionNSigma(NSigmaPion2)) {
+          continue;
+        }
+
+      } else if ((p2.p() <= 0.50)) {
+        float NSigmaPion2 = p2.tpcNSigmaPi();
+        if (!IsPionNSigma(NSigmaPion2)) {
+          continue;
+        }
+      }
+      if (ConfIsCPR) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          continue;
+        }
+      }
+      // track cleaning
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
+
+      sameEventCont.setPair(p1, p2, multCol);
     }
-    PROCESS_SWITCH(FemtoWorldIdenticalPionPair, processMixedEvent, "Enable processing mixed events", true);
+  }
+
+  PROCESS_SWITCH(FemtoWorldIdenticalPionPair, processSameEvent, "Enable processing same event", true);
+
+  /// This function processes the mixed event
+  void processMixedEvent(o2::aod::FemtoWorldCollisions& cols, o2::aod::FemtoWorldParticlesMerged& parts)
+  {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multV0M()}));
+
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
+      auto groupPartsTwo = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+
+      /// \todo before mixing we should check whether both collisions contain a pair of particles!
+      // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
+
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if ((p1.sign() != cfgSignPartOne) || (p2.sign() != cfgSignPartTwo))
+          continue;
+
+        if ((p1.p() > 0.50)) {
+          float NSigmaPion1 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p1.tpcNSigmaPi()) + TMath::Sq(p1.tofNSigmaPi()));
+          if (!IsPionNSigma(NSigmaPion1)) {
+            continue;
+          }
+
+        } else if ((p1.p() <= 0.50)) {
+          float NSigmaPion1 = p1.tpcNSigmaPi();
+          if (!IsPionNSigma(NSigmaPion1)) {
+            continue;
+          }
+        }
+        if ((p2.p() > 0.50)) {
+          float NSigmaPion2 = TMath::Sqrt(2.0) * TMath::Sqrt(TMath::Sq(p2.tpcNSigmaPi()) + TMath::Sq(p2.tofNSigmaPi()));
+          if (!IsPionNSigma(NSigmaPion2)) {
+            continue;
+          }
+
+        } else if ((p2.p() <= 0.50)) {
+          float NSigmaPion2 = p2.tpcNSigmaPi();
+          if (!IsPionNSigma(NSigmaPion2)) {
+            continue;
+          }
+        }
+
+        if (ConfIsCPR) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
+            continue;
+          }
+        }
+        mixedEventCont.setPair(p1, p2, collision1.multV0M());
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoWorldIdenticalPionPair, processMixedEvent, "Enable processing mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
