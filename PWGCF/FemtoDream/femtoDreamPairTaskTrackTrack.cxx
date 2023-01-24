@@ -51,6 +51,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle selection part
 
   /// Table for both particles
+  Configurable<bool> ConfAnalyseRun3{"ConfAnalyseRun3", true, "Running over Run 3 data or Run 2"};
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
   Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
@@ -121,9 +122,14 @@ struct femtoDreamPairTaskTrackTrack {
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
+    if(ConfAnalyseRun3){
+      sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
+      mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
+    } else {
+      sameEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
+      mixedEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
+    }
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
-    mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
@@ -218,7 +224,11 @@ struct femtoDreamPairTaskTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair(p1, p2, multCol);
+      if(ConfAnalyseRun3){
+        sameEventCont.setPair(p1, p2, col.multNtrPV());
+      } else {
+        sameEventCont.setPair(p1, p2, col.multV0M());
+      }
     }
   }
 
@@ -275,7 +285,11 @@ struct femtoDreamPairTaskTrackTrack {
             continue;
           }
         }
-        mixedEventCont.setPair(p1, p2, collision1.multNtrPV());
+        if(ConfAnalyseRun3){
+          mixedEventCont.setPair(p1, p2, collision1.multNtrPV());
+        } else {
+          mixedEventCont.setPair(p1, p2, collision1.multV0M());
+        }
       }
     }
   }
