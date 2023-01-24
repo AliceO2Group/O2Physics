@@ -34,6 +34,31 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MixingLibrary.h"
 
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include "KFParticle.h"
+#include "KFPTrack.h"
+#include "KFPVertex.h"
+#include "KFParticleBase.h"
+#include "KFVertex.h"
+
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
+#include "TableHelper.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "CCDB/BasicCCDBManager.h"
+
+#ifndef HomogeneousField
+#define HomogeneousField
+#endif
+
 using std::cout;
 using std::endl;
 using std::string;
@@ -94,7 +119,7 @@ constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::Redu
 constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 
-// constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 
@@ -721,6 +746,7 @@ struct AnalysisEventMixing {
 struct AnalysisSameEventPairing {
 
   Produces<aod::Dileptons> dileptonList;
+  Produces<aod::DileptonsKF> dileptonKFList;
   Produces<aod::DileptonsExtra> dileptonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
@@ -733,6 +759,16 @@ struct AnalysisSameEventPairing {
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
+  Configurable<float> magneticField{"d_bz", -999, "magnetic field"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  float d_bz;
+  int mRunNumber;
+  o2::base::MatLayerCylSet* lut = nullptr;
+  KFParticle KFPV;
+  bool flagKF = false;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -762,7 +798,7 @@ struct AnalysisSameEventPairing {
     // Keep track of all the histogram class names to avoid composing strings in the event mixing pairing
     TString histNames = "";
 
-    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedKFParticle") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -813,11 +849,21 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    // Usage example of ccdb
-    // ccdb->setURL(url.value);
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-    // ccdb->setCreatedNotAfter(nolaterthan.value);
+    if (context.mOptions.get<bool>("processDecayToEESkimmedKFParticle")) {
+      LOGF(info, "It is running Jpsi->ee with KF Particle");
+      mRunNumber = 0;
+      d_bz = 0;
+      flagKF = true;
+      // Usage example of ccdb
+      ccdb->setURL(url.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(nolaterthan.value);
+      ccdb->setFatalWhenNull(false);
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    }
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
@@ -825,6 +871,36 @@ struct AnalysisSameEventPairing {
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
+  }
+
+  float getMagneticField(uint64_t timestamp)
+  {
+    o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    static o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
+    if (grpo != nullptr) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    } else {
+      LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+      return 0;
+    }
+    LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+    float bz = std::lround(5.f * grpo->getL3Current() / 30000.f); // in kG
+    LOGF(info, "magnetig field = %f kG", bz);
+    return bz;
+  }
+
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  {
+    if (lRunNumber != mRunNumber) {
+      if (abs(magneticField) > 99) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(lTimeStamp);
+      } else {
+        d_bz = magneticField;
+      }
+      mRunNumber = lRunNumber;
+    }
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
@@ -850,6 +926,57 @@ struct AnalysisSameEventPairing {
     if (fConfigFlatTables.value) {
       dimuonAllList.reserve(1);
     }
+
+    /// @brief define variables to keep KF information and setup magenited field, create KFPV
+    // PV information
+    float PVNContributors = -999.;
+    int PVNDF = -999;
+    float PVParameters[8] = {-999.};
+    float PVCovariance[36] = {-999.};
+    // tracks information
+    int trk0IsAmbiguous = 0;
+    int trk1IsAmbiguous = 0;
+    char trk0Charge;
+    char trk1Charge;
+    float trk0Parameters[8] = {-999.};
+    float trk1Parameters[8] = {-999.};
+    float dcaTrk0KF = -999.;
+    float dcaTrk1KF = -999.;
+    float dcaTrksMaxKF = -999.;
+    float dcaBetweenTrksKF = -999.;
+    float dcaXYTrk0KF = -999.;
+    float dcaXYTrk1KF = -999.;
+    float dcaXYTrksMaxKF = -999.;
+    float dcaXYBetweenTrksKF = -999.;
+    // only Geometrical fitting
+    float pairMassKFGeo = -999.;
+    float pairMassErrKFGeo = -999.;
+    float pairChi2OverNDFKFGeo = -999.;
+    int pairNDFKFGeo = -999;
+    float pairCosPAGeo = -999.;
+    float pairDecayLengthKFGeo = -999.;
+    float pairDecayLengthOverErrKFGeo = -999.;
+    float pairDecayLengthXYKFGeo = -999.;
+    float pairDecayLengthXYOverErrKFGeo = -999.;
+    float pairPseudoProperDecayTimeKFGeo = -999.;
+    float pairPseudoProperDecayLengthManuallyGeo = -999.;
+    float pairParametersGeo[8] = {-999.};
+    float pairCovarianceGeo[36] = {-999.};
+
+    if (flagKF) {
+      dileptonKFList.reserve(1);
+      CheckAndUpdate(event.runNumber(), event.timestamp());
+      // LOG(info) << "~~~~~~~~~~~~~~~~Run: " << event.runNumber() << " with magnetic field of " << d_bz << " kZG";
+      KFParticle::SetField(d_bz);
+
+      if constexpr ((TPairType == pairTypeEE) && ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov) > 0)) {
+        KFPVertex kfpVertex = createKFPVertexFromCollision(event);
+        KFParticle KFPV(kfpVertex);
+      } else {
+        LOG(info) << "~~~~~~~~~~~~~~~~maybe the event has no VtxCov !!!!!!!!!!!!!!!!!!!";
+      }
+    }
+
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -874,10 +1001,105 @@ struct AnalysisSameEventPairing {
         }
       }
 
+      /// @brief Create KF objects and get KF information
+      if (flagKF) {
+        trk0IsAmbiguous = t1.isAmbiguous();
+        trk1IsAmbiguous = t2.isAmbiguous();
+        if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0) {
+
+          KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
+          int pdgTrack0 = 0;
+          if (t1.sign() < 0)
+            pdgTrack0 = 11; // e-
+          if (t1.sign() > 0)
+            pdgTrack0 = -11; // e+
+          KFParticle trk0KF(kfpTrack0, pdgTrack0);
+
+          KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
+          int pdgTrack1 = 0;
+          if (t2.sign() < 0)
+            pdgTrack1 = 11; // e-
+          if (t2.sign() > 0)
+            pdgTrack1 = -11; // e+
+          KFParticle trk1KF(kfpTrack1, pdgTrack1);
+
+          // get PV information
+          for (int i = 0; i < 8; i++) {
+            PVParameters[i] = KFPV.GetParameter(i);
+          }
+          for (int i = 0; i < 36; i++) {
+            PVCovariance[i] = KFPV.GetCovariance(i);
+          }
+
+          // reconstruct Jpsi via KF
+          KFParticle JpsiGeo;
+          JpsiGeo.SetConstructMethod(2);
+          JpsiGeo.AddDaughter(trk0KF);
+          JpsiGeo.AddDaughter(trk1KF);
+
+          /// get information from KF objects
+          // get daughters information
+          trk0Charge = trk0KF.GetQ();
+          trk1Charge = trk1KF.GetQ();
+          for (int i = 0; i < 8; i++) {
+            trk0Parameters[i] = trk0KF.GetParameter(i);
+            trk1Parameters[i] = trk1KF.GetParameter(i);
+          }
+          dcaTrk0KF = trk0KF.GetDistanceFromVertex(KFPV);
+          dcaTrk1KF = trk1KF.GetDistanceFromVertex(KFPV);
+          if (dcaTrk0KF > dcaTrk1KF)
+            dcaTrksMaxKF = dcaTrk0KF;
+          else
+            dcaTrksMaxKF = dcaTrk1KF;
+          dcaBetweenTrksKF = trk0KF.GetDistanceFromParticle(trk1KF);
+          dcaXYTrk0KF = trk0KF.GetDistanceFromVertexXY(KFPV);
+          dcaXYTrk1KF = trk1KF.GetDistanceFromVertexXY(KFPV);
+          if (dcaXYTrk0KF > dcaXYTrk1KF)
+            dcaXYTrksMaxKF = dcaXYTrk0KF;
+          else
+            dcaXYTrksMaxKF = dcaXYTrk1KF;
+          dcaXYBetweenTrksKF = trk0KF.GetDistanceFromParticleXY(trk1KF);
+
+          // get JpsiGeo information
+          pairCosPAGeo = cpaFromKF(JpsiGeo, KFPV);
+          pairChi2OverNDFKFGeo = JpsiGeo.GetChi2() / JpsiGeo.GetNDF();
+          pairNDFKFGeo = JpsiGeo.GetNDF();
+          pairMassKFGeo = JpsiGeo.GetMass();
+          pairMassErrKFGeo = JpsiGeo.GetErrMass();
+          double dxJpsiGeo = JpsiGeo.GetX() - KFPV.GetX();
+          double dyJpsiGeo = JpsiGeo.GetY() - KFPV.GetY();
+          double dzJpsiGeo = JpsiGeo.GetZ() - KFPV.GetZ();
+          pairDecayLengthKFGeo = sqrt(dxJpsiGeo * dxJpsiGeo + dyJpsiGeo * dyJpsiGeo + dzJpsiGeo * dzJpsiGeo);
+          double pairDecayLengthErrKFGeo = (KFPV.GetCovariance(0) + JpsiGeo.GetCovariance(0)) * dxJpsiGeo * dxJpsiGeo + (KFPV.GetCovariance(2) + JpsiGeo.GetCovariance(2)) * dyJpsiGeo * dyJpsiGeo + (KFPV.GetCovariance(5) + JpsiGeo.GetCovariance(5)) * dzJpsiGeo * dzJpsiGeo + 2 * ((KFPV.GetCovariance(1) + JpsiGeo.GetCovariance(1)) * dxJpsiGeo * dyJpsiGeo + (KFPV.GetCovariance(3) + JpsiGeo.GetCovariance(3)) * dxJpsiGeo * dzJpsiGeo + (KFPV.GetCovariance(4) + JpsiGeo.GetCovariance(4)) * dyJpsiGeo * dzJpsiGeo);
+          pairDecayLengthOverErrKFGeo = pairDecayLengthKFGeo / pairDecayLengthErrKFGeo;
+          pairDecayLengthXYKFGeo = sqrt(dxJpsiGeo * dxJpsiGeo + dyJpsiGeo * dyJpsiGeo);
+          double pairDecayLengthXYErrKFGeo = (KFPV.GetCovariance(0) + JpsiGeo.GetCovariance(0)) * dxJpsiGeo * dxJpsiGeo + (KFPV.GetCovariance(5) + JpsiGeo.GetCovariance(5)) * dzJpsiGeo * dzJpsiGeo + 2 * ((KFPV.GetCovariance(3) + JpsiGeo.GetCovariance(3)) * dxJpsiGeo * dzJpsiGeo);
+          pairDecayLengthXYOverErrKFGeo = pairDecayLengthXYKFGeo / pairDecayLengthXYErrKFGeo;
+          pairPseudoProperDecayTimeKFGeo = JpsiGeo.GetPseudoProperDecayTime(KFPV, pairMassKFGeo);
+          pairPseudoProperDecayLengthManuallyGeo = JpsiGeo.GetDecayLengthXY() * (JpsiGeo.GetMass() / JpsiGeo.GetPt());
+          for (int i = 0; i < 8; i++) {
+            pairParametersGeo[i] = JpsiGeo.GetParameter(i);
+          }
+          for (int i = 0; i < 36; i++) {
+            pairCovarianceGeo[i] = JpsiGeo.GetCovariance(i);
+          }
+        }
+      }
+
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
       dileptonFilterMap = twoTrackFilter;
 
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+
+      if (flagKF) {
+        if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
+          dileptonKFList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision, t1.pt(),
+                         t1.eta(), t1.phi(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(), t2.pt(), t2.eta(), t2.phi(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
+                         trk0IsAmbiguous, trk1IsAmbiguous, trk0Parameters, trk1Parameters, dcaTrk0KF, dcaTrk1KF, dcaTrksMaxKF, dcaBetweenTrksKF, dcaXYTrk0KF, dcaXYTrk1KF, dcaXYTrksMaxKF, dcaXYBetweenTrksKF, 0, 0, 0, 0, 0, 0, // trk0Charge,trk1Charge,
+                         pairMassKFGeo, pairCosPAGeo, pairChi2OverNDFKFGeo, pairNDFKFGeo, pairDecayLengthKFGeo, pairDecayLengthOverErrKFGeo, pairDecayLengthXYKFGeo, pairDecayLengthXYOverErrKFGeo, pairPseudoProperDecayTimeKFGeo, pairPseudoProperDecayLengthManuallyGeo, pairParametersGeo, pairCovarianceGeo,
+                         PVParameters, PVCovariance, PVNContributors, PVNDF);
+        }
+      }
 
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
@@ -913,6 +1135,13 @@ struct AnalysisSameEventPairing {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+  }
+  void processDecayToEESkimmedKFParticle(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMapWithCov>(event, VarManager::fgValues);
+    runSameEventPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, tracks);
   }
   void processDecayToEEPrefilterSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelectedWithPrefilter> const& tracks)
   {
@@ -972,6 +1201,7 @@ struct AnalysisSameEventPairing {
   }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedKFParticle, "Run Jpsi reconstruction by KFparticle tools, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEPrefilterSkimmed, "Run electron-electron pairing, with skimmed tracks and prefilter from AnalysisPrefilterSelection", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmed, "Run muon-muon pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuVertexingSkimmed, "Run muon-muon pairing and vertexing, with skimmed muons", false);

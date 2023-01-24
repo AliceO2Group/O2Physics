@@ -26,6 +26,9 @@
 #include "KFPVertex.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
+#include "Common/Core/trackUtilities.h"
 
 #include "TVector3.h"
 #include <iostream>
