@@ -120,6 +120,7 @@ struct LfTreeCreatorNuclei {
         track.isEvTimeTOF(),
         track.isEvTimeT0AC(),
         track.hasTOF(),
+        track.hasTRD(),
         track.tpcInnerParam(),
         track.tpcSignal(),
         track.beta(),

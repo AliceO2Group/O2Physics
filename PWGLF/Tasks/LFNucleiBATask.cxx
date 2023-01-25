@@ -53,6 +53,7 @@ struct LFNucleiBATask {
   ConfigurableAxis binsdEdx{"binsdEdx", {1000, 0.f, 1000.f}, ""};
   Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", true, "Flag to enable histograms splitting depending on the Event Time used"};
   Configurable<bool> enableDebug{"enableDebug", false, "Flag to enable histograms for debug"};
+  Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
 
   static constexpr int PDGPion = 211;
   static constexpr int PDGKaon = 321;
@@ -306,6 +307,7 @@ struct LFNucleiBATask {
     //  Bethe-Bloch TPC distribution and Beta vs pT TOF distribution
     histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{1000, -5.f, 5.f}, {8000, 0.0, 1E3}});
     histos.add<TH2>("tracks/h2TOFbetaVsP", "#TOF beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
+    histos.add<TH2>("tracks/h2TOFbetaVsP_debug", "#TOF beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
     histos.add<TH2>("tracks/h2withTPCProtonCutTOFbetaVsP", "#TOF beta (with N_{#sigma(TPC(p))} cut) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (with N_{#sigma(TPC(p))} cut)", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
 
     //  TPCExpSignal histograms
@@ -1039,18 +1041,33 @@ struct LFNucleiBATask {
       }
 
       if (track.hasTOF()) {
-        histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-        if (std::abs(track.tpcNSigmaPr()) < ProtonNsigmaTPCcutInTOFbeta) {
-          histos.fill(HIST("tracks/h2withTPCProtonCutTOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-          if (std::abs(track.tofNSigmaPr()) < nsigmaTOFcut && track.sign() > 0)
-            histos.fill(HIST("tracks/proton/h2ProtonTOFbetaVsP"), track.p(), track.beta());
-          if (std::abs(track.tofNSigmaPr()) < nsigmaTOFcut && track.sign() < 0)
-            histos.fill(HIST("tracks/proton/h2antiProtonTOFbetaVsP"), track.p(), track.beta());
-          if (std::abs(track.tofNSigmaDe()) < nsigmaTOFcut && track.sign() > 0)
-            histos.fill(HIST("tracks/deuteron/h2DeuteronTOFbetaVsP"), track.p(), track.beta());
-          if (std::abs(track.tofNSigmaDe()) < nsigmaTOFcut && track.sign() < 0)
-            histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFbetaVsP"), track.p(), track.beta());
+        histos.fill(HIST("tracks/h2TOFbetaVsP_debug"), track.p() / (1.f * track.sign()), track.beta());
+        switch (useHasTRDConfig) {
+          case 0:
+            histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
+            break;
+          case 1:
+            if (track.hasTRD()) {
+              histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
+            }
+            break;
+          case 2:
+            if (!track.hasTRD()) {
+              histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
+            }
+            break;
         }
+        if (track.tpcNSigmaPr() + 3 > ProtonNsigmaTPCcutInTOFbeta) {
+          histos.fill(HIST("tracks/h2withTPCProtonCutTOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
+        }
+        if (std::abs(track.tpcNSigmaPr()) < nsigmaTPCcut && track.sign() > 0)
+          histos.fill(HIST("tracks/proton/h2ProtonTOFbetaVsP"), track.p(), track.beta());
+        if (std::abs(track.tpcNSigmaPr()) < nsigmaTPCcut && track.sign() < 0)
+          histos.fill(HIST("tracks/proton/h2antiProtonTOFbetaVsP"), track.p(), track.beta());
+        if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCcut && track.sign() > 0)
+          histos.fill(HIST("tracks/deuteron/h2DeuteronTOFbetaVsP"), track.p(), track.beta());
+        if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCcut && track.sign() < 0)
+          histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFbetaVsP"), track.p(), track.beta());
 
         if (track.sign() > 0) {
           histos.fill(HIST("tracks/proton/h3ProtonNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
