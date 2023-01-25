@@ -41,6 +41,7 @@
 #include "ReconstructionDataFormats/Vertex.h"
 
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
@@ -133,6 +134,8 @@ struct lumiTask {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
     mRunNumber = 0;
   }
 
@@ -169,8 +172,7 @@ struct lumiTask {
     std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
 
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(
-        ccdbpath_grp, bc.timestamp());
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
       } else {

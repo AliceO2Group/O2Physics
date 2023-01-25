@@ -9,10 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_library(ALICE3Core
-	       SOURCES TOFResoALICE3.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
-
-o2physics_target_root_dictionary(ALICE3Core
-              HEADERS   TOFResoALICE3.h
-              LINKDEF ALICE3CoreLinkDef.h)
+o2physics_add_dpl_workflow(task-mc-simple-qc
+                           SOURCES taskMcSimpleQC.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)

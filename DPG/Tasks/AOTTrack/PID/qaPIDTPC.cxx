@@ -107,6 +107,7 @@ struct tpcPidQa {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
+  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
@@ -195,7 +196,7 @@ struct tpcPidQa {
     histos.add(hnsigma_pt_pos_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigma_pt_neg_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
 
-    const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} Arb. units"};
+    const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
     histos.add(hsignal_wTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
   }
 
@@ -212,7 +213,7 @@ struct tpcPidQa {
       ptAxis.makeLogarithmic();
       pAxis.makeLogarithmic();
     }
-    const AxisSpec dedxAxis{5000, 0, 5000, "d#it{E}/d#it{x} A.U."};
+    const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
@@ -322,10 +323,10 @@ struct tpcPidQa {
       histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
       if (track.sign() > 0) {
         histos.fill(HIST("event/pos/tpcsignalvspt"), track.pt(), track.tpcSignal());
-        histos.fill(HIST("event/pos/tpcsignal"), track.p(), track.tpcSignal());
+        histos.fill(HIST("event/pos/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
       } else {
         histos.fill(HIST("event/neg/tpcsignalvspt"), track.pt(), track.tpcSignal());
-        histos.fill(HIST("event/neg/tpcsignal"), track.p(), track.tpcSignal());
+        histos.fill(HIST("event/neg/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
       }
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/phi"), track.phi());

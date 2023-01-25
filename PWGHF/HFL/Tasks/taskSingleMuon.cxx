@@ -97,13 +97,17 @@ struct HfTaskSingleMuonEventSelection {
   void runEventSel(TEvent const& event, aod::BCs const& bcs)
   {
     // select events
-    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-    VarManager::FillEvent<TEventFillMap>(event, values);
-    histMan->FillHistClass("EventBeforeCuts", values);
+    if (event.sel8()) {
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+      VarManager::FillEvent<TEventFillMap>(event, values);
+      histMan->FillHistClass("EventBeforeCuts", values);
 
-    if (eventCut->IsSelected(values)) {
-      histMan->FillHistClass("EventAfterCuts", values);
-      eventSel(1);
+      if (eventCut->IsSelected(values)) {
+        histMan->FillHistClass("EventAfterCuts", values);
+        eventSel(1);
+      } else {
+        eventSel(0);
+      }
     } else {
       eventSel(0);
     }
@@ -120,6 +124,14 @@ struct HfTaskSingleMuonEventSelection {
     runEventSel<gEventFillMap>(event, bcs);
   }
   PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMc, "run event selection with MC data", false);
+
+  void processNoEventSelection(MyCollisions::iterator const& event, aod::BCs const& bcs)
+  {
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    VarManager::FillEvent<gEventFillMap>(event, values);
+    eventSel(1);
+  }
+  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processNoEventSelection, "skip the event selection", false);
 };
 
 struct HfTaskSingleMuonSelection {
@@ -273,6 +285,11 @@ struct HfTaskSingleMuonSelection {
     } // end loop over muon tracks
   }
 
+  void processDummy(MyEventsSelected&)
+  {
+    // do nothing
+  }
+
   void processMuon(MyEventsSelected::iterator const& event, aod::BCs const& bcs,
                    MyMuons const& tracks)
   {
@@ -285,6 +302,7 @@ struct HfTaskSingleMuonSelection {
     runMuonSelMC<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
   }
 
+  PROCESS_SWITCH(HfTaskSingleMuonSelection, processDummy, "do nothing", false);
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", true);
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMc, "run muon selection with MC data", false);
 };

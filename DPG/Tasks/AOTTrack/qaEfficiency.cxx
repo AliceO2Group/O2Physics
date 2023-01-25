@@ -46,7 +46,6 @@ struct QaEfficiency {
   Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
   Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
   // Particle only selection
-  Configurable<bool> doUnId{"do-un-id", true, "Flag to run without PDG code"};
   Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of electrons"};
   Configurable<bool> doMu{"do-mu", false, "Flag to run with the PDG code of muons"};
   Configurable<bool> doPi{"do-pi", false, "Flag to run with the PDG code of pions"};
@@ -591,8 +590,11 @@ struct QaEfficiency {
 
   void initMC(const AxisSpec& axisSel)
   {
-    if (!doprocessMC) {
+    if (!doprocessMC && !doprocessMCWithoutCollisions) {
       return;
+    }
+    if (doprocessMC && doprocessMCWithoutCollisions) {
+      LOG(fatal) << "Both processMC and processMCWithoutCollisions are set to true. Please set only one of them to true.";
     }
 
     auto h = histos.add<TH1>("MC/trackSelection", "Track Selection", kTH1F, {axisSel});
@@ -806,7 +808,6 @@ struct QaEfficiency {
     LOG(info) << "Set noFakesHits to: " << (noFakesHits ? "true" : "false");
     LOG(info) << "Set doPositivePDG to: " << (doPositivePDG ? "true" : "false");
     LOG(info) << "Set doNegativePDG to: " << (doNegativePDG ? "true" : "false");
-    LOG(info) << "Set doUnId to: " << (doUnId ? "true" : "false");
     LOG(info) << "Set doEl to: " << (doEl ? "true" : "false");
     LOG(info) << "Set doMu to: " << (doMu ? "true" : "false");
     LOG(info) << "Set doPi to: " << (doPi ? "true" : "false");
@@ -1404,6 +1405,63 @@ struct QaEfficiency {
     });
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
+
+  // MC process without the collision association
+  void processMCWithoutCollisions(o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension> const& tracks,
+                                  o2::aod::McParticles const& mcParticles)
+  {
+    // Track loop
+    for (const auto& track : tracks) {
+      if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
+        continue;
+      }
+      // Filling variable histograms
+      histos.fill(HIST("MC/trackLength"), track.length());
+      static_for<0, 1>([&](auto charge) {
+        fillMCTrackHistograms<charge, o2::track::PID::Electron>(track, doEl);
+        fillMCTrackHistograms<charge, o2::track::PID::Muon>(track, doMu);
+        fillMCTrackHistograms<charge, o2::track::PID::Pion>(track, doPi);
+        fillMCTrackHistograms<charge, o2::track::PID::Kaon>(track, doKa);
+        fillMCTrackHistograms<charge, o2::track::PID::Proton>(track, doPr);
+        fillMCTrackHistograms<charge, o2::track::PID::Deuteron>(track, doDe);
+        fillMCTrackHistograms<charge, o2::track::PID::Triton>(track, doTr);
+        fillMCTrackHistograms<charge, o2::track::PID::Helium3>(track, doHe);
+        fillMCTrackHistograms<charge, o2::track::PID::Alpha>(track, doAl);
+      });
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
+        continue;
+      }
+
+      static_for<0, 1>([&](auto charge) {
+        fillMCParticleHistograms<charge, o2::track::PID::Electron>(mcParticle, doEl);
+        fillMCParticleHistograms<charge, o2::track::PID::Muon>(mcParticle, doMu);
+        fillMCParticleHistograms<charge, o2::track::PID::Pion>(mcParticle, doPi);
+        fillMCParticleHistograms<charge, o2::track::PID::Kaon>(mcParticle, doKa);
+        fillMCParticleHistograms<charge, o2::track::PID::Proton>(mcParticle, doPr);
+        fillMCParticleHistograms<charge, o2::track::PID::Deuteron>(mcParticle, doDe);
+        fillMCParticleHistograms<charge, o2::track::PID::Triton>(mcParticle, doTr);
+        fillMCParticleHistograms<charge, o2::track::PID::Helium3>(mcParticle, doHe);
+        fillMCParticleHistograms<charge, o2::track::PID::Alpha>(mcParticle, doAl);
+      });
+    }
+
+    // Fill TEfficiencies
+    static_for<0, 1>([&](auto charge) {
+      fillMCEfficiency<charge, o2::track::PID::Electron>(doEl);
+      fillMCEfficiency<charge, o2::track::PID::Muon>(doMu);
+      fillMCEfficiency<charge, o2::track::PID::Pion>(doPi);
+      fillMCEfficiency<charge, o2::track::PID::Kaon>(doKa);
+      fillMCEfficiency<charge, o2::track::PID::Proton>(doPr);
+      fillMCEfficiency<charge, o2::track::PID::Deuteron>(doDe);
+      fillMCEfficiency<charge, o2::track::PID::Triton>(doTr);
+      fillMCEfficiency<charge, o2::track::PID::Helium3>(doHe);
+      fillMCEfficiency<charge, o2::track::PID::Alpha>(doAl);
+    });
+  }
+  PROCESS_SWITCH(QaEfficiency, processMCWithoutCollisions, "process MC without the collision association", false);
 
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
                    const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>& tracks)
