@@ -265,7 +265,7 @@ struct tofPidQa {
     histos.add(hdelta_pt_pos[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
     histos.add(hdelta_pt_neg[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
     if (produceDeltaTEtaPhiMap) {
-      histos.add(hdelta_etaphi[id].data(), Form("%s, #it{p}_{T} > %.2f", axisTitle, ptDeltaTEtaPhiMap), kTH3F, {etaAxis, phiAxis, deltaAxis});
+      histos.add(hdelta_etaphi[id].data(), Form("%s, #it{p}_{T} > %.2f", axisTitle, ptDeltaTEtaPhiMap.value), kTH3F, {etaAxis, phiAxis, deltaAxis});
     }
 
     if (enableEvTimeSplitting) {
