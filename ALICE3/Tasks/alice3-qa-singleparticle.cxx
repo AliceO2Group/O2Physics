@@ -9,7 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
+///
+/// \file    qa-singleparticle.cxx
+/// \author  Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief   Task to monitor the single particle QA, at the particle and track level, showing the tracked and the origin of particles
+///
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
@@ -138,7 +142,7 @@ struct Alice3SingleParticle {
   }
 
   void process(const o2::aod::McCollisions& colls,
-               const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra>& tracks,
+               const soa::Join<o2::aod::TracksIU, o2::aod::McTrackLabels, o2::aod::TracksExtra>& tracks,
                const aod::McParticles& mcParticles)
   {
     for (const auto& col : colls) {
