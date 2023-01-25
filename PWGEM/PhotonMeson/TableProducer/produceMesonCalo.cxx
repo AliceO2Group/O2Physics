@@ -48,14 +48,6 @@ struct produceMesonCalo {
   Configurable<float> minPt{"minPt", 0., "Minimum value for pT axis"};
   Configurable<float> maxPt{"maxPt", 60., "Maximum value for pT axis"};
 
-  // Configurable for filter/cuts
-  Configurable<float> minTime{"minTime", -200.,
-                              "Minimum cluster time for time cut"};
-  Configurable<float> maxTime{"maxTime", +200.,
-                              "Maximum cluster time for time cut"};
-  Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"}; // standard 0.1
-  Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"}; // standard o.5
-
   void init(o2::framework::InitContext&)
   {
     std::vector<double> ptBinning(nBinsPt, 0);
@@ -102,27 +94,15 @@ struct produceMesonCalo {
     spectra.add("SameEvent_PtMother_PtGamma", "SameEvent_PtMother_PtGamma", defaultPtMotherPtGammaHist, true);
 
     spectra.add("Photon_Eta_Phi", "Photon_Eta_Phi", defaultEtaPhiHist, true);
-
-    LOG(info) << "| Timing cut: " << minTime << "< t < " << maxTime << std::endl;
-    LOG(info) << "| M02 cut: " << minM02 << "< M02 < " << maxM02 << std::endl;
   }
 
   void
     processRec(aod::Collision const&,
-               aod::SkimEMCClusters const& caloclusters)
+               aod::SkimGammas const& skimgammas)
   {
-    for (auto& [gamma0, gamma1] :
-         combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(caloclusters,
-                                                                    caloclusters))) {
-      // custer time cut
-      if (gamma0.time() < minTime || gamma1.time() < minTime || gamma0.time() > maxTime || gamma1.time() > maxTime) {
-        continue;
-      }
-      // cluster M02 cut
-      if (gamma0.m02() < minM02 || gamma1.m02() < minM02 || gamma0.m02() > maxM02 || gamma1.m02() > maxM02) {
-        continue;
-      }
-
+    for (auto& [gamma0, gamma1] : // EMC-EMC
+         combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(skimgammas,
+                                                                    skimgammas))) {
       float openingAngle = acos((cos(gamma0.phi() - gamma1.phi()) +
                                  sinh(gamma0.eta()) * sinh(gamma1.eta())) /
                                 (cosh(gamma0.eta()) * cosh(gamma1.eta())));
@@ -146,7 +126,7 @@ struct produceMesonCalo {
       float eta = asinh(pz / Pt);
       float phi = atan2(py, px);
       phi = (phi < 0) ? phi + 2. * M_PI : phi;
-      tableCaloMeson(gamma0.collisionId(), gamma0.id(), gamma1.id(),
+      tableCaloMeson(gamma0.collisionId(), gamma0.globalIndex(), gamma1.globalIndex(),
                      openingAngle, px, py, pz, E, alpha, minv, eta, phi,
                      Pt);
       spectra.get<TH2>(HIST("SameEvent_Minv_Pt"))->Fill(minv, Pt);
