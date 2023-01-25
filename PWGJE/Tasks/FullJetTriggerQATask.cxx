@@ -41,33 +41,31 @@ struct JetTriggerQA {
 
   OutputObj<TH1I> hProcessedEvents{"hProcessedEvents"};
 
-  OutputObj<TH2F> hJetPtEta{"hJetPtEta"};
-  OutputObj<TH2F> hJetPtPhi{"hJetPtPhi"};
+  OutputObj<TH3F> hJetRPtEta{"hJetRPtEta"};
+  OutputObj<TH3F> hJetRPtPhi{"hJetRPtPhi"};
   OutputObj<TH2F> hClusterPtEta{"hClusterPtEta"};
   OutputObj<TH2F> hClusterPtPhi{"hClusterPtPhi"};
-  OutputObj<TH2F> hJetPtTrackPt{"hJetPtTrackPt"};
-  OutputObj<TH2F> hJetPtClusterPt{"hJetPtClusterPt"};
-  OutputObj<TH2F> hJetPtPtd{"hJetPtPtd"};
-  OutputObj<TH2F> hJetPtChargeFrag{"hJetPtChargeFrag"};
-  OutputObj<TH2F> hJetPtNEF{"hJetPtNEF"};
-  OutputObj<TH2F> hJetPtZTheta{"hJetPtZTheta"};
-  OutputObj<TH2F> hJetPtZSqTheta{"hJetPtZSqTheta"};
-  OutputObj<TH2F> hJetPtZThetaSq{"hJetPtZThetaSq"};
+  OutputObj<TH3F> hJetRPtTrackPt{"hJetRPtTrackPt"};
+  OutputObj<TH3F> hJetRPtClusterPt{"hJetRPtClusterPt"};
+  OutputObj<TH3F> hJetRPtPtd{"hJetRPtPtd"};
+  OutputObj<TH3F> hJetRPtChargeFrag{"hJetRPtChargeFrag"};
+  OutputObj<TH3F> hJetRPtNEF{"hJetRPtNEF"};
+  OutputObj<TH3F> hJetRPtZTheta{"hJetRPtZTheta"};
+  OutputObj<TH3F> hJetRPtZSqTheta{"hJetRPtZSqTheta"};
+  OutputObj<TH3F> hJetRPtZThetaSq{"hJetRPtZThetaSq"};
 
-  OutputObj<TH3F> hJetRPtEta{"hJetRPtEta"};
-
-  OutputObj<TH2F> hSelectedJetPtEta{"hSelectedJetPtEta"};
-  OutputObj<TH2F> hSelectedJetPtPhi{"hSelectedJetPtPhi"};
+  OutputObj<TH3F> hSelectedJetRPtEta{"hSelectedJetRPtEta"};
+  OutputObj<TH3F> hSelectedJetRPtPhi{"hSelectedJetRPtPhi"};
   OutputObj<TH2F> hSelectedClusterPtEta{"hSelectedClusterPtEta"};
   OutputObj<TH2F> hSelectedClusterPtPhi{"hSelectedClusterPtPhi"};
-  OutputObj<TH2F> hSelectedJetPtTrackPt{"hSelectedJetPtTrackPt"};
-  OutputObj<TH2F> hSelectedJetPtClusterPt{"hSelectedJetPtClusterPt"};
-  OutputObj<TH2F> hSelectedJetPtPtd{"hSelectedJetPtPtd"};
-  OutputObj<TH2F> hSelectedJetPtChargeFrag{"hSelectedJetPtChargeFrag"};
-  OutputObj<TH2F> hSelectedJetPtNEF{"hSelectedJetPtNEF"};
-  OutputObj<TH2F> hSelectedJetPtZTheta{"hSelectedJetPtZTheta"};
-  OutputObj<TH2F> hSelectedJetPtZSqTheta{"hSelectedJetPtZSqTheta"};
-  OutputObj<TH2F> hSelectedJetPtZThetaSq{"hSelectedJetPtZThetaSq"};
+  OutputObj<TH3F> hSelectedJetRPtTrackPt{"hSelectedJetRPtTrackPt"};
+  OutputObj<TH3F> hSelectedJetRPtClusterPt{"hSelectedJetRPtClusterPt"};
+  OutputObj<TH3F> hSelectedJetRPtPtd{"hSelectedJetRPtPtd"};
+  OutputObj<TH3F> hSelectedJetRPtChargeFrag{"hSelectedJetRPtChargeFrag"};
+  OutputObj<TH3F> hSelectedJetRPtNEF{"hSelectedJetRPtNEF"};
+  OutputObj<TH3F> hSelectedJetRPtZTheta{"hSelectedJetRPtZTheta"};
+  OutputObj<TH3F> hSelectedJetRPtZSqTheta{"hSelectedJetRPtZSqTheta"};
+  OutputObj<TH3F> hSelectedJetRPtZThetaSq{"hSelectedJetRPtZThetaSq"};
 
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_SD_zCut{"f_SD_zCut", 0.1, "soft drop z cut"};
@@ -99,39 +97,42 @@ struct JetTriggerQA {
     Int_t nEtaBins = 100;
     Float_t kMinEta = -1.;
     Float_t kMaxEta = 1.;
+    Int_t nRBins = 6;
+    Float_t kMinR = 0.05;
+    Float_t kMaxR = 0.65;
 
     hProcessedEvents.setObject(new TH1I("hProcessedEvents", "Processed events", 3, -0.5, 2.5));
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "MB");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "EMC");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "Selected");
 
-    hJetPtEta.setObject(new TH2F("hJetPtEta", "Jets #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
-    hJetPtPhi.setObject(new TH2F("hJetPtPhi", "Jets #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    // Histograms for events where the EMCAL is live
+    hJetRPtEta.setObject(new TH3F("hJetRPtEta", "Jets #it{p}_{T} and #eta;#it{R};#it{p}_{T};#eta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
+    hJetRPtPhi.setObject(new TH3F("hJetRPtPhi", "Jets #it{p}_{T} and #phi;#it{R};#it{p}_{T};#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hClusterPtEta.setObject(new TH2F("hClusterPtEta", "Cluster #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hClusterPtPhi.setObject(new TH2F("hClusterPtPhi", "Cluster #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
-    hJetPtTrackPt.setObject(new TH2F("hJetPtTrackPt", "Jets;#it{p}_{T};#it{p}_{T}^{track}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
-    hJetPtClusterPt.setObject(new TH2F("hJetPtClusterPt", "Jets;#it{p}_{T};#it{p}_{T}^{clus}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
-    hJetPtPtd.setObject(new TH2F("hJetPtPtd", "Jets;#it{p}_{T};ptD", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hJetPtChargeFrag.setObject(new TH2F("hJetPtChargeFrag", "Jets;#it{p}_{T};z", nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
-    hJetPtNEF.setObject(new TH2F("hJetPtNEF", "Jets;#it{p}_{T};NEF", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hJetPtZTheta.setObject(new TH2F("hJetPtZTheta", "Jets;#it{p}_{T};z#theta", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hJetPtZSqTheta.setObject(new TH2F("hJetPtZSqTheta", "Jets;#it{p}_{T};z^{2} #theta", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hJetPtZThetaSq.setObject(new TH2F("hJetPtZThetaSq", "Jets;#it{p}_{T};z #theta^{2}", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
+    hJetRPtTrackPt.setObject(new TH3F("hJetRPtTrackPt", "Jets;#it{p}_{T};#it{R};#it{p}_{T}^{track}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
+    hJetRPtClusterPt.setObject(new TH3F("hJetRPtClusterPt", "Jets;#it{R};#it{p}_{T};#it{p}_{T}^{clus}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
+    hJetRPtPtd.setObject(new TH3F("hJetRPtPtd", "Jets;#it{R};#it{p}_{T};ptD", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hJetRPtChargeFrag.setObject(new TH3F("hJetRPtChargeFrag", "Jets;#it{R};#it{p}_{T};z", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hJetRPtNEF.setObject(new TH3F("hJetRPtNEF", "Jets;#it{R};#it{p}_{T};NEF", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hJetRPtZTheta.setObject(new TH3F("hJetRPtZTheta", "Jets;#it{R};#it{p}_{T};z#theta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hJetRPtZSqTheta.setObject(new TH3F("hJetRPtZSqTheta", "Jets;#it{R};#it{p}_{T};z^{2} #theta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hJetRPtZThetaSq.setObject(new TH3F("hJetRPtZThetaSq", "Jets;#it{R};#it{p}_{T};z #theta^{2}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
 
-    hJetRPtEta.setObject(new TH3F("hJetRPtEta", "Jet #it{R}, #it{p}_{T} and #eta;#it{R};#it{p}_{T};#eta", 6, 0.05, 0.65, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
-
-    hSelectedJetPtEta.setObject(new TH2F("hSelectedJetPtEta", "Selected jet #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
-    hSelectedJetPtPhi.setObject(new TH2F("hSelectedJetPtPhi", "Selected jet #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    // Histograms for triggered events
+    hSelectedJetRPtEta.setObject(new TH3F("hSelectedJetRPtEta", "Selected jets #it{p}_{T} and #eta;#it{R};#it{p}_{T};#eta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
+    hSelectedJetRPtPhi.setObject(new TH3F("hSelectedJetRPtPhi", "Selected jets #it{p}_{T} and #phi;#it{R};#it{p}_{T};#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedClusterPtEta.setObject(new TH2F("hSelectedClusterPtEta", "Selected Cluster #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", "Selected Cluster #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
-    hSelectedJetPtTrackPt.setObject(new TH2F("hSelectedJetPtTrackPt", "Selected Jets;#it{p}_{T};#it{p}_{T}^{track}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
-    hSelectedJetPtClusterPt.setObject(new TH2F("hSelectedJetPtClusterPt", "Selected Jets;#it{p}_{T};#it{p}_{T}^{clus}", nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
-    hSelectedJetPtPtd.setObject(new TH2F("hSelectedJetPtPtd", "Jets;#it{p}_{T};ptD", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hSelectedJetPtChargeFrag.setObject(new TH2F("hSelectedJetPtChargeFrag", "Jets;#it{p}_{T};z", nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
-    hSelectedJetPtNEF.setObject(new TH2F("hSelectedJetPtNEF", "Jets;#it{p}_{T};NEF", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hSelectedJetPtZTheta.setObject(new TH2F("hSelectedJetPtZTheta", "Jets;#it{p}_{T};z#theta", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hSelectedJetPtZSqTheta.setObject(new TH2F("hSelectedJetPtZSqTheta", "Jets;#it{p}_{T};z^{2} #theta", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
-    hSelectedJetPtZThetaSq.setObject(new TH2F("hSelectedJetPtZThetaSq", "Jets;#it{p}_{T};z #theta^{2}", nPtBins, kMinPt, kMaxPt, nPtBins, 0., 1.));
+    hSelectedJetRPtTrackPt.setObject(new TH3F("hSelectedJetRPtTrackPt", "Selected jets;#it{R};#it{p}_{T};#it{p}_{T}^{track}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
+    hSelectedJetRPtClusterPt.setObject(new TH3F("hSelectedJetRPtClusterPt", "Selected jets;#it{R};#it{p}_{T};#it{p}_{T}^{clus}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
+    hSelectedJetRPtPtd.setObject(new TH3F("hSelectedJetRPtPtd", "Selected jets;#it{R};#it{p}_{T};ptD", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hSelectedJetRPtChargeFrag.setObject(new TH3F("hSelectedJetRPtChargeFrag", "Selected jets;#it{R};#it{p}_{T};z", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hSelectedJetRPtNEF.setObject(new TH3F("hSelectedJetRPtNEF", "Selected jets;#it{R};#it{p}_{T};NEF", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hSelectedJetRPtZTheta.setObject(new TH3F("hSelectedJetRPtZTheta", "Selected jets;#it{R};#it{p}_{T};z#theta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hSelectedJetRPtZSqTheta.setObject(new TH3F("hSelectedJetRPtZSqTheta", "Selected jets;#it{R};#it{p}_{T};z^{2} #theta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
+    hSelectedJetRPtZThetaSq.setObject(new TH3F("hSelectedJetRPtZThetaSq", "Selected jets;#it{R};#it{p}_{T};z #theta^{2}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
   } // init
 
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
@@ -188,11 +189,11 @@ struct JetTriggerQA {
         zSqTheta += z * z * dR / jetR;
         zThetaSq += z * dR * dR / (jetR * jetR);
         ptD += z * z;
-        hJetPtTrackPt->Fill(jetPt, trackPt);
-        hJetPtChargeFrag->Fill(jetPt, chargeFrag);
+        hJetRPtTrackPt->Fill(jetR, jetPt, trackPt);
+        hJetRPtChargeFrag->Fill(jetR, jetPt, chargeFrag);
         if (isEvtSelected) {
-          hSelectedJetPtTrackPt->Fill(jetPt, trackPt);
-          hSelectedJetPtChargeFrag->Fill(jetPt, chargeFrag);
+          hSelectedJetRPtTrackPt->Fill(jetR, jetPt, trackPt);
+          hSelectedJetRPtChargeFrag->Fill(jetR, jetPt, chargeFrag);
         }
       } // for tracks in jet
 
@@ -208,31 +209,30 @@ struct JetTriggerQA {
         zSqTheta += z * z * dR / jetR;
         zThetaSq += z * dR * dR / (jetR * jetR);
         ptD += z * z;
-        hJetPtClusterPt->Fill(jetPt, clusterPt);
+        hJetRPtClusterPt->Fill(jetR, jetPt, clusterPt);
         if (isEvtSelected) {
-          hSelectedJetPtClusterPt->Fill(jetPt, clusterPt);
+          hSelectedJetRPtClusterPt->Fill(jetR, jetPt, clusterPt);
         }
       } // for clusters in jet
       neutralEnergyFraction /= jet.energy();
       ptD = TMath::Sqrt(ptD);
 
-      // Filling histograms
-      hJetPtEta->Fill(jetPt, jet.eta());
-      hJetPtPhi->Fill(jetPt, jet.phi());
-      hJetPtPtd->Fill(jetPt, ptD);
-      hJetPtNEF->Fill(jetPt, neutralEnergyFraction);
-      hJetPtZTheta->Fill(jetPt, zTheta);
-      hJetPtZSqTheta->Fill(jetPt, zSqTheta);
-      hJetPtZThetaSq->Fill(jetPt, zThetaSq);
+      // Fillng histograms
       hJetRPtEta->Fill(jetR, jetPt, jet.eta());
+      hJetRPtPhi->Fill(jetR, jetPt, jet.phi());
+      hJetRPtPtd->Fill(jetR, jetPt, ptD);
+      hJetRPtNEF->Fill(jetR, jetPt, neutralEnergyFraction);
+      hJetRPtZTheta->Fill(jetR, jetPt, zTheta);
+      hJetRPtZSqTheta->Fill(jetR, jetPt, zSqTheta);
+      hJetRPtZThetaSq->Fill(jetR, jetPt, zThetaSq);
       if (isEvtSelected) {
-        hSelectedJetPtEta->Fill(jetPt, jet.eta());
-        hSelectedJetPtPhi->Fill(jetPt, jet.phi());
-        hSelectedJetPtPtd->Fill(jetPt, ptD);
-        hSelectedJetPtNEF->Fill(jetPt, neutralEnergyFraction);
-        hSelectedJetPtZTheta->Fill(jetPt, zTheta);
-        hSelectedJetPtZSqTheta->Fill(jetPt, zSqTheta);
-        hSelectedJetPtZThetaSq->Fill(jetPt, zThetaSq);
+        hSelectedJetRPtEta->Fill(jetR, jetPt, jet.eta());
+        hSelectedJetRPtPhi->Fill(jetR, jetPt, jet.phi());
+        hSelectedJetRPtPtd->Fill(jetR, jetPt, ptD);
+        hSelectedJetRPtNEF->Fill(jetR, jetPt, neutralEnergyFraction);
+        hSelectedJetRPtZTheta->Fill(jetR, jetPt, zTheta);
+        hSelectedJetRPtZSqTheta->Fill(jetR, jetPt, zSqTheta);
+        hSelectedJetRPtZThetaSq->Fill(jetR, jetPt, zThetaSq);
       }
     } // for jets
 
