@@ -72,9 +72,7 @@ static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doCascades", VariantType::Bool, false, {"Skim also Λc -> K0S p"}};
   ConfigParamSpec optionEvSel{"doTrigSel", VariantType::Bool, false, {"Apply trigger selection"}};
-  workflowOptions.push_back(optionDoMC);
   workflowOptions.push_back(optionEvSel);
 }
 
@@ -2238,8 +2236,11 @@ struct HfTrackIndexSkimCreatorCascades {
   // histograms
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const&)
+  void init(InitContext const& context)
   {
+    if (!(context.mOptions.get<bool>("processCascades"))) {
+      return;
+    }
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -2253,16 +2254,22 @@ struct HfTrackIndexSkimCreatorCascades {
     }
   }
 
-  void process(SelectedCollisions::iterator const& collision,
-               aod::BCsWithTimestamps const&,
-               // soa::Filtered<aod::V0Datas> const& V0s,
-               aod::V0Datas const& V0s,
-               MyTracks const& tracks
+  void processNoCascades(SelectedCollisions const&){
+    // dummy
+  };
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do cascades", true);
+
+  void processCascades(SelectedCollisions::iterator const& collision,
+                       aod::BCsWithTimestamps const&,
+                       // soa::Filtered<aod::V0Datas> const& V0s,
+                       aod::V0Datas const& V0s,
+                       MyTracks const& tracks
 #ifdef MY_DEBUG
-               ,
-               aod::McParticles& mcParticles
+                       ,
+                       aod::McParticles& mcParticles
 #endif
-               ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
+                       ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
 
     // set the magnetic field from CCDB
@@ -2440,6 +2447,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
     } // loop over tracks
   }   // process
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim also cascades", false);
 };
 
 //________________________________________________________________________________________________________________________
@@ -2456,11 +2464,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
-
-  const bool doCascades = cfgc.options().get<bool>("doCascades");
-  if (doCascades) {
-    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
-  }
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
 
   return workflow;
 }
