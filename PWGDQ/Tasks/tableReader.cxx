@@ -987,6 +987,10 @@ struct AnalysisSameEventPairing {
 
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
 
+      constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+      if constexpr ((TPairType == pairTypeEE) && trackHasCov) { 
+        dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+      }
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
@@ -1183,18 +1187,43 @@ struct AnalysisDileptonHadron {
   }
 
   // Template function to run pair - hadron combinations
-  template <uint32_t TEventFillMap, typename TEvent, typename TTracks>
-  void runDileptonHadron(TEvent const& event, TTracks const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
+  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
+  void runDileptonHadron(TEvent const& event, TTracks const& tracks,  soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
     VarManager::FillEvent<TEventFillMap>(event, fValuesHadron);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
 
+    // Set the global index offset to find the proper lepton
+    // TO DO: remove it once the issue with lepton index is solved
+    int indexOffset = -999;
     // loop once over dileptons for QA purposes
     for (auto dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
       fHistMan->FillHistClass("DileptonsSelected", fValuesDilepton);
+
+      // get the index of the electron legs 
+      int indexLepton1 = dilepton.index0Id();
+      int indexLepton2 = dilepton.index1Id();
+
+      if (indexOffset == -999) {
+        indexOffset = indexLepton1;
+      }
+
+      // get full track info of tracks based on the index
+      auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
+      auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
+
+      // Check that the dilepton has zero charge
+      if (dilepton.sign() != 0) {
+        continue;
+      }
+
+      // Check that the leptons are opposite sign
+      if (lepton1.sign() * lepton2.sign() > 0) {
+        continue;
+      }
       // loop over hadrons
       for (auto& hadron : tracks) {
         // TODO: Replace this with a Filter expression
@@ -1203,15 +1232,16 @@ struct AnalysisDileptonHadron {
         }
         // TODO: Check whether this hadron is one of the dilepton daughters!
         VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
+        VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronCorrelation", fValuesHadron);
       }
     }
   }
 
-  void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelected const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
+  void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons)
   {
-    runDileptonHadron<gkEventFillMap>(event, tracks, dileptons);
+    runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
   }
   // TODO: Add process functions which use cov matrices for secondary vertexing (e.g. B->Jpsi + K)
   void processDummy(MyEvents&)
