@@ -216,7 +216,7 @@ struct strangenessFilter {
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
