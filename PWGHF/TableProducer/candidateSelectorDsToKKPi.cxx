@@ -190,12 +190,12 @@ struct HfCandidateSelectorDsToKKPi {
       int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDAll(trackPos2);
       int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
 
-      bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Status::PIDRejected || 
-                           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected || 
+      bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Status::PIDRejected ||
+                           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
                            pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected);
 
-      bool pidDsToPiKK = !(pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected || 
-                           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected || 
+      bool pidDsToPiKK = !(pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
+                           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
                            pidTrackPos2Kaon == TrackSelectorPID::Status::PIDRejected);
 
       if (!pidDsToKKPi && !pidDsToPiKK) {

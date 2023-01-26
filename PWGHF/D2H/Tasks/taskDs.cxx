@@ -156,21 +156,21 @@ struct HfTaskDs {
   template <typename T1>
   void fillHistoMCRec(const T1& candidate, int flag)
   {
-    auto pt = candidate.pt();  // rec. level pT
+    auto pt = candidate.pt(); // rec. level pT
     auto y = yDs(candidate);
 
     registry.fill(HIST("hPtRecSig"), pt);
     registry.fill(HIST("hCPARecSig"), candidate.cpa());
     registry.fill(HIST("hEtaRecSig"), candidate.eta());
     registry.fill(HIST("hPtvsYRecSigRecoSkim"), pt, y);
-    if (TESTBIT(flag, aod::SelectionStep::RecoTopol)){
+    if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
       registry.fill(HIST("hPtvsYRecSigRecoTopol"), pt, y);
     }
     if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
       registry.fill(HIST("hPtvsYRecSigRecoPID"), pt, y);
     }
 
-     // prompt
+    // prompt
     if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
       registry.fill(HIST("hPtRecSigPrompt"), pt);
       registry.fill(HIST("hPtvsYRecSigPromptRecoSkim"), pt, y);
@@ -183,7 +183,7 @@ struct HfTaskDs {
     }
 
     // non-prompt
-    if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt){
+    if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
       registry.fill(HIST("hPtRecSigNonPrompt"), pt);
       registry.fill(HIST("hPtvsYRecSigNonPromptRecoSkim"), pt, y);
       if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
@@ -286,8 +286,8 @@ struct HfTaskDs {
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), pt);
           registry.fill(HIST("hPtVsYGenPrompt"), pt, y);
-        } 
-        
+        }
+
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hPtGenNonPrompt"), pt);
           registry.fill(HIST("hPtVsYGenNonPrompt"), pt, y);

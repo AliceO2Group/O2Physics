@@ -791,7 +791,7 @@ auto cosPiKPhiRestFrame(const T& candidate, int option)
   array<float, 3> momK1;
   array<float, 3> momK2;
 
-  if (option == 0){ // KKPi
+  if (option == 0) { // KKPi
     momPi = candidate.pVectorProng2();
     momK1 = candidate.pVectorProng1();
     momK2 = candidate.pVectorProng0();
