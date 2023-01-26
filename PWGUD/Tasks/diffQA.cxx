@@ -553,12 +553,12 @@ struct DiffQA {
       auto gBC = aBC % nBCpOrbit;
       auto ampA = udhelpers::FT0AmplitudeA(bc.foundFT0());
       auto ampC = udhelpers::FT0AmplitudeC(bc.foundFT0());
-        
+
       // update FT0ABCNUM
       if (ampA > 0.) {
         registry.get<TH1>(HIST("FT0ABCNUM"))->Fill(gBC, 1.);
       }
-      
+
       // update FT0CBCNUM
       if (ampC > 0.) {
         registry.get<TH1>(HIST("FT0CBCNUM"))->Fill(gBC, 1.);
