@@ -133,7 +133,7 @@ o2physics_add_dpl_workflow(v0qaanalysis
 
 o2physics_add_dpl_workflow(cascqaanalysis
                     SOURCES cascqaanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-hist
