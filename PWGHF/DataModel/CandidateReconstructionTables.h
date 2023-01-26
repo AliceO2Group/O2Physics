@@ -929,13 +929,13 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 template <typename T>
 auto invMassXicZeroToXiPi(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(kXiMinus), RecoDecay::getMassPDG(kPiPlus)}); 
+  return candidate.m(array{RecoDecay::getMassPDG(kXiMinus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
 auto invMassOmegacZeroToOmegaPi(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(kOmegaMinus), RecoDecay::getMassPDG(kPiPlus)}); 
+  return candidate.m(array{RecoDecay::getMassPDG(kOmegaMinus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 // mapping of decay types
