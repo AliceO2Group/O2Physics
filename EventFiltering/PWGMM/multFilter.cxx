@@ -51,6 +51,7 @@ struct multFilter {
   Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 187.0, "FT0C+FV0 mult threshold"};
   Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.885, "1-flatenicity FT0C+FV0 threshold"};
   Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
+  Configurable<bool> sel8{"sel8", 0, "apply sel8 event selection"};
 
   Produces<aod::MultFilters> tags;
 
@@ -211,6 +212,10 @@ struct multFilter {
       multiplicity.fill(HIST("hT0A_time"), t0_a);
     }
     if (!isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
+      tags(false, false, false, false, false, false, false, false);
+      return;
+    }
+    if (sel8 && !collision.sel8()) {
       tags(false, false, false, false, false, false, false, false);
       return;
     }
