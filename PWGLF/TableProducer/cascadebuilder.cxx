@@ -753,7 +753,7 @@ struct cascadePreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
-  void processBuildAll(aod::Cascades const& cascades, TracksWithExtra const&)
+  void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithExtra const&)
   {
     for (auto& casc : cascades) {
       bool lIsQualityInteresting = false;
