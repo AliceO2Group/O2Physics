@@ -82,7 +82,7 @@ struct lambda1520analysis {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     //  Event QA
-    auto h = histos.add<TH1>("QA/Event/EnumEvents", "Event selection; ; Selected Events", {HistType::kTH1F, {{10, 0, 10}}});
+    auto h = histos.add<TH1>("QA/Event/EnumEvents", "Event selection; ; Event Count", {HistType::kTH1F, {{10, 0, 10}}});
     h->GetXaxis()->SetBinLabel(1, "Events read and Ev. sel. passed");
     h->GetXaxis()->SetBinLabel(2, "posZ passed");
     histos.add("QA/Event/VertexZ", "Event selection; Vertex Z (cm); Selected Events", {HistType::kTH1F, {{4000, -20, 20}}});
@@ -90,36 +90,36 @@ struct lambda1520analysis {
 
     //  PID QA
     //  --- Kaon
-    histos.add("QA/Kaon/TOF_TPC_Map", "TOF + TPC Combined PID for Kaons; #sigma_{TOF}^{Kaon}; #sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("QA/Kaon/TOF_TPC_Map", "TOF + TPC Combined PID for Kaons; #sigma_{TOF}^{Kaon}; #sigma_{TPC}^{Kaon}; Counts;", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
     histos.add("QA/Kaon/TOF_Nsigma", "TOF NSigma for Kaons; #it{p}_{T} (GeV/#it{c}); #sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{1000, 0, 20}, {1000, -10, 10}}});
     histos.add("QA/Kaon/TPC_Nsigma", "TPC NSigma for Kaons; #it{p}_{T} (GeV/#it{c}); #sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{1000, 0, 20}, {1000, -10, 10}}});
     //  --- Proton
-    histos.add("QA/Proton/TOF_TPC_Map", "TOF + TPC Combined PID for Protons; #sigma_{TOF}^{Proton}; #sigma_{TPC}^{Proton}", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("QA/Proton/TOF_TPC_Map", "TOF + TPC Combined PID for Protons; #sigma_{TOF}^{Proton}; #sigma_{TPC}^{Proton}; Counts;", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
     histos.add("QA/Proton/TOF_Nsigma", "TOF NSigma for Protons; #it{p}_{T} (GeV/#it{c}); #sigma_{TOF}^{Proton};", {HistType::kTH2F, {{1000, 0, 20}, {1000, -10, 10}}});
     histos.add("QA/Proton/TPC_Nsigma", "TPC NSigma for Protons; #it{p}_{T} (GeV/#it{c}); #sigma_{TPC}^{Proton};", {HistType::kTH2F, {{1000, 0, 20}, {1000, -10, 10}}});
 
-    histos.add("QA/Kaon/pT", "pT distribution of Kaons", kTH1F, {{1000, 0, 20, "#it{p}_{T} (GeV/#it{c})"}});
-    histos.add("QA/Proton/pT", "pT distribution of Protons", kTH1F, {{1000, 0, 20, "#it{p}_{T} (GeV/#it{c})"}});
+    histos.add("QA/Kaon/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {{1000, 0, 20}}});
+    histos.add("QA/Proton/pT", "pT distribution of Protons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {{1000, 0, 20}}});
 
     // Mass QA (quick check)
-    histos.add("Analysis/lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}", kTH1F, {{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
-    histos.add("Analysis/lambda1520invmassLS", "Invariant mass of #Lambda(1520) Like Sign Method K^{#pm}p^{#pm}", kTH1F, {{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
-    histos.add("Analysis/lambda1520invmassLSkp", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}", kTH1F, {{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});         // K+ + Pr
-    histos.add("Analysis/lambda1520invmassLSkbarpbar", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}", kTH1F, {{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}}); // K- + anti-Pr
-    histos.add("Analysis/lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", kTH1F, {{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
+    histos.add("Analysis/lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {{500, 1.3, 1.8}}});
+    histos.add("Analysis/lambda1520invmassLS", "Invariant mass of #Lambda(1520) Like Sign Method K^{#pm}p^{#pm}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {{500, 1.3, 1.8}}});
+    histos.add("Analysis/lambda1520invmassLSkp", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {{500, 1.3, 1.8}}});         // K+ + Pr
+    histos.add("Analysis/lambda1520invmassLSkbarpbar", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {{500, 1.3, 1.8}}}); // K- + anti-Pr
+    histos.add("Analysis/lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {{500, 1.3, 1.8}}});
 
     // 3d histogram
-    histos.add("Analysis/h3lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 1.3, 1.8}});
-    histos.add("Analysis/h3lambda1520invmassLS", "Invariant mass of #Lambda(1520) Like Sign Method K^{#pm}p^{#pm}", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 1.3, 1.8}});
-    histos.add("Analysis/h3lambda1520invmassLSkp", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 1.3, 1.8}});         // K+ + Pr
-    histos.add("Analysis/h3lambda1520invmassLSkbarpbar", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 1.3, 1.8}}); // K- + anti-Pr
-    histos.add("Analysis/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 1.3, 1.8}});
+    histos.add("Analysis/h3lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}", HistType::kTH3F, {{1000, 0.0f, 2000.0f, "mult_{TPC}"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}, {500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
+    histos.add("Analysis/h3lambda1520invmassLS", "Invariant mass of #Lambda(1520) Like Sign Method K^{#pm}p^{#pm}", HistType::kTH3F, {{1000, 0.0f, 2000.0f, "mult_{TPC}"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}, {500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
+    histos.add("Analysis/h3lambda1520invmassLSkp", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}", HistType::kTH3F, {{1000, 0.0f, 2000.0f, "mult_{TPC}"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}, {500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});         // K+ + Pr
+    histos.add("Analysis/h3lambda1520invmassLSkbarpbar", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}", HistType::kTH3F, {{1000, 0.0f, 2000.0f, "mult_{TPC}"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}, {500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}}); // K- + anti-Pr
+    histos.add("Analysis/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTH3F, {{1000, 0.0f, 2000.0f, "mult_{TPC}"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}, {500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
 
     if (doprocessMC) {
-      histos.add("MC/h3recolambda1520invmass", "Invariant mass of Reconstructed MC #Lambda(1520)", kTH3F, {{300, 0, 3000}, {100, 0.0f, 10.0f}, {500, 1.3, 1.8}});
-      histos.add("MC/truelambda1520pt", "pT distribution of True MC #Lambda(1520)", kTH1F, {{100, 0, 20, "#it{p}_{T} (GeV/#it{c})"}});
-      histos.add("MC/reconlambda1520pt", "pT distribution of Reconstructed MC #Lambda(1520)", kTH1F, {{100, 0, 20, "#it{p}_{T} (GeV/#it{c})"}});
-      histos.add("MC/reconlambda1520invmass", "Inv mass distribution of Reconstructed MC #Lambda(1520)", kTH1F, {{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
+      histos.add("MC/h3recolambda1520invmass", "Invariant mass of Reconstructed MC #Lambda(1520)", HistType::kTH3F, {{1000, 0.0f, 2000.0f, "mult_{TPC}"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}, {500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"}});
+      histos.add("MC/truelambda1520pt", "pT distribution of True MC #Lambda(1520); #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {{100, 0, 20}}});
+      histos.add("MC/reconlambda1520pt", "pT distribution of Reconstructed MC #Lambda(1520); #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {{100, 0, 20}}});
+      histos.add("MC/reconlambda1520invmass", "Inv mass distribution of Reconstructed MC #Lambda(1520); #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {{500, 1.3, 1.8}}});
     }
   }
 
@@ -140,10 +140,9 @@ struct lambda1520analysis {
     histos.fill(HIST("QA/Event/Selected/VertexZ"), collision.posZ());
 
     // LOGF(info, "event id: %d, event multiplicity: %d", collision.bcId(), collision.multTPCtemp());
-    // LOGF(info, "event multiplicity: %d", collision.multTPCtemp());
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks, dTracks))) {
+    for (auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
 
       // Trk1: Kaon, Trk2: Proton
       // pT-dependent TPC PID cut
@@ -204,15 +203,24 @@ struct lambda1520analysis {
 
       // Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
+        // LOGF(info, "track 1 (K) ResoID: %d, NsigTOF: %f NSigTPC: %f", trk1.globalIndex(), trk1.tofNSigmaKa(), trk1.tpcNSigmaKa());  //trk1=Kaon
+        // LOGF(info, "track 2 (p) ResoID: %d, NsigTOF: %f NSigTPC: %f", trk2.globalIndex(), trk2.tofNSigmaPr(), trk2.tpcNSigmaPr());  //trk2=Proton
+        // LOGF(info, "ResoMass: %f", lResonance.M());
         histos.fill(HIST("Analysis/lambda1520invmass"), lResonance.M());
         histos.fill(HIST("Analysis/h3lambda1520invmass"), collision.multTPCtemp(), lResonance.Pt(), lResonance.M());
       } else {
+        if (trk1.globalIndex() == trk2.globalIndex())
+          continue;
+        // LOGF(info, "track 1 (K) ResoID: %d, NsigTOF: %f NSigTPC: %f", trk1.globalIndex(), trk1.tofNSigmaKa(), trk1.tpcNSigmaKa());  //trk1=Kaon
+        // LOGF(info, "track 2 (p) ResoID: %d, NsigTOF: %f NSigTPC: %f", trk2.globalIndex(), trk2.tofNSigmaPr(), trk2.tpcNSigmaPr());  //trk2=Proton
+        // LOGF(info, "ResoMass: %f", lResonance.M());
         histos.fill(HIST("Analysis/lambda1520invmassLS"), lResonance.M());
         histos.fill(HIST("Analysis/h3lambda1520invmassLS"), collision.multTPCtemp(), lResonance.Pt(), lResonance.M());
       }
 
       // Like sign pair ++
       if (trk1.sign() > 0 && trk2.sign() > 0) {
+
         histos.fill(HIST("Analysis/lambda1520invmassLSkp"), lResonance.M());
         histos.fill(HIST("Analysis/h3lambda1520invmassLSkp"), collision.multTPCtemp(), lResonance.Pt(), lResonance.M());
       }
@@ -348,6 +356,9 @@ struct lambda1520analysis {
 
         if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5)
           continue;
+        // LOGF(info, "track 1 (K) ResoID: %d, NsigTOF: %f NSigTPC: %f", trk1.globalIndex(), trk1.tofNSigmaKa(), trk1.tpcNSigmaKa());  //trk1=Kaon
+        // LOGF(info, "track 2 (p) ResoID: %d, NsigTOF: %f NSigTPC: %f", trk2.globalIndex(), trk2.tofNSigmaPr(), trk2.tpcNSigmaPr());  //trk2=Proton
+        // LOGF(info, "ResoMass: %f", lResonance.M());
 
         histos.fill(HIST("Analysis/lambda1520invmassME"), lResonance.M());
         histos.fill(HIST("Analysis/h3lambda1520invmassME"), collision1.multTPCtemp(), lResonance.Pt(), lResonance.M());
