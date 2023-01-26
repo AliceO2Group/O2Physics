@@ -42,7 +42,7 @@ using MyBigTracks = aod::BigTracks;
 #endif
 
 /// Reconstruction of heavy-flavour cascade decay candidates
-struct HfCandidateCreatorCascade {
+struct HfCandidateCreatorVZero {
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
   // vertexing
@@ -206,7 +206,7 @@ struct HfCandidateCreatorCascade {
 };
 
 /// Performs MC matching.
-struct HfCandidateCreatorCascadeMc {
+struct HfCandidateCreatorVZeroMc {
   Spawns<aod::HfCandCascExt> rowCandidateCasc;
   Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
   Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
@@ -290,12 +290,12 @@ struct HfCandidateCreatorCascadeMc {
     }
   }
 
-  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMc, "Process MC data", false);
+  PROCESS_SWITCH(HfCandidateCreatorVZeroMc, processMc, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreatorCascade>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorCascadeMc>(cfgc)};
+    adaptAnalysisTask<HfCandidateCreatorVZero>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorVZeroMc>(cfgc)};
 }
