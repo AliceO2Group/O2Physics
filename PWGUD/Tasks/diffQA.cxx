@@ -582,7 +582,7 @@ struct DiffQA {
         fAmpA = ampA;
         fAmpC = ampC;
       }
-      auto dBC = (int)(aBC - fBC);
+      auto dBC = static_cast<int>(aBC - fBC);
       if (dBC <= ns) {
         LOGF(debug, "<processFT0> dBC %d ampA %f ampC %f", dBC, ampA, ampC);
         switch (dBC) {
