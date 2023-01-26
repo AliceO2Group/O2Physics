@@ -144,7 +144,7 @@ struct cascqaanalysis {
 
     registry.fill(HIST("hNEvents"), 0.5);
     float lEventScale = scalefactor;
-    
+
     for (auto& casc : Cascades) { // loop over Cascades
 
       // Access daughter tracks
