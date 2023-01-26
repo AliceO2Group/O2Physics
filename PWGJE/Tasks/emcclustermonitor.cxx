@@ -72,6 +72,7 @@ struct ClusterMonitor {
   Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   ConfigurableAxis mClusterTimeBinning{"clustertime-binning", {1500, -600, 900}, ""};
   ConfigurableAxis mNumberClusterBinning{"numclusters-binning", {201, -0.5, 200.5}, ""};
+  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -121,11 +122,15 @@ struct ClusterMonitor {
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
     mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
-    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});
-    mHistManager.add("clusterTM_dEtadTN", "cluster trackmatching dEta/TN", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0, 10}});  // dEta compared to the Nth closest track
-    mHistManager.add("clusterTM_dPhiTN", "cluster trackmatching dEta/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0, 10}}); // dPhi compared to the Nth closest track
-    mHistManager.add("clusterTM_dRTN", "cluster trackmatching dR/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0, 10}});     // dR compared to the Nth closest track
-    mHistManager.add("clusterTM_NTrack", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{10, 0, 10}});              // how many tracks are matched
+    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});
+    mHistManager.add("clusterTM_dEtadTN", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0.5, 10.5}});            // dEta compared to the Nth closest track
+    mHistManager.add("clusterTM_dPhiTN", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0.5, 10.5}});    // dPhi compared to the Nth closest track
+    mHistManager.add("clusterTM_dRTN", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, 0.0, 0.4}, {10, 0.5, 10.5}});                     // dR compared to the Nth closest track
+    mHistManager.add("clusterTM_NTrack", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{11, -0.5, 10.5}});                                                          // how many tracks are matched
+    mHistManager.add("clusterTM_dEtadTNAli", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.06, 0.06}, {10, 0.5, 10.5}});       // dEta compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_dPhiTNAli", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.1, 0.1}, {10, 0.5, 10.5}}); // dPhi compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_dRTNAli", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, 0.0, 0.1}, {10, 0.5, 10.5}});                  // dR compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_NTrackAli", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{11, -0.5, 10.5}});                                                       // how many tracks are matched with cuts from latest Pi0 Run2 analysis
     mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05)", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});
 
     // add histograms per supermodule
@@ -164,7 +169,7 @@ struct ClusterMonitor {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, o2::aod::Tracks const& alltrack)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, o2::aod::FullTracks const& alltrack)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
@@ -257,27 +262,45 @@ struct ClusterMonitor {
       // Example of loop over tracks matched to cluster within dR=0.4, where only the
       // 5 most closest tracks are stored. If needed the number of tracks can be later
       // increased in the correction framework. Access to all track properties via match.track()
+      // If you want to access tracks from a joined table you can access all track properties via
+      // match.track_as<globTracks>() with
+      // using globTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>;
       // In this example the counter t is just used to only look at the closest match
       double dEta, dPhi;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
       int t = 0;
+      int tAli = 0;
       for (const auto& match : tracksofcluster) {
         // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
-        LOG(debug) << "Pt of match" << match.track().pt();
+        LOG(debug) << "Pt of match" << match.track_as<o2::aod::FullTracks>().pt();
         // only consider closest match
-        dEta = match.track().eta() - cluster.eta();
-        dPhi = match.track().phi() - cluster.phi();
+        if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
+          dEta = match.track_as<o2::aod::FullTracks>().trackEtaEmcal() - cluster.eta();
+          dPhi = match.track_as<o2::aod::FullTracks>().trackPhiEmcal() - cluster.phi();
+        } else {
+          dEta = match.track_as<o2::aod::FullTracks>().eta() - cluster.eta();
+          dPhi = match.track_as<o2::aod::FullTracks>().phi() - cluster.phi();
+        }
         if (t == 0) {
           if (dEta < 0.05 && dPhi < 0.05) {
-            mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track().p(), cluster.energy());
+            mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track_as<o2::aod::FullTracks>().p(), cluster.energy());
           }
           mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi);
+        }
+        t++;
+        if ((fabs(dEta) <= 0.01 + pow(match.track_as<o2::aod::FullTracks>().pt() + 4.07, -2.5)) &&
+            (fabs(dPhi) <= 0.015 + pow(match.track_as<o2::aod::FullTracks>().pt() + 3.65, -2.)) &&
+            cluster.energy() / match.track_as<o2::aod::FullTracks>().p() < 1.75) {
+          mHistManager.fill(HIST("clusterTM_dEtadTNAli"), dEta, t);
+          mHistManager.fill(HIST("clusterTM_dPhiTNAli"), dPhi, t);
+          mHistManager.fill(HIST("clusterTM_dRTNAli"), std::sqrt(dPhi * dPhi + dEta * dEta), t);
+          tAli++;
         }
         mHistManager.fill(HIST("clusterTM_dEtadTN"), dEta, t);
         mHistManager.fill(HIST("clusterTM_dPhiTN"), dPhi, t);
         mHistManager.fill(HIST("clusterTM_dRTN"), std::sqrt(dPhi * dPhi + dEta * dEta), t);
-        t++;
       }
+      mHistManager.fill(HIST("clusterTM_NTrackAli"), tAli);
       mHistManager.fill(HIST("clusterTM_NTrack"), t);
     }
     for (int supermoduleID = 0; supermoduleID < 20; supermoduleID++) {
