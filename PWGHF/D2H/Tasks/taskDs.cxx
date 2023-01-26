@@ -162,35 +162,35 @@ struct HfTaskDs {
     registry.fill(HIST("hPtRecSig"), pt);
     registry.fill(HIST("hCPARecSig"), candidate.cpa());
     registry.fill(HIST("hEtaRecSig"), candidate.eta());
-    registry.fill(HIST("hPtvsYRecSigRecoSkim"), pt, y);
+    registry.fill(HIST("hPtVsYRecSigRecoSkim"), pt, y);
     if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-      registry.fill(HIST("hPtvsYRecSigRecoTopol"), pt, y);
+      registry.fill(HIST("hPtVsYRecSigRecoTopol"), pt, y);
     }
     if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-      registry.fill(HIST("hPtvsYRecSigRecoPID"), pt, y);
+      registry.fill(HIST("hPtVsYRecSigRecoPID"), pt, y);
     }
 
     // prompt
     if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
       registry.fill(HIST("hPtRecSigPrompt"), pt);
-      registry.fill(HIST("hPtvsYRecSigPromptRecoSkim"), pt, y);
+      registry.fill(HIST("hPtVsYRecSigPromptRecoSkim"), pt, y);
       if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-        registry.fill(HIST("hPtvsYRecSigPromptRecoTopol"), pt, y);
+        registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), pt, y);
       }
       if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-        registry.fill(HIST("hPtvsYRecSigPromptRecoPID"), pt, y);
+        registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), pt, y);
       }
     }
 
     // non-prompt
     if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
       registry.fill(HIST("hPtRecSigNonPrompt"), pt);
-      registry.fill(HIST("hPtvsYRecSigNonPromptRecoSkim"), pt, y);
+      registry.fill(HIST("hPtVsYRecSigNonPromptRecoSkim"), pt, y);
       if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-        registry.fill(HIST("hPtvsYRecSigNonPromptRecoTopol"), pt, y);
+        registry.fill(HIST("hPtVsYRecSigNonPromptRecoTopol"), pt, y);
       }
       if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-        registry.fill(HIST("hPtvsYRecSigNonPromptRecoPID"), pt, y);
+        registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), pt, y);
       }
     }
 
