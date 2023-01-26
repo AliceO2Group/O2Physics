@@ -44,10 +44,10 @@ struct reso2initializer {
   Produces<aod::ResoV0s> reso2v0s;
   Produces<aod::ResoMCTracks> reso2mctracks;
   Produces<aod::ResoMCParents> reso2mcparents;
+  Produces<aod::ResoMCV0s> reso2mcv0s;
 
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
-  Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0s"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -60,7 +60,6 @@ struct reso2initializer {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 5.0f, "TPC and TOF PID cut (loose, improve performance)"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"};
 
   /// DCA Selections for V0
   // DCAr to PV
@@ -81,7 +80,7 @@ struct reso2initializer {
                                              {"hGoodV0Indices", "hGoodV0Indices", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
                                              {"hMCParentsScan", "hMCParentsScan", {HistType::kTH1F, {{18, 0.0f, 18.0f}}}},
                                            },
-                               OutputObjHandlingPolicy::QAObject};
+                               OutputObjHandlingPolicy::AnalysisObject};
 
   // Pre-filters for efficient process
   // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
@@ -90,33 +89,28 @@ struct reso2initializer {
   Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                      // Global track cuts
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
-  // Resonance pdg lists for MC
-  std::vector<int> resoSearchList = {
-    313,     // K*
-    323,     // K*pm
-    333,     // phi
-    9010221, // f_0(980)
-    10221,   // f_0(1370)
-    9030221, // f_0(1500)
-    10331,   // f_0(1710)
-    113,     // rho(770)
-    213,     // rho(770)pm
-    3224,    // Sigma(1385)+
-    3114,    // Sigma(1385)-
-    3124,    // Lambda(1520)0
-    3324,    // Xi(1530)0
-    123314,  // Xi(1820)
-    123324   // Xi(1820)-0
-  };
+  // MC Resonance parent filter
+  Partition<aod::McParticles> selectedMCParticles = (aod::mcparticle::pdgCode == 313)        // K*
+                                                    || (aod::mcparticle::pdgCode == 323)     // K*pm
+                                                    || (aod::mcparticle::pdgCode == 333)     // phi
+                                                    || (aod::mcparticle::pdgCode == 9010221) // f_0(980)
+                                                    || (aod::mcparticle::pdgCode == 10221)   // f_0(1370)
+                                                    || (aod::mcparticle::pdgCode == 9030221) // f_0(1500)
+                                                    || (aod::mcparticle::pdgCode == 10331)   // f_0(1710)
+                                                    || (aod::mcparticle::pdgCode == 113)     // rho(770)
+                                                    || (aod::mcparticle::pdgCode == 213)     // rho(770)pm
+                                                    || (aod::mcparticle::pdgCode == 3224)    // Sigma(1385)+
+                                                    || (aod::mcparticle::pdgCode == 3124)    // Sigma(1385)-
+                                                    || (aod::mcparticle::pdgCode == 3324)    // Xi(1530)0
+                                                    || (aod::mcparticle::pdgCode == 123314)  // Xi(1820)0
+                                                    || (aod::mcparticle::pdgCode == 123324); // Xi(1820)-0
+
   using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
   using ResoV0s = aod::V0Datas;
   using ResoV0sMC = soa::Join<ResoV0s, aod::McV0Labels>;
-
-  Preslice<soa::Filtered<ResoTracks>> tracksbyCollisionID = aod::track::collisionId;
-  Preslice<ResoV0s> v0sbyCollisionID = aod::v0data::collisionId;
 
   template <bool isMC, typename CollisionType, typename TrackType>
   bool IsTrackSelected(CollisionType const& collision, TrackType const& track)
@@ -217,7 +211,7 @@ struct reso2initializer {
                 track.tofNSigmaKa(),
                 track.tofNSigmaPr());
       if constexpr (isMC) {
-        fillMCTracks(track);
+        fillMCTrack(track);
       }
     }
   }
@@ -243,11 +237,14 @@ struct reso2initializer {
                v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
+      if constexpr (isMC) {
+        fillMCV0(v0);
+      }
     }
   }
 
   template <typename TrackType>
-  void fillMCTracks(TrackType const& track)
+  void fillMCTrack(TrackType const& track)
   {
     // ------ Temporal lambda function to prevent error in build
     auto getMothersIndeces = [&](auto const& theMcParticle) {
@@ -266,58 +263,24 @@ struct reso2initializer {
       }
       return lMothersPDGs;
     };
-    auto getDaughtersIndeces = [&](auto const& theMcParticle) {
-      std::vector<int> lDaughtersIndeces{};
-      for (auto& lMother : theMcParticle.template daughters_as<aod::McParticles>()) {
-        LOGF(debug, "   daughter index lMother: %d", lMother.globalIndex());
-        lDaughtersIndeces.push_back(lMother.globalIndex());
-      }
-      return lDaughtersIndeces;
-    };
-    auto getDaughtersPDGCodes = [&](auto const& theMcParticle) {
-      std::vector<int> lDaughtersPDGs{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
-        LOGF(debug, "   daughter pdgcode lMother: %d", lMother.pdgCode());
-        lDaughtersPDGs.push_back(lMother.pdgCode());
-      }
-      return lDaughtersPDGs;
-    };
     // ------
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
-    std::vector<int> daughters = {-1, -1};
-    std::vector<int> daughterPDGs = {-1, -1};
     if (track.has_mcParticle()) {
       //
       // Get the MC particle
       const auto& particle = track.mcParticle();
       if (particle.has_mothers()) {
-        // TODO: Mothers can be more than 2 ??
         mothers = getMothersIndeces(particle);
         motherPDGs = getMothersPDGCodes(particle);
       }
-      if (particle.has_daughters()) {
-        daughters = getDaughtersIndeces(particle);
-        daughterPDGs = getDaughtersPDGCodes(particle);
-      }
-      // Prevent segfaults
-      // TODO: Check if this is the best way to do it
-      // More than 2 daughters/mothers is not supported
       while (mothers.size() < 3) {
         mothers.pop_back();
         motherPDGs.pop_back();
       }
-      while (daughters.size() < 3) {
-        daughters.pop_back();
-        daughterPDGs.pop_back();
-      }
       reso2mctracks(particle.pdgCode(),
                     mothers[0],
                     motherPDGs[0],
-                    // &mothers[0],    // Do we need this?
-                    // &motherPDGs[0],
-                    // &daughters[0],
-                    // &daughterPDGs[0],
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
     } else {
@@ -325,13 +288,19 @@ struct reso2initializer {
       reso2mctracks(0,
                     mothers[0],
                     motherPDGs[0],
-                    // &mothers[0],
-                    // &motherPDGs[0],
-                    // &daughters[0],
-                    // &daughterPDGs[0],
                     0,
                     0);
     }
+  }
+  // Additonoal information for MC V0s
+  template <typename V0Type>
+  void fillMCV0(V0Type const& v0)
+  {
+    // TODO: Update this to get the MC V0
+    reso2mcv0s(0,
+               0,
+               0,
+               0);
   }
 
   void init(InitContext&)
@@ -382,6 +351,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0Data, "Process for data", true);
 
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processTrackMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
                       aod::McCollisions const& mcCols, soa::Filtered<ResoTracksMC> const& tracks,
                       aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
@@ -399,39 +369,42 @@ struct reso2initializer {
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
-  }
-  PROCESS_SWITCH(reso2initializer, processTrackMC, "Process for MC", false);
 
-  void processTrueMC(aod::McParticles const& mcParticles)
-  {
     // Loop over all MC particles
-    for (auto& mcParticle : mcParticles) {
-      // LOGF(info, "MC particle ID: %d", mcParticle.globalIndex());
-      // Get the MC particle
-      auto position = std::find(resoSearchList.begin(), resoSearchList.end(), abs(mcParticle.pdgCode()));
-      qaRegistry.fill(HIST("hMCParentsScan"), 17);
-      if (position != resoSearchList.end()) {
-        // LOGF(info, "MC particle PDG: %d", mcParticle.pdgCode());
-        reso2mcparents(mcParticle.pdgCode(),
-                       mcParticle.isPhysicalPrimary(),
-                       mcParticle.producedByGenerator(),
-                       mcParticle.pt(),
-                       mcParticle.px(),
-                       mcParticle.py(),
-                       mcParticle.pz(),
-                       mcParticle.eta(),
-                       mcParticle.phi());
-        qaRegistry.fill(HIST("hMCParentsScan"), position - resoSearchList.begin());
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+    for (auto& mcPart : mcParts) {
+      std::vector<int> daughterPDGs;
+      if (mcPart.has_daughters()) {
+        auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
+        auto daughter02 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[1] - mcParticles.offset());
+        daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
+      } else {
+        daughterPDGs = {-1, -1};
       }
+      reso2mcparents(resoCollisions.lastIndex(),
+                     mcPart.globalIndex(),
+                     mcPart.pdgCode(),
+                     daughterPDGs[0], daughterPDGs[1],
+                     mcPart.isPhysicalPrimary(),
+                     mcPart.producedByGenerator(),
+                     mcPart.pt(),
+                     mcPart.px(),
+                     mcPart.py(),
+                     mcPart.pz(),
+                     mcPart.eta(),
+                     mcPart.phi(),
+                     mcPart.y());
+      daughterPDGs.clear();
     }
   }
-  PROCESS_SWITCH(reso2initializer, processTrueMC, "Process for MC True", false);
+  PROCESS_SWITCH(reso2initializer, processTrackMC, "Process for MC", false);
 
   void processTrackV0MC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
                         aod::McCollisions const& mcCols, soa::Filtered<ResoTracksMC> const& tracks,
                         ResoV0sMC const& V0s,
-                        aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
+                        soa::Filtered<aod::McParticles> const& mcParticles, aod::BCsWithTimestamps const& bcs)
   {
+    // TODO: this process is not working yet, need to investigate the issue. For now, we use the processTrackMC
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     if (!colCuts.isSelected(collision))
       return;
@@ -446,6 +419,33 @@ struct reso2initializer {
     // Loop over tracks
     fillTracks<true>(collision, tracks);
     fillV0s<true>(collision, V0s, tracks);
+
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+    for (auto& mcPart : mcParts) {
+      std::vector<int> daughterPDGs;
+      if (mcPart.has_daughters()) {
+        auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
+        auto daughter02 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[1] - mcParticles.offset());
+        daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
+      } else {
+        daughterPDGs = {-1, -1};
+      }
+      reso2mcparents(resoCollisions.lastIndex(),
+                     mcPart.globalIndex(),
+                     mcPart.pdgCode(),
+                     daughterPDGs[0], daughterPDGs[1],
+                     mcPart.isPhysicalPrimary(),
+                     mcPart.producedByGenerator(),
+                     mcPart.pt(),
+                     mcPart.px(),
+                     mcPart.py(),
+                     mcPart.pz(),
+                     mcPart.eta(),
+                     mcPart.phi(),
+                     mcPart.y());
+      daughterPDGs.clear();
+    }
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0MC, "Process for MC", false);
 };

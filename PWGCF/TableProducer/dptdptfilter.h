@@ -29,8 +29,10 @@ namespace o2
 {
 namespace aod
 {
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>::iterator;
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
+using CollisionsEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
+using CollisionEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
@@ -68,11 +70,13 @@ enum DataType {
 /// \brief The detector used to estimate centrality/multiplicity
 enum CentMultEstimatorType {
   kNOCM = 0,           ///< do not use centrality/multiplicity estimator
-  kV0M,                ///< V0M centrality/multiplicity estimator
-  kV0A,                ///< V0A centrality/multiplicity estimator
-  kV0C,                ///< V0C centrality/multiplicity estimator
-  kCL0,                ///< CL0 centrality/multiplicity estimator
-  kCL1,                ///< CL1 centrality/multiplicity estimator
+  kV0M,                ///< V0M centrality/multiplicity estimator Run 1/2
+  kCL0,                ///< CL0 centrality/multiplicity estimator Run 1/2
+  kCL1,                ///< CL1 centrality/multiplicity estimator Run 1/2
+  kFV0A,               ///< FV0A centrality/multiplicity estimator Run 3
+  kFT0M,               ///< FT0M centrality/multiplicity estimator Run 3
+  kFT0A,               ///< FT0A centrality/multiplicity estimator Run 3
+  kFT0C,               ///< FT0C centrality/multiplicity estimator Run 3
   knCentMultEstimators ///< number of centrality/mutiplicity estimator
 };
 
@@ -242,6 +246,18 @@ inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
 {
   if (datastr == "V0M") {
     return kV0M;
+  } else if (datastr == "CL0") {
+    return kCL0;
+  } else if (datastr == "CL1") {
+    return kCL1;
+  } else if (datastr == "FV0A") {
+    return kFV0A;
+  } else if (datastr == "FT0M") {
+    return kFT0M;
+  } else if (datastr == "FT0A") {
+    return kFT0A;
+  } else if (datastr == "FT0C") {
+    return kFT0C;
   } else if (datastr == "NOCM") {
     return kNOCM;
   } else {
@@ -328,6 +344,13 @@ inline bool triggerSelection<aod::CollisionEvSel>(aod::CollisionEvSel const& col
   return triggerSelectionReco(collision);
 }
 
+/// \brief Trigger selection for reconstructed collision tables with Run 2 centrality/multiplicity
+template <>
+inline bool triggerSelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision)
+{
+  return triggerSelectionReco(collision);
+}
+
 /// \brief Trigger selection for reconstructed collision tables with centrality/multiplicity
 template <>
 inline bool triggerSelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision)
@@ -338,6 +361,13 @@ inline bool triggerSelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent co
 /// \brief Trigger selection for detector level collision tables without centrality/multiplicity
 template <>
 inline bool triggerSelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision)
+{
+  return triggerSelectionReco(collision);
+}
+
+/// \brief Trigger selection for detector level collision tables with Run 2 centrality/multiplicity
+template <>
+inline bool triggerSelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const& collision)
 {
   return triggerSelectionReco(collision);
 }
@@ -393,16 +423,51 @@ inline float extractMultiplicity(CollisionObject const& collision)
 template <typename CollisionObject>
 inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 {
+  auto getPercentile = [&centmult](auto mult) {
+    if (mult < 100 && 0 < mult) {
+      centmult = mult;
+      return true;
+    }
+    return false;
+  };
   bool centmultsel = false;
-  switch (fCentMultEstimator) {
-    case kV0M:
-      if (collision.centRun2V0M() < 100 && 0 < collision.centRun2V0M()) {
-        centmult = collision.centRun2V0M();
-        centmultsel = true;
-      }
-      break;
-    default:
-      break;
+  if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
+    switch (fCentMultEstimator) {
+      case kV0M:
+        centmultsel = getPercentile(collision.centRun2V0M());
+        break;
+      case kCL0:
+        centmultsel = getPercentile(collision.centRun2CL0());
+        break;
+      case kCL1:
+        centmultsel = getPercentile(collision.centRun2CL1());
+        break;
+      default:
+        break;
+    }
+  }
+  if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
+    switch (fCentMultEstimator) {
+      case kFV0A:
+        centmultsel = getPercentile(collision.centFV0A());
+        break;
+      case kFT0M:
+        centmultsel = getPercentile(collision.centFT0M());
+        break;
+      case kFT0A:
+        centmultsel = getPercentile(collision.centFT0A());
+        break;
+      case kFT0C:
+        centmultsel = getPercentile(collision.centFT0C());
+        break;
+      default:
+        break;
+    }
   }
   return centmultsel;
 }
@@ -438,6 +503,13 @@ inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent
   return centralitySelectionMult(collision, centmult);
 }
 
+/// \brief Centrality selection for reconstructed and detector level collision tables with Run 2 centrality/multiplicity information
+template <>
+inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision, float& centmult)
+{
+  return centralitySelectionMult(collision, centmult);
+}
+
 /// \brief Centrality selection for reconstructed and detector level collision tables without centrality/multiplicity information
 template <>
 inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision, float& centmult)
@@ -455,6 +527,13 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollision
 /// \brief Centrality selection for detector level collision tables with centrality/multiplicity
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision, float& centmult)
+{
+  return centralitySelectionMult(collision, centmult);
+}
+
+/// \brief Centrality selection for detector level collision tables with Run 2 centrality/multiplicity
+template <>
+inline bool centralitySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
   return centralitySelectionMult(collision, centmult);
 }

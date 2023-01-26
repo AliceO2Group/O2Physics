@@ -472,12 +472,12 @@ struct CorrelationTask {
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
 
-        registry.fill(HIST("eventcount_mixed"), bin);
         mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
       }
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
+      registry.fill(HIST("eventcount_mixed"), bin);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
 
       if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {

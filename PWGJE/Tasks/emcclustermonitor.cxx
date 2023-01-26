@@ -122,6 +122,10 @@ struct ClusterMonitor {
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
     mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
     mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});
+    mHistManager.add("clusterTM_dEtadTN", "cluster trackmatching dEta/TN", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0, 10}});  // dEta compared to the Nth closest track
+    mHistManager.add("clusterTM_dPhiTN", "cluster trackmatching dEta/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0, 10}}); // dPhi compared to the Nth closest track
+    mHistManager.add("clusterTM_dRTN", "cluster trackmatching dR/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {10, 0, 10}});     // dR compared to the Nth closest track
+    mHistManager.add("clusterTM_NTrack", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{10, 0, 10}});              // how many tracks are matched
     mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05)", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});
 
     // add histograms per supermodule
@@ -261,17 +265,20 @@ struct ClusterMonitor {
         // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
         LOG(debug) << "Pt of match" << match.track().pt();
         // only consider closest match
+        dEta = match.track().eta() - cluster.eta();
+        dPhi = match.track().phi() - cluster.phi();
         if (t == 0) {
-          dEta = match.track().eta() - cluster.eta();
-          dPhi = match.track().phi() - cluster.phi();
           if (dEta < 0.05 && dPhi < 0.05) {
             mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track().p(), cluster.energy());
           }
           mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi);
         }
-
+        mHistManager.fill(HIST("clusterTM_dEtadTN"), dEta, t);
+        mHistManager.fill(HIST("clusterTM_dPhiTN"), dPhi, t);
+        mHistManager.fill(HIST("clusterTM_dRTN"), std::sqrt(dPhi * dPhi + dEta * dEta), t);
         t++;
       }
+      mHistManager.fill(HIST("clusterTM_NTrack"), t);
     }
     for (int supermoduleID = 0; supermoduleID < 20; supermoduleID++) {
       mHistManager.fill(HIST("numberOfClustersSMEvents"), numberOfClustersSM[supermoduleID], supermoduleID);

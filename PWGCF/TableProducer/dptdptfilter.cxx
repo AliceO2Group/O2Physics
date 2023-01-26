@@ -143,7 +143,7 @@ using namespace dptdptfilter;
 
 struct DptDptFilter {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 1"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
+  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
@@ -629,11 +629,17 @@ struct DptDptFilter {
   void processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks);
   PROCESS_SWITCH(DptDptFilter, processWithCent, "Process reco with centrality", false);
 
+  void processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks);
+  PROCESS_SWITCH(DptDptFilter, processWithRun2Cent, "Process reco with Run !/2 centrality", false);
+
   void processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks);
   PROCESS_SWITCH(DptDptFilter, processWithoutCent, "Process reco without centrality", false);
 
   void processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks);
   PROCESS_SWITCH(DptDptFilter, processWithCentPID, "Process PID reco with centrality", false);
+
+  void processWithRun2CentPID(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPID const& ftracks);
+  PROCESS_SWITCH(DptDptFilter, processWithRun2CentPID, "Process PID reco with centrality", false);
 
   void processWithoutCentPID(aod::CollisionEvSel const& collision, DptDptFullTracksPID const& ftracks);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentPID, "Process PID reco without centrality", false);
@@ -641,11 +647,17 @@ struct DptDptFilter {
   void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
 
+  void processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
+  PROCESS_SWITCH(DptDptFilter, processWithRun2CentDetectorLevel, "Process MC detector level with centrality", false);
+
   void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
 
   void processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithCentPIDDetectorLevel, "Process PID MC detector level with centrality", false);
+
+  void processWithRun2CentPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
+  PROCESS_SWITCH(DptDptFilter, processWithRun2CentPIDDetectorLevel, "Process PID MC detector level with centrality", false);
 
   void processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentPIDDetectorLevel, "Process PID MC detector level without centrality", false);
@@ -653,11 +665,24 @@ struct DptDptFilter {
   template <typename CollisionObject, typename ParticlesList>
   void processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
 
+  template <typename CollisionsGroup, typename AllCollisions>
+  void processGeneratorLevel(aod::McCollision const& mccollision,
+                             CollisionsGroup const& collisions,
+                             aod::McParticles const& mcparticles,
+                             AllCollisions const& allcollisions,
+                             float defaultcent);
+
   void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
                                      soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
                                      aod::McParticles const& mcparticles,
                                      aod::CollisionsEvSelCent const& allcollisions);
   PROCESS_SWITCH(DptDptFilter, processWithCentGeneratorLevel, "Process generated with centrality", false);
+
+  void processWithRun2CentGeneratorLevel(aod::McCollision const& mccollision,
+                                         soa::SmallGroups<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>> const& collisions,
+                                         aod::McParticles const& mcparticles,
+                                         aod::CollisionsEvSelRun2Cent const& allcollisions);
+  PROCESS_SWITCH(DptDptFilter, processWithRun2CentGeneratorLevel, "Process generated with centrality", false);
 
   void processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
                                         soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
@@ -874,7 +899,7 @@ void DptDptFilter::filterTracks<DptDptFullTracksPIDDetLevel>(DptDptFullTracksPID
 }
 
 template <typename CollisionObject, typename TracksObject>
-void DptDptFilter::processReconstructed(CollisionObject const& collision, TracksObject const& ftracks, float passedcent)
+void DptDptFilter::processReconstructed(CollisionObject const& collision, TracksObject const& ftracks, float tentativecentmult)
 {
   using namespace dptdptfilter;
 
@@ -882,11 +907,11 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
   float mult = extractMultiplicity(collision);
 
-  fhCentMultB->Fill(passedcent);
+  fhCentMultB->Fill(tentativecentmult);
   fhMultB->Fill(mult);
   fhVertexZB->Fill(collision.posZ());
   uint8_t acceptedevent = uint8_t(false);
-  float centormult = passedcent;
+  float centormult = tentativecentmult;
   if (IsEvtSelected(collision, centormult)) {
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
@@ -916,6 +941,11 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
 void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks)
 {
+  processReconstructed(collision, ftracks, collision.centFT0M());
+}
+
+void DptDptFilter::processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks)
+{
   processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
 
@@ -925,6 +955,11 @@ void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptD
 }
 
 void DptDptFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks)
+{
+  processReconstructed(collision, ftracks, collision.centFT0M());
+}
+
+void DptDptFilter::processWithRun2CentPID(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPID const& ftracks)
 {
   processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
@@ -936,6 +971,11 @@ void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, D
 
 void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
+  processReconstructed(collision, ftracks, collision.centFT0M());
+}
+
+void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
+{
   processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
 
@@ -945,6 +985,11 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 }
 
 void DptDptFilter::processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
+{
+  processReconstructed(collision, ftracks, collision.centFT0M());
+}
+
+void DptDptFilter::processWithRun2CentPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
   processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
@@ -980,27 +1025,28 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, Particle
   }
 }
 
-void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccollision,
-                                                 soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
-                                                 aod::McParticles const& mcparticles,
-                                                 aod::CollisionsEvSelCent const& allcollisions)
+template <typename CollisionsGroup, typename AllCollisions>
+void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
+                                         CollisionsGroup const& collisions,
+                                         aod::McParticles const& mcparticles,
+                                         AllCollisions const& allcollisions,
+                                         float defaultcent)
 {
   using namespace dptdptfilter;
 
-  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithCentGeneratorLevel(). New generated collision with %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
+  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processGeneratorLevel(). New generated collision with %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
 
   if (collisions.size() > 1) {
-    LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithCentGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first accepted for centrality/multiplicity classes extraction");
+    LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first accepted for centrality/multiplicity classes extraction");
   }
 
   for (auto& tmpcollision : collisions) {
     if (tmpcollision.has_mcCollision()) {
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
-        aod::CollisionsEvSelCent::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
-        float centmult = collision.centRun2V0M();
-        if (IsEvtSelected(collision, centmult)) {
+        typename AllCollisions::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
+        if (IsEvtSelected(collision, defaultcent)) {
           fhTrueVertexZAA->Fill((mccollision.posZ()));
-          processGenerated(mccollision, mcparticles, centmult);
+          processGenerated(mccollision, mcparticles, defaultcent);
           break; /* TODO: only processing the first reconstructed accepted collision */
         }
       }
@@ -1008,33 +1054,28 @@ void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccolli
   }
 }
 
+void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccollision,
+                                                 soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
+                                                 aod::McParticles const& mcparticles,
+                                                 aod::CollisionsEvSelCent const& allcollisions)
+{
+  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
+}
+
+void DptDptFilter::processWithRun2CentGeneratorLevel(aod::McCollision const& mccollision,
+                                                     soa::SmallGroups<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>> const& collisions,
+                                                     aod::McParticles const& mcparticles,
+                                                     aod::CollisionsEvSelRun2Cent const& allcollisions)
+{
+  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
+}
+
 void DptDptFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
                                                     soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
                                                     aod::McParticles const& mcparticles,
                                                     aod::CollisionsEvSel const& allcollisions)
 {
-  using namespace dptdptfilter;
-
-  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithoutCentGeneratorLevel(). New generated collision with %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
-
-  if (collisions.size() > 1) {
-    LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithoutCentGeneratorLevel(). Generated collision with %d reconstructed collisions. Processing only the first accepted for centrality/multiplicity classes extraction", collisions.size());
-  }
-
-  for (auto& tmpcollision : collisions) {
-    if (tmpcollision.has_mcCollision()) {
-      if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
-        aod::CollisionsEvSel::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
-        /* we assign a default value */
-        float centmult = 50.0f;
-        if (IsEvtSelected(collision, centmult)) {
-          fhTrueVertexZAA->Fill((mccollision.posZ()));
-          processGenerated(mccollision, mcparticles, centmult);
-          break; /* TODO: only processing the first reconstructed accepted collision */
-        }
-      }
-    }
-  }
+  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
 }
 
 void DptDptFilter::processVertexGenerated(aod::McCollisions const& mccollisions)

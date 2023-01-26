@@ -17,6 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
@@ -59,7 +60,7 @@ struct JetFinderHFTask {
   OutputObj<TH1F> hJetPtTrue{"h_jet_pt_true"};
   OutputObj<TH1F> hD0Pt{"h_D0_pt"};
 
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   TrackSelection globalTracks;
 

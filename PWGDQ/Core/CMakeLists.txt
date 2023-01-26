@@ -12,6 +12,10 @@
 o2physics_add_library(PWGDQCore
                SOURCES  VarManager.cxx
                         HistogramManager.cxx
+			HistogramsLibrary.cxx
+			CutsLibrary.cxx
+			MixingLibrary.cxx
+			MCSignalLibrary.cxx
                         MixingHandler.cxx
                         AnalysisCut.cxx
                         AnalysisCompositeCut.cxx

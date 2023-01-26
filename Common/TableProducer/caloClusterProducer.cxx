@@ -286,8 +286,9 @@ struct caloClusterProducerTask {
             colId,
             kPHOS, mom.X(), mom.Y(), mom.Z(), e,
             mod, clu.getMultiplicity(), posX, posZ,
+            globaPos.X(), globaPos.Y(), globaPos.Z(),
             clu.getTime(), clu.getNExMax(),
-            lambdaShort, lambdaLong,
+            lambdaLong, lambdaShort,
             trackdist, trackindex,
             clu.firedTrigger(),
             clu.getDistanceToBadChannel());

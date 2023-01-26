@@ -98,10 +98,13 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                       //! X pos
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                       //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                       //! Z position of the decay vertex
 // For MC
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! Index of the corresponding MC particle
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
-DECLARE_SOA_COLUMN(MothersId, motherId, int);  //! Id of the mother particle
-DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! PDG code of the mother particle
+DECLARE_SOA_COLUMN(MothersId, motherId, int);        //! Id of the mother particle
+DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int);       //! PDG code of the mother particle
+DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first Daughter particle
+DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::soa::Index<>,
@@ -166,7 +169,11 @@ using ResoMCV0 = ResoMCV0s::iterator;
 
 DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENTS",
                   o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resodaughter::McParticleId,
                   mcparticle::PdgCode,
+                  resodaughter::DaughterPDG1,
+                  resodaughter::DaughterPDG2,
                   resodaughter::IsPhysicalPrimary,
                   resodaughter::ProducedByGenerator,
                   resodaughter::Pt,
@@ -174,7 +181,8 @@ DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENTS",
                   resodaughter::Py,
                   resodaughter::Pz,
                   resodaughter::Eta,
-                  resodaughter::Phi);
+                  resodaughter::Phi,
+                  mcparticle::Y);
 using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
