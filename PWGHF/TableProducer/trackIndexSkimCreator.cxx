@@ -37,7 +37,6 @@
 #include "DetectorsBase/GeometryManager.h"     // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-
 #include <algorithm>
 
 using namespace o2;
@@ -2257,7 +2256,7 @@ struct HfTrackIndexSkimCreatorVZero {
 
   void processNoCascades(SelectedCollisions const&){
     // dummy
-  };
+  }
 
   PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processNoCascades, "Do not do cascades", true);
 
