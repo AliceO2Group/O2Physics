@@ -70,15 +70,14 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
 using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
-// using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels>;
+using MyEventsWithCentRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
+using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
+constexpr static uint32_t gkEventFillMapRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2;
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -341,16 +340,16 @@ struct AnalysisQvector {
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses
-  void processBarrelQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvector(MyEventsWithCentRun2::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
-    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun2, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   // Process to fill Q vector  using forward tracks in a reduced event table for barrel/muon tracks flow related analyses
-  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
+  void processForwardQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
   {
     // Need to add gkEventFillMap with proper centrality values
-    runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMap, 0u>(collisions, bcs, tracks);
   }
 
   // TODO: dummy function for the case when no process function is enabled
