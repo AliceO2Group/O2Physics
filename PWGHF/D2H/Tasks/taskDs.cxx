@@ -236,7 +236,7 @@ struct HfTaskDs {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kKPlus) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().pdgCode()) == kKPlus) {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
@@ -257,7 +257,7 @@ struct HfTaskDs {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().pdgCode()) == kPiPlus) {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
