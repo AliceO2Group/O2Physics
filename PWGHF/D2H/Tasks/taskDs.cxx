@@ -33,10 +33,16 @@ struct HfTaskDs {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>> recodDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi > 0;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>> recodDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK > 0;
+  Filter dsFlagFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0);
+
+  using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
+  using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
+  using candDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+
+  Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
+  Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Partition<candDsMcReco> recodDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi > 0;
+  Partition<candDsMcReco> recodDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK > 0;
 
   HistogramRegistry registry{
     "registry",
@@ -197,13 +203,9 @@ struct HfTaskDs {
     return;
   }
 
-  void process(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const& candidates)
+  void process(candDsData const& candidates)
   {
     for (auto& candidate : selectedDsToKKPiCand) {
-      // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        continue;
-      }
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
@@ -212,10 +214,6 @@ struct HfTaskDs {
     }
 
     for (auto& candidate : selectedDsToPiKKCand) {
-      // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        continue;
-      }
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
@@ -224,20 +222,15 @@ struct HfTaskDs {
     }
   }
 
-  void processMc(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const&)
+  void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
     for (auto& candidate : recodDsToKKPiCand) {
-      // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        continue;
-      }
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().pdgCode()) == kKPlus) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDS, true);
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>().pdgCode()) == kKPlus) {
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>(), pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         fillHistoMCRec(candidate, candidate.isSelDsToKKPi());
@@ -250,15 +243,11 @@ struct HfTaskDs {
     }
 
     for (auto& candidate : recodDsToPiKKCand) {
-      // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        continue;
-      }
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().pdgCode()) == kPiPlus) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDS, true);
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>().pdgCode()) == kPiPlus) {
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>(), pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         fillHistoMCRec(candidate, candidate.isSelDsToPiKK());
