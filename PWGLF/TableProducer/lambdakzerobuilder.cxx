@@ -109,18 +109,19 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
+using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe>;
+using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe, aod::McTrackLabels>;
+using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 
 // For MC association in pre-selection
-using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+using LabeledTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeroBuilder {
   Produces<aod::StoredV0Datas> v0data;
@@ -132,9 +133,6 @@ struct lambdakzeroBuilder {
 
   // use auto-detect configuration
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
-
-  // Topological selection criteria
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -171,7 +169,6 @@ struct lambdakzeroBuilder {
 
   enum v0step { kV0All = 0,
                 kV0TPCrefit,
-                kV0CrossedRows,
                 kV0DCAxy,
                 kV0DCADau,
                 kV0CosPA,
@@ -426,12 +423,6 @@ struct lambdakzeroBuilder {
 
     // Passes TPC refit
     statisticsRegistry.v0stats[kV0TPCrefit]++;
-    if (posTrack.tpcNClsCrossedRows() < mincrossedrows || negTrack.tpcNClsCrossedRows() < mincrossedrows) {
-      return false;
-    }
-
-    // passes crossed rows
-    statisticsRegistry.v0stats[kV0CrossedRows]++;
     if (fabs(posTrack.dcaXY()) < dcapostopv || fabs(negTrack.dcaXY()) < dcanegtopv) {
       return false;
     }
@@ -609,8 +600,37 @@ struct lambdakzeroPreselector {
   // dEdx pre-selection compatibility
   Configurable<float> ddEdxPreSelectionWindow{"ddEdxPreSelectionWindow", 7, "Nsigma window for dE/dx preselection"};
 
+  // tpc quality pre-selection
+  Configurable<int> dTPCNCrossedRows{"dTPCNCrossedRows", 50, "Minimum TPC crossed rows"};
+
+  // context-aware selections
+  Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
+
   void init(InitContext const&) {}
 
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// function to check track quality
+  template <class TTracksTo, typename TV0Object>
+  void checkTrackQuality(TV0Object const& lV0Candidate, bool& lIsInteresting, bool lIsGamma, bool lIsK0Short, bool lIsLambda, bool lIsAntiLambda, bool lIsHypertriton, bool lIsAntiHypertriton)
+  {
+    lIsInteresting = false;
+    auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
+    auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
+
+    // No baryons in decay
+    if ((lIsGamma || lIsK0Short) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
+      lIsInteresting = true;
+    // With baryons in decay
+    if (lIsLambda && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      lIsInteresting = true;
+    if (lIsAntiLambda && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      lIsInteresting = true;
+    if (lIsHypertriton && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      lIsInteresting = true;
+    if (lIsHypertriton && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      lIsInteresting = true;
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTracksTo, typename TV0Object>
   void checkPDG(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
@@ -680,26 +700,26 @@ struct lambdakzeroPreselector {
       lIsK0Short = 1;
       lIsInteresting = 1;
     }
-    if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+    if ((TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         ddEdxPreSelectLambda) {
       lIsLambda = 1;
       lIsInteresting = 1;
     }
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         ddEdxPreSelectAntiLambda) {
       lIsAntiLambda = 1;
       lIsInteresting = 1;
     }
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow &&
+        (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         ddEdxPreSelectHypertriton) {
       lIsHypertriton = 1;
       lIsInteresting = 1;
     }
-    if (TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
+    if ((TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         ddEdxPreSelectAntiHypertriton) {
       lIsAntiHypertriton = 1;
       lIsInteresting = 1;
@@ -707,12 +727,15 @@ struct lambdakzeroPreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all V0s are built. It will simply tag everything as true.
-  void processBuildAll(aod::V0s const& v0table)
+  void processBuildAll(aod::V0s const& v0table, TracksWithExtra const&)
   {
-    for (int ii = 0; ii < v0table.size(); ii++)
-      v0tags(true,
+    for (auto& v0 : v0table) {
+      bool lIsQualityInteresting = false;
+      checkTrackQuality<TracksWithExtra>(v0, lIsQualityInteresting, true, true, true, true, true, true);
+      v0tags(lIsQualityInteresting,
              true, true, true, true, true, true,
              true, true, true, true, true, true);
+    }
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildAll, "Switch to build all V0s", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -727,8 +750,11 @@ struct lambdakzeroPreselector {
       bool lIsTrueHypertriton = false;
       bool lIsTrueAntiHypertriton = false;
 
+      bool lIsQualityInteresting = false;
+
       checkPDG<LabeledTracks>(v0, lIsInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
-      v0tags(lIsInteresting,
+      checkTrackQuality<LabeledTracks>(v0, lIsQualityInteresting, true, true, true, true, true, true);
+      v0tags(lIsInteresting * lIsQualityInteresting,
              lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
              true, true, true, true, true, true);
     }
@@ -746,8 +772,11 @@ struct lambdakzeroPreselector {
       bool lIsdEdxHypertriton = false;
       bool lIsdEdxAntiHypertriton = false;
 
+      bool lIsQualityInteresting = false;
+
       checkdEdx<TracksWithPID>(v0, lIsInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      v0tags(lIsInteresting,
+      checkTrackQuality<TracksWithPID>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      v0tags(lIsInteresting * lIsQualityInteresting,
              true, true, true, true, true, true,
              lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
     }
@@ -773,9 +802,12 @@ struct lambdakzeroPreselector {
       bool lIsdEdxHypertriton = false;
       bool lIsdEdxAntiHypertriton = false;
 
+      bool lIsQualityInteresting = false;
+
       checkPDG<TracksWithPIDandLabels>(v0, lIsTrueInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
       checkdEdx<TracksWithPIDandLabels>(v0, lIsdEdxInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      v0tags(lIsTrueInteresting * lIsdEdxInteresting,
+      checkTrackQuality<TracksWithPIDandLabels>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      v0tags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
              lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
              lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
     }
