@@ -242,10 +242,10 @@ struct DQBarrelTrackSelection {
   }
 
   // Templated function instantianed for all of the process functions
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runTrackSelection(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel)
+  template <uint32_t TTrackFillMap, typename TTracks>
+  void runTrackSelection(aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel)
   {
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = bcs.begin();         // check just the first bc to get the run number
     if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
       auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
       VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -259,12 +259,8 @@ struct DQBarrelTrackSelection {
 
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
-    //    int CollisionId = -1;
-
+    
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-    // fill event information which might be needed in histograms or cuts that combine track and event properties
-    VarManager::FillEvent<TEventFillMap>(collision);
-
     for (auto& track : tracksBarrel) {
       filterMap = uint32_t(0);
       if (!track.has_collision()) {
@@ -288,15 +284,15 @@ struct DQBarrelTrackSelection {
     } // end loop over tracks
   }
 
-  void processSelection(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks)
+  void processSelection(aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks)
   {
-    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collision, bcs, tracks);
+    runTrackSelection<gkTrackFillMap>(bcs, tracks);
   }
-  void processSelectionTiny(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyBarrelTracksTiny const& tracks)
+  void processSelectionTiny(aod::BCsWithTimestamps const& bcs, MyBarrelTracksTiny const& tracks)
   {
-    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collision, bcs, tracks);
+    runTrackSelection<gkTrackFillMap>(bcs, tracks);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyBarrelTracks&)
   {
     // do nothing
   }
@@ -347,16 +343,14 @@ struct DQMuonsSelection {
     }
   }
 
-  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void runMuonSelection(TEvent const& collision, aod::BCs const& bcs, TMuons const& muons)
+  template <uint32_t TMuonFillMap, typename TMuons>
+  void runMuonSelection(TMuons const& muons)
   {
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(muons.size());
-    //    int CollisionId = -1;
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
     // fill event information which might be needed in histograms or cuts that combine track and event properties
-    VarManager::FillEvent<TEventFillMap>(collision);
 
     for (auto& muon : muons) {
       filterMap = uint32_t(0);
@@ -381,11 +375,11 @@ struct DQMuonsSelection {
     } // end loop over tracks
   }
 
-  void processSelection(MyEvents::iterator const& collision, aod::BCs const& bcs, MyMuons const& muons)
+  void processSelection(MyMuons const& muons)
   {
-    runMuonSelection<gkEventFillMap, gkMuonFillMap>(collision, bcs, muons);
+    runMuonSelection<gkMuonFillMap>(muons);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyMuons&)
   {
     // do nothing
   }
