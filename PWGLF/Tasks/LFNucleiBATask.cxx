@@ -1117,7 +1117,7 @@ struct LFNucleiBATask {
         if (std::abs(track.tpcNSigmaPr()) < nsigmaTPCcut && TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton))) < yCut) {
           if (track.sign() > 0) {
             histos.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - fMassProton * fMassProton, track.pt());
-            // histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPtCut"), track.pt(), track.tofExpSignalDiffPr());
+            histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPtCut"), track.pt(), track.tofExpSignalDiffPr());
 
             if (enableEvTimeSplitting) {
               if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
