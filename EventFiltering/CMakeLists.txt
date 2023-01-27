@@ -63,9 +63,14 @@ o2physics_add_dpl_workflow(je-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(fje-filter
+                           SOURCES PWGJE/fullJetFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lf-strangeness-filter
                            SOURCES PWGLF/strangenessFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mult-filter

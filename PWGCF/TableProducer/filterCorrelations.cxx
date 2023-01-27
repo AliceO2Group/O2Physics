@@ -12,6 +12,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
 #include "MathUtils/detail/TypeTruncation.h"
 
 #include "PWGCF/DataModel/CorrelationsDerived.h"
@@ -42,7 +44,7 @@ using CFMultiplicity = CFMultiplicities::iterator;
 } // namespace o2::aod
 
 struct FilterCF {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")

@@ -10,36 +10,6 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief A QA task for DG events
-///
-///     options:
-///           DiffCuts.mNDtcoll(4)
-///           DiffCuts.mMinNBCs(7)
-///           DiffCuts.mMinNTracks(0)
-///           DiffCuts.mMaxNTracks(10000)
-///           DiffCuts.mNetCharges({0})
-///           DiffCuts.mPidHypo(211)
-///           DiffCuts.mMinPosz(-1000.)
-///           DiffCuts.mMaxPosz(1000.)
-///           DiffCuts.mMinPt(0.)
-///           DiffCuts.mMaxPt(1000.)
-///           DiffCuts.mMinEta(-1.)
-///           DiffCuts.mMaxEta(1.)
-///           DiffCuts.mMinIVM(0.)
-///           DiffCuts.mMaxIVM(1000.)
-///           DiffCuts.mMaxnSigmaTPC(1000.)
-///           DiffCuts.mMaxnSigmaTOF(1000.)
-///           DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
-///
-///     usage: copts="--configuration json://DiffQAConfig.json -b"
-///
-///           o2-analysis-timestamp $copts |
-///           o2-analysis-track-propagation $copts |
-///           o2-analysis-event-selection $copts |
-///           o2-analysis-ft0-corrected-table $copts |
-///           o2-analysis-trackextension $copts |
-///           o2-analysis-trackselection $copts |
-///           o2-analysis-ud-diff-qa $copts > diffQA.log
-///
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  20.05.2022
 
@@ -56,6 +26,18 @@ using namespace o2::framework::expressions;
 
 struct DiffQA {
 
+  // constants
+  static const int nBCpOrbit = 3564;
+  static const int ns = 20;    // number of BCs to save (used in processF[V0, T0, DD])
+  static const int ncmin = 20; // minimum length of series of empty BCs  (used in processF[V0, T0, DD])
+
+  static constexpr std::string_view hFV0A[ns + 1] = {"fv0A00", "fv0A01", "fv0A02", "fv0A03", "fv0A04", "fv0A05", "fv0A06", "fv0A07", "fv0A08", "fv0A09", "fv0A10", "fv0A11", "fv0A12", "fv0A13", "fv0A14", "fv0A15", "fv0A16", "fv0A17", "fv0A18", "fv0A19", "fv0A20"};
+  static constexpr std::string_view hFT0A[ns + 1] = {"ft0A00", "ft0A01", "ft0A02", "ft0A03", "ft0A04", "ft0A05", "ft0A06", "ft0A07", "ft0A08", "ft0A09", "ft0A10", "ft0A11", "ft0A12", "ft0A13", "ft0A14", "ft0A15", "ft0A16", "ft0A17", "ft0A18", "ft0A19", "ft0A20"};
+  static constexpr std::string_view hFT0C[ns + 1] = {"ft0C00", "ft0C01", "ft0C02", "ft0C03", "ft0C04", "ft0C05", "ft0C06", "ft0C07", "ft0C08", "ft0C09", "ft0C10", "ft0C11", "ft0C12", "ft0C13", "ft0C14", "ft0C15", "ft0C16", "ft0C17", "ft0C18", "ft0C19", "ft0C20"};
+  static constexpr std::string_view hFDDA[ns + 1] = {"fddA00", "fddA01", "fddA02", "fddA03", "fddA04", "fddA05", "fddA06", "fddA07", "fddA08", "fddA09", "fddA10", "fddA11", "fddA12", "fddA13", "fddA14", "fddA15", "fddA16", "fddA17", "fddA18", "fddA19", "fddA20"};
+  static constexpr std::string_view hFDDC[ns + 1] = {"fddC00", "fddC01", "fddC02", "fddC03", "fddC04", "fddC05", "fddC06", "fddC07", "fddC08", "fddC09", "fddC10", "fddC11", "fddC12", "fddC13", "fddC14", "fddC15", "fddC16", "fddC17", "fddC18", "fddC19", "fddC20"};
+
+  // global variables
   float maxdEdxTPC;
   float maxdEdxTOF;
 
@@ -70,53 +52,12 @@ struct DiffQA {
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
   o2::dataformats::bcRanges afbcrs = o2::dataformats::bcRanges("ambiguous_fwdtracks");
 
-  // define histograms
-  // Stat:
-  //  bin  0: all collisions
-  //  bin  1: clean FIT
-  //  bin  2: clean ZDC
-  //  bin  3: clean Calo
-  //  bin  4: no V0s
-  //  bin  5: no Cascades
-  //  bin  6: no FWD tracks
-  //  bin  7: no global tracks which are no vtx tracks
-  //  bin  8: no vtx tracks which are no global tracks
-  //  bin  9: possible ambiguous tracks
-  //  bin 10: possible ambiguous FwdTracks
-  //  bin 11: fraction of PV tracks with TOF hit > minRgtrwTOF
-  //  bin 12: number of tracks >= minimum number
-  //  bin 13: number of tracks <= maximum number
-  //  bin 14: minimum pt <= pt of vtx tracks <= maximum pt
-  //  bin 15: minimum eta <= eta of vtx tracks <= maximum eta
-  //  bin 16: net charge >= minimum net charge
-  //  bin 17: net charge <= maximum net charge
-  //  bin 18: IVM >= minimum IVM
-  //  bin 19: IVM <= maximum IVM
+  // initialize HistogramRegistry
   HistogramRegistry registry{
     "registry",
-    {
-      {"Stat", "#Stat", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
-      {"cleanFIT", "#cleanFIT", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
-      {"Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"rejectedTracks", "#rejectedTracks", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
-      {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
-      {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{120, -6., 6.}, {1000, 0., 1000.}}}},
-      {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{120, -6., 6.0}, {1000, 0., 1000.}}}},
-      {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"netChargeDG", "#netChargeDG", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
-      {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-    }};
+    {}};
 
+  // define abbreviations
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -125,11 +66,74 @@ struct DiffQA {
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;
 
-  void init(InitContext&)
+  void init(InitContext& context)
   {
+    // initialize global variables
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
     diffCuts = (DGCutparHolder)DGCuts;
+
+    // add histograms for the different process functions
+    if (context.mOptions.get<bool>("processMain")) {
+      registry.add("Stat", "#Stat", {HistType::kTH1F, {{20, -0.5, 19.5}}});
+      registry.add("Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("rejectedTracks", "#rejectedTracks", {HistType::kTH1F, {{17, -0.5, 16.5}}});
+      registry.add("tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}});
+      registry.add("vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{120, -6., 6.}, {1000, 0., 1000.}}});
+      registry.add("dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{120, -6., 6.0}, {1000, 0., 1000.}}});
+      registry.add("dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("netChargeDG", "#netChargeDG", {HistType::kTH1F, {{21, -10.5, 10.5}}});
+      registry.add("IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+    }
+    if (context.mOptions.get<bool>("processFewProng")) {
+      registry.add("fpStat", "#fpStat", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+      registry.add("fpPVC", "#fpPVC", {HistType::kTH1F, {{100, 0.5, 100.5}}});
+    }
+    if (context.mOptions.get<bool>("processCleanFIT1")) {
+      registry.add("cleanFIT1", "#cleanFIT1", {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+    }
+    if (context.mOptions.get<bool>("processCleanFIT2")) {
+      registry.add("cleanFIT2", "#cleanFIT2", {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+    }
+    if (context.mOptions.get<bool>("processFV0")) {
+      registry.add("FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {2000, 0., 2000.}}});
+      registry.add("FV0BCNUM", "#FV0BCNUM", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+    }
+    if (context.mOptions.get<bool>("processFT0")) {
+      registry.add("FT0A", "#FT0A", {HistType::kTH2F, {{96, -0.5, 95.5}, {400, 0., 400.}}});
+      registry.add("FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {400, 0., 400.}}});
+      registry.add("FT0ABCNUM", "#FT0ABCNUM", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+      registry.add("FT0CBCNUM", "#FT0CBCNUM", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+      registry.add("dFT0BCNUM", "#dFT0BCNUM", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+
+      // add amplitude histograms
+      for (auto n{0}; n <= ns; n++) {
+        registry.add(hFT0A[n].data(), hFT0A[n].data(), {HistType::kTH1F, {{1000, 0., 1000.}}});
+        registry.add(hFT0C[n].data(), hFT0C[n].data(), {HistType::kTH1F, {{1000, 0., 1000.}}});
+      }
+    }
+    if (context.mOptions.get<bool>("processFDD")) {
+      registry.add("FDDA", "#FDDA", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}});
+      registry.add("FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}});
+      registry.add("FDDBCNUM", "#FDDBCNUM", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+    }
+    if (context.mOptions.get<bool>("processZDC")) {
+      registry.add("ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}});
+    }
+    // if (context.mOptions.get<bool>("processCalo")) {
+    //   registry.add("CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}});
+    //   registry.add("CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}});
+    // }
   }
 
   void run(ProcessingContext& pc)
@@ -175,13 +179,16 @@ struct DiffQA {
     }
   }
 
-  void process(CC const& collision, BCs const& bct0s,
-               TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
-               aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
-               aod::Zdcs& zdcs, aod::Calos& calos,
-               aod::V0s const& v0s, aod::Cascades const& cascades)
+  // ...............................................................................................................
+  void processMain(CC const& collision, BCs const& bct0s,
+                   TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
+                   aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
+                   aod::Zdcs& zdcs, aod::Calos& calos,
+                   aod::V0s const& v0s, aod::Cascades const& cascades)
   {
+    LOGF(debug, "<DiffQA. Collision %d", collision.globalIndex());
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
+
     bool isDGcandidate = true;
     registry.get<TH1>(HIST("Stat"))->Fill(0., isDGcandidate * 1.);
 
@@ -198,16 +205,6 @@ struct DiffQA {
     goodTracks.bindTable(tracks);
     registry.get<TH1>(HIST("globalTracks"))->Fill(goodTracks.size());
 
-    // test influence of BCrange width
-    for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
-      auto bcSlice = udhelpers::compatibleBCs(collision, NDtcoll, bct0s, 0);
-      isDGcandidate = true;
-      for (auto const& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
-      }
-      registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
-    }
-
     // number of vertex tracks with TOF hit
     float rgtrwTOF = 0.;
     for (auto const& track : tracks) {
@@ -217,7 +214,7 @@ struct DiffQA {
       registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.p() * track.sign(), track.tpcSignal());
       if (track.tpcSignal() > maxdEdxTPC) {
         maxdEdxTPC = track.tpcSignal();
-        LOGF(info, "<DiffQA> New maxdEdx TPC %f", maxdEdxTPC);
+        LOGF(debug, "<DiffQA> New maxdEdx TPC %f", maxdEdxTPC);
       }
 
       // TOF hit?
@@ -225,7 +222,7 @@ struct DiffQA {
         registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
         if (track.tofSignal() > maxdEdxTOF) {
           maxdEdxTOF = track.tofSignal();
-          LOGF(info, "<DiffQA> New maxdEdx tOF %f", maxdEdxTOF);
+          LOGF(debug, "<DiffQA> New maxdEdx tOF %f", maxdEdxTOF);
         }
 
         // vertex track with TOF hit?
@@ -436,105 +433,333 @@ struct DiffQA {
         }
       }
     }
-  };
-};
+  }
+  PROCESS_SWITCH(DiffQA, processMain, "Process Main", true);
 
-struct FV0Signals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
-    }};
-
-  void process(aod::FV0A const& fv0)
+  // ...............................................................................................................
+  void processFewProng(CC const& collision, BCs const& bct0s,
+                       aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    // side A
-    for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
-      registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
+    // count collisions
+    registry.get<TH1>(HIST("fpStat"))->Fill(1., 1.);
+
+    // check FT0 to be empty
+    auto bc = collision.foundBC_as<BCs>();
+    if (udhelpers::cleanFT0(bc, 0., 0.)) {
+      // only collisions with empty FT0 arrive here
+      registry.get<TH1>(HIST("fpStat"))->Fill(2., 1.);
+
+      // update #PV contributors in collisions with empty FT0
+      registry.get<TH1>(HIST("fpPVC"))->Fill(collision.numContrib(), 1.);
+    }
+  }
+  PROCESS_SWITCH(DiffQA, processFewProng, "Process FewProng", true);
+
+  // ...............................................................................................................
+  void processCleanFIT1(CC const& collision, BCs const& bct0s,
+                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  {
+    LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
+
+    // test influence of BCrange width using a series of NDtcoll
+    bool isDGcandidate = true;
+    for (int NDtcoll = 0; NDtcoll < 20; NDtcoll++) {
+      auto bcSlice = udhelpers::compatibleBCs(collision, NDtcoll, bct0s, 0);
+      isDGcandidate = true;
+      for (auto const& bc : bcSlice) {
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+      }
+      registry.get<TH2>(HIST("cleanFIT1"))->Fill(NDtcoll, isDGcandidate * 1.);
+    }
+  }
+  PROCESS_SWITCH(DiffQA, processCleanFIT1, "Process CleanFitTest1", true);
+
+  // ...............................................................................................................
+  void processCleanFIT2(CC const& collision, BCs const& bct0s,
+                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  {
+    LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
+
+    // test influence of BCrange width using a series of nMinBC
+    bool isDGcandidate = true;
+    for (int nMinBC = 0; nMinBC < 20; nMinBC++) {
+      auto bcSlice = udhelpers::compatibleBCs(collision, 0, bct0s, nMinBC);
+      isDGcandidate = true;
+      for (auto const& bc : bcSlice) {
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+      }
+      registry.get<TH2>(HIST("cleanFIT2"))->Fill(nMinBC, isDGcandidate * 1.);
+    }
+  }
+  PROCESS_SWITCH(DiffQA, processCleanFIT2, "Process CleanFitTest2", true);
+
+  // ...............................................................................................................
+  void processFV0(aod::FV0As const& fv0s, aod::BCs const&)
+  {
+    LOGF(debug, "<FV0Signals> %d", fv0s.size());
+
+    int64_t lastBCwFV0 = fv0s.begin().bc_as<BCs>().globalBC();
+    auto lastOrbit = lastBCwFV0 / nBCpOrbit;
+    for (auto fv0 : fv0s) {
+
+      // side A
+      for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
+        registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
+      }
+
+      // sequence of BCs
+      auto bc = fv0.bc_as<BCs>();
+      int64_t aBC = bc.globalBC();
+      auto aOrbit = aBC / nBCpOrbit;
+      auto ampA = udhelpers::FV0AmplitudeA(bc.foundFV0());
+      if (ampA > 0.) {
+        // require both BCs to be in same orbit
+        if (aOrbit == lastOrbit)
+          registry.get<TH1>(HIST("FV0BCNUM"))->Fill((bc.globalBC() - lastBCwFV0));
+        lastBCwFV0 = aBC;
+        lastOrbit = aOrbit;
+      }
     }
   };
-};
+  PROCESS_SWITCH(DiffQA, processFV0, "Process FV0", true);
 
-struct FT0Signals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"FT0A", "#FT0A", {HistType::kTH2F, {{96, -0.5, 95.5}, {100, 0., 200.}}}},
-      {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
-    }};
-
-  void process(aod::FT0 const& ft0)
+  // ...............................................................................................................
+  void processFT0(aod::FT0s const& ft0s, BCs const&)
   {
-    // side A
-    for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
-      registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
-    }
+    LOGF(info, "<processFT0> %d", ft0s.size());
+    int nc = 0;
+    int64_t fBC = 0; // first BC with FIT activity
+    int64_t aBC = 0; // actually processed BC
+    float minAmpA = 15., fAmpA = 0.;
+    float minAmpC = 15., fAmpC = 0.;
 
-    // side C
-    for (size_t ind = 0; ind < ft0.channelC().size(); ind++) {
-      registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
+    int64_t lastBCwFT0 = ft0s.begin().bc_as<BCs>().globalBC();
+    auto lastOrbit = lastBCwFT0 / nBCpOrbit;
+    for (auto ft0 : ft0s) {
+
+      // side A
+      for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
+        registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
+      }
+
+      // side C
+      for (size_t ind = 0; ind < ft0.channelC().size(); ind++) {
+        registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
+      }
+
+      // sequence of BCs
+      auto bc = ft0.bc_as<BCs>();
+      aBC = bc.globalBC();
+      auto gBC = aBC % nBCpOrbit;
+      auto ampA = udhelpers::FT0AmplitudeA(bc.foundFT0());
+      auto ampC = udhelpers::FT0AmplitudeC(bc.foundFT0());
+
+      // update FT0ABCNUM
+      if (ampA > 0.) {
+        registry.get<TH1>(HIST("FT0ABCNUM"))->Fill(gBC, 1.);
+      }
+
+      // update FT0CBCNUM
+      if (ampC > 0.) {
+        registry.get<TH1>(HIST("FT0CBCNUM"))->Fill(gBC, 1.);
+      }
+
+      // update dFT0BCNUM
+      // require both BCs to be in same orbit
+      auto aOrbit = aBC / nBCpOrbit;
+      LOGF(debug, "lastOrbit %d aOrbit %d", lastOrbit, aOrbit);
+      if (ampA > 0. || ampC > 0.) {
+        if (aOrbit == lastOrbit)
+          registry.get<TH1>(HIST("dFT0BCNUM"))->Fill((aBC - lastBCwFT0));
+      } else {
+        continue;
+      }
+
+      // amplitude distributions in BCs following a long series of empty BCs
+      nc = aBC - lastBCwFT0 - 1;
+      if (nc >= ncmin) {
+        fBC = aBC;
+        fAmpA = ampA;
+        fAmpC = ampC;
+      }
+      auto dBC = static_cast<int>(aBC - fBC);
+      if (dBC <= ns) {
+        LOGF(debug, "<processFT0> dBC %d ampA %f ampC %f", dBC, ampA, ampC);
+        switch (dBC) {
+          case 0:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[0].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[0].data()))->Fill(ampC, 1.);
+            break;
+          case 1:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[1].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[1].data()))->Fill(ampC, 1.);
+            break;
+          case 2:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[2].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[2].data()))->Fill(ampC, 1.);
+            break;
+          case 3:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[3].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[3].data()))->Fill(ampC, 1.);
+            break;
+          case 4:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[4].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[4].data()))->Fill(ampC, 1.);
+            break;
+          case 5:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[5].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[5].data()))->Fill(ampC, 1.);
+            break;
+          case 6:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[6].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[6].data()))->Fill(ampC, 1.);
+            break;
+          case 7:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[7].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[7].data()))->Fill(ampC, 1.);
+            break;
+          case 8:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[8].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[8].data()))->Fill(ampC, 1.);
+            break;
+          case 9:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[9].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[9].data()))->Fill(ampC, 1.);
+            break;
+          case 10:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[10].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[10].data()))->Fill(ampC, 1.);
+            break;
+          case 11:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[11].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[11].data()))->Fill(ampC, 1.);
+            break;
+          case 12:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[12].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[12].data()))->Fill(ampC, 1.);
+            break;
+          case 13:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[13].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[13].data()))->Fill(ampC, 1.);
+            break;
+          case 14:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[14].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[14].data()))->Fill(ampC, 1.);
+            break;
+          case 15:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[15].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[15].data()))->Fill(ampC, 1.);
+            break;
+          case 16:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[16].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[16].data()))->Fill(ampC, 1.);
+            break;
+          case 17:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[17].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[17].data()))->Fill(ampC, 1.);
+            break;
+          case 18:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[18].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[18].data()))->Fill(ampC, 1.);
+            break;
+          case 19:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[19].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[19].data()))->Fill(ampC, 1.);
+            break;
+          case 20:
+            if (fAmpA > minAmpA)
+              registry.get<TH1>(HIST(hFT0A[20].data()))->Fill(ampA, 1.);
+            if (fAmpC > minAmpC)
+              registry.get<TH1>(HIST(hFT0C[20].data()))->Fill(ampC, 1.);
+        }
+      }
+      lastBCwFT0 = aBC;
+      lastOrbit = aOrbit;
     }
   };
-};
+  PROCESS_SWITCH(DiffQA, processFT0, "Process FT0", true);
 
-struct FDDSignals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"FDDA", "#FDDA", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
-      {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
-    }};
-
-  void process(aod::FDD const& fdd)
+  // ...............................................................................................................
+  void processFDD(aod::FDDs const& fdds, aod::BCs const&)
   {
-    // side A
-    for (auto ind = 0; ind < 8; ind++) {
-      registry.get<TH2>(HIST("FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
-    }
+    LOGF(debug, "<FDDSignals> %d", fdds.size());
 
-    // side C
-    for (auto ind = 0; ind < 8; ind++) {
-      registry.get<TH2>(HIST("FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
+    int64_t lastBCwFDD = fdds.begin().bc_as<BCs>().globalBC();
+    auto lastOrbit = lastBCwFDD / nBCpOrbit;
+    for (auto fdd : fdds) {
+
+      // side A
+      for (auto ind = 0; ind < 8; ind++) {
+        registry.get<TH2>(HIST("FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
+      }
+
+      // side C
+      for (auto ind = 0; ind < 8; ind++) {
+        registry.get<TH2>(HIST("FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
+      }
+
+      // sequence of BCs
+      auto bc = fdd.bc_as<BCs>();
+      auto aBC = bc.globalBC();
+      int64_t aOrbit = aBC / nBCpOrbit;
+      auto ampA = udhelpers::FDDAmplitudeA(bc.foundFDD());
+      auto ampC = udhelpers::FDDAmplitudeC(bc.foundFDD());
+      if (ampA > 0. || ampC > 0.) {
+        // require both BCs to be in same orbit
+        if (aOrbit == lastOrbit)
+          registry.get<TH1>(HIST("FDDBCNUM"))->Fill((bc.globalBC() - lastBCwFDD));
+        lastBCwFDD = aBC;
+        lastOrbit = aOrbit;
+      }
     }
   };
-};
+  PROCESS_SWITCH(DiffQA, processFDD, "Process FDD", true);
 
-struct ZDCSignals {
-
-  // energies:
-  //  0: energyZEM1
-  //  1: energyZEM2
-  //  2: energyCommonZNA
-  //  3: energyCommonZNC
-  //  4: energyCommonZPA
-  //  5: energyCommonZPC
-  //  6: energySectorZNA[0]
-  //  7: energySectorZNA[1]
-  //  8: energySectorZNA[2]
-  //  9: energySectorZNA[3]
-  // 10: energySectorZNC[0]
-  // 11: energySectorZNC[1]
-  // 12: energySectorZNC[2]
-  // 13: energySectorZNC[3]
-  // 14: energySectorZPA[0]
-  // 15: energySectorZPA[1]
-  // 16: energySectorZPA[2]
-  // 17: energySectorZPA[3]
-  // 18: energySectorZPC[0]
-  // 19: energySectorZPC[1]
-  // 20: energySectorZPC[2]
-  // 21: energySectorZPC[3]
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
-    }};
-
-  void process(aod::Zdc const& zdc)
+  // ...............................................................................................................
+  void processZDC(aod::Zdc const& zdc)
   {
+    LOGF(debug, "<ZDCSignals> %d", zdc.size());
+
     // Zdc energies
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(0., zdc.energyZEM1());
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(1., zdc.energyZEM2());
@@ -559,35 +784,12 @@ struct ZDCSignals {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(20., (zdc.energySectorZPC())[2]);
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
   };
-};
-
-struct CaloSignals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}}},
-      {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
-    }};
-
-  void process(aod::Calo const& calo)
-  {
-    // cell number
-    registry.get<TH1>(HIST("CaloCell"))->Fill(calo.cellNumber());
-
-    // amplitude
-    registry.get<TH1>(HIST("CaloAmplitude"))->Fill(calo.amplitude());
-  };
+  PROCESS_SWITCH(DiffQA, processZDC, "Process ZDC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<DiffQA>(cfgc, TaskName{"diffqa"}),
-    adaptAnalysisTask<FV0Signals>(cfgc, TaskName{"fv0signals"}),
-    adaptAnalysisTask<FT0Signals>(cfgc, TaskName{"ft0signals"}),
-    adaptAnalysisTask<FDDSignals>(cfgc, TaskName{"fddsignals"}),
-    adaptAnalysisTask<ZDCSignals>(cfgc, TaskName{"zdcsignals"}),
-    adaptAnalysisTask<CaloSignals>(cfgc, TaskName{"calosignals"}),
   };
 }

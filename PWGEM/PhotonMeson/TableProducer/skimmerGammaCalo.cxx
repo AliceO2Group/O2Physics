@@ -13,8 +13,6 @@
 /// dependencies: emcal-correction-task
 /// \author marvin.hemmer@cern.ch
 
-// TODO: add o2::aod::EMCALClusterCell and o2::aod::EMCALMatchedTrack to this for cell and track matching
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Framework/runDataProcessing.h"
@@ -32,7 +30,11 @@ using namespace o2::framework::expressions;
 
 struct skimmerGammaCalo {
 
+  Preslice<o2::aod::EMCALClusterCells> CellperCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALMatchedTracks> MTperCluster = o2::aod::emcalclustercell::emcalclusterId;
+
   Produces<aod::SkimEMCClusters> tableGammaEMCReco;
+  Produces<aod::SkimEMCCells> tableCellEMCReco;
 
   // Configurable for histograms
   Configurable<int> nBinsE{"nBinsE", 200, "N bins in E histo"};
@@ -46,7 +48,8 @@ struct skimmerGammaCalo {
   HistogramRegistry historeg{
     "historeg",
     {{"hCaloClusterEIn", "hCaloClusterEIn", {HistType::kTH1F, {{nBinsE, 0., 100.}}}},
-     {"hCaloClusterEOut", "hCaloClusterEOut", {HistType::kTH1F, {{nBinsE, 0., 100.}}}}}};
+     {"hCaloClusterEOut", "hCaloClusterEOut", {HistType::kTH1F, {{nBinsE, 0., 100.}}}},
+     {"hMTEtaPhi", "hMTEtaPhi", {HistType::kTH2F, {{160, -0.8, 0.8}, {360, -1. * M_PI, 1. * M_PI}}}}}};
 
   void init(o2::framework::InitContext&)
   {
@@ -60,7 +63,7 @@ struct skimmerGammaCalo {
     LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
   }
 
-  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks)
+  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::Tracks const& tracks)
   {
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
@@ -73,6 +76,17 @@ struct skimmerGammaCalo {
       if (emccluster.m02() > maxM02 || emccluster.m02() < minM02) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
+      }
+
+      auto groupedCells = emcclustercells.sliceBy(CellperCluster, emccluster.globalIndex());
+
+      for (const auto& emcclustercell : groupedCells) {
+        tableCellEMCReco(emcclustercell.emcalclusterId(), emcclustercell.caloId());
+      }
+
+      auto groupedMTs = emcmatchedtracks.sliceBy(MTperCluster, emccluster.globalIndex());
+      for (const auto& emcmatchedtrack : groupedMTs) {
+        historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track().eta(), emccluster.phi() - emcmatchedtrack.track().phi());
       }
 
       historeg.fill(HIST("hCaloClusterEOut"), emccluster.energy());

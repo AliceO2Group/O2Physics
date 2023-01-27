@@ -156,6 +156,7 @@ struct qaEventTrack {
     histos.add("Events/nContrib", "", kTH1D, {axisVertexNumContrib});
     histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
+    histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -1021,6 +1022,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Tracks/recoEff"), 2, tracks.size());
 
   // unfiltered track related histograms
+  int nPvContrWithTOF = 0;
+  int nPvContrWithTRD = 0;
   for (const auto& trackUnfiltered : tracksUnfiltered) {
     // fill ITS variables
     int itsNhits = 0;
@@ -1039,7 +1042,19 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     if (!trkHasITS) {
       histos.fill(HIST("Tracks/ITS/itsHitsUnfiltered"), -1, itsNhits);
     }
+
+    /// look for PV contributors and check correlation between TRD and TOF
+    /// to check if TRD time shift creates issues or not
+    if (trackUnfiltered.isPVContributor()) {
+      if (trackUnfiltered.hasTOF()) {
+        nPvContrWithTOF++;
+      }
+      if (trackUnfiltered.hasTRD()) {
+        nPvContrWithTRD++;
+      }
+    }
   }
+  histos.fill(HIST("Events/nContribWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
 
   // track related histograms
   for (const auto& track : tracks) {

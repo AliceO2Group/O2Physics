@@ -41,17 +41,14 @@
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "DetectorsVertexing/FwdDCAFitterN.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using std::cout;
 using std::endl;
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 using Vec3D = ROOT::Math::SVector<double, 3>;
-
-// TODO: create an array holding these constants for all needed particles or check for a place where these are already defined
-static const float fgkElectronMass = 0.000511; // GeV
-static const float fgkMuonMass = 0.105658;     // GeV
-static const float fgkKaonMass = 0.493677;     // GeV
+using namespace o2::constants::physics;
 
 //_________________________________________________________________________
 class VarManager : public TObject
@@ -71,6 +68,7 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
+    CollisionCentRun3 = BIT(10),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -139,6 +137,7 @@ class VarManager : public TObject
     kVtxCovZZ,
     kVtxChi2,
     kCentVZERO,
+    kCentFT0C,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -282,6 +281,9 @@ class VarManager : public TObject
     kMCParticleGeneratorId,
     kNMCParticleVariables,
 
+    // MC mother particle variables
+    kMCMotherPdgCode,
+
     // Pair variables
     kCandidateId,
     kPairType,
@@ -313,6 +315,7 @@ class VarManager : public TObject
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
+    kDeltaPtotTracks,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -420,6 +423,8 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
+  template <typename U, typename T>
+  static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -573,6 +578,10 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionCent) > 0) {
     values[kCentVZERO] = event.centRun2V0M();
+  }
+
+  if constexpr ((fillMap & CollisionCentRun3) > 0) {
+    values[kCentFT0C] = event.centFT0C();
   }
 
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
@@ -855,8 +864,8 @@ void VarManager::FillTrack(T const& track, float* values)
 
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCElectronMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCElectronSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -874,8 +883,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCPionMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCPionSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -893,8 +902,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
-      TH3F* calibMean = (TH3F*)fgCalibs[kTPCProtonMean];
-      TH3F* calibSigma = (TH3F*)fgCalibs[kTPCProtonSigma];
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonSigma]);
 
       int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
       binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
@@ -963,24 +972,37 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMass] = track.mass();
   }
 
-  if constexpr ((fillMap & ParticleMC) > 0) {
-    values[kMCPdgCode] = track.pdgCode();
-    values[kMCParticleWeight] = track.weight();
-    values[kMCPx] = track.px();
-    values[kMCPy] = track.py();
-    values[kMCPz] = track.pz();
-    values[kMCE] = track.e();
-    values[kMCVx] = track.vx();
-    values[kMCVy] = track.vy();
-    values[kMCVz] = track.vz();
-    values[kMCPt] = track.pt();
-    values[kMCPhi] = track.phi();
-    values[kMCEta] = track.eta();
-    values[kMCY] = track.y();
-    values[kMCParticleGeneratorId] = track.producedByGenerator();
+  // Derived quantities which can be computed based on already filled variables
+  FillTrackDerived(values);
+}
+
+template <typename U, typename T>
+void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
+{
+  if (!values) {
+    values = fgValues;
   }
 
-  // Derived quantities which can be computed based on already filled variables
+  // Quantities based on the mc particle table
+  values[kMCPdgCode] = track.pdgCode();
+  values[kMCParticleWeight] = track.weight();
+  values[kMCPx] = track.px();
+  values[kMCPy] = track.py();
+  values[kMCPz] = track.pz();
+  values[kMCE] = track.e();
+  values[kMCVx] = track.vx();
+  values[kMCVy] = track.vy();
+  values[kMCVz] = track.vz();
+  values[kMCPt] = track.pt();
+  values[kMCPhi] = track.phi();
+  values[kMCEta] = track.eta();
+  values[kMCY] = track.y();
+  values[kMCParticleGeneratorId] = track.producedByGenerator();
+  if (track.has_mothers()) {
+    auto mother = track.template mothers_first_as<U>();
+    values[kMCMotherPdgCode] = mother.pdgCode();
+  }
+
   FillTrackDerived(values);
 }
 
@@ -991,15 +1013,15 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -1010,6 +1032,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
@@ -1109,15 +1134,15 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -1137,15 +1162,15 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   // TODO : implement resolution smearing.
@@ -1228,8 +1253,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     return;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   Vec3D secondaryVertex;
   float bz = 0;
   std::array<float, 3> pvec0;
@@ -1261,8 +1286,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
     } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
       // Get pca candidate from forward DCA fitter
-      m1 = fgkMuonMass;
-      m2 = fgkMuonMass;
+      m1 = MassMuon;
+      m2 = MassMuon;
 
       secondaryVertex = fgFitterTwoProngFwd.getPCACandidate();
       bz = fgFitterTwoProngFwd.getBz();
@@ -1330,8 +1355,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   int procCodeJpsi = 0;
 
   if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
-    mlepton = fgkMuonMass;
-    mtrack = fgkMuonMass;
+    mlepton = MassMuon;
+    mtrack = MassMuon;
 
     double chi21 = lepton1.chi2();
     double chi22 = lepton2.chi2();
@@ -1359,8 +1384,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
     procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
   } else if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
-    mlepton = fgkElectronMass;
-    mtrack = fgkKaonMass;
+    mlepton = MassElectron;
+    mtrack = MassKaonCharged;
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
     std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
                                          lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
@@ -1512,15 +1537,15 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = fgkElectronMass;
-  float m2 = fgkElectronMass;
+  float m1 = MassElectron;
+  float m2 = MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = fgkMuonMass;
-    m2 = fgkMuonMass;
+    m1 = MassMuon;
+    m2 = MassMuon;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = fgkMuonMass;
+    m2 = MassMuon;
   }
 
   // Fill dilepton information

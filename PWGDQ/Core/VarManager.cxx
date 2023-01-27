@@ -207,6 +207,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxChi2] = "";
   fgVariableNames[kCentVZERO] = "Centrality VZERO";
   fgVariableUnits[kCentVZERO] = "%";
+  fgVariableNames[kCentFT0C] = "Centrality FT0C";
+  fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
   fgVariableNames[kMCVtxX] = "MC Vtx X";
   fgVariableNames[kMCVtxY] = "MC Vtx Y";
@@ -239,6 +241,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kRap] = "";
   fgVariableNames[kMass] = "mass";
   fgVariableUnits[kMass] = "GeV/c2";
+  fgVariableNames[kDeltaPtotTracks] = "#it{p}_{Tot}^{#mu+} - #it{p}_{Tot}^{#mu-}";
+  fgVariableUnits[kDeltaPtotTracks] = "GeV/c";
   fgVariableNames[kCharge] = "charge";
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";

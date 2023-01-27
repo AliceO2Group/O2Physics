@@ -91,9 +91,6 @@ struct TrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
-    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
