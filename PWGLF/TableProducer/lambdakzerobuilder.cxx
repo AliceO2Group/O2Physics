@@ -374,13 +374,13 @@ struct lambdakzeroBuilder {
       return;
     }
 
-    //In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990){
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if( fabs(d_bz) > 1e-5 ){
-        grpmag.setL3Current(30000.f / (d_bz/5.0f) );
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
