@@ -40,7 +40,7 @@ o2physics_add_header_only_library(HFFilterHelpers
 
 o2physics_add_dpl_workflow(hf-filter
                            SOURCES PWGHF/HFFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-qc
