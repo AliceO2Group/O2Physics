@@ -882,7 +882,7 @@ struct TableMakerMC {
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel,
                                   aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
-    fullSkimming<gkEventFillMapWithMults, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
+    fullSkimming<gkEventFillMapWithMults, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with centrality ------------------------------------------------------------------------------------
@@ -898,7 +898,7 @@ struct TableMakerMC {
                                          soa::Filtered<MyBarrelTracks> const& tracksBarrel,
                                          aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with cov matrix-----------------------------------------------------------------------

@@ -329,7 +329,7 @@ struct DQEventQvector {
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 2
   void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
-    runFillQvector<gkEventFillMapRun2, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
