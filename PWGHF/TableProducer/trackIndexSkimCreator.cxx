@@ -2238,7 +2238,7 @@ struct HfTrackIndexSkimCreatorVZero {
 
   void init(InitContext const& context)
   {
-    if (!(context.mOptions.get<bool>("processVzero"))) {
+    if (!(context.mOptions.get<bool>("processVZeros"))) {
       return;
     }
     ccdb->setURL(ccdbUrl);
@@ -2254,13 +2254,13 @@ struct HfTrackIndexSkimCreatorVZero {
     }
   }
 
-  void processNoCascades(SelectedCollisions const&){
+  void processNoVZeros(SelectedCollisions const&){
     // dummy
   }
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processNoCascades, "Do not do cascades", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processNoVZeros, "Do not do v0", true);
 
-  void processVzero(SelectedCollisions::iterator const& collision,
+  void processVZeros(SelectedCollisions::iterator const& collision,
                     aod::BCsWithTimestamps const&,
                     // soa::Filtered<aod::V0Datas> const& V0s,
                     aod::V0Datas const& V0s,
@@ -2447,10 +2447,10 @@ struct HfTrackIndexSkimCreatorVZero {
 
     } // loop over tracks
   }   // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processVzero, "Skim also cascades", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processVZeros, "Skim also V0", false);
 };
 
-struct HfTrackIndexSkimsCreatorCascades {
+struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCasc2Prongs> rowTrackIndexCasc2Prong;
   Produces<aod::HfCasc3Prongs> rowTrackIndexCasc3Prong;
 
@@ -2640,7 +2640,13 @@ struct HfTrackIndexSkimsCreatorCascades {
     return true;
   }
 
-  void process(SelectedCollisions::iterator const& collision,
+  void processNoCascades(SelectedCollisions const&){
+    // dummy
+  }
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do cascade", true);
+
+  void processCascases(SelectedCollisions::iterator const& collision,
                aod::BCs const& bcs,
                aod::V0sLinked const&,
                V0full const&,
@@ -2877,6 +2883,7 @@ struct HfTrackIndexSkimsCreatorCascades {
       } // loop over pion
     }   // loop over cascade
   }     // process
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascases, "Skim also cascades", false);
 };
 
 //________________________________________________________________________________________________________________________
@@ -2894,7 +2901,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorVZero>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreatorCascades>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
 
   return workflow;
 }
