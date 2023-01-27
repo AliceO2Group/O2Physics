@@ -31,12 +31,14 @@ namespace dpgcollision
 DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
 } // namespace dpgcollision
 
 DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG collisions
                   collision::PosZ,
                   dpgcollision::IsEventReject,
-                  dpgcollision::RunNumber);
+                  dpgcollision::RunNumber,
+                  dpgcollision::NumContrib);
 
 namespace dpgtrack
 {
