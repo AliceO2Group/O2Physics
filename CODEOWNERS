@@ -19,12 +19,12 @@
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @njacazio
 /EventFiltering @alibuild @mpuccio
-/EventFiltering/PWGHF @alibuild @fgrosa @vkucera
-/EventFiltering/PWGUD @alibuild @pbuehler
+/EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio
 /EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95
-/EventFiltering/PWGCF @alibuild @lauraser
-/EventFiltering/PWGMM @alibuild @aortizve
-/EventFiltering/PWGJE @alibuild @fkrizek
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio
+/EventFiltering/PWGJE @alibuild @fkrizek @mpuccio
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
