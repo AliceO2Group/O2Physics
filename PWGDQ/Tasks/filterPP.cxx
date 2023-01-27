@@ -79,10 +79,10 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventCuts>;
 // TODO: subscribe to the bare needed minimum, in particular for the CEFP task
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                      aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                      aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                      aod::pidTOFFullEl, aod::pidTOFFullPi,
-                                      aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                 aod::pidTOFFullEl, aod::pidTOFFullPi,
+                                 aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using MyBarrelTracksTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                      aod::pidTPCKa, aod::pidTPCPr,
@@ -245,7 +245,7 @@ struct DQBarrelTrackSelection {
   template <uint32_t TTrackFillMap, typename TTracks>
   void runTrackSelection(aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel)
   {
-    auto bc = bcs.begin();         // check just the first bc to get the run number
+    auto bc = bcs.begin(); // check just the first bc to get the run number
     if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
       auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
       VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -259,7 +259,7 @@ struct DQBarrelTrackSelection {
 
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
-    
+
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     for (auto& track : tracksBarrel) {
       filterMap = uint32_t(0);

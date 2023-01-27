@@ -72,8 +72,8 @@ class VarManager : public TObject
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
-    TrackPID = BIT(3),        // used for basic PID properties (needed such that we can subscribe to a minimal set of PID tables): e,pi,K,p for TPC and TOF
-    TrackPIDExtra = BIT(4),   // extra PID information
+    TrackPID = BIT(3),      // used for basic PID properties (needed such that we can subscribe to a minimal set of PID tables): e,pi,K,p for TPC and TOF
+    TrackPIDExtra = BIT(4), // extra PID information
     TrackDCA = BIT(5),
     TrackSelection = BIT(6),
     TrackV0Bits = BIT(7),
@@ -773,7 +773,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTrackLength] = track.length();
     values[kTPCnclsCR] = track.tpcNClsCrossedRows();
     values[kTRDPattern] = track.trdPattern();
-    
+
     values[kTPCsignal] = track.tpcSignal();
     values[kTRDsignal] = track.trdSignal();
 
@@ -918,7 +918,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTOFnSigmaPi] = track.tofNSigmaPi();
     values[kTOFnSigmaKa] = track.tofNSigmaKa();
     values[kTOFnSigmaPr] = track.tofNSigmaPr();
-    
+
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
       // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
       //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
@@ -934,7 +934,7 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
     }
-    
+
     if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
       values[kTPCnSigmaMu] = track.tpcNSigmaMu();
       values[kTOFnSigmaMu] = track.tofNSigmaMu();
@@ -944,9 +944,9 @@ void VarManager::FillTrack(T const& track, float* values)
     }
   }
   if constexpr ((fillMap & TrackPIDExtra) > 0) {
-      values[kTPCnSigmaMu] = track.tpcNSigmaMu();
-      values[kTOFnSigmaMu] = track.tofNSigmaMu();
-      values[kTOFbeta] = track.beta();
+    values[kTPCnSigmaMu] = track.tpcNSigmaMu();
+    values[kTOFnSigmaMu] = track.tofNSigmaMu();
+    values[kTOFbeta] = track.beta();
   }
 
   // Quantities based on the muon extra table
