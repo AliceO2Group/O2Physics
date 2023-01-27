@@ -347,7 +347,8 @@ struct centralEventFilterTask {
   }
 
   /// Trivial process to have automatically the collision and BC input tables
-  void process(aod::Collisions const&, aod::BCs const&)  {
+  void process(aod::Collisions const&, aod::BCs const&)
+  {
   }
 
   std::mt19937_64 mGeneratorEngine;
