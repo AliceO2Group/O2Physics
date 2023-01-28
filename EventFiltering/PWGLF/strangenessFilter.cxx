@@ -27,6 +27,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "../filterTables.h"
 #include <cmath>
 
@@ -90,7 +91,7 @@ struct strangenessFilter {
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
   Configurable<float> hMinPt{"hMinPt", 1.0f, "Min pt for trigger particles"};
-  Configurable<bool> isTrackFilter{"isTrackFilter", 1, "Apply track myTrackSelections"};
+  Configurable<bool> isTrackFilter{"isTrackFilter", "true", "Apply track myTrackSelections"};
 
   void init(o2::framework::InitContext&)
   {
@@ -125,7 +126,9 @@ struct strangenessFilter {
     hCandidate->GetXaxis()->SetBinLabel(19, "ProperLifeTime");
 
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
-    AxisSpec centAxis = {centBinning, "V0M (%)"};
+    AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
+    AxisSpec multAxisT0M = {600, 0.0f, 6000.0f, "T0M multiplicity estimator"};
+    AxisSpec multAxisV0A = {500, 0.0f, 25000.0f, "V0A multiplicity estimator"};
     AxisSpec ximassAxis = {200, 1.28f, 1.36f};
     AxisSpec omegamassAxis = {200, 1.59f, 1.75f};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -183,9 +186,14 @@ struct strangenessFilter {
     QAHistosTriggerParticles.add("hDCAzTriggerAllEv", "hDCAzTriggerAllEv", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz of trigger particles"}, {ptTriggAxis}});
 
     if (doextraQA) {
+      EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
+      EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of events with hight pT hadron", HistType::kTH1F, {multAxisV0A});
 
-      EventsvsMultiplicity.add("AllEventsvsMultiplicity", "Multiplicity distribution of all events", HistType::kTH1F, {centAxis});
-      EventsvsMultiplicity.add("hadEventsvsMultiplicity", "Multiplicity distribution of events with hight pT hadron", HistType::kTH1F, {centAxis});
+      EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqT0M", "ZeqT0M distribution of all events", HistType::kTH1F, {multAxisT0M});
+      EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqT0M", "ZeqT0M distribution of events with hight pT hadron", HistType::kTH1F, {multAxisT0M});
+
+      EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqNTracksPV", "ZeqNTracksPV distribution of all events", HistType::kTH1F, {multAxisNTPV});
+      EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqNTracksPV", "ZeqNTracksPV distribution of events with hight pT hadron", HistType::kTH1F, {multAxisNTPV});
 
       // additional QA histos
       QAHistos.add("hTPCNsigmaXiBachPiPlus", "nsigma TPC distribution bachelor pion+", HistType::kTH2F, {{80, -10, 10}, {pTPCAxis}});
@@ -214,7 +222,8 @@ struct strangenessFilter {
 
   // Tables
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
-  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  // using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>;
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
   using Cascades = aod::CascDataExt;
@@ -477,6 +486,11 @@ struct strangenessFilter {
       return;
     }
     QAHistos.fill(HIST("hVtxZ"), collision.posZ());
+    if (doextraQA) {
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqV0A"), collision.multZeqFV0A());
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqNTracksPV"), collision.multZeqNTracksPV());
+    }
 
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -770,7 +784,11 @@ struct strangenessFilter {
     } // end loop over tracks
     if (triggcounterAllEv > 0) {
       hProcessedEvents->Fill(1.5);
-      // qua centralità
+      if (doextraQA) {
+        EventsvsMultiplicity.fill(HIST("hadEventsvsMultiplicityZeqV0A"), collision.multZeqFV0A());
+        EventsvsMultiplicity.fill(HIST("hadEventsvsMultiplicityZeqT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
+        EventsvsMultiplicity.fill(HIST("hadEventsvsMultiplicityZeqNTracksPV"), collision.multZeqNTracksPV());
+      }
     }
     QAHistosTriggerParticles.fill(HIST("hTriggeredParticlesAllEv"), triggcounterAllEv);
 
