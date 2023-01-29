@@ -181,7 +181,7 @@ struct jetFilter {
         spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
-    tags(collision, keepEvent[kJetChHighPt]);
+    tags(keepEvent[kJetChHighPt]);
   }
 };
 
