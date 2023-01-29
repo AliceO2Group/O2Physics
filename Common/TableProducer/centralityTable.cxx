@@ -54,7 +54,7 @@ struct CentralityTable {
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
   Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
-  
+
   int mRunNumber;
   struct tagRun2V0MCalibration {
     bool mCalibrationStored = false;
@@ -244,9 +244,9 @@ struct CentralityTable {
           mRunNumber = bc.runNumber();
         }
       } else {
-        if( !doNotCrashOnNull ){ // default behaviour: crash
+        if (!doNotCrashOnNull) { // default behaviour: crash
           LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-        }else{ // only if asked: continue filling with non-valid values (105)
+        } else { // only if asked: continue filling with non-valid values (105)
           LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
         }
       }
@@ -369,9 +369,9 @@ struct CentralityTable {
         }
         mRunNumber = bc.runNumber();
       } else {
-        if( !doNotCrashOnNull ){ // default behaviour: crash
+        if (!doNotCrashOnNull) { // default behaviour: crash
           LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-        }else{ // only if asked: continue filling with non-valid values (105)
+        } else { // only if asked: continue filling with non-valid values (105)
           LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
         }
       }
