@@ -23,8 +23,10 @@
 
 #include "Framework/DataTypes.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
 #include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include <vector>
 #include <array>
@@ -37,6 +39,10 @@
 
 // CCDB
 #include "CCDB/CcdbApi.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
@@ -90,6 +96,7 @@ enum PIDSpecies {
   kPi,
   kPr
 };
+
 static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm", "softGamma"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
@@ -118,6 +125,545 @@ static const float massBs = RecoDecay::getMassPDG(531);
 static const float massLb = RecoDecay::getMassPDG(5122);
 static const float massXib = RecoDecay::getMassPDG(5232);
 static const float massGamma = RecoDecay::getMassPDG(22);
+
+static const AxisSpec ptAxis{50, 0.f, 50.f};
+static const AxisSpec pAxis{50, 0.f, 10.f};
+static const AxisSpec kstarAxis{100, 0.f, 1.f};
+static const AxisSpec etaAxis{30, -1.5f, 1.5f};
+static const AxisSpec nSigmaAxis{100, -10.f, 10.f};
+static const AxisSpec alphaAxis{100, -10.f, 10.f};
+static const AxisSpec bdtAxis{100, 0.f, 1.f};
+static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
+static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.3f, 5.9f}, AxisSpec{100, 5.3f, 5.9f}};
+
+/// Single-track cuts for bachelor track of beauty candidates
+/// \param track is a track
+/// \param pTMinSoftPion min pT for soft pions
+/// \param pTMinBeautyBachelor min pT for beauty bachelor pions
+/// \param cutsSingleTrackBeauty cuts for all tracks
+/// \return 0 if track is rejected, 1 if track is soft pion, 2 if it is regular beauty
+template <typename T1, typename T2, typename T3>
+int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T2& pTBinsTrack, const T3& cutsSingleTrackBeauty)
+{
+  auto pT = track.pt();
+  auto pTBinTrack = findBin(pTBinsTrack, pT);
+  if (pTBinTrack == -1) {
+    return kRejected;
+  }
+
+  if (pT < pTMinSoftPion) { // soft pion should be more stringent than usual tracks
+    return kRejected;
+  }
+
+  if (std::abs(track.eta()) > 0.8) {
+    return kRejected;
+  }
+
+  if (std::abs(track.dcaZ()) > 2.f) {
+    return kRejected;
+  }
+
+  if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
+    return kRejected; // minimum DCAxy
+  }
+  if (std::abs(track.dcaXY()) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
+    return kRejected; // maximum DCAxy
+  }
+
+  // below only regular beauty tracks, not required for soft pions
+  if (pT < pTMinBeautyBachelor) {
+    return kSoftPion;
+  }
+
+  return kRegular;
+}
+
+/// Basic selection of proton candidates
+/// \param track is a track
+/// \param femtoMinProtonPt min pT for proton candidates
+/// \param femtoMaxNsigmaProton max Nsigma for proton candidates
+/// \param femtoProtonOnlyTOF flag to activate PID selection with TOF only
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapProtonMean map of nSigma mean calibrations
+/// \param hMapProtonSigma map of nSigma sigma calibrations
+/// \param activateQA flag to activate the filling of QA histos
+/// \param hProtonTPCPID histo with NsigmaTPC vs. p
+/// \param hProtonTOFPID histo with NsigmaTOF vs. p
+/// \return true if track passes all cuts
+template <typename T, typename H2, typename H3>
+bool isSelectedProton4Femto(const T& track, const float& femtoMinProtonPt, const float& femtoMaxNsigmaProton, const bool femtoProtonOnlyTOF, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
+{
+  if (track.pt() < femtoMinProtonPt) {
+    return false;
+  }
+
+  if (std::abs(track.eta()) > 0.8) {
+    return false;
+  }
+
+  if (track.isGlobalTrack() != (uint8_t) true) {
+    return false; // use only global tracks
+  }
+
+  float NSigmaTPC = track.tpcNSigmaPr();
+  float NSigmaTOF = track.tofNSigmaPr();
+  float NSigma;
+
+  if (computeTPCPostCalib) {
+    NSigmaTPC = getTPCPostCalib(hMapProtonMean, hMapProtonSigma, track, kPr);
+  }
+
+  if (femtoProtonOnlyTOF) {
+    NSigma = abs(NSigmaTOF);
+  } else {
+    NSigma = sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
+  }
+
+  if (NSigma > femtoMaxNsigmaProton) {
+    return false;
+  }
+
+  if (activateQA > 1) {
+    hProtonTPCPID->Fill(track.p(), NSigmaTPC);
+    hProtonTOFPID->Fill(track.p(), NSigmaTOF);
+  }
+
+  return true;
+}
+
+/// Basic selection of proton candidates for Lc
+/// \param track is a track
+/// \param nsigmaTPCProtonLc max NsigmaTPC for proton candidates
+/// \param nsigmaTOFProtonLc max NsigmaTOF for proton candidates
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapProtonMean map of nSigma mean calibrations
+/// \param hMapProtonSigma map of nSigma sigma calibrations
+/// \return true if track passes all cuts
+template <typename T, typename H3>
+bool isSelectedProton4CharmBaryons(const T& track, const float& nsigmaTPCProtonLc, const float& nsigmaTOFProtonLc, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma)
+{
+  float NSigmaTPC = track.tpcNSigmaPr();
+  float NSigmaTOF = track.tofNSigmaPr();
+
+  if (computeTPCPostCalib) {
+    NSigmaTPC = getTPCPostCalib(hMapProtonMean, hMapProtonSigma, track, kPr);
+  }
+
+  if (std::abs(NSigmaTPC) > nsigmaTPCProtonLc) {
+    return false;
+  }
+  if (track.hasTOF() && std::abs(NSigmaTOF) > nsigmaTOFProtonLc) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Basic selection of kaon candidates for charm candidates
+/// \param track is a track
+/// \param nsigmaTPCKaon3Prong max NsigmaTPC for kaon candidates
+/// \param nsigmaTOFKaon3Prong max NsigmaTOF for kaon candidates
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapPionMean map of nSigma mean calibrations
+/// \param hMapPionSigma map of nSigma sigma calibrations
+/// \return true if track passes all cuts
+template <typename T, typename H3>
+bool isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong, const bool computeTPCPostCalib, H3 hMapPionMean, H3 hMapPionSigma)
+{
+  float NSigmaTPC = track.tpcNSigmaKa();
+  float NSigmaTOF = track.tofNSigmaKa();
+
+  if (computeTPCPostCalib) {
+    NSigmaTPC = getTPCPostCalib(hMapPionMean, hMapPionSigma, track, kKa); // use pion correction map for kaon for the moment
+  }
+
+  if (std::abs(NSigmaTPC) > nsigmaTPCKaon3Prong) {
+    return false;
+  }
+  if (track.hasTOF() && std::abs(NSigmaTOF) > nsigmaTOFKaon3Prong) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Basic additional selection of D+ candidates
+/// \param trackOppositeCharge is the opposite charge track
+/// \param nsigmaTPCKaon3Prong max NsigmaTPC for kaon candidates
+/// \param nsigmaTOFKaon3Prong max NsigmaTOF for kaon candidates
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapPionMean map of nSigma mean calibrations
+/// \param hMapPionSigma map of nSigma sigma calibrations
+/// \return BIT(0) for Kpipi
+template <typename T, typename H3>
+int8_t isDplusPreselected(const T& trackOppositeCharge, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong, const bool computeTPCPostCalib, H3 hMapPionMean, H3 hMapPionSigma)
+{
+  int8_t retValue = 0;
+
+  // check PID of opposite charge track
+  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma)) {
+    return retValue;
+  }
+
+  retValue |= BIT(0);
+  return retValue;
+}
+
+/// Basic additional selection of Ds candidates
+/// \param pTrackSameChargeFirst is the first same-charge track momentum
+/// \param pTrackSameChargeSecond is the second same-charge track momentum
+/// \param pTrackOppositeCharge is the opposite charge track momentum
+/// \param trackOppositeCharge is the opposite charge track
+/// \param nsigmaTPCKaon3Prong max NsigmaTPC for kaon candidates
+/// \param nsigmaTOFKaon3Prong max NsigmaTOF for kaon candidates
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapPionMean map of nSigma mean calibrations
+/// \param hMapPionSigma map of nSigma sigma calibrations
+/// \return BIT(0) for KKpi, BIT(1) for piKK
+template <typename P, typename T, typename H3>
+int8_t isDsPreselected(const P& pTrackSameChargeFirst, const P& pTrackSameChargeSecond, const P& pTrackOppositeCharge, const T& trackOppositeCharge, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong, const bool computeTPCPostCalib, H3 hMapPionMean, H3 hMapPionSigma)
+{
+  int8_t retValue = 0;
+
+  // check PID of opposite charge track
+  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma)) {
+    return retValue;
+  }
+
+  // check delta-mass for phi resonance
+  auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
+  auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
+
+  if (std::abs(invMassKKFirst - massPhi) < 0.02) {
+    retValue |= BIT(0);
+  }
+  if (std::abs(invMassKKSecond - massPhi) < 0.02) {
+    retValue |= BIT(1);
+  }
+
+  return retValue;
+}
+
+/// Basic additional selection of Lc->pKpi and Xic->pKpi candidates
+/// \param trackSameChargeFirst is the first same-charge track
+/// \param trackSameChargeSecond is the second same-charge track
+/// \param trackOppositeCharge is the opposite charge track
+/// \param nsigmaTPCProtonLc max NsigmaTPC for proton candidates
+/// \param nsigmaTOFProtonLc max NsigmaTOF for proton candidates
+/// \param nsigmaTPCKaon3Prong max NsigmaTPC for kaon candidates
+/// \param nsigmaTOFKaon3Prong max NsigmaTOF for kaon candidates
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapProtonMean map of nSigma mean calibrations for protons
+/// \param hMapProtonSigma map of nSigma sigma calibrations for protons
+/// \param hMapPionMean map of nSigma mean calibrations for pions
+/// \param hMapPionSigma map of nSigma sigma calibrations for pions
+/// \return BIT(0) for pKpi, BIT(1) for piKp
+template <typename T, typename H3>
+int8_t isCharmBaryonPreselected(const T& trackSameChargeFirst, const T& trackSameChargeSecond, const T& trackOppositeCharge, const float& nsigmaTPCProtonLc, const float& nsigmaTOFProtonLc, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma, H3 hMapPionMean, H3 hMapPionSigma)
+{
+  int8_t retValue = 0;
+  // check PID of opposite charge track
+  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma)) {
+    return retValue;
+  }
+
+  if (isSelectedProton4CharmBaryons(trackSameChargeFirst, nsigmaTPCProtonLc, nsigmaTOFProtonLc, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma)) {
+    retValue |= BIT(0);
+  }
+  if (isSelectedProton4CharmBaryons(trackSameChargeSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma)) {
+    retValue |= BIT(1);
+  }
+
+  return retValue;
+}
+
+/// Basic additional selection of D0 candidates
+/// \param trackPos is the positive track
+/// \param trackNeg is the negative track
+/// \param nsigmaTPCPionKaonDzero max NsigmaTPC for pion/kaon candidates
+/// \param nsigmaTOFPionKaonDzero max NsigmaTOF for pion/kaon candidates
+/// \param computeTPCPostCalib flag to activate TPC PID postcalibrations
+/// \param hMapPionMean map of nSigma mean calibrations
+/// \param hMapPionSigma map of nSigma sigma calibrations
+/// \return BIT(0) for D0, BIT(1) for D0bar
+template <typename T, typename H3>
+int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg, const float& nsigmaTPCPionKaonDzero, const float& nsigmaTOFPionKaonDzero, const bool computeTPCPostCalib, H3 hMapPionMean, H3 hMapPionSigma)
+{
+  int8_t retValue = 0;
+
+  float NSigmaPiTPCPos = trackPos.tpcNSigmaPi();
+  float NSigmaPiTOFPos = trackPos.tofNSigmaPi();
+  float NSigmaKaTPCPos = trackPos.tpcNSigmaKa();
+  float NSigmaKaTOFPos = trackPos.tofNSigmaKa();
+
+  float NSigmaPiTPCNeg = trackNeg.tpcNSigmaPi();
+  float NSigmaPiTOFNeg = trackNeg.tofNSigmaPi();
+  float NSigmaKaTPCNeg = trackNeg.tpcNSigmaKa();
+  float NSigmaKaTOFNeg = trackNeg.tofNSigmaKa();
+
+  if (computeTPCPostCalib) {
+    NSigmaPiTPCPos = getTPCPostCalib(hMapPionMean, hMapPionSigma, trackPos, kPi);
+    NSigmaPiTPCNeg = getTPCPostCalib(hMapPionMean, hMapPionSigma, trackNeg, kPi);
+    NSigmaKaTPCPos = getTPCPostCalib(hMapPionMean, hMapPionSigma, trackPos, kKa); // use pion correction map for kaon for the moment
+    NSigmaKaTPCNeg = getTPCPostCalib(hMapPionMean, hMapPionSigma, trackNeg, kKa); // use pion correction map for kaon for the moment
+  }
+
+  if ((std::abs(NSigmaPiTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaPiTOFPos) <= nsigmaTOFPionKaonDzero)) && (std::abs(NSigmaKaTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaKaTOFNeg) <= nsigmaTOFPionKaonDzero))) {
+    retValue |= BIT(0);
+  }
+  if ((std::abs(NSigmaPiTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaPiTOFNeg) <= nsigmaTOFPionKaonDzero)) && (std::abs(NSigmaKaTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaKaTOFPos) <= nsigmaTOFPionKaonDzero))) {
+    retValue |= BIT(1);
+  }
+
+  return retValue;
+}
+
+/// Mass selection of D0 candidates to build Bplus candidates
+/// \param pTrackPos is the positive track momentum
+/// \param pTrackNeg is the negative track momentum
+/// \param ptD is the pt of the D0 meson candidate
+/// \param isSelected is the flag containing the selection tag for the D0 candidate
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param activateQA flag to activate the filling of QA histos
+/// \param hMassVsPt histo with invariant mass vs pt
+/// \return 1 for D0, 2 for D0bar, 3 for both
+template <typename T, typename H2>
+int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
+{
+  int8_t retValue = 0;
+  if (TESTBIT(isSelected, 0)) {
+    auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
+    if (activateQA) {
+      hMassVsPt->Fill(ptD, invMassD0);
+    }
+    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(0);
+    }
+  }
+  if (TESTBIT(isSelected, 1)) {
+    auto invMassD0bar = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
+    if (activateQA) {
+      hMassVsPt->Fill(ptD, invMassD0bar);
+    }
+    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(1);
+    }
+  }
+
+  return retValue;
+}
+
+/// Mass selection of D+ candidates to build B0 candidates
+/// \param pTrackSameChargeFirst is the first same-charge track momentum
+/// \param pTrackSameChargeFirst is the second same-charge track momentum
+/// \param pTrackSameChargeFirst is the opposite charge track momentum
+/// \param ptD is the pt of the D+ meson candidate
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param activateQA flag to activate the filling of QA histos
+/// \param hMassVsPt histo with invariant mass vs pt
+/// \return BIT(0) (==1) for D+, 0 otherwise
+template <typename T, typename H2>
+int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
+{
+  auto invMassDplus = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
+  if (activateQA) {
+    hMassVsPt->Fill(ptD, invMassDplus);
+  }
+
+  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty) {
+    return 0;
+  }
+
+  return BIT(0);
+}
+
+/// Mass selection of of Ds candidates to build Bs candidates
+/// \param pTrackSameChargeFirst is the first same-charge track momentum
+/// \param pTrackSameChargeFirst is the second same-charge track momentum
+/// \param pTrackSameChargeFirst is the opposite charge track momentum
+/// \param ptD is the pt of the Ds meson candidate
+/// \param isSelected is the flag containing the selection tag for the Ds candidate
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param activateQA flag to activate the filling of QA histos
+/// \param hMassVsPt histo with invariant mass vs pt
+/// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
+template <typename T, typename H2>
+int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
+{
+  int8_t retValue = 0;
+  if (TESTBIT(isSelected, 0)) {
+    auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
+    if (activateQA) {
+      hMassVsPt->Fill(ptD, invMassDsToKKPi);
+    }
+    if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(0);
+    }
+  }
+  if (TESTBIT(isSelected, 1)) {
+    auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
+    if (activateQA) {
+      hMassVsPt->Fill(ptD, invMassDsToPiKK);
+    }
+    if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(1);
+    }
+  }
+
+  return retValue;
+}
+
+/// Mass selection of Lc candidates to build Lb candidates
+/// \param pTrackSameChargeFirst is the first same-charge track momentum
+/// \param pTrackSameChargeSecond is the second same-charge track momentum
+/// \param pTrackOppositeCharge is the opposite charge track momentum
+/// \param ptLc is the pt of the D0 meson candidate
+/// \param isSelected is the flag containing the selection tag for the D0 candidate
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param activateQA flag to activate the filling of QA histos
+/// \param hMassVsPt histo with invariant mass vs pt
+/// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
+template <typename T, typename H2>
+int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
+{
+  int8_t retValue = 0;
+  if (TESTBIT(isSelected, 0)) {
+    auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
+    if (activateQA) {
+      hMassVsPt->Fill(ptLc, invMassLcToPKPi);
+    }
+    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(0);
+    }
+  }
+  if (TESTBIT(isSelected, 1)) {
+    auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
+    if (activateQA) {
+      hMassVsPt->Fill(ptLc, invMassLcToPiKP);
+    }
+    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(1);
+    }
+  }
+
+  return retValue;
+}
+
+/// Mass selection of Xic candidates to build Lb candidates
+/// \param pTrackSameChargeFirst is the first same-charge track momentum
+/// \param pTrackSameChargeSecond is the second same-charge track momentum
+/// \param pTrackOppositeCharge is the opposite charge track momentum
+/// \param ptXic is the pt of the D0 meson candidate
+/// \param isSelected is the flag containing the selection tag for the D0 candidate
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param activateQA flag to activate the filling of QA histos
+/// \param hMassVsPt histo with invariant mass vs pt
+/// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
+template <typename T, typename H2>
+int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
+{
+  int8_t retValue = 0;
+  if (TESTBIT(isSelected, 0)) {
+    auto invMassXicToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
+    if (activateQA) {
+      hMassVsPt->Fill(ptXic, invMassXicToPKPi);
+    }
+    if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(0);
+    }
+  }
+  if (TESTBIT(isSelected, 1)) {
+    auto invMassXicToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
+    if (activateQA) {
+      hMassVsPt->Fill(ptXic, invMassXicToPiKP);
+    }
+    if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(1);
+    }
+  }
+
+  return retValue;
+}
+
+/// Basic selection of gamma candidates
+/// \param gamma is the gamma candidate
+/// \param gammaCosinePA is the cosp of the gamma
+/// \param hGammaSelected is the pointer to the QA histo for selected gammas
+/// \param hGammaEtaBefore is the pointer to the QA histo for gamma eta before selection
+/// \param hGammaArmPodBefore is the pointer to the QA histo AP plot before selection
+/// \param hGammaEtaAfter is the pointer to the QA histo for gamma eta before selection
+/// \param hGammaArmPodAfter is the pointer to the QA histo AP plot before selection
+/// \return true if gamma passes all cuts
+template <typename T, typename H1, typename H2>
+bool isSelectedGamma(const T& gamma, const float& gammaCosinePA, const int& activateQA, H1 hGammaSelected, H1 hGammaEtaBefore, H1 hGammaEtaAfter, H2 hGammaArmPodBefore, H2 hGammaArmPodAfter)
+{
+  if (activateQA > 1) {
+    hGammaSelected->Fill(0);
+    hGammaEtaBefore->Fill(gamma.eta());
+    hGammaArmPodBefore->Fill(gamma.alpha(), gamma.qtarm());
+  }
+  if (std::abs(gamma.eta()) > 0.8) {
+    if (activateQA > 1)
+      hGammaSelected->Fill(1);
+    return false;
+  }
+
+  if (gamma.v0radius() < 0. || gamma.v0radius() > 180.) {
+    if (activateQA > 1)
+      hGammaSelected->Fill(2);
+    return false;
+  }
+
+  if ((std::pow(gamma.alpha() / 0.95, 2) + std::pow(gamma.qtarm() / 0.05, 2)) >= 1) {
+    if (activateQA > 1)
+      hGammaSelected->Fill(3);
+    return false;
+  }
+
+  if (std::abs(gamma.psipair()) > 0.1) {
+    if (activateQA > 1)
+      hGammaSelected->Fill(4);
+    return false;
+  }
+
+  if (gammaCosinePA < 0.85) {
+    if (activateQA > 1)
+      hGammaSelected->Fill(5);
+    return false;
+  }
+
+  if (activateQA > 1) {
+    hGammaSelected->Fill(6);
+    hGammaEtaAfter->Fill(gamma.eta());
+    hGammaArmPodAfter->Fill(gamma.alpha(), gamma.qtarm());
+  }
+  return true;
+}
+
+/// Single-track cuts for bachelor track of beauty candidates
+/// \param scores is a 3-element array with BDT out scores
+/// \param thresholdBDTScores is the LabelledArray containing the BDT cut values
+/// \return 0 if rejected, otherwise bitmap with BIT(RecoDecay::OriginType::Prompt) and/or BIT(RecoDecay::OriginType::NonPrompt) on
+template <typename T, typename U>
+int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores)
+{
+  int8_t retValue = 0;
+  if (scores.size() < 3) {
+    return retValue;
+  }
+
+  if (scores[0] > thresholdBDTScores.get(0u, "BDTbkg")) {
+    return retValue;
+  }
+  if (scores[1] > thresholdBDTScores.get(0u, "BDTprompt")) {
+    retValue |= BIT(RecoDecay::OriginType::Prompt);
+  }
+  if (scores[2] > thresholdBDTScores.get(0u, "BDTnonprompt")) {
+    retValue |= BIT(RecoDecay::OriginType::NonPrompt);
+  }
+
+  return retValue;
+}
 
 /// Computation of the relative momentum between particle pairs
 /// \param track is a track
@@ -224,7 +770,7 @@ Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string p
   }
 
   return session;
-};
+}
 
 /// Iinitialisation of ONNX session
 /// \param inputFeatures is the vector with input features
@@ -255,7 +801,48 @@ std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort:
   }
 
   return scores;
-};
+}
+
+/// PID postcalibrations
+
+/// compute TPC postcalibrated nsigma based on calibration histograms from CCDB
+/// \param hCalibMean calibration histograms of mean from CCDB
+/// \param hCalibSigma calibration histograms of sigma from CCDB
+/// \param track is the track
+/// \param pidSpecies is the PID species
+/// \return the corrected Nsigma value for the PID species
+template <typename T>
+float getTPCPostCalib(const TH3F* hCalibMean, const TH3F* hCalibSigma, const T& track, const int pidSpecies)
+{
+  auto tpcNCls = track.tpcNClsFound();
+  auto tpcPin = track.tpcInnerParam();
+  auto eta = track.eta();
+  auto tpcNSigma = 0.;
+
+  if (pidSpecies == kKa) {
+    tpcNSigma = track.tpcNSigmaKa();
+  } else if (pidSpecies == kPi) {
+    tpcNSigma = track.tpcNSigmaPi();
+  } else if (pidSpecies == kPr) {
+    tpcNSigma = track.tpcNSigmaPr();
+  } else {
+    LOG(fatal) << "Wrong PID Species be selected, please check!";
+  }
+  auto binTPCNCls = hCalibMean->GetXaxis()->FindBin(tpcNCls);
+  binTPCNCls = (binTPCNCls == 0 ? 1 : binTPCNCls);
+  binTPCNCls = std::min(hCalibMean->GetXaxis()->GetNbins(), binTPCNCls);
+  auto binPin = hCalibMean->GetYaxis()->FindBin(tpcPin);
+  binPin = (binPin == 0 ? 1 : binPin);
+  binPin = std::min(hCalibMean->GetYaxis()->GetNbins(), binPin);
+  auto binEta = hCalibMean->GetZaxis()->FindBin(eta);
+  binEta = (binEta == 0 ? 1 : binEta);
+  binEta = std::min(hCalibMean->GetZaxis()->GetNbins(), binEta);
+
+  auto mean = hCalibMean->GetBinContent(binTPCNCls, binPin, binEta);
+  auto width = hCalibSigma->GetBinContent(binTPCNCls, binPin, binEta);
+
+  return (tpcNSigma - mean) / width;
+}
 } // namespace hffilters
 
 /// definition of tables
