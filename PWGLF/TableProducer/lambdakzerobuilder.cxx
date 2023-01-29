@@ -215,7 +215,7 @@ struct lambdakzeroBuilder {
     statisticsRegistry.eventCounter = 0;
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       statisticsRegistry.v0stats[ii] = 0;
-    for (Int_t ii = 0; ii < 10; ii++){
+    for (Int_t ii = 0; ii < 10; ii++) {
       statisticsRegistry.posITSclu[ii] = 0;
       statisticsRegistry.negITSclu[ii] = 0;
     }
@@ -227,8 +227,8 @@ struct lambdakzeroBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
-    if(d_doTrackQA){
-      for (Int_t ii = 0; ii < 10; ii++){
+    if (d_doTrackQA) {
+      for (Int_t ii = 0; ii < 10; ii++) {
         registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
         registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
       }
@@ -389,13 +389,13 @@ struct lambdakzeroBuilder {
       return;
     }
 
-    //In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990){
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if( fabs(d_bz) > 1e-5 ){
-        grpmag.setL3Current(30000.f / (d_bz/5.0f) );
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -544,9 +544,11 @@ struct lambdakzeroBuilder {
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
 
-      if(d_doTrackQA){
-        if( posTrackCast.itsNCls() < 10 ) statisticsRegistry.posITSclu[ posTrackCast.itsNCls() ]++;
-        if( negTrackCast.itsNCls() < 10 ) statisticsRegistry.negITSclu[ negTrackCast.itsNCls() ]++;
+      if (d_doTrackQA) {
+        if (posTrackCast.itsNCls() < 10)
+          statisticsRegistry.posITSclu[posTrackCast.itsNCls()]++;
+        if (negTrackCast.itsNCls() < 10)
+          statisticsRegistry.negITSclu[negTrackCast.itsNCls()]++;
       }
 
       // populate V0 covariance matrices if required by any other task
