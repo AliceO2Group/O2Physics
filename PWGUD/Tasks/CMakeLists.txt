@@ -16,7 +16,7 @@ o2physics_add_dpl_workflow(upc
 
 o2physics_add_dpl_workflow(upc-forward
                            SOURCES upcForward.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsVertexing
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(diff-mcdatascanner
