@@ -769,7 +769,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, LabeledTracks const&, aod::McParticles const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -788,7 +788,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0s const&, TracksWithPID const&)
+  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPID const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -807,7 +807,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0s const&, TracksWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPIDandLabels const&)
   {
     for (auto& casc : cascades) {
       bool lIsdEdxInteresting = false;
