@@ -48,7 +48,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -142,6 +142,7 @@ struct cascadeBuilder {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
+  Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -193,6 +194,9 @@ struct cascadeBuilder {
   // Helper struct to do bookkeeping of building parameters
   struct {
     std::array<long, kNCascSteps> cascstats;
+    std::array<long, 10> posITSclu;
+    std::array<long, 10> negITSclu;
+    std::array<long, 10> bachITSclu;
     long exceptions;
     long eventCounter;
   } statisticsRegistry;
@@ -201,6 +205,9 @@ struct cascadeBuilder {
     "registry",
     {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
+     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
+     {"hBachelorITSClusters", "hBachelorITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
      {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
   void resetHistos()
@@ -209,6 +216,11 @@ struct cascadeBuilder {
     statisticsRegistry.eventCounter = 0;
     for (Int_t ii = 0; ii < kNCascSteps; ii++)
       statisticsRegistry.cascstats[ii] = 0;
+    for (Int_t ii = 0; ii < 10; ii++){
+      statisticsRegistry.posITSclu[ii] = 0;
+      statisticsRegistry.negITSclu[ii] = 0;
+      statisticsRegistry.bachITSclu[ii] = 0;
+    }
   }
 
   void fillHistos()
@@ -217,6 +229,13 @@ struct cascadeBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNCascSteps; ii++)
       registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
+    if(d_doTrackQA){
+      for (Int_t ii = 0; ii < 10; ii++){
+        registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
+        registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
+        registry.fill(HIST("hBachelorITSClusters"), ii, statisticsRegistry.bachITSclu[ii]);
+      }
+    }
   }
 
   void init(InitContext& context)
@@ -390,13 +409,13 @@ struct cascadeBuilder {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    //In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990){
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if( fabs(d_bz) > 1e-5 ){
+        grpmag.setL3Current(30000.f / (d_bz/5.0f) );
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -544,6 +563,8 @@ struct cascadeBuilder {
         continue; // skip those cascades for which V0 doesn't exist
       }
       auto v0 = v0index.template v0Data_as<V0full>(); // de-reference index to correct v0data in case it exists
+      auto posTrackCast = v0.template posTrack_as<TTracksTo>();
+      auto negTrackCast = v0.template negTrack_as<TTracksTo>();
       //
       bool validCascadeCandidate = buildCascadeCandidate(collision, bachTrackCast, v0);
       if (!validCascadeCandidate)
@@ -561,6 +582,12 @@ struct cascadeBuilder {
                v0.dcaV0daughters(), cascadecandidate.dcacascdau,
                v0.dcapostopv(), v0.dcanegtopv(),
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
+      
+      if(d_doTrackQA){
+        if( posTrackCast.itsNCls() < 10 ) statisticsRegistry.posITSclu[ posTrackCast.itsNCls() ]++;
+        if( negTrackCast.itsNCls() < 10 ) statisticsRegistry.negITSclu[ negTrackCast.itsNCls() ]++;
+        if( bachTrackCast.itsNCls() < 10 ) statisticsRegistry.bachITSclu[ bachTrackCast.itsNCls() ]++;
+      }
     }
     // En masse filling at end of process call
     fillHistos();
@@ -788,7 +815,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0s const&, TracksWithPID const&)
+  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPID const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -807,7 +834,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0s const&, TracksWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPIDandLabels const&)
   {
     for (auto& casc : cascades) {
       bool lIsdEdxInteresting = false;
