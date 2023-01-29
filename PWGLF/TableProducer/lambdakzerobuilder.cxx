@@ -148,6 +148,7 @@ struct lambdakzeroBuilder {
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
+  Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -194,6 +195,8 @@ struct lambdakzeroBuilder {
   // Helper struct to do bookkeeping of building parameters
   struct {
     std::array<long, kNV0Steps> v0stats;
+    std::array<long, 10> posITSclu;
+    std::array<long, 10> negITSclu;
     long exceptions;
     long eventCounter;
   } statisticsRegistry;
@@ -202,6 +205,8 @@ struct lambdakzeroBuilder {
     "registry",
     {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
+     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
      {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
   void resetHistos()
@@ -210,6 +215,10 @@ struct lambdakzeroBuilder {
     statisticsRegistry.eventCounter = 0;
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       statisticsRegistry.v0stats[ii] = 0;
+    for (Int_t ii = 0; ii < 10; ii++) {
+      statisticsRegistry.posITSclu[ii] = 0;
+      statisticsRegistry.negITSclu[ii] = 0;
+    }
   }
 
   void fillHistos()
@@ -218,6 +227,12 @@ struct lambdakzeroBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
+    if (d_doTrackQA) {
+      for (Int_t ii = 0; ii < 10; ii++) {
+        registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
+        registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
+      }
+    }
   }
 
   o2::track::TrackParCov lPositiveTrack;
@@ -528,6 +543,13 @@ struct lambdakzeroBuilder {
              v0candidate.dcaV0dau,
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
+
+      if (d_doTrackQA) {
+        if (posTrackCast.itsNCls() < 10)
+          statisticsRegistry.posITSclu[posTrackCast.itsNCls()]++;
+        if (negTrackCast.itsNCls() < 10)
+          statisticsRegistry.negITSclu[negTrackCast.itsNCls()]++;
+      }
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
