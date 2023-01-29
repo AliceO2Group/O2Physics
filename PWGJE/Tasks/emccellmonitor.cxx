@@ -168,7 +168,7 @@ struct CellMonitor {
           mHistManager.fill(HIST("cellTimeMain"), cell.time(), cell.cellNumber());
         }
         mHistManager.fill(HIST("celTimeBC"), cellIR.bc, cell.time());
-        fillHistTimeBCMod(bcMod4, cell.time(), cell.cellNumber());
+        fillHistTimeBCMod(bcMod4, cell.cellNumber(), cell.time());
       }
 
       mHistManager.fill(HIST("cellAmplitudeBC"), cellIR.bc, cell.amplitude());

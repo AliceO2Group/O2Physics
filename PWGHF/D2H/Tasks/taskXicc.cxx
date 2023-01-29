@@ -69,7 +69,7 @@ struct HfTaskXicc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
-  //void process(aod::HfCandXicc const& candidates)
+  // void process(aod::HfCandXicc const& candidates)
   {
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
@@ -153,7 +153,7 @@ struct HfTaskXiccMc {
     registry.add("hYSecVtxPosRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;y-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hZSecVtxPosRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;z-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;pt reco - gen;entries (GeV/#it{c}})", {HistType::kTH2F, {{400, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    //debug
+    // debug
     registry.add("hDebugMCmatching", "#Xi^{++}_{cc} (rec. matched) candidates;debug MC matching bitmap;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // Check Y dependence (To be removed)
     registry.add("hMassVsPtVsYRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;inv. mass (p K #pi #pi) (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {20, -5., 5.}}});
@@ -177,7 +177,7 @@ struct HfTaskXiccMc {
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
-    //Printf("MC Candidates: %d", candidates.size());
+    // Printf("MC Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
@@ -258,7 +258,7 @@ struct HfTaskXiccMc {
       }
     } // end of loop over reconstructed candidates
     // MC gen.
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
