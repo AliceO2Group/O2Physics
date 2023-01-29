@@ -21,6 +21,8 @@
 //  propagation calls that are intrinsically heavy. Please
 //  also be cautious when adjusting selections: these can
 //  increase / decrease CPU consumption quite significantly.
+//  Please also remember to use the preselector carefully
+//  to select candidates for the full building process.
 //
 //  IDEAL USAGE: if you are interested in taking V0s and
 //  cascades and propagating TrackParCovs based on these,
