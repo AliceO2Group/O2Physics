@@ -46,6 +46,10 @@ struct tofPidQa {
   static constexpr std::string_view hdelta_pt_neg[Np] = {"delta/pt/neg/El", "delta/pt/neg/Mu", "delta/pt/neg/Pi",
                                                          "delta/pt/neg/Ka", "delta/pt/neg/Pr", "delta/pt/neg/De",
                                                          "delta/pt/neg/Tr", "delta/pt/neg/He", "delta/pt/neg/Al"};
+  static constexpr std::string_view hdelta_etaphi[Np] = {"delta/etaphi/El", "delta/etaphi/Mu", "delta/etaphi/Pi",
+                                                         "delta/etaphi/Ka", "delta/etaphi/Pr", "delta/etaphi/De",
+                                                         "delta/etaphi/Tr", "delta/etaphi/He", "delta/etaphi/Al"};
+
   // Ev. Time fill
   static constexpr std::string_view hdelta_evtime_fill[Np] = {"delta/evtime/fill/El", "delta/evtime/fill/Mu", "delta/evtime/fill/Pi",
                                                               "delta/evtime/fill/Ka", "delta/evtime/fill/Pr", "delta/evtime/fill/De",
@@ -174,9 +178,14 @@ struct tofPidQa {
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
+  Configurable<bool> produceDeltaTEtaPhiMap{"produceDeltaTEtaPhiMap", false, "Produces the map of the delta time as a function of eta and phi"};
+  Configurable<float> ptDeltaTEtaPhiMap{"ptDeltaTEtaPhiMap", 3.f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
 
   template <o2::track::PID::ID id>
-  void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis)
+  void initPerParticle(const AxisSpec& pAxis,
+                       const AxisSpec& ptAxis,
+                       const AxisSpec& etaAxis,
+                       const AxisSpec& phiAxis)
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     bool enableFullHistos = false;
@@ -255,6 +264,9 @@ struct tofPidQa {
     histos.add(hdelta[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
     histos.add(hdelta_pt_pos[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
     histos.add(hdelta_pt_neg[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    if (produceDeltaTEtaPhiMap) {
+      histos.add(hdelta_etaphi[id].data(), Form("%s, #it{p}_{T} > %.2f", axisTitle, ptDeltaTEtaPhiMap.value), kTH3F, {etaAxis, phiAxis, deltaAxis});
+    }
 
     if (enableEvTimeSplitting) {
       histos.add(hdelta_evtime_fill[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
@@ -347,7 +359,7 @@ struct tofPidQa {
     // histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
 
     static_for<0, 8>([&](auto i) {
-      initPerParticle<i>(pAxis, ptAxis);
+      initPerParticle<i>(pAxis, ptAxis, etaAxis, phiAxis);
     });
   }
 
@@ -579,6 +591,13 @@ struct tofPidQa {
         } else {
           histos.fill(HIST(hdelta_pt_neg[id]), t.p(), diff);
         }
+
+        if (produceDeltaTEtaPhiMap) {
+          if (t.pt() > ptDeltaTEtaPhiMap) {
+            histos.fill(HIST(hdelta_etaphi[id]), t.eta(), t.phi(), diff);
+          }
+        }
+
         // Filling info split per ev. time
         if (enableEvTimeSplitting) {
           if (t.isEvTimeTOF() && t.isEvTimeT0AC()) { // TOF + FT0 Ev. Time

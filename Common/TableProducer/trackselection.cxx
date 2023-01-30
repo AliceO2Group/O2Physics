@@ -60,24 +60,29 @@ struct TrackSelectionTask {
       case 0:
         // Run 2 SPD kAny
         if (!isRun3) {
+          LOG(info) << "setting up globalTracks = getGlobalTrackSelection();";
           globalTracks = getGlobalTrackSelection();
           break;
         }
+        LOG(warning) << "isRun3 == true and itsMatching == 0: not setting globalTracks = getGlobalTrackSelection();, but going to itsMatching == 1 and set getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny)";
       case 1:
         // Run 3 kAny on 3 IB layers of ITS
         if (isRun3) {
+          LOG(info) << "setting up globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny);";
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny);
           break;
         }
       case 2:
         // Run 3 kAny on all 7 layers of ITS
         if (isRun3) {
+          LOG(info) << "setting up globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny);";
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny);
           break;
         }
       case 3:
         // Run 3 kAll on all 7 layers of ITS
         if (isRun3) {
+          LOG(info) << "setting up globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers);";
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers);
           break;
         }

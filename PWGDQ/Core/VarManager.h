@@ -56,11 +56,11 @@ class VarManager : public TObject
  public:
   // map the information contained in the objects passed to the Fill functions
   enum ObjTypes {
-    // NOTE: Elements containing "Reduced" in their name refer to skimmed data tables
-    //       and the ones that don't refer to tables from the Framework data model
+    // NOTE: Elements containing "Reduced" in their name refer strictly to skimmed data tables
+    //       and the ones that don't refer to tables from the Framework data model or both models
     BC = BIT(0),
     Collision = BIT(1),
-    CollisionCent = BIT(2),
+    CollisionCentRun2 = BIT(2),
     CollisionTimestamp = BIT(3),
     ReducedEvent = BIT(4),
     ReducedEventExtended = BIT(5),
@@ -68,28 +68,30 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
-    CollisionCentRun3 = BIT(10),
+    CollisionCent = BIT(10),
+    CollisionMult = BIT(11),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
-    TrackPID = BIT(3),
-    TrackDCA = BIT(4),
-    TrackSelection = BIT(5),
-    TrackV0Bits = BIT(6),
-    ReducedTrack = BIT(7),
-    ReducedTrackBarrel = BIT(8),
-    ReducedTrackBarrelCov = BIT(9),
-    ReducedTrackBarrelPID = BIT(10),
-    Muon = BIT(11),
-    MuonCov = BIT(12),
-    ReducedMuon = BIT(13),
-    ReducedMuonExtra = BIT(14),
-    ReducedMuonCov = BIT(15),
-    ParticleMC = BIT(16),
-    Pair = BIT(17), // TODO: check whether we really need the Pair member here
-    AmbiTrack = BIT(18),
-    AmbiMuon = BIT(19),
-    DalitzBits = BIT(20)
+    TrackPID = BIT(3),      // used for basic PID properties (needed such that we can subscribe to a minimal set of PID tables): e,pi,K,p for TPC and TOF
+    TrackPIDExtra = BIT(4), // extra PID information
+    TrackDCA = BIT(5),
+    TrackSelection = BIT(6),
+    TrackV0Bits = BIT(7),
+    ReducedTrack = BIT(8),
+    ReducedTrackBarrel = BIT(9),
+    ReducedTrackBarrelCov = BIT(10),
+    ReducedTrackBarrelPID = BIT(11),
+    Muon = BIT(12),
+    MuonCov = BIT(13),
+    ReducedMuon = BIT(14),
+    ReducedMuonExtra = BIT(15),
+    ReducedMuonCov = BIT(16),
+    ParticleMC = BIT(17),
+    Pair = BIT(18), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(19),
+    AmbiMuon = BIT(20),
+    DalitzBits = BIT(21)
   };
 
   enum PairCandidateType {
@@ -138,6 +140,16 @@ class VarManager : public TObject
     kVtxChi2,
     kCentVZERO,
     kCentFT0C,
+    kMultTPC,
+    kMultFV0A,
+    kMultFV0C,
+    kMultFT0A,
+    kMultFT0C,
+    kMultFDDA,
+    kMultFDDC,
+    kMultZNA,
+    kMultZNC,
+    kMultTracklets,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -576,14 +588,26 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxChi2] = event.chi2();
   }
 
-  if constexpr ((fillMap & CollisionCent) > 0) {
+  if constexpr ((fillMap & CollisionCentRun2) > 0) {
     values[kCentVZERO] = event.centRun2V0M();
   }
 
-  if constexpr ((fillMap & CollisionCentRun3) > 0) {
+  if constexpr ((fillMap & CollisionCent) > 0) {
     values[kCentFT0C] = event.centFT0C();
   }
 
+  if constexpr ((fillMap & CollisionMult) > 0) {
+    values[kMultTPC] = event.multTPC();
+    values[kMultFV0A] = event.multFV0A();
+    values[kMultFV0C] = event.multFV0C();
+    values[kMultFT0A] = event.multFT0A();
+    values[kMultFT0C] = event.multFT0C();
+    values[kMultFDDA] = event.multFDDA();
+    values[kMultFDDC] = event.multFDDC();
+    values[kMultZNA] = event.multZNA();
+    values[kMultZNC] = event.multZNC();
+    values[kMultTracklets] = event.multTracklets();
+  }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
@@ -773,6 +797,9 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnclsCR] = track.tpcNClsCrossedRows();
     values[kTRDPattern] = track.trdPattern();
 
+    values[kTPCsignal] = track.tpcSignal();
+    values[kTRDsignal] = track.trdSignal();
+
     if constexpr ((fillMap & TrackExtra) > 0) {
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
@@ -849,18 +876,9 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the barrel PID tables
   if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
     values[kTPCnSigmaEl] = track.tpcNSigmaEl();
-    values[kTPCnSigmaMu] = track.tpcNSigmaMu();
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
     values[kTPCnSigmaPr] = track.tpcNSigmaPr();
-
-    // TODO: This part is deprecated and should be removed soon. It performs TPC postcalibration based on some
-    //      hardcoded parameterization.
-    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
-      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
-      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
-      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
-    }
 
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
@@ -920,13 +938,10 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
     }
     values[kTOFnSigmaEl] = track.tofNSigmaEl();
-    values[kTOFnSigmaMu] = track.tofNSigmaMu();
     values[kTOFnSigmaPi] = track.tofNSigmaPi();
     values[kTOFnSigmaKa] = track.tofNSigmaKa();
     values[kTOFnSigmaPr] = track.tofNSigmaPr();
-    values[kTPCsignal] = track.tpcSignal();
-    values[kTRDsignal] = track.trdSignal();
-    values[kTOFbeta] = track.beta();
+
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
       // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
       //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
@@ -942,6 +957,19 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
     }
+
+    if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTPCnSigmaMu] = track.tpcNSigmaMu();
+      values[kTOFnSigmaMu] = track.tofNSigmaMu();
+      values[kTPCsignal] = track.tpcSignal();
+      values[kTRDsignal] = track.trdSignal();
+      values[kTOFbeta] = track.beta();
+    }
+  }
+  if constexpr ((fillMap & TrackPIDExtra) > 0) {
+    values[kTPCnSigmaMu] = track.tpcNSigmaMu();
+    values[kTOFnSigmaMu] = track.tofNSigmaMu();
+    values[kTOFbeta] = track.beta();
   }
 
   // Quantities based on the muon extra table

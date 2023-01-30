@@ -136,6 +136,8 @@ struct CFFilter {
       registry.add("fPtAntiPPL", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fMinvLambda", "Invariant mass of lambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
       registry.add("fMinvAntiLambda", "Invariant mass of antilambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
+      registry.add("fMinvLambdaBefore", "Invariant mass of lambdas before ", HistType::kTH1F, {{1000, 0.7, 1.5}});
+      registry.add("fMinvAntiLambdaBefore", "Invariant mass of antilambdas before", HistType::kTH1F, {{1000, 0.7, 1.5}});
     }
     if (Q3Trigger == 2 || Q3Trigger == 1111) {
       registry.add("fSameEventPartPLL", "CF - same event pLL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
@@ -192,6 +194,13 @@ struct CFFilter {
         registry.get<TH1>(HIST("fPtAfterAntiPPP"))->Fill(p1pt.pt());
         antiprot++;
       }
+    }
+
+    for (auto lambda : partsLambda0) {
+      registry.get<TH1>(HIST("fMinvLambdaBefore"))->Fill(lambda.mLambda());
+    }
+    for (auto antilambda : partsLambda1) {
+      registry.get<TH1>(HIST("fMinvAntiLambdaBefore"))->Fill(antilambda.mAntiLambda());
     }
 
     bool keepEvent[kNTriggers] = {false, false, false, false};
