@@ -663,7 +663,6 @@ struct straRecoStudy {
         histos.fill(HIST("h3dTrackPtsXiPlusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
       }
 
-
       if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
         continue;
       if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.itsNCls() < tpcmincrossedrows)
@@ -693,7 +692,7 @@ struct straRecoStudy {
     }
   }
   PROCESS_SWITCH(straRecoStudy, processCascadeRealData, "Regular cascade analysis, real data", false);
-  
+
   void processGeneratedReconstructible(soa::Filtered<RecoedMCCollisions>::iterator const& collision, aod::McParticles const& mcParticles)
   {
     // check if collision successfully reconstructed
