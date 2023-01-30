@@ -112,10 +112,10 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe>;
+using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe, aod::McTrackLabels>;
+using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
@@ -215,7 +215,7 @@ struct lambdakzeroBuilder {
     statisticsRegistry.eventCounter = 0;
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       statisticsRegistry.v0stats[ii] = 0;
-    for (Int_t ii = 0; ii < 10; ii++) {
+    for (Int_t ii = 0; ii < 10; ii++){
       statisticsRegistry.posITSclu[ii] = 0;
       statisticsRegistry.negITSclu[ii] = 0;
     }
@@ -227,8 +227,8 @@ struct lambdakzeroBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
-    if (d_doTrackQA) {
-      for (Int_t ii = 0; ii < 10; ii++) {
+    if(d_doTrackQA){
+      for (Int_t ii = 0; ii < 10; ii++){
         registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
         registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
       }
@@ -261,7 +261,6 @@ struct lambdakzeroBuilder {
     if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false) {
@@ -389,13 +388,13 @@ struct lambdakzeroBuilder {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    //In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990){
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if( fabs(d_bz) > 1e-5 ){
+        grpmag.setL3Current(30000.f / (d_bz/5.0f) );
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -423,6 +422,12 @@ struct lambdakzeroBuilder {
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
+    
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
   }
 
   template <class TTracksTo>
@@ -544,11 +549,9 @@ struct lambdakzeroBuilder {
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
 
-      if (d_doTrackQA) {
-        if (posTrackCast.itsNCls() < 10)
-          statisticsRegistry.posITSclu[posTrackCast.itsNCls()]++;
-        if (negTrackCast.itsNCls() < 10)
-          statisticsRegistry.negITSclu[negTrackCast.itsNCls()]++;
+      if(d_doTrackQA){
+        if( posTrackCast.itsNCls() < 10 ) statisticsRegistry.posITSclu[ posTrackCast.itsNCls() ]++;
+        if( negTrackCast.itsNCls() < 10 ) statisticsRegistry.negITSclu[ negTrackCast.itsNCls() ]++;
       }
 
       // populate V0 covariance matrices if required by any other task
