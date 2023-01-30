@@ -103,10 +103,10 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfPi, aod::pidTPCLfKa, aod::pidTPCLfPr>;
+using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfPi, aod::pidTPCLfKa, aod::pidTPCLfPr, aod::McTrackLabels>;
+using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
@@ -216,7 +216,7 @@ struct cascadeBuilder {
     statisticsRegistry.eventCounter = 0;
     for (Int_t ii = 0; ii < kNCascSteps; ii++)
       statisticsRegistry.cascstats[ii] = 0;
-    for (Int_t ii = 0; ii < 10; ii++) {
+    for (Int_t ii = 0; ii < 10; ii++){
       statisticsRegistry.posITSclu[ii] = 0;
       statisticsRegistry.negITSclu[ii] = 0;
       statisticsRegistry.bachITSclu[ii] = 0;
@@ -229,8 +229,8 @@ struct cascadeBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNCascSteps; ii++)
       registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
-    if (d_doTrackQA) {
-      for (Int_t ii = 0; ii < 10; ii++) {
+    if(d_doTrackQA){
+      for (Int_t ii = 0; ii < 10; ii++){
         registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
         registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
         registry.fill(HIST("hBachelorITSClusters"), ii, statisticsRegistry.bachITSclu[ii]);
@@ -261,7 +261,6 @@ struct cascadeBuilder {
     if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false) {
@@ -409,13 +408,13 @@ struct cascadeBuilder {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    //In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990){
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if( fabs(d_bz) > 1e-5 ){
+        grpmag.setL3Current(30000.f / (d_bz/5.0f) );
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -443,6 +442,12 @@ struct cascadeBuilder {
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
+    
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
   }
 
   template <class TTracksTo, typename TV0Object>
@@ -582,14 +587,11 @@ struct cascadeBuilder {
                v0.dcaV0daughters(), cascadecandidate.dcacascdau,
                v0.dcapostopv(), v0.dcanegtopv(),
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
-
-      if (d_doTrackQA) {
-        if (posTrackCast.itsNCls() < 10)
-          statisticsRegistry.posITSclu[posTrackCast.itsNCls()]++;
-        if (negTrackCast.itsNCls() < 10)
-          statisticsRegistry.negITSclu[negTrackCast.itsNCls()]++;
-        if (bachTrackCast.itsNCls() < 10)
-          statisticsRegistry.bachITSclu[bachTrackCast.itsNCls()]++;
+      
+      if(d_doTrackQA){
+        if( posTrackCast.itsNCls() < 10 ) statisticsRegistry.posITSclu[ posTrackCast.itsNCls() ]++;
+        if( negTrackCast.itsNCls() < 10 ) statisticsRegistry.negITSclu[ negTrackCast.itsNCls() ]++;
+        if( bachTrackCast.itsNCls() < 10 ) statisticsRegistry.bachITSclu[ bachTrackCast.itsNCls() ]++;
       }
     }
     // En masse filling at end of process call
@@ -756,30 +758,30 @@ struct cascadePreselector {
     auto lPosTrack = v0data.template posTrack_as<TTracksTo>();
 
     // dEdx check with LF PID
-    if (TMath::Abs(lNegTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+    if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         ddEdxPreSelectXiMinus) {
       lIsXiMinus = 1;
       lIsInteresting = 1;
     }
-    if (TMath::Abs(lNegTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+    if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         ddEdxPreSelectXiPlus) {
       lIsXiPlus = 1;
       lIsInteresting = 1;
     }
-    if (TMath::Abs(lNegTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.template tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
+    if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
         ddEdxPreSelectOmegaMinus) {
       lIsOmegaMinus = 1;
       lIsInteresting = 1;
     }
-    if (TMath::Abs(lNegTrack.template tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.template tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.template tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
+    if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
+        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
         ddEdxPreSelectOmegaPlus) {
       lIsOmegaPlus = 1;
       lIsInteresting = 1;
