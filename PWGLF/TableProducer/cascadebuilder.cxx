@@ -216,7 +216,7 @@ struct cascadeBuilder {
     statisticsRegistry.eventCounter = 0;
     for (Int_t ii = 0; ii < kNCascSteps; ii++)
       statisticsRegistry.cascstats[ii] = 0;
-    for (Int_t ii = 0; ii < 10; ii++){
+    for (Int_t ii = 0; ii < 10; ii++) {
       statisticsRegistry.posITSclu[ii] = 0;
       statisticsRegistry.negITSclu[ii] = 0;
       statisticsRegistry.bachITSclu[ii] = 0;
@@ -229,8 +229,8 @@ struct cascadeBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNCascSteps; ii++)
       registry.fill(HIST("hCascadeCriteria"), ii, statisticsRegistry.cascstats[ii]);
-    if(d_doTrackQA){
-      for (Int_t ii = 0; ii < 10; ii++){
+    if (d_doTrackQA) {
+      for (Int_t ii = 0; ii < 10; ii++) {
         registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
         registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
         registry.fill(HIST("hBachelorITSClusters"), ii, statisticsRegistry.bachITSclu[ii]);
@@ -408,13 +408,13 @@ struct cascadeBuilder {
       return;
     }
 
-    //In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990){
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if( fabs(d_bz) > 1e-5 ){
-        grpmag.setL3Current(30000.f / (d_bz/5.0f) );
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -442,7 +442,7 @@ struct cascadeBuilder {
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
-    
+
     if (useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
@@ -587,11 +587,14 @@ struct cascadeBuilder {
                v0.dcaV0daughters(), cascadecandidate.dcacascdau,
                v0.dcapostopv(), v0.dcanegtopv(),
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
-      
-      if(d_doTrackQA){
-        if( posTrackCast.itsNCls() < 10 ) statisticsRegistry.posITSclu[ posTrackCast.itsNCls() ]++;
-        if( negTrackCast.itsNCls() < 10 ) statisticsRegistry.negITSclu[ negTrackCast.itsNCls() ]++;
-        if( bachTrackCast.itsNCls() < 10 ) statisticsRegistry.bachITSclu[ bachTrackCast.itsNCls() ]++;
+
+      if (d_doTrackQA) {
+        if (posTrackCast.itsNCls() < 10)
+          statisticsRegistry.posITSclu[posTrackCast.itsNCls()]++;
+        if (negTrackCast.itsNCls() < 10)
+          statisticsRegistry.negITSclu[negTrackCast.itsNCls()]++;
+        if (bachTrackCast.itsNCls() < 10)
+          statisticsRegistry.bachITSclu[bachTrackCast.itsNCls()]++;
       }
     }
     // En masse filling at end of process call
