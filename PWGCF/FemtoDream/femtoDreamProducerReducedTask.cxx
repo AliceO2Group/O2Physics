@@ -190,6 +190,8 @@ struct femtoDreamProducerReducedTask {
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
     const auto multNtr = col.multNTracksPV();
+    const auto multNtrwithTPC = col.multTPC();
+    const auto multNtracklets = col.multTracklets();
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
@@ -203,14 +205,14 @@ struct femtoDreamProducerReducedTask {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(vtxZ, mult, multNtr, multNtrwithTPC, multNtracklets, colCuts.computeSphericity(col, tracks), mMagField);
       }
       return;
     }
 
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    outputCollision(vtxZ, mult, multNtr, multNtrwithTPC, multNtracklets, spher, mMagField);
 
     // these IDs are necessary to keep track of the children
     // since this producer only produces the tables for tracks, there are no children

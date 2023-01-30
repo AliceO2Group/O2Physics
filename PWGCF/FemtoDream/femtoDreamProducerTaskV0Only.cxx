@@ -228,20 +228,12 @@ struct femtoDreamProducerTaskV0Only {
       mRunNumber = bc.runNumber();
     }
 
-    /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
-      if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), colCuts.computeSphericity(col, tracks), mMagField);
-      }
-      return;
-    }
-
     const auto vtxZ = col.posZ();
-    const int multNtr = col.multNTracksPV();
     const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto multNtr = col.multNTracksPV();
+    const auto multNtrwithTPC = col.multTPC();
+    const auto multNtracklets = col.multTracklets();
+    
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
@@ -249,10 +241,23 @@ struct femtoDreamProducerTaskV0Only {
     } else {
       mult = 0.5 * (col.multFV0M());
     }
+    
+    /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        //outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(vtxZ, mult, multNtr, multNtrwithTPC, multNtracklets, spher, mMagField);
+      }
+      return;
+    }
+    
     colCuts.fillQA(col);
-
     // now the table is filled
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    //outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    outputCollision(vtxZ, mult, multNtr, multNtrwithTPC, multNtracklets, spher, mMagField);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
