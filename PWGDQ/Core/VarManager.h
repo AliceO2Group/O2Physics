@@ -60,7 +60,7 @@ class VarManager : public TObject
     //       and the ones that don't refer to tables from the Framework data model or both models
     BC = BIT(0),
     Collision = BIT(1),
-    CollisionCent = BIT(2),
+    CollisionCentRun2 = BIT(2),
     CollisionTimestamp = BIT(3),
     ReducedEvent = BIT(4),
     ReducedEventExtended = BIT(5),
@@ -68,7 +68,8 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
-    CollisionCentRun3 = BIT(10),
+    CollisionCent = BIT(10),
+    CollisionMult = BIT(11),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -139,6 +140,16 @@ class VarManager : public TObject
     kVtxChi2,
     kCentVZERO,
     kCentFT0C,
+    kMultTPC,
+    kMultFV0A,
+    kMultFV0C,
+    kMultFT0A,
+    kMultFT0C,
+    kMultFDDA,
+    kMultFDDC,
+    kMultZNA,
+    kMultZNC,
+    kMultTracklets,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -577,14 +588,26 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxChi2] = event.chi2();
   }
 
-  if constexpr ((fillMap & CollisionCent) > 0) {
+  if constexpr ((fillMap & CollisionCentRun2) > 0) {
     values[kCentVZERO] = event.centRun2V0M();
   }
 
-  if constexpr ((fillMap & CollisionCentRun3) > 0) {
+  if constexpr ((fillMap & CollisionCent) > 0) {
     values[kCentFT0C] = event.centFT0C();
   }
 
+  if constexpr ((fillMap & CollisionMult) > 0) {
+    values[kMultTPC] = event.multTPC();
+    values[kMultFV0A] = event.multFV0A();
+    values[kMultFV0C] = event.multFV0C();
+    values[kMultFT0A] = event.multFT0A();
+    values[kMultFT0C] = event.multFT0C();
+    values[kMultFDDA] = event.multFDDA();
+    values[kMultFDDC] = event.multFDDC();
+    values[kMultZNA] = event.multZNA();
+    values[kMultZNC] = event.multZNC();
+    values[kMultTracklets] = event.multTracklets();
+  }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
