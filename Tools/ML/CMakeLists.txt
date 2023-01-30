@@ -9,6 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(PIDML)
-add_subdirectory(ML)
-add_subdirectory(KFparticle)
+o2physics_add_library(MLCore
+             SOURCES model.cxx
+             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
+)
