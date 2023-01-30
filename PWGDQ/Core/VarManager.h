@@ -595,7 +595,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCentFT0C] = event.centFT0C();
   }
 
-  if constexpr((fillMap & CollisionMult) > 0){
+  if constexpr ((fillMap & CollisionMult) > 0) {
     values[kMultTPC] = event.multTPC();
     values[kMultFV0A] = event.multFV0A();
     values[kMultFV0C] = event.multFV0C();
