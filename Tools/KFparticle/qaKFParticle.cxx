@@ -640,7 +640,7 @@ struct qaKFParticle {
     float normdecayLength = KFDZero_PV.GetDecayLength() / KFDZero_PV.GetErrDecayLength();
     float chi2topo = KFDZero_PV.GetChi2() / KFDZero_PV.GetNDF();
     float chi2Topo = KFDZero_DecayVtx.GetChi2() / KFDZero_DecayVtx.GetNDF();
-    double pseudoRndm = track1.pt() * 1000. - (long)(track1.pt() * 1000);
+    const double pseudoRndm = track1.pt() * 1000. - (int64_t)(track1.pt() * 1000);
     if (pseudoRndm < d_DwnSmplFact) {
       if (writeTree) {
         /// Filling the D0 tree

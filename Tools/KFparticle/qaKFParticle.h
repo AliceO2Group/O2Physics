@@ -12,6 +12,9 @@
 /// \file qaKFParticle.h
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>
 
+#ifndef TOOLS_KFPARTICLE_QAKFPARTICLE_H_
+#define TOOLS_KFPARTICLE_QAKFPARTICLE_H_
+
 using namespace o2;
 using namespace o2::framework;
 
@@ -108,3 +111,5 @@ DECLARE_SOA_TABLE(TreeKF, "AOD", "TREEKF",
                   kfparticle::Chi2GeoTopo);
 
 } // namespace o2::aod
+
+#endif // TOOLS_KFPARTICLE_QAKFPARTICLE_H_

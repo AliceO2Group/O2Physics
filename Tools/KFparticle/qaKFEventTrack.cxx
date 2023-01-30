@@ -38,7 +38,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "TableHelper.h"
 #include "Tools/KFparticle/KFUtilities.h"
-#include "Tools/KFparticle/qaKFParticle.h"
+#include "Tools/KFparticle/qaKFEventTrack.h"
 #include <iostream>
 using namespace std;
 #include <TDatabasePDG.h>
@@ -61,7 +61,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::dataformats;
 
-struct qaKFParticle {
+struct qaKFEventTrack {
 
   /// general steering settings
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
@@ -86,6 +86,9 @@ struct qaKFParticle {
   /// singe track selections
   Configurable<float> d_pTMin{"d_pTMin", 0.3, "minimum momentum for tracks"};
   Configurable<float> d_etaRange{"d_etaRange", 0.8, "eta Range for tracks"};
+  /// Option to write variables in a tree
+  Configurable<double> d_DwnSmplFact{"d_DwnSmplFact", 1., "Downsampling factor for tree"};
+  Configurable<bool> writeTree{"writeTree", false, "write daughter variables in a tree"};
 
   // Define which track selection should be used:
   // 0 -> No track selection is applied
@@ -110,9 +113,11 @@ struct qaKFParticle {
 
   HistogramRegistry histos;
   /// Table to be produced
-  Produces<o2::aod::TreeKF> rowKF;
+  Produces<o2::aod::TreeTracks> rowKFTracks;
+  Produces<o2::aod::TreeCollisions> rowKFCollisions;
 
   int source = 0;
+  int pVContrib = 0;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
                              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
@@ -203,15 +208,6 @@ struct qaKFParticle {
     histos.add("Tracks/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
     histos.add("Tracks/deviationPiToPV", "deviation of Pi to PV", kTH1D, {{200, 0., 10.}});
 
-    auto hSelection = histos.add<TH1>("DZeroCandTopo/Selections", "Selections", kTH1D, {{7, 0.5, 7.5}});
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(1), "All Collisions");
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(2), "Cov < 0");
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(3), "All Tracks");
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(4), "Tr Pt");
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(5), "Tr Eta");
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(6), "Tr DCAXY");
-    hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(7), "Tr DCAZ");
-
     auto hSelectionMC = histos.add<TH1>("DZeroCandTopo/SelectionsMC", "Selections MC", kTH1D, {{5, 0.5, 5.5}});
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(1), "All Tracks");
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(2), "No MC particle");
@@ -228,11 +224,6 @@ struct qaKFParticle {
     if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
       return false;
     }
-    /// Reject collisions with negative covariance matrix elemts on the digonal
-    if (collision.covXX() < 0. || collision.covYY() < 0. || collision.covZZ() < 0.) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 2.f);
-      return false;
-    }
     return true;
   }
 
@@ -241,12 +232,10 @@ struct qaKFParticle {
   bool isSelectedTracks(const T& track1)
   {
     if (track1.p() < d_pTMin) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
       return false;
     }
     /// Eta range
     if (abs(track1.eta()) > d_etaRange) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 5.f);
       return false;
     }
     return true;
@@ -269,6 +258,44 @@ struct qaKFParticle {
     histos.fill(HIST("Tracks/deviationPiToPV"), KFPion.GetDeviationFromVertex(KFPV));
   }
 
+  template <typename T1, typename T2, typename T3, typename T4>
+  void writeVarTree(const T1& kfpTrackPi, const T2& KFPion, const T2& KFPV, const T3& track, const int source, const int pVContrib, const int runNumber, const T4& collision)
+  {
+    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
+    if (pseudoRndm < d_DwnSmplFact) {
+      if (writeTree) {
+        /// Filling the tree
+        rowKFTracks(source,
+                    pVContrib,
+                    track.dcaXY(),
+                    track.dcaZ(),
+                    KFPion.GetDistanceFromVertex(KFPV),
+                    KFPion.GetDistanceFromVertexXY(KFPV),
+                    track.sign(),
+                    track.p(),
+                    runNumber,
+                    collision.posX(),
+                    collision.posY(),
+                    collision.posZ(),
+                    collision.covXX(),
+                    collision.covYY(),
+                    collision.covZZ(),
+                    collision.numContrib(),
+                    collision.chi2());
+
+        rowKFCollisions(collision.posX(),
+                        collision.posY(),
+                        collision.posZ(),
+                        collision.covXX(),
+                        collision.covYY(),
+                        collision.covZZ(),
+                        collision.numContrib(),
+                        collision.chi2(),
+                        runNumber);
+      }
+    }
+  }
+
   /// Process function for data
   void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -280,7 +307,6 @@ struct qaKFParticle {
       /// Set magnetic field for KF vertexing
       KFParticle::SetField(magneticField);
     }
-    histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
     histos.fill(HIST("Events/covXX"), collision.covXX());
     histos.fill(HIST("Events/covXY"), collision.covXY());
     histos.fill(HIST("Events/covXZ"), collision.covXZ());
@@ -310,8 +336,8 @@ struct qaKFParticle {
     histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
 
     for (auto& track : tracks) {
-
-      histos.fill(HIST("DZeroCandTopo/Selections"), 3.f);
+      source = 0;
+      pVContrib = 0;
 
       /// Apply single track selection
       if (!isSelectedTracks(track)) {
@@ -322,10 +348,27 @@ struct qaKFParticle {
       kfpTrack = createKFPTrackFromTrack(track);
       KFParticle KFParticleTrack(kfpTrack, 211);
 
+      if (track.hasITS()) {
+        source |= kITS;
+      }
+      if (track.hasTPC()) {
+        source |= kTPC;
+      }
+      if (track.hasTRD()) {
+        source |= kTRD;
+      }
+      if (track.hasTOF()) {
+        source |= kTOF;
+      }
+      if (track.isPVContributor()) {
+        pVContrib = 1;
+      }
+
       fillHistograms(kfpTrack, KFParticleTrack, KFPV);
+      writeVarTree(kfpTrack, KFParticleTrack, KFPV, track, source, pVContrib, runNumber, collision);
     }
   }
-  PROCESS_SWITCH(qaKFParticle, processData, "process data", true);
+  PROCESS_SWITCH(qaKFEventTrack, processData, "process data", true);
 
   /// Process function for MC
   using CollisionTableMC = soa::Join<CollisionTableData, aod::McCollisionLabels>;
@@ -345,7 +388,6 @@ struct qaKFParticle {
     if (!collision.has_mcCollision()) {
       return;
     }
-    histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
     histos.fill(HIST("Events/covXX"), collision.covXX());
     histos.fill(HIST("Events/covXY"), collision.covXY());
     histos.fill(HIST("Events/covXZ"), collision.covXZ());
@@ -379,7 +421,8 @@ struct qaKFParticle {
 
     for (auto& track : tracks) {
 
-      histos.fill(HIST("DZeroCandTopo/Selections"), 3.f);
+      source = 0;
+      pVContrib = 0;
 
       histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 1.f);
 
@@ -450,16 +493,33 @@ struct qaKFParticle {
       kfpTrack = createKFPTrackFromTrack(track);
       KFParticle KFParticleTrack(kfpTrack, 211);
 
+      if (track.hasITS()) {
+        source |= kITS;
+      }
+      if (track.hasTPC()) {
+        source |= kTPC;
+      }
+      if (track.hasTRD()) {
+        source |= kTRD;
+      }
+      if (track.hasTOF()) {
+        source |= kTOF;
+      }
+      if (track.isPVContributor()) {
+        pVContrib = 1;
+      }
+
       fillHistograms(kfpTrack, KFParticleTrack, KFPV);
+      writeVarTree(kfpTrack, KFParticleTrack, KFPV, track, source, pVContrib, runNumber, collision);
 
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCBeforeReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPVDefault));
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCAfterReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPV));
     }
   }
-  PROCESS_SWITCH(qaKFParticle, processMC, "process mc", false);
+  PROCESS_SWITCH(qaKFEventTrack, processMC, "process mc", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<qaKFParticle>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<qaKFEventTrack>(cfgc)};
 }
