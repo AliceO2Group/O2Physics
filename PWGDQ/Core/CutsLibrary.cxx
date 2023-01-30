@@ -671,6 +671,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairMassLow4")) {
+    cut->AddCut(GetAnalysisCut("pairMassLow4"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMassLow5")) {
+    cut->AddCut(GetAnalysisCut("pairMassLow5"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairDalitz1")) {
     cut->AddCut(GetAnalysisCut("pairDalitz1"));
     return cut;
@@ -715,6 +725,68 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("pairJpsiLowPt2")) {
     cut->AddCut(GetAnalysisCut("pairJpsi"));
     cut->AddCut(GetAnalysisCut("pairPtLow2"));
+    return cut;
+  }
+
+  // -------------------------------------------------------------------------------------------------
+  //
+  // Below are a list of single electron single muon and in order or optimize the trigger
+  // trigger selection cuts
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_LooseNsigma")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_LooseNsigma_corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5"));
+    return cut;
+  }
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_MediumNsigma")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_MediumNsigma_corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug1"));
+    return cut;
+  }
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_TightNsigma")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_TightNsigma_corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonLooseTriggerTestCuts")) {
+    cut->AddCut(GetAnalysisCut("muonLooseTriggerTestCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonLooseTriggerTestCuts_LowPt")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    cut->AddCut(GetAnalysisCut("muonLooseTriggerTestCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonMatchingMFTMCHTriggerTestCuts_LowPt")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    cut->AddCut(GetAnalysisCut("muonMatchingMFTMCHTriggerTestCuts"));
     return cut;
   }
 
@@ -1310,16 +1382,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairMassLow1")) {
-    cut->AddCut(VarManager::kMass, 2.0, 1000.0);
+    cut->AddCut(VarManager::kMass, 1.0, 1000.0);
     return cut;
   }
 
   if (!nameStr.compare("pairMassLow2")) {
-    cut->AddCut(VarManager::kMass, 2.2, 1000.0);
+    cut->AddCut(VarManager::kMass, 1.5, 1000.0);
     return cut;
   }
 
   if (!nameStr.compare("pairMassLow3")) {
+    cut->AddCut(VarManager::kMass, 2.5, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMassLow4")) {
+    cut->AddCut(VarManager::kMass, 2.2, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMassLow5")) {
     cut->AddCut(VarManager::kMass, 2.5, 1000.0);
     return cut;
   }
@@ -1361,6 +1443,42 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("singleDCA")) {
     cut->AddCut(VarManager::kTrackDCAsigXY, 0.0, 5.);
+    return cut;
+  }
+
+  // -------------------------------------------------------------------------------------------------
+  //
+  // Below are a list of single electron single muon and pair selection in order or optimize the trigger
+  // trigger selection cuts
+
+  if (!nameStr.compare("electronStandardQualityTriggerTest")) {
+    cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsTPCrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kITSchi2, 0.1, 36.0);
+    cut->AddCut(VarManager::kTPCncls, 50.0, 161.);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonLooseTriggerTestCuts")) {
+    cut->AddCut(VarManager::kEta, -4.5, -2.0);
+    cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 10, 100);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 1500, false, VarManager::kMuonRAtAbsorberEnd, 10, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 800, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 100);
+    cut->AddCut(VarManager::kMuonChi2, 0.0, 1e6);
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMID, 0.0, 1e6); // matching MCH-MID
+    return cut;
+  }
+
+  if (!nameStr.compare("muonMatchingMFTMCHTriggerTestCuts")) {
+    cut->AddCut(VarManager::kEta, -4.5, -2.0);
+    cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 10, 100);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 1500, false, VarManager::kMuonRAtAbsorberEnd, 10, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 800, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 100);
+    cut->AddCut(VarManager::kMuonChi2, 0.0, 1e6);
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMID, 0.0, 1e6); // matching MCH-MID
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0.0, 1e6); // matching MFT-MCH
     return cut;
   }
 
