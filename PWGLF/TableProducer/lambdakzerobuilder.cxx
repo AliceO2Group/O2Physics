@@ -109,7 +109,7 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
-using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra>;
+using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
 using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
