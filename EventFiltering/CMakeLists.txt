@@ -82,3 +82,8 @@ o2physics_add_dpl_workflow(mult-filter
                            SOURCES PWGMM/multFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(em-filter
+                           SOURCES PWGEM/photonFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
