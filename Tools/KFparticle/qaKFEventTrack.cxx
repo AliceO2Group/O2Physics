@@ -273,6 +273,9 @@ struct qaKFEventTrack {
                     KFPion.GetDistanceFromVertexXY(KFPV),
                     track.sign(),
                     track.p(),
+                    track.eta(),
+                    track.phi(),
+                    track.tpcSignal(),
                     runNumber,
                     collision.posX(),
                     collision.posY(),
@@ -282,17 +285,25 @@ struct qaKFEventTrack {
                     collision.covZZ(),
                     collision.numContrib(),
                     collision.chi2());
-
-        rowKFCollisions(collision.posX(),
-                        collision.posY(),
-                        collision.posZ(),
-                        collision.covXX(),
-                        collision.covYY(),
-                        collision.covZZ(),
-                        collision.numContrib(),
-                        collision.chi2(),
-                        runNumber);
       }
+    }
+  }
+
+  template <typename T4>
+  void writeVarTreeColl(const T4& collision, const int ntracks)
+  {
+    if (writeTree) {
+      /// Filling the tree
+      rowKFCollisions(collision.posX(),
+                      collision.posY(),
+                      collision.posZ(),
+                      collision.covXX(),
+                      collision.covYY(),
+                      collision.covZZ(),
+                      collision.numContrib(),
+                      ntracks,
+                      collision.chi2(),
+                      runNumber);
     }
   }
 
@@ -335,9 +346,15 @@ struct qaKFEventTrack {
     histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
     histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
 
+    int ntracks = 0;
+
     for (auto& track : tracks) {
       source = 0;
       pVContrib = 0;
+
+      if (track.isPVContributor()) {
+        ntracks = ntracks + 1;
+      }
 
       /// Apply single track selection
       if (!isSelectedTracks(track)) {
@@ -367,6 +384,7 @@ struct qaKFEventTrack {
       fillHistograms(kfpTrack, KFParticleTrack, KFPV);
       writeVarTree(kfpTrack, KFParticleTrack, KFPV, track, source, pVContrib, runNumber, collision);
     }
+    writeVarTreeColl(collision, ntracks);
   }
   PROCESS_SWITCH(qaKFEventTrack, processData, "process data", true);
 
@@ -419,10 +437,16 @@ struct qaKFEventTrack {
     histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
     histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
 
+    int ntracks = 0;
+
     for (auto& track : tracks) {
 
       source = 0;
       pVContrib = 0;
+
+      if (track.isPVContributor()) {
+        ntracks = ntracks + 1;
+      }
 
       histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 1.f);
 
@@ -515,6 +539,7 @@ struct qaKFEventTrack {
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCBeforeReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPVDefault));
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCAfterReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPV));
     }
+    writeVarTreeColl(collision, ntracks);
   }
   PROCESS_SWITCH(qaKFEventTrack, processMC, "process mc", false);
 };

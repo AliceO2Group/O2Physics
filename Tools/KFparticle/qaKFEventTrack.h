@@ -37,6 +37,9 @@ DECLARE_SOA_COLUMN(DCA3DKF, Dca3dkf, float);
 DECLARE_SOA_COLUMN(DCAXYKF, DcaXYkf, float);
 DECLARE_SOA_COLUMN(CHARGE, Charge, float);
 DECLARE_SOA_COLUMN(MOMENTUM, Momentum, float);
+DECLARE_SOA_COLUMN(ETA, Eta, float);
+DECLARE_SOA_COLUMN(PHI, Phi, float);
+DECLARE_SOA_COLUMN(TPCSIGNAL, Tpcsignal, float);
 DECLARE_SOA_COLUMN(RUNNUMBER, Runnumber, float);
 DECLARE_SOA_COLUMN(XPV, Xpv, float);
 DECLARE_SOA_COLUMN(YPV, Ypv, float);
@@ -45,6 +48,7 @@ DECLARE_SOA_COLUMN(COVXX, CovXX, float);
 DECLARE_SOA_COLUMN(COVYY, CovYY, float);
 DECLARE_SOA_COLUMN(COVZZ, CovZZ, float);
 DECLARE_SOA_COLUMN(NCONTRIB, Ncontrib, float);
+DECLARE_SOA_COLUMN(NTRACKS, Ntracks, int);
 DECLARE_SOA_COLUMN(CHI2, Chi2, float);
 
 } // namespace kfeventtrack
@@ -58,6 +62,9 @@ DECLARE_SOA_TABLE(TreeTracks, "AOD", "TREETRACKS",
                   kfeventtrack::DCAXYKF,
                   kfeventtrack::CHARGE,
                   kfeventtrack::MOMENTUM,
+                  kfeventtrack::ETA,
+                  kfeventtrack::PHI,
+                  kfeventtrack::TPCSIGNAL,
                   kfeventtrack::RUNNUMBER,
                   kfeventtrack::XPV,
                   kfeventtrack::YPV,
@@ -76,6 +83,7 @@ DECLARE_SOA_TABLE(TreeCollisions, "AOD", "TREECOLLISIONS",
                   kfeventtrack::COVYY,
                   kfeventtrack::COVZZ,
                   kfeventtrack::NCONTRIB,
+                  kfeventtrack::NTRACKS,
                   kfeventtrack::CHI2,
                   kfeventtrack::RUNNUMBER);
 } // namespace o2::aod
