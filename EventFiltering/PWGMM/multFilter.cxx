@@ -19,6 +19,7 @@
 
 #include "EventFiltering/filterTables.h"
 
+#include "DataFormatsFT0/Digit.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -201,8 +202,11 @@ struct multFilter {
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
 
     bool isOkTimeFT0 = false;
+    bool isvtxtrig = false;
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
+      std::bitset<8> triggers = ft0.triggerMask();
+      isvtxtrig = triggers[o2::fit::Triggers::bitVertex];
       float t0_a = ft0.timeA();
       float t0_c = ft0.timeC();
       if (abs(t0_a) < 1. && abs(t0_c) < 1.) {
@@ -211,6 +215,10 @@ struct multFilter {
       multiplicity.fill(HIST("hT0C_time"), t0_c);
       multiplicity.fill(HIST("hT0A_time"), t0_a);
     }
+    if (!isvtxtrig) {
+      isOkTimeFT0 = false;
+    }
+
     if (!isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
       tags(false, false, false, false, false, false, false, false);
       return;
