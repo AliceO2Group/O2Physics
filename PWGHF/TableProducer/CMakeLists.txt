@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(track-index-skim-creator
                     SOURCES trackIndexSkimCreator.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(refit-pv-dummy
