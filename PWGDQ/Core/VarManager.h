@@ -34,13 +34,13 @@
 #include "Framework/DataTypes.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
-#include "DetectorsVertexing/FwdDCAFitterN.h"
+#include "DCAFitter/FwdDCAFitterN.h"
 #include "CommonConstants/PhysicsConstants.h"
 
 using std::cout;
