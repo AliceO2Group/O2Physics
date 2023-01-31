@@ -15,6 +15,10 @@
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
+#include "Tools/KFparticle/qaKFEventTrack.h"
+#include <string>
+#include <CCDB/BasicCCDBManager.h>
+
 /// includes O2
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -26,35 +30,29 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
-#include <CCDB/BasicCCDBManager.h>
+
 /// includes O2Physics
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/RecoDecay.h"
 #include "TableHelper.h"
 #include "Tools/KFparticle/KFUtilities.h"
-#include "Tools/KFparticle/qaKFEventTrack.h"
-#include <iostream>
-using namespace std;
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
 
-#ifndef HomogeneousField
-
-#define HomogeneousField
-
-#endif
 /// includes KFParticle
 #include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
+
+#ifndef HomogeneousField
+
+#define HomogeneousField
+
+#endif
 
 using namespace o2;
 using namespace o2::framework;
@@ -109,7 +107,7 @@ struct qaKFEventTrack {
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-  using TrackTableData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using TrackTableData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
 
   HistogramRegistry histos;
   /// Table to be produced
@@ -316,7 +314,9 @@ struct qaKFEventTrack {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
       magneticField = o2::base::Propagator::Instance()->getNominalBz();
       /// Set magnetic field for KF vertexing
+      #ifdef HomogeneousField
       KFParticle::SetField(magneticField);
+      #endif
     }
     histos.fill(HIST("Events/covXX"), collision.covXX());
     histos.fill(HIST("Events/covXY"), collision.covXY());
@@ -400,7 +400,9 @@ struct qaKFEventTrack {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
       magneticField = o2::base::Propagator::Instance()->getNominalBz();
       /// Set magnetic field for KF vertexing
+      #ifdef HomogeneousField
       KFParticle::SetField(magneticField);
+      #endif
     }
     /// Remove Collisions without a MC Collision
     if (!collision.has_mcCollision()) {
@@ -473,7 +475,6 @@ struct qaKFEventTrack {
             min = dcaZ[i];
           }
           if (i > 0) {
-            // cout << "more than one collision matches! " << i << endl;
             if (dcaZ[i] < dcaZ[i - 1]) {
               min = dcaZ[i];
             }

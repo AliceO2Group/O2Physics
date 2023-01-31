@@ -15,6 +15,12 @@
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
+#include "Tools/KFparticle/qaKFParticle.h"
+#include <string>
+#include <CCDB/BasicCCDBManager.h>
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
+
 /// includes O2
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -26,7 +32,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
-#include <CCDB/BasicCCDBManager.h>
+
 /// includes O2Physics
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -38,23 +44,19 @@
 #include "Common/Core/RecoDecay.h"
 #include "TableHelper.h"
 #include "Tools/KFparticle/KFUtilities.h"
-#include "Tools/KFparticle/qaKFParticle.h"
-#include <iostream>
-using namespace std;
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
 
-#ifndef HomogeneousField
-
-#define HomogeneousField
-
-#endif
 /// includes KFParticle
 #include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
+
+#ifndef HomogeneousField
+
+#define HomogeneousField
+
+#endif
 
 using namespace o2;
 using namespace o2::framework;
@@ -107,7 +109,6 @@ struct qaKFParticle {
   Configurable<float> d_cosThetaStarKa{"d_cosThetaStarKa", 1000., "maximum cosine theta star of the kaon from D0"};
   Configurable<float> d_distPiToSV{"d_distPiToSV", 1000., "maximum distance Pi to SV"};
   Configurable<float> d_distKaToSV{"d_distKaToSV", 1000., "maximum distance Ka to SV"};
-  Configurable<float> d_d0pid0ka{"d_d0pid0ka", -100000., "maximum product of impact parameters of daughters to the PV"};
   /// Option to write D0 variables in a tree
   Configurable<double> d_DwnSmplFact{"d_DwnSmplFact", 1., "Downsampling factor for tree"};
   Configurable<bool> writeTree{"writeTree", false, "write daughter variables in a tree"};
@@ -442,13 +443,6 @@ struct qaKFParticle {
       histos.fill(HIST("DZeroCandTopo/Selections"), 15.f);
       return false;
     }
-    // /// product impact parameters of daughters to the PV
-    // float d0pid0ka = 0.;
-    // d0pid0ka = KFPion.GetDistanceFromVertexXY(KFPV) * KFKaon.GetDistanceFromVertexXY(KFPV);
-    // if (d0pid0ka > d_d0pid0ka) {
-    //   histos.fill(HIST("DZeroCandTopo/Selections"), 16.f);
-    //   return false;
-    // }
     return true;
   }
 
@@ -693,7 +687,10 @@ struct qaKFParticle {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
       magneticField = o2::base::Propagator::Instance()->getNominalBz();
       /// Set magnetic field for KF vertexing
+      #ifdef HomogeneousField
       KFParticle::SetField(magneticField);
+      #endif
+
     }
     histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
     histos.fill(HIST("Events/covXX"), collision.covXX());
@@ -895,7 +892,9 @@ struct qaKFParticle {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
       magneticField = o2::base::Propagator::Instance()->getNominalBz();
       /// Set magnetic field for KF vertexing
+      #ifdef HomogeneousField
       KFParticle::SetField(magneticField);
+      #endif
     }
     /// Remove Collisions without a MC Collision
     if (!collision.has_mcCollision()) {
@@ -1043,7 +1042,7 @@ struct qaKFParticle {
       float nSigmaPosKa = 0.;
       float nSigmaNegKa = 0.;
       /// At the moment pT independent TPC selection. Add a minimum and Maximum momentum
-      /// Apply TPC+TOF at higher momenta (TOF still uncalibrated for LHC22f).
+      /// Apply TPC+TOF at higher momenta.
 
       int pdgMother = mcParticles.rawIteratorAt(indexRec - mcParticles.offset()).pdgCode();
       /// Select D0 and D0bar candidates
