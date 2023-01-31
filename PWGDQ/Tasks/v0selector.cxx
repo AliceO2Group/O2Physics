@@ -33,7 +33,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
