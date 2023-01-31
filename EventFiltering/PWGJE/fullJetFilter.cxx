@@ -38,6 +38,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
 
 struct fullJetFilter {
   enum {
@@ -60,6 +61,7 @@ struct fullJetFilter {
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_clusterPtMin{"f_clusterPtMin", 0.0, "minimum cluster pT cut"};
+  Configurable<double> f_jetR{"f_jetR", 0.2, "jet R to trigger on"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
 
   void init(o2::framework::InitContext&)
@@ -90,8 +92,9 @@ struct fullJetFilter {
   // Declare filters
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter jetRadiusSelection = o2::aod::jet::r == std::round(f_jetR * 100);
 
-  Bool_t isJetInEmcal(aod::Jet const& jet)
+  Bool_t isJetInEmcal(filteredJets::iterator const& jet)
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
     double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
@@ -109,7 +112,7 @@ struct fullJetFilter {
     return false;
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Jets const& jets, selectedClusters const& clusters)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, filteredJets const& jets, selectedClusters const& clusters)
   {
     bool keepEvent[kCategories]{false};
     double maxClusterPt = -1., maxSelectedJetPt = -1.;

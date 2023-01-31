@@ -21,17 +21,14 @@ namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(H2, hasH2, bool);   //!
-DECLARE_SOA_COLUMN(H3, hasH3, bool);   //!
-DECLARE_SOA_COLUMN(He, hasHe, bool);   //!
+DECLARE_SOA_COLUMN(H2, hasH2, bool); //!
+DECLARE_SOA_COLUMN(H3, hasH3, bool); //!
+DECLARE_SOA_COLUMN(He, hasHe, bool); //!
 
 // diffraction
-DECLARE_SOA_COLUMN(TwoPi, has2pi, bool);  //! Double Gap events, DG, 2 pion
-DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
-DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
-DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
+DECLARE_SOA_COLUMN(UDdiff, hasDiff, bool); //! Double Gap events, DG
 
-DECLARE_SOA_COLUMN(DiffBC, hasDiffBC, bool); //! diffractive BC
+DECLARE_SOA_COLUMN(UDdiffBC, hasDiffBC, bool); //! diffractive BC
 
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
@@ -108,11 +105,11 @@ using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
 DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters (Collisions)
-                  filtering::TwoPi, filtering::FourPi, filtering::TwoK, filtering::FourK);
+                  filtering::UDdiff);
 using DiffractionFilter = DiffractionFilters::iterator;
 
 DECLARE_SOA_TABLE(DiffractionBCFilters, "AOD", "DiffBCFilters", //! Diffraction filters (BCs)
-                  filtering::DiffBC);
+                  filtering::UDdiffBC);
 using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia

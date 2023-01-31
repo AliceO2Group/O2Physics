@@ -112,10 +112,10 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe>;
+using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCLfEl, aod::pidTPCLfPi, aod::pidTPCLfPr, aod::pidTPCLfHe, aod::McTrackLabels>;
+using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
@@ -261,7 +261,6 @@ struct lambdakzeroBuilder {
     if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false) {
@@ -423,6 +422,12 @@ struct lambdakzeroBuilder {
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
+
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
   }
 
   template <class TTracksTo>

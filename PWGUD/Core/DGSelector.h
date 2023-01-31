@@ -61,7 +61,7 @@ class DGSelector
       }
     }
 
-    // no activity in muon arm
+    // no activity in forward direction
     LOGF(debug, "FwdTracks %i", fwdtracks.size());
     for (auto& fwdtrack : fwdtracks) {
       LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
@@ -72,7 +72,7 @@ class DGSelector
 
     // no global tracks which are not vtx tracks
     // no vtx tracks which are not global tracks
-    auto rgtrwTOF = 0.;
+    auto rgtrwTOF = 0.; // fraction of PV tracks with TOF hit
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         return 3;
