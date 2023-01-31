@@ -12,10 +12,10 @@
 o2physics_add_library(PWGDQCore
                SOURCES  VarManager.cxx
                         HistogramManager.cxx
-			HistogramsLibrary.cxx
-			CutsLibrary.cxx
-			MixingLibrary.cxx
-			MCSignalLibrary.cxx
+                        HistogramsLibrary.cxx
+                        CutsLibrary.cxx
+                        MixingLibrary.cxx
+                        MCSignalLibrary.cxx
                         MixingHandler.cxx
                         AnalysisCut.cxx
                         AnalysisCompositeCut.cxx
@@ -24,9 +24,9 @@ o2physics_add_library(PWGDQCore
                PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(PWGDQCore
-                          HEADERS   AnalysisCut.h 
-                                    AnalysisCompositeCut.h 
-                                    VarManager.h 
+                          HEADERS   AnalysisCut.h
+                                    AnalysisCompositeCut.h
+                                    VarManager.h
                                     HistogramManager.h
                                     CutsLibrary.h
                                     MixingHandler.h
