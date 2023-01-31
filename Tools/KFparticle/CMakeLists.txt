@@ -19,4 +19,3 @@ o2physics_add_dpl_workflow(qa-kfeventtrack
                            SOURCES qaKFEventTrack.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing O2Physics::AnalysisCCDB O2::ReconstructionDataFormats KFParticle::KFParticle
                            COMPONENT_NAME Analysis)
-              
