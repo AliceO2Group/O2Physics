@@ -51,9 +51,9 @@ struct createEMReducedEvent {
   };
 
   // Configurable for filter/cuts
-  Configurable<int> minN_PCM{"minN_PCM", 2, "Minimum number of V0s for PCM. Events are saved if either minimum number condition is met"};
-  Configurable<int> minN_PHOS{"minN_PHOS", 2, "Minimum number of clusters for PHOS. Events are saved if either minimum number condition is met"};
-  Configurable<int> minN_EMC{"minN_EMC", 2, "Minimum number of clusters for EMCal. Events are saved if either minimum number condition is met"};
+  Configurable<int> minN_PCM{"minN_PCM", 0, "Minimum number of V0s for PCM. Events are saved if either minimum number condition is met"};
+  Configurable<int> minN_PHOS{"minN_PHOS", 0, "Minimum number of clusters for PHOS. Events are saved if either minimum number condition is met"};
+  Configurable<int> minN_EMC{"minN_EMC", 0, "Minimum number of clusters for EMCal. Events are saved if either minimum number condition is met"};
 
   HistogramRegistry registry{
     "registry"};
@@ -134,14 +134,15 @@ struct createEMReducedEvent {
 
   void process_PCM(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons)
   {
-    const uint8_t sysflag = kPCM;
-    ;
-    process<sysflag>(collisions, bcs, v0photons, nullptr, nullptr);
+    process<kPCM>(collisions, bcs, v0photons, nullptr, nullptr);
   }
   void process_PHOS(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters)
   {
-    const uint8_t sysflag = kPHOS;
-    process<sysflag>(collisions, bcs, nullptr, phosclusters, nullptr);
+    process<kPHOS>(collisions, bcs, nullptr, phosclusters, nullptr);
+  }
+  void process_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
+  {
+    process<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
   }
   void process_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
   {

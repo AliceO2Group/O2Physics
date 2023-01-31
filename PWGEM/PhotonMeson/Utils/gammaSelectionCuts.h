@@ -61,7 +61,7 @@ void gatherCutsEMC(float minTime, float maxTime, float minM02, float maxM02, flo
   emccuts::EMC_Eoverp.resize(64, 0);
 }
 
-uint64_t doTimeCutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry registry)
+uint64_t doTimeCutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
   if (cutbit & ((uint64_t)1 << (uint64_t)iCut)) {                                                             // check if current cut should be applied
@@ -74,7 +74,7 @@ uint64_t doTimeCutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& clus
   return cut_return;
 }
 
-uint64_t doM02CutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry registry)
+uint64_t doM02CutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
   if (cutbit & ((uint64_t)1 << (uint64_t)iCut)) {                                                         // check if current cut should be applied
@@ -87,7 +87,7 @@ uint64_t doM02CutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& clust
   return cut_return;
 }
 
-uint64_t doMinECutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry registry)
+uint64_t doMinECutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
   if (cutbit & ((uint64_t)1 << (uint64_t)iCut)) {        // check if current cut should be applied
@@ -100,7 +100,7 @@ uint64_t doMinECutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& clus
   return cut_return;
 }
 
-uint64_t doNCellCutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry registry)
+uint64_t doNCellCutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
   if (cutbit & ((uint64_t)1 << (uint64_t)iCut)) {             // check if current cut should be applied
@@ -113,7 +113,7 @@ uint64_t doNCellCutEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& clu
   return cut_return;
 }
 
-uint64_t doTrackMatchingEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, aod::SkimEMCMTs const& tracks, HistogramRegistry registry)
+uint64_t doTrackMatchingEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, aod::SkimEMCMTs const& tracks, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
   double dEta, dPhi;
@@ -137,7 +137,7 @@ uint64_t doTrackMatchingEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const
   return cut_return;
 }
 
-uint64_t doPhotonCutsEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, aod::SkimEMCMTs const& tracks, Preslice<o2::aod::SkimEMCMTs> perEMCClusterMT, HistogramRegistry registry)
+uint64_t doPhotonCutsEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, aod::SkimEMCMTs const& tracks, Preslice<o2::aod::SkimEMCMTs> perEMCClusterMT, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
   auto tracksMatchedEMC = tracks.sliceBy(perEMCClusterMT, cluster.globalIndex());
