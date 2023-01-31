@@ -144,11 +144,6 @@ struct createEMReducedEvent {
   {
     process<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
   }
-  void process_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
-  {
-    const uint8_t sysflag = kEMC;
-    process<sysflag>(collisions, bcs, nullptr, nullptr, emcclusters);
-  }
   void process_PCM_PHOS(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
