@@ -1,4 +1,4 @@
-// // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -73,7 +73,7 @@ using Particle = Particles::iterator;
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
-// using DaughterTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCPr>;
+
 enum {
   kECbegin = 0,
   kDATA = 1,
