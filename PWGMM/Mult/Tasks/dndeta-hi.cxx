@@ -9,16 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <Math/Vector4D.h>
 #include <array>
 #include <cmath>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <Math/Vector4D.h>
 #include <TFile.h>
 #include <TH2F.h>
 #include <TProfile.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
 
@@ -44,7 +43,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "TDatabasePDG.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Framework/AnalysisTask.h"
@@ -293,30 +291,33 @@ struct MultiplicityCounter {
           registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kAll));
           registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kAll));
 
+          auto pTrack = v0.template posTrack_as<FiTracks>();
+          auto nTrack = v0.template negTrack_as<FiTracks>();
+
           if (v0.v0radius() > v0radius &&
               v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
-              TMath::Abs(v0.template posTrack_as<FiTracks>().eta()) < etadau &&
-              TMath::Abs(v0.template negTrack_as<FiTracks>().eta()) < etadau) {
+              abs(pTrack.eta()) < etadau &&
+              abs(nTrack.eta()) < etadau) {
             registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kBasiccut));
             registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kBasiccut));
             registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kBasiccut));
 
-            if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && TMath::Abs(v0.yK0Short()) < rapidity) {
+            if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
               registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut));
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), v0.template posTrack_as<FiTracks>().eta());
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), v0.template negTrack_as<FiTracks>().eta());
+              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
+              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
             }
 
-            if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && TMath::Abs(v0.yLambda()) < rapidity) {
+            if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
               registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut));
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), v0.template posTrack_as<FiTracks>().eta());
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), v0.template negTrack_as<FiTracks>().eta());
+              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
+              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
             }
 
-            if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && TMath::Abs(v0.yLambda()) < rapidity) {
+            if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
               registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut));
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), v0.template posTrack_as<FiTracks>().eta());
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), v0.template negTrack_as<FiTracks>().eta());
+              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
+              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
             }
           }
 
@@ -393,28 +394,31 @@ struct MultiplicityCounter {
         registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kAll));
         registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kAll));
 
+        auto pTrack = v0.template posTrack_as<DaughterTracks>();
+        auto nTrack = v0.template negTrack_as<DaughterTracks>();
+
         if (v0.v0radius() > v0radius &&
             v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
-            TMath::Abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau &&
-            TMath::Abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) {
+            abs(pTrack.eta()) < etadau &&
+            abs(nTrack.eta()) < etadau) {
           registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kBasiccut));
           registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kBasiccut));
           registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kBasiccut));
 
-          if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && TMath::Abs(v0.yK0Short()) < rapidity) {
+          if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
             registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kMasscut));
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kK0short), v0.posTrack_as<DaughterTracks>().eta());
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kK0short), v0.negTrack_as<DaughterTracks>().eta());
+            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
+            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
           }
-          if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && TMath::Abs(v0.yLambda()) < rapidity) {
+          if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
             registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kMasscut));
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kLambda), v0.posTrack_as<DaughterTracks>().eta());
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kLambda), v0.negTrack_as<DaughterTracks>().eta());
+            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
+            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
           }
-          if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && TMath::Abs(v0.yLambda()) < rapidity) {
+          if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
             registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kMasscut));
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kAntilambda), v0.posTrack_as<DaughterTracks>().eta());
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kAntilambda), v0.negTrack_as<DaughterTracks>().eta());
+            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
+            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
           }
         }
         registry.fill(HIST("hV0Mass"), Double_t(kINEL), Double_t(kK0short), v0.mK0Short());
