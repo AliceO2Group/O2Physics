@@ -16,7 +16,7 @@
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
 #include "Framework/AnalysisTask.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
