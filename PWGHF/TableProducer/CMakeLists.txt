@@ -26,7 +26,7 @@ o2physics_add_dpl_workflow(candidate-creator-2prong
 
 o2physics_add_dpl_workflow(candidate-creator-dstar
                     SOURCES candidateCreatorDstar.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EG
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-d0-to-k-pi
@@ -36,17 +36,17 @@ o2physics_add_dpl_workflow(tree-creator-d0-to-k-pi
 
 o2physics_add_dpl_workflow(candidate-creator-cascade
                     SOURCES candidateCreatorCascade.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter ROOT::EG
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-3prong
                     SOURCES candidateCreator3Prong.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter ROOT::EG
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-b0
                     SOURCES candidateCreatorB0.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter ROOT::EG
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-bplus
