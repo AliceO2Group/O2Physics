@@ -49,7 +49,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-#include "DetectorsVertexing/HelixHelper.h"
+#include "DCAFitter/HelixHelper.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/Core/trackUtilities.h"
 
