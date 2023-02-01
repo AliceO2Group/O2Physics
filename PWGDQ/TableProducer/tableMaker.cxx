@@ -170,12 +170,13 @@ struct TableMaker {
     }
 
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
-                               context.mOptions.get<bool>("processFullWithCent") ||
+                               context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
-                             context.mOptions.get<bool>("processFullWithCent") ||
+                             context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter"));
 
@@ -641,6 +642,21 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
+  // Produce barrel + muon tables, with track covariance matrix and event filtering ----------------------------------------------------------------------------------------
+  void processFullWithCovAndEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                        soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    for (int i = 0; i < kNaliases; i++) {
+      if (collision.alias()[i] > 0) {
+        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
+      }
+    }
+    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
+    if (collision.eventFilter()) {
+      fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
+    }
+  }
+
   // Produce barrel only tables, with V0Bits ------------------------------------------------------------------------------------------------
   void processBarrelOnlyWithV0Bits(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                    soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel)
@@ -675,6 +691,21 @@ struct TableMaker {
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithMult, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
+  // Produce barrel only tables, with track covariance matrix and event filtering ----------------------------------------------------------------------------------------
+  void processBarrelOnlyWithCovAndEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                              soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+  {
+    for (int i = 0; i < kNaliases; i++) {
+      if (collision.alias()[i] > 0) {
+        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
+      }
+    }
+    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
+    if (collision.eventFilter()) {
+      fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    }
   }
 
   // Produce barrel only tables, with centrality -----------------------------------------------------------------------------------------------
@@ -768,12 +799,14 @@ struct TableMaker {
 
   PROCESS_SWITCH(TableMaker, processFull, "Build full DQ skimmed data model, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processFullWithCov, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables", false);
+  PROCESS_SWITCH(TableMaker, processFullWithCovAndEventFilter, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processFullWithCentAndMults, "Build full DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithEventFilter, "Build full DQ skimmed data model, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithMults, "Build barrel-only DQ skimmed data model, w/ multiplicity", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovAndEventFilter, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCent, "Build barrel-only DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
