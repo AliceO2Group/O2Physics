@@ -72,9 +72,6 @@ DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-co
 DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
                   hf_track_association::TrackType);
 
-DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
-                  hf_track_association::TrackType);
-
 DECLARE_SOA_TABLE(HfCompColls, "AOD", "HFCOMPCOLLS", //! Table with vectors of collision indices stored per track
                   hf_track_association::CompatibleCollIds);
 
