@@ -170,7 +170,7 @@ struct TableMaker {
     }
 
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
-                               context.mOptions.get<bool>("processFullWithCent") ||
+                               context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") || 
 							   context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
