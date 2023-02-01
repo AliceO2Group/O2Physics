@@ -248,6 +248,7 @@ struct CentralityTable {
           LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
         } else { // only if asked: continue filling with non-valid values (105)
           LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+          mRunNumber = bc.runNumber();
         }
       }
     }
@@ -373,6 +374,7 @@ struct CentralityTable {
           LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
         } else { // only if asked: continue filling with non-valid values (105)
           LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+          mRunNumber = bc.runNumber();
         }
       }
     }
