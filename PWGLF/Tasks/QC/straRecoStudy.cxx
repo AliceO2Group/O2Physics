@@ -190,7 +190,13 @@ struct preProcessMCcollisions {
     histos.add("h2dNContribSpecialCorr2b", "h2dNContribSpecialCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
-  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles, aod::BCs const&)
+  void processData(TracksCompleteIU const& tracks)
+  {
+    // Dummy process
+  }
+  PROCESS_SWITCH(preProcessMCcollisions, processData, "Real data dummy", false);
+
+  void processMC(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles, aod::BCs const&)
   {
     int lNumberOfXi = 0;
     for (auto& mcp : mcParticles) {
@@ -294,6 +300,7 @@ struct preProcessMCcollisions {
     }
     mcCollsExtra(collisions.size());
   }
+  PROCESS_SWITCH(preProcessMCcollisions, processMC, "MC prepare", true);
 };
 
 struct straRecoStudy {
@@ -381,6 +388,10 @@ struct straRecoStudy {
     const AxisSpec axisITSClu{10, -0.5f, +9.5f, "ITS clusters"};
     const AxisSpec axisTPCCroRo{160, -0.5f, +159.5f, "TPC crossed rows"};
 
+    // bit packed ITS cluster map
+    const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+    const AxisSpec axisRadius{(int)160, 0.0f, +80.0f, "Radius (cm)"};
+
     TString lSpecies[] = {"K0Short", "Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
     const AxisSpec lMassAxis[] = {axisK0ShortMass, axisLambdaMass, axisLambdaMass, axisXiMass, axisXiMass, axisOmegaMass, axisOmegaMass};
 
@@ -428,6 +439,12 @@ struct straRecoStudy {
     histos.add("h2dOmegaMinusQADCABachToPV", "h2dOmegaMinusQADCABachToPV", kTH2F, {axisVsPtCoarse, axisDCA});
     histos.add("h2dOmegaMinusQADCACascToPV", "h2dOmegaMinusQADCACascToPV", kTH2F, {axisVsPtCoarse, axisDCAWD});
     histos.add("h2dOmegaMinusQAPointingAngle", "h2dOmegaMinusQAPointingAngle", kTH2F, {axisVsPtCoarse, axisPA});
+
+    histos.add("h2dITSCluMap_V0Positive", "h2dITSCluMap_V0Positive", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMap_V0Negative", "h2dITSCluMap_V0Negative", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMap_CascPositive", "h2dITSCluMap_CascPositive", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMap_CascNegative", "h2dITSCluMap_CascNegative", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMap_CascBachelor", "h2dITSCluMap_CascBachelor", kTH2D, {axisITSCluMap, axisRadius});
 
     // Track quality tests
     histos.add("h3dTrackPtsK0ShortP", "h3dTrackPtsK0ShortP", kTH3F, {axisVsPtCoarse, axisITSClu, axisTPCCroRo});
@@ -533,6 +550,47 @@ struct straRecoStudy {
     resetCounters();
   }
   PROCESS_SWITCH(straRecoStudy, processV0, "Regular V0 analysis", true);
+
+  void processV0RealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& v0tables, aod::CascDataExt const& Cascades, TracksCompleteIU const& tracks, aod::V0sLinked const&)
+  {
+    evselstats[kEvSelAll]++;
+    if (event_sel8_selection && !collision.sel8()) {
+      return;
+    }
+    evselstats[kEvSelBool]++;
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    evselstats[kEvSelVtxZ]++;
+    for (auto& v0 : v0tables) {
+      // MC association
+      auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
+      auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
+      histos.fill(HIST("h2dITSCluMap_V0Positive"), (float)posPartTrack.itsClusterMap(), v0.v0radius());
+      histos.fill(HIST("h2dITSCluMap_V0Negative"), (float)negPartTrack.itsClusterMap(), v0.v0radius());
+
+      if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters)
+        continue;
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows)
+        continue;
+
+      if (v0.v0radius() > v0setting_radius && v0.v0radius() < maxV0Radius) {
+        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+          if (v0.dcaV0daughters() < v0setting_dcav0dau) {
+            //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+            // Fill invariant masses
+            histos.fill(HIST("h2dMassK0Short"), v0.pt(), v0.mK0Short());
+            histos.fill(HIST("h2dMassLambda"), v0.pt(), v0.mLambda());
+            histos.fill(HIST("h2dMassAntiLambda"), v0.pt(), v0.mAntiLambda());
+            //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+          }
+        }
+      }
+    } // end v0 loop
+    fillHistos();
+    resetCounters();
+  }
+  PROCESS_SWITCH(straRecoStudy, processV0RealData, "Regular V0 analysis in real data", false);
 
   void processCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
   {
@@ -651,6 +709,10 @@ struct straRecoStudy {
       auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
+
+      histos.fill(HIST("h2dITSCluMap_CascPositive"), (float)posPartTrack.itsClusterMap(), casc.v0radius());
+      histos.fill(HIST("h2dITSCluMap_CascNegative"), (float)negPartTrack.itsClusterMap(), casc.v0radius());
+      histos.fill(HIST("h2dITSCluMap_CascBachelor"), (float)bachPartTrack.itsClusterMap(), casc.cascradius());
 
       if (casc.sign() < 0) {
         histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
