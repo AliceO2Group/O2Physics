@@ -634,6 +634,65 @@ struct straRecoStudy {
   }
   PROCESS_SWITCH(straRecoStudy, processCascade, "Regular cascade analysis", true);
 
+  void processCascadeRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const&, aod::CascDataExt const& Cascades, TracksCompleteIU const& tracks, aod::V0sLinked const&)
+  {
+    if (event_sel8_selection && !collision.sel8()) {
+      return;
+    }
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    for (auto& casc : Cascades) {
+      auto bachPartTrack = casc.bachelor_as<TracksCompleteIU>();
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0index.has_v0Data())) {
+        continue;
+      }
+      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
+      auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
+      auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
+
+      if (casc.sign() < 0) {
+        histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        histos.fill(HIST("h3dTrackPtsXiMinusN"), casc.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+        histos.fill(HIST("h3dTrackPtsXiMinusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
+      }
+      if (casc.sign() > 0) {
+        histos.fill(HIST("h3dTrackPtsXiPlusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
+        histos.fill(HIST("h3dTrackPtsXiPlusN"), casc.pt(), negPartTrack.itsNCls(), negPartTrack.tpcNClsCrossedRows());
+        histos.fill(HIST("h3dTrackPtsXiPlusB"), casc.pt(), bachPartTrack.itsNCls(), bachPartTrack.tpcNClsCrossedRows());
+      }
+
+      if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
+        continue;
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.itsNCls() < tpcmincrossedrows)
+        continue;
+
+      if (casc.v0radius() < maxV0Radius && casc.cascradius() < maxCascRadius) {
+        if (casc.v0radius() > v0setting_radius && casc.cascradius() > cascadesetting_cascradius) {
+          if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+            if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadesetting_cospa) {
+              if (casc.dcaV0daughters() < v0setting_dcav0dau) {
+                //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+                // Fill invariant masses
+                if (casc.sign() < 0)
+                  histos.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
+                if (casc.sign() > 0)
+                  histos.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
+                if (casc.sign() < 0)
+                  histos.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
+                if (casc.sign() > 0)
+                  histos.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
+                //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(straRecoStudy, processCascadeRealData, "Regular cascade analysis, real data", false);
+
   void processGeneratedReconstructible(soa::Filtered<RecoedMCCollisions>::iterator const& collision, aod::McParticles const& mcParticles)
   {
     // check if collision successfully reconstructed
