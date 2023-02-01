@@ -547,8 +547,8 @@ struct TableMaker {
                   muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2());
         }
       }
-    }
-  } // end fullSkimming()
+    } // end if constexpr (TMuonFillMap)
+  }   // end fullSkimming()
 
   void DefineHistograms(TString histClasses)
   {
@@ -648,10 +648,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
     }
@@ -677,16 +677,16 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
     }
   }
 
-  // Produce barrel tables only, with multiplicity ----------------------------------------------------------------------------------------------------------------
+  // Produce barrel tables only, with multiplicity ---------------------------------------------------------------------------------------------
   void processBarrelOnlyWithMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
@@ -699,10 +699,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
     }
@@ -763,10 +763,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
     }
@@ -791,10 +791,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (bc.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(0.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, float(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(0.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, float(kNaliases));
   }
 
   PROCESS_SWITCH(TableMaker, processFull, "Build full DQ skimmed data model, w/o centrality", false);
