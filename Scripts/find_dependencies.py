@@ -92,7 +92,7 @@ def get_inputs(specs_wf: dict, device=""):
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_inputs += [i["binding"] for i in dev["inputs"] if i["origin"] == "AOD"]
+        list_inputs += [i["description"] for i in dev["inputs"] if i["origin"] == "AOD"]
     return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
 
@@ -104,7 +104,9 @@ def get_outputs(specs_wf: dict, device=""):
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_outputs += [i["binding"] for i in dev["outputs"] if i["origin"] == "AOD"]
+        list_outputs += [
+            i["description"] for i in dev["outputs"] if i["origin"] == "AOD"
+        ]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
 
