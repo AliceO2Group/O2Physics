@@ -52,7 +52,6 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
       mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
 
-
       /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
 
       std::string tempFitVarName;
@@ -72,7 +71,7 @@ class FemtoDreamParticleHisto
       } else {
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
-      
+
       framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"}; // the pT binning may vary
       framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
       mHistogramRegistry->add((folderName + tempFitVarName).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarpTAxis}, {tempFitVarAxis}});
@@ -91,11 +90,6 @@ class FemtoDreamParticleHisto
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
       */
-
-
-
-
-
     }
   }
 

@@ -89,9 +89,9 @@ struct femtoDreamPairTaskTrackTrack {
   std::vector<float> kNsigma;
 
   /// particle part
-  ConfigurableAxis CfgTempFitVarBins{"CfgDTempFitVarBins", {300,-0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis CfgTempFitVarBins{"CfgDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis CfgTempFitVarpTBins{"CfgTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
-  
+
   /// Correlation part
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
   // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -118,20 +118,20 @@ struct femtoDreamPairTaskTrackTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry,  CfgTempFitVarpTBins, CfgTempFitVarBins);
+    trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
     if (!ConfIsSame) {
-      trackHistoPartTwo.init(&qaRegistry,  CfgTempFitVarpTBins, CfgTempFitVarBins);
+      trackHistoPartTwo.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
     }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    if(ConfAnalyseRun3){
+    if (ConfAnalyseRun3) {
       sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
       mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     } else {
-      //sameEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
-      //mixedEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
+      // sameEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
+      // mixedEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
       sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
       mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     }
@@ -159,8 +159,8 @@ struct femtoDreamPairTaskTrackTrack {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
-    //const int multCol = col.multNtrPV();
-    
+    // const int multCol = col.multNtrPV();
+
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
@@ -231,7 +231,7 @@ struct femtoDreamPairTaskTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      if(ConfAnalyseRun3){
+      if (ConfAnalyseRun3) {
         sameEventCont.setPair(p1, p2, col.multNtrPV());
       } else {
         sameEventCont.setPair(p1, p2, col.multNtrlets());
@@ -292,7 +292,7 @@ struct femtoDreamPairTaskTrackTrack {
             continue;
           }
         }
-        if(ConfAnalyseRun3){
+        if (ConfAnalyseRun3) {
           mixedEventCont.setPair(p1, p2, collision1.multNtrPV());
         } else {
           mixedEventCont.setPair(p1, p2, collision1.multNtrlets());
