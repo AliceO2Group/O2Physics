@@ -149,7 +149,7 @@ struct preProcessMCcollisions {
     histos.add("h2dPVResolutionXYWithXi", "h2dPVResolutionXYWithXi", kTH2D, {axisPVResolutionXY, axisTwenty});
     histos.add("h2dPVResolutionZWithXi", "h2dPVResolutionZWithXi", kTH2D, {axisPVResolutionZ, axisTwenty});
     histos.add("h2dPVResolutionTWithXi", "h2dPVResolutionTWithXi", kTH2D, {axisPVResolutionT, axisTwenty});
-    
+
     // Helper to decipher this histogram
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(1, "Recoed 1 time, 1st PV");      // size 1 = 0
     histos.get<TH2>(HIST("h2dNContributors"))->GetYaxis()->SetBinLabel(2, "Recoed 2 times, Biggest PV"); // size 2 = 1
@@ -195,7 +195,7 @@ struct preProcessMCcollisions {
     // Dummy process
   }
   PROCESS_SWITCH(preProcessMCcollisions, processData, "Real data dummy", false);
-  
+
   void processMC(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles, aod::BCs const&)
   {
     int lNumberOfXi = 0;
@@ -387,7 +387,7 @@ struct straRecoStudy {
 
     const AxisSpec axisITSClu{10, -0.5f, +9.5f, "ITS clusters"};
     const AxisSpec axisTPCCroRo{160, -0.5f, +159.5f, "TPC crossed rows"};
-    
+
     // bit packed ITS cluster map
     const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
     const AxisSpec axisRadius{(int)160, 0.0f, +80.0f, "Radius (cm)"};
@@ -439,7 +439,7 @@ struct straRecoStudy {
     histos.add("h2dOmegaMinusQADCABachToPV", "h2dOmegaMinusQADCABachToPV", kTH2F, {axisVsPtCoarse, axisDCA});
     histos.add("h2dOmegaMinusQADCACascToPV", "h2dOmegaMinusQADCACascToPV", kTH2F, {axisVsPtCoarse, axisDCAWD});
     histos.add("h2dOmegaMinusQAPointingAngle", "h2dOmegaMinusQAPointingAngle", kTH2F, {axisVsPtCoarse, axisPA});
-    
+
     histos.add("h2dITSCluMap_V0Positive", "h2dITSCluMap_V0Positive", kTH2D, {axisITSCluMap, axisRadius});
     histos.add("h2dITSCluMap_V0Negative", "h2dITSCluMap_V0Negative", kTH2D, {axisITSCluMap, axisRadius});
     histos.add("h2dITSCluMap_CascPositive", "h2dITSCluMap_CascPositive", kTH2D, {axisITSCluMap, axisRadius});
@@ -550,7 +550,7 @@ struct straRecoStudy {
     resetCounters();
   }
   PROCESS_SWITCH(straRecoStudy, processV0, "Regular V0 analysis", true);
-  
+
   void processV0RealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& v0tables, aod::CascDataExt const& Cascades, TracksCompleteIU const& tracks, aod::V0sLinked const&)
   {
     evselstats[kEvSelAll]++;
@@ -709,7 +709,7 @@ struct straRecoStudy {
       auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
-      
+
       histos.fill(HIST("h2dITSCluMap_CascPositive"), (float)posPartTrack.itsClusterMap(), casc.v0radius());
       histos.fill(HIST("h2dITSCluMap_CascNegative"), (float)negPartTrack.itsClusterMap(), casc.v0radius());
       histos.fill(HIST("h2dITSCluMap_CascBachelor"), (float)bachPartTrack.itsClusterMap(), casc.cascradius());
@@ -754,7 +754,7 @@ struct straRecoStudy {
     }
   }
   PROCESS_SWITCH(straRecoStudy, processCascadeRealData, "Regular cascade analysis, real data", false);
-  
+
   void processGeneratedReconstructible(soa::Filtered<RecoedMCCollisions>::iterator const& collision, aod::McParticles const& mcParticles)
   {
     // check if collision successfully reconstructed
