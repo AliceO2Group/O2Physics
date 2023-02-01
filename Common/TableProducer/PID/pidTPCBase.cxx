@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   pidTOFBase.cxx
+/// \file   pidTPCBase.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Base to build tasks for TOF PID tasks.
+/// \brief  Base to build tasks for TPC PID tasks.
 ///
 
 #include <utility>
@@ -21,7 +21,6 @@
 
 // O2 includes
 #include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
 
@@ -49,7 +48,7 @@ struct PidMultiplicity {
   {
     LOG(info) << "Initializing PID Mult Task";
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
+    enableTable = isTableRequiredInWorkflow(initContext, "PIDMults");
     if (enableTable) {
       LOG(info) << "Table TPC PID Multiplicity enabled!";
     }
