@@ -944,8 +944,12 @@ struct HfTrackIndexSkimCreator {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const&)
+  void init(InitContext const& context)
   {
+    if (!(context.mOptions.get<bool>("processSkimCreator"))) {
+      return;
+    }
+
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = array{array{massPi, massK},
                                                               array{massK, massPi}};
 
@@ -1439,7 +1443,7 @@ struct HfTrackIndexSkimCreator {
     return;
   } /// end of performPvRefitCandProngs function
 
-  void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+  void processSkimCreator( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions::iterator const& collision,
     aod::Collisions const&,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -2159,6 +2163,14 @@ struct HfTrackIndexSkimCreator {
       registry.fill(HIST("hNCand3ProngVsNTracks"), nTracks, nCand3);
     }
   }
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, processSkimCreator, "Process 2-prong and 3-prong skim", true);
+
+  void processNoSkimCreator(SelectedCollisions const&){
+    // dummy
+  };
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, processNoSkimCreator, "Do not process 2-prongs and 3-prongs", false);
 };
 
 //________________________________________________________________________________________________________________________
