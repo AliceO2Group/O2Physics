@@ -13,8 +13,11 @@
 //
 // Authors: Nima Zardoshti, Jochen Klein
 
-#ifndef O2_ANALYSIS_JETFINDER_H
-#define O2_ANALYSIS_JETFINDER_H
+#ifndef PWGJE_CORE_JETFINDER_H_
+#define PWGJE_CORE_JETFINDER_H_
+
+#include <memory>
+#include <vector>
 
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
@@ -27,8 +30,6 @@
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 #include "fastjet/tools/Subtractor.hh"
 #include "fastjet/contrib/ConstituentSubtractor.hh"
-
-#include <vector>
 
 class JetFinder
 {
@@ -101,42 +102,41 @@ class JetFinder
   fastjet::Selector selRho;
 
   /// Default constructor
-  JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : bkgSubMode(BkgSubMode::none),
-                                                                                                        phiMin(phi_Min),
-                                                                                                        phiMax(phi_Max),
-                                                                                                        etaMin(eta_Min),
-                                                                                                        etaMax(eta_Max),
-                                                                                                        jetR(0.4),
-                                                                                                        jetPtMin(0.0),
-                                                                                                        jetPtMax(1000.0),
-                                                                                                        jetPhiMin(phi_Min),
-                                                                                                        jetPhiMax(phi_Max),
-                                                                                                        jetEtaMin(eta_Min),
-                                                                                                        jetEtaMax(eta_Max),
-                                                                                                        ghostEtaMin(eta_Min),
-                                                                                                        ghostEtaMax(eta_Max),
-                                                                                                        ghostArea(0.005),
-                                                                                                        ghostRepeatN(1),
-                                                                                                        ghostktMean(1e-100), // is float precise enough?
-                                                                                                        gridScatter(1.0),
-                                                                                                        ktScatter(0.1),
-                                                                                                        jetBkgR(0.2),
-                                                                                                        bkgPhiMin(phi_Min),
-                                                                                                        bkgPhiMax(phi_Max),
-                                                                                                        bkgEtaMin(eta_Min),
-                                                                                                        bkgEtaMax(eta_Max),
-                                                                                                        constSubAlpha(1.0),
-                                                                                                        constSubRMax(0.6),
-                                                                                                        isReclustering(false),
-                                                                                                        algorithm(fastjet::antikt_algorithm),
-                                                                                                        recombScheme(fastjet::E_scheme),
-                                                                                                        strategy(fastjet::Best),
-                                                                                                        areaType(fastjet::active_area),
-                                                                                                        algorithmBkg(fastjet::JetAlgorithm(fastjet::kt_algorithm)),
-                                                                                                        recombSchemeBkg(fastjet::RecombinationScheme(fastjet::E_scheme)),
-                                                                                                        strategyBkg(fastjet::Best),
-                                                                                                        areaTypeBkg(fastjet::active_area)
-
+  explicit JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : bkgSubMode(BkgSubMode::none),
+                                                                                                                 phiMin(phi_Min),
+                                                                                                                 phiMax(phi_Max),
+                                                                                                                 etaMin(eta_Min),
+                                                                                                                 etaMax(eta_Max),
+                                                                                                                 jetR(0.4),
+                                                                                                                 jetPtMin(0.0),
+                                                                                                                 jetPtMax(1000.0),
+                                                                                                                 jetPhiMin(phi_Min),
+                                                                                                                 jetPhiMax(phi_Max),
+                                                                                                                 jetEtaMin(eta_Min),
+                                                                                                                 jetEtaMax(eta_Max),
+                                                                                                                 ghostEtaMin(eta_Min),
+                                                                                                                 ghostEtaMax(eta_Max),
+                                                                                                                 ghostArea(0.005),
+                                                                                                                 ghostRepeatN(1),
+                                                                                                                 ghostktMean(1e-100), // is float precise enough?
+                                                                                                                 gridScatter(1.0),
+                                                                                                                 ktScatter(0.1),
+                                                                                                                 jetBkgR(0.2),
+                                                                                                                 bkgPhiMin(phi_Min),
+                                                                                                                 bkgPhiMax(phi_Max),
+                                                                                                                 bkgEtaMin(eta_Min),
+                                                                                                                 bkgEtaMax(eta_Max),
+                                                                                                                 constSubAlpha(1.0),
+                                                                                                                 constSubRMax(0.6),
+                                                                                                                 isReclustering(false),
+                                                                                                                 algorithm(fastjet::antikt_algorithm),
+                                                                                                                 recombScheme(fastjet::E_scheme),
+                                                                                                                 strategy(fastjet::Best),
+                                                                                                                 areaType(fastjet::active_area),
+                                                                                                                 algorithmBkg(fastjet::JetAlgorithm(fastjet::kt_algorithm)),
+                                                                                                                 recombSchemeBkg(fastjet::RecombinationScheme(fastjet::E_scheme)),
+                                                                                                                 strategyBkg(fastjet::Best),
+                                                                                                                 areaTypeBkg(fastjet::active_area)
   {
 
     // default constructor
@@ -173,11 +173,14 @@ class JetFinder
 
 // does this belong here?
 template <typename T>
-void fillConstituents(const T& constituent, std::vector<fastjet::PseudoJet>& constituents)
+void fillConstituents(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999, double mass = JetFinder::mPion)
 {
-
-  auto energy = std::sqrt(constituent.p() * constituent.p() + JetFinder::mPion * JetFinder::mPion);
+  // auto energy = std::sqrt(constituent.p() * constituent.p() + JetFinder::mPion * JetFinder::mPion);
+  auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
+  auto energy = std::sqrt((p * p) + (mass * mass));
   constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
+  if (index != -99999)
+    constituents.back().set_user_index(index); // can the index of a track be -99999?
 }
 
-#endif
+#endif // PWGJE_CORE_JETFINDER_H_
