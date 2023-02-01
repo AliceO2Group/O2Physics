@@ -304,10 +304,10 @@ struct TableMaker {
     // fill stats information, before selections
     for (int i = 0; i < kNaliases; i++) {
       if (triggerAliases & (uint32_t(1) << i)) {
-        ((TH2I*)fStatsList->At(0))->Fill(2.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(2.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
     if (!fEventCut->IsSelected(VarManager::fgValues)) {
       return;
@@ -316,10 +316,10 @@ struct TableMaker {
     // fill stats information, after selections
     for (int i = 0; i < kNaliases; i++) {
       if (triggerAliases & (uint32_t(1) << i)) {
-        ((TH2I*)fStatsList->At(0))->Fill(3.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
       }
     }
-    ((TH2I*)fStatsList->At(0))->Fill(3.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
 
     fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
 
@@ -381,7 +381,7 @@ struct TableMaker {
                 fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
               }
             }
-            ((TH1I*)fStatsList->At(1))->Fill(float(i));
+            (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
           }
         }
         if (!trackTempFilterMap) {
@@ -399,7 +399,7 @@ struct TableMaker {
           trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
           for (int iv0 = 0; iv0 < 5; iv0++) {
             if (track.pidbit() & (uint8_t(1) << iv0)) {
-              ((TH1I*)fStatsList->At(1))->Fill(fTrackCuts.size() + float(iv0));
+              (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
             }
           }
         }
@@ -505,7 +505,7 @@ struct TableMaker {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", (*cut).GetName()), VarManager::fgValues);
               }
             }
-            ((TH1I*)fStatsList->At(2))->Fill(float(i));
+            (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
           }
         }
         if (!trackTempFilterMap) {
@@ -527,9 +527,7 @@ struct TableMaker {
           } else {
             newMatchIndex[muon.index()] = -1;
           }
-        }
-
-        else if (int(muon.trackType() == 4)) { // an MCH track
+        } else if (int(muon.trackType() == 4)) { // an MCH track
           // in this case the matches should be filled from the other types but we need to check
           if (newMatchIndex.count(muon.index()) == 0) { // if an entry for this mch was not added it simply mean that non of the global tracks were matched to it
             newMatchIndex[muon.index()] = -1;
@@ -648,10 +646,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
     }
@@ -677,10 +675,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
     }
@@ -699,10 +697,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
     }
@@ -763,10 +761,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
-        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(kNaliases));
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
     }
@@ -791,10 +789,10 @@ struct TableMaker {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (bc.alias()[i] > 0) {
-        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, float(i));
+        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, float(kNaliases));
+    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(kNaliases));
   }
 
   PROCESS_SWITCH(TableMaker, processFull, "Build full DQ skimmed data model, w/o centrality", false);
