@@ -2541,10 +2541,10 @@ struct HfTrackIndexSkimCreatorCascades {
             registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
             registry.fill(HIST("hMassLcToPK0S"), mass2K0sP);
           }
-        }
-      }
-    } // loop over tracks
-  }   // process
+        } // loop over V0s
+      }   // loop over tracks
+    }     // loop over collisions
+  }       // process
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim also V0", false);
 };
 
