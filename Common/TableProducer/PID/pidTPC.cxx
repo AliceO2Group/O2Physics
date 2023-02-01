@@ -34,6 +34,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Tools/ML/model.h"
+#include "pidTPCBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -54,7 +55,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Task to produce the response table
 struct tpcPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults>;
+  using Coll = soa::Join<aod::Collisions, aod::PIDMults>;
 
   // Tables to produce
   Produces<o2::aod::pidTPCEl> tablePIDEl;
