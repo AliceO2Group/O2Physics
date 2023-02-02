@@ -2433,7 +2433,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
         // fill table row
         rowTrackIndexCasc(bach.globalIndex(),
-                          v0.globalIndex());
+                          v0.v0Id());
         // fill histograms
         if (fillHistograms) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
