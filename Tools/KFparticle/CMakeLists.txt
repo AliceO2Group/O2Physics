@@ -1,3 +1,4 @@
+
 # Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
@@ -8,3 +9,13 @@
 # In applying this license CERN does not waive the privileges and immunities
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
+
+o2physics_add_dpl_workflow(qa-kfparticle
+                           SOURCES qaKFParticle.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter O2Physics::AnalysisCCDB O2::ReconstructionDataFormats KFParticle::KFParticle
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qa-kfeventtrack
+                           SOURCES qaKFEventTrack.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter O2Physics::AnalysisCCDB O2::ReconstructionDataFormats KFParticle::KFParticle
+                           COMPONENT_NAME Analysis)
