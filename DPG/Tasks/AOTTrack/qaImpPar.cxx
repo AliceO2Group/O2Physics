@@ -87,7 +87,7 @@ struct QaImpactPar {
   // PV refit
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbpath_lut{"ccdbpath_lut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  //Configurable<std::string> ccdbpath_geo{"ccdbpath_geo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  // Configurable<std::string> ccdbpath_geo{"ccdbpath_geo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbpath_grp{"ccdbpath_grp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> doPVrefit{"doPVrefit", true, "Do PV refit"};
   Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
@@ -224,9 +224,9 @@ struct QaImpactPar {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
-    //if (!o2::base::GeometryManager::isGeometryLoaded()) {
-    //  ccdb->get<TGeoManager>(ccdbpath_geo);
-    //}
+    // if (!o2::base::GeometryManager::isGeometryLoaded()) {
+    //   ccdb->get<TGeoManager>(ccdbpath_geo);
+    // }
     mRunNumber = -1;
 
     /// Custom cut selection objects
