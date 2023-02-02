@@ -161,7 +161,7 @@ struct cascadeBuilder {
 
   Filter taggedFilter = aod::casctag::isInteresting == true;
 
-  //For manual sliceBy
+  // For manual sliceBy
   Preslice<aod::Cascades> perCollision = o2::aod::cascade::collisionId;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -471,7 +471,7 @@ struct cascadeBuilder {
     auto posTrack = v0.template posTrack_as<TTrackTo>();
     auto negTrack = v0.template negTrack_as<TTrackTo>();
     auto const& collision = cascade.collision();
-    
+
     // value 0.5: any considered cascade
     statisticsRegistry.cascstats[kCascAll]++;
 
@@ -499,7 +499,7 @@ struct cascadeBuilder {
     auto bachTrackPar = getTrackPar(bachTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascadecandidate.bachDCAxy = dcaInfo[0];
-    
+
     if (TMath::Abs(cascadecandidate.bachDCAxy) < dcabachtopv)
       return false;
     statisticsRegistry.cascstats[kBachDCAxy]++;
@@ -575,7 +575,7 @@ struct cascadeBuilder {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
 
-    //Populate information
+    // Populate information
     cascadecandidate.v0Id = v0index.globalIndex();
     cascadecandidate.bachelorId = bachTrack.globalIndex();
     cascadecandidate.v0pos[0] = v0.x();
@@ -590,7 +590,7 @@ struct cascadeBuilder {
     cascadecandidate.v0dcadau = v0.dcaV0daughters();
     cascadecandidate.v0dcapostopv = v0.dcapostopv();
     cascadecandidate.v0dcanegtopv = v0.dcanegtopv();
-    
+
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
