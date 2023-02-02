@@ -948,7 +948,7 @@ struct TableMakerMC {
   }
 
   void processAmbiguousMuonOnlyWithCov(MyEvents const& collisions, aod::BCs const& bcs,
-                                       soa::Filtered<MyMuonsWithCov> const& tracksMuon, 
+                                       soa::Filtered<MyMuonsWithCov> const& tracksMuon,
                                        aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, ambiTracksFwd);
