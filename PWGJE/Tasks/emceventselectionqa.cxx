@@ -13,6 +13,8 @@
 //
 // Author: Markus Fasel
 
+#include <unordered_map>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,6 +32,9 @@ using collEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 
 struct EmcEventSelectionQA {
   o2::framework::HistogramRegistry mHistManager{"EMCALEventSelectionQAHistograms"};
+
+  // Require EMCAL cells (CALO type 1)
+  Filter emccellfilter = aod::calo::caloType == 1;
 
   void init(o2::framework::InitContext const&)
   {
@@ -49,8 +54,21 @@ struct EmcEventSelectionQA {
 
   Preslice<collEventSels> perFoundBC = aod::evsel::foundBCId;
 
-  void process(bcEvSels const& bcs, collEventSels const& collisions, aod::Calos const& cells)
+  void process(bcEvSels const& bcs, collEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
   {
+    std::unordered_map<uint64_t, int> cellGlobalBCs;
+    // Build map of number of cells for corrected BCs using global BCs
+    // used later in the determination whether a BC has EMC cell content (for speed reason)
+    for (const auto& cell : cells) {
+      auto globalbcid = cell.bc_as<bcEvSels>().globalBC();
+      auto found = cellGlobalBCs.find(globalbcid);
+      if (found != cellGlobalBCs.end()) {
+        found->second++;
+      } else {
+        cellGlobalBCs.insert(std::pair<uint64_t, int>(globalbcid, 1));
+      }
+    }
+
     for (const auto& bc : bcs) {
       bool isEMCALreadout = false;
       auto bcID = bc.globalBC() % 3564;
@@ -78,15 +96,14 @@ struct EmcEventSelectionQA {
         mHistManager.fill(HIST("hBCTVX"), bcID);
       }
 
-      // Find cells:
-      int ncellsBC = 0;
-      for (const auto& cell : cells) {
-        if (cell.bc_as<bcEvSels>() == bc) {
-          ncellsBC++;
+      // lookup number of cells for global BC of this BC
+      // avoid iteration over cell table for speed reason
+      auto found = cellGlobalBCs.find(bc.globalBC());
+      if (found != cellGlobalBCs.end()) {
+        // require at least 1 cell for global BC
+        if (found->second > 0) {
+          mHistManager.fill(HIST("hBCEmcalCellContent"), bcID);
         }
-      }
-      if (ncellsBC) {
-        mHistManager.fill(HIST("hBCEmcalCellContent"), bcID);
       }
 
       auto collisionsGrouped = collisions.sliceBy(perFoundBC, bc.globalIndex());
