@@ -1421,7 +1421,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrue"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrue"), track.pt(), track.dcaZ());
             if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe) {
-              histos.fill(HIST("tracks/proton/h1DeuteronSpectraTrueWPID"), track.pt());
+              histos.fill(HIST("tracks/deuterons/h1DeuteronSpectraTrueWPID"), track.pt());
             }
             if (isPhysPrim) {
               histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTruePrim"), track.pt());
@@ -1443,7 +1443,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrue"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTrue"), track.pt(), track.dcaZ());
             if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe) {
-              histos.fill(HIST("tracks/proton/h1antiDeuteronSpectraTrueWPID"), track.pt());
+              histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrueWPID"), track.pt());
             }
             if (isPhysPrim) {
               histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTruePrim"), track.pt());
@@ -1505,7 +1505,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTrue"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTrue"), track.pt(), track.dcaZ());
             if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe) {
-              histos.fill(HIST("tracks/proton/h1HeliumSpectraTrueWPID"), track.pt());
+              histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueWPID"), track.pt());
             }
             if (isPhysPrim) {
               histos.fill(HIST("tracks/helium/h1HeliumSpectraTruePrim"), track.pt());
@@ -1528,7 +1528,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTrue"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTrue"), track.pt(), track.dcaZ());
             if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe) {
-              histos.fill(HIST("tracks/proton/h1antiHeliumSpectraTrueWPID"), track.pt());
+              histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID"), track.pt());
             }
             if (isPhysPrim) {
               histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTruePrim"), track.pt());
