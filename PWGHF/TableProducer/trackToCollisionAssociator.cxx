@@ -118,7 +118,7 @@ struct HfTrackToCollisionAssociation {
     }
   }
 
-  PROCESS_SWITCH(HfTrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", true);
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
 
   Partition<TracksWithSel> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
 
@@ -237,7 +237,7 @@ struct HfTrackToCollisionAssociation {
     }
   }
 
-  PROCESS_SWITCH(HfTrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", false);
+  PROCESS_SWITCH(HfTrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", true);
 };
 
 //________________________________________________________________________________________________________________________
