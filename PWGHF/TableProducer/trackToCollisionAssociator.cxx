@@ -11,8 +11,9 @@
 
 /// \file trackToCollisionAssociator.cxx
 /// \brief Associates tracks to collisions considering ambiguities
-///
-/// \author
+/// \author Jan Fiete Grosse-Oetringhaus <jan.fiete.grosse-oetringhaus@cern.ch>, CERN
+/// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
+/// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -29,12 +30,14 @@ using namespace o2::aod;
 struct HfTrackToCollisionAssociation {
   Produces<HfTrackAssoc> association;
   Produces<HfTrackAssocExtra> associationExtra;
-  Produces<HfCompColls> reverseIndices;
 
-  Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 3.f, "number of sigmas for time compatibility"};
-  Configurable<float> timeMargin{"timeMargin", 0., "time margin in ns added to uncertainty because of uncalibrated TPC"};
+  Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
+  Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
+  Configurable<bool> applyTrackSelForRun2{"applyMinimalTrackSelForRun2", false, "flag to apply minimal track selection for Run2 in case of standard association"};
+  Configurable<bool> applyIsGlobalTrack{"applyIsGlobalTrack", true, "flag to apply global track w/o DCA selection"};
+  Configurable<bool> debug{"debug", false, "fill a table with flag to keep track of kind of track (PV contributor or ambiguous)"};
 
-  Filter trackFilter = requireGlobalTrackWoDCAInFilter();
+  Filter trackFilter = (applyIsGlobalTrack == false) || requireGlobalTrackWoDCAInFilter();
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
@@ -45,6 +48,10 @@ struct HfTrackToCollisionAssociation {
     if (doProcessSum != 1) {
       LOGP(fatal, "Exactly one process function should be enabled! Exit");
     }
+
+    if (applyIsGlobalTrack && applyTrackSelForRun2) {
+      LOGP(fatal, "You cannot apply simultaneously Run2 track selections and isGlobalWoDCA! Exit");
+    }
   }
 
   void processAssocWithTime(Collisions const& collisions,
@@ -52,8 +59,6 @@ struct HfTrackToCollisionAssociation {
                             TracksWithSelFilter const& tracks,
                             BCs const& bcs)
   {
-    std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
-
     // loop over collisions to find time-compatible tracks
     auto trackBegin = tracks.begin();
     const auto bOffsetMax = 241; // 6 mus (ITS)
@@ -69,9 +74,11 @@ struct HfTrackToCollisionAssociation {
         const int64_t bcOffset = (int64_t)track.collision().bc().globalBC() - (int64_t)collBC;
         float trackTime{0.};
         float trackTimeRes{0.};
+        int trackType = hf_track_association::eTrackType::Ambiguous;
         if (track.isPVContributor()) {
           trackTime = track.collision().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
           trackTimeRes = 25.f;                           // 1 BC
+          trackType = hf_track_association::eTrackType::PVContributor;
         } else {
           trackTime = track.trackTime();
           trackTimeRes = track.trackTimeRes();
@@ -102,27 +109,11 @@ struct HfTrackToCollisionAssociation {
           const auto collIdx = collision.globalIndex();
           const auto trackIdx = track.globalIndex();
           LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
-          if (collsPerTrack[trackIdx] == nullptr) {
-            collsPerTrack[trackIdx] = std::make_unique<std::vector<int>>();
-          }
-          collsPerTrack[trackIdx].get()->push_back(collIdx);
           association(collIdx, trackIdx);
+          if (debug) {
+            associationExtra(trackType);
+          }
         }
-      }
-    }
-
-    // create reverse index track to collisions
-    std::vector<int> empty{};
-    for (const auto& track : tracksUnfiltered) {
-
-      const auto trackId = track.globalIndex();
-      if (collsPerTrack[trackId] == nullptr) {
-        reverseIndices(empty);
-      } else {
-        // for (const auto& collId : *collsPerTrack[trackId]) {
-        //   LOGP(info, "  -> Coll id {}", collId);
-        // }
-        reverseIndices(*collsPerTrack[trackId].get());
       }
     }
   }
@@ -138,19 +129,17 @@ struct HfTrackToCollisionAssociation {
                            BCs const& bcs)
   {
     std::vector<uint64_t> collIds{}, trackIds{}, trackTypes{};
-    std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
 
     // associate collisions with tracks as default in the AO2Ds
     for (const auto& track : tracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
       const auto trackId = track.globalIndex();
       const auto collId = track.collisionId();
       collIds.push_back(collId);
       trackIds.push_back(trackId);
       trackTypes.push_back(hf_track_association::eTrackType::Regular);
-      if (collsPerTrack[trackId] == nullptr) {
-        collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
-      }
-      collsPerTrack[trackId].get()->push_back(collId);
     }
 
     // associate collisions with ambiguous tracks as in the AO2Ds
@@ -172,10 +161,6 @@ struct HfTrackToCollisionAssociation {
             collIds.push_back(collId);
             trackIds.push_back(trackId);
             trackTypes.push_back(hf_track_association::eTrackType::Ambiguous);
-            if (collsPerTrack[trackId] == nullptr) {
-              collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
-            }
-            collsPerTrack[trackId].get()->push_back(collId);
           }
         }
       }
@@ -206,10 +191,6 @@ struct HfTrackToCollisionAssociation {
                 collIds.push_back(repCollId2);
                 trackIds.push_back(trackId);
                 trackTypes.push_back(hf_track_association::eTrackType::PVContributor);
-                if (collsPerTrack[trackId] == nullptr) {
-                  collsPerTrack[trackId] = std::make_unique<std::vector<int>>();
-                }
-                collsPerTrack[trackId].get()->push_back(repCollId2);
               }
             }
           }
@@ -223,21 +204,8 @@ struct HfTrackToCollisionAssociation {
 
     for (const auto& index : sortedCollIds) {
       association(collIds[index], trackIds[index]);
-      associationExtra(trackTypes[index]);
-    }
-
-    // create reverse index track to collisions
-    std::vector<int> empty{};
-    for (const auto& track : tracksUnfiltered) {
-
-      const auto trackId = track.globalIndex();
-      if (collsPerTrack[trackId] == nullptr) {
-        reverseIndices(empty);
-      } else {
-        // for (const auto& collId : *collsPerTrack[trackId]) {
-        //   LOGP(info, "  -> Coll id {}", collId);
-        // }
-        reverseIndices(*collsPerTrack[trackId].get());
+      if (debug) {
+        associationExtra(trackTypes[index]);
       }
     }
   }
@@ -247,22 +215,24 @@ struct HfTrackToCollisionAssociation {
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
 
   void processStandardAssoc(Collisions const& collisions,
-                            Tracks const& tracks)
+                            TracksWithSel const& tracks)
   {
     for (const auto& collision : collisions) { // we do it for all tracks, to be compatible with Run2 analyses
       const uint64_t collIdx = collision.globalIndex();
       auto tracksPerCollision = tracks.sliceBy(perCollision, collIdx);
       for (const auto& track : tracksPerCollision) {
-        association(collIdx, track.globalIndex());
-      }
-    }
-
-    std::vector<int> empty{};
-    for (const auto& track : tracks) {
-      if (!track.has_collision()) {
-        reverseIndices(empty);
-      } else {
-        reverseIndices(std::vector<int>{track.collisionId()});
+        bool hasGoodQuality = true;
+        if (applyIsGlobalTrack && !track.isGlobalTrackWoDCA()) {
+          hasGoodQuality = false;
+        } else if (applyTrackSelForRun2) {
+          unsigned char itsClusterMap = track.itsClusterMap();
+          if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
+            hasGoodQuality = false;
+          }
+        }
+        if (hasGoodQuality) {
+          association(collIdx, track.globalIndex());
+        }
       }
     }
   }

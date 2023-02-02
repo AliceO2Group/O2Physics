@@ -768,11 +768,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   } /// end of performPvRefitTrack function
 
   /// Partition for PV contributors
-  using TracksWithAssoc = soa::Join<TracksWithSelAndDCA, HfCompColls>;
-  Partition<TracksWithAssoc> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+
+  Preslice<HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Partition<TracksWithSelAndDCA> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
 
   void process(aod::Collisions const& collisions,
-               TracksWithAssoc const& tracks,
+               HfTrackAssoc const& trackIndices,
+               TracksWithSelAndDCA const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps // for PV refit
 #ifdef MY_DEBUG
                ,
@@ -781,41 +783,38 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   )
   {
 
-    if (doPvRefit) {
+    if (doPvRefit && debug) {
       LOG(info) << ">>> number of tracks: " << tracks.size();
       LOG(info) << ">>> number of collisions: " << collisions.size();
     }
 
-    for (const auto& track : tracks) {
+    // prepare vectors to cache quantities needed for PV refit
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack(tracks.size());
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack(tracks.size());
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack(tracks.size());
 
-      auto compatibleCollIds = track.compatibleCollIds(); // compatible collision ids according to HF criteria
-      if (compatibleCollIds.size() == 0) {
-        rowSelectedTrack(std::vector<int>{}, track.px(), track.py(), track.pz());
-        tabPvRefitTrack(0.f, 0.f, 0.f, 1e10f, 1e10f, 1e10f, 1e10f, 1e10f, 1e10f, 0.f, 0.f);
-        continue;
-      }
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
-      std::vector<int> statusProng{}; // selection flag
+      for (const auto& trackId : groupedTrackIndices) {
+        int statusProng = BIT(CandidateType::NCandidateTypes) - 1; // all bits on
+        auto track = trackId.track_as<TracksWithSelAndDCA>();
+        auto trackIdx = track.globalIndex();
+        float trackPt = track.pt();
+        float trackEta = track.eta();
 
-      std::array<float, 2> pvRefitDcaXYDcaZ{track.dcaXY(), track.dcaZ()};
-      std::array<float, 3> pvRefitPvCoord{0.f, 0.f, 0.f};
-      std::array<float, 6> pvRefitPvCovMatrix{1e10f, 1e10f, 1e10f, 1e10f, 1e10f, 1e10f};
-
-      float trackPt = track.pt();
-      float trackEta = track.eta();
-
-      for (const auto& iColl : compatibleCollIds) { // loop over all compatible collisions
-        auto collision = collisions.rawIteratorAt(iColl);
-        statusProng.push_back(BIT(CandidateType::NCandidateTypes) - 1); // all bits on
+        std::array<float, 2> pvRefitDcaXYDcaZ{track.dcaXY(), track.dcaZ()};
+        std::array<float, 3> pvRefitPvCoord{0.f, 0.f, 0.f};
+        std::array<float, 6> pvRefitPvCovMatrix{1e10f, 1e10f, 1e10f, 1e10f, 1e10f, 1e10f};
 
 #ifdef MY_DEBUG
         auto indexBach = track.mcParticleId();
         //      LOG(info) << "Checking label " << indexBach;
         bool isProtonFromLc = isProtonFromLcFunc(indexBach, indexProton);
-
 #endif
         // PV refit and DCA recalculation only for tracks with an assigned collision
-        if (doPvRefit && track.has_collision() && track.collisionId() == iColl) {
+        if (doPvRefit && track.has_collision() && track.collisionId() == thisCollId && track.isPVContributor()) {
           pvRefitPvCoord = {collision.posX(), collision.posY(), collision.posZ()};
           pvRefitPvCovMatrix = {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
 
@@ -824,7 +823,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
           std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov = {};
 
           /// contributors for the current collision
-          auto pvContrCollision = pvContributors->sliceByCached(aod::track::collisionId, iColl);
+          auto pvContrCollision = pvContributors->sliceByCached(aod::track::collisionId, thisCollId);
           for (auto contributor : pvContrCollision) {
             vecPvContributorGlobId.push_back(contributor.globalIndex());
             vecPvContributorTrackParCov.push_back(getTrackParCov(contributor));
@@ -838,16 +837,16 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
             LOG(info) << "[BEFORE performPvRefitTrack] track.collision().globalIndex(): " << collision.globalIndex();
           }
           performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, (BigTracks::iterator const&)track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
-        } else if (track.collisionId() != iColl) {
+        } else if (track.collisionId() != thisCollId) {
           auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
           initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
           auto trackPar = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dcaInfo);
-          pvRefitDcaXYDcaZ[0] = dcaInfo[0];
-          pvRefitDcaXYDcaZ[1] = dcaInfo[1];
           trackPt = trackPar.getPt();
           trackEta = trackPar.getEta();
+          pvRefitDcaXYDcaZ[0] = dcaInfo[0];
+          pvRefitDcaXYDcaZ[1] = dcaInfo[1];
         }
 
         MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "\nWe found the proton " << indexBach);
@@ -861,14 +860,20 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         //   }
         // }
 
-        isSelectedTrack(track, trackPt, trackEta, pvRefitDcaXYDcaZ, statusProng.back());
+        isSelectedTrack(track, trackPt, trackEta, pvRefitDcaXYDcaZ, statusProng);
+        rowSelectedTrack(statusProng);
+
+        pvRefitDcaPerTrack[trackIdx] = pvRefitDcaXYDcaZ;
+        pvRefitPvCoordPerTrack[trackIdx] = pvRefitPvCoord;
+        pvRefitPvCovMatrixPerTrack[trackIdx] = pvRefitPvCovMatrix;
       }
-      // fill table row
-      rowSelectedTrack(statusProng, track.px(), track.py(), track.pz());
-      /// fill table with PV refit info
-      tabPvRefitTrack(pvRefitPvCoord[0], pvRefitPvCoord[1], pvRefitPvCoord[2],
-                      pvRefitPvCovMatrix[0], pvRefitPvCovMatrix[1], pvRefitPvCovMatrix[2], pvRefitPvCovMatrix[3], pvRefitPvCovMatrix[4], pvRefitPvCovMatrix[5],
-                      pvRefitDcaXYDcaZ[0], pvRefitDcaXYDcaZ[1]);
+    }
+
+    /// fill table with PV refit info (it has to be filled per track)
+    for (auto iTrack{0u}; iTrack < tracks.size(); ++iTrack) {
+      tabPvRefitTrack(pvRefitPvCoordPerTrack[iTrack][0], pvRefitPvCoordPerTrack[iTrack][1], pvRefitPvCoordPerTrack[iTrack][2],
+                      pvRefitPvCovMatrixPerTrack[iTrack][0], pvRefitPvCovMatrixPerTrack[iTrack][1], pvRefitPvCovMatrixPerTrack[iTrack][2], pvRefitPvCovMatrixPerTrack[iTrack][3], pvRefitPvCovMatrixPerTrack[iTrack][4], pvRefitPvCovMatrixPerTrack[iTrack][5],
+                      pvRefitDcaPerTrack[iTrack][0], pvRefitDcaPerTrack[iTrack][1]);
     }
   }
 };
@@ -951,14 +956,14 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, n3ProngDecays> pTBins3Prong;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfCompColls>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  // Filter filterSelectTracks = aod::hf_sel_track::isSelProng > 0;
+  Filter filterSelectedTrackIds = aod::hf_sel_track::isSelProng > 0;
 
   // FIXME
-  // Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
-  // Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
+  // Partition<TracksWithPVRefitAndDCA> tracksPos = aod::track::signed1Pt > 0.f;
+  // Partition<TracksWithPVRefitAndDCA> tracksNeg = aod::track::signed1Pt < 0.f;
 
   // QA of PV refit
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
@@ -1466,14 +1471,17 @@ struct HfTrackIndexSkimCreator {
   } /// end of performPvRefitCandProngs function
 
   // define slice of track indices per collisions
-  Preslice<SelectedTracks> tracksPerCollision = aod::track::collisionId; // needed for PV refit
-  Preslice<HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
+
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
 
   void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
-    HfTrackAssoc const& trackIndices,
-    SelectedTracks const& tracks)
+    FilteredHfTrackAssocSel const& trackIndices,
+    TracksWithPVRefitAndDCA const& tracks)
   {
 
     // can be added to run over limited collisions per file - for tesing purposes
@@ -1570,21 +1578,18 @@ struct HfTrackIndexSkimCreator {
       // first loop over positive tracks
       // for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
 
-      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      auto thisCollId = collision.globalIndex();
+      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (auto trackIndexPos1 = groupedTrackIndices.begin(); trackIndexPos1 != groupedTrackIndices.end(); ++trackIndexPos1) {
-        auto trackPos1 = trackIndexPos1.track_as<SelectedTracks>();
+        auto trackPos1 = trackIndexPos1.track_as<TracksWithPVRefitAndDCA>();
 
         if (trackPos1.signed1Pt() < 0) {
           continue;
         }
 
         // retrieve the selection flag that corresponds to this collision
-        const auto thisCollId = collision.globalIndex();
-        const auto compCollsIdsPos1 = trackPos1.compatibleCollIds();
-        const auto iCollIdPos1 = std::distance(compCollsIdsPos1.begin(), std::find_if(compCollsIdsPos1.begin(), compCollsIdsPos1.end(), [&](auto& collId) { return collId == thisCollId; }));
-        auto isSelProngPos1 = trackPos1.isSelProng()[iCollIdPos1];
-
+        auto isSelProngPos1 = trackIndexPos1.isSelProng();
         bool sel2ProngStatusPos = TESTBIT(isSelProngPos1, CandidateType::Cand2Prong);
         bool sel3ProngStatusPos1 = TESTBIT(isSelProngPos1, CandidateType::Cand3Prong);
         if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
@@ -1594,7 +1599,7 @@ struct HfTrackIndexSkimCreator {
         auto trackParVarPos1 = getTrackParCov(trackPos1);
         std::array<float, 3> pVecTrackPos1{trackPos1.px(), trackPos1.py(), trackPos1.pz()};
         o2::gpu::gpustd::array<float, 2> dcaInfoPos1{trackPos1.dcaXY(), trackPos1.dcaZ()};
-        if (collision.globalIndex() != trackPos1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+        if (thisCollId != trackPos1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos1, 2.f, noMatCorr, &dcaInfoPos1);
           getPxPyPz(trackParVarPos1, pVecTrackPos1);
         }
@@ -1602,16 +1607,13 @@ struct HfTrackIndexSkimCreator {
         // first loop over negative tracks
         // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
         for (auto trackIndexNeg1 = groupedTrackIndices.begin(); trackIndexNeg1 != groupedTrackIndices.end(); ++trackIndexNeg1) {
-          auto trackNeg1 = trackIndexNeg1.track_as<SelectedTracks>();
+          auto trackNeg1 = trackIndexNeg1.track_as<TracksWithPVRefitAndDCA>();
           if (trackNeg1.signed1Pt() > 0) {
             continue;
           }
 
           // retrieve the selection flag that corresponds to this collision
-          const auto compCollsIdsNeg1 = trackNeg1.compatibleCollIds();
-          const auto iCollIdNeg1 = std::distance(compCollsIdsNeg1.begin(), std::find_if(compCollsIdsNeg1.begin(), compCollsIdsNeg1.end(), [&](auto& collId) { return collId == thisCollId; }));
-          auto isSelProngNeg1 = trackNeg1.isSelProng()[iCollIdNeg1];
-
+          auto isSelProngNeg1 = trackIndexNeg1.isSelProng();
           bool sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
           bool sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
           if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
@@ -1621,7 +1623,7 @@ struct HfTrackIndexSkimCreator {
           auto trackParVarNeg1 = getTrackParCov(trackNeg1);
           std::array<float, 3> pVecTrackNeg1{trackNeg1.px(), trackNeg1.py(), trackNeg1.pz()};
           o2::gpu::gpustd::array<float, 2> dcaInfoNeg1{trackNeg1.dcaXY(), trackNeg1.dcaZ()};
-          if (collision.globalIndex() != trackNeg1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+          if (thisCollId != trackNeg1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg1, 2.f, noMatCorr, &dcaInfoNeg1);
             getPxPyPz(trackParVarNeg1, pVecTrackNeg1);
           }
@@ -1790,16 +1792,13 @@ struct HfTrackIndexSkimCreator {
             // second loop over positive tracks
             // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
             for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
-              auto trackPos2 = trackIndexPos2.track_as<SelectedTracks>();
+              auto trackPos2 = trackIndexPos2.track_as<TracksWithPVRefitAndDCA>();
               if (trackPos2.signed1Pt() < 0) {
                 continue;
               }
 
               // retrieve the selection flag that corresponds to this collision
-              const auto compCollsIdsPos2 = trackPos2.compatibleCollIds();
-              const auto iCollIdPos2 = std::distance(compCollsIdsPos2.begin(), std::find_if(compCollsIdsPos2.begin(), compCollsIdsPos2.end(), [&](auto& collId) { return collId == thisCollId; }));
-              auto isSelProngPos2 = trackPos2.isSelProng()[iCollIdPos2];
-
+              auto isSelProngPos2 = trackIndexPos2.isSelProng();
               if (!TESTBIT(isSelProngPos2, CandidateType::Cand3Prong)) {
                 continue;
               }
@@ -1807,7 +1806,7 @@ struct HfTrackIndexSkimCreator {
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array<float, 3> pVecTrackPos2{trackPos2.px(), trackPos2.py(), trackPos2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
-              if (collision.globalIndex() != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+              if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                 getPxPyPz(trackParVarPos2, pVecTrackPos2);
               }
@@ -2010,15 +2009,13 @@ struct HfTrackIndexSkimCreator {
             // second loop over negative tracks
             // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
             for (auto trackIndexNeg2 = trackIndexNeg1 + 1; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
-              auto trackNeg2 = trackIndexNeg2.track_as<SelectedTracks>();
+              auto trackNeg2 = trackIndexNeg2.track_as<TracksWithPVRefitAndDCA>();
               if (trackNeg2.signed1Pt() > 0) {
                 continue;
               }
 
-              const auto compCollsIdsNeg2 = trackNeg2.compatibleCollIds();
-              const auto iCollIdNeg2 = std::distance(compCollsIdsNeg2.begin(), std::find_if(compCollsIdsNeg2.begin(), compCollsIdsNeg2.end(), [&](auto& collId) { return collId == thisCollId; }));
-              auto isSelProngNeg2 = trackNeg2.isSelProng()[iCollIdNeg2];
-
+              // retrieve the selection flag that corresponds to this collision
+              auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               if (!TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong)) {
                 continue;
               }
@@ -2026,7 +2023,7 @@ struct HfTrackIndexSkimCreator {
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
               std::array<float, 3> pVecTrackNeg2{trackNeg2.px(), trackNeg2.py(), trackNeg2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
-              if (collision.globalIndex() != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+              if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                 getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
               }
@@ -2317,13 +2314,15 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack, aod::HfCompColls>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  // Partition<MyTracks> selectedTracks = aod::hf_sel_track::isSelProng >= 4;
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
+  // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
 
-  Preslice<SelectedTracks> tracksPerCollision = aod::track::collisionId; // needed for PV refit
-  Preslice<HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
+  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
 
   // histograms
   HistogramRegistry registry{"registry"};
@@ -2358,8 +2357,8 @@ struct HfTrackIndexSkimCreatorCascades {
                        aod::BCsWithTimestamps const&,
                        // soa::Filtered<aod::V0Datas> const& V0s,
                        aod::V0Datas const& V0s,
-                       HfTrackAssoc const& trackIndices,
-                       SelectedTracks const& tracks
+                       FilteredHfTrackAssocSel const& trackIndices,
+                       TracksWithPVRefitAndDCA const& tracks
 #ifdef MY_DEBUG
                        ,
                        aod::McParticles& mcParticles
@@ -2389,7 +2388,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
       // for (const auto& bach : selectedTracks) {
       for (const auto& bachIdx : groupedBachTrackIndices) {
-        auto bach = bachIdx.track_as<SelectedTracks>();
+        auto bach = bachIdx.track_as<TracksWithPVRefitAndDCA>();
 
         MY_DEBUG_MSG(1, printf("\n"); LOG(info) << "Bachelor loop");
 #ifdef MY_DEBUG
@@ -2399,9 +2398,7 @@ struct HfTrackIndexSkimCreatorCascades {
         // selections on the bachelor
 
         // // retrieve the selection flag that corresponds to this collision
-        const auto compCollsIdsBach = bach.compatibleCollIds();
-        const auto iCollIdBach = std::distance(compCollsIdsBach.begin(), std::find_if(compCollsIdsBach.begin(), compCollsIdsBach.end(), [&](auto& collId) { return collId == thisCollId; }));
-        auto isSelProngBach = bach.isSelProng()[iCollIdBach];
+        auto isSelProngBach = bachIdx.isSelProng();
 
         // pT cut
         if (!TESTBIT(isSelProngBach, CandidateType::CandV0bachelor)) {
@@ -2425,8 +2422,8 @@ struct HfTrackIndexSkimCreatorCascades {
         for (const auto& v0 : V0s) {
           MY_DEBUG_MSG(1, LOG(info) << "*** Checking next K0S");
           // selections on the V0 daughters
-          const auto& trackV0DaughPos = v0.posTrack_as<SelectedTracks>();
-          const auto& trackV0DaughNeg = v0.negTrack_as<SelectedTracks>();
+          const auto& trackV0DaughPos = v0.posTrack_as<TracksWithPVRefitAndDCA>();
+          const auto& trackV0DaughNeg = v0.negTrack_as<TracksWithPVRefitAndDCA>();
 #ifdef MY_DEBUG
           auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
           auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
