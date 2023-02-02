@@ -779,7 +779,7 @@ auto deltaMassPhiDsToPiKK(const T& candidate)
   return std::abs(invMassKKpair - RecoDecay::getMassPDG(pdg::Code::kPhi));
 }
 
-/// Calculate the cosine of the angle between the pion and the first kaon in the phi rest frame
+/// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
 /// \param candidate Ds candidate from aod::HfCand3Prong table
 /// \param option mass hypothesis considered: 0 = KKPi, 1 = PiKK
 /// \return cosine of pion-kaon angle in the phi rest frame
