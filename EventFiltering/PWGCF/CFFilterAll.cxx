@@ -14,10 +14,12 @@
 ///
 /// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch; Anton Riedel, TU München, anton.riedel@cern.ch
 
+#include <Framework/Configurable.h>
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 #include <TMath.h>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 #include "../filterTables.h"
@@ -151,6 +153,10 @@ struct CFFilter {
     "ConfEvtOfflineCheck",
     false,
     "Evt sel: check for offline selection"};
+  Configurable<bool> ConfAutocorRejection{
+    "ConfAutocorRejection",
+    true,
+    "Rejection autocorrelation pL pairs"};
 
   // Configs for tracks
   Configurable<bool> ConfRejectNotPropagatedTracks{
@@ -760,6 +766,10 @@ struct CFFilter {
       registry.fill(HIST("EventCuts/fMultiplicityAfter"), col.multNTracksPV());
       registry.fill(HIST("EventCuts/fZvtxAfter"), col.posZ());
 
+      // keep track of proton indices
+      std::vector<int> ProtonIndex = {};
+      std::vector<int> AntiProtonIndex = {};
+
       // Prepare vectors for different species
       std::vector<ROOT::Math::PtEtaPhiMVector> protons, antiprotons, deuterons, antideuterons, lambdas, antilambdas;
 
@@ -789,6 +799,7 @@ struct CFFilter {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassProton);
           if (track.sign() > 0) {
             protons.push_back(temp);
+            ProtonIndex.push_back(track.globalIndex());
             registry.fill(HIST("TrackCuts/fPProton"), track.p());
             registry.fill(HIST("TrackCuts/fPTPCProton"), track.tpcInnerParam());
             registry.fill(HIST("TrackCuts/fNsigmaTPCvsPTPCProton"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -802,6 +813,7 @@ struct CFFilter {
           }
           if (track.sign() < 0) {
             antiprotons.push_back(temp);
+            AntiProtonIndex.push_back(track.globalIndex());
             registry.fill(HIST("TrackCuts/fPtAntiProton"), track.pt());
             registry.fill(HIST("TrackCuts/fEtaAntiProton"), track.eta());
             registry.fill(HIST("TrackCuts/fPhiAntiProton"), track.phi());
@@ -830,6 +842,12 @@ struct CFFilter {
         }
       }
 
+      // keep track of daugher indices to avoid selfcorrelations
+      std::vector<int> LambdaPosDaughIndex = {};
+      std::vector<int> LambdaNegDaughIndex = {};
+      std::vector<int> AntiLambdaPosDaughIndex = {};
+      std::vector<int> AntiLambdaNegDaughIndex = {};
+
       for (auto& v0 : fullV0s) {
 
         registry.fill(HIST("TrackCuts/fPtLambdaBefore"), v0.pt());
@@ -847,12 +865,16 @@ struct CFFilter {
         if (isSelectedMinimalV0(col, v0, postrack, negtrack, 1)) {
           ROOT::Math::PtEtaPhiMVector temp(v0.pt(), v0.eta(), v0.phi(), mMassLambda);
           lambdas.push_back(temp);
+          LambdaPosDaughIndex.push_back(postrack.globalIndex());
+          LambdaNegDaughIndex.push_back(negtrack.globalIndex());
           registry.fill(HIST("TrackCuts/fPtLambda"), v0.pt());
           registry.fill(HIST("TrackCuts/fInvMassLambda"), v0.mLambda());
         }
         if (isSelectedMinimalV0(col, v0, postrack, negtrack, -1)) {
           ROOT::Math::PtEtaPhiMVector temp(v0.pt(), v0.eta(), v0.phi(), mMassLambda);
           antilambdas.push_back(temp);
+          AntiLambdaPosDaughIndex.push_back(postrack.globalIndex());
+          AntiLambdaNegDaughIndex.push_back(negtrack.globalIndex());
           registry.fill(HIST("TrackCuts/fPtAntiLambda"), v0.pt());
           registry.fill(HIST("TrackCuts/fInvMassAntiLambda"), v0.mAntiLambda());
         }
@@ -893,8 +915,16 @@ struct CFFilter {
         // ppl trigger
         for (auto iProton1 = protons.begin(); iProton1 != protons.end(); ++iProton1) {
           auto iProton2 = iProton1 + 1;
+          auto i1 = std::distance(protons.begin(), iProton1);
           for (; iProton2 != protons.end(); ++iProton2) {
+            auto i2 = std::distance(protons.begin(), iProton2);
             for (auto iLambda1 = lambdas.begin(); iLambda1 != lambdas.end(); ++iLambda1) {
+              auto i3 = std::distance(lambdas.begin(), iLambda1);
+              if (ConfAutocorRejection.value &&
+                  (ProtonIndex.at(i1) == LambdaPosDaughIndex.at(i3) ||
+                   ProtonIndex.at(i2) == LambdaPosDaughIndex.at(i3))) {
+                continue;
+              }
               Q3 = getQ3(*iProton1, *iProton2, *iLambda1);
               registry.fill(HIST("ppl/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPL)) {
@@ -905,8 +935,16 @@ struct CFFilter {
         }
         for (auto iAntiProton1 = antiprotons.begin(); iAntiProton1 != antiprotons.end(); ++iAntiProton1) {
           auto iAntiProton2 = iAntiProton1 + 1;
+          auto i1 = std::distance(antiprotons.begin(), iAntiProton1);
           for (; iAntiProton2 != antiprotons.end(); ++iAntiProton2) {
+            auto i2 = std::distance(antiprotons.begin(), iAntiProton2);
             for (auto iAntiLambda1 = antilambdas.begin(); iAntiLambda1 != antilambdas.end(); ++iAntiLambda1) {
+              auto i3 = std::distance(antilambdas.begin(), iAntiLambda1);
+              if (ConfAutocorRejection.value &&
+                  (AntiProtonIndex.at(i1) == AntiLambdaNegDaughIndex.at(i3) ||
+                   AntiProtonIndex.at(i2) == AntiLambdaNegDaughIndex.at(i3))) {
+                continue;
+              }
               Q3 = getQ3(*iAntiProton1, *iAntiProton2, *iAntiLambda1);
               registry.fill(HIST("ppl/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPL)) {
@@ -920,8 +958,21 @@ struct CFFilter {
         // pll trigger
         for (auto iLambda1 = lambdas.begin(); iLambda1 != lambdas.end(); ++iLambda1) {
           auto iLambda2 = iLambda1 + 1;
+          auto i1 = std::distance(lambdas.begin(), iLambda1);
           for (; iLambda2 != lambdas.end(); ++iLambda2) {
+            auto i2 = std::distance(lambdas.begin(), iLambda2);
+            if (ConfAutocorRejection.value &&
+                (LambdaPosDaughIndex.at(i1) == LambdaPosDaughIndex.at(i2) ||
+                 LambdaNegDaughIndex.at(i1) == LambdaNegDaughIndex.at(i2))) {
+              continue;
+            }
             for (auto iProton1 = protons.begin(); iProton1 != protons.end(); ++iProton1) {
+              auto i3 = std::distance(protons.begin(), iProton1);
+              if (ConfAutocorRejection.value &&
+                  (LambdaPosDaughIndex.at(i1) == ProtonIndex.at(i3) ||
+                   LambdaPosDaughIndex.at(i2) == ProtonIndex.at(i3))) {
+                continue;
+              }
               Q3 = getQ3(*iLambda1, *iLambda2, *iProton1);
               registry.fill(HIST("pll/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPLL)) {
@@ -932,8 +983,21 @@ struct CFFilter {
         }
         for (auto iAntiLambda1 = antilambdas.begin(); iAntiLambda1 != antilambdas.end(); ++iAntiLambda1) {
           auto iAntiLambda2 = iAntiLambda1 + 1;
+          auto i1 = std::distance(antilambdas.begin(), iAntiLambda1);
           for (; iAntiLambda2 != antilambdas.end(); ++iAntiLambda2) {
+            auto i2 = std::distance(antilambdas.begin(), iAntiLambda2);
+            if (ConfAutocorRejection.value &&
+                (AntiLambdaPosDaughIndex.at(i1) == AntiLambdaPosDaughIndex.at(i2) ||
+                 AntiLambdaNegDaughIndex.at(i1) == AntiLambdaNegDaughIndex.at(i2))) {
+              continue;
+            }
             for (auto iAntiProton1 = antiprotons.begin(); iAntiProton1 != antiprotons.end(); ++iAntiProton1) {
+              auto i3 = std::distance(antiprotons.begin(), iAntiProton1);
+              if (ConfAutocorRejection.value &&
+                  (AntiLambdaNegDaughIndex.at(i1) == AntiProtonIndex.at(i3) ||
+                   AntiLambdaNegDaughIndex.at(i2) == AntiProtonIndex.at(i3))) {
+                continue;
+              }
               Q3 = getQ3(*iAntiLambda1, *iAntiLambda2, *iAntiProton1);
               registry.fill(HIST("pll/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPLL)) {
@@ -947,9 +1011,24 @@ struct CFFilter {
         // lll trigger
         for (auto iLambda1 = lambdas.begin(); iLambda1 != lambdas.end(); ++iLambda1) {
           auto iLambda2 = iLambda1 + 1;
+          auto i1 = std::distance(lambdas.begin(), iLambda1);
           for (; iLambda2 != lambdas.end(); ++iLambda2) {
+            auto i2 = std::distance(lambdas.begin(), iLambda2);
+            if (ConfAutocorRejection.value &&
+                (LambdaPosDaughIndex.at(i1) == LambdaPosDaughIndex.at(i2) ||
+                 LambdaNegDaughIndex.at(i1) == LambdaNegDaughIndex.at(i2))) {
+              continue;
+            }
             auto iLambda3 = iLambda2 + 1;
             for (; iLambda3 != lambdas.end(); ++iLambda3) {
+              auto i3 = std::distance(lambdas.begin(), iLambda3);
+              if (ConfAutocorRejection.value &&
+                  (LambdaPosDaughIndex.at(i1) == LambdaPosDaughIndex.at(i3) ||
+                   LambdaNegDaughIndex.at(i1) == LambdaNegDaughIndex.at(i3) ||
+                   LambdaPosDaughIndex.at(i2) == LambdaPosDaughIndex.at(i3) ||
+                   LambdaNegDaughIndex.at(i2) == LambdaNegDaughIndex.at(i3))) {
+                continue;
+              }
               Q3 = getQ3(*iLambda1, *iLambda2, *iLambda3);
               registry.fill(HIST("lll/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kLLL)) {
@@ -960,9 +1039,24 @@ struct CFFilter {
         }
         for (auto iAntiLambda1 = antilambdas.begin(); iAntiLambda1 != antilambdas.end(); ++iAntiLambda1) {
           auto iAntiLambda2 = iAntiLambda1 + 1;
+          auto i1 = std::distance(antilambdas.begin(), iAntiLambda1);
           for (; iAntiLambda2 != antilambdas.end(); ++iAntiLambda2) {
+            auto i2 = std::distance(antilambdas.begin(), iAntiLambda2);
+            if (ConfAutocorRejection.value &&
+                (AntiLambdaPosDaughIndex.at(i1) == AntiLambdaPosDaughIndex.at(i2) ||
+                 AntiLambdaNegDaughIndex.at(i1) == AntiLambdaNegDaughIndex.at(i2))) {
+              continue;
+            }
             auto iAntiLambda3 = iAntiLambda2 + 1;
             for (; iAntiLambda3 != antilambdas.end(); ++iAntiLambda3) {
+              auto i3 = std::distance(antilambdas.begin(), iAntiLambda3);
+              if (ConfAutocorRejection.value &&
+                  (AntiLambdaPosDaughIndex.at(i1) == AntiLambdaPosDaughIndex.at(i3) ||
+                   AntiLambdaNegDaughIndex.at(i1) == AntiLambdaNegDaughIndex.at(i3) ||
+                   AntiLambdaPosDaughIndex.at(i2) == AntiLambdaPosDaughIndex.at(i3) ||
+                   AntiLambdaNegDaughIndex.at(i2) == AntiLambdaNegDaughIndex.at(i3))) {
+                continue;
+              }
               Q3 = getQ3(*iAntiLambda1, *iAntiLambda2, *iAntiLambda3);
               registry.fill(HIST("lll/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kLLL)) {
