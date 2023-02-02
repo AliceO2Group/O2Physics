@@ -75,21 +75,6 @@ class FemtoDreamParticleHisto
       framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"}; // the pT binning may vary
       framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
       mHistogramRegistry->add((folderName + tempFitVarName).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarpTAxis}, {tempFitVarAxis}});
-
-      /*
-      /// Particle-type specific histograms
-      if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-        /// Track histograms
-        mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {tempFitVarAxis}});
-      } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-        /// V0 histograms
-        mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{p}_{T} (GeV/#it{c}); cos#alpha", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1}});
-      } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-        /// Cascade histograms
-      } else {
-        LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
-      }
-      */
     }
   }
 
