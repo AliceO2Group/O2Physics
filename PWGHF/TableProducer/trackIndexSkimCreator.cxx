@@ -597,7 +597,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                            aod::BCsWithTimestamps const& bcWithTimeStamps,
                            std::vector<int64_t> vecPvContributorGlobId,
                            std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
-                           BigTracks::iterator const& myTrack,
+                           TracksWithSelAndDCA::iterator const& myTrack,
                            std::array<float, 3>& pvCoord,
                            std::array<float, 6>& pvCovMatrix,
                            std::array<float, 2>& dcaXYdcaZ)
@@ -836,7 +836,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
           if (debug) {
             LOG(info) << "[BEFORE performPvRefitTrack] track.collision().globalIndex(): " << collision.globalIndex();
           }
-          performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, (BigTracks::iterator const&)track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
+          performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
         } else if (track.collisionId() != thisCollId) {
           auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
           initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
