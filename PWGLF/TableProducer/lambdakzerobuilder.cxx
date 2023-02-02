@@ -168,7 +168,7 @@ struct lambdakzeroBuilder {
 
   Filter taggedFilter = aod::v0tag::isInteresting == true;
 
-  //For manual sliceBy
+  // For manual sliceBy
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
   enum v0step { kV0All = 0,
@@ -436,7 +436,7 @@ struct lambdakzeroBuilder {
   template <class TTrackTo, typename TV0Object>
   bool buildV0Candidate(TV0Object const& V0)
   {
-    //Get tracks
+    // Get tracks
     auto const& posTrack = V0.template posTrack_as<TTrackTo>();
     auto const& negTrack = V0.template negTrack_as<TTrackTo>();
     auto const& collision = V0.collision();
@@ -454,7 +454,7 @@ struct lambdakzeroBuilder {
 
     // Passes TPC refit
     statisticsRegistry.v0stats[kV0TPCrefit]++;
-    
+
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
