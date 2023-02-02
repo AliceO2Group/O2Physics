@@ -218,8 +218,16 @@ struct qaKFEventTrack {
   bool isSelectedCollision(const T& collision)
   {
     /// Trigger selection
-    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-      return false;
+    if (eventSelection) {
+      if (isRun3) {
+        if (!collision.sel8()) {
+          return false;
+        }
+      } else {
+        if (!collision.sel7()) {
+          return false;
+        }
+      }
     }
     return true;
   }
@@ -594,8 +602,16 @@ struct qaKFEvent {
   bool isSelectedCollision(const T& collision)
   {
     /// Trigger selection
-    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-      return false;
+    if (eventSelection) {
+      if (isRun3) {
+        if (!collision.sel8()) {
+          return false;
+        }
+      } else {
+        if (!collision.sel7()) {
+          return false;
+        }
+      }
     }
     return true;
   }
