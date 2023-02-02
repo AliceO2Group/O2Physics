@@ -41,8 +41,6 @@ struct HfTaskDs {
 
   Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<candDsMcReco> recodDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi > 0;
-  Partition<candDsMcReco> recodDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK > 0;
 
   HistogramRegistry registry{
     "registry",
@@ -225,36 +223,28 @@ struct HfTaskDs {
   void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
-    for (auto& candidate : recodDsToKKPiCand) {
+    for (auto& candidate : candidates) {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi &&
-          std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>().pdgCode()) == kKPlus) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>(), pdg::Code::kDS, true);
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
+        auto prong0McPart = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>();
+        auto indexMother = RecoDecay::getMother(particlesMC, prong0McPart, pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
-        fillHistoMCRec(candidate, candidate.isSelDsToKKPi());
-      } else {
-        // TODO: add histograms for reflections
-        registry.fill(HIST("hPtRecBkg"), candidate.pt());
-        registry.fill(HIST("hCPARecBkg"), candidate.cpa());
-        registry.fill(HIST("hEtaRecBkg"), candidate.eta());
-      }
-    }
 
-    for (auto& candidate : recodDsToPiKKCand) {
-      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
-        continue;
-      }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi &&
-          std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>().pdgCode()) == kPiPlus) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>(), pdg::Code::kDS, true);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
-        registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
-        fillHistoMCRec(candidate, candidate.isSelDsToPiKK());
-      } else {
+        // KKPi
+        if (std::abs(prong0McPart.pdgCode()) == kKPlus) {
+          fillHistoMCRec(candidate, candidate.isSelDsToKKPi());
+        }
         // TODO: add histograms for reflections
+
+        // PiKK
+        if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
+          fillHistoMCRec(candidate, candidate.isSelDsToPiKK());
+        }
+        // TODO: add histograms for reflections
+      } else {
         registry.fill(HIST("hPtRecBkg"), candidate.pt());
         registry.fill(HIST("hCPARecBkg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBkg"), candidate.eta());
