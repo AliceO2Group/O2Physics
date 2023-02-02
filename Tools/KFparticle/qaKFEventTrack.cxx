@@ -112,7 +112,6 @@ struct qaKFEventTrack {
   HistogramRegistry histos;
   /// Table to be produced
   Produces<o2::aod::TreeTracks> rowKFTracks;
-  Produces<o2::aod::TreeCollisions> rowKFCollisions;
 
   int source = 0;
   int pVContrib = 0;
@@ -287,28 +286,9 @@ struct qaKFEventTrack {
     }
   }
 
-  template <typename T4>
-  void writeVarTreeColl(const T4& collision, const int ntracks)
-  {
-    if (writeTree) {
-      /// Filling the tree
-      rowKFCollisions(collision.posX(),
-                      collision.posY(),
-                      collision.posZ(),
-                      collision.covXX(),
-                      collision.covYY(),
-                      collision.covZZ(),
-                      collision.numContrib(),
-                      ntracks,
-                      collision.chi2(),
-                      runNumber);
-    }
-  }
-
   /// Process function for data
   void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
-
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
@@ -318,6 +298,7 @@ struct qaKFEventTrack {
       KFParticle::SetField(magneticField);
 #endif
     }
+
     histos.fill(HIST("Events/covXX"), collision.covXX());
     histos.fill(HIST("Events/covXY"), collision.covXY());
     histos.fill(HIST("Events/covXZ"), collision.covXZ());
@@ -384,7 +365,6 @@ struct qaKFEventTrack {
       fillHistograms(kfpTrack, KFParticleTrack, KFPV);
       writeVarTree(kfpTrack, KFParticleTrack, KFPV, track, source, pVContrib, runNumber, collision);
     }
-    writeVarTreeColl(collision, ntracks);
   }
   PROCESS_SWITCH(qaKFEventTrack, processData, "process data", true);
 
@@ -404,6 +384,7 @@ struct qaKFEventTrack {
       KFParticle::SetField(magneticField);
 #endif
     }
+
     /// Remove Collisions without a MC Collision
     if (!collision.has_mcCollision()) {
       return;
@@ -540,12 +521,128 @@ struct qaKFEventTrack {
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCBeforeReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPVDefault));
       histos.fill(HIST("Tracks/dcaToPVLargeRangeMCAfterReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPV));
     }
-    writeVarTreeColl(collision, ntracks);
   }
   PROCESS_SWITCH(qaKFEventTrack, processMC, "process mc", false);
 };
 
+struct qaKFEvent {
+
+  /// general steering settings
+  Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+  double magneticField = 0.;
+
+  /// option to select good events
+  Configurable<bool> eventSelection{"eventSelection", true, "select good events"}; // currently only sel8 is defined for run3
+  Configurable<bool> writeTree{"writeTree", true, "write daughter variables in a tree"};
+
+  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+
+  Produces<o2::aod::TreeCollisions> rowKFCollisions;
+
+  void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             bool isRun3)
+  {
+
+    if (mRunNumber != bc.runNumber()) {
+
+      LOGF(info, "====== initCCDB function called (isRun3==%d)", isRun3);
+      if (!isRun3) { // Run 2 GRP object
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
+        if (grpo == nullptr) {
+          LOGF(fatal, "Run 2 GRP object (type o2::parameters::GRPObject) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object (type o2::parameters::GRPObject)", grpo->getNominalL3Field(), bc.runNumber());
+      } else { // Run 3 GRP object
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+        if (grpo == nullptr) {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+        LOGF(info, "Setting magnetic field to current %f A for run %d from its GRP CCDB object (type o2::parameters::GRPMagField)", grpo->getL3Current(), bc.runNumber());
+      }
+      mRunNumber = bc.runNumber();
+    }
+  } /// end initMagneticFieldCCDB
+
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  } /// End init
+
+  /// Function to select collisions
+  template <typename T>
+  bool isSelectedCollision(const T& collision)
+  {
+    /// Trigger selection
+    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T4>
+  void writeVarTreeColl(const T4& collision)
+  {
+    if (writeTree) {
+      /// Filling the tree
+      rowKFCollisions(collision.posX(),
+                      collision.posY(),
+                      collision.posZ(),
+                      collision.covXX(),
+                      collision.covYY(),
+                      collision.covZZ(),
+                      collision.numContrib(),
+                      collision.multNTracksPV(),
+                      collision.chi2(),
+                      runNumber);
+    }
+  }
+  /// Process function for data
+  void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
+  {
+
+    for (auto& collisionIndex : collisions) {
+
+      auto bc = collisionIndex.bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
+        magneticField = o2::base::Propagator::Instance()->getNominalBz();
+      }
+
+      /// Apply event selection
+      if (!isSelectedCollision(collisionIndex)) {
+        return;
+      }
+      writeVarTreeColl(collisionIndex);
+    }
+  }
+  PROCESS_SWITCH(qaKFEvent, processCollisions, "process collision", true);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<qaKFEventTrack>(cfgc)};
+  WorkflowSpec workflow{};
+  workflow.push_back(adaptAnalysisTask<qaKFEventTrack>(cfgc));
+  workflow.push_back(adaptAnalysisTask<qaKFEvent>(cfgc));
+  return workflow;
 }
