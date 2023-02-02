@@ -137,20 +137,27 @@ uint64_t doTrackMatchingEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const
   return cut_return;
 }
 
-uint64_t doPhotonCutsEMC(int iCut, uint64_t cutbit, aod::SkimEMCCluster const& cluster, aod::SkimEMCMTs const& tracks, Preslice<o2::aod::SkimEMCMTs> perEMCClusterMT, HistogramRegistry& registry)
+uint64_t doPhotonCutsEMC(uint64_t cutbit, aod::SkimEMCCluster const& cluster, aod::SkimEMCMTs const& tracks, Preslice<o2::aod::SkimEMCMTs> perEMCClusterMT, HistogramRegistry& registry)
 {
   uint64_t cut_return = 0;
-  auto tracksMatchedEMC = tracks.sliceBy(perEMCClusterMT, cluster.globalIndex());
-  cut_return = doTimeCutEMC(iCut, cutbit, cluster, registry);
-  cut_return &= doM02CutEMC(iCut, cut_return, cluster, registry);
-  cut_return &= doMinECutEMC(iCut, cut_return, cluster, registry);
-  cut_return &= doNCellCutEMC(iCut, cut_return, cluster, registry);
-  cut_return &= doTrackMatchingEMC(iCut, cut_return, cluster, tracksMatchedEMC, registry);
+  for (int iCut = 0; iCut < 64; iCut++) {           // loop over max number of cut settings
+    if (cutbit & ((uint64_t)1 << (uint64_t)iCut)) { // check each cut setting if it is selected
+      registry.fill(HIST("hClusterEIn"), cluster.energy(), iCut);
+      auto tracksMatchedEMC = tracks.sliceBy(perEMCClusterMT, cluster.globalIndex());
+      cut_return = doTimeCutEMC(iCut, cutbit, cluster, registry);
+      // use cut_return instead of cutbit from here on to only check cut settings that we want to look at
+      // where the cluster did not fail in the previous cut(s)
+      cut_return = doM02CutEMC(iCut, cut_return, cluster, registry);
+      cut_return = doMinECutEMC(iCut, cut_return, cluster, registry);
+      cut_return = doNCellCutEMC(iCut, cut_return, cluster, registry);
+      cut_return = doTrackMatchingEMC(iCut, cut_return, cluster, tracksMatchedEMC, registry);
 
-  registry.fill(HIST("hCaloCuts_EMC"), 0, iCut);
-  if (cut_return & ((uint64_t)1 << (uint64_t)iCut)) {
-    registry.fill(HIST("hClusterEOut"), cluster.energy(), iCut);
-    registry.fill(HIST("hCaloCuts_EMC"), 6, iCut);
+      registry.fill(HIST("hCaloCuts_EMC"), 0, iCut);
+      if (cut_return & ((uint64_t)1 << (uint64_t)iCut)) {
+        registry.fill(HIST("hClusterEOut"), cluster.energy(), iCut);
+        registry.fill(HIST("hCaloCuts_EMC"), 6, iCut);
+      }
+    }
   }
   return cut_return;
 }

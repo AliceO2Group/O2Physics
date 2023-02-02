@@ -96,14 +96,14 @@ struct gammaSelection {
     hCaloCuts_EMC->GetXaxis()->SetBinLabel(6, "TM");
     hCaloCuts_EMC->GetXaxis()->SetBinLabel(7, "out");
 
-    LOG(info) << "| ECMal cluster cut settings:" << std::endl;
-    LOG(info) << "|\t Timing cut: " << EMC_minTime << " < t < " << EMC_maxTime << std::endl;
-    LOG(info) << "|\t M02 cut: " << EMC_minM02 << " < M02 < " << EMC_maxM02 << std::endl;
-    LOG(info) << "|\t E_min cut: E_cluster > " << EMC_minE << std::endl;
-    LOG(info) << "|\t N_cell cut: N_cell > " << EMC_minNCell << std::endl;
-    LOG(info) << "|\t TM |eta|: |eta| <= " << EMC_TM_Eta->at(0) << " + (pT + " << EMC_TM_Eta->at(1) << ")^" << EMC_TM_Eta->at(2) << std::endl;
-    LOG(info) << "|\t TM |phi|: |phi| <= " << EMC_TM_Phi->at(0) << " + (pT + " << EMC_TM_Phi->at(1) << ")^" << EMC_TM_Phi->at(2) << std::endl;
-    LOG(info) << "|\t TM E/p: E/p < " << EMC_Eoverp << std::endl;
+    LOG(info) << "| ECMal cluster cut settings:";
+    LOG(info) << "|\t Timing cut: " << EMC_minTime << " < t < " << EMC_maxTime;
+    LOG(info) << "|\t M02 cut: " << EMC_minM02 << " < M02 < " << EMC_maxM02;
+    LOG(info) << "|\t E_min cut: E_cluster > " << EMC_minE;
+    LOG(info) << "|\t N_cell cut: N_cell > " << EMC_minNCell;
+    LOG(info) << "|\t TM |eta|: |eta| <= " << EMC_TM_Eta->at(0) << " + (pT + " << EMC_TM_Eta->at(1) << ")^" << EMC_TM_Eta->at(2);
+    LOG(info) << "|\t TM |phi|: |phi| <= " << EMC_TM_Phi->at(0) << " + (pT + " << EMC_TM_Phi->at(1) << ")^" << EMC_TM_Phi->at(2);
+    LOG(info) << "|\t TM E/p: E/p < " << EMC_Eoverp;
     LOG(info) << "|\t Cut bit is set to: " << EMC_CutModeBitSet << std::endl;
 
     gatherCutsEMC(EMC_minTime, EMC_maxTime, EMC_minM02, EMC_maxM02, EMC_minE, EMC_minNCell, EMC_TM_Eta, EMC_TM_Phi, EMC_Eoverp);
@@ -123,26 +123,21 @@ struct gammaSelection {
       PHOSHistos.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", kTH2F, {{100, -0.2, 0.2}, {100, -0.2, 0.2}}); // dEta dPhi map of matched tracks
     }
 
-    LOG(info) << "| PHOS cluster cut settings:" << std::endl;
-    LOG(info) << "|\t Timing cut: " << PHOS_minTime << " < t < " << PHOS_maxTime << std::endl;
-    LOG(info) << "|\t NCell cut: " << PHOS_minNCell << " <= NCell for E >= " << PHOS_minENCell << std::endl;
-    LOG(info) << "|\t M02 cut: " << PHOS_minM02 << " < M02 for E >= " << PHOS_minENCell << std::endl;
-    LOG(info) << "|\t E_min cut: E_cluster > " << PHOS_minE << std::endl;
-    LOG(info) << "|\t TM |eta|: |eta| <= " << PHOS_TM_Eta << std::endl;
+    LOG(info) << "| PHOS cluster cut settings:";
+    LOG(info) << "|\t Timing cut: " << PHOS_minTime << " < t < " << PHOS_maxTime;
+    LOG(info) << "|\t NCell cut: " << PHOS_minNCell << " <= NCell for E >= " << PHOS_minENCell;
+    LOG(info) << "|\t M02 cut: " << PHOS_minM02 << " < M02 for E >= " << PHOS_minENCell;
+    LOG(info) << "|\t E_min cut: E_cluster > " << PHOS_minE;
+    LOG(info) << "|\t TM |eta|: |eta| <= " << PHOS_TM_Eta;
     LOG(info) << "|\t TM |phi|: |phi| <= " << PHOS_TM_Phi << std::endl;
   }
 
   void processRec(aod::EMReducedEvents const&, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& matchedtracks, aod::PHOSClusters const& phosclusters)
   {
-    for (int iCut = 0; iCut < 64; iCut++) {                   // loop over max number of cut settings
-      if (EMC_CutModeBit & ((uint64_t)1 << (uint64_t)iCut)) { // check each cut setting if it is selected
-        for (const auto& emccluster : emcclusters) {          // loop of EMC clusters
-          EMCHistos.fill(HIST("hClusterEIn"), emccluster.energy(), iCut);
-          uint64_t EMC_CutBit = doPhotonCutsEMC(iCut, EMC_CutModeBit, emccluster, matchedtracks, perEMCClusterMT, EMCHistos);
-          tableEMCCuts(emccluster.globalIndex(), EMC_CutBit);
-        } // end loop of EMC clusters
-      }
-    } // end loop over max number of cut settings
+    for (const auto& emccluster : emcclusters) { // loop of EMC clusters
+      uint64_t EMC_CutBit = doPhotonCutsEMC(EMC_CutModeBit, emccluster, matchedtracks, perEMCClusterMT, EMCHistos);
+      tableEMCCuts(emccluster.globalIndex(), EMC_CutBit);
+    } // end loop of EMC clusters
 
     for (const auto& phoscluster : phosclusters) { // loop over PHOS clusters
       PHOSHistos.fill(HIST("hClusterEIn"), phoscluster.e(), 0);
