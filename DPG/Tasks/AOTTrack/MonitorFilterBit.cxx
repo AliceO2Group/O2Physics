@@ -107,7 +107,7 @@ struct CheckFilterBit {
         auto mcCollID_recoColl = collision.mcCollisionId();
         auto mcCollID_particle = mcparticle.mcCollisionId();
         bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
-        double pvZdiff = collision.posZ() - collMC.posZ();
+        // double pvZdiff = collision.posZ() - collMC.posZ();
         if (indexMatchOK) {
           double prodRadius2 = mcparticle.vx() * mcparticle.vx() + mcparticle.vy() * mcparticle.vy();
           if (mcparticle.isPhysicalPrimary() && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
