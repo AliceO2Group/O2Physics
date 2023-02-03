@@ -107,8 +107,8 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
 } // namespace o2::aod
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
@@ -167,6 +167,9 @@ struct lambdakzeroBuilder {
   o2::vertexing::DCAFitterN<2> fitter;
 
   Filter taggedFilter = aod::v0tag::isInteresting == true;
+
+  // For manual sliceBy
+  Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
   enum v0step { kV0All = 0,
                 kV0TPCrefit,
@@ -430,9 +433,13 @@ struct lambdakzeroBuilder {
     }
   }
 
-  template <class TTracksTo>
-  bool buildV0Candidate(aod::Collision const& collision, TTracksTo const& posTrack, TTracksTo const& negTrack)
+  template <class TTrackTo, typename TV0Object>
+  bool buildV0Candidate(TV0Object const& V0)
   {
+    // Get tracks
+    auto const& posTrack = V0.template posTrack_as<TTrackTo>();
+    auto const& negTrack = V0.template negTrack_as<TTrackTo>();
+    auto const& collision = V0.collision();
 
     // value 0.5: any considered V0
     statisticsRegistry.v0stats[kV0All]++;
@@ -447,13 +454,25 @@ struct lambdakzeroBuilder {
 
     // Passes TPC refit
     statisticsRegistry.v0stats[kV0TPCrefit]++;
-    if (fabs(posTrack.dcaXY()) < dcapostopv || fabs(negTrack.dcaXY()) < dcanegtopv) {
+
+    // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+    gpu::gpustd::array<float, 2> dcaInfo;
+
+    auto posTrackPar = getTrackPar(posTrack);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    auto posTrackdcaXY = dcaInfo[0];
+
+    auto negTrackPar = getTrackPar(negTrack);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    auto negTrackdcaXY = dcaInfo[0];
+
+    if (fabs(posTrackdcaXY) < dcapostopv || fabs(negTrackdcaXY) < dcanegtopv) {
       return false;
     }
 
     // Initialize properly, please
-    v0candidate.posDCAxy = posTrack.dcaXY();
-    v0candidate.negDCAxy = negTrack.dcaXY();
+    v0candidate.posDCAxy = posTrackdcaXY;
+    v0candidate.negDCAxy = negTrackdcaXY;
 
     // passes DCAxy
     statisticsRegistry.v0stats[kV0DCAxy]++;
@@ -516,21 +535,24 @@ struct lambdakzeroBuilder {
     // Passes radius check
     statisticsRegistry.v0stats[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
+    if (d_doTrackQA) {
+      if (posTrack.itsNCls() < 10)
+        statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
+      if (negTrack.itsNCls() < 10)
+        statisticsRegistry.negITSclu[negTrack.itsNCls()]++;
+    }
     return true;
   }
 
-  template <class TTracksTo, typename TV0Objects>
-  void buildStrangenessTables(aod::Collision const& collision, TV0Objects const& V0s, TTracksTo const& tracks)
+  template <class TTrackTo, typename TV0Table>
+  void buildStrangenessTables(TV0Table const& V0s)
   {
     statisticsRegistry.eventCounter++;
 
+    // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
-      // Track preselection part
-      auto posTrackCast = V0.template posTrack_as<TTracksTo>();
-      auto negTrackCast = V0.template negTrack_as<TTracksTo>();
-
       // populates v0candidate struct declared inside strangenessbuilder
-      bool validCandidate = buildV0Candidate(collision, posTrackCast, negTrackCast);
+      bool validCandidate = buildV0Candidate<TTrackTo>(V0);
 
       if (!validCandidate) {
         continue; // doesn't pass selections
@@ -548,13 +570,6 @@ struct lambdakzeroBuilder {
              v0candidate.dcaV0dau,
              v0candidate.posDCAxy,
              v0candidate.negDCAxy);
-
-      if (d_doTrackQA) {
-        if (posTrackCast.itsNCls() < 10)
-          statisticsRegistry.posITSclu[posTrackCast.itsNCls()]++;
-        if (negTrackCast.itsNCls() < 10)
-          statisticsRegistry.negITSclu[negTrackCast.itsNCls()]++;
-      }
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
@@ -587,25 +602,31 @@ struct lambdakzeroBuilder {
     resetHistos();
   }
 
-  void processRun2(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const& tracks, aod::BCsWithTimestamps const&)
+  void processRun2(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-
-    // do v0s, typecase correctly into tracks (Run 2 use case)
-    buildStrangenessTables<FullTracksExt>(collision, V0s, tracks);
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      buildStrangenessTables<FullTracksExt>(V0Table_thisCollision);
+    }
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", false);
 
-  void processRun3(aod::Collision const& collision, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-
-    // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildStrangenessTables<FullTracksExtIU>(collision, V0s, tracks);
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      buildStrangenessTables<FullTracksExtIU>(V0Table_thisCollision);
+    }
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", true);
 };
@@ -641,12 +662,12 @@ struct lambdakzeroPreselector {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
-  template <class TTracksTo, typename TV0Object>
+  template <class TTrackTo, typename TV0Object>
   void checkTrackQuality(TV0Object const& lV0Candidate, bool& lIsInteresting, bool lIsGamma, bool lIsK0Short, bool lIsLambda, bool lIsAntiLambda, bool lIsHypertriton, bool lIsAntiHypertriton)
   {
     lIsInteresting = false;
-    auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
-    auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
+    auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
+    auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // No baryons in decay
     if ((lIsGamma || lIsK0Short) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
@@ -663,12 +684,12 @@ struct lambdakzeroPreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
-  template <class TTracksTo, typename TV0Object>
+  template <class TTrackTo, typename TV0Object>
   void checkPDG(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
   {
     int lPDG = -1;
-    auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
-    auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
+    auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
+    auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // Association check
     // There might be smarter ways of doing this in the future
@@ -712,11 +733,11 @@ struct lambdakzeroPreselector {
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  template <class TTracksTo, typename TV0Object>
+  template <class TTrackTo, typename TV0Object>
   void checkdEdx(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
   {
-    auto lNegTrack = lV0Candidate.template negTrack_as<TTracksTo>();
-    auto lPosTrack = lV0Candidate.template posTrack_as<TTracksTo>();
+    auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
+    auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // dEdx check with LF PID
     if (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
