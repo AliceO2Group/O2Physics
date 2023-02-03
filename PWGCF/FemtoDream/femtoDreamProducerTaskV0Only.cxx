@@ -248,7 +248,6 @@ struct femtoDreamProducerTaskV0Only {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        // outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), colCuts.computeSphericity(col, tracks), mMagField);
         outputCollision(vtxZ, mult, multNtr, multNtrwithTPC, multNtracklets, spher, mMagField);
       }
       return;
@@ -256,7 +255,6 @@ struct femtoDreamProducerTaskV0Only {
 
     colCuts.fillQA(col);
     // now the table is filled
-    // outputCollision(vtxZ, mult, multNtr, spher, mMagField);
     outputCollision(vtxZ, mult, multNtr, multNtrwithTPC, multNtracklets, spher, mMagField);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children

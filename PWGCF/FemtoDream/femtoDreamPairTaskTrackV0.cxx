@@ -53,6 +53,7 @@ struct femtoDreamPairTaskTrackV0 {
   /// Particle selection part
 
   /// Table for both particles
+  Configurable<bool> ConfAnalyseRun3{"ConfAnalyseRun3", true, "Running over Run 3 data or Run 2"};
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
@@ -132,8 +133,15 @@ struct femtoDreamPairTaskTrackV0 {
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    const int multCol = col.multV0M();
+    int multCol;
+    if (ConfAnalyseRun3) {
+      multCol = col.multNtrPV();
+    } else {
+      multCol = col.multNtrlets();
+    }
+
     eventHisto.fillQA(col);
+
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
@@ -166,20 +174,24 @@ struct femtoDreamPairTaskTrackV0 {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair(p1, p2, multCol);
+      sameEventCont.setPair(p1, p2, multCol, col.multNtrWithTPC());
     }
   }
 
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEvent, "Enable processing same event", true);
 
-  /// This function processes the mixed event
-  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
-                         o2::aod::FemtoDreamParticles& parts)
+  template <typename ColBinningType>
+  void DoTheMixing(ColBinningType colBinning, o2::aod::FemtoDreamCollisions& cols, o2::aod::FemtoDreamParticles& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      int multCol;
+      if (ConfAnalyseRun3) {
+        multCol = collision1.multNtrPV();
+      } else {
+        multCol = collision1.multNtrlets();
+      }
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
@@ -203,8 +215,23 @@ struct femtoDreamPairTaskTrackV0 {
             continue;
           }
         }
-        mixedEventCont.setPair(p1, p2, collision1.multV0M());
+        mixedEventCont.setPair(p1, p2, multCol, collision1.multNtrWithTPC());
       }
+    }
+  }
+
+  /// This function processes the mixed event
+  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
+  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
+                         o2::aod::FemtoDreamParticles& parts)
+  {
+    // ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::Mult> colBinning{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrPV> colBinningRun3{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrlets> colBinningRun2{{CfgVtxBins, CfgMultBins}, true};
+    if (ConfAnalyseRun3) {
+      DoTheMixing(colBinningRun3, cols, parts);
+    } else {
+      DoTheMixing(colBinningRun2, cols, parts);
     }
   }
 

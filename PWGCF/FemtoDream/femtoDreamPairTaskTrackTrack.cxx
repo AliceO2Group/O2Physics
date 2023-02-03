@@ -97,7 +97,9 @@ struct femtoDreamPairTaskTrackTrack {
   // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+  // ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrPV> colBinningRun3{{CfgVtxBins, CfgMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrlets> colBinningRun2{{CfgVtxBins, CfgMultBins}, true};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
@@ -130,8 +132,6 @@ struct femtoDreamPairTaskTrackTrack {
       sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
       mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     } else {
-      // sameEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
-      // mixedEventCont.init(&resultRegistry, CfgkstarBins, {{16384, 0, 32768}}, CfgkTBins, CfgmTBins);
       sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
       mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     }
@@ -152,7 +152,13 @@ struct femtoDreamPairTaskTrackTrack {
   void processSameEvent(o2::aod::FemtoDreamCollision& col,
                         o2::aod::FemtoDreamParticles& parts)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtrPV()}));
+
+    int multCol;
+    if (ConfAnalyseRun3) {
+      MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningRun3.getBin({col.posZ(), multCol}));
+    } else {
+      MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningRun2.getBin({col.posZ(), multCol}));
+    }
 
     const auto& magFieldTesla = col.magField();
 
@@ -231,25 +237,26 @@ struct femtoDreamPairTaskTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      if (ConfAnalyseRun3) {
-        sameEventCont.setPair(p1, p2, col.multNtrPV());
-      } else {
-        sameEventCont.setPair(p1, p2, col.multNtrlets());
-      }
+
+      sameEventCont.setPair(p1, p2, multCol, col.multNtrWithTPC());
     }
   }
 
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
 
-  /// This function processes the mixed event
-  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
-                         o2::aod::FemtoDreamParticles& parts)
+  template <typename ColBinningType>
+  void DoTheMixing(ColBinningType colBinning, o2::aod::FemtoDreamCollisions& cols, o2::aod::FemtoDreamParticles& parts)
   {
-
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multNtrPV()}));
+      int multCol;
+      if (ConfAnalyseRun3) {
+        multCol = collision1.multNtrPV();
+      } else {
+        multCol = collision1.multNtrlets();
+      }
+
+      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multCol}));
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
@@ -292,12 +299,22 @@ struct femtoDreamPairTaskTrackTrack {
             continue;
           }
         }
-        if (ConfAnalyseRun3) {
-          mixedEventCont.setPair(p1, p2, collision1.multNtrPV());
-        } else {
-          mixedEventCont.setPair(p1, p2, collision1.multNtrlets());
-        }
+
+        mixedEventCont.setPair(p1, p2, multCol, collision1.multNtrWithTPC());
       }
+    }
+  }
+
+  /// This function processes the mixed event
+  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
+  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
+                         o2::aod::FemtoDreamParticles& parts)
+  {
+
+    if (ConfAnalyseRun3) {
+      DoTheMixing(colBinningRun3, cols, parts);
+    } else {
+      DoTheMixing(colBinningRun2, cols, parts);
     }
   }
 
