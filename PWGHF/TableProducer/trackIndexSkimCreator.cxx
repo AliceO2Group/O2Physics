@@ -1065,7 +1065,7 @@ struct HfTrackIndexSkimCreator {
 
   /// Method to compute px, py, pz from the track parameters
   /// \param trackPars are the track parameters
-  /// \param hfTrack1 is the momentum array to be filled
+  /// \param pVec is the momentum array to be filled
   template <typename T, typename U>
   void getPxPyPz(T const& trackPars, U& pVec)
   {
