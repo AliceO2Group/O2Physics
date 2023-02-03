@@ -97,6 +97,7 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
+  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use TPC multiplicity in the binning policy"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -228,10 +229,16 @@ struct femtoDreamPairTaskTrackV0 {
     // ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::Mult> colBinning{{CfgVtxBins, CfgMultBins}, true};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrPV> colBinningRun3{{CfgVtxBins, CfgMultBins}, true};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrlets> colBinningRun2{{CfgVtxBins, CfgMultBins}, true};
-    if (ConfAnalyseRun3) {
-      DoTheMixing(colBinningRun3, cols, parts);
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrWithTPC> colBinningTPC{{CfgVtxBins, CfgMultBins}, true};
+
+    if (ConfUseTPCmult) {
+      DoTheMixing(colBinningTPC, cols, parts);
     } else {
-      DoTheMixing(colBinningRun2, cols, parts);
+      if (ConfAnalyseRun3) {
+        DoTheMixing(colBinningRun3, cols, parts);
+      } else {
+        DoTheMixing(colBinningRun2, cols, parts);
+      }
     }
   }
 
