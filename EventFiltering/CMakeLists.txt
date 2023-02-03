@@ -63,8 +63,8 @@ o2physics_add_dpl_workflow(cf-filter
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cf-filter-pp
-                            SOURCES PWGCF/CFFilterPP.cxx
+o2physics_add_dpl_workflow(cf-filter-qa
+                            SOURCES PWGCF/CFFilterQA.cxx
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
