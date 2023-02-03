@@ -238,7 +238,7 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
 
 DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
                   track::DcaZ,
-                  track::DcaXY)
+                  track::DcaXY);
 
 DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
                   udtrack::CollisionId,
