@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -46,7 +47,7 @@ struct HfCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
   // vertexing
-  Configurable<double> bz{"bz", 5., "magnetic field"};
+  //Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -54,6 +55,21 @@ struct HfCandidateCreatorCascade {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation histograms"};
   Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
+
+  // magnetic field setting from CCDB
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+
+
   // for debugging
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -66,16 +82,30 @@ struct HfCandidateCreatorCascade {
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.};
+  double bz = 0.;
 
-  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  }
 
   void process(aod::Collisions const&,
                aod::HfCascades const& rowsTrackIndexCasc,
                MyBigTracks const&,
                aod::V0sLinked const&,
-               aod::V0Datas const&
+               aod::V0Datas const&,
+               aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
                ,
                aod::McParticles& mcParticles
@@ -84,7 +114,7 @@ struct HfCandidateCreatorCascade {
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
-    df.setBz(bz);
+    //df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
     df.setMaxDZIni(maxDZIni);
@@ -112,6 +142,14 @@ struct HfCandidateCreatorCascade {
       const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
       const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();
 
+      auto collision = bach.collision();
+
+      // set the magnetic field from CCDB
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      bz = o2::base::Propagator::Instance()->getNominalBz(); // z component
+      df.setBz(bz);
+
 #ifdef MY_DEBUG
       auto indexBach = bach.mcParticleId();
       auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
@@ -131,7 +169,6 @@ struct HfCandidateCreatorCascade {
       // we build the neutral track to then build the cascade
       auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg, {0, 0}, {0, 0}); // build the V0 track (indices for v0 daughters set to 0 for now)
 
-      auto collision = bach.collision();
 
       // reconstruct the cascade secondary vertex
       if (df.process(trackV0, trackParCovBach) == 0) {
@@ -281,7 +318,7 @@ struct HfCandidateCreatorCascadeMc {
           if (!(arrDaughLcPDG[0] == arrDaughLcPDGRef[0] && arrDaughLcPDG[1] == arrDaughLcPDGRef[1] && arrDaughLcPDG[2] == arrDaughLcPDGRef[2])) { // this should be the condition, first bach, then v0
             sign = 0;
           } else {
-            LOG(info) << "Lc --> K0S+p found in MC table";
+            LOG(debug) << "Lc --> K0S+p found in MC table";
           }
           MY_DEBUG_MSG(sign == 0, LOG(info) << "Pity, the three final daughters are not p, pi+, pi-, but " << arrDaughLcPDG[0] << ", " << arrDaughLcPDG[1] << ", " << arrDaughLcPDG[2]);
         }
