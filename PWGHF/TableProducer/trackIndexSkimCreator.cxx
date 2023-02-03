@@ -1063,7 +1063,7 @@ struct HfTrackIndexSkimCreator {
     runNumber = 0;
   }
 
-  /// Method to compute px, py, and px from the track parameters
+  /// Method to compute px, py, pz from the track parameters
   /// \param trackPars are the track parameters
   /// \param hfTrack1 is the momentum array to be filled
   template <typename T, typename U>
