@@ -2521,13 +2521,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
   void init(InitContext const&)
   {
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = array{array{massXi, massPi},
-                                                                         array{massPi, massXi}};
+                                                                            array{massPi, massXi}};
 
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = array{array{massOmega, massPi},
-                                                                               array{massPi, massOmega}};
+                                                                                  array{massPi, massOmega}};
 
     arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = array{array{massXi, massPi, massPi},
-                                                                           array{massPi, massPi, massXi}};
+                                                                              array{massPi, massPi, massXi}};
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
