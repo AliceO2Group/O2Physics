@@ -90,4 +90,18 @@ auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta)
          + matrix[5] * st * st;               // covZZ
 }
 
+/// Method to compute px, py, pz from the track parameters
+/// \param trackPars are the track parameters
+/// \param pVec is the momentum array to be filled
+template <typename T, typename U>
+void getPxPyPz(T const& trackPars, U& pVec)
+{
+  auto pt = 1.f / std::abs(trackPars.getQ2Pt());
+  float cs = cosf(trackPars.getAlpha()), sn = sinf(trackPars.getAlpha());
+  auto r = std::sqrt((1.f - trackPars.getSnp()) * (1.f + trackPars.getSnp()));
+  pVec[0] = pt * (r * cs - trackPars.getSnp() * sn);
+  pVec[1] = pt * (trackPars.getSnp() * cs + r * sn);
+  pVec[2] = pt * trackPars.getTgl();
+}
+
 #endif // O2_ANALYSIS_TRACKUTILITIES_H_

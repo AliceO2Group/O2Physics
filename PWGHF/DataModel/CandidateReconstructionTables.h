@@ -41,16 +41,29 @@ DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
 namespace hf_sel_track
 {
 DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
-DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
-DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
-DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
-                  hf_sel_track::IsSelProng,
-                  hf_sel_track::PxProng,
-                  hf_sel_track::PyProng,
-                  hf_sel_track::PzProng);
+                  hf_sel_track::IsSelProng);
+
+namespace hf_track_association
+{
+
+enum TrackTypes { Regular = 0,
+                  Ambiguous,
+                  PVContributor };
+
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);           //! Track index
+DECLARE_SOA_COLUMN(TrackType, trackType, int8_t); //! Track type
+} // namespace hf_track_association
+
+DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions
+                  hf_track_association::CollisionId,
+                  hf_track_association::TrackId);
+
+DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
+                  hf_track_association::TrackType);
 
 namespace hf_pv_refit_track
 {
@@ -111,6 +124,7 @@ DECLARE_SOA_COLUMN(FlagXicToPKPi, flagXicToPKPi, uint8_t);       //!
 
 DECLARE_SOA_TABLE(Hf2Prongs, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates
                   o2::soa::Index<>,
+                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
                   hf_track_index::HFflag);
@@ -118,12 +132,14 @@ using Hf2Prong = Hf2Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
                   o2::soa::Index<>,
+                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::V0Id);
 using HfCascade = HfCascades::iterator;
 
 DECLARE_SOA_TABLE(Hf3Prongs, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
                   o2::soa::Index<>,
+                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
                   hf_track_index::Prong2Id,
