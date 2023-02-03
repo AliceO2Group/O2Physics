@@ -130,18 +130,18 @@ DECLARE_SOA_TABLE(Hf3Prongs, "AOD", "HF3PRONG", //! Table for HF 3 prong candida
                   hf_track_index::HFflag);
 using Hf3Prong = Hf3Prongs::iterator;
 
-DECLARE_SOA_TABLE(HfCasc2Prongs, "AOD", "HFCASC2PRONG", //! Table for HF 2 prong candidates with a Cascade
+DECLARE_SOA_TABLE(HfCascLf2Prongs, "AOD", "HFCASCLF2PRONG", //! Table for HF 2 prong candidates with a Cascade
                   o2::soa::Index<>,
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id);
-using HfCasc2Prong = HfCasc2Prongs::iterator;
+using HfCascLf2Prong = HfCascLf2Prongs::iterator;
 
-DECLARE_SOA_TABLE(HfCasc3Prongs, "AOD", "HFCASC3PRONG", //! Table for HF 3 prong candidates with a Cascade
+DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 prong candidates with a Cascade
                   o2::soa::Index<>,
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
-using HfCasc3Prong = HfCasc3Prongs::iterator;
+using HfCascLf3Prong = HfCascLf3Prongs::iterator;
 
 namespace hf_track_index
 {
@@ -900,7 +900,7 @@ DECLARE_SOA_TABLE(HfCand3ProngMcGen, "AOD", "HFCAND3PMCGEN", //!
                   hf_cand_3prong::OriginMcGen,
                   hf_cand_3prong::FlagMcDecayChanGen);
 
-namespace hf_cand_casc_2prong
+namespace hf_cand_casc_lf_2prong
 {
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //!
                               float, 1.f * aod::hf_cand::pxProng0 + 1.f * aod::hf_cand::pxProng1);
@@ -927,25 +927,25 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin,
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
 template <typename T>
-auto invMassXicZeroToXiPi(const T& candidate)
+auto invMassXiczeroToXiPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kXiMinus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>
-auto invMassOmegacZeroToOmegaPi(const T& candidate)
+auto invMassOmegaczeroToOmegaPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kOmegaMinus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 // mapping of decay types
-enum DecayType { XicZeroToXiPi = 0,
-                 OmegacZeroToOmegaPi,
+enum DecayType { XiczeroToXiPi = 0,
+                 OmegaczeroToOmegaPi,
                  N2ProngDecays }; // always keep N2ProngDecays at the end
 
-} // namespace hf_cand_casc_2prong
+} // namespace hf_cand_casc_lf_2prong
 
-namespace hf_cand_casc_3prong
+namespace hf_cand_casc_lf_3prong
 {
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //!
                               float, 1.f * aod::hf_cand::pxProng0 + 1.f * aod::hf_cand::pxProng1);
@@ -972,16 +972,16 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin,
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
 template <typename T>
-auto invMassXicPlusToXiPiPi(const T& candidate)
+auto invMassXicplusToXiPiPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kXiMinus), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 // mapping of decay types
-enum DecayType { XicPlusToXiPiPi = 0,
-                 N3ProngDecays }; // always keep N2ProngDecays at the end
+enum DecayType { XicplusToXiPiPi = 0,
+                 N3ProngDecays }; // always keep N3ProngDecays at the end
 
-} // namespace hf_cand_casc_3prong
+} // namespace hf_cand_casc_lf_3prong
 
 // specific X candidate properties
 namespace hf_cand_x

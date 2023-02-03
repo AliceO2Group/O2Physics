@@ -37,6 +37,7 @@
 #include "DetectorsBase/GeometryManager.h"     // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+
 #include <algorithm>
 
 using namespace o2;
@@ -2170,7 +2171,7 @@ struct HfTrackIndexSkimCreator {
 /// to run: o2-analysis-weak-decay-indices --aod-file AO2D.root -b | o2-analysis-lambdakzerobuilder -b |
 ///         o2-analysis-trackextension -b | o2-analysis-hf-track-index-skim-creator -b
 
-struct HfTrackIndexSkimCreatorVZero {
+struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -2238,7 +2239,7 @@ struct HfTrackIndexSkimCreatorVZero {
 
   void init(InitContext const& context)
   {
-    if (!(context.mOptions.get<bool>("processVZeros"))) {
+    if (!(context.mOptions.get<bool>("processCascades"))) {
       return;
     }
     ccdb->setURL(ccdbUrl);
@@ -2254,22 +2255,23 @@ struct HfTrackIndexSkimCreatorVZero {
     }
   }
 
-  void processNoVZeros(SelectedCollisions const&){
+  void processNoCascades(SelectedCollisions const&)
+  {
     // dummy
   }
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processNoVZeros, "Do not do v0", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do v0", true);
 
-  void processVZeros(SelectedCollisions::iterator const& collision,
-                    aod::BCsWithTimestamps const&,
-                    // soa::Filtered<aod::V0Datas> const& V0s,
-                    aod::V0Datas const& V0s,
-                    MyTracks const& tracks
+  void processCascades(SelectedCollisions::iterator const& collision,
+                       aod::BCsWithTimestamps const&,
+                       // soa::Filtered<aod::V0Datas> const& V0s,
+                       aod::V0Datas const& V0s,
+                       MyTracks const& tracks
 #ifdef MY_DEBUG
-                    ,
-                    aod::McParticles& mcParticles
+                       ,
+                       aod::McParticles& mcParticles
 #endif
-                    ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
+                       ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
 
     // set the magnetic field from CCDB
@@ -2447,41 +2449,41 @@ struct HfTrackIndexSkimCreatorVZero {
 
     } // loop over tracks
   }   // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorVZero, processVZeros, "Skim also V0", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim also V0", false);
 };
 
-struct HfTrackIndexSkimCreatorCascades {
+struct HfTrackIndexSkimCreatorLfCascades {
   Produces<aod::HfCasc2Prongs> rowTrackIndexCasc2Prong;
   Produces<aod::HfCasc3Prongs> rowTrackIndexCasc3Prong;
 
   // whether to do or not validation plots
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-  Configurable<int> do3prong{"do3prong", 0, "do 3 prong cascade"};
+  Configurable<bool> do3Prong{"do3Prong", false, "do 3-prong cascade"};
 
   // vertexing parameters
-  Configurable<bool> propDCA{"propDCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> UseAbsDCA{"UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
 
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
 
   // Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"};       // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> casccospa{"casccospa", 0.95, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcav0dau{"dcav0dau", 2.0, "DCA V0 Daughters"};
-  Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA Casc Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", .05, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .05, "DCA Pos To PV"};
-  Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
-  Configurable<float> dcav0topv{"dcav0topv", .05, "DCA V0 To PV"};
-  Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
-  Configurable<float> cascradius{"cascradius", 0.5, "cascradius"};
-  Configurable<float> v0masswindow{"v0masswindow", 0.008, "v0masswindow"};
+  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};       // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};
+  Configurable<float> dcaCascDau{"dcaCascDau", 1.0, "DCA Casc Daughters"};
+  Configurable<float> dcaNegToPv{"dcaNegToPv", .05, "DCA Neg To PV"};
+  Configurable<float> dcaPosToPv{"dcaPosToPv", .05, "DCA Pos To PV"};
+  Configurable<float> dcaBachToPv{"dcaBachToPv", .05, "DCA Bach To PV"};
+  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .05, "DCA V0 To PV"};
+  Configurable<float> v0Radius{"v0Radius", 0.9, "V0 radius"};
+  Configurable<float> cascRadius{"cascRadius", 0.5, "Casc radius"};
+  Configurable<float> v0MassWindow{"v0MassWindow", 0.008, "V0 mass window"};
 
   // Track identification configurables
   Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 4, "TPC NSigma bachelor (>10 is no cut)"};
@@ -2490,11 +2492,12 @@ struct HfTrackIndexSkimCreatorCascades {
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
-  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -2512,8 +2515,8 @@ struct HfTrackIndexSkimCreatorCascades {
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massXi = RecoDecay::getMassPDG(kXiMinus);
   double massOmega = RecoDecay::getMassPDG(kOmegaMinus);
-  double massXicZero = RecoDecay::getMassPDG(pdg::Code::kXiCZero);
-  double massXicPlus = RecoDecay::getMassPDG(pdg::Code::kXiCPlus);
+  double massXiczero = RecoDecay::getMassPDG(pdg::Code::kXiCZero);
+  double massXicplus = RecoDecay::getMassPDG(pdg::Code::kXiCPlus);
 
   void init(InitContext const&)
   {
@@ -2535,11 +2538,11 @@ struct HfTrackIndexSkimCreatorCascades {
     }
     runNumber = 0;
 
-    AxisSpec ptAxis = {200, 0.0f, 10.0f, "it{p}_{T} (GeV/c)"};
-    AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
-    AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
-
     if (fillHistograms) {
+      AxisSpec ptAxis = {200, 0.0f, 10.0f, "it{p}_{T} (GeV/c)"};
+      AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+      AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+
       registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}});
 
       // Cascade mass spectra
@@ -2582,76 +2585,73 @@ struct HfTrackIndexSkimCreatorCascades {
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   Filter filterSelectTracks = aod::hf_sel_track::isSelProng > 0;
-  Filter filterSelectedCascades =
-    nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack>>;
-  using SelectedCascades = soa::Filtered<aod::CascDataExt>;
-  using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   /// Single-cascade cuts for 2-prongs or 3-prongs
-  /// From cascadeanalysis.cxx w/o PID and Centality study
-  //  Function to process cascades and generate corresponding invariant mass distributions
+  /// From cascadeanalysis.cxx w/o PID and Centrality study
+  ///  Function to process cascades and generate corresponding invariant-mass distributions
   template <typename TCascade, typename T1, typename T2, typename T3>
   bool isPreselectedCascade(const TCascade& casc, const T1& bachTrackCast, const T2& posTrackCast, const T3& negTrackCast, const float& pvx, const float& pvy, const float& pvz)
   {
     // Logic: either you have enough TPC clusters, OR you enabled ITSSA and have enough ITS clusters as requested
     // N.B.: This will require dedicated studies!
-
     registry.fill(HIST("hCandidateCounter"), 2.5); // okay track quality
 
-    if (casc.v0radius() > v0radius &&
-        casc.cascradius() > cascradius &&
-        casc.v0cosPA(pvx, pvy, pvz) > v0cospa &&
-        casc.casccosPA(pvx, pvy, pvz) > casccospa &&
-        casc.dcav0topv(pvx, pvy, pvz) > dcav0topv &&
-        TMath::Abs(casc.mLambda() - 1.115683) < v0masswindow) {
+    if (casc.v0cosPA(pvx, pvy, pvz) > v0CosPA &&
+        casc.casccosPA(pvx, pvy, pvz) > cascCosPA &&
+        casc.dcacascdaughters() > dcaCascDau &&
+        casc.dcaV0daughters() > dcaV0Dau &&
+        casc.dcanegtopv() > dcaNegToPv &&
+        casc.dcapostopv() > dcaPosToPv &&
+        casc.dcabachtopv() > dcaBachToPv &&
+        casc.dcav0topv(pvx, pvy, pvz) > dcaV0ToPv &&
+        casc.v0radius() > v0Radius &&
+        casc.cascradius() > cascRadius &&
+        std::abs(casc.mLambda() - 1.115683) < v0MassWindow) {
       registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
       if (casc.sign() < 0) {                         // FIXME: could be done better...
-        if (TMath::Abs(casc.yXi()) < 0.5) {
-          registry.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
-        }
-        if (TMath::Abs(casc.yOmega()) < 0.5) {
-          registry.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
-        }
+        registry.fill(HIST("hMassXiMinus"), casc.mXi());
+        registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
       } else {
-        if (TMath::Abs(casc.yXi()) < 0.5) {
-          registry.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
-        }
-        if (TMath::Abs(casc.yOmega()) < 0.5) {
-          registry.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
-        }
+        registry.fill(HIST("hMassXiPlus"), casc.mXi());
+        registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
       }
-      // The basic eleven!
-      registry.fill(HIST("hV0Radius"), casc.v0radius());
-      registry.fill(HIST("hCascRadius"), casc.cascradius());
-      registry.fill(HIST("hV0CosPA"), casc.v0cosPA(pvx, pvy, pvz));
-      registry.fill(HIST("hCascCosPA"), casc.casccosPA(pvx, pvy, pvz));
-      registry.fill(HIST("hDCAPosToPV"), casc.dcapostopv());
-      registry.fill(HIST("hDCANegToPV"), casc.dcanegtopv());
-      registry.fill(HIST("hDCABachToPV"), casc.dcabachtopv());
-      registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv(pvx, pvy, pvz));
-      registry.fill(HIST("hDCAV0Dau"), casc.dcaV0daughters());
-      registry.fill(HIST("hDCACascDau"), casc.dcacascdaughters());
-      registry.fill(HIST("hLambdaMass"), casc.mLambda());
-    }
 
-    return true;
+      if (fillHistograms) {
+        // The basic eleven!
+        registry.fill(HIST("hV0Radius"), casc.v0radius());
+        registry.fill(HIST("hCascRadius"), casc.cascradius());
+        registry.fill(HIST("hV0CosPA"), casc.v0cosPA(pvx, pvy, pvz));
+        registry.fill(HIST("hCascCosPA"), casc.casccosPA(pvx, pvy, pvz));
+        registry.fill(HIST("hDCAPosToPV"), casc.dcapostopv());
+        registry.fill(HIST("hDCANegToPV"), casc.dcanegtopv());
+        registry.fill(HIST("hDCABachToPV"), casc.dcabachtopv());
+        registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv(pvx, pvy, pvz));
+        registry.fill(HIST("hDCAV0Dau"), casc.dcaV0daughters());
+        registry.fill(HIST("hDCACascDau"), casc.dcacascdaughters());
+        registry.fill(HIST("hLambdaMass"), casc.mLambda());
+      }
+      return true;
+    }
+    return false;
   }
 
-  void processNoCascades(SelectedCollisions const&){
+  void processNoCascades(SelectedCollisions const&)
+  {
     // dummy
   }
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do cascade", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoCascades, "Do not do cascade", true);
 
-  void processCascases(SelectedCollisions::iterator const& collision,
-               aod::BCs const& bcs,
-               aod::V0sLinked const&,
-               V0full const&,
-               SelectedCascades const& cascades,
-               SelectedTracks const& tracks)
+  void processCascades(SelectedCollisions::iterator const& collision,
+                       aod::BCs const& bcs,
+                       aod::V0sLinked const&,
+                       V0Full const&,
+                       aod::CascDataFull const& cascades,
+                       SelectedTracks const& tracks)
   {
     // set the magnetic field from CCDB
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -2661,7 +2661,7 @@ struct HfTrackIndexSkimCreatorCascades {
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(magneticField);
-    df2.setPropagateToPCA(propDCA);
+    df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
@@ -2671,18 +2671,12 @@ struct HfTrackIndexSkimCreatorCascades {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(magneticField);
-    df3.setPropagateToPCA(propDCA);
+    df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(UseAbsDCA);
-
-    double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
-    double massProtonFromPDG = RecoDecay::getMassPDG(kProton);  // pdg code 2212
-    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
-    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
-    double massXicPlus = RecoDecay::getMassPDG(pdg::Code::kXiCPlus);
 
     // cascade loop
     for (const auto& casc : cascades) {
@@ -2700,7 +2694,7 @@ struct HfTrackIndexSkimCreatorCascades {
       }
       registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
       auto v0index = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0index.v0Data_as<V0full>(); // V0 element from LF table containing V0 info
+      auto v0 = v0index.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
       // V0 positive daughter
       auto trackV0DauPos = v0.posTrack_as<SelectedTracks>(); // p <- V0 track (positive track) from SelectedTracks table
       // V0 negative daughter
@@ -2722,14 +2716,13 @@ struct HfTrackIndexSkimCreatorCascades {
 
       o2::vertexing::DCAFitterN<2> dfc;
       dfc.setBz(magneticField);
-      dfc.setPropagateToPCA(propDCA);
+      dfc.setPropagateToPCA(propagateToPCA);
       dfc.setMaxR(maxR);
       dfc.setMaxDZIni(maxDZIni);
       dfc.setMinParamChange(minParamChange);
       dfc.setMinRelChi2Change(minRelChi2Change);
       dfc.setUseAbsDCA(UseAbsDCA);
 
-      // Do actual minimization
       auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
 
       // Set up covariance matrices (should in fact be optional)
@@ -2771,7 +2764,7 @@ struct HfTrackIndexSkimCreatorCascades {
         }
 
         // ask for opposite sign daughters
-        if (trackPion1.sign() * trackXiDauCharged.sign() <= 0) {
+        if (trackPion1.sign() * trackXiDauCharged.sign() >= 0) {
           continue;
         }
 
@@ -2793,7 +2786,7 @@ struct HfTrackIndexSkimCreatorCascades {
             }
 
             // ask for same sign daughters
-            if (trackPion2.sign() * trackPion1.sign() >= 0) {
+            if (trackPion2.sign() * trackPion1.sign() <= 0) {
               continue;
             }
 
@@ -2837,7 +2830,7 @@ struct HfTrackIndexSkimCreatorCascades {
                 auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                 switch (iDecay3P) {
                   case hf_cand_casc_3prong::DecayType::XicPlusToXiPiPi:
-                    registry.fill(HIST("hMassXicPlusToXiPiPi"), massXicPlus);
+                    registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                     break;
                 }
               }
@@ -2883,7 +2876,7 @@ struct HfTrackIndexSkimCreatorCascades {
       } // loop over pion
     }   // loop over cascade
   }     // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascases, "Skim also cascades", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processCascades, "Skim also cascades", false);
 };
 
 //________________________________________________________________________________________________________________________
@@ -2900,8 +2893,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorVZero>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorLfCascades>(cfgc));
 
   return workflow;
 }
