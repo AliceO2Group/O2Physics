@@ -27,12 +27,10 @@ namespace o2::aod
 /// FemtoDreamCollision
 namespace femtodreamcollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);             //! V0M multiplicity
-DECLARE_SOA_COLUMN(MultNtrPV, multNtrPV, int);           //! multiplicity of charged tracks contributing to the primary vertex
-DECLARE_SOA_COLUMN(MultNtrWithTPC, multNtrWithTPC, int); //! multiplicity of charged tracks with TPC information
-DECLARE_SOA_COLUMN(MultNtrlets, multNtrlets, int);       //! multiplicity of tracklets (used in Run2)
-DECLARE_SOA_COLUMN(Sphericity, sphericity, float);       //! Sphericity of the event
-DECLARE_SOA_COLUMN(MagField, magField, float);           //! Magnetic field of the event
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
+DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
+DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
+DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
 
 } // namespace femtodreamcollision
 
@@ -40,9 +38,7 @@ DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
-                  femtodreamcollision::MultNtrPV,
-                  femtodreamcollision::MultNtrWithTPC,
-                  femtodreamcollision::MultNtrlets,
+                  femtodreamcollision::MultNtr,
                   femtodreamcollision::Sphericity,
                   femtodreamcollision::MagField);
 using FemtoDreamCollision = FemtoDreamCollisions::iterator;

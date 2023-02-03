@@ -51,7 +51,6 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle selection part
 
   /// Table for both particles
-  Configurable<bool> ConfAnalyseRun3{"ConfAnalyseRun3", true, "Running over Run 3 data or Run 2"};
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
   Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
@@ -93,15 +92,11 @@ struct femtoDreamPairTaskTrackTrack {
   ConfigurableAxis CfgTempFitVarpTBins{"CfgTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Correlation part
-  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use TPC multiplicity in the binning policy"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
   // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  // ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrPV> colBinningRun3{{CfgVtxBins, CfgMultBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrlets> colBinningRun2{{CfgVtxBins, CfgMultBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtrWithTPC> colBinningTPC{{CfgVtxBins, CfgMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
@@ -130,13 +125,8 @@ struct femtoDreamPairTaskTrackTrack {
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    if (ConfAnalyseRun3) {
-      sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
-      mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
-    } else {
-      sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
-      mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
-    }
+    sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
+    mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
@@ -155,15 +145,8 @@ struct femtoDreamPairTaskTrackTrack {
                         o2::aod::FemtoDreamParticles& parts)
   {
 
-    if (ConfUseTPCmult) {
-      MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningTPC.getBin({col.posZ(), col.multNtrWithTPC()}));
-    } else {
-      if (ConfAnalyseRun3) {
-        MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningRun3.getBin({col.posZ(), col.multNtrPV()}));
-      } else {
-        MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningRun2.getBin({col.posZ(), col.multNtrlets()}));
-      }
-    }
+    const int multCol = col.multNtr();
+    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), multCol}));
 
     const auto& magFieldTesla = col.magField();
 
@@ -241,28 +224,20 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      if (ConfAnalyseRun3) {
-        sameEventCont.setPair(p1, p2, col.multNtrPV(), col.multNtrWithTPC());
-      } else {
-        sameEventCont.setPair(p1, p2, col.multNtrlets(), col.multNtrWithTPC());
-      }
+      sameEventCont.setPair(p1, p2, multCol);
     }
   }
 
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
 
-  template <typename ColBinningType>
-  void DoTheMixing(ColBinningType colBinning, o2::aod::FemtoDreamCollisions& cols, o2::aod::FemtoDreamParticles& parts)
+  /// This function processes the mixed event
+  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
+  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
+                         o2::aod::FemtoDreamParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      int multCol;
-      if (ConfAnalyseRun3) {
-        multCol = collision1.multNtrPV();
-      } else {
-        multCol = collision1.multNtrlets();
-      }
-
+      const int multCol = collision1.multNtr();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multCol}));
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
@@ -307,24 +282,7 @@ struct femtoDreamPairTaskTrackTrack {
           }
         }
 
-        mixedEventCont.setPair(p1, p2, multCol, collision1.multNtrWithTPC());
-      }
-    }
-  }
-
-  /// This function processes the mixed event
-  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
-                         o2::aod::FemtoDreamParticles& parts)
-  {
-
-    if (ConfUseTPCmult) {
-      DoTheMixing(colBinningTPC, cols, parts);
-    } else {
-      if (ConfAnalyseRun3) {
-        DoTheMixing(colBinningRun3, cols, parts);
-      } else {
-        DoTheMixing(colBinningRun2, cols, parts);
+        mixedEventCont.setPair(p1, p2, multCol);
       }
     }
   }
