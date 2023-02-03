@@ -412,7 +412,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param trackEta is the track eta
   /// \param dca is a 2-element array with dca in transverse and longitudinal directions
   /// \param statusProng is the selection flag
-  /// \return true if track passes all cuts
   template <typename T>
   void isSelectedTrack(const T& hfTrack, const float& trackPt, const float& trackEta, const std::array<float, 2>& dca, int& statusProng)
   {
