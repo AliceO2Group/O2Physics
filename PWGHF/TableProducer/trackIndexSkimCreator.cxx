@@ -16,11 +16,8 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
-<<<<<<< HEAD
 /// \author Jinjoo Seo <jseo@cern.ch>, Inha University
-=======
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
->>>>>>> Put QC workflow in dedicated task
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -2309,6 +2306,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
 
   // histograms
   HistogramRegistry registry{"registry"};
@@ -2351,8 +2349,8 @@ struct HfTrackIndexSkimCreatorCascades {
 #endif
                        ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {
+    // set the magnetic field from CCDB
     for (const auto& collision : collisions) {
-      // set the magnetic field from CCDB
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
@@ -2404,8 +2402,10 @@ struct HfTrackIndexSkimCreatorCascades {
         MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "KEPT! proton from Lc with daughters " << indexBach);
 
         auto trackBach = getTrackParCov(bach);
+
+        auto groupedV0s = V0s.sliceBy(v0sPerCollision, thisCollId);
         // now we loop over the V0s
-        for (const auto& v0 : V0s) {
+        for (const auto& v0 : groupedV0s) {
           MY_DEBUG_MSG(1, LOG(info) << "*** Checking next K0S");
           // selections on the V0 daughters
           const auto& trackV0DaughPos = v0.posTrack_as<TracksWithPVRefitAndDCA>();
@@ -2616,9 +2616,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
 
     if (fillHistograms) {
@@ -2667,11 +2664,16 @@ struct HfTrackIndexSkimCreatorLfCascades {
   }
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTracks = aod::hf_sel_track::isSelProng > 0;
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfSelTrack, aod::HfPvRefitTrack>>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
+
+  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
+  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::CascDataFull> cascadesPerCollision = aod::cascdata::collisionId;
 
   /// Single-cascade cuts for 2-prongs or 3-prongs
   /// From cascadeanalysis.cxx w/o PID and Centrality study
@@ -2729,236 +2731,242 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoCascades, "Do not do cascade", true);
 
-  void processCascades(SelectedCollisions::iterator const& collision,
-                       aod::BCs const& bcs,
+  void processCascades(SelectedCollisions const& collisions,
+                       aod::BCsWithTimestamps const&,
                        aod::V0sLinked const&,
                        V0Full const&,
                        aod::CascDataFull const& cascades,
-                       SelectedTracks const& tracks)
+                       FilteredHfTrackAssocSel const& trackIndices,
+                       TracksWithPVRefitAndDCA const& tracks)
   {
-    // set the magnetic field from CCDB
-    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-    auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
+    for (const auto& collision : collisions) {
 
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(magneticField);
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
+      // set the magnetic field from CCDB
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
 
-    // 3-prong vertex fitter
-    o2::vertexing::DCAFitterN<3> df3;
-    df3.setBz(magneticField);
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
+      // Define o2 fitter, 2-prong
+      o2::vertexing::DCAFitterN<2> df2;
+      df2.setBz(magneticField);
+      df2.setPropagateToPCA(propagateToPCA);
+      df2.setMaxR(maxR);
+      df2.setMaxDZIni(maxDZIni);
+      df2.setMinParamChange(minParamChange);
+      df2.setMinRelChi2Change(minRelChi2Change);
+      df2.setUseAbsDCA(useAbsDCA);
 
-    // cascade loop
-    for (const auto& casc : cascades) {
+      // 3-prong vertex fitter
+      o2::vertexing::DCAFitterN<3> df3;
+      df3.setBz(magneticField);
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
 
-      if (collision.globalIndex() != casc.collisionId()) { // check to be further processed when the problem of ambiguous tracks will be solved
-        continue;
-      }
+      // cascade loop
+      auto thisCollId = collision.globalIndex();
+      auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      for (const auto& casc : groupedCascades) {
 
-      registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
+        registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
 
-      auto trackXiDauCharged = casc.bachelor_as<SelectedTracks>(); // pion <- xi track from SelectedTracks table
-      // cascade daughter - V0
-      if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
-        continue;
-      }
-      registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
-      auto v0index = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0index.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
-      // V0 positive daughter
-      auto trackV0DauPos = v0.posTrack_as<SelectedTracks>(); // p <- V0 track (positive track) from SelectedTracks table
-      // V0 negative daughter
-      auto trackV0DauNeg = v0.negTrack_as<SelectedTracks>(); // pion <- V0 track (negative track) from SelectedTracks table
-
-      // check that particles come from the same collision
-      if (rejDiffCollTrack) {
-        if (trackV0DauPos.collisionId() != trackV0DauNeg.collisionId()) {
+        auto trackXiDauCharged = casc.bachelor_as<TracksWithPVRefitAndDCA>(); // pion <- xi track from TracksWithPVRefitAndDCA table
+        // cascade daughter - V0
+        if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
           continue;
         }
-        if (trackXiDauCharged.collisionId() != trackV0DauPos.collisionId()) {
-          continue;
+        registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
+        auto v0index = casc.v0_as<aod::V0sLinked>();
+        auto v0 = v0index.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
+        // V0 positive daughter
+        auto trackV0DauPos = v0.posTrack_as<TracksWithPVRefitAndDCA>(); // p <- V0 track (positive track) from TracksWithPVRefitAndDCA table
+        // V0 negative daughter
+        auto trackV0DauNeg = v0.negTrack_as<TracksWithPVRefitAndDCA>(); // pion <- V0 track (negative track) from TracksWithPVRefitAndDCA table
+
+        // check that particles come from the same collision
+        if (rejDiffCollTrack) {
+          if (trackV0DauPos.collisionId() != trackV0DauNeg.collisionId()) {
+            continue;
+          }
+          if (trackXiDauCharged.collisionId() != trackV0DauPos.collisionId()) {
+            continue;
+          }
         }
-      }
 
-      if (!(isPreselectedCascade(casc, trackXiDauCharged, trackV0DauPos, trackV0DauNeg, collision.posX(), collision.posY(), collision.posZ()))) {
-        continue;
-      }
-
-      o2::vertexing::DCAFitterN<2> dfc;
-      dfc.setBz(magneticField);
-      dfc.setPropagateToPCA(propagateToPCA);
-      dfc.setMaxR(maxR);
-      dfc.setMaxDZIni(maxDZIni);
-      dfc.setMinParamChange(minParamChange);
-      dfc.setMinRelChi2Change(minRelChi2Change);
-      dfc.setUseAbsDCA(useAbsDCA);
-
-      auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
-
-      // Set up covariance matrices (should in fact be optional)
-      std::array<float, 21> covV = {0.};
-      constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      for (int i = 0; i < 6; i++) {
-        covV[MomInd[i]] = v0.momentumCovMat()[i];
-        covV[i] = v0.positionCovMat()[i];
-      }
-      auto trackV0 = o2::track::TrackParCov(
-        {v0.x(), v0.y(), v0.z()},
-        {v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()},
-        covV, 0, true);
-      trackV0.setAbsCharge(0);
-      trackV0.setPID(o2::track::PID::Lambda);
-
-      // reconstruct the cascade
-      if (dfc.process(trackV0, trackParVarXiDauCharged) == 0) {
-        continue;
-      }
-
-      array<float, 3> pvecV0;        // V0
-      array<float, 3> pvecXiDauPion; // bach pion
-
-      dfc.getTrack(0).getPxPyPzGlo(pvecV0);
-      dfc.getTrack(1).getPxPyPzGlo(pvecXiDauPion);
-
-      std::array<float, 3> coordVtxCasc = dfc.getPCACandidatePos();
-      std::array<float, 6> covVtxCasc = dfc.calcPCACovMatrixFlat();
-      std::array<float, 3> pvecCascAsM = {pvecV0[0] + pvecXiDauPion[0], pvecV0[1] + pvecXiDauPion[1], pvecV0[2] + pvecXiDauPion[2]};
-
-      auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
-
-      //-------------------combining cascade and pion tracks--------------------------
-      // first loop over positive tracks
-      for (auto trackPion1 = tracks.begin(); trackPion1 != tracks.end(); ++trackPion1) {
-        if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion1.collisionId())) {
+        if (!(isPreselectedCascade(casc, trackXiDauCharged, trackV0DauPos, trackV0DauNeg, collision.posX(), collision.posY(), collision.posZ()))) {
           continue;
         }
 
-        // ask for opposite sign daughters
-        if (trackPion1.sign() * trackXiDauCharged.sign() >= 0) {
+        o2::vertexing::DCAFitterN<2> dfc;
+        dfc.setBz(magneticField);
+        dfc.setPropagateToPCA(propagateToPCA);
+        dfc.setMaxR(maxR);
+        dfc.setMaxDZIni(maxDZIni);
+        dfc.setMinParamChange(minParamChange);
+        dfc.setMinRelChi2Change(minRelChi2Change);
+        dfc.setUseAbsDCA(useAbsDCA);
+
+        auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
+
+        // Set up covariance matrices (should in fact be optional)
+        std::array<float, 21> covV = {0.};
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          covV[MomInd[i]] = v0.momentumCovMat()[i];
+          covV[i] = v0.positionCovMat()[i];
+        }
+        auto trackV0 = o2::track::TrackParCov(
+          {v0.x(), v0.y(), v0.z()},
+          {v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()},
+          covV, 0, true);
+        trackV0.setAbsCharge(0);
+        trackV0.setPID(o2::track::PID::Lambda);
+
+        // reconstruct the cascade
+        if (dfc.process(trackV0, trackParVarXiDauCharged) == 0) {
           continue;
         }
 
-        // check not to take the same particle twice in the decay chain
-        if (trackPion1.globalIndex() == trackXiDauCharged.globalIndex() || trackPion1.globalIndex() == trackV0DauPos.globalIndex() || trackPion1.globalIndex() == trackV0DauNeg.globalIndex() || trackPion1.globalIndex() == casc.globalIndex()) {
-          continue;
-        }
+        array<float, 3> pvecV0;        // V0
+        array<float, 3> pvecXiDauPion; // bach pion
 
-        // primary pion track to be processed with DCAFitter
-        auto trackParVarPion1 = getTrackParCov(trackPion1);
+        dfc.getTrack(0).getPxPyPzGlo(pvecV0);
+        dfc.getTrack(1).getPxPyPzGlo(pvecXiDauPion);
 
-        // first loop over tracks
-        if (do3Prong) {
-          // second loop over positive tracks
-          for (auto trackPion2 = trackPion1 + 1; trackPion2 != tracks.end(); ++trackPion2) {
+        std::array<float, 3> coordVtxCasc = dfc.getPCACandidatePos();
+        std::array<float, 6> covVtxCasc = dfc.calcPCACovMatrixFlat();
+        std::array<float, 3> pvecCascAsM = {pvecV0[0] + pvecXiDauPion[0], pvecV0[1] + pvecXiDauPion[1], pvecV0[2] + pvecXiDauPion[2]};
 
-            if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion2.collisionId())) {
-              continue;
-            }
+        auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
 
-            // ask for same sign daughters
-            if (trackPion2.sign() * trackPion1.sign() <= 0) {
-              continue;
-            }
+        //-------------------combining cascade and pion tracks--------------------------
+        // first loop over positive tracks
+        auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+        for (auto trackIdPion1 = groupedBachTrackIndices.begin(); trackIdPion1 != groupedBachTrackIndices.end(); ++trackIdPion1) {
+          auto trackPion1 = trackIdPion1.track_as<TracksWithPVRefitAndDCA>();
 
-            // check not to take the same particle twice in the decay chain
-            if (trackPion2.globalIndex() == trackXiDauCharged.globalIndex() || trackPion2.globalIndex() == trackV0DauPos.globalIndex() || trackPion2.globalIndex() == trackV0DauNeg.globalIndex() || trackPion2.globalIndex() == casc.globalIndex()) {
-              continue;
-            }
+          if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion1.collisionId())) {
+            continue;
+          }
 
-            // primary pion track to be processed with DCAFitter
-            auto trackParVarPion2 = getTrackParCov(trackPion2);
+          // ask for opposite sign daughters
+          if (trackPion1.sign() * trackXiDauCharged.sign() >= 0) {
+            continue;
+          }
 
-            // reconstruct Xic with DCAFitter
-            if (df3.process(trackCasc, trackParVarPion1, trackParVarPion2) == 0) {
-              continue;
-            }
+          // check not to take the same particle twice in the decay chain
+          if (trackPion1.globalIndex() == trackXiDauCharged.globalIndex() || trackPion1.globalIndex() == trackV0DauPos.globalIndex() || trackPion1.globalIndex() == trackV0DauNeg.globalIndex() || trackPion1.globalIndex() == casc.globalIndex()) {
+            continue;
+          }
 
-            std::array<float, 3> pVec1 = {0.};
-            std::array<float, 3> pVec2 = {0.};
-            std::array<float, 3> pVec3 = {0.};
+          // primary pion track to be processed with DCAFitter
+          auto trackParVarPion1 = getTrackParCov(trackPion1);
 
-            df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
-            df3.getTrack(1).getPxPyPzGlo(pVec2);
-            df3.getTrack(2).getPxPyPzGlo(pVec3);
+          // first loop over tracks
+          if (do3Prong) {
+            // second loop over positive tracks
+            for (auto trackIdPion2 = trackIdPion1 + 1; trackIdPion2 != groupedBachTrackIndices.end(); ++trackIdPion2) {
+              auto trackPion2 = trackIdPion2.track_as<TracksWithPVRefitAndDCA>();
 
-            // std::array<float, 3> secondaryVertex3 = {0., 0., 0.};
-            const auto& secondaryVertex3 = df3.getPCACandidate();
+              if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion2.collisionId())) {
+                continue;
+              }
 
-            // fill table row
-            rowTrackIndexCasc3Prong(casc.globalIndex(),
-                                    trackPion1.globalIndex(),
-                                    trackPion2.globalIndex());
+              // ask for same sign daughters
+              if (trackPion2.sign() * trackPion1.sign() <= 0) {
+                continue;
+              }
 
-            // fill histograms
-            if (fillHistograms) {
-              registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
-              registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
-              registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
+              // check not to take the same particle twice in the decay chain
+              if (trackPion2.globalIndex() == trackXiDauCharged.globalIndex() || trackPion2.globalIndex() == trackV0DauPos.globalIndex() || trackPion2.globalIndex() == trackV0DauNeg.globalIndex() || trackPion2.globalIndex() == casc.globalIndex()) {
+                continue;
+              }
 
-              array<array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
-              for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
-                auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
-                switch (iDecay3P) {
-                  case hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi:
-                    registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
-                    break;
+              // primary pion track to be processed with DCAFitter
+              auto trackParVarPion2 = getTrackParCov(trackPion2);
+
+              // reconstruct Xic with DCAFitter
+              if (df3.process(trackCasc, trackParVarPion1, trackParVarPion2) == 0) {
+                continue;
+              }
+
+              std::array<float, 3> pVec1 = {0.};
+              std::array<float, 3> pVec2 = {0.};
+              std::array<float, 3> pVec3 = {0.};
+
+              df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
+              df3.getTrack(1).getPxPyPzGlo(pVec2);
+              df3.getTrack(2).getPxPyPzGlo(pVec3);
+
+              // std::array<float, 3> secondaryVertex3 = {0., 0., 0.};
+              const auto& secondaryVertex3 = df3.getPCACandidate();
+
+              // fill table row
+              rowTrackIndexCasc3Prong(casc.globalIndex(),
+                                      trackPion1.globalIndex(),
+                                      trackPion2.globalIndex());
+
+              // fill histograms
+              if (fillHistograms) {
+                registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
+                registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
+                registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
+
+                array<array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
+                  auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
+                  switch (iDecay3P) {
+                    case hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi:
+                      registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
+                      break;
+                  }
                 }
               }
             }
           }
-        }
 
-        if (df2.process(trackCasc, trackParVarPion1) == 0) {
-          continue;
-        }
+          if (df2.process(trackCasc, trackParVarPion1) == 0) {
+            continue;
+          }
 
-        std::array<float, 3> pVec1 = {0.};
-        std::array<float, 3> pVec2 = {0.};
+          std::array<float, 3> pVec1 = {0.};
+          std::array<float, 3> pVec2 = {0.};
 
-        df2.getTrack(0).getPxPyPzGlo(pVec1);
-        df2.getTrack(1).getPxPyPzGlo(pVec2);
+          df2.getTrack(0).getPxPyPzGlo(pVec1);
+          df2.getTrack(1).getPxPyPzGlo(pVec2);
 
-        const auto& secondaryVertex2 = df2.getPCACandidate();
+          const auto& secondaryVertex2 = df2.getPCACandidate();
 
-        // fill table row
-        rowTrackIndexCasc2Prong(casc.globalIndex(),
-                                trackPion1.globalIndex());
+          // fill table row
+          rowTrackIndexCasc2Prong(casc.globalIndex(),
+                                  trackPion1.globalIndex());
 
-        // fill histograms
-        if (fillHistograms) {
-          registry.fill(HIST("hVtx2ProngX"), secondaryVertex2[0]);
-          registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
-          registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
+          // fill histograms
+          if (fillHistograms) {
+            registry.fill(HIST("hVtx2ProngX"), secondaryVertex2[0]);
+            registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
+            registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
 
-          array<array<float, 3>, 2> arrMom = {pVec1, pVec2};
-          for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
-            auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
-            switch (iDecay2P) {
-              case hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi:
-                registry.fill(HIST("hMassXicZeroToXiPi"), mass2Prong);
-                break;
-              case hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi:
-                registry.fill(HIST("hMassOmegacZeroToXiPi"), mass2Prong);
-                break;
+            array<array<float, 3>, 2> arrMom = {pVec1, pVec2};
+            for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
+              auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
+              switch (iDecay2P) {
+                case hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi:
+                  registry.fill(HIST("hMassXicZeroToXiPi"), mass2Prong);
+                  break;
+                case hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi:
+                  registry.fill(HIST("hMassOmegacZeroToXiPi"), mass2Prong);
+                  break;
+              }
             }
           }
-        }
-      } // loop over pion
-    }   // loop over cascade
-  }     // process
+        } // loop over pion
+      }   // loop over cascade
+    }     // loop over collisions
+  }       // process
   PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processCascades, "Skim also cascades", false);
 };
 
