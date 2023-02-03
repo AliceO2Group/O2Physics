@@ -49,6 +49,8 @@ struct CheckFilterBit {
     histos.add("Tracks/Reco/histpt3DFB0", "FB0 tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/Reco/histpt3DFB1", "FB1 tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/Reco/histpt3DFB2", "FB2 tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/Reco/histpt3DFB3", "FB3 tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/Reco/histpt3DFB4", "FB4 tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
 
     histos.add("Tracks/MCgen/histMCgenpt", "pt", kTH1D, {axisPt});
     histos.add("Tracks/MCgen/histMCgen3dPhysPrimary", "MC Phys. Prim.;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
@@ -59,14 +61,20 @@ struct CheckFilterBit {
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histptFB0", "FB0;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histptFB1", "FB1;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histptFB2", "FB2;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCPhysPrimCollMatch/histptFB3", "FB3;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCPhysPrimCollMatch/histptFB4", "FB4;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
 
     histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB0", "FB0;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB1", "FB1;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB2", "FB2;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB3", "FB3;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB4", "FB4;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
 
     histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB0", "FB0;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB1", "FB1;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB2", "FB2;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3", "FB3;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4", "FB4;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
   }
 
   void processData(soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension> const& tracks)
@@ -83,6 +91,10 @@ struct CheckFilterBit {
         histos.fill(HIST("Tracks/Reco/histpt3DFB1"), track.pt(), track.eta(), track.phi());
       if (track.trackCutFlagFb2())
         histos.fill(HIST("Tracks/Reco/histpt3DFB2"), track.pt(), track.eta(), track.phi());
+      if (track.trackCutFlagFb3())
+        histos.fill(HIST("Tracks/Reco/histpt3DFB3"), track.pt(), track.eta(), track.phi());
+      if (track.trackCutFlagFb4())
+        histos.fill(HIST("Tracks/Reco/histpt3DFB4"), track.pt(), track.eta(), track.phi());
     }
   }
   PROCESS_SWITCH(CheckFilterBit, processData, "process data", true);
@@ -103,7 +115,7 @@ struct CheckFilterBit {
         /// the track is not fake
         auto mcparticle = track.mcParticle();
         // auto collReco = track.collision_as<CollisionTableMC>();
-        auto collMC = mcparticle.mcCollision();
+        // auto collMC = mcparticle.mcCollision();
         auto mcCollID_recoColl = collision.mcCollisionId();
         auto mcCollID_particle = mcparticle.mcCollisionId();
         bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
@@ -119,6 +131,10 @@ struct CheckFilterBit {
               histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
             if (track.trackCutFlagFb2())
               histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+	    if (track.trackCutFlagFb3())
+              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+	    if (track.trackCutFlagFb4())
+              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
           } else if (prodRadius2 > 1. && prodRadius2 < 15. && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
             if (track.isGlobalTrack())
               histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
@@ -126,6 +142,10 @@ struct CheckFilterBit {
               histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
             if (track.trackCutFlagFb2())
               histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+	    if (track.trackCutFlagFb3())
+	      histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+	    if (track.trackCutFlagFb4())
+              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
           }
           if (prodRadius2 > 1.e-4 && prodRadius2 < 0.5 && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
             if (track.isGlobalTrack())
@@ -134,6 +154,10 @@ struct CheckFilterBit {
               histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
             if (track.trackCutFlagFb2())
               histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+	    if (track.trackCutFlagFb3())
+	      histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+	    if (track.trackCutFlagFb4())
+              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
           }
         }
       }
