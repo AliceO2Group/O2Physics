@@ -2453,8 +2453,8 @@ struct HfTrackIndexSkimCreatorCascades {
 };
 
 struct HfTrackIndexSkimCreatorLfCascades {
-  Produces<aod::HfCasc2Prongs> rowTrackIndexCasc2Prong;
-  Produces<aod::HfCasc3Prongs> rowTrackIndexCasc3Prong;
+  Produces<aod::HfCascLf2Prongs> rowTrackIndexCasc2Prong;
+  Produces<aod::HfCascLf3Prongs> rowTrackIndexCasc3Prong;
 
   // whether to do or not validation plots
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
@@ -2503,8 +2503,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
 
-  static const int n2ProngDecays = hf_cand_casc_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
-  static const int n3ProngDecays = hf_cand_casc_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
+  static const int n2ProngDecays = hf_cand_casc_lf_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
+  static const int n3ProngDecays = hf_cand_casc_lf_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
   std::array<std::array<std::array<double, 2>, 2>, n2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, n3ProngDecays> arrMass3Prong;
 
@@ -2520,13 +2520,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   void init(InitContext const&)
   {
-    arrMass2Prong[hf_cand_casc_2prong::DecayType::XicZeroToXiPi] = array{array{massXi, massPi},
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = array{array{massXi, massPi},
                                                                          array{massPi, massXi}};
 
-    arrMass2Prong[hf_cand_casc_2prong::DecayType::OmegacZeroToOmegaPi] = array{array{massOmega, massPi},
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = array{array{massOmega, massPi},
                                                                                array{massPi, massOmega}};
 
-    arrMass3Prong[hf_cand_casc_3prong::DecayType::XicPlusToXiPiPi] = array{array{massXi, massPi, massPi},
+    arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = array{array{massXi, massPi, massPi},
                                                                            array{massPi, massPi, massXi}};
 
     ccdb->setURL(ccdbUrl);
@@ -2666,7 +2666,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(UseAbsDCA);
+    df2.setUseAbsDCA(useAbsDCA);
 
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df3;
@@ -2676,7 +2676,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(UseAbsDCA);
+    df3.setUseAbsDCA(useAbsDCA);
 
     // cascade loop
     for (const auto& casc : cascades) {
@@ -2721,7 +2721,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       dfc.setMaxDZIni(maxDZIni);
       dfc.setMinParamChange(minParamChange);
       dfc.setMinRelChi2Change(minRelChi2Change);
-      dfc.setUseAbsDCA(UseAbsDCA);
+      dfc.setUseAbsDCA(useAbsDCA);
 
       auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
 
@@ -2777,7 +2777,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
         auto trackParVarPion1 = getTrackParCov(trackPion1);
 
         // first loop over tracks
-        if (do3prong) {
+        if (do3Prong) {
           // second loop over positive tracks
           for (auto trackPion2 = trackPion1 + 1; trackPion2 != tracks.end(); ++trackPion2) {
 
@@ -2829,7 +2829,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
                 auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                 switch (iDecay3P) {
-                  case hf_cand_casc_3prong::DecayType::XicPlusToXiPiPi:
+                  case hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi:
                     registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                     break;
                 }
@@ -2864,10 +2864,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
           for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
             auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
             switch (iDecay2P) {
-              case hf_cand_casc_2prong::DecayType::XicZeroToXiPi:
+              case hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi:
                 registry.fill(HIST("hMassXicZeroToXiPi"), mass2Prong);
                 break;
-              case hf_cand_casc_2prong::DecayType::OmegacZeroToOmegaPi:
+              case hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi:
                 registry.fill(HIST("hMassOmegacZeroToXiPi"), mass2Prong);
                 break;
             }
