@@ -131,9 +131,9 @@ struct CheckFilterBit {
               histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
             if (track.trackCutFlagFb2())
               histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
-	    if (track.trackCutFlagFb3())
+            if (track.trackCutFlagFb3())
               histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
-	    if (track.trackCutFlagFb4())
+            if (track.trackCutFlagFb4())
               histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
           } else if (prodRadius2 > 1. && prodRadius2 < 15. && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
             if (track.isGlobalTrack())
@@ -142,9 +142,9 @@ struct CheckFilterBit {
               histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
             if (track.trackCutFlagFb2())
               histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
-	    if (track.trackCutFlagFb3())
-	      histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
-	    if (track.trackCutFlagFb4())
+            if (track.trackCutFlagFb3())
+              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+            if (track.trackCutFlagFb4())
               histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
           }
           if (prodRadius2 > 1.e-4 && prodRadius2 < 0.5 && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
@@ -154,9 +154,9 @@ struct CheckFilterBit {
               histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
             if (track.trackCutFlagFb2())
               histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
-	    if (track.trackCutFlagFb3())
-	      histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
-	    if (track.trackCutFlagFb4())
+            if (track.trackCutFlagFb3())
+              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+            if (track.trackCutFlagFb4())
               histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
           }
         }
