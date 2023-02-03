@@ -36,6 +36,9 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -136,6 +139,9 @@ struct CFFilter {
   Produces<aod::CFFilters> tags3N;
   Produces<aod::CFFiltersTwoN> tags2N;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
   // Configs for events
   Configurable<bool> ConfIsRun3{
     "ConfIsRun3",
@@ -159,6 +165,66 @@ struct CFFilter {
     "Rejection autocorrelation pL pairs"};
 
   // Configs for tracks
+  Configurable<bool> ConfUseManualPIDproton{
+    "ConfUseManualPIDproton",
+    false,
+    "True: use home-made PID solution for proton "};
+  Configurable<std::string> ConfPIDBBProton{
+    "ConfPIDBBProton",
+    "Users/l/lserksny/PIDProton",
+    "Path to the CCDB ocject for proton BB param"};
+  Configurable<std::string> ConfPIDBBAntiProton{
+    "ConfPIDBBAntiProton",
+    "Users/l/lserksny/PIDAntiProton",
+    "Path to the CCDB ocject for antiproton BB param"};
+
+  Configurable<bool> ConfUseManualPIDdeuteron{
+    "ConfUseManualPIDdeuteron",
+    false,
+    "True: use home-made PID solution for deuteron "};
+  Configurable<std::string> ConfPIDBBDeuteron{
+    "ConfPIDBBDeuteron",
+    "Users/l/lserksny/PIDDeuteron",
+    "Path to the CCDB ocject for Deuteron BB param"};
+  Configurable<std::string> ConfPIDBBAntiDeuteron{
+    "ConfPIDBBAntiDeuteron",
+    "Users/l/lserksny/PIDAntiDeuteron",
+    "Path to the CCDB ocject for antiDeuteron BB param"};
+
+  Configurable<bool> ConfUseManualPIDpion{
+    "ConfUseManualPIDpion",
+    false,
+    "True: use home-made PID solution for pions"};
+  Configurable<std::string> ConfPIDBBPion{
+    "ConfPIDBBPion",
+    "Users/l/lserksny/PIDPion",
+    "Path to the CCDB ocject for Pion BB param"};
+  Configurable<std::string> ConfPIDBBAntiPion{
+    "ConfPIDBBAntiPion",
+    "Users/l/lserksny/PIDAntiPion",
+    "Path to the CCDB ocject for antiPion BB param"};
+
+  Configurable<bool> ConfUseManualPIDel{
+    "ConfUseManualPIDel",
+    false,
+    "True: use home-made PID solution for electron"};
+  Configurable<std::string> ConfPIDBBElectron{
+    "ConfPIDBBElectron",
+    "Users/l/lserksny/PIDElectron",
+    "Path to the CCDB ocject for Electron BB param"};
+  Configurable<std::string> ConfPIDBBAntiElectron{
+    "ConfPIDBBAntiElectron",
+    "Users/l/lserksny/PIDAntiElectron",
+    "Path to the CCDB ocject for antiElectron BB param"};
+
+  Configurable<bool> ConfUseManualPIDdaughterPion{
+    "ConfUseManualPIDdaughterPion",
+    false,
+    "True: use home-made PID solution for pion from V0"};
+  Configurable<bool> ConfUseManualPIDdaughterProton{
+    "ConfUseManualPIDdaughterProton",
+    false,
+    "True: use home-made PID solution for proton from V0"};
   Configurable<bool> ConfRejectNotPropagatedTracks{
     "ConfRejectNotPropagatedTracks",
     false,
@@ -229,6 +295,17 @@ struct CFFilter {
     false,
     "True: require ITS refit"};
   // PID selections
+  Configurable<float>
+    ConfTPCAvg{
+      "ConfTPCAvg",
+      0.0f,
+      "TPC center value, which is substracted in calculation of combined TPC and TOF nSigma"};
+  Configurable<float>
+    ConfTOFAvg{
+      "ConfTOFAvg",
+      0.0f,
+      "TOF center value, which is substracted in calculation of combined TPC and TOF nSigma"};
+
   Configurable<LabeledArray<float>> ConfPIDCuts{
     "ConfPIDCuts",
     {CFTrigger::pidcutsTable[0], CFTrigger::kNParticleSpecies, CFTrigger::kNPIDLimits, CFTrigger::nSpeciesName, CFTrigger::nPidCutsName},
@@ -332,9 +409,16 @@ struct CFFilter {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   // HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int mRunNumber;
+  std::vector<double> BBProton, BBAntiproton, BBDeuteron, BBAntideuteron, BBPion, BBAntipion, BBElectron, BBAntielectron;
   void init(o2::framework::InitContext&)
   {
+
+    // init the ccdb
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
     // global histograms
     registry.add("fProcessedEvents", "CF - event filtered;;events", HistType::kTH1F, {{8, -0.5, 7.5}});
     std::vector<std::string> eventTitles = {"all", "rejected", "ppp", "ppL", "pLL", "LLL", "pD", "LD"};
@@ -363,6 +447,18 @@ struct CFFilter {
     registry.add("TrackCuts/fNsigmaTPCvsPDeuteronBefore", "NSigmaTPC Deuteron Before", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/fNsigmaTPCvsPAntiDeuteronBefore", "NSigmaTPC AntiDeuteron Before", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
 
+    // TPC signal
+    registry.add("TrackCuts/fTPCSignal", "TPCSignal", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+    registry.add("TrackCuts/fTPCSignalALLCUTS", "TPCSignalALLCUTS", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -1000.f, 1000.f}}});
+    // TPC signal anti
+    registry.add("TrackCuts/fTPCSignalAnti", "TPCSignal", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+    registry.add("TrackCuts/fTPCSignalAntiALLCUTS", "TPCSignalALLCUTS", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+
+    registry.add("TrackCuts/fTPCSignalProton", "fTPCSignalProton", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+    registry.add("TrackCuts/fTPCSignalAntiProton", "fTPCSignalAntiProton", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+    registry.add("TrackCuts/fTPCSignalDeuteron", "fTPCSignalDeuteron", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+    registry.add("TrackCuts/fTPCSignalAntiDeuteron", "fTPCSignalAntiDeuteron", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {20000, -100.f, 1000.f}}});
+
     // PID vs momentum before cuts daughters
     registry.add("TrackCuts/fNsigmaTPCvsPProtonV0DaughBefore", "NSigmaTPC Proton V0Daught Before", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/fNsigmaTPCvsPPionMinusV0DaughBefore", "NSigmaTPC AntiPion V0Daught Before", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -374,6 +470,7 @@ struct CFFilter {
     registry.add("TrackCuts/fPProton", "Momentum of protons at PV", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/fPTPCProton", "Momentum of protons at TPC inner wall", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/fNsigmaTPCvsPTPCProton", "NSigmaTPC Proton P TPC", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/fNsigmaTPCvsPTPCDeuteron", "NSigmaTPC Deuterons P TPC", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
 
     registry.add("TrackCuts/fPtProton", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/fEtaProton", "Pseudorapidity of all processed tracks", HistType::kTH1F, {{1000, -2, 2}});
@@ -454,6 +551,8 @@ struct CFFilter {
   float mMassProton = o2::constants::physics::MassProton;
   float mMassLambda = o2::constants::physics::MassLambda;
   float mMassDeuteron = o2::constants::physics::MassDeuteron;
+  int currentRunNumber = -999;
+  int lastRunNumber = -999;
 
   template <typename T>
   bool isSelectedEvent(T const& col)
@@ -534,13 +633,13 @@ struct CFFilter {
   }
 
   template <typename T>
-  bool isSelectedV0Daughter(T const& track, float charge, CFTrigger::V0Daughters species)
+  bool isSelectedV0Daughter(T const& track, float charge, CFTrigger::V0Daughters species, double nSigmaTPCDaug[2])
   {
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
     const auto dcaXY = track.dcaXY();
     const auto sign = track.sign();
-    float nSigmaTPC = -999.f;
+    double nSigmaTPC = -999.f;
 
     if (charge < 0 && sign > 0) {
       return false;
@@ -560,10 +659,10 @@ struct CFFilter {
 
     switch (species) {
       case CFTrigger::kDaughPion:
-        nSigmaTPC = track.tpcNSigmaPi();
+        nSigmaTPC = nSigmaTPCDaug[1];
         break;
       case CFTrigger::kDaughProton:
-        nSigmaTPC = track.tpcNSigmaPr();
+        nSigmaTPC = nSigmaTPCDaug[0];
         break;
       default:
         LOG(fatal) << "Particle species for V0 daughters not found";
@@ -577,16 +676,15 @@ struct CFFilter {
   }
 
   template <typename T>
-  bool isSelectedTrackPID(T const& track, CFTrigger::ParticleSpecies partSpecies, bool Rejection = false)
+  bool isSelectedTrackPID(T const& track, CFTrigger::ParticleSpecies partSpecies, bool Rejection, double nSigmaTPC[2])
   {
+    // nSigma should have entries [proton, deuteron]
     bool isSelected = false;
     bool pThres = true;
     float nSigma = -999.;
-    float TPCAvg = 0; //(ConfPIDCuts->get(partSpecies, CFTrigger::kTPCMax) + ConfPIDCuts->get(partSpecies, CFTrigger::kTPCMin)) / 2.;
-    float TOFAvg = 0; //(ConfPIDCuts->get(partSpecies, CFTrigger::kTOFMax) + ConfPIDCuts->get(partSpecies, CFTrigger::kTOFMin)) / 2.;
 
     // check momentum threshold
-    if (track.p() <= ConfPtCuts->get(partSpecies, "P thres")) {
+    if (track.tpcInnerParam() <= ConfPtCuts->get(partSpecies, "P thres")) {
       pThres = true;
     } else {
       pThres = false;
@@ -594,14 +692,14 @@ struct CFFilter {
     // compute nsigma
     switch (partSpecies) {
       case CFTrigger::kProton:
-        nSigma = (pThres) ? track.tpcNSigmaPr()
-                          : std::sqrt(std::pow(track.tpcNSigmaPr() - TPCAvg, 2) +
-                                      std::pow(track.tofNSigmaPr() - TOFAvg, 2));
+        nSigma = (pThres) ? nSigmaTPC[0]
+                          : std::sqrt(std::pow(nSigmaTPC[0] - ConfTPCAvg, 2) +
+                                      std::pow(track.tofNSigmaPr() - ConfTOFAvg, 2));
         break;
       case CFTrigger::kDeuteron:
-        nSigma = (pThres) ? track.tpcNSigmaDe()
-                          : std::sqrt(std::pow(track.tpcNSigmaDe() - TPCAvg, 2) +
-                                      std::pow(track.tofNSigmaDe() - TOFAvg, 2));
+        nSigma = (pThres) ? nSigmaTPC[1]
+                          : std::sqrt(std::pow(nSigmaTPC[1] - ConfTPCAvg, 2) +
+                                      std::pow(track.tofNSigmaDe() - ConfTOFAvg, 2));
         break;
       case CFTrigger::kLambda:
         LOG(fatal) << "No PID selection for Lambdas";
@@ -623,12 +721,20 @@ struct CFFilter {
     // for deuterons normally, we want to reject tracks that have a high
     // probablilty of being another particle
     if (Rejection) {
-      if ((ConfPIDRejection->get(CFTrigger::kRejProton, CFTrigger::kTPCMin) < track.tpcNSigmaPr() &&
-           ConfPIDRejection->get(CFTrigger::kRejProton, CFTrigger::kTPCMax) > track.tpcNSigmaPr()) ||
-          (ConfPIDRejection->get(CFTrigger::kRejPion, CFTrigger::kTPCMin) < track.tpcNSigmaPi() &&
-           ConfPIDRejection->get(CFTrigger::kRejPion, CFTrigger::kTPCMax) > track.tpcNSigmaPi()) ||
-          (ConfPIDRejection->get(CFTrigger::kRejElectron, CFTrigger::kTPCMin) < track.tpcNSigmaEl() &&
-           ConfPIDRejection->get(CFTrigger::kRejElectron, CFTrigger::kTPCMax) > track.tpcNSigmaEl())) {
+      double nSigmaPi{track.tpcNSigmaPi()};
+      double nSigmaEl{track.tpcNSigmaEl()};
+      if (ConfUseManualPIDpion) {
+        // TO BE IMPLEMENTED
+      }
+      if (ConfUseManualPIDel) {
+        // TO BE IMPLEMENTED
+      }
+      if ((ConfPIDRejection->get(CFTrigger::kRejProton, CFTrigger::kTPCMin) < nSigmaTPC[0] &&
+           ConfPIDRejection->get(CFTrigger::kRejProton, CFTrigger::kTPCMax) > nSigmaTPC[0]) ||
+          (ConfPIDRejection->get(CFTrigger::kRejPion, CFTrigger::kTPCMin) < nSigmaPi &&
+           ConfPIDRejection->get(CFTrigger::kRejPion, CFTrigger::kTPCMax) > nSigmaPi) ||
+          (ConfPIDRejection->get(CFTrigger::kRejElectron, CFTrigger::kTPCMin) < nSigmaEl &&
+           ConfPIDRejection->get(CFTrigger::kRejElectron, CFTrigger::kTPCMax) > nSigmaEl)) {
         return false;
       }
     }
@@ -637,7 +743,7 @@ struct CFFilter {
 
   template <typename C, typename V, typename T>
   bool isSelectedMinimalV0(C const& col, V const& v0, T const& posTrack,
-                           T const& negTrack, float charge)
+                           T const& negTrack, float charge, double nSigmaTPCPos[2], double nSigmaTPCNeg[2])
   {
     const auto signPos = posTrack.sign();
     const auto signNeg = negTrack.sign();
@@ -685,18 +791,18 @@ struct CFFilter {
       }
     }
     if (charge > 0) {
-      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughProton)) {
+      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughProton, nSigmaTPCPos)) {
         return false;
       }
-      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughPion)) {
+      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughPion, nSigmaTPCNeg)) {
         return false;
       }
     }
     if (charge < 0) {
-      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughPion)) {
+      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughPion, nSigmaTPCPos)) {
         return false;
       }
-      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughProton)) {
+      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughProton, nSigmaTPCNeg)) {
         return false;
       }
     }
@@ -744,11 +850,62 @@ struct CFFilter {
     return sqrt(-Q32);
   }
 
+  std::vector<double> setValuesBB(aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
+  {
+    map<string, string> metadata;
+    auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());
+    // auto h = ccdb->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()); //check if possible to use this without getting fatal
+    if (!h) {
+      std::vector<double> dummy;
+      LOG(info) << "File from CCDB in path " << ccdbPath << " was not found for run " << bunchCrossing.runNumber() << ". Will use default PID task values!";
+      return dummy;
+    }
+    TAxis* axis = h->GetXaxis();
+    std::vector<double> v{static_cast<double>(h->GetBinContent(axis->FindBin("bb1"))),
+                          static_cast<double>(h->GetBinContent(axis->FindBin("bb2"))),
+                          static_cast<double>(h->GetBinContent(axis->FindBin("bb3"))),
+                          static_cast<double>(h->GetBinContent(axis->FindBin("bb4"))),
+                          static_cast<double>(h->GetBinContent(axis->FindBin("bb5"))),
+                          static_cast<double>(h->GetBinContent(axis->FindBin("Resolution")))};
+    return v;
+  }
+
+  template <typename T>
+  double updatePID(T const& track, double bgScaling, std::vector<double> BB)
+  {
+    double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), BB[0], BB[1], BB[2], BB[3], BB[4]);
+    double expSigma = expBethe * BB[5];
+    return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+  }
+
   void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
   {
 
     if (!ConfIsRun3) {
       LOG(fatal) << "Run 2 processing is not implemented!";
+    }
+    if (ConfUseManualPIDproton || ConfUseManualPIDdeuteron) {
+      currentRunNumber = col.bc_as<aod::BCsWithTimestamps>().runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        auto bc = col.bc_as<aod::BCsWithTimestamps>();
+        if (ConfUseManualPIDproton) {
+          BBProton = setValuesBB(bc, ConfPIDBBProton);
+          BBAntiproton = setValuesBB(bc, ConfPIDBBAntiProton);
+        }
+        if (ConfUseManualPIDdeuteron) {
+          BBDeuteron = setValuesBB(bc, ConfPIDBBDeuteron);
+          BBAntideuteron = setValuesBB(bc, ConfPIDBBAntiDeuteron);
+        }
+        if (ConfUseManualPIDpion) {
+          BBPion = setValuesBB(bc, ConfPIDBBPion);
+          BBAntipion = setValuesBB(bc, ConfPIDBBAntiPion);
+        }
+        if (ConfUseManualPIDpion) {
+          BBElectron = setValuesBB(bc, ConfPIDBBElectron);
+          BBAntielectron = setValuesBB(bc, ConfPIDBBAntiElectron);
+        }
+        lastRunNumber = currentRunNumber;
+      }
     }
 
     registry.fill(HIST("fProcessedEvents"), 0);
@@ -776,68 +933,98 @@ struct CFFilter {
       // create deuteron and proton vectors (and corresponding antiparticles) for pair and triplet creation
       for (auto& track : tracks) {
 
+        double nTPCSigmaP[2]{track.tpcNSigmaPr(), track.tpcNSigmaDe()};
+        double nTPCSigmaN[2]{track.tpcNSigmaPr(), track.tpcNSigmaDe()};
+
+        if (ConfUseManualPIDproton) {
+          auto bgScalingProton = 1 / mMassProton; // momentum scaling?
+          if (BBProton.size() == 6)
+            nTPCSigmaP[0] = updatePID(track, bgScalingProton, BBProton);
+          if (BBAntiproton.size() == 6)
+            nTPCSigmaN[0] = updatePID(track, bgScalingProton, BBAntiproton);
+        }
+        if (ConfUseManualPIDdeuteron) {
+          auto bgScalingDeuteron = 1 / mMassDeuteron; // momentum scaling?
+          if (BBDeuteron.size() == 6)
+            nTPCSigmaP[1] = updatePID(track, bgScalingDeuteron, BBDeuteron);
+          if (BBAntideuteron.size() == 6)
+            nTPCSigmaN[1] = updatePID(track, bgScalingDeuteron, BBAntideuteron);
+        }
+
         registry.fill(HIST("TrackCuts/fPtTrackBefore"), track.pt());
         registry.fill(HIST("TrackCuts/fEtaTrackBefore"), track.eta());
         registry.fill(HIST("TrackCuts/fPhiTrackBefore"), track.phi());
 
         if (track.sign() > 0) {
           // Fill PID info
-          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPProtonBefore"), track.p(), track.tpcNSigmaPr());
-          registry.fill(HIST("TrackCuts/fNsigmaTOFvsPProtonBefore"), track.p(), track.tofNSigmaPr());
-          registry.fill(HIST("TrackCuts/fNsigmaTPCTOFvsPProtonBefore"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2)));
-          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPDeuteronBefore"), track.p(), track.tpcNSigmaDe());
+          registry.fill(HIST("TrackCuts/fTPCSignal"), track.tpcInnerParam(), track.tpcSignal());
+          if (isSelectedTrack(track, CFTrigger::kProton)) {
+            registry.fill(HIST("TrackCuts/fTPCSignalALLCUTS"), track.tpcInnerParam(), track.tpcSignal());
+          }
+          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPProtonBefore"), track.tpcInnerParam(), nTPCSigmaP[0]);
+          registry.fill(HIST("TrackCuts/fNsigmaTOFvsPProtonBefore"), track.tpcInnerParam(), track.tofNSigmaPr());
+          registry.fill(HIST("TrackCuts/fNsigmaTPCTOFvsPProtonBefore"), track.tpcInnerParam(), std::sqrt(std::pow(nTPCSigmaP[0] - ConfTPCAvg, 2) + std::pow(track.tofNSigmaPr() - ConfTOFAvg, 2)));
+          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPDeuteronBefore"), track.tpcInnerParam(), nTPCSigmaP[1]);
         }
         if (track.sign() < 0) {
-          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiProtonBefore"), track.p(), track.tpcNSigmaPr());
-          registry.fill(HIST("TrackCuts/fNsigmaTOFvsPAntiProtonBefore"), track.p(), track.tofNSigmaPr());
-          registry.fill(HIST("TrackCuts/fNsigmaTOFvsPAntiProtonBefore"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2)));
-          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiDeuteronBefore"), track.p(), track.tpcNSigmaDe());
+
+          registry.fill(HIST("TrackCuts/fTPCSignalAnti"), track.tpcInnerParam(), track.tpcSignal());
+          if (isSelectedTrack(track, CFTrigger::kProton)) {
+            registry.fill(HIST("TrackCuts/fTPCSignalAntiALLCUTS"), track.tpcInnerParam(), track.tpcSignal());
+          }
+
+          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiProtonBefore"), track.tpcInnerParam(), nTPCSigmaN[0]);
+          registry.fill(HIST("TrackCuts/fNsigmaTOFvsPAntiProtonBefore"), track.tpcInnerParam(), track.tofNSigmaPr());
+          registry.fill(HIST("TrackCuts/fNsigmaTOFvsPAntiProtonBefore"), track.tpcInnerParam(), std::sqrt(std::pow(nTPCSigmaN[0] - ConfTPCAvg, 2) + std::pow(track.tofNSigmaPr() - ConfTOFAvg, 2)));
+          registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiDeuteronBefore"), track.tpcInnerParam(), nTPCSigmaN[1]);
         }
 
         // get protons
-        if (isSelectedTrack(track, CFTrigger::kProton) && isSelectedTrackPID(track, CFTrigger::kProton, false)) {
+        if (isSelectedTrack(track, CFTrigger::kProton)) {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassProton);
-          if (track.sign() > 0) {
+          if (track.sign() > 0 && isSelectedTrackPID(track, CFTrigger::kProton, false, nTPCSigmaP)) {
             protons.push_back(temp);
             ProtonIndex.push_back(track.globalIndex());
+            registry.fill(HIST("TrackCuts/fTPCSignalProton"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/fPProton"), track.p());
             registry.fill(HIST("TrackCuts/fPTPCProton"), track.tpcInnerParam());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPTPCProton"), track.tpcInnerParam(), track.tpcNSigmaPr());
-
             registry.fill(HIST("TrackCuts/fPtProton"), track.pt());
             registry.fill(HIST("TrackCuts/fEtaProton"), track.eta());
             registry.fill(HIST("TrackCuts/fPhiProton"), track.phi());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPProton"), track.p(), track.tpcNSigmaPr());
-            registry.fill(HIST("TrackCuts/fNsigmaTOFvsPProton"), track.p(), track.tofNSigmaPr());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCTOFvsPProton"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2)));
+            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPProton"), track.tpcInnerParam(), nTPCSigmaP[0]);
+            registry.fill(HIST("TrackCuts/fNsigmaTOFvsPProton"), track.tpcInnerParam(), track.tofNSigmaPr());
+            registry.fill(HIST("TrackCuts/fNsigmaTPCTOFvsPProton"), track.tpcInnerParam(), std::sqrt(std::pow(nTPCSigmaP[0] - ConfTPCAvg, 2) + std::pow(track.tofNSigmaPr() - ConfTOFAvg, 2)));
           }
-          if (track.sign() < 0) {
+          if (track.sign() < 0 && isSelectedTrackPID(track, CFTrigger::kProton, false, nTPCSigmaN)) {
             antiprotons.push_back(temp);
             AntiProtonIndex.push_back(track.globalIndex());
+            registry.fill(HIST("TrackCuts/fTPCSignalAntiProton"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/fPtAntiProton"), track.pt());
             registry.fill(HIST("TrackCuts/fEtaAntiProton"), track.eta());
             registry.fill(HIST("TrackCuts/fPhiAntiProton"), track.phi());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiProton"), track.p(), track.tpcNSigmaPr());
-            registry.fill(HIST("TrackCuts/fNsigmaTOFvsPAntiProton"), track.p(), track.tofNSigmaPr());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCTOFvsPAntiProton"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2)));
+            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiProton"), track.tpcInnerParam(), nTPCSigmaN[0]);
+            registry.fill(HIST("TrackCuts/fNsigmaTOFvsPAntiProton"), track.tpcInnerParam(), track.tofNSigmaPr());
+            registry.fill(HIST("TrackCuts/fNsigmaTPCTOFvsPAntiProton"), track.tpcInnerParam(), std::sqrt(std::pow(nTPCSigmaN[0] - ConfTPCAvg, 2) + std::pow(track.tofNSigmaPr() - ConfTOFAvg, 2)));
           }
         }
         // get deuterons
-        if (isSelectedTrack(track, CFTrigger::kDeuteron) && isSelectedTrackPID(track, CFTrigger::kDeuteron, ConfRejectNOTDeuteron.value)) {
+        if (isSelectedTrack(track, CFTrigger::kDeuteron)) {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassDeuteron);
-          if (track.sign() > 0) {
+          if (track.sign() > 0 && isSelectedTrackPID(track, CFTrigger::kDeuteron, ConfRejectNOTDeuteron.value, nTPCSigmaP)) {
             deuterons.push_back(temp);
+            registry.fill(HIST("TrackCuts/fTPCSignalDeuteron"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/fPtDeuteron"), track.pt());
             registry.fill(HIST("TrackCuts/fEtaDeuteron"), track.eta());
             registry.fill(HIST("TrackCuts/fPhiDeuteron"), track.phi());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPDeuteron"), track.p(), track.tpcNSigmaDe());
+            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPDeuteron"), track.tpcInnerParam(), nTPCSigmaP[1]);
           }
-          if (track.sign() < 0) {
+          if (track.sign() < 0 && isSelectedTrackPID(track, CFTrigger::kDeuteron, ConfRejectNOTDeuteron.value, nTPCSigmaN)) {
             antideuterons.push_back(temp);
+            registry.fill(HIST("TrackCuts/fTPCSignalAntiDeuteron"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/fPtAntiDeuteron"), track.pt());
             registry.fill(HIST("TrackCuts/fEtaAntiDeuteron"), track.eta());
             registry.fill(HIST("TrackCuts/fPhiAntiDeuteron"), track.phi());
-            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiDeuteron"), track.p(), track.tpcNSigmaDe());
+            registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiDeuteron"), track.tpcInnerParam(), nTPCSigmaN[1]);
           }
         }
       }
@@ -855,14 +1042,22 @@ struct CFFilter {
 
         auto postrack = v0.template posTrack_as<aod::FemtoFullTracks>();
         auto negtrack = v0.template negTrack_as<aod::FemtoFullTracks>();
+        double nTPCSigmaPos[2]{postrack.tpcNSigmaPr(), postrack.tpcNSigmaPi()};
+        double nTPCSigmaNeg[2]{negtrack.tpcNSigmaPr(), negtrack.tpcNSigmaPi()};
+        if (ConfUseManualPIDdaughterPion) {
+          // TO BE IMPLEMENTED
+        }
+        if (ConfUseManualPIDdaughterProton) {
+          // TO BE IMPLEMENTED
+        }
 
-        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPProtonV0DaughBefore"), postrack.p(), postrack.tpcNSigmaPr());
-        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPPionPlusAntiV0DaughBefore"), postrack.p(), postrack.tpcNSigmaPi());
+        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPProtonV0DaughBefore"), postrack.tpcInnerParam(), nTPCSigmaPos[0]);
+        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPPionPlusAntiV0DaughBefore"), postrack.tpcInnerParam(), nTPCSigmaNeg[1]);
 
-        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPPionMinusV0DaughBefore"), negtrack.p(), negtrack.tpcNSigmaPi());
-        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiProtonAntiV0DaughBefore"), negtrack.p(), negtrack.tpcNSigmaPr());
+        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPPionMinusV0DaughBefore"), negtrack.tpcInnerParam(), nTPCSigmaNeg[1]);
+        registry.fill(HIST("TrackCuts/fNsigmaTPCvsPAntiProtonAntiV0DaughBefore"), negtrack.tpcInnerParam(), nTPCSigmaNeg[0]);
 
-        if (isSelectedMinimalV0(col, v0, postrack, negtrack, 1)) {
+        if (isSelectedMinimalV0(col, v0, postrack, negtrack, 1, nTPCSigmaPos, nTPCSigmaNeg)) {
           ROOT::Math::PtEtaPhiMVector temp(v0.pt(), v0.eta(), v0.phi(), mMassLambda);
           lambdas.push_back(temp);
           LambdaPosDaughIndex.push_back(postrack.globalIndex());
@@ -870,7 +1065,7 @@ struct CFFilter {
           registry.fill(HIST("TrackCuts/fPtLambda"), v0.pt());
           registry.fill(HIST("TrackCuts/fInvMassLambda"), v0.mLambda());
         }
-        if (isSelectedMinimalV0(col, v0, postrack, negtrack, -1)) {
+        if (isSelectedMinimalV0(col, v0, postrack, negtrack, -1, nTPCSigmaPos, nTPCSigmaNeg)) {
           ROOT::Math::PtEtaPhiMVector temp(v0.pt(), v0.eta(), v0.phi(), mMassLambda);
           antilambdas.push_back(temp);
           AntiLambdaPosDaughIndex.push_back(postrack.globalIndex());
@@ -1162,12 +1357,6 @@ struct CFFilter {
         !keepEvent2N[CFTrigger::kPD] && !keepEvent2N[CFTrigger::kLD]) {
       registry.fill(HIST("fProcessedEvents"), 1);
     }
-    //     for (int i = 0; i < CFTrigger::kNThreeBodyTriggers; i++) {
-    //       if (keepEvent3N[i]) {
-    //         registry.fill(HIST("fProcessedEvents"), i + 2);
-    //       }
-    //     }
-    //   }
   }
 };
 
