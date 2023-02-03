@@ -49,13 +49,13 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
 namespace hf_track_association
 {
 
-enum TrackType { Regular = 0,
+enum TrackTypes { Regular = 0,
                   Ambiguous,
                   PVContributor };
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
-DECLARE_SOA_COLUMN(TrackType, trackType, int);  //! Track type
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);           //! Track index
+DECLARE_SOA_COLUMN(TrackType, trackType, int8_t); //! Track type
 } // namespace hf_track_association
 
 DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions

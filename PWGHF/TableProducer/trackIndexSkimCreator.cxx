@@ -386,9 +386,10 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
   }
 
-  /// Single-track cuts for 2-prongs or 3-prongs
+  /// Single-track cuts for 2-prongs, 3-prongs, or cascades
   /// \param trackPt is the track pt
   /// \param dca is a 2-element array with dca in transverse and longitudinal directions
+  /// \param candType is the flag to decide which cuts to be applied (either for 2-prong, 3-prong, or cascade decays)
   /// \return true if track passes all cuts
   bool isSelectedTrackDCA(const float& trackPt, const array<float, 2>& dca, const int candType)
   {
@@ -1061,20 +1062,6 @@ struct HfTrackIndexSkimCreator {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
-  }
-
-  /// Method to compute px, py, pz from the track parameters
-  /// \param trackPars are the track parameters
-  /// \param pVec is the momentum array to be filled
-  template <typename T, typename U>
-  void getPxPyPz(T const& trackPars, U& pVec)
-  {
-    auto pt = 1.f / std::abs(trackPars.getQ2Pt());
-    float cs = cosf(trackPars.getAlpha()), sn = sinf(trackPars.getAlpha());
-    auto r = std::sqrt((1.f - trackPars.getSnp()) * (1.f + trackPars.getSnp()));
-    pVec[0] = pt * (r * cs - trackPars.getSnp() * sn);
-    pVec[1] = pt * (trackPars.getSnp() * cs + r * sn);
-    pVec[2] = pt * trackPars.getTgl();
   }
 
   /// Method to perform selections for 2-prong candidates before vertex reconstruction

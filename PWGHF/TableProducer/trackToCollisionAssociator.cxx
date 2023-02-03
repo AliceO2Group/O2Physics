@@ -74,11 +74,11 @@ struct HfTrackToCollisionAssociation {
         const int64_t bcOffset = (int64_t)track.collision().bc().globalBC() - (int64_t)collBC;
         float trackTime{0.};
         float trackTimeRes{0.};
-        int trackType = hf_track_association::eTrackType::Ambiguous;
+        int trackType = hf_track_association::TrackTypes::Ambiguous;
         if (track.isPVContributor()) {
           trackTime = track.collision().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
           trackTimeRes = 25.f;                           // 1 BC
-          trackType = hf_track_association::eTrackType::PVContributor;
+          trackType = hf_track_association::TrackTypes::PVContributor;
         } else {
           trackTime = track.trackTime();
           trackTimeRes = track.trackTimeRes();
@@ -139,7 +139,7 @@ struct HfTrackToCollisionAssociation {
       const auto collId = track.collisionId();
       collIds.push_back(collId);
       trackIds.push_back(trackId);
-      trackTypes.push_back(hf_track_association::eTrackType::Regular);
+      trackTypes.push_back(hf_track_association::TrackTypes::Regular);
     }
 
     // associate collisions with ambiguous tracks as in the AO2Ds
@@ -160,7 +160,7 @@ struct HfTrackToCollisionAssociation {
             const uint64_t trackId = track.globalIndex();
             collIds.push_back(collId);
             trackIds.push_back(trackId);
-            trackTypes.push_back(hf_track_association::eTrackType::Ambiguous);
+            trackTypes.push_back(hf_track_association::TrackTypes::Ambiguous);
           }
         }
       }
@@ -190,7 +190,7 @@ struct HfTrackToCollisionAssociation {
                 const uint64_t trackId = pvContr.globalIndex();
                 collIds.push_back(repCollId2);
                 trackIds.push_back(trackId);
-                trackTypes.push_back(hf_track_association::eTrackType::PVContributor);
+                trackTypes.push_back(hf_track_association::TrackTypes::PVContributor);
               }
             }
           }
