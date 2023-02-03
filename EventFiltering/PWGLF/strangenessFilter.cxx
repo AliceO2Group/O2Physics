@@ -188,12 +188,15 @@ struct strangenessFilter {
     if (doextraQA) {
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
       EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of events with hight pT hadron", HistType::kTH1F, {multAxisV0A});
+      EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqV0AvsPt", "ZeqV0A distribution of events with hight pT hadron", HistType::kTH2F, {{multAxisV0A}, {11, 0, 11}});
 
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqT0M", "ZeqT0M distribution of all events", HistType::kTH1F, {multAxisT0M});
       EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqT0M", "ZeqT0M distribution of events with hight pT hadron", HistType::kTH1F, {multAxisT0M});
+      EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqT0MvsPt", "ZeqT0M distribution of events with hight pT hadron", HistType::kTH2F, {{multAxisT0M}, {11, 0, 11}});
 
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqNTracksPV", "ZeqNTracksPV distribution of all events", HistType::kTH1F, {multAxisNTPV});
       EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqNTracksPV", "ZeqNTracksPV distribution of events with hight pT hadron", HistType::kTH1F, {multAxisNTPV});
+      EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqNTracksPVvsPt", "ZeqNTracksPV distribution of events with hight pT hadron", HistType::kTH2F, {{multAxisNTPV}, {11, 0, 11}});
 
       // additional QA histos
       QAHistos.add("hTPCNsigmaXiBachPiPlus", "nsigma TPC distribution bachelor pion+", HistType::kTH2F, {{80, -10, 10}, {pTPCAxis}});
@@ -764,9 +767,11 @@ struct strangenessFilter {
     }
 
     bool EvtwhMinPt[11];
+    bool EvtwhMinPtXi[11];
     float ThrdPt[11];
     for (int i = 0; i < 11; i++) {
       EvtwhMinPt[i] = 0.;
+      EvtwhMinPtXi[i] = 0.;
       ThrdPt[i] = (float)i;
     }
 
@@ -781,7 +786,18 @@ struct strangenessFilter {
       QAHistosTriggerParticles.fill(HIST("hEtaTriggerAllEv"), track.eta(), track.pt());
       QAHistosTriggerParticles.fill(HIST("hDCAxyTriggerAllEv"), track.dcaXY(), track.pt());
       QAHistosTriggerParticles.fill(HIST("hDCAzTriggerAllEv"), track.dcaZ(), track.pt());
+      for (int i = 0; i < 11; i++) {
+        if (track.pt() > ThrdPt[i])
+          EvtwhMinPt[i] = 1;
+      }
     } // end loop over tracks
+    for (int i = 0; i < 11; i++) {
+      if (EvtwhMinPt[i]) {
+        EventsvsMultiplicity.fill(HIST("hadEventsvsMultiplicityZeqV0AvsPt"), collision.multZeqFV0A(), i + 0.5);
+        EventsvsMultiplicity.fill(HIST("hadEventsvsMultiplicityZeqT0MvsPt"), collision.multZeqFT0A() + collision.multZeqFT0C(), i + 0.5);
+        EventsvsMultiplicity.fill(HIST("hadEventsvsMultiplicityZeqNTracksPVvsPt"), collision.multZeqNTracksPV(), i + 0.5);
+      }
+    }
     if (triggcounterAllEv > 0) {
       hProcessedEvents->Fill(1.5);
       if (doextraQA) {
@@ -802,7 +818,7 @@ struct strangenessFilter {
         QAHistosTriggerParticles.fill(HIST("hPtTriggerSelEv"), track.pt());
         for (int i = 0; i < 11; i++) {
           if (track.pt() > ThrdPt[i])
-            EvtwhMinPt[i] = 1;
+            EvtwhMinPtXi[i] = 1;
         }
         keepEvent[1] = true;
       } // end loop over tracks
@@ -810,7 +826,7 @@ struct strangenessFilter {
     }
 
     for (int i = 0; i < 11; i++) {
-      if (EvtwhMinPt[i])
+      if (EvtwhMinPtXi[i])
         hEvtvshMinPt->Fill(i + 0.5);
     }
 
