@@ -820,6 +820,34 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_TPCPID1")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_TriggerTest1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_TPCPID2")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_TriggerTest2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_TPCPID3")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_TriggerTest3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2TriggerTestCuts_TPCPID4")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_TriggerTest4"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonLooseTriggerTestCuts")) {
     cut->AddCut(GetAnalysisCut("muonLooseTriggerTestCuts"));
     return cut;
@@ -828,6 +856,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("muonLooseTriggerTestCuts_LowPt")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonLooseTriggerTestCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonMatchingMFTMCHTriggerTestCuts")) {
+    cut->AddCut(GetAnalysisCut("muonMatchingMFTMCHTriggerTestCuts"));
     return cut;
   }
 
@@ -1577,6 +1610,38 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kMuonChi2, 0.0, 1e6);
     cut->AddCut(VarManager::kMuonChi2MatchMCHMID, 0.0, 1e6); // matching MCH-MID
     cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0.0, 1e6); // matching MFT-MCH
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_TriggerTest1")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 4.0, false, VarManager::kPin, 0, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2.0, 4.0, false, VarManager::kPin, 2.0, 9999.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 3.0, 999, false, VarManager::kPin, 0, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 3.0, 999, false, VarManager::kPin, 0, 2.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_TriggerTest2")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 4.0, false, VarManager::kPin, 0, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2.0, 4.0, false, VarManager::kPin, 2.0, 9999.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999, false, VarManager::kPin, 0, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999, false, VarManager::kPin, 0, 2.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_TriggerTest3")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 4.0, false, VarManager::kPin, 0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2.0, 4.0, false, VarManager::kPin, 3.0, 9999.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 3.0, 999, false, VarManager::kPin, 0, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 3.0, 999, false, VarManager::kPin, 0, 2.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_TriggerTest4")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3.0, 4.0, false, VarManager::kPin, 0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2.0, 4.0, false, VarManager::kPin, 3.0, 9999.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, 2.5, 999, false, VarManager::kPin, 0, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr_Corr, 2.5, 999, false, VarManager::kPin, 0, 2.0);
     return cut;
   }
 
