@@ -2345,8 +2345,7 @@ struct HfTrackIndexSkimCreatorCascades {
   {
     // dummy
   }
-
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do v0", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not skim HF -> V0 cascades", true);
 
   void processCascades(SelectedCollisions const& collisions,
                        aod::BCsWithTimestamps const&,
@@ -2543,7 +2542,7 @@ struct HfTrackIndexSkimCreatorCascades {
       }   // loop over tracks
     }     // loop over collisions
   }       // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim also V0", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim HF -> V0 cascades", false);
 };
 
 struct HfTrackIndexSkimCreatorLfCascades {
@@ -2614,7 +2613,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   void init(InitContext const&)
   {
-    if (!doprocessCascades) {
+    if (!doprocessLfCascades) {
       return;
     }
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = array{array{massXi, massPi},
@@ -2738,14 +2737,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
     return false;
   }
 
-  void processNoCascades(SelectedCollisions const&)
+  void processNoLfCascades(SelectedCollisions const&)
   {
     // dummy
   }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoLfCascades, "Do not skim LF cascades", true);
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoCascades, "Do not do cascade", true);
-
-  void processCascades(SelectedCollisions const& collisions,
+  void processLfCascades(SelectedCollisions const& collisions,
                        aod::BCsWithTimestamps const&,
                        aod::V0sLinked const&,
                        V0Full const&,
@@ -2981,7 +2979,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       }   // loop over cascade
     }     // loop over collisions
   }       // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processCascades, "Skim also cascades", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processLfCascades, "Skim LF cascades", false);
 };
 
 //________________________________________________________________________________________________________________________
