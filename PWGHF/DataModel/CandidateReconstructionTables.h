@@ -49,7 +49,7 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
 namespace hf_track_association
 {
 
-enum eTrackType { Regular = 0,
+enum TrackType { Regular = 0,
                   Ambiguous,
                   PVContributor };
 
