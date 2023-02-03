@@ -69,9 +69,10 @@ struct DGFilterRun3 {
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  // using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+  //                       aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+  //                       aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
 
   // using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
