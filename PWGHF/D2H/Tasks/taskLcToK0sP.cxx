@@ -39,14 +39,14 @@ struct HfTaskLcToK0sP {
   HistogramRegistry registry{
     "registry",
     {// data
-     {"hMass", "cascade candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.0f, 5.0f}}}},
+     {"hMass", "cascade candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 1.5f, 3.0f}}}},
      {"hPtCand", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
      {"hPtBach", "cascade candidates;bachelor #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
      {"hPtV0", "cascade candidates;v0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
      {"hd0Bach", "cascade candidates;bachelor DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{100, -1.0f, 1.0f}}}},
-     {"hd0V0pos", "cascade candidates;pos daugh v0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
-     {"hd0V0neg", "cascade candidates;neg daugh v0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
-     {"hV0CPA", "cascade candidates;v0 cosine of pointing angle;entries", {HistType::kTH1F, {{110, -0.98f, 1.1f}}}},
+     {"hd0V0pos", "cascade candidates;pos daugh v0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"hd0V0neg", "cascade candidates;neg daugh v0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"hV0CPA", "cascade candidates;v0 cosine of pointing angle;entries", {HistType::kTH1F, {{100, 0.98f, 1.0001f}}}},
      {"hEta", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -2.0f, 2.0f}}}},
      {"hSelectionStatus", "cascade candidates;selection status;entries", {HistType::kTH1F, {{5, -0.5f, 4.5f}}}}}};
 
@@ -60,6 +60,8 @@ struct HfTaskLcToK0sP {
       registry.add("hPtGenSig", "cascade candidates (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
       registry.add("hCPARecSig", "cascade candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
       registry.add("hCPARecBg", "cascade candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+      registry.add("hV0CPARecSig", "cascade candidates (matched);v0 cosine of pointing angle;entries", {HistType::kTH1F, {{100, 0.98, 1.0001}}});
+      registry.add("hV0CPARecBg", "cascade candidates (unmatched);v0 cosine of pointing angle;entries", {HistType::kTH1F, {{100, 0.98, 1.0001}}});
       registry.add("hEtaRecSig", "cascade candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
       registry.add("hEtaRecBg", "cascade candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
       registry.add("hEtaGen", "MC particles (MC);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
@@ -112,10 +114,12 @@ struct HfTaskLcToK0sP {
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         registry.fill(HIST("hPtRecSig"), candidate.pt());      // rec. level pT
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
+        registry.fill(HIST("hV0CPARecSig"), candidate.v0cosPA());
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
+        registry.fill(HIST("hV0CPARecBg"), candidate.v0cosPA());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
     }
