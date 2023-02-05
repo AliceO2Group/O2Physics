@@ -64,7 +64,7 @@ DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                //!
 DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table
                   o2::soa::Index<>,
                   reducedevent::Tag, bc::RunNumber,
-                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
+                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, mult::MultNTracksPV,
                   collision::CollisionTime, collision::CollisionTimeRes);
 
 DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information

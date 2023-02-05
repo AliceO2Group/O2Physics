@@ -325,7 +325,12 @@ struct TableMaker {
     fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
 
     // create the event tables
-    event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
+      event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.multNTracksPV(), collision.collisionTime(), collision.collisionTimeRes());
+    }
+    else {
+      event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), -999, collision.collisionTime(), collision.collisionTimeRes());
+    }
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
       eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
@@ -722,10 +727,10 @@ struct TableMaker {
   }
 
   // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
-  void processBarrelOnlyWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+  void processBarrelOnlyWithCov(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only ----------------------------------------------------------------------------------------------------------------

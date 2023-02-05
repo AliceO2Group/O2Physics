@@ -355,7 +355,11 @@ struct TableMakerMC {
       }
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
 
-      event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
+        event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.multNTracksPV(), collision.collisionTime(), collision.collisionTimeRes());
+      } else {
+        event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), -999, collision.collisionTime(), collision.collisionTimeRes());
+      }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
         eventExtended(collision.bc().globalBC(), collision.bc().triggerMask(), 0, triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
@@ -903,11 +907,11 @@ struct TableMakerMC {
   }
 
   // Produce barrel only tables, with cov matrix-----------------------------------------------------------------------
-  void processBarrelOnlyWithCov(MyEvents const& collisions, aod::BCs const& bcs,
+  void processBarrelOnlyWithCov(MyEventsWithMults const& collisions, aod::BCs const& bcs,
                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel,
                                 aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithMults, gkTrackFillMapWithCov, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with cov matrix and dalitz bits-----------------------------------------------------------------------
