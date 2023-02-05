@@ -20,9 +20,21 @@ struct collisionConverter {
   Produces<aod::Collisions_001> Collisions_001;
 
   Configurable<bool> doNotSwap{"doNotSwap", false, "simple pass-through"};
+  Configurable<bool> debug{"debug", false, "flag to save debug histo"};
+  Configurable<int> nbins{"nbins", 1, "number of bins in debug histo"};
+  Configurable<float> tolerance{"tolerance", 1e-3, "Tolerance for CYY check"};
+
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext const&)
+  {
+    const AxisSpec axisCYYdebug{(int)nbins, -1.0f, +1.0f, ""};
+    histos.add("hCYY", "hCYY", kTH1F, {axisCYYdebug});
+  }
 
   void process(aod::Collisions_000 const& collisionTable)
   {
+    float negtolerance = -1.0f * tolerance;
     for (auto& collision : collisionTable) {
       float lYY = collision.covXZ();
       float lXZ = collision.covYY();
@@ -30,11 +42,13 @@ struct collisionConverter {
         lYY = collision.covYY();
         lXZ = collision.covXZ();
       };
-      if (lYY < -1e-6) {
+      if (debug)
+        histos.fill(HIST("hCYY"), lYY);
+      if (lYY < negtolerance) {
         // This happened by accident!
-        if (!doNotSwap) {
+        if (!doNotSwap && !debug) {
           LOGF(info, "Collision converter task found negative YY element!");
-          LOGF(info, "Value of C_YY = %.10f", lYY);
+          LOGF(info, "CYY = %.10f, exceeds tolerance of %.10f", lYY, negtolerance);
           LOGF(info, "This is an indication that you're looping over data");
           LOGF(info, "produced with an O2 version of late December 2022.");
           LOGF(info, "Unfortunately, O2 versions of late December 2022");
@@ -44,12 +58,15 @@ struct collisionConverter {
           LOGF(info, "with the configurable 'doNotSwap' set to true.");
           LOGF(info, "This program will now crash. Please adjust your settings!");
           LOGF(fatal, "FATAL: please set doNotSwap to true!");
-        };
-        LOGF(info, "Collision converter task found negative YY element!");
-        LOGF(info, "You're running with 'doNotSwap' enabled, but the ");
-        LOGF(info, "data your're analysing requires it to be disabled. ");
-        LOGF(info, "This program will now crash. Please adjust your settings!");
-        LOGF(fatal, "FATAL: please set doNotSwap to false!");
+        }
+        if (!debug) {
+          LOGF(info, "Collision converter task found negative YY element!");
+          LOGF(info, "CYY = %.10f, exceeds tolerance of %.10f", lYY, negtolerance);
+          LOGF(info, "You're running with 'doNotSwap' enabled, but the ");
+          LOGF(info, "data your're analysing requires it to be disabled. ");
+          LOGF(info, "This program will now crash. Please adjust your settings!");
+          LOGF(fatal, "FATAL: please set doNotSwap to false!");
+        }
       }
       // Repopulate new table
       Collisions_001(

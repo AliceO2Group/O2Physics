@@ -19,28 +19,30 @@
 #include <TH2I.h>
 #include <THashList.h>
 #include <TString.h>
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGDQ/Core/CutsLibrary.h"
 
 using std::cout;
 using std::endl;
+using std::string;
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,28 +79,17 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventCuts>;
 // TODO: subscribe to the bare needed minimum, in particular for the CEFP task
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyBarrelTracksTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                     aod::pidTPCKa, aod::pidTPCPr,
-                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
+                                 aod::pidTOFFullEl, aod::pidTOFFullPi,
+                                 aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                         aod::pidTPCFullEl, aod::pidTPCFullPi,
                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                         aod::pidTOFFullEl, aod::pidTOFFullPi,
+                                         aod::pidTOFFullKa, aod::pidTOFFullPr,
                                          aod::DQBarrelTrackCuts>;
-using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                             aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                             aod::pidTPCKa, aod::pidTPCPr,
-                                             aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta,
-                                             aod::DQBarrelTrackCuts>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::DQMuonsCuts>;
 
@@ -143,7 +134,8 @@ struct DQEventSelectionTask {
     }
   }
 
-  void processEventSelection(MyEvents::iterator const& collision, aod::BCs const& bcs)
+  template <uint32_t TEventFillMap, typename TEvent>
+  void runEventSelection(TEvent const& collision, aod::BCs const& bcs)
   {
     // Reset the Values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -162,6 +154,11 @@ struct DQEventSelectionTask {
     }
   }
 
+  void processEventSelection(MyEvents::iterator const& collision, aod::BCs const& bcs)
+  {
+    runEventSelection<gkEventFillMap>(collision, bcs);
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -176,12 +173,19 @@ struct DQBarrelTrackSelection {
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
 
-  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of ADDITIONAL barrel track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  // TODO: configure the histogram classes to be filled by QA
+  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
+
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   void init(o2::framework::InitContext&)
   {
@@ -214,29 +218,43 @@ struct DQBarrelTrackSelection {
       DefineHistograms(fHistMan, cutNames.Data());     // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
+
+      // CCDB configuration
+      if (fConfigComputeTPCpostCalib) {
+        fCCDB->setURL(fConfigCcdbUrl.value);
+        fCCDB->setCaching(true);
+        fCCDB->setLocalObjectValidityChecking();
+        // Not later than now objects
+        fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+      }
     }
   }
 
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runTrackSelection(TEvent const& collisions, aod::BCs const& bcs, TTracks const& tracksBarrel)
+  // Templated function instantianed for all of the process functions
+  template <uint32_t TTrackFillMap, typename TTracks>
+  void runTrackSelection(aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel)
   {
+    auto bc = bcs.begin(); // check just the first bc to get the run number
+    if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
+      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+      fCurrentRun = bc.runNumber();
+    }
+
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
-    int CollisionId = -1;
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-
     for (auto& track : tracksBarrel) {
       filterMap = uint32_t(0);
       if (!track.has_collision()) {
         trackSel(uint32_t(0));
       } else {
-        // fill event information which might be needed in histograms or cuts that combine track and event properties
-        if (track.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
-          CollisionId = track.collisionId();
-          auto collision = track.template collision_as<TEvent>();
-          VarManager::FillEvent<TEventFillMap>(collision);
-        }
         VarManager::FillTrack<TTrackFillMap>(track);
         if (fConfigQA) {
           fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -255,21 +273,16 @@ struct DQBarrelTrackSelection {
     } // end loop over tracks
   }
 
-  void processSelection(MyEvents const& collisions, aod::BCs const& bcs, MyBarrelTracks const& tracks)
+  void processSelection(aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks)
   {
-    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
+    runTrackSelection<gkTrackFillMap>(bcs, tracks);
   }
-  void processSelectionTiny(MyEvents const& collisions, aod::BCs const& bcs, MyBarrelTracksTiny const& tracks)
-  {
-    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
-  }
-  void processDummy(MyEvents&)
+  void processDummy(MyBarrelTracks&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(DQBarrelTrackSelection, processSelection, "Run barrel track selection", false);
-  PROCESS_SWITCH(DQBarrelTrackSelection, processSelectionTiny, "Run barrel track selection", false);
   PROCESS_SWITCH(DQBarrelTrackSelection, processDummy, "Dummy function", false);
 };
 
@@ -314,26 +327,20 @@ struct DQMuonsSelection {
     }
   }
 
-  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void runMuonSelection(TEvent const& collisions, aod::BCs const& bcs, TMuons const& muons)
+  template <uint32_t TMuonFillMap, typename TMuons>
+  void runMuonSelection(TMuons const& muons)
   {
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(muons.size());
-    int CollisionId = -1;
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
+    // fill event information which might be needed in histograms or cuts that combine track and event properties
 
     for (auto& muon : muons) {
       filterMap = uint32_t(0);
       if (!muon.has_collision()) {
         trackSel(uint32_t(0));
       } else {
-        // fill event information which might be needed in histograms or cuts that combine track and event properties
-        if (muon.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
-          CollisionId = muon.collisionId();
-          auto collision = muon.template collision_as<TEvent>();
-          VarManager::FillEvent<TEventFillMap>(collision);
-        }
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fConfigQA) {
           fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
@@ -352,11 +359,11 @@ struct DQMuonsSelection {
     } // end loop over tracks
   }
 
-  void processSelection(MyEvents const& collisions, aod::BCs const& bcs, MyMuons const& muons)
+  void processSelection(MyMuons const& muons)
   {
-    runMuonSelection<gkEventFillMap, gkMuonFillMap>(collisions, bcs, muons);
+    runMuonSelection<gkMuonFillMap>(muons);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyMuons&)
   {
     // do nothing
   }
@@ -638,12 +645,6 @@ struct DQFilterPPTask {
     runFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
   }
 
-  void processFilterPPTiny(MyEventsSelected::iterator const& collision, aod::BCs const& bcs,
-                           soa::Filtered<MyBarrelTracksSelectedTiny> const& tracks, soa::Filtered<MyMuonsSelected> const& muons)
-  {
-    runFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
-  }
-
   // TODO: dummy function for the case when no process function is enabled
   void processDummy(MyEvents&)
   {
@@ -651,7 +652,6 @@ struct DQFilterPPTask {
   }
 
   PROCESS_SWITCH(DQFilterPPTask, processFilterPP, "Run filter task", false);
-  PROCESS_SWITCH(DQFilterPPTask, processFilterPPTiny, "Run filter task", false);
   PROCESS_SWITCH(DQFilterPPTask, processDummy, "Dummy function", false);
 };
 

@@ -18,13 +18,13 @@
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @njacazio
-/EventFiltering @alibuild @mpuccio
-/EventFiltering/PWGHF @alibuild @fgrosa @vkucera
-/EventFiltering/PWGUD @alibuild @pbuehler
-/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
-/EventFiltering/PWGCF @alibuild @lauraser
-/EventFiltering/PWGMM @alibuild @aortizve
-/EventFiltering/PWGJE @alibuild @fkrizek
+/EventFiltering @alibuild @mpuccio @strogolo
+/EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio @strogolo
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @strogolo
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @strogolo
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @strogolo
+/EventFiltering/PWGJE @alibuild @fkrizek @mpuccio @strogolo
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu

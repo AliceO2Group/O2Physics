@@ -88,7 +88,7 @@ struct nucleiFilter {
     qaHists.add("fTPCcounts", "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
 
     auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
-    scalers->GetXaxis()->SetBinLabel(0, "Processed events");
+    scalers->GetXaxis()->SetBinLabel(1, "Processed events");
     for (uint32_t iS{2}; iS <= nucleiNames.size() + 1; ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, nucleiNames[iS - 1].data());
     }

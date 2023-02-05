@@ -34,13 +34,13 @@
 #include "Framework/DataTypes.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
-#include "DetectorsVertexing/FwdDCAFitterN.h"
+#include "DCAFitter/FwdDCAFitterN.h"
 #include "CommonConstants/PhysicsConstants.h"
 
 using std::cout;
@@ -56,11 +56,11 @@ class VarManager : public TObject
  public:
   // map the information contained in the objects passed to the Fill functions
   enum ObjTypes {
-    // NOTE: Elements containing "Reduced" in their name refer to skimmed data tables
-    //       and the ones that don't refer to tables from the Framework data model
+    // NOTE: Elements containing "Reduced" in their name refer strictly to skimmed data tables
+    //       and the ones that don't refer to tables from the Framework data model or both models
     BC = BIT(0),
     Collision = BIT(1),
-    CollisionCent = BIT(2),
+    CollisionCentRun2 = BIT(2),
     CollisionTimestamp = BIT(3),
     ReducedEvent = BIT(4),
     ReducedEventExtended = BIT(5),
@@ -68,28 +68,30 @@ class VarManager : public TObject
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
     ReducedEventQvector = BIT(9),
-    CollisionCentRun3 = BIT(10),
+    CollisionCent = BIT(10),
+    CollisionMult = BIT(11),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
-    TrackPID = BIT(3),
-    TrackDCA = BIT(4),
-    TrackSelection = BIT(5),
-    TrackV0Bits = BIT(6),
-    ReducedTrack = BIT(7),
-    ReducedTrackBarrel = BIT(8),
-    ReducedTrackBarrelCov = BIT(9),
-    ReducedTrackBarrelPID = BIT(10),
-    Muon = BIT(11),
-    MuonCov = BIT(12),
-    ReducedMuon = BIT(13),
-    ReducedMuonExtra = BIT(14),
-    ReducedMuonCov = BIT(15),
-    ParticleMC = BIT(16),
-    Pair = BIT(17), // TODO: check whether we really need the Pair member here
-    AmbiTrack = BIT(18),
-    AmbiMuon = BIT(19),
-    DalitzBits = BIT(20)
+    TrackPID = BIT(3),      // used for basic PID properties (needed such that we can subscribe to a minimal set of PID tables): e,pi,K,p for TPC and TOF
+    TrackPIDExtra = BIT(4), // extra PID information
+    TrackDCA = BIT(5),
+    TrackSelection = BIT(6),
+    TrackV0Bits = BIT(7),
+    ReducedTrack = BIT(8),
+    ReducedTrackBarrel = BIT(9),
+    ReducedTrackBarrelCov = BIT(10),
+    ReducedTrackBarrelPID = BIT(11),
+    Muon = BIT(12),
+    MuonCov = BIT(13),
+    ReducedMuon = BIT(14),
+    ReducedMuonExtra = BIT(15),
+    ReducedMuonCov = BIT(16),
+    ParticleMC = BIT(17),
+    Pair = BIT(18), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(19),
+    AmbiMuon = BIT(20),
+    DalitzBits = BIT(21)
   };
 
   enum PairCandidateType {
@@ -138,6 +140,16 @@ class VarManager : public TObject
     kVtxChi2,
     kCentVZERO,
     kCentFT0C,
+    kMultTPC,
+    kMultFV0A,
+    kMultFV0C,
+    kMultFT0A,
+    kMultFT0C,
+    kMultFDDA,
+    kMultFDDC,
+    kMultZNA,
+    kMultZNC,
+    kMultTracklets,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -305,6 +317,7 @@ class VarManager : public TObject
     kDeltaPhiPair,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
+    kQuadDCAsigXYZ,
     kCosPointingAngle,
     kImpParXYJpsi,
     kImpParXYK,
@@ -315,6 +328,7 @@ class VarManager : public TObject
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
+    kDeltaPtotTracks,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -575,14 +589,26 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxChi2] = event.chi2();
   }
 
-  if constexpr ((fillMap & CollisionCent) > 0) {
+  if constexpr ((fillMap & CollisionCentRun2) > 0) {
     values[kCentVZERO] = event.centRun2V0M();
   }
 
-  if constexpr ((fillMap & CollisionCentRun3) > 0) {
+  if constexpr ((fillMap & CollisionCent) > 0) {
     values[kCentFT0C] = event.centFT0C();
   }
 
+  if constexpr ((fillMap & CollisionMult) > 0) {
+    values[kMultTPC] = event.multTPC();
+    values[kMultFV0A] = event.multFV0A();
+    values[kMultFV0C] = event.multFV0C();
+    values[kMultFT0A] = event.multFT0A();
+    values[kMultFT0C] = event.multFT0C();
+    values[kMultFDDA] = event.multFDDA();
+    values[kMultFDDC] = event.multFDDC();
+    values[kMultZNA] = event.multZNA();
+    values[kMultZNC] = event.multZNC();
+    values[kMultTracklets] = event.multTracklets();
+  }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
@@ -772,6 +798,9 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnclsCR] = track.tpcNClsCrossedRows();
     values[kTRDPattern] = track.trdPattern();
 
+    values[kTPCsignal] = track.tpcSignal();
+    values[kTRDsignal] = track.trdSignal();
+
     if constexpr ((fillMap & TrackExtra) > 0) {
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
@@ -848,18 +877,9 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the barrel PID tables
   if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
     values[kTPCnSigmaEl] = track.tpcNSigmaEl();
-    values[kTPCnSigmaMu] = track.tpcNSigmaMu();
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
     values[kTPCnSigmaPr] = track.tpcNSigmaPr();
-
-    // TODO: This part is deprecated and should be removed soon. It performs TPC postcalibration based on some
-    //      hardcoded parameterization.
-    if (fgUsedVars[kTPCnSigmaEl_Corr] || fgUsedVars[kTPCnSigmaPi_Corr] || fgUsedVars[kTPCnSigmaPr_Corr]) {
-      values[kTPCnSigmaEl_Corr] = values[kTPCnSigmaEl] - GetTPCPostCalibMap(values[kPin], values[kEta], 0, GetRunPeriod(values[kRunNo]));
-      values[kTPCnSigmaPi_Corr] = values[kTPCnSigmaPi] - GetTPCPostCalibMap(values[kPin], values[kEta], 1, GetRunPeriod(values[kRunNo]));
-      values[kTPCnSigmaPr_Corr] = values[kTPCnSigmaPr] - GetTPCPostCalibMap(values[kPin], values[kEta], 2, GetRunPeriod(values[kRunNo]));
-    }
 
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
@@ -919,13 +939,10 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
     }
     values[kTOFnSigmaEl] = track.tofNSigmaEl();
-    values[kTOFnSigmaMu] = track.tofNSigmaMu();
     values[kTOFnSigmaPi] = track.tofNSigmaPi();
     values[kTOFnSigmaKa] = track.tofNSigmaKa();
     values[kTOFnSigmaPr] = track.tofNSigmaPr();
-    values[kTPCsignal] = track.tpcSignal();
-    values[kTRDsignal] = track.trdSignal();
-    values[kTOFbeta] = track.beta();
+
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
       // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
       //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
@@ -941,6 +958,19 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
       values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
     }
+
+    if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTPCnSigmaMu] = track.tpcNSigmaMu();
+      values[kTOFnSigmaMu] = track.tofNSigmaMu();
+      values[kTPCsignal] = track.tpcSignal();
+      values[kTRDsignal] = track.trdSignal();
+      values[kTOFbeta] = track.beta();
+    }
+  }
+  if constexpr ((fillMap & TrackPIDExtra) > 0) {
+    values[kTPCnSigmaMu] = track.tpcNSigmaMu();
+    values[kTOFnSigmaMu] = track.tofNSigmaMu();
+    values[kTOFbeta] = track.beta();
   }
 
   // Quantities based on the muon extra table
@@ -1031,11 +1061,14 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
-    values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
+    values[kDeltaPhiPair] = (t1.sign() > 0) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
-    values[kPsiPair] = TMath::ASin((v1.Theta() - v2.Theta()) / xipair);
+    values[kPsiPair] = (t1.sign() > 0) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
   }
 
   // CosTheta Helicity calculation
@@ -1050,15 +1083,31 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY]) {
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAsigXYZ]) {
       // Quantities based on the barrel tables
-      double dca1 = t1.dcaXY();
-      double dca2 = t2.dcaXY();
-      double dca1sig = dca1 / std::sqrt(t1.cYY());
-      double dca2sig = dca2 / std::sqrt(t2.cYY());
+      double dca1XY = t1.dcaXY();
+      double dca2XY = t2.dcaXY();
+      double dca1Z = t1.dcaZ();
+      double dca2Z = t2.dcaZ();
+      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
 
-      values[kQuadDCAabsXY] = std::sqrt((dca1 * dca1 + dca2 * dca2) / 2);
-      values[kQuadDCAsigXY] = std::sqrt((dca1sig * dca1sig + dca2sig * dca2sig) / 2);
+      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
+      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+
+      double det1 = t1.cZY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cZY() * t2.cZZ() - t2.cZY() * t2.cZY();
+      if ((det1 < 0) || (det2 < 0)) {
+        values[kQuadDCAsigXYZ] = -999;
+      } else {
+        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+
+        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+      }
     }
   }
   if (fgUsedVars[kPairPhiv]) {

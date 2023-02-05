@@ -56,6 +56,7 @@ struct MultiplicityQa {
   Configurable<int> NBinsMultFT0C2d{"NBinsMultFT0C2d", 100, "N bins FT0C in 2D"};
   Configurable<int> NBinsMultFDD2d{"NBinsMultFDD2d", 100, "N bins FDD in 2D"};
   Configurable<int> NBinsMultNTracks2d{"NBinsMultNTracks2d", 100, "N bins Ntracks in 2D"};
+  Configurable<int> NBinsNContributors{"NBinsNContributors", 100, "N bins Ntracks in 2D"};
 
   Configurable<float> MaxMultFV0{"MaxMultFV0", 20000, "Max FV0 signal"};
   Configurable<float> MaxMultFT0{"MaxMultFT0", 10000, "Max FT0 signal"};
@@ -63,6 +64,7 @@ struct MultiplicityQa {
   Configurable<float> MaxMultFT0C{"MaxMultFT0C", 10000, "Max FT0C signal"};
   Configurable<float> MaxMultFDD{"MaxMultFDD", 10000, "Max FDD signal"};
   Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
+  Configurable<float> MaxNContributors{"MaxNContributors", 200, "Max NContributors"};
   Configurable<int> NBinsVertexZ{"NBinsVertexZ", 400, "max vertex Z (cm)"};
   Configurable<bool> useZeqInProfiles{"useZeqInProfiles", true, "use Z-equalized signals in midrap Nch profiles"};
 
@@ -84,8 +86,8 @@ struct MultiplicityQa {
     const AxisSpec axisMultNTracks2d{(int)NBinsMultNTracks2d, 0, MaxMultNTracks, "Track counter"};
 
     const AxisSpec axisVertexZ{(int)NBinsVertexZ, -20, 20, "Vertex Z (cm)"};
-    const AxisSpec axisContributorsTRD{(int)200, -0.5f, +199.5f, "N_{contribs}^{TRD}"};
-    const AxisSpec axisContributorsTOF{(int)200, -0.5f, +199.5f, "N_{contribs}^{TOF}"};
+    const AxisSpec axisContributorsTRD{(int)NBinsNContributors, -0.5f, MaxNContributors - 0.5f, "N_{contribs}^{TRD}"};
+    const AxisSpec axisContributorsTOF{(int)NBinsNContributors, -0.5f, MaxNContributors - 0.5f, "N_{contribs}^{TOF}"};
 
     //Base histograms
     histos.add("multiplicityQa/hEventCounter", "Event counter", kTH1D, {axisEvent});

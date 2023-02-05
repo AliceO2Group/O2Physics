@@ -50,15 +50,28 @@ struct createEMReducedEvent {
     kUndef = -1,
   };
 
+  // Configurable for filter/cuts
+  Configurable<int> minN_PCM{"minN_PCM", 0, "Minimum number of V0s for PCM. Events are saved if either minimum number condition is met"};
+  Configurable<int> minN_PHOS{"minN_PHOS", 0, "Minimum number of clusters for PHOS. Events are saved if either minimum number condition is met"};
+  Configurable<int> minN_EMC{"minN_EMC", 0, "Minimum number of clusters for EMCal. Events are saved if either minimum number condition is met"};
+
   HistogramRegistry registry{
-    "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
-    },
-  };
+    "registry"};
 
   Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::phoscluster::collisionId;
+  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::gammacaloreco::collisionId;
+
+  void init(o2::framework::InitContext&)
+  {
+    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
+    hEventCounter->GetXaxis()->SetBinLabel(1, "all");
+    hEventCounter->GetXaxis()->SetBinLabel(2, "has > minN_PCM");
+    hEventCounter->GetXaxis()->SetBinLabel(3, "has > minN_PHOS");
+    hEventCounter->GetXaxis()->SetBinLabel(4, "has > minN_EMC");
+    hEventCounter->GetXaxis()->SetBinLabel(5, "has > minN_any");
+    hEventCounter->GetXaxis()->SetBinLabel(6, "sel8");
+  }
 
   template <uint8_t system, typename TPCMs, typename TPHOSs, typename TEMCs>
   void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters)
@@ -70,6 +83,7 @@ struct createEMReducedEvent {
       int ng_pcm = 0;
       int ng_phos = 0;
       int ng_emc = 0;
+      bool minN_any = false;
 
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
@@ -78,6 +92,28 @@ struct createEMReducedEvent {
       if constexpr (static_cast<bool>(system & kPHOS)) {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
         ng_phos = phos_coll.size();
+      }
+      if constexpr (static_cast<bool>(system & kEMC)) {
+        auto emc_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
+        ng_emc = emc_coll.size();
+      }
+      if (ng_pcm >= minN_PCM) {
+        minN_any = true;
+        registry.fill(HIST("hEventCounter"), 2);
+      }
+      if (ng_phos >= minN_PHOS) {
+        minN_any = true;
+        registry.fill(HIST("hEventCounter"), 3);
+      }
+      if (ng_emc >= minN_EMC) {
+        minN_any = true;
+        registry.fill(HIST("hEventCounter"), 4);
+      }
+      if (minN_any) {
+        registry.fill(HIST("hEventCounter"), 5);
+      }
+      if (collision.sel8()) {
+        registry.fill(HIST("hEventCounter"), 6);
       }
 
       uint64_t tag = 0;
@@ -98,26 +134,46 @@ struct createEMReducedEvent {
 
   void process_PCM(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons)
   {
-    const uint8_t sysflag = kPCM;
-    ;
-    process<sysflag>(collisions, bcs, v0photons, nullptr, nullptr);
+    process<kPCM>(collisions, bcs, v0photons, nullptr, nullptr);
   }
   void process_PHOS(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters)
   {
-    const uint8_t sysflag = kPHOS;
-    process<sysflag>(collisions, bcs, nullptr, phosclusters, nullptr);
+    process<kPHOS>(collisions, bcs, nullptr, phosclusters, nullptr);
+  }
+  void process_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
+  {
+    process<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
   }
   void process_PCM_PHOS(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
     process<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr);
   }
+  void process_PCM_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  {
+    const uint8_t sysflag = kPCM | kEMC;
+    process<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters);
+  }
+  void process_PHOS_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  {
+    const uint8_t sysflag = kPHOS | kEMC;
+    process<sysflag>(collisions, bcs, nullptr, phosclusters, emcclusters);
+  }
+  void process_PCM_PHOS_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  {
+    const uint8_t sysflag = kPCM | kPHOS | kEMC;
+    process<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters);
+  }
 
   void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collisions) {}
 
   PROCESS_SWITCH(createEMReducedEvent, process_PCM, "create em event table for PCM", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PHOS, "create em event table for PHOS", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_EMC, "create em event table for EMCal", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PCM_PHOS, "create em event table for PCM, PHOS", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PCM_EMC, "create em event table for PCM, EMCal", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PHOS_EMC, "create em event table for PHOS, EMCal", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PCM_PHOS_EMC, "create em event table for PCM, PHOS, EMCal", false);
   PROCESS_SWITCH(createEMReducedEvent, processDummy, "processDummy", true);
 };
 

@@ -14,21 +14,14 @@
 //
 
 #include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/GeomConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
@@ -90,10 +83,6 @@ struct AmbiguousTrackPropagation {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
-    }
   }
 
   void initCCDB(ExtBCs::iterator const& bc)

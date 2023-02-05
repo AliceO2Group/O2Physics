@@ -19,12 +19,14 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "TRandom.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
+// using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
+using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
 
 namespace o2::aod
 {
@@ -65,11 +67,13 @@ DECLARE_SOA_COLUMN(NTPCSigmaPosPr, ntpcsigmapospr, float);
 DECLARE_SOA_COLUMN(NTPCSigmaNegPi, ntpcsigmanegpi, float);
 DECLARE_SOA_COLUMN(NTPCSigmaPosPi, ntpcsigmapospi, float);
 DECLARE_SOA_COLUMN(NTPCSigmaBachPi, ntpcsigmabachpi, float);
+DECLARE_SOA_COLUMN(NTPCSigmaBachKa, ntpcsigmabachka, float);
 DECLARE_SOA_COLUMN(NTOFSigmaNegPr, ntofsigmanegpr, float);
 DECLARE_SOA_COLUMN(NTOFSigmaPosPr, ntofsigmapospr, float);
 DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
 DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
 DECLARE_SOA_COLUMN(NTOFSigmaBachPi, ntofsigmabachpi, float);
+DECLARE_SOA_COLUMN(NTOFSigmaBachKa, ntofsigmabachka, float);
 DECLARE_SOA_COLUMN(PosNTPCClusters, posntpcscls, float);
 DECLARE_SOA_COLUMN(NegNTPCClusters, negntpcscls, float);
 DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
@@ -86,9 +90,9 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
                   mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
                   mycascades::CtauXiMinus, mycascades::CtauXiPlus, mycascades::CtauOmegaMinus, mycascades::CtauOmegaPlus,
-                  mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi, mycascades::NTPCSigmaBachPi,
+                  mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi, mycascades::NTPCSigmaBachPi, mycascades::NTPCSigmaBachKa,
                   mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
-                  mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi,
+                  mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF);
 
@@ -111,6 +115,7 @@ struct cascqaanalysis {
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
 
   // Selection criteria
+  Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
   Configurable<float> dcacascdau{"dcacascdau", 2.0, "DCA Casc Daughters"};
@@ -121,6 +126,8 @@ struct cascqaanalysis {
   Configurable<float> v0radius{"v0radius", 0.0, "V0 Radius"};
   Configurable<float> cascradius{"cascradius", 0.0, "Casc Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
+
+  TRandom* fRand = new TRandom();
 
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
@@ -136,6 +143,7 @@ struct cascqaanalysis {
     }
 
     registry.fill(HIST("hNEvents"), 0.5);
+    float lEventScale = scalefactor;
 
     for (auto& casc : Cascades) { // loop over Cascades
 
@@ -178,16 +186,18 @@ struct cascqaanalysis {
           TMath::Abs(posdau.eta()) < etadau && TMath::Abs(negdau.eta()) < etadau && TMath::Abs(bachelor.eta()) < etadau) {
 
         // Fill table
-        mycascades(casc.globalIndex(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(),
-                   casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
-                   casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-                   casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
-                   posdau.eta(), negdau.eta(), bachelor.eta(), posITSNhits, negITSNhits, bachITSNhits,
-                   ctauXiMinus, ctauXiPlus, ctauOmegaMinus, ctauOmegaPlus,
-                   negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(),
-                   negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(),
-                   posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
-                   posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF());
+        if (fRand->Rndm() < lEventScale) {
+          mycascades(casc.globalIndex(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(),
+                     casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
+                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                     casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                     posdau.eta(), negdau.eta(), bachelor.eta(), posITSNhits, negITSNhits, bachITSNhits,
+                     ctauXiMinus, ctauXiPlus, ctauOmegaMinus, ctauOmegaPlus,
+                     negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(), bachelor.tpcNSigmaKa(),
+                     negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
+                     posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
+                     posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF());
+        }
       }
     }
   }

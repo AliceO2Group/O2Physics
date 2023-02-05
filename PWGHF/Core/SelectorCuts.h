@@ -34,6 +34,7 @@ enum Code {
   kDStar = 413,
   kDS = 431,
   kLambdaCPlus = 4122,
+  kXiCZero = 4132,
   kXiCPlus = 4232,
   kXiCCPlusPlus = 4422,
   kLambdaB0 = 5122,

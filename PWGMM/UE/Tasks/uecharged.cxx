@@ -23,6 +23,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 #include <TH1F.h>
 #include <TH2F.h>
@@ -41,7 +42,7 @@ struct ueCharged {
 
   TrackSelection myTrackSelection();
 
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
   float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   // acceptance cuts

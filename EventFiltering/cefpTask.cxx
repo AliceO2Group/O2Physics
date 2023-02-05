@@ -233,20 +233,6 @@ struct centralEventFilterTask {
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
     int bin{2};
 
-    // for (auto& spec : reinterpret_cast<std::unique_ptr<ConfigParamStore>*>(&(initc.mOptions))->get()->specs()) {
-    //   std::cout << "Configuration available: " << spec.name << "\t" << int(spec.type) << std::endl;
-    //   auto filterOpt = initc.mOptions.get<LabeledArray<float>>(spec.name.data());
-    //   std::cout << " -- row labs: ";
-    //   for (auto& lab : filterOpt.labels_rows) {
-    //     std::cout << lab << "\t";
-    //   }
-    //   std::cout << "\n -- col labs: ";
-    //   for (auto& lab : filterOpt.labels_cols) {
-    //     std::cout << lab << "\t";
-    //   }
-    //    std::cout << std::endl;
-    // }
-
     for (auto& table : mDownscaling) {
       LOG(info) << "Setting downscalings for table " << table.first;
       for (auto& column : table.second) {
@@ -320,9 +306,9 @@ struct centralEventFilterTask {
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
 
     // Filling output table
-    auto bcTabConsumer = pc.inputs().get<TableConsumer>("BCs");
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
     auto bcTabPtr{bcTabConsumer->asArrowTable()};
-    auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
     auto collTabPtr{collTabConsumer->asArrowTable()};
     if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
@@ -360,6 +346,11 @@ struct centralEventFilterTask {
     // }
   }
 
+  /// Trivial process to have automatically the collision and BC input tables
+  void process(aod::Collisions const&, aod::BCs const&)
+  {
+  }
+
   std::mt19937_64 mGeneratorEngine;
   std::uniform_real_distribution<double> mUniformGenerator = std::uniform_real_distribution<double>(0., 1.);
 };
@@ -367,9 +358,6 @@ struct centralEventFilterTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
   std::vector<InputSpec> inputs;
-  inputs.emplace_back("Collisions", "AOD", "COLLISION", 0, Lifetime::Timeframe);
-  inputs.emplace_back("BCs", "AOD", "BC", 0, Lifetime::Timeframe);
-
   auto config = cfg.options().get<std::string>("train_config");
   Document d;
   std::unordered_map<std::string, std::unordered_map<std::string, float>> downscalings;

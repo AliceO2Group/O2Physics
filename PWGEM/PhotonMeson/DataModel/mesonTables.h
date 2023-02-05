@@ -41,6 +41,6 @@ DECLARE_SOA_COLUMN(Pt, pt, float);     //! pT of the meson
 DECLARE_SOA_TABLE(CaloMeson, "AOD", "CALOMESON", //!
                   o2::soa::Index<>, calomeson::CollisionId, calomeson::DaugtherPhotonOneId, calomeson::DaugtherPhotonTwoId,
                   calomeson::Oa, calomeson::Px, calomeson::Py, calomeson::Pz, calomeson::E, calomeson::Alpha,
-                  calomeson::Minv, calomeson::Eta, calomeson::Phi, calomeson::Pt)
+                  calomeson::Minv, calomeson::Eta, calomeson::Phi, calomeson::Pt);
 } // namespace o2::aod
 #endif // PWGEM_PHOTONMESON_DATAMODEL_MESONTABLES_H_

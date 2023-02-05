@@ -51,7 +51,7 @@ struct DGCandAnalyzer {
 
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
-  Configurable<int> candCaseSel{"CandCase", {}, "1: only ColCands,2: only BCCands"};
+  Configurable<int> candCaseSel{"CandCase", {}, "0: all Cands, 1: only ColCands,2: only BCCands"};
   Configurable<std::string> goodRunsFile{"goodRunsFile", {}, "json with list of good runs"};
 
   // get a DGCutparHolder and DGAnaparHolder
@@ -132,7 +132,7 @@ struct DGCandAnalyzer {
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
-    registry.add("trackQC", "#trackQC", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+    registry.add("trackQC", "#trackQC", {HistType::kTH1F, {{5, -0.5, 4.5}}});
     registry.add("dcaXYDG", "#dcaXYDG", {HistType::kTH1F, {{400, -2., 2.}}});
     registry.add("ptTrkdcaXYDG", "#ptTrkdcaXYDG", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
     registry.add("dcaZDG", "#dcaZDG", {HistType::kTH1F, {{800, -20., 20.}}});
@@ -150,6 +150,12 @@ struct DGCandAnalyzer {
     registry.add("2TrackAngle", "#2TrackAngle", {HistType::kTH1F, {{140, -0.2, 3.3}}});
     registry.add("2TrackAngleIVM", "#2TrackAngleIVM", {HistType::kTH2F, {axisIVM, {140, -0.2, 3.3}}});
 
+    registry.add("FT0AAmplitude", "#FT0AAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
+    registry.add("FT0CAmplitude", "#FT0CAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
+    registry.add("FV0AAmplitude", "#FV0AAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
+    registry.add("FDDAAmplitude", "#FDDAAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
+    registry.add("FDDCAmplitude", "#FDDCAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
+
     registry.add("BBT0A", "#BBT0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
     registry.add("BBT0C", "#BBT0C", {HistType::kTH1F, {{32, -16.5, 15.5}}});
     registry.add("BBV0A", "#BBV0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
@@ -166,6 +172,7 @@ struct DGCandAnalyzer {
     if (!grsel.isGoodRun(dgcand.runNumber())) {
       return;
     }
+    LOGF(debug, "Run number %d", dgcand.runNumber());
 
     // skip unwanted cases
     // 0. all candidates
@@ -204,17 +211,24 @@ struct DGCandAnalyzer {
     }
 
     // check FIT information
-    for (auto bit = 15; bit <= 17; bit++) {
-      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
-          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
-          TESTBIT(dgcand.bbFV0Apf(), bit) ||
-          TESTBIT(dgcand.bbFDDApf(), bit) ||
-          TESTBIT(dgcand.bbFDDCpf(), bit)) {
-        return;
-      }
-    }
+    // for (auto bit = 15; bit <= 17; bit++) {
+    //  if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
+    //      TESTBIT(dgcand.bbFT0Cpf(), bit) ||
+    //      TESTBIT(dgcand.bbFV0Apf(), bit) ||
+    //      TESTBIT(dgcand.bbFDDApf(), bit) ||
+    //      TESTBIT(dgcand.bbFDDCpf(), bit)) {
+    //    return;
+    //  }
+    //}
 
-    // full BBFlag histograms
+    // fill FIT amplitude histograms
+    registry.get<TH1>(HIST("FT0AAmplitude"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+    registry.get<TH1>(HIST("FT0CAmplitude"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+    registry.get<TH1>(HIST("FV0AAmplitude"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+    registry.get<TH1>(HIST("FDDAAmplitude"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+    registry.get<TH1>(HIST("FDDCAmplitude"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+
+    // fill BBFlag histograms
     for (auto bit = 0; bit < 33; bit++) {
       registry.get<TH1>(HIST("BBT0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Apf(), bit));
       registry.get<TH1>(HIST("BBT0C"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Cpf(), bit));
@@ -275,10 +289,11 @@ struct DGCandAnalyzer {
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = dgtracks.rawIteratorAt(ind);
-        registry.get<TH1>(HIST("trackQC"))->Fill(0., track.hasITS() * 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasTPC() * 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTRD() * 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTOF() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(0., 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasITS() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTPC() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTRD() * 1.);
+        registry.get<TH1>(HIST("trackQC"))->Fill(4., track.hasTOF() * 1.);
         // registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
         // registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
         // registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
