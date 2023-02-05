@@ -434,7 +434,8 @@ class VarManager : public TObject
   {
     KFParticle::SetField(magField);
     fgUsedKF = true;
-    LOG(info) << "~~~~~~~~~~~~~~~~ It is using KFParticle !!!!!!!!!!!!!!!!!!!" << " with fgUsedKF: "<< fgUsedKF;
+    LOG(info) << "~~~~~~~~~~~~~~~~ It is using KFParticle !!!!!!!!!!!!!!!!!!!"
+              << " with fgUsedKF: " << fgUsedKF;
   }
 
   // Setup the 2 prong DCAFitterN
@@ -523,7 +524,7 @@ class VarManager : public TObject
 
  private:
   static bool fgUsedVars[kNVars];        // holds flags for when the corresponding variable is needed (e.g., in the histogram manager, in cuts, mixing handler, etc.)
-  static bool fgUsedKF;        
+  static bool fgUsedKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
   static std::map<int, int> fgRunMap; // map of runs to be used in histogram axes
@@ -574,8 +575,8 @@ KFPTrack VarManager::createKFPTrackFromTrack(const T& track)
 {
   std::array<float, 5> trackpars = {track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt()};
   std::array<float, 15> trackcovs = {track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
-                                  track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
-                                  track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2()};
+                                     track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
+                                     track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2()};
   o2::track::TrackParametrizationWithError trackparCov{track.x(), track.alpha(), std::move(trackpars), std::move(trackcovs)};
   std::array<float, 3> trkpos_par;
   std::array<float, 3> trkmom_par;
@@ -1464,8 +1465,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
     }
-  }
-  else {
+  } else {
     KFParticle trk0KF;
     KFParticle trk1KF;
     KFParticle KFGeoTwoProngBarrel;
@@ -1490,20 +1490,23 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxy] = std::sqrt(dxPair2PV * dxPair2PV + dyPair2PV * dyPair2PV);
       values[kVertexingLz] = std::sqrt(dzPair2PV * dzPair2PV);
       values[kVertexingLxyz] = std::sqrt(dxPair2PV * dxPair2PV + dyPair2PV * dyPair2PV + dzPair2PV * dzPair2PV);
-      values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoTwoProngBarrel.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2) + KFGeoTwoProngBarrel.GetCovariance(2)) * dyPair2PV * dyPair2PV + 2 * ( (KFPV.GetCovariance(1) + KFGeoTwoProngBarrel.GetCovariance(1)) * dxPair2PV * dyPair2PV);
+      values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoTwoProngBarrel.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2) + KFGeoTwoProngBarrel.GetCovariance(2)) * dyPair2PV * dyPair2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoTwoProngBarrel.GetCovariance(1)) * dxPair2PV * dyPair2PV);
       values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoTwoProngBarrel.GetCovariance(5)) * dzPair2PV * dzPair2PV;
-      values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoTwoProngBarrel.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2)+KFGeoTwoProngBarrel.GetCovariance(2)) * dyPair2PV * dyPair2PV + (KFPV.GetCovariance(5) + KFGeoTwoProngBarrel.GetCovariance(5)) * dzPair2PV * dzPair2PV + 2*( (KFPV.GetCovariance(1)+KFGeoTwoProngBarrel.GetCovariance(1))*dxPair2PV*dyPair2PV + (KFPV.GetCovariance(3)+KFGeoTwoProngBarrel.GetCovariance(3))*dxPair2PV*dzPair2PV + (KFPV.GetCovariance(4)+KFGeoTwoProngBarrel.GetCovariance(4))*dyPair2PV*dzPair2PV );
-      if ( fabs(values[kVertexingLxy])<1.e-8f ) values[kVertexingLxy] = 1.e-8f;
-      values[kVertexingLxyErr] = values[kVertexingLxyErr]<0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr])/values[kVertexingLxy];
-      if ( fabs(values[kVertexingLz])<1.e-8f ) values[kVertexingLz] = 1.e-8f;
-      values[kVertexingLzErr] = values[kVertexingLzErr]<0. ? 1.e8f : std::sqrt(values[kVertexingLzErr])/values[kVertexingLz];
-      if ( fabs(values[kVertexingLxyz])<1.e-8f ) values[kVertexingLxyz] = 1.e-8f;
-      values[kVertexingLxyzErr] = values[kVertexingLxyzErr]<0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr])/values[kVertexingLxyz];
+      values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoTwoProngBarrel.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2) + KFGeoTwoProngBarrel.GetCovariance(2)) * dyPair2PV * dyPair2PV + (KFPV.GetCovariance(5) + KFGeoTwoProngBarrel.GetCovariance(5)) * dzPair2PV * dzPair2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoTwoProngBarrel.GetCovariance(1)) * dxPair2PV * dyPair2PV + (KFPV.GetCovariance(3) + KFGeoTwoProngBarrel.GetCovariance(3)) * dxPair2PV * dzPair2PV + (KFPV.GetCovariance(4) + KFGeoTwoProngBarrel.GetCovariance(4)) * dyPair2PV * dzPair2PV);
+      if (fabs(values[kVertexingLxy]) < 1.e-8f)
+        values[kVertexingLxy] = 1.e-8f;
+      values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
+      if (fabs(values[kVertexingLz]) < 1.e-8f)
+        values[kVertexingLz] = 1.e-8f;
+      values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
+      if (fabs(values[kVertexingLxyz]) < 1.e-8f)
+        values[kVertexingLxyz] = 1.e-8f;
+      values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
       values[kVertexingLxyOverErr] = values[kVertexingLxy] / values[kVertexingLxyErr];
       values[kVertexingLzOverErr] = values[kVertexingLz] / values[kVertexingLzErr];
       values[kVertexingLxyzOverErr] = values[kVertexingLxyz] / values[kVertexingLxyzErr];
 
-      values[kVertexingTauxy] = KFGeoTwoProngBarrel.GetPseudoProperDecayTime(KFPV,KFGeoTwoProngBarrel.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauxy] = KFGeoTwoProngBarrel.GetPseudoProperDecayTime(KFPV, KFGeoTwoProngBarrel.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauz] = dzPair2PV * KFGeoTwoProngBarrel.GetMass() / (TMath::Abs(KFGeoTwoProngBarrel.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoTwoProngBarrel.GetMass() / (KFGeoTwoProngBarrel.GetPt() * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoTwoProngBarrel.GetMass() / (TMath::Abs(KFGeoTwoProngBarrel.GetPz()) * o2::constants::physics::LightSpeedCm2NS);

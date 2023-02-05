@@ -327,8 +327,7 @@ struct TableMaker {
     // create the event tables
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
       event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.multNTracksPV(), collision.collisionTime(), collision.collisionTimeRes());
-    }
-    else {
+    } else {
       event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), -999, collision.collisionTime(), collision.collisionTimeRes());
     }
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
