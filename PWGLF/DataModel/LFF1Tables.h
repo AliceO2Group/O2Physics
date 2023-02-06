@@ -28,14 +28,14 @@ namespace o2::aod
 /// F1 Collisions
 namespace f1collision
 {
-DECLARE_SOA_COLUMN(TriggerEventF1, triggereventf1, bool);         //! F1 trigger event
-DECLARE_SOA_COLUMN(TriggerEventF1P, triggereventf1p, bool);         //! F1 - proton trigger event
-DECLARE_SOA_COLUMN(TriggerEventF1PFemto, triggereventf1pfemto, bool);         //! F1 - proton femto trigger event
+DECLARE_SOA_COLUMN(TriggerEventF1, triggereventf1, bool);             //! F1 trigger event
+DECLARE_SOA_COLUMN(TriggerEventF1P, triggereventf1p, bool);           //! F1 - proton trigger event
+DECLARE_SOA_COLUMN(TriggerEventF1PFemto, triggereventf1pfemto, bool); //! F1 - proton femto trigger event
 } // namespace f1collision
 DECLARE_SOA_TABLE(F1Collisions, "AOD", "F1COL",
                   f1collision::TriggerEventF1,
-		  f1collision::TriggerEventF1P,
-		  f1collision::TriggerEventF1PFemto);
+                  f1collision::TriggerEventF1P,
+                  f1collision::TriggerEventF1PFemto);
 
 using F1Collision = F1Collisions::iterator;
 } // namespace o2::aod
