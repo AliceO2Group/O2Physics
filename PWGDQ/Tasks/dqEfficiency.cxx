@@ -486,7 +486,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsExtra> dileptonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  float mMagField=0.0;
+  float mMagField = 0.0;
   OutputObj<THashList> fOutputList{"output"};
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -653,7 +653,6 @@ struct AnalysisSameEventPairing {
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
   }
 
   template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TEventsMC, typename TTracksMC>

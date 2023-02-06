@@ -734,7 +734,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  float mMagField=0.0;
+  float mMagField = 0.0;
 
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
@@ -837,7 +837,6 @@ struct AnalysisSameEventPairing {
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
