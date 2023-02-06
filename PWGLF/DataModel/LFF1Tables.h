@@ -13,8 +13,8 @@
 ///
 /// \author Sourav Kundu <sourav.kundu@cern.ch>
 
-#ifndef PWGLF_DATAMODEL_F1TABLES_H_
-#define PWGLF_DATAMODEL_F1TABLES_H_
+#ifndef PWGLF_DATAMODEL_LFF1TABLES_H_
+#define PWGLF_DATAMODEL_LFF1TABLES_H_
 
 #include <cmath>
 
@@ -39,4 +39,4 @@ DECLARE_SOA_TABLE(F1Collisions, "AOD", "F1COL",
 
 using F1Collision = F1Collisions::iterator;
 } // namespace o2::aod
-#endif // PWGLF_DATAMODEL_F1TABLES_H_
+#endif // PWGLF_DATAMODEL_LFF1TABLES_H_
