@@ -66,12 +66,12 @@ struct f1protoninitializer {
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "Minimum V0 CosPA to PV"};
   Configurable<double> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
-  ///F1 mass cut///////////
+  /// F1 mass cut///////////
   Configurable<double> cMaxMassKKs0{"cMaxMassKKs0", 1.04, "Mass cut on K-KS0 pair"};
   Configurable<double> cMaxMassF1{"cMaxMassF1", 1.80001, "Mass cut on F1 resonance"};
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
 
-  ///PID///////////
+  /// PID///////////
   Configurable<double> pionMomentumPID{"pionMomentumPID", 0.5, "pi momentum range for TPC PID selection"};
   Configurable<double> kaonMomentumPID{"kaonMomentumPID", 0.45, "ka momentum range for TPC PID selection"};
   Configurable<double> protonMomentumPID{"protonMomentumPID", 0.75, "pr momentum range for TPC PID selection"};
@@ -97,7 +97,7 @@ struct f1protoninitializer {
                                            },
                                OutputObjHandlingPolicy::AnalysisObject};
 
-  ////////////////Primary track selection and Ks0 selection//////////////////////////
+  //////////////// Primary track selection and Ks0 selection//////////////////////////
   template <typename T>
   bool SelectionTrack(const T& candidate)
   {
@@ -207,9 +207,9 @@ struct f1protoninitializer {
   /*auto pionTracksGrouped = pionTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto kaonTracksGrouped = kaonTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto protonTracksGrouped = protonTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());*/
-  //for (auto& track1 : pionTracksGrouped) {
+  // for (auto& track1 : pionTracksGrouped) {
   void processF1Proton(EventCandidates::iterator const& collision, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
-  //void processF1Proton(aod::Collision const& collision, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
+  // void processF1Proton(aod::Collision const& collision, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
   {
     qaRegistry.fill(HIST("hEventstat"), 0.5);
     int numberPion = 0;
@@ -282,7 +282,7 @@ struct f1protoninitializer {
           if (collisionId1 != collisionId3) {
             continue;
           }
-          //LOG(info) << "Track3" << "\n";
+          // LOG(info) << "Track3" << "\n";
           if (numberPiKpair == 1) {
             qaRegistry.fill(HIST("hInvMassk0"), track3.mK0Short(), track3.pt());
           }
@@ -304,7 +304,7 @@ struct f1protoninitializer {
           numberF1 = numberF1 + 1;
           F1Vector.SetXYZM(track1.px() + track2.px() + track3.px(), track1.py() + track2.py() + track3.py(), track1.pz() + track2.pz() + track3.pz(), massF1);
 
-          //////////////proton loop for F1-proton trigger
+          ////////////// proton loop for F1-proton trigger/////////////////
           for (auto track4 : tracks) {
             auto collisionId4 = track4.collisionId();
             if (collisionId1 != collisionId4) {
