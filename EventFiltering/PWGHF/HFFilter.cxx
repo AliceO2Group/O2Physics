@@ -281,7 +281,7 @@ struct HfFilter { // Main struct for HF triggers
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
 
-        //needed for TPC PID postcalibrations
+        // needed for TPC PID postcalibrations
         if (computeTPCPostCalib) {
           auto calibList = ccdb->getForTimeStamp<TList>(ccdbPathTPC.value, bc.timestamp());
           if (!calibList) {
