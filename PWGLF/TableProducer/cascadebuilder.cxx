@@ -625,7 +625,7 @@ struct cascadeBuilder {
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
-      
+
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
         // Calculate position covariance matrix
