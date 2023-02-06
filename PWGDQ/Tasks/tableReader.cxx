@@ -733,7 +733,6 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsExtra> dileptonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   float mMagField = 0.0;
 
   OutputObj<THashList> fOutputList{"output"};
