@@ -222,7 +222,7 @@ struct Pi0EtaToGammaGamma {
   }
 
   Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-  Preslice<aod::PHOSClusters> perCollision_phos = aod::phoscluster::collisionId;
+  Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2)
