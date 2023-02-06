@@ -18,6 +18,9 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
+#include <Math/Vector4D.h>
+#include <Math/GenVector/Boost.h>
+
 #include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
@@ -790,6 +793,68 @@ template <typename T>
 auto invMassDsToPiKK(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
+}
+
+template <typename T>
+auto deltaMassPhiDsToKKPi(const T& candidate)
+{
+  double invMassKKpair = RecoDecay::m(array{candidate.pVectorProng0(), candidate.pVectorProng1()}, array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
+  return std::abs(invMassKKpair - RecoDecay::getMassPDG(pdg::Code::kPhi));
+}
+
+template <typename T>
+auto deltaMassPhiDsToPiKK(const T& candidate)
+{
+  double invMassKKpair = RecoDecay::m(array{candidate.pVectorProng1(), candidate.pVectorProng2()}, array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
+  return std::abs(invMassKKpair - RecoDecay::getMassPDG(pdg::Code::kPhi));
+}
+
+/// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
+/// \param candidate Ds candidate from aod::HfCand3Prong table
+/// \param option mass hypothesis considered: 0 = KKPi, 1 = PiKK
+/// \return cosine of pion-kaon angle in the phi rest frame
+template <typename T>
+auto cosPiKPhiRestFrame(const T& candidate, int option)
+{
+  // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
+  array<float, 3> momPi;
+  array<float, 3> momK1;
+  array<float, 3> momK2;
+
+  if (option == 0) { // KKPi
+    momPi = candidate.pVectorProng2();
+    momK1 = candidate.pVectorProng1();
+    momK2 = candidate.pVectorProng0();
+  } else { // PiKK
+    momPi = candidate.pVectorProng0();
+    momK1 = candidate.pVectorProng1();
+    momK2 = candidate.pVectorProng2();
+  }
+
+  ROOT::Math::PxPyPzMVector vecPi(momPi[0], momPi[1], momPi[2], RecoDecay::getMassPDG(kPiPlus));
+  ROOT::Math::PxPyPzMVector vecK1(momK1[0], momK1[1], momK1[2], RecoDecay::getMassPDG(kKPlus));
+  auto momPhi = RecoDecay::pVec(momK1, momK2);
+  ROOT::Math::PxPyPzMVector vecPhi(momPhi[0], momPhi[1], momPhi[2], RecoDecay::getMassPDG(pdg::Code::kPhi));
+
+  ROOT::Math::Boost boostToPhiRestFrame(vecPhi.BoostToCM());
+  auto momPiPhiRestFrame = boostToPhiRestFrame(vecPi).Vect();
+  auto momK1PhiRestFrame = boostToPhiRestFrame(vecK1).Vect();
+
+  return momPiPhiRestFrame.Dot(momK1PhiRestFrame) / std::sqrt(momPiPhiRestFrame.Mag2() * momK1PhiRestFrame.Mag2());
+}
+
+template <typename T>
+auto cos3PiKDsToKKPi(const T& candidate)
+{
+  auto cosPiK = cosPiKPhiRestFrame(candidate, 0);
+  return cosPiK * cosPiK * cosPiK;
+}
+
+template <typename T>
+auto cos3PiKDsToPiKK(const T& candidate)
+{
+  auto cosPiK = cosPiKPhiRestFrame(candidate, 1);
+  return cosPiK * cosPiK * cosPiK;
 }
 
 // Λc± → p± K∓ π±
