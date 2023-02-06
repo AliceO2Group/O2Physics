@@ -143,10 +143,18 @@ struct HfCandidateCreatorCascade {
 
       auto collision = bach.collision();
 
-      // set the magnetic field from CCDB
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-      bz = o2::base::Propagator::Instance()->getNominalBz(); // z component
+      /// Set the magnetic field from ccdb.
+      /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
+      /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        bz = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
+        // df.print();
+      }
       df.setBz(bz);
 
 #ifdef MY_DEBUG
