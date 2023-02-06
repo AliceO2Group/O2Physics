@@ -625,6 +625,32 @@ struct cascadeBuilder {
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
+      
+      // populate cascade covariance matrices if required by any other task
+      if (createCascCovMats) {
+        // Calculate position covariance matrix
+        auto covVtxV = fitter.calcPCACovMatrix(0);
+        // std::array<float, 6> positionCovariance;
+        float positionCovariance[6];
+        positionCovariance[0] = covVtxV(0, 0);
+        positionCovariance[1] = covVtxV(1, 0);
+        positionCovariance[2] = covVtxV(1, 1);
+        positionCovariance[3] = covVtxV(2, 0);
+        positionCovariance[4] = covVtxV(2, 1);
+        positionCovariance[5] = covVtxV(2, 2);
+        // store momentum covariance matrix
+        std::array<float, 21> covTv0 = {0.};
+        std::array<float, 21> covTbachelor = {0.};
+        // std::array<float, 6> momentumCovariance;
+        float momentumCovariance[6];
+        lV0Track.getCovXYZPxPyPzGlo(covTv0);
+        lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+        }
+        casccovs(positionCovariance, momentumCovariance);
+      }
     }
     // En masse filling at end of process call
     fillHistos();
