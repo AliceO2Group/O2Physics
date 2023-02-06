@@ -317,6 +317,7 @@ class VarManager : public TObject
     kDeltaPhiPair,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
+    kQuadDCAsigXYZ,
     kCosPointingAngle,
     kImpParXYJpsi,
     kImpParXYK,
@@ -1065,9 +1066,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
-    values[kDeltaPhiPair] = v1.Phi() - v2.Phi();
+    values[kDeltaPhiPair] = (t1.sign() > 0) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
-    values[kPsiPair] = TMath::ASin((v1.Theta() - v2.Theta()) / xipair);
+    values[kPsiPair] = (t1.sign() > 0) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
   }
 
   // CosTheta Helicity calculation
@@ -1082,15 +1083,31 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY]) {
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAsigXYZ]) {
       // Quantities based on the barrel tables
-      double dca1 = t1.dcaXY();
-      double dca2 = t2.dcaXY();
-      double dca1sig = dca1 / std::sqrt(t1.cYY());
-      double dca2sig = dca2 / std::sqrt(t2.cYY());
+      double dca1XY = t1.dcaXY();
+      double dca2XY = t2.dcaXY();
+      double dca1Z = t1.dcaZ();
+      double dca2Z = t2.dcaZ();
+      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
 
-      values[kQuadDCAabsXY] = std::sqrt((dca1 * dca1 + dca2 * dca2) / 2);
-      values[kQuadDCAsigXY] = std::sqrt((dca1sig * dca1sig + dca2sig * dca2sig) / 2);
+      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
+      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+
+      double det1 = t1.cZY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cZY() * t2.cZZ() - t2.cZY() * t2.cZY();
+      if ((det1 < 0) || (det2 < 0)) {
+        values[kQuadDCAsigXYZ] = -999;
+      } else {
+        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+
+        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+      }
     }
   }
   if (fgUsedVars[kPairPhiv]) {

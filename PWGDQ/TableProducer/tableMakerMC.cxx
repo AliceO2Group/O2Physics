@@ -94,6 +94,7 @@ constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarMan
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkMuonFillMapWithAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::AmbiMuon;
+constexpr static uint32_t gkMuonFillMapWithCovAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov | VarManager::ObjTypes::AmbiMuon;
 constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 
 struct TableMakerMC {
@@ -946,6 +947,13 @@ struct TableMakerMC {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, ambiTracksFwd);
   }
 
+  void processAmbiguousMuonOnlyWithCov(MyEvents const& collisions, aod::BCs const& bcs,
+                                       soa::Filtered<MyMuonsWithCov> const& tracksMuon,
+                                       aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksFwd const& ambiTracksFwd)
+  {
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, ambiTracksFwd);
+  }
+
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
   void processAmbiguousBarrelOnly(MyEvents const& collisions, aod::BCs const& bcs,
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel,
@@ -977,6 +985,7 @@ struct TableMakerMC {
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCent, "Produce muon skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
   PROCESS_SWITCH(TableMakerMC, processAmbiguousMuonOnly, "Build muon-only DQ skimmed data model with QA plots for ambiguous muons", false);
+  PROCESS_SWITCH(TableMakerMC, processAmbiguousMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model with QA plots for ambiguous muons", false);
   PROCESS_SWITCH(TableMakerMC, processAmbiguousBarrelOnly, "Build barrel-only DQ skimmed data model with QA plots for ambiguous tracks", false);
 };
 

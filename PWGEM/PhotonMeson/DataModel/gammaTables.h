@@ -282,6 +282,10 @@ DECLARE_SOA_COLUMN(NCells, nCells, int);                                        
 DECLARE_SOA_COLUMN(Time, time, float);                                              //! cluster time (ns)
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float);              //! distance to bad channel in cm
 DECLARE_SOA_COLUMN(NLM, nlm, int);                                                  //! number of local maxima
+// DECLARE_SOA_COLUMN(TrackEta, tracketa, float);                                      //! eta of the matched track
+// DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
+// DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
+// DECLARE_SOA_COLUMN(TrackPt, trackpt, float);                                        //! pt of the matched track
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
@@ -295,6 +299,7 @@ DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
                   phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
                   phoscluster::M02, phoscluster::M20, phoscluster::NCells,
                   phoscluster::Time, phoscluster::DistanceToBadChannel, phoscluster::NLM,
+                  // phoscluster::TrackEta, phoscluster::TrackPhi, phoscluster::TrackP, phoscluster::TrackPt,
                   // dynamic column
                   phoscluster::Px<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
                   phoscluster::Py<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
@@ -308,24 +313,42 @@ using SkimEMCCluster = SkimEMCClusters::iterator;
 
 namespace gammacellsreco
 {
-DECLARE_SOA_INDEX_COLUMN(SkimEMCCluster, skimEMCCluster); //! collisionID used as index for matched clusters
-DECLARE_SOA_INDEX_COLUMN(Calo, calo);                     //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_INDEX_COLUMN(SkimEMCCluster, skimEMCCluster); //! SkimEMCClusterID
+DECLARE_SOA_INDEX_COLUMN(Calo, calo);                     //! CaloID (CellID)
+// DECLARE_SOA_INDEX_COLUMN(Track, track);                   //! CaloID (CellID)
+DECLARE_SOA_COLUMN(TrackEta, tracketa, float); //! eta of the matched track
+DECLARE_SOA_COLUMN(TrackPhi, trackphi, float); //! phi of the matched track
+DECLARE_SOA_COLUMN(TrackP, trackp, float);     //! momentum of the matched track
+DECLARE_SOA_COLUMN(TrackPt, trackpt, float);   //! pt of the matched track
 } // namespace gammacellsreco
 
 DECLARE_SOA_TABLE(SkimEMCCells, "AOD", "SKIMEMCCELLS",                                         //! table of link between skimmed EMCal clusters and their cells
                   o2::soa::Index<>, gammacellsreco::SkimEMCClusterId, gammacellsreco::CaloId); //!
 
+DECLARE_SOA_TABLE(SkimEMCMTs, "AOD", "SKIMEMCMTS", //! table of link between skimmed EMCal clusters and their matched tracks
+                  o2::soa::Index<>, gammacellsreco::SkimEMCClusterId, gammacellsreco::TrackEta,
+                  gammacellsreco::TrackPhi, gammacellsreco::TrackP, gammacellsreco::TrackPt);
+
 namespace gammareco
 {
-DECLARE_SOA_COLUMN(Method, method, int); //! gamma type: 0 == PCM, 1 == EMCal, 2 == PHOS
-// DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPCM, skimmedPCM, int, NOT YET IMPLEMENTED?, ""); // reference to the gamma in the skimmed PCM table
-DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedEMC, skimmedEMC, int, SkimEMCClusters, ""); // reference to the gamma in the skimmed EMCal table
-// DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPHOS, skimmedPHOS, int, NOT YET IMPLEMENTED, ""); // reference to the gamma in the skimmed PHOS table
+DECLARE_SOA_COLUMN(Method, method, int);                                         //! cut bit for PCM photon candidates
+DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPCM, skimmedPCM, int, V0Photons, "");       //! reference to the gamma in the skimmed PCM table
+DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPHOS, skimmedPHOS, int, PHOSClusters, "");  //! reference to the gamma in the skimmed PHOS table
+DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedEMC, skimmedEMC, int, SkimEMCClusters, ""); //! reference to the gamma in the skimmed EMCal table
+DECLARE_SOA_COLUMN(PCMCutBit, pcmcutbit, uint64_t);                              //! cut bit for PCM photon candidates
+DECLARE_SOA_COLUMN(PHOSCutBit, phoscutbit, uint64_t);                            //! cut bit for PHOS photon candidates
+DECLARE_SOA_COLUMN(EMCCutBit, emccutbit, uint64_t);                              //! cut bit for EMCal photon candidates
 } // namespace gammareco
 DECLARE_SOA_TABLE(SkimGammas, "AOD", "SKIMGAMMAS", //! table of all gamma candidates (PCM, EMCal and PHOS) after cuts
                   o2::soa::Index<>, gammacaloreco::CollisionId, gammareco::Method,
                   gammacaloreco::Energy, gammacaloreco::Eta, gammacaloreco::Phi,
-                  gammareco::SkimmedEMCId);
+                  gammareco::SkimmedEMCId, gammareco::SkimmedPHOSId);
+DECLARE_SOA_TABLE(SkimPCMCuts, "AOD", "SKIMPCMCUTS",                                  //! table of link between skimmed PCM photon candidates and their cuts
+                  o2::soa::Index<>, gammareco::SkimmedPCMId, gammareco::PCMCutBit);   //!
+DECLARE_SOA_TABLE(SkimPHOSCuts, "AOD", "SKIMPHOSCUTS",                                //! table of link between skimmed PHOS photon candidates and their cuts
+                  o2::soa::Index<>, gammareco::SkimmedPHOSId, gammareco::PHOSCutBit); //!
+DECLARE_SOA_TABLE(SkimEMCCuts, "AOD", "SKIMEMCCUTS",                                  //! table of link between skimmed EMCal photon candidates and their cuts
+                  o2::soa::Index<>, gammareco::SkimmedEMCId, gammareco::EMCCutBit);   //!
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_

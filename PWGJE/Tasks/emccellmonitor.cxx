@@ -55,6 +55,9 @@ struct CellMonitor {
 
   o2::framework::HistogramRegistry mHistManager{"CellMonitorHistograms"};
 
+  // Require EMCAL cells (CALO type 1)
+  o2::framework::expressions::Filter emccellfilter = o2::aod::calo::caloType == 1;
+
   o2::emcal::Geometry* mGeometry = nullptr;
   std::shared_ptr<o2::emcal::BadChannelMap> mBadChannels;
   std::vector<int> mVetoBCIDs;
@@ -129,7 +132,8 @@ struct CellMonitor {
   }
 
   /// \brief Process EMCAL cells
-  void process(o2::aod::BC const& bc, o2::aod::Calos const& cells)
+  void process(o2::aod::BC const& bc, o2::soa::Filtered<o2::aod::Calos> const& cells)
+  // void process(o2::aod::BC const& bc, o2::aod::Calos const& cells)
   {
     LOG(debug) << "Processing next event";
     o2::InteractionRecord eventIR;
@@ -146,13 +150,13 @@ struct CellMonitor {
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
     for (const auto& cell : cells) {
+      // cells expected to be filtered -> only EMCAL cells
       // cell.cellNumber(),
       // cell.amplitude(),
       // cell.time(),
-      if (cell.caloType() != 1)
+      if (isCellMasked(cell.cellNumber())) {
         continue;
-      if (isCellMasked(cell.cellNumber()))
-        continue;
+      }
       o2::InteractionRecord cellIR;
       cellIR.setFromLong(cell.bc().globalBC());
       mHistManager.fill(HIST("cellBCAll"), cellIR.bc);

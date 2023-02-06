@@ -11,8 +11,7 @@
 
 // jet finder task
 //
-// Author: Nima Zardoshti
-/// \author Jochen Klein <jochen.klein@cern.ch>
+// Authors: Nima Zardoshti, Jochen Klein
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -57,7 +56,9 @@ struct JetFinderHFTask {
   Produces<JetTable> jetsTable;
   Produces<TrackConstituentTable> trackConstituents;
   OutputObj<TH1F> hJetPt{"h_jet_pt"};
-  OutputObj<TH1F> hJetPtTrue{"h_jet_pt_true"};
+  OutputObj<TH1F> hJetPhi{"h_jet_phi"};
+  OutputObj<TH1F> hJetEta{"h_jet_eta"};
+  OutputObj<TH1F> hJetNTracks{"h_jet_ntracks"};
   OutputObj<TH1F> hD0Pt{"h_D0_pt"};
 
   Service<O2DatabasePDG> pdg;
@@ -68,18 +69,40 @@ struct JetFinderHFTask {
   std::vector<fastjet::PseudoJet> inputParticles;
   JetFinder jetFinder;
 
+  Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
+  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
+  Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
+  Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
+  Configurable<float> trackEtaMin{"trackEtaMin", -0.8, "minimum track eta"};
+  Configurable<float> trackEtaMax{"trackEtaMax", 0.8, "maximum track eta"};
+  Configurable<float> candPtMin{"candPtMin", 0.0, "minimum candidate pT"};
+  Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
+  Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
+  Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
+
   void init(InitContext const&)
   {
     // set up global tracks and adjust as necessary
     globalTracks = getGlobalTrackSelection();
-    globalTracks.SetEtaRange(-.9, .9);
+    globalTracks.SetEtaRange(trackEtaMin, trackEtaMax);
 
     hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
                               100, 0., 100.));
-    hJetPtTrue.setObject(new TH1F("h_jet_pt_true", "jet p_{T};p_{T} (GeV/#it{c})",
-                                  100, 0., 100.));
+    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi",
+                               140, -7.0, 7.0));
+    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta",
+                               30, -1.5, 1.5));
+    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
+                                   150, -0.5, 99.5));
     hD0Pt.setObject(new TH1F("h_D0_pt", "jet p_{T,D};p_{T,D} (GeV/#it{c})",
-                             60, 0., 60.));
+                             100, 0., 100.));
+
+    jetFinder.etaMin = trackEtaMin;
+    jetFinder.etaMax = trackEtaMax;
+    jetFinder.jetPtMin = jetPtMin;
+    jetFinder.jetPtMax = jetPtMax;
+    jetFinder.jetR = jetR;
   }
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -88,12 +111,14 @@ struct JetFinderHFTask {
   //need enum as configurable
   enum pdgCode { pdgD0 = 421 };
 
-  Filter trackCuts = (aod::track::pt > 0.15f && aod::track::eta > -0.9f && aod::track::eta < 0.9f);
-  Filter partCuts = (aod::mcparticle::pt > 0.15f && aod::mcparticle::eta > -0.9f && aod::mcparticle::eta < 0.9f);
-  Filter seltrack = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
+  Filter trackCuts = (aod::track::pt >= trackPtMin && aod::track::pt < trackPtMax && aod::track::eta > trackEtaMin && aod::track::eta < trackEtaMax);
+  Filter partCuts = (aod::mcparticle::pt >= trackPtMin && aod::mcparticle::pt < trackPtMax);
+  Filter candCuts = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
+
+  using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
 
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                   soa::Filtered<aod::Tracks> const& tracks,
+                   JetTracks const& tracks,
                    soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates)
   {
     // TODO: retrieve pion mass from somewhere
@@ -104,36 +129,58 @@ struct JetFinderHFTask {
 
     //this loop should be made more efficient
     for (auto& candidate : candidates) {
+      if (yD0(candidate) < candYMin || yD0(candidate) > candYMax) {
+        continue;
+      }
+      if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
+        continue;
+      }
       jets.clear();
       inputParticles.clear();
       for (auto& track : tracks) {
-        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        if (candidate.prong0().globalIndex() == track.globalIndex() || candidate.prong1().globalIndex() == track.globalIndex()) { // is it global index?
+        if (!globalTracks.IsSelected(track)) {
           continue;
         }
-        inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
-        inputParticles.back().set_user_index(track.globalIndex());
+        if (candidate.prong0_as<JetTracks>().globalIndex() == track.globalIndex() || candidate.prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
+          continue;
+        }
+        fillConstituents(track, inputParticles, track.globalIndex());
       }
-      inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e(RecoDecay::getMassPDG(pdgD0)));
-      inputParticles.back().set_user_index(1);
-
+      fillConstituents(candidate, inputParticles, -1, RecoDecay::getMassPDG(pdgD0));
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
-
       for (const auto& jet : jets) {
         isHFJet = false;
+        if (jet.eta() < trackEtaMin + jetR || jet.eta() > trackEtaMax - jetR) {
+          continue;
+        }
+        if (jet.perp() < jetPtMin || jet.perp() >= jetPtMax) {
+          continue;
+        }
+        std::vector<int> trackconst;
+        std::vector<int> candconst;
         for (const auto& constituent : jet.constituents()) {
-          if (constituent.user_index() == 1 && (candidate.isSelD0() == 1 || candidate.isSelD0bar() == 1)) {
+          if (constituent.user_index() == -1) {
             isHFJet = true;
             break;
           }
         }
+
         if (isHFJet) {
           jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                     jet.E(), jet.m(), jet.area(), jetFinder.jetR);
-          // for (const auto& constituent : jet.constituents()) {
-          // trackConstituents(jetsTable.lastIndex(), constituent.user_index());
-          // }
+          const auto& constituents = sorted_by_pt(jet.constituents());
+          for (const auto& constituent : constituents) {
+            if (constituent.user_index() != -1) {
+              // auto track = tracks.rawIteratorAt(constituent.user_index() - tracks.offset());
+              trackconst.push_back(constituent.user_index());
+            }
+          }
+          candconst.push_back(candidate.globalIndex()); // is this grouped per collision too?
+          trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
+          hJetPhi->Fill(jet.phi());
+          hJetEta->Fill(jet.rap());
+          hJetNTracks->Fill(jet.constituents().size());
           hD0Pt->Fill(candidate.pt());
           break;
         }
@@ -143,43 +190,52 @@ struct JetFinderHFTask {
   PROCESS_SWITCH(JetFinderHFTask, processData, "HF jet finding on data", true);
 
   void processMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                  soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks,
+                  JetTracks const& tracks,
                   soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> const& candidates)
   {
-    LOG(debug) << "Per Event MCP";
     // TODO: retrieve pion mass from somewhere
     bool isHFJet;
-
     //this loop should be made more efficient
     // TODO: should probably refine the candidate selection
     for (auto& candidate : candidates) {
+      if (yD0(candidate) < candYMin || yD0(candidate) > candYMax) {
+        continue;
+      }
+      if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
+        continue;
+      }
+      // are the next two ifs needed?
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        continue;
+      }
+      if (!(std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        continue;
+      }
       jets.clear();
       inputParticles.clear();
       for (auto& track : tracks) {
         if (!globalTracks.IsSelected(track)) {
-          LOGF(info, "Rejecting track %d with track cuts", track.globalIndex());
           continue;
         }
-        if (candidate.prong0().globalIndex() == track.globalIndex() || candidate.prong1().globalIndex() == track.globalIndex()) {
-          LOGF(info, "Rejecting track %d as daughter of candidate %d", track.globalIndex(), candidate.globalIndex());
+        if (candidate.prong0_as<JetTracks>().globalIndex() == track.globalIndex() || candidate.prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
-        // LOGF(info, "Adding track %d with pt %g", track.globalIndex(), track.pt());
-        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
-        inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
-        inputParticles.back().set_user_index(track.globalIndex());
+        fillConstituents(track, inputParticles, track.globalIndex());
       }
-      inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e(RecoDecay::getMassPDG(pdgD0)));
-      inputParticles.back().set_user_index(1);
-
+      fillConstituents(candidate, inputParticles, -1, RecoDecay::getMassPDG(pdgD0));
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
-
       for (const auto& jet : jets) {
         isHFJet = false;
+        if (jet.eta() < trackEtaMin + jetR || jet.eta() > trackEtaMax - jetR) { // is this needed?
+          continue;
+        }
+        if (jet.perp() < jetPtMin || jet.perp() >= jetPtMax) {
+          continue;
+        }
         std::vector<int> trackconst;
         std::vector<int> candconst;
         for (const auto& constituent : jet.constituents()) {
-          if (constituent.user_index() == 1 && (candidate.isSelD0() == 1 || candidate.isSelD0bar() == 1)) {
+          if (constituent.user_index() == -1) {
             isHFJet = true;
             break;
           }
@@ -189,19 +245,17 @@ struct JetFinderHFTask {
                     jet.E(), jet.m(), jet.area(), jetFinder.jetR);
           const auto& constituents = sorted_by_pt(jet.constituents());
           for (const auto& constituent : constituents) {
-            if (constituent.user_index() != 1) {
-              LOGF(info, "jet %d (coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
-              auto track = tracks.rawIteratorAt(constituent.user_index());
-              LOGF(info, "constituent %d points to track %d (coll %d)", constituent.user_index(), track.globalIndex(), 0); // , track.collisionId()); // .globalIndex());
+            if (constituent.user_index() != -1) {
+              // auto track = tracks.rawIteratorAt(constituent.user_index() - tracks.offset());
               trackconst.push_back(constituent.user_index());
             }
           }
-          LOGF(info, "jet %d (coll %d) has candidate %d-%d", jetsTable.lastIndex(), collision.globalIndex(), candidate.index(), candidate.globalIndex());
-          candconst.push_back(candidate.globalIndex());
+          candconst.push_back(candidate.globalIndex()); // check if its correct
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
-          if (candidate.flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK))
-            hJetPtTrue->Fill(jet.pt());
+          hJetPhi->Fill(jet.phi());
+          hJetEta->Fill(jet.rap());
+          hJetNTracks->Fill(jet.constituents().size());
           hD0Pt->Fill(candidate.pt());
           break;
         }
@@ -222,8 +276,14 @@ struct JetFinderHFTask {
     for (auto const& part : particles) {
       // TODO: generalise to any D0
       if (std::abs(part.flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        auto partY = RecoDecay::y(array{part.px(), part.py(), part.pz()}, RecoDecay::getMassPDG(part.pdgCode()));
+        if (partY < candYMin || partY > candYMax) {
+          continue;
+        }
+        if (part.pt() < candPtMin || part.pt() >= candPtMax) {
+          continue;
+        }
         candidates.push_back(part);
-        LOGF(info, "MC candidate %d -> %d", part.globalIndex(), candidates.back().globalIndex());
       }
     }
 
@@ -234,36 +294,37 @@ struct JetFinderHFTask {
       for (auto& track : particles) {
         // exclude neutral particles
         // TODO: can we do this through the filter?
+        if (track.eta() < trackEtaMin || track.eta() > trackEtaMax) {
+          continue;
+        }
         auto p = pdg->GetParticle(track.pdgCode());
-        // LOGF(info, "Checking particle %i with status %d and charge %g",
         //   track.globalIndex(), track.getGenStatusCode(), p ? std::abs(p->Charge()) : -999.);
         if ((track.getGenStatusCode() != 1) || (p ? std::abs(p->Charge()) : 0.) < 3.) {
-          LOGF(info, "Rejecting particle %d with status %d and charge %g", track.globalIndex(), track.getGenStatusCode(), p ? std::abs(p->Charge()) : -999.);
           continue;
         }
-
         // TODO: check what mass to use?
-        auto energy = std::sqrt(track.p() * track.p() + JetFinder::mPion * JetFinder::mPion);
         const auto daughters = candidate.daughtersIds();
         if (std::find(std::begin(daughters), std::end(daughters), track.globalIndex()) != std::end(daughters)) {
-          LOGF(info, "Rejecting particle %d as daughter of candidate %d", track.globalIndex(), candidate.globalIndex());
           continue;
         }
-        // LOGF(info, "Adding particle %d with pt %g", track.globalIndex(), track.pt());
-        inputParticles.emplace_back(track.px(), track.py(), track.pz(), energy);
-        inputParticles.back().set_user_index(track.globalIndex());
+        fillConstituents(track, inputParticles, track.globalIndex(), RecoDecay::getMassPDG(track.pdgCode()));
       }
-      inputParticles.emplace_back(candidate.px(), candidate.py(), candidate.pz(), candidate.e());
-      inputParticles.back().set_user_index(1);
+      fillConstituents(candidate, inputParticles, -1, RecoDecay::getMassPDG(candidate.pdgCode()));
 
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
 
       for (const auto& jet : jets) {
+        if (jet.eta() < trackEtaMin + jetR || jet.eta() > trackEtaMax - jetR) {
+          continue;
+        }
+        if (jet.perp() < jetPtMin || jet.perp() >= jetPtMax) {
+          continue;
+        }
         isHFJet = false;
         std::vector<int> trackconst;
         std::vector<int> candconst;
         for (const auto& constituent : jet.constituents()) {
-          if (constituent.user_index() == 1) {
+          if (constituent.user_index() == -1) {
             isHFJet = true;
             break;
           }
@@ -272,17 +333,17 @@ struct JetFinderHFTask {
           jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                     jet.E(), jet.m(), jet.area(), jetFinder.jetR);
           for (const auto& constituent : jet.constituents()) {
-            if (constituent.user_index() == 1)
+            if (constituent.user_index() == -1)
               continue;
-            LOGF(info, "MC jet %d (MC coll %d) has constituent %d", jetsTable.lastIndex(), collision.globalIndex(), constituent.user_index());
             trackconst.push_back(constituent.user_index());
           }
-          LOGF(info, "MC jet %d (MC coll %d) has candidate %d",
-               jetsTable.lastIndex(), collision.globalIndex(), candidates.back().globalIndex());
+
           candconst.push_back(candidate.globalIndex());
-          LOGF(info, "MC jet %d has %d track and %d candidate constituents", jetsTable.lastIndex(), trackconst.size(), candconst.size());
           trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
           hJetPt->Fill(jet.pt());
+          hJetPhi->Fill(jet.phi());
+          hJetEta->Fill(jet.rap());
+          hJetNTracks->Fill(jet.constituents().size());
           hD0Pt->Fill(candidate.pt());
           break;
         }
