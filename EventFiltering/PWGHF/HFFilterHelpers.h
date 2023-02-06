@@ -24,7 +24,11 @@
 #include "Framework/DataTypes.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/Propagator.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -137,15 +141,16 @@ static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{10
 static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.3f, 5.9f}, AxisSpec{100, 5.3f, 5.9f}};
 
 /// Single-track cuts for bachelor track of beauty candidates
-/// \param track is a track
+/// \param trackPar is a track parameter
+/// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \param pTMinSoftPion min pT for soft pions
 /// \param pTMinBeautyBachelor min pT for beauty bachelor pions
 /// \param cutsSingleTrackBeauty cuts for all tracks
 /// \return 0 if track is rejected, 1 if track is soft pion, 2 if it is regular beauty
-template <typename T1, typename T2, typename T3>
-int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T2& pTBinsTrack, const T3& cutsSingleTrackBeauty)
+template <typename T1, typename T2, typename T3, typename T4>
+int isSelectedTrackForBeauty(const T1& trackPar, const T2& dca, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T3& pTBinsTrack, const T4& cutsSingleTrackBeauty)
 {
-  auto pT = track.pt();
+  auto pT = trackPar.getPt();
   auto pTBinTrack = findBin(pTBinsTrack, pT);
   if (pTBinTrack == -1) {
     return kRejected;
@@ -155,18 +160,18 @@ int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const 
     return kRejected;
   }
 
-  if (std::abs(track.eta()) > 0.8) {
+  if (std::abs(trackPar.getEta()) > 0.8) {
     return kRejected;
   }
 
-  if (std::abs(track.dcaZ()) > 2.f) {
+  if (std::abs(dca[1]) > 2.f) {
     return kRejected;
   }
 
-  if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
+  if (std::abs(dca[0]) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
     return kRejected; // minimum DCAxy
   }
-  if (std::abs(track.dcaXY()) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
+  if (std::abs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
     return kRejected; // maximum DCAxy
   }
 
@@ -180,6 +185,7 @@ int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const 
 
 /// Basic selection of proton candidates
 /// \param track is a track
+/// \param trackPar is a track parameter
 /// \param femtoMinProtonPt min pT for proton candidates
 /// \param femtoMaxNsigmaProton max Nsigma for proton candidates
 /// \param femtoProtonOnlyTOF flag to activate PID selection with TOF only
@@ -190,17 +196,18 @@ int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const 
 /// \param hProtonTPCPID histo with NsigmaTPC vs. p
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
 /// \return true if track passes all cuts
-template <typename T, typename H2, typename H3>
-bool isSelectedProton4Femto(const T& track, const float& femtoMinProtonPt, const float& femtoMaxNsigmaProton, const bool femtoProtonOnlyTOF, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
+template <typename T1, typename T2, typename H2, typename H3>
+bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& femtoMinProtonPt, const float& femtoMaxNsigmaProton, const bool femtoProtonOnlyTOF, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
 {
-  if (track.pt() < femtoMinProtonPt) {
+  if (trackPar.getPt() < femtoMinProtonPt) {
     return false;
   }
 
-  if (std::abs(track.eta()) > 0.8) {
+  if (std::abs(trackPar.getEta()) > 0.8) {
     return false;
   }
 
+  // FIXME: this is applied to the wrong dca for ambiguous tracks!
   if (track.isGlobalTrack() != (uint8_t) true) {
     return false; // use only global tracks
   }
@@ -666,15 +673,15 @@ int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores)
 }
 
 /// Computation of the relative momentum between particle pairs
-/// \param track is a track
+/// \param pTrack is the track momentum array
 /// \param ProtonMass is the mass of a proton
 /// \param CharmCandMomentum is the three momentum of a charm candidate
 /// \param CharmMass is the mass of the charm hadron
 /// \return relative momentum of pair
 template <typename T>
-float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
+T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass)
 {
-  ROOT::Math::PxPyPzMVector part1(track.px(), track.py(), track.pz(), massProton);
+  ROOT::Math::PxPyPzMVector part1(pTrack[0], pTrack[1], pTrack[2], massProton);
   ROOT::Math::PxPyPzMVector part2(CharmCandMomentum[0], CharmCandMomentum[1], CharmCandMomentum[2], CharmMass);
 
   ROOT::Math::PxPyPzMVector trackSum = part1 + part2;
@@ -683,7 +690,7 @@ float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmC
   ROOT::Math::PxPyPzMVector part2CM = boostv12(part2);
   ROOT::Math::PxPyPzMVector trackRelK = part1CM - part2CM;
 
-  float kStar = 0.5 * trackRelK.P();
+  T kStar = 0.5 * trackRelK.P();
   return kStar;
 } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
