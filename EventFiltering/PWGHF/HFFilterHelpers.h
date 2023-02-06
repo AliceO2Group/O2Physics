@@ -846,18 +846,6 @@ float getTPCPostCalib(const TH3F* hCalibMean, const TH3F* hCalibSigma, const T& 
 } // namespace hffilters
 
 /// definition of tables
-
-namespace extra2Prong
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace extra2Prong
-namespace extra3Prong
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace extra3Prong
-DECLARE_SOA_TABLE(Colls2Prong, "AOD", "COLLSID2P", o2::aod::extra2Prong::CollisionId);
-DECLARE_SOA_TABLE(Colls3Prong, "AOD", "COLLSID3P", o2::aod::extra3Prong::CollisionId);
-
 namespace hftraining
 {
 DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                 //!

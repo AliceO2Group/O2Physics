@@ -41,24 +41,6 @@ using namespace o2::aod::hffilters;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
 
-struct AddCollisionId {
-
-  Produces<o2::aod::Colls2Prong> colls2Prong;
-  Produces<o2::aod::Colls3Prong> colls3Prong;
-
-  void process(aod::Hf2Prongs const& cand2Prongs,
-               aod::Hf3Prongs const& cand3Prongs,
-               aod::Tracks const&)
-  {
-    for (const auto& cand2Prong : cand2Prongs) {
-      colls2Prong(cand2Prong.prong0_as<aod::Tracks>().collisionId());
-    }
-    for (const auto& cand3Prong : cand3Prongs) {
-      colls3Prong(cand3Prong.prong0_as<aod::Tracks>().collisionId());
-    }
-  }
-};
-
 struct HfFilter { // Main struct for HF triggers
 
   Produces<aod::HfFilters> tags;
@@ -254,8 +236,6 @@ struct HfFilter { // Main struct for HF triggers
     }
   }
 
-  using HfTrackIndexProng2withColl = soa::Join<aod::Hf2Prongs, aod::Colls2Prong>;
-  using HfTrackIndexProng3withColl = soa::Join<aod::Hf3Prongs, aod::Colls3Prong>;
   using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels>;
 
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
@@ -264,8 +244,8 @@ struct HfFilter { // Main struct for HF triggers
   void process(aod::Collision const& collision,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
-               HfTrackIndexProng2withColl const& cand2Prongs,
-               HfTrackIndexProng3withColl const& cand3Prongs,
+               aod::Hf2Prongs const& cand2Prongs,
+               aod::Hf3Prongs const& cand3Prongs,
                BigTracksPID const& tracks)
   {
     if (applyOptimisation) {
@@ -842,7 +822,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
 
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<AddCollisionId>(cfg));
   workflow.push_back(adaptAnalysisTask<HfFilter>(cfg));
 
   return workflow;
