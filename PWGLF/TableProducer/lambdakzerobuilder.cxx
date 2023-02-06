@@ -112,16 +112,16 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
+using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
+using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 
 // For MC association in pre-selection
-using LabeledTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
+using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeroBuilder {
   Produces<aod::StoredV0Datas> v0data;
@@ -779,11 +779,11 @@ struct lambdakzeroPreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all V0s are built. It will simply tag everything as true.
-  void processBuildAll(aod::V0s const& v0table, TracksWithExtra const&)
+  void processBuildAll(aod::V0s const& v0table, aod::TracksExtra const&)
   {
     for (auto& v0 : v0table) {
       bool lIsQualityInteresting = false;
-      checkTrackQuality<TracksWithExtra>(v0, lIsQualityInteresting, true, true, true, true, true, true);
+      checkTrackQuality<aod::TracksExtra>(v0, lIsQualityInteresting, true, true, true, true, true, true);
       v0tags(lIsQualityInteresting,
              true, true, true, true, true, true,
              true, true, true, true, true, true);
@@ -791,7 +791,7 @@ struct lambdakzeroPreselector {
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildAll, "Switch to build all V0s", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
       bool lIsInteresting = false;
@@ -804,8 +804,8 @@ struct lambdakzeroPreselector {
 
       bool lIsQualityInteresting = false;
 
-      checkPDG<LabeledTracks>(v0, lIsInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
-      checkTrackQuality<LabeledTracks>(v0, lIsQualityInteresting, true, true, true, true, true, true);
+      checkPDG<LabeledTracksExtra>(v0, lIsInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
+      checkTrackQuality<LabeledTracksExtra>(v0, lIsQualityInteresting, true, true, true, true, true, true);
       v0tags(lIsInteresting * lIsQualityInteresting,
              lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
              true, true, true, true, true, true);
@@ -813,7 +813,7 @@ struct lambdakzeroPreselector {
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::V0s const& v0table, TracksWithPID const&)
+  void processBuildValiddEdx(aod::Collision const& collision, aod::V0s const& v0table, TracksExtraWithPID const&)
   {
     for (auto& v0 : v0table) {
       bool lIsInteresting = false;
@@ -826,8 +826,8 @@ struct lambdakzeroPreselector {
 
       bool lIsQualityInteresting = false;
 
-      checkdEdx<TracksWithPID>(v0, lIsInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      checkTrackQuality<TracksWithPID>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      checkdEdx<TracksExtraWithPID>(v0, lIsInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      checkTrackQuality<TracksExtraWithPID>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
       v0tags(lIsInteresting * lIsQualityInteresting,
              true, true, true, true, true, true,
              lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
@@ -835,7 +835,7 @@ struct lambdakzeroPreselector {
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, TracksWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&)
   {
     for (auto& v0 : v0table) {
       bool lIsTrueInteresting = false;
@@ -856,9 +856,9 @@ struct lambdakzeroPreselector {
 
       bool lIsQualityInteresting = false;
 
-      checkPDG<TracksWithPIDandLabels>(v0, lIsTrueInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
-      checkdEdx<TracksWithPIDandLabels>(v0, lIsdEdxInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      checkTrackQuality<TracksWithPIDandLabels>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      checkPDG<TracksExtraWithPIDandLabels>(v0, lIsTrueInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
+      checkdEdx<TracksExtraWithPIDandLabels>(v0, lIsdEdxInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
       v0tags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
              lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
              lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);

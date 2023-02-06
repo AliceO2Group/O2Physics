@@ -103,17 +103,17 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>; // generally always need DCA, will have Tracks too
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
+using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::McTrackLabels>;
+using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
 
 // For MC association in pre-selection
-using LabeledTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
+using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
@@ -625,6 +625,32 @@ struct cascadeBuilder {
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
+
+      // populate cascade covariance matrices if required by any other task
+      if (createCascCovMats) {
+        // Calculate position covariance matrix
+        auto covVtxV = fitter.calcPCACovMatrix(0);
+        // std::array<float, 6> positionCovariance;
+        float positionCovariance[6];
+        positionCovariance[0] = covVtxV(0, 0);
+        positionCovariance[1] = covVtxV(1, 0);
+        positionCovariance[2] = covVtxV(1, 1);
+        positionCovariance[3] = covVtxV(2, 0);
+        positionCovariance[4] = covVtxV(2, 1);
+        positionCovariance[5] = covVtxV(2, 2);
+        // store momentum covariance matrix
+        std::array<float, 21> covTv0 = {0.};
+        std::array<float, 21> covTbachelor = {0.};
+        // std::array<float, 6> momentumCovariance;
+        float momentumCovariance[6];
+        lV0Track.getCovXYZPxPyPzGlo(covTv0);
+        lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+        }
+        casccovs(positionCovariance, momentumCovariance);
+      }
     }
     // En masse filling at end of process call
     fillHistos();
@@ -827,11 +853,11 @@ struct cascadePreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
-  void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithExtra const&)
+  void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, aod::TracksExtra const&)
   {
     for (auto& casc : cascades) {
       bool lIsQualityInteresting = false;
-      checkTrackQuality<TracksWithExtra>(casc, lIsQualityInteresting, true, true, true, true);
+      checkTrackQuality<aod::TracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
       casctags(lIsQualityInteresting,
                true, true, true, true,
                true, true, true, true);
@@ -839,7 +865,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -849,8 +875,8 @@ struct cascadePreselector {
       bool lIsTrueOmegaMinus = false;
       bool lIsTrueOmegaPlus = false;
 
-      checkPDG<LabeledTracks>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkTrackQuality<LabeledTracks>(casc, lIsQualityInteresting, true, true, true, true);
+      checkPDG<LabeledTracksExtra>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
+      checkTrackQuality<LabeledTracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
       casctags(lIsInteresting * lIsQualityInteresting,
                lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
                true, true, true, true);
@@ -858,7 +884,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPID const&)
+  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPID const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -868,8 +894,8 @@ struct cascadePreselector {
       bool lIsdEdxOmegaMinus = false;
       bool lIsdEdxOmegaPlus = false;
 
-      checkdEdx<TracksWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksWithPID>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkdEdx<TracksExtraWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkTrackQuality<TracksExtraWithPID>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
       casctags(lIsInteresting * lIsQualityInteresting,
                true, true, true, true,
                lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
@@ -877,7 +903,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&)
   {
     for (auto& casc : cascades) {
       bool lIsdEdxInteresting = false;
@@ -893,9 +919,9 @@ struct cascadePreselector {
       bool lIsTrueOmegaMinus = false;
       bool lIsTrueOmegaPlus = false;
 
-      checkPDG<TracksWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkdEdx<TracksWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksWithPIDandLabels>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkPDG<TracksExtraWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
+      checkdEdx<TracksExtraWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
       casctags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
                lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
                lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
