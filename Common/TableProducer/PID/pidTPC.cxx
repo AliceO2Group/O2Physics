@@ -165,7 +165,7 @@ struct tpcPid {
           headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, ccdbTimestamp.value);
           if (retrieveSuccess) {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
-            network.evalModel(std::vector<float>(network.getInputDimensions(), 1.)); /// Init the model evaluations
+            network.evalModel(std::vector<float>(network.getNumInputNodes(), 1.)); /// Init the model evaluations
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }
@@ -176,7 +176,7 @@ struct tpcPid {
           }
           LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
           network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value);
-          network.evalModel(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          network.evalModel(std::vector<float>(network.getNumInputNodes(), 1.)); // This is an initialisation and might reduce the overhead of the model
         }
       } else {
         return;
@@ -220,7 +220,7 @@ struct tpcPid {
           headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
           if (retrieveSuccess) {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
-            network.evalModel(std::vector<float>(network.getInputDimensions(), 1.));
+            network.evalModel(std::vector<float>(network.getNumInputNodes(), 1.));
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }
@@ -228,8 +228,8 @@ struct tpcPid {
       }
 
       // Defining some network parameters
-      int input_dimensions = network.getInputDimensions();
-      int output_dimensions = network.getOutputDimensions();
+      int input_dimensions = network.getNumInputNodes();
+      int output_dimensions = network.getNumOutputNodes();
       const uint64_t track_prop_size = input_dimensions * tracks_size;
       const uint64_t prediction_size = output_dimensions * tracks_size;
 
@@ -294,11 +294,11 @@ struct tpcPid {
 
           // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
           // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
-          if (network.getOutputDimensions() == 1) {
+          if (network.getNumOutputNodes() == 1) {
             aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - network_prediction[count_tracks + tracks_size * pid] * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
-          } else if (network.getOutputDimensions() == 2) {
+          } else if (network.getNumOutputNodes() == 2) {
             aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[2 * (count_tracks + tracks_size * pid)]) / (network_prediction[2 * (count_tracks + tracks_size * pid) + 1] - network_prediction[2 * (count_tracks + tracks_size * pid)]), table);
-          } else if (network.getOutputDimensions() == 3) {
+          } else if (network.getNumOutputNodes() == 3) {
             if (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) >= network_prediction[3 * (count_tracks + tracks_size * pid)]) {
               aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]), table);
             } else {
