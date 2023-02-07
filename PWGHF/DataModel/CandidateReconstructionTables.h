@@ -533,7 +533,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 template <typename T>
 auto invMassLcToK0sP(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(kK0Short), RecoDecay::getMassPDG(kProton)}); // first daughter is K0s
+  return candidate.m(array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kK0Short)}); // first daughter is bachelor
 }
 
 template <typename T>

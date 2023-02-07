@@ -91,7 +91,7 @@ struct strangenessFilter {
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
   Configurable<float> hMinPt{"hMinPt", 1.0f, "Min pt for trigger particles"};
-  Configurable<bool> isTrackFilter{"isTrackFilter", "true", "Apply track myTrackSelections"};
+  Configurable<bool> isTrackFilter{"isTrackFilter", true, "Apply track myTrackSelections"};
 
   void init(o2::framework::InitContext&)
   {
