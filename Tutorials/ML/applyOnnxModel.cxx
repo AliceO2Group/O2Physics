@@ -57,9 +57,9 @@ struct applyModel {
 
   void process(aod::Tracks const&)
   {
-    std::vector<float> modelInput = std::vector<float>(network.getInputDimensions() * 10, 0.); // Use an input of size 100 * (number of model inputs)
+    std::vector<float> modelInput = std::vector<float>(network.getNumInputNodes() * 10, 0.); // Use an input of size 100 * (number of model inputs)
     TRandom3* fRndm = new TRandom3(0);
-    for (int i = 0; i < network.getInputDimensions() * 10; i++) {
+    for (int i = 0; i < network.getNumInputNodes() * 10; i++) {
       modelInput[i] = fRndm->Rndm();
     }
     float* modelOutput = network.evalModel(modelInput); // evaluate
