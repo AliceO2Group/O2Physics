@@ -44,8 +44,8 @@ struct HfCandidateSelectorOmegac {
   Configurable<double> dcaOmegacDauMax{"dcaOmegacDauMax", 5.0, "Max DCA omegac daughters"};
 
   // limit charm baryon invariant mass spectrum
-  Configurable<double> invMassOmegacMin{"invMassOmegacMin", 2.4, "Lower limit invariant mass spectrum charm baryon"};
-  Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.0, "Upper limit invariant mass spectrum charm baryon"};
+  Configurable<double> invMassOmegacMin{"invMassOmegacMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
+  Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
   Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "Max absolute value of eta"};
@@ -91,7 +91,6 @@ struct HfCandidateSelectorOmegac {
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hInvMassOmegacNotFixed{TH1F("hInvMassOmegacNotFixed", "Omegac invariant mass (not fixed);inv mass;entries", 500, 2.2, 3.1)};
 
   // temporary histo for debugging (to be removed after test on hyperloop)
   OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
@@ -205,8 +204,8 @@ struct HfCandidateSelectorOmegac {
       }
 
       // pT selections
-      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCascAtProd(), candidate.pyPiFromCascAtProd());
-      double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPiAtProd(), candidate.pyPrimaryPiAtProd());
+      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCasc(), candidate.pyPiFromCasc());
+      double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPi(), candidate.pyPrimaryPi());
       if (std::abs(ptPiFromCasc) > ptPiFromCascMin) {
         continue;
       }
@@ -374,7 +373,6 @@ struct HfCandidateSelectorOmegac {
         hxVertexOmegac->Fill(candidate.xDecayVtxOmegac());
         hInvMassOmegac->Fill(invMassOmegac);
         hCTauOmegac->Fill(candidate.ctauOmegac());
-        hInvMassOmegacNotFixed->Fill(candidate.massOmegacNotFixed());
       }
     }
   }
