@@ -197,7 +197,7 @@ struct tracksWGTInBCs {
   {
     LOGF(info, "Tables tibcs and ftibcs are not filled!");
   }
-  PROCESS_SWITCH(tracksWGTInBCs, processDummy, "Process dummy task", true);
+  PROCESS_SWITCH(tracksWGTInBCs, processNone, "Process dummy task", true);
 };
 
 // -----------------------------------------------------------------------------
