@@ -969,8 +969,12 @@ struct HfTrackIndexSkimCreator {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const&)
+  void init(InitContext const& context)
   {
+    if (!(context.mOptions.get<bool>("process2And3Prongs"))) {
+      return;
+    }
+
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = array{array{massPi, massK},
                                                               array{massK, massPi}};
 
@@ -1460,7 +1464,13 @@ struct HfTrackIndexSkimCreator {
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
 
-  void process( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+  void processNo2And3Prongs(SelectedCollisions const&)
+  {
+    // dummy
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, processNo2And3Prongs, "Do not process 2-prongs and 3-prongs", false);
+
+  void process2And3Prongs( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     FilteredHfTrackAssocSel const& trackIndices,
@@ -2224,6 +2234,7 @@ struct HfTrackIndexSkimCreator {
       }
     }
   }
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3Prongs, "Process 2-prong and 3-prong skim", true);
 };
 
 //________________________________________________________________________________________________________________________
