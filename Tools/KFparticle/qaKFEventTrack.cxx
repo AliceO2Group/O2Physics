@@ -622,6 +622,12 @@ struct qaKFEvent {
   /// Process function for data
   void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
   {
+    float time = 0;
+    uint64_t time_bc = 0;
+    uint64_t bc_number = 0;
+    int bcID = 0;
+
+
     for (auto& collisionIndex : collisions) {
       auto bc = collisionIndex.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
@@ -633,6 +639,15 @@ struct qaKFEvent {
         continue;
       }
       writeVarTreeColl(collisionIndex);
+
+      time_bc = bc.timestamp();
+      time = collisionIndex.collisionTime();
+      bc_number = bc.globalBC();
+      bcID = collisionIndex.bcId();
+      cout << "relative time collision: " << time << endl;
+      cout << "timestamp bc: " << time_bc << endl;
+      cout << "bc number: " << bc_number << endl;
+      cout << "bc ID collision: " << bcID << endl;
     }
   }
   PROCESS_SWITCH(qaKFEvent, processCollisions, "process collision", true);
