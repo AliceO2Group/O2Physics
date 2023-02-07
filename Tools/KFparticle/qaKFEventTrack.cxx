@@ -19,6 +19,8 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <string>
 #include "TableHelper.h"
+#include <iostream>
+using namespace std;
 
 /// includes O2
 #include "Framework/AnalysisTask.h"
@@ -218,16 +220,8 @@ struct qaKFEventTrack {
   bool isSelectedCollision(const T& collision)
   {
     /// Trigger selection
-    if (eventSelection) {
-      if (isRun3) {
-        if (!collision.sel8()) {
-          return false;
-        }
-      } else {
-        if (!collision.sel7()) {
-          return false;
-        }
-      }
+    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return false;
     }
     return true;
   }
@@ -347,7 +341,7 @@ struct qaKFEventTrack {
 
       /// Apply single track selection
       if (!isSelectedTracks(track)) {
-        return;
+        continue;
       }
 
       KFPTrack kfpTrack;
@@ -443,7 +437,7 @@ struct qaKFEventTrack {
 
       /// Apply single track selection
       if (!isSelectedTracks(track)) {
-        return;
+        continue;
       }
 
       /// Check whether the track was assigned to the true MC PV
@@ -547,7 +541,6 @@ struct qaKFEvent {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
   double magneticField = 0.;
-
   /// option to select good events
   Configurable<bool> eventSelection{"eventSelection", true, "select good events"}; // currently only sel8 is defined for run3
   Configurable<bool> writeTree{"writeTree", true, "write daughter variables in a tree"};
@@ -595,6 +588,7 @@ struct qaKFEvent {
       ccdb->get<TGeoManager>(ccdbPathGeo);
     }
     runNumber = 0;
+
   } /// End init
 
   /// Function to select collisions
@@ -602,16 +596,8 @@ struct qaKFEvent {
   bool isSelectedCollision(const T& collision)
   {
     /// Trigger selection
-    if (eventSelection) {
-      if (isRun3) {
-        if (!collision.sel8()) {
-          return false;
-        }
-      } else {
-        if (!collision.sel7()) {
-          return false;
-        }
-      }
+    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return false;
     }
     return true;
   }
@@ -636,18 +622,15 @@ struct qaKFEvent {
   /// Process function for data
   void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
   {
-
     for (auto& collisionIndex : collisions) {
-
       auto bc = collisionIndex.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
         magneticField = o2::base::Propagator::Instance()->getNominalBz();
       }
-
       /// Apply event selection
       if (!isSelectedCollision(collisionIndex)) {
-        return;
+        continue;
       }
       writeVarTreeColl(collisionIndex);
     }

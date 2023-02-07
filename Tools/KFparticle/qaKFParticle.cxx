@@ -727,7 +727,7 @@ struct qaKFParticle {
 
       /// Apply single track selection
       if (!isSelectedTracks(track1, track2)) {
-        return;
+        continue;
       }
 
       histos.fill(HIST("Tracks/dcaXYToPV"), track1.dcaXY());
@@ -940,7 +940,7 @@ struct qaKFParticle {
 
       /// Apply single track selection
       if (!isSelectedTracks(track1, track2)) {
-        return;
+        continue;
       }
 
       /// Check whether the track was assigned to the true MC PV
