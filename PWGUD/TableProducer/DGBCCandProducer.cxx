@@ -678,7 +678,7 @@ struct DGBCCandProducer {
             auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
             isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
-          
+
           if (isDG2 == 0) {
             // this is a DG candidate with tracks-in-BC
             SETBIT(bcFlag, 5);
@@ -692,7 +692,7 @@ struct DGBCCandProducer {
           }
         }
       }
-      
+
       // update histograms
       registry.get<TH1>(HIST("bcFlag"))->Fill(bcFlag, 1.);
       registry.get<TH2>(HIST("isDG1vsisDG2"))->Fill(isDG1, isDG2);

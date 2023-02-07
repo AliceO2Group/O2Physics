@@ -482,7 +482,7 @@ struct DiffQA {
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
         isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
-        
+
         if (bc.has_foundFV0()) {
           ampFV0A += udhelpers::FV0AmplitudeA(bc.foundFV0());
         }
@@ -522,7 +522,7 @@ struct DiffQA {
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
         isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
-        
+
         if (bc.has_foundFV0()) {
           ampFV0A += udhelpers::FV0AmplitudeA(bc.foundFV0());
         }
