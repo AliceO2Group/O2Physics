@@ -103,9 +103,6 @@ constexpr static int pairTypeEE = VarManager::kDecayToEE;
 constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
-const char* ccdbpath_grp = "GLO/GRP/GRP";
-const char* ccdburl = "http://alice-ccdb.cern.ch";
-
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
 
@@ -746,6 +743,9 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -896,7 +896,7 @@ struct AnalysisSameEventPairing {
   void runSameEventPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     if (fUseRemoteField.value) {
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, event.timestamp());
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPath, event.timestamp());
       if (grpo != nullptr) {
         mMagField = grpo->getNominalL3Field();
       } else {

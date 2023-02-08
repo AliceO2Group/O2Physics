@@ -86,9 +86,6 @@ constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | Va
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
-const char* ccdbpath_grp = "GLO/GRP/GRP";
-const char* ccdburl = "http://alice-ccdb.cern.ch";
-
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
 struct AnalysisEventSelection {
@@ -498,6 +495,9 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
   // TODO:   special AnalysisCuts to be prepared in this direction
@@ -661,7 +661,7 @@ struct AnalysisSameEventPairing {
   void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     if (fUseRemoteField.value) {
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, event.timestamp());
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPath, event.timestamp());
       if (grpo != nullptr) {
         mMagField = grpo->getNominalL3Field();
       } else {
