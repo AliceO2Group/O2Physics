@@ -108,7 +108,7 @@ float* OnnxModel::evalModel(std::vector<Ort::Value> input)
     auto outputTensors = mSession->Run(mInputNames, input, mOutputNames);
     float* outputValues = outputTensors[0].GetTensorMutableData<float>();
     LOG(debug) << "Shape of output (tensor): " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
-    assert(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == getOutputDimensions());
+    assert(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == getNumOutputNodes());
 
     return outputValues;
 
