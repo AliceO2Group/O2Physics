@@ -32,17 +32,19 @@ struct qaMatchEff {
   //
   // histogram registry
   HistogramRegistry histos{
-      "Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "Histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
   //
   // Track selections
   Configurable<bool> b_useTrackSelections{
-      "b_useTrackSelections", false,
-      "Boolean to switch the track selections on/off."};
+    "b_useTrackSelections", false,
+    "Boolean to switch the track selections on/off."};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{
-      "ptMinCutInnerWallTPC", 0.1f,
-      "Minimum transverse momentum calculated at the inner wall of TPC "
-      "(GeV/c)"};
+    "ptMinCutInnerWallTPC", 0.1f,
+    "Minimum transverse momentum calculated at the inner wall of TPC "
+    "(GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f,
                                "Minimum transverse momentum (GeV/c)"};
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f,
@@ -53,26 +55,26 @@ struct qaMatchEff {
                                   "Maximum dcaXY (cm)"};
   // Configurable<float> dcaMaxCut{"dcaMaxCut", 1000000.0f, "Maximum dca (cm)"};
   Configurable<bool> b_useTPCinnerWallPt{
-      "b_useTPCinnerWallPt", false,
-      "Boolean to switch the usage of pt calculated at the inner wall of TPC "
-      "on/off."};
+    "b_useTPCinnerWallPt", false,
+    "Boolean to switch the usage of pt calculated at the inner wall of TPC "
+    "on/off."};
   // TPC
   Configurable<int> tpcNClusterMin{"tpcNClusterMin", 0,
                                    "Minimum number of clusters in TPC"};
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70,
                                        "Minimum number of crossed rows in TPC"};
   Configurable<float> tpcNCrossedRowsOverFindableClstMin{
-      "tpcNCrossedRowsOverFindableClstMin", 0.8f,
-      "Minimum fracion of crossed rows over findable custers in TPC"};
+    "tpcNCrossedRowsOverFindableClstMin", 0.8f,
+    "Minimum fracion of crossed rows over findable custers in TPC"};
   Configurable<float> tpcChi2Max{"tpcChi2Max", 4.0f, "Maximum chi2 in TPC"};
   // ITS
   Configurable<float> itsChi2Max{"itsChi2Max", 36.0f, "Maximum chi2 in ITS"};
   Configurable<int> customITShitmap{
-      "customITShitmap", 3, "ITS hitmap (think to the binary representation)"};
+    "customITShitmap", 3, "ITS hitmap (think to the binary representation)"};
   Configurable<int> customMinITShits{
-      "customMinITShits", 1,
-      "Minimum number of layers crossed by a track among those in "
-      "\"customITShitmap\""};
+    "customMinITShits", 1,
+    "Minimum number of layers crossed by a track among those in "
+    "\"customITShitmap\""};
   // Other track settings
   //  TRD presence
   Configurable<int> isTRDThere{"isTRDThere", 2,
@@ -109,23 +111,27 @@ struct qaMatchEff {
   AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
   //
   // pdg codes vector
-  std::vector<int> pdgChoice = {211, 213, 215, 217,  219,  221, 223,
+  std::vector<int> pdgChoice = {211, 213, 215, 217, 219, 221, 223,
                                 321, 411, 521, 2212, 1114, 2214};
   //
   // configuration for THnSparse's
   //
   Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
   ConfigurableAxis thnd0{
-      "thnd0", {600, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
+    "thnd0",
+    {600, -3.0f, 3.0f},
+    "impact parameter in xy [cm]"};
   ConfigurableAxis thnPt{"thnPt", {30, 0.0f, 15.0f}, "pt [GeV/c]"};
   ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
   ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
   ConfigurableAxis thnType{
-      "thnType",
-      {3, -0.5f, 2.5f},
-      "0: primary, 1: physical secondary, 2: sec. from material"};
+    "thnType",
+    {3, -0.5f, 2.5f},
+    "0: primary, 1: physical secondary, 2: sec. from material"};
   ConfigurableAxis thnLabelSign{
-      "thnLabelSign", {3, -1.5f, 1.5f}, "particle label sign"};
+    "thnLabelSign",
+    {3, -1.5f, 1.5f},
+    "particle label sign"};
   ConfigurableAxis thnSpec{"thnSpec",
                            {5, 0.5f, 5.5f},
                            "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
@@ -146,7 +152,8 @@ struct qaMatchEff {
   float trackPtInParamTPC = -1.;
   // Init function
   //
-  void init(InitContext &) {
+  void init(InitContext&)
+  {
     if (doDebug)
       LOG(info) << "===========================================>>>>>>>>>>>>>>>>"
                    ">>>>>>>>>>>>>>>>>  is it MC? = "
@@ -160,12 +167,14 @@ struct qaMatchEff {
 
     if ((!isitMC && (doprocessMC || doprocessMCNoColl)) ||
         (isitMC && (doprocessData && doprocessDataNoColl)))
-      LOGF(fatal, "Initialization set for MC and processData function flagged "
-                  "(or viceversa)! Fix the configuration.");
+      LOGF(fatal,
+           "Initialization set for MC and processData function flagged "
+           "(or viceversa)! Fix the configuration.");
     if ((doprocessMC && doprocessMCNoColl) ||
         (doprocessData && doprocessDataNoColl))
-      LOGF(fatal, "Cannot process for both without collision tag and with "
-                  "collision tag at the same time! Fix the configuration.");
+      LOGF(fatal,
+           "Cannot process for both without collision tag and with "
+           "collision tag at the same time! Fix the configuration.");
 
     /// initialize the track selections
     if (b_useTrackSelections) {
@@ -178,7 +187,7 @@ struct qaMatchEff {
       cutObject.SetMinNClustersTPC(tpcNClusterMin);
       cutObject.SetMinNCrossedRowsTPC(tpcNCrossedRowsMin);
       cutObject.SetMinNCrossedRowsOverFindableClustersTPC(
-          tpcNCrossedRowsOverFindableClstMin);
+        tpcNCrossedRowsOverFindableClstMin);
       cutObject.SetMaxChi2PerClusterTPC(tpcChi2Max);
       // ITS
       cutObject.SetMaxChi2PerClusterITS(itsChi2Max);
@@ -207,10 +216,12 @@ struct qaMatchEff {
   //
   //
   // Init Data function - define data histograms
-  void initData() {
+  void initData()
+  {
     if (doDebug)
-      LOGF(info, "*********************************************************** "
-                 "DATA  ***************************************************");
+      LOGF(info,
+           "*********************************************************** "
+           "DATA  ***************************************************");
     //
     // data histos
     //
@@ -292,10 +303,12 @@ struct qaMatchEff {
   }
   //
   // Init MC function
-  void initMC() {
+  void initMC()
+  {
     if (doDebug)
-      LOGF(info, " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    MC  "
-                 "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+      LOGF(info,
+           " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    MC  "
+           "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 
     //
     // adding histos to the registry
@@ -588,7 +601,9 @@ struct qaMatchEff {
   } // end initMC
 
   /// Function calculatind the pt at inner wall of TPC
-  template <typename T> float computePtInParamTPC(T &track) {
+  template <typename T>
+  float computePtInParamTPC(T& track)
+  {
     /// Using pt calculated at the inner wall of TPC
     /// Caveat: tgl still from tracking: this is not the value of tgl at the
     /// inner wall of TPC
@@ -596,7 +611,9 @@ struct qaMatchEff {
   }
 
   /// Function applying the kinematic selections
-  template <typename T> bool isTrackSelectedKineCuts(T &track) {
+  template <typename T>
+  bool isTrackSelectedKineCuts(T& track)
+  {
     if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
@@ -617,7 +634,9 @@ struct qaMatchEff {
     return true;
   }
   /// Function applying the TPC selections
-  template <typename T> bool isTrackSelectedTPCCuts(T &track) {
+  template <typename T>
+  bool isTrackSelectedTPCCuts(T& track)
+  {
     if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kTPCNCls))
@@ -626,14 +645,16 @@ struct qaMatchEff {
                               TrackSelection::TrackCuts::kTPCCrossedRows))
       return false;
     if (!cutObject.IsSelected(
-            track, TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls))
+          track, TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls))
       return false;
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kTPCChi2NDF))
       return false;
     return true;
   }
   /// Function applying the ITS selections
-  template <typename T> bool isTrackSelectedITSCuts(T &track) {
+  template <typename T>
+  bool isTrackSelectedITSCuts(T& track)
+  {
     if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kITSChi2NDF))
@@ -672,13 +693,14 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////
   //
   //
-  void processMC(aod::Collision const &collision,
+  void processMC(aod::Collision const& collision,
                  soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                           aod::McTrackLabels> const &jTracks,
-                 aod::McParticles const &mcParticles) {
+                           aod::McTrackLabels> const& jTracks,
+                 aod::McParticles const& mcParticles)
+  {
     //
     //
-    for (auto &jT : jTracks) {
+    for (auto& jT : jTracks) {
       // choose if we keep the track according to the TRD presence requirement
       if ((isTRDThere == 1) && !jT.hasTRD())
         continue;
@@ -736,20 +758,20 @@ struct qaMatchEff {
           sayPrim = 2;
         int signPDGCode = siPDGCode / tpPDGCode;
         switch (tpPDGCode) {
-        case 11:
-          specind = 1;
-          break;
-        case 211:
-          specind = 2;
-          break;
-        case 321:
-          specind = 3;
-          break;
-        case 2212:
-          specind = 4;
-          break;
-        default:
-          specind = 5;
+          case 11:
+            specind = 1;
+            break;
+          case 211:
+            specind = 2;
+            break;
+          case 321:
+            specind = 3;
+            break;
+          case 2212:
+            specind = 4;
+            break;
+          default:
+            specind = 5;
         }
         histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
                     jT.eta(), sayPrim, signPDGCode, specind);
@@ -892,9 +914,9 @@ struct qaMatchEff {
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
               histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))
-                  ->Fill(jT.phi());
+                ->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))
-                  ->Fill(jT.eta());
+                ->Fill(jT.eta());
             } //  end if ITS
           }   //  end if TPC
         }     //  end if primaries
@@ -908,9 +930,9 @@ struct qaMatchEff {
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
               histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))
-                  ->Fill(jT.phi());
+                ->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))
-                  ->Fill(jT.eta());
+                ->Fill(jT.eta());
             } //  end if ITS
           }   //  end if TPC
           //
@@ -922,11 +944,11 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
               if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
                 histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))
-                    ->Fill(trackPt);
+                  ->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secm"))
-                    ->Fill(jT.phi());
+                  ->Fill(jT.phi());
                 histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secm"))
-                    ->Fill(jT.eta());
+                  ->Fill(jT.eta());
               } //  end if ITS
             }   //  end if TPC
           }     // end if secondaries from material
@@ -1000,11 +1022,12 @@ struct qaMatchEff {
   //
   //
   void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                 aod::McTrackLabels> const &jTracks,
-                       aod::McParticles const &mcParticles) {
+                                 aod::McTrackLabels> const& jTracks,
+                       aod::McParticles const& mcParticles)
+  {
     //
     //
-    for (auto &jT : jTracks) {
+    for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
       if ((isTRDThere == 1) && !jT.hasTRD())
@@ -1069,20 +1092,20 @@ struct qaMatchEff {
           sayPrim = 2;
         int signPDGCode = siPDGCode / tpPDGCode;
         switch (tpPDGCode) {
-        case 11:
-          specind = 1;
-          break;
-        case 211:
-          specind = 2;
-          break;
-        case 321:
-          specind = 3;
-          break;
-        case 2212:
-          specind = 4;
-          break;
-        default:
-          specind = 5;
+          case 11:
+            specind = 1;
+            break;
+          case 211:
+            specind = 2;
+            break;
+          case 321:
+            specind = 3;
+            break;
+          case 2212:
+            specind = 4;
+            break;
+          default:
+            specind = 5;
         }
         histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
                     jT.eta(), sayPrim, signPDGCode, specind);
@@ -1225,9 +1248,9 @@ struct qaMatchEff {
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
               histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))
-                  ->Fill(jT.phi());
+                ->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))
-                  ->Fill(jT.eta());
+                ->Fill(jT.eta());
             } //  end if ITS
           }   //  end if TPC
         }     //  end if primaries
@@ -1241,9 +1264,9 @@ struct qaMatchEff {
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
               histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))
-                  ->Fill(jT.phi());
+                ->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))
-                  ->Fill(jT.eta());
+                ->Fill(jT.eta());
             } //  end if ITS
           }   //  end if TPC
           //
@@ -1255,11 +1278,11 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
               if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
                 histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))
-                    ->Fill(trackPt);
+                  ->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secm"))
-                    ->Fill(jT.phi());
+                  ->Fill(jT.phi());
                 histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secm"))
-                    ->Fill(jT.eta());
+                  ->Fill(jT.eta());
               } //  end if ITS
             }   //  end if TPC
           }     // end if secondaries from material
@@ -1334,11 +1357,12 @@ struct qaMatchEff {
   //
   //
   void processData(
-      aod::Collision const &collision,
-      soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const &jTracks) {
+    aod::Collision const& collision,
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& jTracks)
+  {
     //
     //
-    for (auto &jT : jTracks) {
+    for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
       if ((isTRDThere == 1) && !jT.hasTRD())
@@ -1434,10 +1458,11 @@ struct qaMatchEff {
   //
   //
   void processDataNoColl(
-      soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const &jTracks) {
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& jTracks)
+  {
     //
     //
-    for (auto &jT : jTracks) {
+    for (auto& jT : jTracks) {
 
       // choose if we keep the track according to the TRD presence requirement
       if ((isTRDThere == 1) && !jT.hasTRD())
@@ -1534,7 +1559,8 @@ struct qaMatchEff {
   //
 }; // end of structure
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-      adaptAnalysisTask<qaMatchEff>(cfgc, TaskName{"qa-match-eff"})};
+    adaptAnalysisTask<qaMatchEff>(cfgc, TaskName{"qa-match-eff"})};
 }
