@@ -587,7 +587,7 @@ struct lambdakzeroBuilder {
       auto lLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
       auto lAntiLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
       auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
-      auto lAntiHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
+      auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
       auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * (v0candidate.posP[0] + v0candidate.negP[0]), v0candidate.posP[1] + v0candidate.negP[1]);
