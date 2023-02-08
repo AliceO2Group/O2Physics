@@ -40,7 +40,7 @@ using namespace o2::track;
 struct PidMultiplicity {
   Produces<aod::PIDMults> mult;
 
-  //For vertex-Z corrections in calibration
+  // For vertex-Z corrections in calibration
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
   bool enableTable = false;
 
