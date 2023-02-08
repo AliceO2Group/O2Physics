@@ -33,6 +33,11 @@ o2physics_add_dpl_workflow(pid-tof-full
 
 # TPC
 
+o2physics_add_dpl_workflow(pid-tpc-base
+                    SOURCES pidTPCBase.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tpc
                     SOURCES pidTPC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore
