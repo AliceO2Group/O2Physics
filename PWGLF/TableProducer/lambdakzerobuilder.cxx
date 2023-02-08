@@ -165,7 +165,6 @@ struct lambdakzeroBuilder {
   Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
   Configurable<float> dQAK0ShortMassWindow{"dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
   Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
-  
 
   int mRunNumber;
   float d_bz;
@@ -255,8 +254,8 @@ struct lambdakzeroBuilder {
   {
     resetHistos();
 
-    //Optionally, add extra QA histograms to processing chain
-    if(d_doQA){
+    // Optionally, add extra QA histograms to processing chain
+    if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
       const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisGammaMass{(int)dQANBinsMass, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
@@ -270,12 +269,12 @@ struct lambdakzeroBuilder {
       registry.add("h2dAntiLambdaMass", "h2dAntiLambdaMass", kTH2F, {axisVsPtCoarse, axisLambdaMass});
       registry.add("h2dHypertritonMass", "h2dHypertritonMass", kTH2F, {axisVsPtCoarse, axisHypertritonMass});
       registry.add("h2dAntiHypertritonMass", "h2dAntiHypertritonMass", kTH2F, {axisVsPtCoarse, axisHypertritonMass});
-      
+
       // bit packed ITS cluster map
       const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
       const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
-      
-      //Histogram to bookkeep cluster maps
+
+      // Histogram to bookkeep cluster maps
       registry.add("h2dITSCluMap_K0ShortPositive", "h2dITSCluMap_K0ShortPositive", kTH2D, {axisITSCluMap, axisRadius});
       registry.add("h2dITSCluMap_K0ShortNegative", "h2dITSCluMap_K0ShortNegative", kTH2D, {axisITSCluMap, axisRadius});
       registry.add("h2dITSCluMap_LambdaPositive", "h2dITSCluMap_LambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
@@ -580,9 +579,8 @@ struct lambdakzeroBuilder {
       if (negTrack.itsNCls() < 10)
         statisticsRegistry.negITSclu[negTrack.itsNCls()]++;
     }
-    
-    
-    if(d_doQA){
+
+    if (d_doQA) {
       // Calculate masses
       auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
       auto lK0ShortMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
@@ -594,7 +592,7 @@ struct lambdakzeroBuilder {
       auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * (v0candidate.posP[0] + v0candidate.negP[0]), v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], 2.0f * (v0candidate.posP[1] + v0candidate.negP[1]));
-      
+
       // Fill basic mass histograms
       registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
       registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
@@ -604,20 +602,20 @@ struct lambdakzeroBuilder {
       registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
 
       // Fill ITS cluster maps with specific mass cuts
-      if( TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow ){
+      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow) {
         registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if( TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow ){
+      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow) {
         registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if( TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow ){
+      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow) {
         registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
     }
-    
+
     return true;
   }
 
