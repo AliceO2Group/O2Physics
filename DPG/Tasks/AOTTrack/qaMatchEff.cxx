@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \brief A task for basic checks on ITS-TPC track matching efficiency
+/// \brief A task for basic checks on ITS-TPC track matching efficiency and primaries/secondaries fractions analysis
 /// \author Rosario Turrisi (rosario.turrisi@pd.infn.it)
 /// \author Mattia Faggin (mfaggin@cern.ch)
 /// \since 2022
@@ -89,6 +89,26 @@ struct qaMatchEff {
   // pdg codes vector
   std::vector<int> pdgChoice = {211, 213, 215, 217, 219, 221, 223, 321, 411, 521, 2212, 1114, 2214};
   //
+  // configuration for THnSparse's
+  //
+  Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
+  ConfigurableAxis thnd0{"thnd0", {600, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
+  ConfigurableAxis thnPt{"thnPt", {30, 0.0f, 15.0f}, "pt [GeV/c]"};
+  ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
+  ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
+  ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "particle class"};
+  ConfigurableAxis thnLabelSign{"thnLabelSign", {3, -1.5f, 1.5f}, "particle label sign"};
+  ConfigurableAxis thnSpec{"thnSpec", {5, 0.5f, 5.5f}, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
+  AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
+  AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
+  AxisSpec thnPhiAxis{thnPhi, "#varphi"};
+  AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
+  AxisSpec thnTypeAxis{thnType, "particle class"};
+  AxisSpec thnLabelSignAxis{thnLabelSign, "particle label sign"};
+  AxisSpec thnSpecAxis{thnSpec, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
+  //
+  //
+  ConfigurableAxis thnPDGAxis{"thnpdgaxis", {3, 0.5f, 3.5f}, "species (1: pi, 2: K, 3: p)"};
   //
   // Track selection object
   TrackSelection cutObject;
@@ -155,6 +175,11 @@ struct qaMatchEff {
       LOGF(info, "*********************************************************** DATA  ***************************************************");
     //
     // data histos
+    //
+    // thnsparse for fractions - only if selected
+    if (makethn)
+      histos.add("data/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+    //
     // tpc request and tpc+its request for all, positive and negative charges vs pt, phi, eta (18 histos tot)
     histos.add("data/pthist_tpc", "#it{p}_{T} distribution - data TPC tag", kTH1F, {axisPt}, true);
     histos.add("data/etahist_tpc", "#eta distribution - data TPC tag", kTH1F, {axisEta}, true);
@@ -196,6 +221,11 @@ struct qaMatchEff {
     // tpc request and tpc+its request for all, positive and negative charges
     // and for phys. primaries, decay secondaries and mat. secondaries (both charges) vs pt, phi, eta (36 histos tot)
     // pions only, also split in prim secd secm
+    //
+    // thnsparse for fractions
+    if (makethn)
+      histos.add("MC/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+
     //
     // all, positive, negative
     histos.add("MC/pthist_tpc", "#it{p}_{T} distribution - MC TPC tag", kTH1F, {axisPt}, true);
@@ -393,6 +423,7 @@ struct qaMatchEff {
   int count = 0;
   int countData = 0;
   int countNoMC = 0;
+  int siPDGCode = 0;
   int tpPDGCode = 0;
   std::vector<int>::iterator itr_pdg;
   float pdg_fill = 0.0;
@@ -431,7 +462,8 @@ struct qaMatchEff {
         continue;
 
       auto mcpart = jT.mcParticle();
-      tpPDGCode = TMath::Abs(mcpart.pdgCode());
+      siPDGCode = mcpart.pdgCode();
+      tpPDGCode = TMath::Abs(siPDGCode);
       if (mcpart.isPhysicalPrimary()) {
         histos.get<TH1>(HIST("MC/etahist_diff"))->Fill(mcpart.eta() - jT.eta());
         auto delta = mcpart.phi() - jT.phi();
@@ -445,6 +477,36 @@ struct qaMatchEff {
       }
       // count the tracks contained in the input file if they have MC counterpart
       count++;
+      //
+      //
+      // fill thnsparse for fraction analysis
+      if (makethn) {
+        int sayPrim = 0, specind = 0;
+        if (mcpart.isPhysicalPrimary())
+          sayPrim = 0;
+        else if (mcpart.getProcess() == 4)
+          sayPrim = 1;
+        else
+          sayPrim = 2;
+        int signPDGCode = siPDGCode / tpPDGCode;
+        switch (tpPDGCode) {
+          case 11:
+            specind = 1;
+            break;
+          case 211:
+            specind = 2;
+            break;
+          case 321:
+            specind = 3;
+            break;
+          case 2212:
+            specind = 4;
+            break;
+          default:
+            specind = 5;
+        }
+        histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(), jT.eta(), sayPrim, signPDGCode, specind);
+      }
       //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
@@ -735,6 +797,36 @@ struct qaMatchEff {
       // count the tracks contained in the input file if they have MC counterpart
       count++;
       //
+      //
+      // fill thnsparse for fraction analysis
+      if (makethn) {
+        int sayPrim = 0, specind = 0;
+        if (mcpart.isPhysicalPrimary())
+          sayPrim = 0;
+        else if (mcpart.getProcess() == 4)
+          sayPrim = 1;
+        else
+          sayPrim = 2;
+        int signPDGCode = siPDGCode / tpPDGCode;
+        switch (tpPDGCode) {
+          case 11:
+            specind = 1;
+            break;
+          case 211:
+            specind = 2;
+            break;
+          case 321:
+            specind = 3;
+            break;
+          case 2212:
+            specind = 4;
+            break;
+          default:
+            specind = 5;
+        }
+        histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(), jT.eta(), sayPrim, signPDGCode, specind);
+      }
+      //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
         histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
@@ -996,6 +1088,13 @@ struct qaMatchEff {
       //
       countData++;
       //
+      //
+      // fill thnsparse for fraction analysis
+      if (makethn) {
+        int sayPrim = -1, signPDGCode = -2, specind = 0;
+        histos.fill(HIST("data/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(), jT.eta(), sayPrim, signPDGCode, specind);
+      }
+      //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
         histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
@@ -1085,6 +1184,12 @@ struct qaMatchEff {
         continue;
       //
       countData++;
+      //
+      // fill thnsparse for fraction analysis
+      if (makethn) {
+        int sayPrim = -1, signPDGCode = -2, specind = 0;
+        histos.fill(HIST("data/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(), jT.eta(), sayPrim, signPDGCode, specind);
+      }
       //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
