@@ -203,8 +203,8 @@ struct HfFilter { // Main struct for HF triggers
         hGammaSelected = registry.add<TH1>("fGammaSelected", "Selections for converted gamma;;counts", HistType::kTH1F, {{7, -0.5, 6.5}});
         hGammaEtaBefore = registry.add<TH1>("fGammaEtaBefore", "#eta of converted gamma before selections;;counts", HistType::kTH1F, {etaAxis});
         hGammaEtaAfter = registry.add<TH1>("hGammaEtaAfter", "#eta of converted gamma after selections;;counts", HistType::kTH1F, {etaAxis});
-        hGammaArmPodBefore = registry.add<TH2>("fGammaAPbefore", "Armenteros Podolanski plot for converted gamma, before selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {alphaAxis, ptAxis});
-        hGammaArmPodAfter = registry.add<TH2>("fGammaAPafter", "Armenteros Podolanski plot for converted gamma, after selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {alphaAxis, ptAxis});
+        hGammaArmPodBefore = registry.add<TH2>("fGammaAPbefore", "Armenteros Podolanski plot for converted gamma, before selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {alphaAxis, qtAxis});
+        hGammaArmPodAfter = registry.add<TH2>("fGammaAPafter", "Armenteros Podolanski plot for converted gamma, after selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {alphaAxis, qtAxis});
       }
     }
 
