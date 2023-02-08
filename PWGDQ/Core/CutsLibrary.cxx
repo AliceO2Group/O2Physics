@@ -1686,12 +1686,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairPhiV")) {
-    cut->AddCut(VarManager::kPairPhiv, 2., 3.2);
+    cut->AddCut(VarManager::kPairPhiv, 2., 3.2, true);
     return cut;
   }
 
   if (!nameStr.compare("pairLowMass")) {
-    cut->AddCut(VarManager::kMass, 0., 0.1);
+    cut->AddCut(VarManager::kMass, 0., 0.1, true);
     return cut;
   }
 
