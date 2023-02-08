@@ -105,8 +105,8 @@ DECLARE_SOA_COLUMN(MothersId, motherId, int);        //! Id of the mother partic
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int);       //! PDG code of the mother particle
 DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first Daughter particle
 DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
-DECLARE_SOA_COLUMN(DaughterID1, daughterId1, int); //! Id of the first Daughter particle
-DECLARE_SOA_COLUMN(DaughterID2, daughterId2, int); //! Id of the second Daughter particle
+DECLARE_SOA_COLUMN(DaughterID1, daughterId1, int);   //! Id of the first Daughter particle
+DECLARE_SOA_COLUMN(DaughterID2, daughterId2, int);   //! Id of the second Daughter particle
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::soa::Index<>,
