@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(v0cascades-qa
                     SOURCES v0cascadesqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-checks
@@ -31,5 +31,5 @@ o2physics_add_dpl_workflow(pid-qa
 
 o2physics_add_dpl_workflow(strarecostudy
                     SOURCES straRecoStudy.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

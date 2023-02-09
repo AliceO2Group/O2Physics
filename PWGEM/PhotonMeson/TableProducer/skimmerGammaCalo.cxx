@@ -13,10 +13,6 @@
 /// dependencies: emcal-correction-task
 /// \author marvin.hemmer@cern.ch
 
-// TODO: add o2::aod::EMCALClusterCell and o2::aod::EMCALMatchedTrack to this for cell and track matching
-
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,30 +22,41 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "CCDB/BasicCCDBManager.h"
 
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct skimmerGammaCalo {
 
-  Produces<aod::SkimEMCClusters> tableGammaEMCReco;
+  Preslice<o2::aod::EMCALClusterCells> CellperCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALMatchedTracks> MTperCluster = o2::aod::emcalclustercell::emcalclusterId;
 
-  // Configurable for histograms
-  Configurable<int> nBinsE{"nBinsE", 200, "N bins in E histo"};
+  Produces<aod::SkimEMCClusters> tableGammaEMCReco;
+  Produces<aod::SkimEMCCells> tableCellEMCReco;
+  Produces<aod::SkimEMCMTs> tableTrackEMCReco;
 
   // Configurable for filter/cuts
   Configurable<float> minTime{"minTime", -200., "Minimum cluster time for time cut"};
   Configurable<float> maxTime{"maxTime", +200., "Maximum cluster time for time cut"};
   Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
+  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
 
   HistogramRegistry historeg{
     "historeg",
-    {{"hCaloClusterEIn", "hCaloClusterEIn", {HistType::kTH1F, {{nBinsE, 0., 100.}}}},
-     {"hCaloClusterEOut", "hCaloClusterEOut", {HistType::kTH1F, {{nBinsE, 0., 100.}}}}}};
+    {},
+    OutputObjHandlingPolicy::QAObject,
+    false,
+    true};
 
   void init(o2::framework::InitContext&)
   {
+    historeg.add("hCaloClusterEIn", "hCaloClusterEIn", gHistoSpec_clusterE);
+    historeg.add("hCaloClusterEOut", "hCaloClusterEOut", gHistoSpec_clusterE);
+    historeg.add("hMTEtaPhi", "hMTEtaPhi", gHistoSpec_EtaPhi);
     auto hCaloClusterFilter = historeg.add<TH1>("hCaloClusterFilter", "hCaloClusterFilter", kTH1I, {{4, 0, 4}});
     hCaloClusterFilter->GetXaxis()->SetBinLabel(1, "in");
     hCaloClusterFilter->GetXaxis()->SetBinLabel(2, "time cut");
@@ -60,19 +67,41 @@ struct skimmerGammaCalo {
     LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
   }
 
-  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks)
+  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
   {
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 0);
 
+      // timing cut
       if (emccluster.time() > maxTime || emccluster.time() < minTime) {
         historeg.fill(HIST("hCaloClusterFilter"), 1);
         continue;
       }
+      // M02 cut
       if (emccluster.m02() > maxM02 || emccluster.m02() < minM02) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
+      }
+
+      // Skimmed cell table
+      auto groupedCells = emcclustercells.sliceBy(CellperCluster, emccluster.globalIndex());
+      for (const auto& emcclustercell : groupedCells) {
+        tableCellEMCReco(emcclustercell.emcalclusterId(), emcclustercell.caloId());
+      }
+
+      // Skimmed matched tracks table
+      auto groupedMTs = emcmatchedtracks.sliceBy(MTperCluster, emccluster.globalIndex());
+      for (const auto& emcmatchedtrack : groupedMTs) {
+        if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
+          historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+          tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal(),
+                            emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
+        } else {
+          historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().eta(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().phi());
+          tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().eta(), emcmatchedtrack.track_as<aod::FullTracks>().phi(),
+                            emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
+        }
       }
 
       historeg.fill(HIST("hCaloClusterEOut"), emccluster.energy());

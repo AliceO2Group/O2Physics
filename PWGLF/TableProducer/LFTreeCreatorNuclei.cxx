@@ -20,8 +20,6 @@
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 
-#include <cmath>
-
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
@@ -29,7 +27,6 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
@@ -40,6 +37,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
+
+// #include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -115,11 +114,12 @@ struct LfTreeCreatorNuclei {
         track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl(),
         track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
         track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl(),
-        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(),
-        track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(),
+        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(), track.tpcExpSignalDiffHe(),
+        track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(), track.tofExpSignalDiffHe(),
         track.isEvTimeTOF(),
         track.isEvTimeT0AC(),
         track.hasTOF(),
+        track.hasTRD(),
         track.tpcInnerParam(),
         track.tpcSignal(),
         track.beta(),

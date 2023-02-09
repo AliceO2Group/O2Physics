@@ -76,11 +76,14 @@ DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float);
 DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float);
 DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float);
 DECLARE_SOA_COLUMN(TPCExpSignalDiffDe, tpcExpSignalDiffDe, float);
+DECLARE_SOA_COLUMN(TPCExpSignalDiffHe, tpcExpSignalDiffHe, float);
 DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float);
 DECLARE_SOA_COLUMN(TOFExpSignalDiffDe, tofExpSignalDiffDe, float);
+DECLARE_SOA_COLUMN(TOFExpSignalDiffHe, tofExpSignalDiffHe, float);
 DECLARE_SOA_COLUMN(IsEvTimeTOF, isEvTimeTOF, bool);
 DECLARE_SOA_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, bool);
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
@@ -114,11 +117,12 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::TPCNSigmaDe, full::TPCNSigmaTr, full::TPCNSigmaHe, full::TPCNSigmaAl,
                   full::TOFNSigmaPi, full::TOFNSigmaKa, full::TOFNSigmaPr,
                   full::TOFNSigmaDe, full::TOFNSigmaTr, full::TOFNSigmaHe, full::TOFNSigmaAl,
-                  full::TPCExpSignalDiffPr, full::TPCExpSignalDiffDe,
-                  full::TOFExpSignalDiffPr, full::TOFExpSignalDiffDe,
+                  full::TPCExpSignalDiffPr, full::TPCExpSignalDiffDe, full::TPCExpSignalDiffHe,
+                  full::TOFExpSignalDiffPr, full::TOFExpSignalDiffDe, full::TOFExpSignalDiffHe,
                   full::IsEvTimeTOF,
                   full::IsEvTimeT0AC,
                   full::HasTOF,
+                  full::HasTRD,
                   full::TPCInnerParam,
                   full::TPCSignal,
                   full::Beta,

@@ -200,7 +200,7 @@ struct qaEventTrackLiteProducer {
 
     tableCollisions(collision.posZ(),
                     (isRun3 ? collision.sel8() : collision.sel7()),
-                    collision.bc().runNumber());
+                    collision.bc().runNumber(), collision.numContrib());
     int nTracks = 0;
     int particleProduction = 0;
 

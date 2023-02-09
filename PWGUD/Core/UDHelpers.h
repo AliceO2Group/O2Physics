@@ -17,7 +17,9 @@
 #define PWGUD_CORE_UDHELPERS_H_
 
 #include <vector>
+#include <bitset>
 #include "Framework/Logger.h"
+#include "DataFormatsFT0/Digit.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -167,6 +169,7 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;
   }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -328,7 +331,8 @@ template <typename T>
 bool cleanFV0(T& bc, float limitA)
 {
   if (bc.has_foundFV0()) {
-    return (FV0AmplitudeA(bc.foundFV0()) < limitA);
+    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
+    return oma;
   } else {
     return true;
   }
@@ -339,7 +343,18 @@ template <typename T>
 bool cleanFT0(T& bc, float limitA, float limitC)
 {
   if (bc.has_foundFT0()) {
-    return (FT0AmplitudeA(bc.foundFT0()) < limitA) && (FT0AmplitudeC(bc.foundFT0()) < limitC);
+
+    // check amplitudes
+    bool oma = FT0AmplitudeA(bc.foundFT0()) <= limitA;
+    bool omc = FT0AmplitudeC(bc.foundFT0()) <= limitC;
+
+    // compare decisions with FT0 trigger decisions
+    std::bitset<8> triggers = bc.foundFT0().triggerMask();
+    bool ora = !triggers[o2::ft0::Triggers::bitA];
+    bool orc = !triggers[o2::ft0::Triggers::bitC];
+    LOGF(debug, "ora/FT0AmplitudeA %d/%d orc/FT0AmplitudeC %d/%d", ora, oma, orc, omc);
+
+    return oma && omc;
   } else {
     return true;
   }
@@ -350,7 +365,9 @@ template <typename T>
 bool cleanFDD(T& bc, float limitA, float limitC)
 {
   if (bc.has_foundFDD()) {
-    return (FDDAmplitudeA(bc.foundFDD()) < limitA) && (FDDAmplitudeC(bc.foundFDD()) < limitC);
+    bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
+    bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
+    return oma && omc;
   } else {
     return true;
   }

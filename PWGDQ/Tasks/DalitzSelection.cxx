@@ -18,6 +18,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/DataTypes.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -64,6 +65,15 @@ struct dalitzPairing {
   Configurable<float> fConfigEtaCut{"cfgEtaCut", 0.9f, "Eta cut for Dalitz tracks in the barrel"};
   Configurable<float> fConfigTPCNSigLow{"cfgTPCNSigElLow", -3.f, "Low TPCNSigEl cut for Dalitz tracks in the barrel"};
   Configurable<float> fConfigTPCNSigHigh{"cfgTPCNSigElHigh", 3.f, "High TPCNsigEl cut for Dalitz tracks in the barrel"};
+  // Configurables for TPC post-calibration maps
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterBarrelTrack = o2::aod::track::tpcInnerParam >= fConfigBarrelTrackPINLow && nabs(o2::aod::track::eta) <= fConfigEtaCut && o2::aod::pidtpc::tpcNSigmaEl <= fConfigTPCNSigHigh && o2::aod::pidtpc::tpcNSigmaEl >= fConfigTPCNSigLow;
 
@@ -108,6 +118,15 @@ struct dalitzPairing {
       LOGF(fatal, "YOU SHOULD PROVIDE THE SAME NUMBER OF TRACK AND PAIR CUTS");
     }
 
+    // CCDB configuration
+    if (fConfigComputeTPCpostCalib) {
+      fCCDB->setURL(fConfigCcdbUrl.value);
+      fCCDB->setCaching(true);
+      fCCDB->setLocalObjectValidityChecking();
+      // Not later than now objects
+      fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+    }
+
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -149,9 +168,10 @@ struct dalitzPairing {
     fStatsList->SetOwner(kTRUE);
 
     // Dalitz selection statistics: one bin for each (track,pair) selection
-    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", fPairCuts.size(), -0.5, fPairCuts.size() - 0.5);
+    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", fPairCuts.size() + 1, -0.5, fPairCuts.size() + 0.5);
+    histTracks->GetXaxis()->SetBinLabel(1, "Events selected");
     auto trackCut = fTrackCuts.begin();
-    int icut = 0;
+    int icut = 1;
     for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
       histTracks->GetXaxis()->SetBinLabel(icut + 1, Form("%s_%s", (*trackCut).GetName(), (*pairCut).GetName()));
     }
@@ -226,7 +246,7 @@ struct dalitzPairing {
         auto trackCut = fTrackCuts.begin();
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
           if (filterMap & (uint8_t(1) << icut)) {
-            ((TH1I*)fStatsList->At(0))->Fill(icut);
+            ((TH1I*)fStatsList->At(0))->Fill(icut + 1);
             fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
           }
         }
@@ -234,7 +254,7 @@ struct dalitzPairing {
     }
   }
 
-  void processFullTracks(MyEvents const& collisions, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
+  void processFullTracks(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
   {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
@@ -246,6 +266,21 @@ struct dalitzPairing {
       bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
 
       if (isEventSelected) {
+
+        ((TH1I*)fStatsList->At(0))->Fill(0);
+
+        auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+        if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
+          auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+          VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+          VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+          VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+          VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+          VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+          VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+          fCurrentRun = bc.runNumber();
+        }
+
         auto groupedFilteredTracks = filteredTracks.sliceBy(perCollision, collision.globalIndex());
         runTrackSelection<gkTrackFillMap>(groupedFilteredTracks);
         runDalitzPairing<pairType, gkTrackFillMap>(groupedFilteredTracks, groupedFilteredTracks);

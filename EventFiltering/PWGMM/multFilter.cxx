@@ -19,6 +19,7 @@
 
 #include "EventFiltering/filterTables.h"
 
+#include "DataFormatsFT0/Digit.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -51,6 +52,9 @@ struct multFilter {
   Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 187.0, "FT0C+FV0 mult threshold"};
   Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.885, "1-flatenicity FT0C+FV0 threshold"};
   Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
+  Configurable<bool> sel8{"sel8", 0, "apply sel8 event selection"};
+  Configurable<bool> selt0time{"selt0time", 0, "apply 1ns cut T0A and T0C"};
+  Configurable<bool> selt0vtx{"selt0vtx", 0, "apply T0 vertext trigger"};
 
   Produces<aod::MultFilters> tags;
 
@@ -200,8 +204,11 @@ struct multFilter {
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
 
     bool isOkTimeFT0 = false;
+    bool isOkvtxtrig = false;
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
+      std::bitset<8> triggers = ft0.triggerMask();
+      isOkvtxtrig = triggers[o2::fit::Triggers::bitVertex];
       float t0_a = ft0.timeA();
       float t0_c = ft0.timeC();
       if (abs(t0_a) < 1. && abs(t0_c) < 1.) {
@@ -210,7 +217,17 @@ struct multFilter {
       multiplicity.fill(HIST("hT0C_time"), t0_c);
       multiplicity.fill(HIST("hT0A_time"), t0_a);
     }
-    if (!isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
+
+    if (selt0vtx && !isOkvtxtrig) {
+      tags(false, false, false, false, false, false, false, false);
+      return;
+    }
+
+    if (selt0time && !isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
+      tags(false, false, false, false, false, false, false, false);
+      return;
+    }
+    if (sel8 && !collision.sel8()) {
       tags(false, false, false, false, false, false, false, false);
       return;
     }

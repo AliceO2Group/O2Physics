@@ -10,41 +10,6 @@
 // or submit itself to any jurisdiction.
 //
 // \brief Saves relevant information of DG candidates
-//
-//     options:
-//           DiffCuts.mNDtcoll(4)
-//           DiffCuts.mMinNBCs(7)
-//           DiffCuts.mMinNTracks(0)
-//           DiffCuts.mMaxNTracks(10000)
-//           DiffCuts.mMinNetCharge(0)
-//           DiffCuts.mMaxNetCharge(0)
-//           DiffCuts.mPidHypo(211)
-//           DiffCuts.mMinPosz(-1000.)
-//           DiffCuts.mMaxPosz(1000.)
-//           DiffCuts.mMinPt(0.)
-//           DiffCuts.mMaxPt(1000.)
-//           DiffCuts.mMinEta(-1.)
-//           DiffCuts.mMaxEta(1.)
-//           DiffCuts.mMinIVM(0.)
-//           DiffCuts.mMaxIVM(1000.)
-//           DiffCuts.mMaxnSigmaTPC(1000.)
-//           DiffCuts.mMaxnSigmaTOF(1000.)
-//           DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
-//
-//     usage: copts="--configuration json://DGCandProducerConfig.json --aod-writer-json DGCandProducerWriter.json -b"
-//
-//           o2-analysis-timestamp $copts |
-//           o2-analysis-track-propagation $copts |
-//           o2-analysis-multiplicity-table $copts |
-//           o2-analysis-ft0-corrected-table $copts |
-//           o2-analysis-event-selection $copts |
-//           o2-analysis-trackextension $copts |
-//           o2-analysis-trackselection $copts |
-//           o2-analysis-pid-tpc-full $copts |
-//           o2-analysis-pid-tof-base $copts |
-//           o2-analysis-pid-tof-full $copts |
-//           o2-analysis-ud-dgcand-producer $copts > DGCandProducer.log
-//
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  20.05.2022
 
@@ -310,18 +275,15 @@ struct DGCandProducer {
   }
 
   // process function for real data
-  void processData(CC const& collision,
-                   BCs const& bcs,
-                   TCs& tracks,
-                   FWs& fwdtracks,
-                   aod::Zdcs& zdcs,
-                   aod::FT0s& ft0s,
-                   aod::FV0As& fv0as,
-                   aod::FDDs& fdds)
+  void processData(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
+                   aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
 
     // nominal BC
-    auto bc = collision.bc_as<BCs>();
+    if (!collision.has_foundBC()) {
+      return;
+    }
+    auto bc = collision.foundBC_as<BCs>();
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
@@ -353,9 +315,7 @@ struct DGCandProducer {
 
       // update DGTracks tables
       for (auto& track : tracks) {
-        if (track.isPVContributor()) {
-          updateUDTrackTables(track, bc.globalBC());
-        }
+        updateUDTrackTables(track, bc.globalBC());
       }
     }
   }
@@ -447,19 +407,16 @@ struct DGCandProducer {
         // UDTracks, UDTrackCollisionID, UDTracksExtras, UDMcTrackLabels
         for (auto& track : collisionTracks) {
           // but save only the Primary Vertex tracks
-          if (track.isPVContributor()) {
-            updateUDTrackTables(track, bc.globalBC());
+          updateUDTrackTables(track, bc.globalBC());
 
-            // properly correct the index into the UDMcParticles tables with deltaIndex
-            auto newval = track.mcParticleId() < 0 ? track.mcParticleId() : track.mcParticleId() + deltaIndex;
-            // only associations with McParticles belonging to the actual McCollision are supported
-            if ((newval < nMcParts0) || (newval > outputMcParticles.lastIndex())) {
-              LOGF(info, "<ATTENTION> UDMcParticles index out of range %i (%i - %i)", newval, nMcParts0 + 1, outputMcParticles.lastIndex());
-              newval = -1;
-            }
-            outputMcTrackLabels(newval,
-                                track.mcMask());
+          // properly correct the index into the UDMcParticles tables with deltaIndex
+          auto newval = track.mcParticleId() < 0 ? track.mcParticleId() : track.mcParticleId() + deltaIndex;
+          // only associations with McParticles belonging to the actual McCollision are supported
+          if ((newval < nMcParts0) || (newval > outputMcParticles.lastIndex())) {
+            LOGF(info, "<ATTENTION> UDMcParticles index out of range %i (%i - %i)", newval, nMcParts0 + 1, outputMcParticles.lastIndex());
+            newval = -1;
           }
+          outputMcTrackLabels(newval, track.mcMask());
         }
       }
     }

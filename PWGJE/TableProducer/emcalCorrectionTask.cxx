@@ -28,6 +28,7 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -40,6 +41,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using myGlobTracks = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
 
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
@@ -48,12 +50,13 @@ struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
 
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  Preslice<myGlobTracks> perCollision = o2::aod::track::collisionId;
   // Options for the clusterization
   // 1 corresponds to EMCAL cells based on the Run2 definition.
   Configurable<int> selectedCellType{"selectedCellType", 1, "EMCAL Cell type"};
   Configurable<std::string> clusterDefinitions{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default. Multiple definitions can be specified separated by comma"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
+  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
 
   // CDB service (for geometry)
   Service<o2::ccdb::BasicCCDBManager> mCcdbManager;
@@ -78,6 +81,12 @@ struct EmcalCorrectionTask {
   OutputObj<TH2I> hCellRowCol{"hCellRowCol"};
   OutputObj<TH1F> hClusterE{"hClusterE"};
   OutputObj<TH2F> hClusterEtaPhi{"hClusterEtaPhi"};
+  OutputObj<TH2F> hGlobalTrackEtaPhi{"hGlobalTrackEtaPhi"};
+  OutputObj<TH1I> hGlobalTrackMult{"hGlobalTrackMult"};
+  OutputObj<TH1I> hCollisionType{"hCollisionType"};
+  OutputObj<TH1I> hClusterType{"hClusterType"};
+  OutputObj<TH1I> hCollPerBC{"hCollPerBC"};
+  OutputObj<TH1I> hBC{"hBC"};
 
   void init(InitContext const&)
   {
@@ -139,6 +148,26 @@ struct EmcalCorrectionTask {
     hCellRowCol.setObject(new TH2I("hCellRowCol", "hCellRowCol;Column;Row", 97, 0, 97, 600, 0, 600));
     hClusterE.setObject(new TH1F("hClusterE", "hClusterE", 200, 0.0, 100));
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
+    hGlobalTrackEtaPhi.setObject(new TH2F("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", 160, -0.8, 0.8, 72, 0, 2. * 3.14159));
+    hGlobalTrackMult.setObject(new TH1I("hGlobalTrackMult", "hGlobalTrackMult", 200, -0.5, 199.5));
+    hCollisionType.setObject(new TH1I("hCollisionType", "hCollisionType;;#it{count}", 3, -0.5, 2.5));
+    hCollisionType->GetXaxis()->SetBinLabel(1, "no collision");
+    hCollisionType->GetXaxis()->SetBinLabel(2, "normal collision");
+    hCollisionType->GetXaxis()->SetBinLabel(3, "mult. collisions");
+    hClusterType.setObject(new TH1I("hClusterType", "hClusterType;;#it{count}", 3, -0.5, 2.5));
+    hClusterType->GetXaxis()->SetBinLabel(1, "no collision");
+    hClusterType->GetXaxis()->SetBinLabel(2, "normal collision");
+    hClusterType->GetXaxis()->SetBinLabel(3, "mult. collisions");
+    hCollPerBC.setObject(new TH1I("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", 100, -0.5, 99.5));
+    hBC.setObject(new TH1I("hBC", "hBC;;#it{count}", 8, -0.5, 7.5));
+    hBC->GetXaxis()->SetBinLabel(1, "with EMCal cells");
+    hBC->GetXaxis()->SetBinLabel(2, "with EMCal cells but no collision");
+    hBC->GetXaxis()->SetBinLabel(3, "with EMCal cells and collision");
+    hBC->GetXaxis()->SetBinLabel(4, "with EMCal cells and mult. collisions");
+    hBC->GetXaxis()->SetBinLabel(5, "no EMCal cells and no collision");
+    hBC->GetXaxis()->SetBinLabel(6, "no EMCal cells and with collision");
+    hBC->GetXaxis()->SetBinLabel(7, "no EMCal cells and mult. collisions");
+    hBC->GetXaxis()->SetBinLabel(8, "all BC");
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
@@ -146,7 +175,7 @@ struct EmcalCorrectionTask {
   // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
 
   //  Appears to need the BC to be accessed to be available in the collision table...
-  void process(aod::BC const& bc, aod::Collisions const& collisions, aod::Tracks const& tracks, aod::Calos const& cells)
+  void process(aod::BC const& bc, o2::soa::Join<aod::Collisions, aod::EvSels> const& collisions, myGlobTracks const& tracks, aod::Calos const& cells)
   {
     LOG(debug) << "Starting process.";
     // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -154,11 +183,14 @@ struct EmcalCorrectionTask {
     mEmcalCells.clear();
     mCellIdToCellGlobalIndex.clear();
     int c = 0;
+    hBC->Fill(7);
+    bool hasEMCCell = false;
     for (auto& cell : cells) {
       if (cell.caloType() != selectedCellType) {
         LOG(debug) << "Rejected";
         continue;
       }
+      hasEMCCell = true;
       // LOG(debug) << "Cell E: " << cell.getEnergy();
       // LOG(debug) << "Cell E: " << cell;
       mEmcalCells.emplace_back(o2::emcal::Cell(
@@ -169,6 +201,24 @@ struct EmcalCorrectionTask {
       mCellIdToCellGlobalIndex.insert(std::make_pair(c, cell.globalIndex()));
       LOG(debug) << "Creating map " << c << " -> " << cell.globalIndex();
       c++;
+    }
+    if (hasEMCCell) {
+      hBC->Fill(0);
+      if (collisions.size() == 0) {
+        hBC->Fill(1);
+      } else if (collisions.size() == 1) {
+        hBC->Fill(2);
+      } else {
+        hBC->Fill(3);
+      }
+    } else {
+      if (collisions.size() == 0) {
+        hBC->Fill(4);
+      } else if (collisions.size() == 1) {
+        hBC->Fill(5);
+      } else {
+        hBC->Fill(6);
+      }
     }
     LOG(debug) << "Number of cells (CF): " << mEmcalCells.size();
 
@@ -222,10 +272,12 @@ struct EmcalCorrectionTask {
       float vx = 0, vy = 0, vz = 0;
       bool hasCollision = false;
       if (collisions.size() > 1) {
-        LOG(error) << "More than one collision in the bc. This is not supported.";
+        LOG(debug) << "More than one collision in the bc. This is not supported.";
       } else {
         // dummy loop to get the first collision
         for (const auto& col : collisions) {
+          hCollPerBC->Fill(1);
+          hCollisionType->Fill(1);
           vx = col.posX();
           vy = col.posY();
           vz = col.posZ();
@@ -237,14 +289,25 @@ struct EmcalCorrectionTask {
           std::vector<double> trackPhi;
           std::vector<double> trackEta;
           std::vector<int64_t> trackGlobalIndex;
+          int NTrack = 0;
           for (auto& track : groupedTracks) {
-            // TODO this actually needs to use the eta phi
-            // of track propagated to EMC surface! Will be provided centrally according to Ruben
             // TODO only consider tracks in current emcal/dcal acceptanc
-            trackPhi.emplace_back(TVector2::Phi_0_2pi(track.phi()));
-            trackEta.emplace_back(track.eta());
+            if (!track.isGlobalTrack()) { // only global tracks
+              continue;
+            }
+            NTrack++;
+            if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
+              trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+              trackEta.emplace_back(track.trackEtaEmcal());
+              hGlobalTrackEtaPhi->Fill(track.trackEtaEmcal(), TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+            } else {
+              trackPhi.emplace_back(TVector2::Phi_0_2pi(track.phi()));
+              trackEta.emplace_back(track.eta());
+              hGlobalTrackEtaPhi->Fill(track.eta(), TVector2::Phi_0_2pi(track.phi()));
+            }
             trackGlobalIndex.emplace_back(track.globalIndex());
           }
+          hGlobalTrackMult->Fill(NTrack);
 
           std::vector<double> clusterPhi;
           std::vector<double> clusterEta;
@@ -259,7 +322,7 @@ struct EmcalCorrectionTask {
             clusterPhi.emplace_back(TVector2::Phi_0_2pi(pos.Phi()));
             clusterEta.emplace_back(pos.Eta());
           }
-          auto&& [clusterToTrackIndexMap, trackToClusterIndexMap] = JetUtilities::MatchClustersAndTracks(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 5);
+          auto&& [clusterToTrackIndexMap, trackToClusterIndexMap] = JetUtilities::MatchClustersAndTracks(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 10);
           // we found a collision, put the clusters into the none ambiguous table
           clusters.reserve(mAnalysisClusters.size());
           int cellindex = -1;
@@ -275,6 +338,7 @@ struct EmcalCorrectionTask {
 
             // save to table
             LOG(debug) << "Writing cluster definition " << static_cast<int>(mClusterDefinitions.at(i)) << " to table.";
+            hClusterType->Fill(1);
             clusters(col, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
                      cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
                      cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(i)));
@@ -303,7 +367,15 @@ struct EmcalCorrectionTask {
       // Store the clusters in the table where a mathcing collision could
       // be identified.
       if (!hasCollision) { // ambiguous
+        bool hasNoCollision = false;
         // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
+        hCollPerBC->Fill(collisions.size());
+        if (collisions.size() == 0) {
+          hasNoCollision = true;
+          hCollisionType->Fill(0);
+        } else {
+          hCollisionType->Fill(2);
+        }
         int cellindex = -1;
         clustersAmbiguous.reserve(mAnalysisClusters.size());
         for (const auto& cluster : mAnalysisClusters) {
@@ -315,6 +387,11 @@ struct EmcalCorrectionTask {
           // We have our necessary properties. Now we store outputs
 
           // LOG(debug) << "Cluster E: " << cluster.E();
+          if (hasNoCollision) {
+            hClusterType->Fill(0);
+          } else {
+            hClusterType->Fill(2);
+          }
           clustersAmbiguous(bc, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
                             cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
                             cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(i)));

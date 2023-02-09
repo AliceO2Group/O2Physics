@@ -226,30 +226,21 @@ struct centralEventFilterTask {
     }
     LOG(info) << "Middle init, total number of columns " << nCols;
 
-    auto mScalers = std::get<std::shared_ptr<TH1>>(scalers.add("mScalers", ";;Number of events", HistType::kTH1F, {{nCols + 1, -0.5, 0.5 + nCols}}));
-    auto mFiltered = std::get<std::shared_ptr<TH1>>(scalers.add("mFiltered", ";;Number of filtered events", HistType::kTH1F, {{nCols + 1, -0.5, 0.5 + nCols}}));
+    auto mScalers = std::get<std::shared_ptr<TH1>>(scalers.add("mScalers", ";;Number of events", HistType::kTH1D, {{nCols + 2, -0.5, 1.5 + nCols}}));
+    auto mFiltered = std::get<std::shared_ptr<TH1>>(scalers.add("mFiltered", ";;Number of filtered events", HistType::kTH1D, {{nCols + 2, -0.5, 1.5 + nCols}}));
+    auto mCovariance = std::get<std::shared_ptr<TH2>>(scalers.add("mCovariance", "Selection covariance", HistType::kTH2D, {{nCols, -0.5, nCols - 0.5}, {nCols, -0.5, nCols - 0.5}}));
 
     mScalers->GetXaxis()->SetBinLabel(1, "Total number of events");
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
+    mScalers->GetXaxis()->SetBinLabel(nCols + 1, "Triggered events");
+    mFiltered->GetXaxis()->SetBinLabel(nCols + 1, "Filtered events");
     int bin{2};
-
-    // for (auto& spec : reinterpret_cast<std::unique_ptr<ConfigParamStore>*>(&(initc.mOptions))->get()->specs()) {
-    //   std::cout << "Configuration available: " << spec.name << "\t" << int(spec.type) << std::endl;
-    //   auto filterOpt = initc.mOptions.get<LabeledArray<float>>(spec.name.data());
-    //   std::cout << " -- row labs: ";
-    //   for (auto& lab : filterOpt.labels_rows) {
-    //     std::cout << lab << "\t";
-    //   }
-    //   std::cout << "\n -- col labs: ";
-    //   for (auto& lab : filterOpt.labels_cols) {
-    //     std::cout << lab << "\t";
-    //   }
-    //    std::cout << std::endl;
-    // }
 
     for (auto& table : mDownscaling) {
       LOG(info) << "Setting downscalings for table " << table.first;
       for (auto& column : table.second) {
+        mCovariance->GetXaxis()->SetBinLabel(bin - 1, column.first.data());
+        mCovariance->GetYaxis()->SetBinLabel(bin - 1, column.first.data());
         mScalers->GetXaxis()->SetBinLabel(bin, column.first.data());
         mFiltered->GetXaxis()->SetBinLabel(bin++, column.first.data());
       }
@@ -268,6 +259,7 @@ struct centralEventFilterTask {
   {
     auto mScalers{scalers.get<TH1>(HIST("mScalers"))};
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
+    auto mCovariance{scalers.get<TH2>(HIST("mCovariance"))};
 
     int64_t nEvents{-1};
     std::vector<uint64_t> outTrigger, outDecision;
@@ -319,10 +311,29 @@ struct centralEventFilterTask {
     mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents);
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
 
+    for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
+      for (int iB{0}; iB < 64; ++iB) {
+        if (!(outTrigger[iE] & BIT(iB))) {
+          continue;
+        }
+        for (int iC{iB}; iC < 64; ++iC) {
+          if (outTrigger[iE] & BIT(iC)) {
+            mCovariance->Fill(iB, iC);
+          }
+        }
+      }
+      if (outTrigger[iE]) {
+        mScalers->Fill(mScalers->GetNbinsX() - 1);
+      }
+      if (outDecision[iE]) {
+        mFiltered->Fill(mFiltered->GetNbinsX() - 1);
+      }
+    }
+
     // Filling output table
-    auto bcTabConsumer = pc.inputs().get<TableConsumer>("BCs");
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
     auto bcTabPtr{bcTabConsumer->asArrowTable()};
-    auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
     auto collTabPtr{collTabConsumer->asArrowTable()};
     if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
@@ -360,6 +371,11 @@ struct centralEventFilterTask {
     // }
   }
 
+  /// Trivial process to have automatically the collision and BC input tables
+  void process(aod::Collisions const&, aod::BCs const&)
+  {
+  }
+
   std::mt19937_64 mGeneratorEngine;
   std::uniform_real_distribution<double> mUniformGenerator = std::uniform_real_distribution<double>(0., 1.);
 };
@@ -367,9 +383,6 @@ struct centralEventFilterTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
   std::vector<InputSpec> inputs;
-  inputs.emplace_back("Collisions", "AOD", "COLLISION", 0, Lifetime::Timeframe);
-  inputs.emplace_back("BCs", "AOD", "BC", 0, Lifetime::Timeframe);
-
   auto config = cfg.options().get<std::string>("train_config");
   Document d;
   std::unordered_map<std::string, std::unordered_map<std::string, float>> downscalings;

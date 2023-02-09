@@ -107,13 +107,15 @@ struct tpcPidQa {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
-  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
+  Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
+
+  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
 
   template <o2::track::PID::ID id>
-  void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis)
+  void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis, const AxisSpec& dedxAxis)
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     bool enableTOFHistos = false;
@@ -196,8 +198,12 @@ struct tpcPidQa {
     histos.add(hnsigma_pt_pos_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigma_pt_neg_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
 
-    const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
-    histos.add(hsignal_wTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
+    if (splitSignalPerCharge) {
+      const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
+      histos.add(hsignal_wTOF[id].data(), "With TOF", kTH3F, {pAxis, dedxAxis, chargeAxis});
+    } else {
+      histos.add(hsignal_wTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
+    }
   }
 
   void init(o2::framework::InitContext&)
@@ -234,12 +240,14 @@ struct tpcPidQa {
       h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
     }
     histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
-    histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
-    histos.add("event/pos/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
-    histos.add("event/neg/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
-    histos.add("event/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
-    histos.add("event/pos/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
-    histos.add("event/neg/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
+    if (splitSignalPerCharge) {
+      const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
+      histos.add("event/tpcsignal", "", kTH3F, {pAxis, dedxAxis, chargeAxis});
+      histos.add("event/tpcsignalvspt", "", kTH3F, {ptAxis, dedxAxis, chargeAxis});
+    } else {
+      histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
+      histos.add("event/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
+    }
     histos.add("event/eta", "", kTH1F, {etaAxis});
     histos.add("event/phi", "", kTH1F, {phiAxis});
     histos.add("event/etaphi", "", kTH2F, {etaAxis, phiAxis});
@@ -248,7 +256,7 @@ struct tpcPidQa {
     histos.add("event/p", "", kTH1F, {pAxis});
 
     static_for<0, 8>([&](auto i) {
-      initPerParticle<i>(pAxis, ptAxis);
+      initPerParticle<i>(pAxis, ptAxis, dedxAxis);
     });
   }
 
@@ -319,14 +327,12 @@ struct tpcPidQa {
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 4.f);
       histos.fill(HIST("event/particlehypo"), track.pidForTracking());
-      histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
-      histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
-      if (track.sign() > 0) {
-        histos.fill(HIST("event/pos/tpcsignalvspt"), track.pt(), track.tpcSignal());
-        histos.fill(HIST("event/pos/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
+      if (splitSignalPerCharge) {
+        histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal(), track.sign());
+        histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal(), track.sign());
       } else {
-        histos.fill(HIST("event/neg/tpcsignalvspt"), track.pt(), track.tpcSignal());
-        histos.fill(HIST("event/neg/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
+        histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
+        histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
       }
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/phi"), track.phi());
@@ -404,7 +410,11 @@ struct tpcPidQa {
         if (std::abs(nsigmatof) < 3.f) {
           histos.fill(HIST(hnsigma_wTOF[id]), t.p(), nsigma);
           histos.fill(HIST(hnsigma_pt_wTOF[id]), t.pt(), nsigma);
-          histos.fill(HIST(hsignal_wTOF[id]), t.tpcInnerParam(), t.tpcSignal());
+          if (splitSignalPerCharge) {
+            histos.fill(HIST(hsignal_wTOF[id]), t.tpcInnerParam(), t.tpcSignal(), t.sign());
+          } else {
+            histos.fill(HIST(hsignal_wTOF[id]), t.tpcInnerParam(), t.tpcSignal());
+          }
           // histos.fill(HIST("event/signedtpcsignal"), t.tpcInnerParam() * t.sign(), t.tpcSignal());
         }
       }

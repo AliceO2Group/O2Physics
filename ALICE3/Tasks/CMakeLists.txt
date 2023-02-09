@@ -41,5 +41,5 @@ o2physics_add_dpl_workflow(alice3-pid-ftof-qa
 
 o2physics_add_dpl_workflow(alice3-cdeuteron
                     SOURCES alice3-cdeuteron.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
