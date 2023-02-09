@@ -992,7 +992,7 @@ class RecoDecay
       arrayIds.push_back(arrayIdsStage);
       stage--;
     }
-    if (!searchUpToQuark && couldbePrompt) { // prompt if it's a charm hadron or a charm-hadron daugther. Note: 1) LF decay particles from cases like ->Lc ->p K0s, K0s->pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched swith to option "search up to quark"
+    if (!searchUpToQuark && couldbePrompt) { // Returns prompt if it's a charm hadron or a charm-hadron daughter. Note: 1) LF decay particles from cases like -> Lc -> p K0S, K0S -> pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched, switch to option "search up to quark"
       return OriginType::Prompt;
     }
     return OriginType::None;
