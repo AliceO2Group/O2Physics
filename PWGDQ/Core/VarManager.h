@@ -1119,28 +1119,60 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
     float bz = fgFitterTwoProngBarrel.getBz();
 
+    bool swapTracks = false;
+    if (v1.Pt() < v2.Pt()) { // ordering of track, pt1 > pt2
+      ROOT::Math::PtEtaPhiMVector v3 = v1;
+      v1 = v2;
+      v2 = v3;
+      swapTracks = true;
+    }
+
     // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
     // vector product of pep X pem
     float vpx = 0, vpy = 0, vpz = 0;
     if (t1.sign() * t2.sign() > 0) { // Like Sign
-      if (bz * t1.sign() < 0) {
-        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-      } else {
-        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      if (!swapTracks) {
+        if (bz * t1.sign() < 0) {
+          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+        } else {
+          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+        }
+      } else { // swaped tracks
+        if (bz * t2.sign() < 0) {
+          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+        } else {
+          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+        }
       }
     } else { // Unlike Sign
-      if (bz * t1.sign() > 0) {
-        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-      } else {
-        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      if (!swapTracks) {
+        if (bz * t1.sign() > 0) {
+          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+        } else {
+          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+        }
+      } else { // swaped tracks
+        if (bz * t2.sign() > 0) {
+          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+        } else {
+          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+        }
       }
     }
 

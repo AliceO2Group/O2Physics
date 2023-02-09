@@ -661,7 +661,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   // lmee pair cuts
 
   if (!nameStr.compare("pairPhiV")) {
-    AnalysisCompositeCut* cut_pairPhiV = new AnalysisCompositeCut("cut_pairPhiV", "cut_pairPhiV", kFALSE);
+    AnalysisCompositeCut* cut_pairPhiV = new AnalysisCompositeCut("cut_pairPhiV", "cut_pairPhiV", kTRUE);
     cut_pairPhiV->AddCut(GetAnalysisCut("pairLowMass"));
     cut_pairPhiV->AddCut(GetAnalysisCut("pairPhiV"));
     cut->AddCut(cut_pairPhiV);
@@ -963,7 +963,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   //
   AnalysisCut* cut = new AnalysisCut(cutName, cutName);
   std::string nameStr = cutName;
-
   // ---------------------------------------------------------------
   // Event cuts
   if (!nameStr.compare("eventStandard")) {
@@ -1686,12 +1685,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairPhiV")) {
-    cut->AddCut(VarManager::kPairPhiv, 2., 3.2, true);
+    cut->AddCut(VarManager::kPairPhiv, 2., 3.2);
     return cut;
   }
 
   if (!nameStr.compare("pairLowMass")) {
-    cut->AddCut(VarManager::kMass, 0., 0.1, true);
+    cut->AddCut(VarManager::kMass, 0., 0.1);
     return cut;
   }
 
