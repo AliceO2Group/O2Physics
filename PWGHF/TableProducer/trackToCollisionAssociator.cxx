@@ -34,7 +34,7 @@ struct HfTrackToCollisionAssociation {
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
   Configurable<bool> applyTrackSelForRun2{"applyMinimalTrackSelForRun2", false, "flag to apply minimal track selection for Run2 in case of standard association"};
-  Configurable<bool> applyIsGlobalTrack{"applyIsGlobalTrack", true, "flag to apply global track w/o DCA selection"};
+  Configurable<bool> applyIsGlobalTrack{"applyIsGlobalTrackWoDCA", true, "flag to apply global track w/o DCA selection"};
   Configurable<bool> debug{"debug", false, "fill a table with flag to keep track of kind of track (PV contributor or ambiguous)"};
 
   Filter trackFilter = (applyIsGlobalTrack == false) || requireGlobalTrackWoDCAInFilter();

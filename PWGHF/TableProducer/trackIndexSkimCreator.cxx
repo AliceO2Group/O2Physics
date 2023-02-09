@@ -971,7 +971,7 @@ struct HfTrackIndexSkimCreator {
 
   void init(InitContext const& context)
   {
-    if (!(context.mOptions.get<bool>("process2And3Prongs"))) {
+    if (!doprocess2And3Prongs) {
       return;
     }
 
@@ -2324,7 +2324,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
   void init(InitContext const& context)
   {
-    if (!(context.mOptions.get<bool>("processCascades"))) {
+    if (!doprocessCascades) {
       return;
     }
     ccdb->setURL(ccdbUrl);
@@ -2614,6 +2614,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   void init(InitContext const&)
   {
+    if (!doprocessCascades) {
+      return;
+    }
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = array{array{massXi, massPi},
                                                                             array{massPi, massXi}};
 

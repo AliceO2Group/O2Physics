@@ -431,7 +431,7 @@ int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg, const float& nsi
 /// \param pTrackNeg is the negative track momentum
 /// \param ptD is the pt of the D0 meson candidate
 /// \param isSelected is the flag containing the selection tag for the D0 candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return 1 for D0, 2 for D0bar, 3 for both
@@ -444,7 +444,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0);
     }
-    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
     }
   }
@@ -453,7 +453,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0bar);
     }
-    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
     }
   }
@@ -466,7 +466,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
 /// \param pTrackSameChargeFirst is the second same-charge track momentum
 /// \param pTrackSameChargeFirst is the opposite charge track momentum
 /// \param ptD is the pt of the D+ meson candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) (==1) for D+, 0 otherwise
@@ -478,7 +478,7 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
     hMassVsPt->Fill(ptD, invMassDplus);
   }
 
-  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty) {
+  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty || ptD > 10) {
     return 0;
   }
 
@@ -491,7 +491,7 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
 /// \param pTrackSameChargeFirst is the opposite charge track momentum
 /// \param ptD is the pt of the Ds meson candidate
 /// \param isSelected is the flag containing the selection tag for the Ds candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
@@ -504,7 +504,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToKKPi);
     }
-    if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
     }
   }
@@ -513,7 +513,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToPiKK);
     }
-    if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
     }
   }
@@ -527,7 +527,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
 /// \param pTrackOppositeCharge is the opposite charge track momentum
 /// \param ptLc is the pt of the D0 meson candidate
 /// \param isSelected is the flag containing the selection tag for the D0 candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
@@ -540,7 +540,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPKPi);
     }
-    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(0);
     }
   }
@@ -549,7 +549,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPiKP);
     }
-    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(1);
     }
   }
@@ -563,7 +563,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
 /// \param pTrackOppositeCharge is the opposite charge track momentum
 /// \param ptXic is the pt of the D0 meson candidate
 /// \param isSelected is the flag containing the selection tag for the D0 candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
@@ -576,7 +576,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPKPi);
     }
-    if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(0);
     }
   }
@@ -585,7 +585,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPiKP);
     }
-    if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(1);
     }
   }
