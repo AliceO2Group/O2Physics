@@ -151,6 +151,15 @@ struct cascadeBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
+  // generate and fill extra QA histograms if requested
+  Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
+  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
+  Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
+  Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
+  Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
+  Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
+  Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -249,6 +258,37 @@ struct cascadeBuilder {
   void init(InitContext& context)
   {
     resetHistos();
+
+    // Optionally, add extra QA histograms to processing chain
+    if (d_doQA) {
+      // Basic histograms containing invariant masses of all built candidates
+      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisXiMass{(int)dQANBinsMass, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisOmegaMass{(int)dQANBinsMass, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+
+      registry.add("h2dXiMinusMass", "h2dXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+      registry.add("h2dXiPlusMass", "h2dXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+      registry.add("h2dOmegaMinusMass", "h2dOmegaMinusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+      registry.add("h2dOmegaPlusMass", "h2dOmegaPlusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+
+      // bit packed ITS cluster map
+      const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+
+      // Histogram to bookkeep cluster maps
+      registry.add("h2dITSCluMap_XiMinusPositive", "h2dITSCluMap_XiMinusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiMinusNegative", "h2dITSCluMap_XiMinusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiMinusBachelor", "h2dITSCluMap_XiMinusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiPlusPositive", "h2dITSCluMap_XiPlusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiPlusNegative", "h2dITSCluMap_XiPlusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiPlusBachelor", "h2dITSCluMap_XiPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaMinusPositive", "h2dITSCluMap_OmegaMinusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaMinusNegative", "h2dITSCluMap_OmegaMinusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaMinusBachelor", "h2dITSCluMap_OmegaMinusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaPlusPositive", "h2dITSCluMap_OmegaPlusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaPlusNegative", "h2dITSCluMap_OmegaPlusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaPlusBachelor", "h2dITSCluMap_OmegaPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+    }
 
     mRunNumber = 0;
     d_bz = 0;
@@ -598,6 +638,47 @@ struct cascadeBuilder {
         statisticsRegistry.negITSclu[negTrack.itsNCls()]++;
       if (bachTrack.itsNCls() < 10)
         statisticsRegistry.bachITSclu[bachTrack.itsNCls()]++;
+    }
+
+    if (d_doQA) {
+      // Calculate masses
+      auto lXiMass = RecoDecay::m(array{array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}, array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
+      auto lOmegaMass = RecoDecay::m(array{array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}, array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
+
+      auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[0]);
+
+      // Fill basic mass histograms
+      // Note: all presel bools are true if unchecked
+      if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
+        registry.fill(HIST("h2dXiMinusMass"), lPt, lXiMass);
+      if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
+        registry.fill(HIST("h2dXiPlusMass"), lPt, lXiMass);
+      if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
+        registry.fill(HIST("h2dOmegaMinusMass"), lPt, lOmegaMass);
+      if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
+        registry.fill(HIST("h2dOmegaPlusMass"), lPt, lOmegaMass);
+
+      // Fill ITS cluster maps with specific mass cuts
+      if (TMath::Abs(lXiMass - 1.322) < dQAXiMassWindow && cascade.isXiMinusCandidate() && cascade.isTrueXiMinus()) {
+        registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+      if (TMath::Abs(lXiMass - 1.322) < dQAXiMassWindow && cascade.isXiPlusCandidate() && cascade.isTrueXiPlus()) {
+        registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+      if (TMath::Abs(lXiMass - 1.672) < dQAOmegaMassWindow && cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus()) {
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+      if (TMath::Abs(lXiMass - 1.672) < dQAOmegaMassWindow && cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus()) {
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
     }
 
     return true;
