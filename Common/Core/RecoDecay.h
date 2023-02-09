@@ -941,8 +941,9 @@ class RecoDecay
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto PDGParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
-    if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4)
+    if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
       couldbePrompt = true;
+    }
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
