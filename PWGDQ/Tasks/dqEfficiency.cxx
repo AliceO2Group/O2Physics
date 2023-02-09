@@ -515,7 +515,7 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdburl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     bool enableBarrelHistos = context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed");
