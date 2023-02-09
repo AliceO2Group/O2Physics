@@ -1443,6 +1443,7 @@ DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, double);
 DECLARE_SOA_COLUMN(CTauOmegac, ctauOmegac, double);
 DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, double);
 DECLARE_SOA_COLUMN(CTauV0, ctauV0, double);
+DECLARE_SOA_COLUMN(CTauXic, ctauXic, double);
 DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
 DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
@@ -1495,7 +1496,7 @@ DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEC",
                   hf_cand_omegac::PtPrimaryPi,
                   hf_cand_omegac::InvMassLambda, hf_cand_omegac::InvMassAntiLambda, hf_cand_omegac::InvMassCascade, hf_cand_omegac::InvMassOmegac,
                   hf_cand_omegac::CosPAV0, hf_cand_omegac::CosPAOmegac, hf_cand_omegac::CosPACasc, hf_cand_omegac::CosPAXYV0, hf_cand_omegac::CosPAXYOmegac, hf_cand_omegac::CosPAXYCasc,
-                  hf_cand_omegac::CTauOmegac, hf_cand_omegac::CTauCascade, hf_cand_omegac::CTauV0,
+                  hf_cand_omegac::CTauOmegac, hf_cand_omegac::CTauCascade, hf_cand_omegac::CTauV0, hf_cand_omegac::CTauXic,
                   hf_cand_omegac::EtaV0PosDau, hf_cand_omegac::EtaV0NegDau, hf_cand_omegac::EtaPiFromCasc, hf_cand_omegac::EtaPiFromOme,
                   hf_cand_omegac::EtaOmegac, hf_cand_omegac::EtaCascade, hf_cand_omegac::EtaV0,
                   hf_cand_omegac::DcaXYToPVPrimaryPi, hf_cand_omegac::DcaXYToPVV0Dau0, hf_cand_omegac::DcaXYToPVV0Dau1, hf_cand_omegac::DcaXYToPVCascDau,

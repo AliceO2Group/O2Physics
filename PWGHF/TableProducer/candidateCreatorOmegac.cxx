@@ -127,6 +127,7 @@ struct HfCandidateCreatorOmegac {
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
     double massOmegacFromPDG = RecoDecay::getMassPDG(kOmegaC0); // pdg code 4332
+    double massXicFromPDG = RecoDecay::getMassPDG(kXiCZero);    // pdg code 4132
 
     // loop over cascades reconstructed by cascadebuilder.cxx
     for (auto const& casc : cascades) {
@@ -291,6 +292,7 @@ struct HfCandidateCreatorOmegac {
         double decLenCascade = RecoDecay::distance(coordVtxOmegac, vertexCasc);
         double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
         double ctOmegac = RecoDecay::ct(pvecOmegac, decLenOmegac, massOmegacFromPDG);
+        double ctXic = RecoDecay::ct(pvecOmegac, decLenOmegac, massXicFromPDG);
         double ctCascade = RecoDecay::ct(pvecCasc, decLenCascade, massXiFromPDG);
         double ctV0 = RecoDecay::ct(pvecV0, decLenV0, massLambdaFromPDG);
 
@@ -338,7 +340,7 @@ struct HfCandidateCreatorOmegac {
                      ptPrimaryPi,
                      mLambda, mAntiLambda, mCasc, mOmegac,
                      cpaV0, cpaOmegac, cpaCasc, cpaxyV0, cpaxyOmegac, cpaxyCasc,
-                     ctOmegac, ctCascade, ctV0,
+                     ctOmegac, ctCascade, ctV0, ctXic,
                      pseudorapV0PosDau, pseudorapV0NegDau, pseudorapPiFromCas, pseudorapPiFromOme,
                      pseudorapOmegac, pseudorapCascade, pseudorapV0,
                      dcaxyPrimaryPi, dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascDau,
@@ -353,6 +355,9 @@ struct HfCandidateCreatorOmegac {
 struct HfCandidateCreatorOmegacMc {
   Produces<aod::HfCandOmegacMCRec> rowMCMatchRec;
   Produces<aod::HfCandOmegacMCGen> rowMCMatchGen;
+
+  Configurable<bool> isOmegacMc{"isOmegacMc", true, "Do MC matching for Omegac0"};
+  Configurable<bool> isXicMc{"isXicMc", false, "Do MC matching for Xic0"};
 
   void init(InitContext const&) {}
 
@@ -373,6 +378,7 @@ struct HfCandidateCreatorOmegacMc {
     int8_t debug = 0;
 
     int pdgCodeOmegac0 = pdg::Code::kOmegaC0; // 4332
+    int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132
     int pdgCodeXiMinus = kXiMinus;            // 3312
     int pdgCodeLambda = kLambda0;             // 3122
     int pdgCodePiPlus = kPiPlus;              // 211
@@ -395,11 +401,21 @@ struct HfCandidateCreatorOmegacMc {
       auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::BigTracksMC>(),
                                          candidate.negTrack_as<aod::BigTracksMC>()};
 
-      // Omegac → pi pi pi p
-      // Printf("Checking Omegac → pi pi pi p");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
-      if (indexRec == -1) {
-        debug = 1;
+      if (isOmegacMc) {
+        // Omegac → pi pi pi p
+        // Printf("Checking Omegac → pi pi pi p");
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        if (indexRec == -1) {
+          debug = 1;
+        }
+      }
+      if (isXicMc) {
+        // Xic → pi pi pi p
+        // Printf("Checking Xic → pi pi pi p");
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        if (indexRec == -1) {
+          debug = 1;
+        }
       }
       if (indexRec > -1) {
         // cascade → lambda pi
@@ -432,19 +448,37 @@ struct HfCandidateCreatorOmegacMc {
       // Printf("New gen. candidate");
       flag = 0;
       // origin = 0;
-      //  Omegac → Xi pi
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
-        // Match Xi -> lambda pi
-        auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
-        // Printf("Checking cascade → lambda pi");
-        if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
-          // lambda -> p pi
-          auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
-            flag = sign * (1 << DecayType::OmegacToXiPi);
+      if (isOmegacMc) {
+        //  Omegac → Xi pi
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+          // Match Xi -> lambda pi
+          auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+          // Printf("Checking cascade → lambda pi");
+          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            // lambda -> p pi
+            auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+              flag = sign * (1 << DecayType::OmegacToXiPi);
+            }
           }
         }
       }
+      if (isXicMc) {
+        //  Xic → Xi pi
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+          // Match Xi -> lambda pi
+          auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+          // Printf("Checking cascade → lambda pi");
+          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            // lambda -> p pi
+            auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+              flag = sign * (1 << DecayType::OmegacToXiPi);
+            }
+          }
+        }
+      }
+
       // rowMCMatchGen(flag, origin);
       rowMCMatchGen(flag);
     }
