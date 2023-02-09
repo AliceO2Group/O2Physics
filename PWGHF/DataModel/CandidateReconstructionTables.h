@@ -1781,13 +1781,13 @@ DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::OriginMcGen);
 
 // specific Σc0,++ candidate properties
-namespace hf_cand_sc
+namespace hf_cand_sigmac
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCand3Prong, "");                //! Index to a Lc prong
-DECLARE_SOA_COLUMN(Charge, charge, int);                                               //! // Σc charge(either 0 or ++)
+DECLARE_SOA_COLUMN(Charge, charge, int8_t);                                            //! // Σc charge(either 0 or ++)
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPKPiFromPDG, statusSpreadLcMinvPKPiFromPDG, int); //! // Λc Minv(pKpi) spread from PDG Λc mass
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPiKPFromPDG, statusSpreadLcMinvPiKPFromPDG, int); //! // Λc Minv(piKp) spread from PDG Λc mass
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0");                // Λc index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0");                //! Λc index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
@@ -1825,15 +1825,10 @@ auto yScPlusPlus(const T& candidate)
   return candidate.y(RecoDecay::getMassPDG(pdg::Code::kSigmacPlusPlus));
 }
 
-} // namespace hf_cand_sc
-
-// namespace hf_track_index
-//{
-// DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCand3Prong, ""); //! Index to a Lc prong
-// } // namespace hf_track_index
+} // namespace hf_cand_sigmac
 
 // declare dedicated Σc0,++ decay candidate table
-// NB: no topology for Σc0, ++ (strong decay)
+// NB: no topology for Σc0,++ (strong decay)
 DECLARE_SOA_TABLE(HfCandScBase, "AOD", "HFCANDSCBASE",
                   o2::soa::Index<>,
                   // general columns
@@ -1844,11 +1839,11 @@ DECLARE_SOA_TABLE(HfCandScBase, "AOD", "HFCANDSCBASE",
                   // hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   // hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
                   // hf_track_index::ProngLcId, hf_track_index::Prong1Id,
-                  hf_cand_sc::ProngLcId, hf_track_index::Prong1Id,
+                  hf_cand_sigmac::ProngLcId, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* Σc0,++ specific columns */
-                  hf_cand_sc::Charge,
-                  hf_cand_sc::StatusSpreadLcMinvPKPiFromPDG, hf_cand_sc::StatusSpreadLcMinvPiKPFromPDG,
+                  hf_cand_sigmac::Charge,
+                  hf_cand_sigmac::StatusSpreadLcMinvPKPiFromPDG, hf_cand_sigmac::StatusSpreadLcMinvPiKPFromPDG,
                   /* prong 0 */
                   // hf_cand::ImpactParameterNormalised0<hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0>,
                   hf_cand::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
@@ -1881,13 +1876,13 @@ using HfCandSc = HfCandScExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandScMcRec, "AOD", "HFCANDSCMCREC", //!
-                  hf_cand_sc::FlagMcMatchRec,
-                  hf_cand_sc::OriginMcRec);
+                  hf_cand_sigmac::FlagMcMatchRec,
+                  hf_cand_sigmac::OriginMcRec);
 
 // table with results of generation level MC matching
 DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
-                  hf_cand_sc::FlagMcMatchGen,
-                  hf_cand_sc::OriginMcGen);
+                  hf_cand_sigmac::FlagMcMatchGen,
+                  hf_cand_sigmac::OriginMcGen);
 
 } // namespace o2::aod
 

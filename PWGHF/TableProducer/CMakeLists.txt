@@ -64,9 +64,9 @@ o2physics_add_dpl_workflow(candidate-creator-omegac
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-creator-sigmac
+                    o2physics_add_dpl_workflow(candidate-creator-sigmac0plusplus
                     SOURCES candidateCreatorSigmac0plusplus.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EG
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-chic
