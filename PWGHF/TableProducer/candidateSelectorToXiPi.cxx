@@ -25,12 +25,12 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_omegac;
-using namespace o2::aod::hf_sel_omegac;
+using namespace o2::aod::hf_cand_toxipi;
+using namespace o2::aod::hf_sel_toxipi;
 
 /// Struct for applying Omegac selection cuts
-struct HfCandidateSelectorOmegac {
-  Produces<aod::HFSelOmegacCandidate> hfSelOmegacCandidate;
+struct HfCandidateSelectorToXiPi {
+  Produces<aod::HfSelToXiPi> hfSelToXiPi;
 
   // LF analysis selections
   // zPV -> can be already set in HFeventselection -> 10 cm
@@ -97,7 +97,7 @@ struct HfCandidateSelectorOmegac {
   OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
   OutputObj<TH1F> hTest2{TH1F("hTest2", "Test status consecutive;status;entries", 12, 0., 12.)};
 
-  void process(aod::HfCandOmegac const& candidates, MyTrackInfo const&)
+  void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
     TrackSelectorPID selectorPionFromOme(kPiPlus);
     selectorPionFromOme.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -145,7 +145,7 @@ struct HfCandidateSelectorOmegac {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int signDecay = candidate.signDecay(); // sign of pi <- cascade
+      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
@@ -330,7 +330,7 @@ struct HfCandidateSelectorOmegac {
         }
       }
 
-      hfSelOmegacCandidate(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac);
+      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac);
 
       if (statusPidLambda == -1) {
         hTest1->Fill(0.5);
@@ -383,5 +383,5 @@ struct HfCandidateSelectorOmegac {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorOmegac>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorToXiPi>(cfgc)};
 }
