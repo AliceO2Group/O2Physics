@@ -592,6 +592,9 @@ struct lfTpcPid {
       if (bb##Particle.takeFromCcdb) {                                                                                                              \
         bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                                                  \
       }                                                                                                                                             \
+      if (bbNeg##Particle.takeFromCcdb) {                                                                                                           \
+        bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                                               \
+      }                                                                                                                                             \
       for (auto const& trk : tracks) {                                                                                                              \
         if (trk.sign() > 0) {                                                                                                                       \
           aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk),       \
@@ -631,6 +634,9 @@ struct lfTpcPid {
       }                                                                                            \
     } else {                                                                                       \
       if (bb##Particle.takeFromCcdb) {                                                             \
+        bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
+      }                                                                                            \
+      if (bbNeg##Particle.takeFromCcdb) {                                                          \
         bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
       }                                                                                            \
       float expSigma = 1.f;                                                                        \
