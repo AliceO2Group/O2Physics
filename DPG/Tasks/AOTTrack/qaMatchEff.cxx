@@ -9,11 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file qaMatchEff.cxx
-/// \author Rosario Turrisi (rosario.turrisi@pd.infn.it)
-/// \author Mattia Faggin (mfaggin@cern.ch)
-/// \brief Task for ITS-TPC track-matching efficiency check and
-/// primaries/secondaries fractions analysis
+/// \brief A task for basic checks on ITS-TPC track matching efficiency and
+/// primaries/secondaries fractions analysis \author Rosario Turrisi
+/// (rosario.turrisi@pd.infn.it) \author Mattia Faggin (mfaggin@cern.ch) \since
+/// 2022
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
@@ -122,11 +121,9 @@ struct qaMatchEff {
   ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
   ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
   ConfigurableAxis thnType{
-      "thnType",
-      {3, -0.5f, 2.5f},
-      "0: primary, 1: physical secondary, 2: sec. from material"};
+      "thnType", {3, -0.5f, 2.5f}, "0,1,2 -> primaries, phys. sec., mat. sec."};
   ConfigurableAxis thnLabelSign{
-      "thnLabelSign", {3, -1.5f, 1.5f}, "particle label sign"};
+      "thnLabelSign", {3, -1.5f, 1.5f}, "+/- -> part./antipart."};
   ConfigurableAxis thnSpec{"thnSpec",
                            {5, 0.5f, 5.5f},
                            "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
@@ -135,13 +132,14 @@ struct qaMatchEff {
   AxisSpec thnPhiAxis{thnPhi, "#varphi"};
   AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
   AxisSpec thnTypeAxis{thnType, "particle class"};
-  AxisSpec thnLabelSignAxis{thnLabelSign, "+/- 1 for part./antipart."};
+  AxisSpec thnLabelSignAxis{thnLabelSign, "particle label sign"};
   AxisSpec thnSpecAxis{thnSpec,
                        "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
   //
   //
-  // Tracks selection object
+  // Track selection object
   TrackSelection cutObject;
+  //
   //
   // pt calculated at the inner wall of TPC
   float trackPtInParamTPC = -1.;
