@@ -983,7 +983,7 @@ struct AnalysisSameEventPairing {
             }
           }
           iCut++;
-          for (int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++, iCut++) {
+          for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++, iCut++) {
             AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
             if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
               continue;
