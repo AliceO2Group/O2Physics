@@ -43,25 +43,29 @@ using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
 struct fullJetFilter {
   enum {
     kJetFullHighPt = 0,
+    kGammaHighPt,
     kCategories
   };
 
   Produces<aod::FullJetFilters> tags;
 
   OutputObj<TH1I> hProcessedEvents{"hProcessedEvents"};
-  OutputObj<TH2F> hEmcClusterPtEta{"hEmcClusterEta"};
-  OutputObj<TH2F> hEmcClusterPtPhi{"hEmcClusterPhi"};
+  OutputObj<TH2F> hEmcClusterPtEta{"hEmcClusterPtEta"};
+  OutputObj<TH2F> hEmcClusterPtPhi{"hEmcClusterPtPhi"};
   OutputObj<TH2F> hSelectedClusterPtEta{"hSelectedClusterEta"};
   OutputObj<TH2F> hSelectedClusterPtPhi{"hSelectedClusterPhi"};
   OutputObj<TH2F> hEmcJetPtEta{"hEmcJetEta"};
   OutputObj<TH2F> hEmcJetPtPhi{"hEmcJetPhi"};
   OutputObj<TH2F> hSelectedJetPtEta{"hSelectedJetEta"};
   OutputObj<TH2F> hSelectedJetPtPhi{"hSelectedJetPhi"};
+  OutputObj<TH2F> hSelectedGammaPtEta{"hSelectedGammaEta"};
+  OutputObj<TH2F> hSelectedGammaPtPhi{"hSelectedGammaPhi"};
 
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_clusterPtMin{"f_clusterPtMin", 0.0, "minimum cluster pT cut"};
   Configurable<double> f_jetR{"f_jetR", 0.2, "jet R to trigger on"};
+  Configurable<float> f_gammaPtMin{"f_gammaPtMin", 4.0, "minimum gamma pT cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
 
   void init(o2::framework::InitContext&)
@@ -85,8 +89,10 @@ struct fullJetFilter {
     hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", "Selected Clusters;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hEmcJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
     hEmcJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
-    hSelectedJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
-    hSelectedJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedJetPtEta.setObject(new TH2F("hSelectedJetPtEta", "Selected Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
+    hSelectedJetPtPhi.setObject(new TH2F("hSelectedJetPtPhi", "Selected Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaPtEta.setObject(new TH2F("hSelectedGammaPtEta", "Selected Gammas;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedGammaPtPhi.setObject(new TH2F("hSelectedGammaPtPhi", "Selected Gammas;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
   } // init()
 
   // Declare filters
@@ -104,9 +110,17 @@ struct fullJetFilter {
     return false;
   }
 
-  Bool_t isEvtSelected(double const& jetpt, double const& jeteta, double const& jetphi, double const& cluspt, double const& cluseta, double const& clusphi)
+  Bool_t isEvtSelected(double const& jetpt)
   {
-    if (jetpt > f_jetPtMin && cluspt >= f_clusterPtMin) {
+    if (jetpt > f_jetPtMin) {
+      return true;
+    }
+    return false;
+  }
+
+  Bool_t isEvtSelectedGamma(double const& gammapt)
+  {
+    if (gammapt > f_gammaPtMin) {
       return true;
     }
     return false;
@@ -118,10 +132,11 @@ struct fullJetFilter {
     double maxClusterPt = -1., maxSelectedJetPt = -1.;
 
     if (!collision.alias()[kTVXinEMC]) {
-      tags(keepEvent[0]);
+      tags(keepEvent[0], keepEvent[1]);
       return; // Skip events where EMCAL is not live
     }
 
+    // Store pt of leading jet inside of the emcal to trigger on
     for (const auto& jet : jets) {
       hEmcJetPtEta->Fill(jet.pt(), jet.eta());
       hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
@@ -140,7 +155,16 @@ struct fullJetFilter {
       hEmcClusterPtPhi->Fill(clusterPt, cluster.phi());
     }
 
-    if (isEvtSelected(maxSelectedJetPt, -1, -1, maxClusterPt, -1, -1)) {
+    if (isEvtSelectedGamma(maxClusterPt)) {
+      keepEvent[kGammaHighPt] = true;
+      for (const auto& cluster : clusters) {
+        double clusterPt = cluster.energy() / std::cosh(cluster.eta());
+        hSelectedGammaPtEta->Fill(clusterPt, cluster.eta());
+        hSelectedGammaPtPhi->Fill(clusterPt, cluster.phi());
+      }
+    }
+
+    if (isEvtSelected(maxSelectedJetPt)) {
       keepEvent[kJetFullHighPt] = true;
       for (const auto& jet : jets) {
         if (isJetInEmcal(jet)) {
@@ -160,7 +184,7 @@ struct fullJetFilter {
         hProcessedEvents->Fill(iDecision);
       }
     }
-    tags(keepEvent[0]);
+    tags(keepEvent[0], keepEvent[1]);
   } // process()
 };
 
