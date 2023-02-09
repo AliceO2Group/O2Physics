@@ -179,7 +179,7 @@ DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated 
 DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float); //! Recalculated conversion point
 DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated conversion point
 DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return TMath::Sqrt(x * x + y * y); });
-} // namespace v0RecalculationsAndKF
+} // namespace v0Recalculations
 
 namespace v0KFParticle
 {
