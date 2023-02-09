@@ -400,6 +400,7 @@ struct HfCandidateCreatorToXiPiMc {
       auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::BigTracksMC>(),
                                          candidate.negTrack_as<aod::BigTracksMC>()};
 
+      // Omegac matching
       if (matchOmegacMc) {
         // Omegac → pi pi pi p
         // Printf("Checking Omegac → pi pi pi p");
@@ -407,6 +408,27 @@ struct HfCandidateCreatorToXiPiMc {
         if (indexRec == -1) {
           debug = 1;
         }
+        if (indexRec > -1) {
+          // cascade → lambda pi
+          // Printf("Checking cascade → pi pi p");
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
+          if (indexRec == -1) {
+            debug = 2;
+          }
+          if (indexRec > -1) {
+            // v0 → p pi
+            // Printf("Checking v0 → p pi");
+            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+            if (indexRec == -1) {
+              debug = 3;
+            }
+            if (indexRec > -1) {
+              flag = sign * (1 << DecayType::OmegaczeroToXiPi);
+            }
+          }
+        }
+
+        // Xic matching
       }
       if (matchXicMc) {
         // Xic → pi pi pi p
@@ -415,28 +437,29 @@ struct HfCandidateCreatorToXiPiMc {
         if (indexRec == -1) {
           debug = 1;
         }
-      }
-      if (indexRec > -1) {
-        // cascade → lambda pi
-        // Printf("Checking cascade → pi pi p");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
-        if (indexRec == -1) {
-          debug = 2;
-        }
         if (indexRec > -1) {
-          // v0 → p pi
-          // Printf("Checking v0 → p pi");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+          // cascade → lambda pi
+          // Printf("Checking cascade → pi pi p");
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
           if (indexRec == -1) {
-            debug = 3;
+            debug = 2;
           }
           if (indexRec > -1) {
-            flag = sign * (1 << DecayType::DecayToXiPi);
+            // v0 → p pi
+            // Printf("Checking v0 → p pi");
+            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+            if (indexRec == -1) {
+              debug = 3;
+            }
+            if (indexRec > -1) {
+              flag = sign * (1 << DecayType::XiczeroToXiPi);
+            }
           }
         }
       }
+
       if (debug == 2 || debug == 3) {
-        LOGF(info, "WARNING: Omegac0 decays in the expected final state but the condition on the intermediate states are not fulfilled");
+        LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fulfilled");
       }
       rowMCMatchRec(flag, debug);
 
@@ -457,7 +480,7 @@ struct HfCandidateCreatorToXiPiMc {
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
-              flag = sign * (1 << DecayType::DecayToXiPi);
+              flag = sign * (1 << DecayType::OmegaczeroToXiPi);
             }
           }
         }
@@ -472,7 +495,7 @@ struct HfCandidateCreatorToXiPiMc {
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
-              flag = sign * (1 << DecayType::DecayToXiPi);
+              flag = sign * (1 << DecayType::XiczeroToXiPi);
             }
           }
         }

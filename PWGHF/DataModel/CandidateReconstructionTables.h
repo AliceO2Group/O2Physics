@@ -1465,7 +1465,9 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mi
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 
 // mapping of decay types
-enum DecayType { DecayToXiPi = 0 };
+enum DecayType { DecayToXiPi = 0,
+                 OmegaczeroToXiPi,    
+                 XiczeroToXiPi};
 
 } // end of namespace hf_cand_toxipi
 
