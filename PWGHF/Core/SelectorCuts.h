@@ -46,7 +46,8 @@ enum Code {
   kX3872 = 9920443,
   kSigmaC0 = 4112,
   kSigmaCPlusPlus = 4222,
-  kOmegaC0 = 4332
+  kOmegaC0 = 4332,
+  kPhi = 333
 };
 } // namespace pdg
 
