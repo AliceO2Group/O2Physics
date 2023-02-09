@@ -12,25 +12,28 @@
 /// \since November 2021
 /// \last update: October 2022
 
-#include "ReconstructionDataFormats/Track.h"
+#include <cmath>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
+#include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+
 #include "TDatabasePDG.h"
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TF1.h>
 #include <TRandom.h>
-#include <cmath>
-#include <vector>
 
 // TODO: implement 50% stat for MC closure vs 50% for testing
 
@@ -217,7 +220,6 @@ void ueCharged::init(InitContext const&)
 
   ue.add("hPtLeadingData", " ", HistType::kTH1D, {{ptAxist}});
   ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
-
   ue.add("hEtaLeadingVsPtLeading", " ", HistType::kTH2D, {{ptAxist}, {50, -2.5, 2.5, "#eta"}});
 }
 
