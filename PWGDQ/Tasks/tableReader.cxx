@@ -58,14 +58,14 @@ DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
 DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, int);
-DECLARE_SOA_COLUMN(IsPrefiltered, isPrefiltered, int);
+DECLARE_SOA_COLUMN(IsPrefilterVetoed, isPrefilterVetoed, int);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
 DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHash);
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected, dqanalysisflags::IsBarrelSelectedPrefilter);
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
-DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefiltered);
+DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -426,11 +426,14 @@ struct AnalysisPrefilterSelection {
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
     if (!pairCutStr.IsNull()) {
-      fPairCut->AddCut(dqcuts::GetAnalysisCut(pairCutStr.Data()));
+      fPairCut = dqcuts::GetCompositeCut(pairCutStr.Data());
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
+
+    VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
+    VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
 
   template <int TPairType, uint32_t TTrackFillMap, typename TTracks1, typename TTracks2>
@@ -750,7 +753,7 @@ struct AnalysisSameEventPairing {
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
-  Filter prefilter = aod::dqanalysisflags::isPrefiltered == 0;
+  Filter prefilter = aod::dqanalysisflags::isPrefilterVetoed == 0;
 
   HistogramManager* fHistMan;
 
@@ -979,7 +982,7 @@ struct AnalysisSameEventPairing {
             }
           } else { // if pair cuts are passed
             for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iCut++) {
-              if (!(*cut).IsSelected(VarManager::fgValues)) // apply pair cuts
+              if ((*cut).IsSelected(VarManager::fgValues)) // apply pair cuts
                 continue;
               if (t1.sign() * t2.sign() < 0) {
                 fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
