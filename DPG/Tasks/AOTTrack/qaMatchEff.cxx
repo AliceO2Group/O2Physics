@@ -11,8 +11,8 @@
 //
 /// \brief A task for basic checks on ITS-TPC track matching efficiency and
 /// primaries/secondaries fractions analysis \author Rosario Turrisi
-/// (rosario.turrisi@pd.infn.it) \author Mattia Faggin (mfaggin@cern.ch) \since
-/// 2022
+/// (rosario.turrisi@pd.infn.it) \author Mattia Faggin (mfaggin@cern.ch) 
+/// \since 2022
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
