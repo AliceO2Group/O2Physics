@@ -942,7 +942,7 @@ class RecoDecay
     auto PDGParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
     if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
-      couldbePrompt = true;
+      couldBePrompt = true;
     }
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
@@ -980,7 +980,7 @@ class RecoDecay
                 (PDGParticleIMother / 100 == 4 || // c mesons
                  PDGParticleIMother / 1000 == 4)  // c baryons
               ) {
-                couldbePrompt = true;
+                couldBePrompt = true;
               }
             }
             // add mother index in the vector for the current stage
@@ -992,7 +992,7 @@ class RecoDecay
       arrayIds.push_back(arrayIdsStage);
       stage--;
     }
-    if (!searchUpToQuark && couldbePrompt) { // Returns prompt if it's a charm hadron or a charm-hadron daughter. Note: 1) LF decay particles from cases like -> Lc -> p K0S, K0S -> pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched, switch to option "search up to quark"
+    if (!searchUpToQuark && couldBePrompt) { // Returns prompt if it's a charm hadron or a charm-hadron daughter. Note: 1) LF decay particles from cases like -> Lc -> p K0S, K0S -> pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched, switch to option "search up to quark"
       return OriginType::Prompt;
     }
     return OriginType::None;
