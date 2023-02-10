@@ -56,8 +56,8 @@ class OnnxModel
 
   // Getters & Setters
   Ort::SessionOptions* getSessionOptions() { return &sessionOptions; } // For optimizations in post
-  int getInputDimensions() const { return mInputShapes[0][1]; }
-  int getOutputDimensions() const { return mOutputShapes[0][1]; }
+  int getNumInputNodes() const { return mInputShapes[0][1]; }
+  int getNumOutputNodes() const { return mOutputShapes[0][1]; }
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }
   void setActiveThreads(int);
