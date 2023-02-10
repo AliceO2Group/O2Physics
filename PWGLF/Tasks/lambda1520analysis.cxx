@@ -177,17 +177,17 @@ struct lambda1520analysis {
 
       // TOF PID cut
       if ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
-        if ((trk1.pt() >= 0.45) && (std::abs(trk1.tofNSigmaKa()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
+        if ((trk1.pt() >= 0.1) && (std::abs(trk1.tofNSigmaKa()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
           continue;
-        if ((trk1.pt() >= 0.45) && (std::abs(trk1.tpcNSigmaKa()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
+        if ((trk1.pt() >= 0.1) && (std::abs(trk1.tpcNSigmaKa()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
           continue;
         // LOGF(info, "Inside the TOF PID: value for Track 1: %f, PIDflag: %d, check: %d", trk1.tofNSigmaKa(), trk1.tofPIDselectionFlag(), trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF);
       }
 
       if ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
-        if ((trk2.pt() >= 0.8) && (std::abs(trk2.tofNSigmaPr()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
+        if ((trk2.pt() >= 0.1) && (std::abs(trk2.tofNSigmaPr()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
           continue;
-        if ((trk2.pt() >= 0.8) && (std::abs(trk2.tpcNSigmaPr()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
+        if ((trk2.pt() >= 0.1) && (std::abs(trk2.tpcNSigmaPr()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
           continue;
         // LOGF(info, "Inside the TOF PID: value for Track 2: %f, PIDflag: %d, check: %d", trk2.tofNSigmaPr(), trk2.tofPIDselectionFlag(), trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF);
       }
@@ -365,17 +365,17 @@ struct lambda1520analysis {
 
         // TOF PID cut
         if ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
-          if ((trk1.pt() >= 0.45) && (std::abs(trk1.tofNSigmaKa()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
+          if ((trk1.pt() >= 0.1) && (std::abs(trk1.tofNSigmaKa()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
             continue;
-          if ((trk1.pt() >= 0.45) && (std::abs(trk1.tpcNSigmaKa()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
+          if ((trk1.pt() >= 0.1) && (std::abs(trk1.tpcNSigmaKa()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
             continue;
           // LOGF(info, "Inside the TOF PID: value for Track 1: %f, PIDflag: %d, check: %d", trk1.tofNSigmaKa(), trk1.tofPIDselectionFlag(), trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF);
         }
 
         if ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
-          if ((trk2.pt() >= 0.8) && (std::abs(trk2.tofNSigmaPr()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
+          if ((trk2.pt() >= 0.1) && (std::abs(trk2.tofNSigmaPr()) > static_cast<float_t>(pidnSigmaPreSelectionCut)))
             continue;
-          if ((trk2.pt() >= 0.8) && (std::abs(trk2.tpcNSigmaPr()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
+          if ((trk2.pt() >= 0.1) && (std::abs(trk2.tpcNSigmaPr()) > static_cast<float_t>(pidnSigmaTPCCuthasTOF)))
             continue;
           // LOGF(info, "Inside the TOF PID: value for Track 2: %f, PIDflag: %d, check: %d", trk2.tofNSigmaPr(), trk2.tofPIDselectionFlag(), trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF);
         }
