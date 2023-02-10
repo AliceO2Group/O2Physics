@@ -295,7 +295,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float x, float y) -> float { return Reco
 } // namespace phoscluster
 
 DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
-                  o2::soa::Index<>, phoscluster::CollisionId, phoscluster::BCId, phoscluster::MatchedTrackId,
+                  o2::soa::Index<>, phoscluster::CollisionId, phoscluster::MatchedTrackId,
                   phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
                   phoscluster::M02, phoscluster::M20, phoscluster::NCells,
                   phoscluster::Time, phoscluster::DistanceToBadChannel, phoscluster::NLM,
