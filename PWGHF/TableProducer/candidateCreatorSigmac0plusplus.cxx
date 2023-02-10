@@ -206,7 +206,7 @@ struct HfCandidateSigmac0plusplusMc {
     // std::vector<int> arrDaughIndex; /// index of daughters of MC particle
 
     /// Match reconstructed Σc0,++ candidates
-    for (auto const& candSigmac : candidatesSigmac) {
+    for (auto const& candSigmac : *candidatesSigmac) {
       indexRec = -1;
       sign = 0;
       flag = 0;
