@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorSc0plusplus.cxx
+/// \file candidateCreatorSigmac0plusplus.cxx
 /// \brief Σc0,++ → Λc+(→pK-π+) π-,+ candidate builder
 /// \note Λc± candidates selected from the HFLcCandidateSelector.cxx
 ///
@@ -17,9 +17,9 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Common/Core/TrackSelection.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,6 +49,8 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   /// Cut selection object for soft π-,+
   TrackSelection softPiCuts;
+
+  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
 
   /// @brief init function, to define the soft pion selections and histograms
   /// @param
@@ -80,7 +82,6 @@ struct HfCandidateCreatorSigmac0plusplus {
     softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, set_softPiItsHitMap);
   }
 
-  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
   /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
@@ -169,23 +170,20 @@ struct HfCandidateCreatorSigmac0plusplus {
 };
 
 /// Extends the base table with expression columns.
-struct HfCandidateCreatorScExpressions {
+
+struct HfCandidateSigmac0plusplusMc {
+
   Spawns<aod::HfCandScExt> rowCandidateSc;
-
-  void init(InitContext const&) {}
-};
-
-struct HfCandidateSc0plusplusMc {
 
   Produces<aod::HfCandScMcRec> rowMCMatchScRec;
   Produces<aod::HfCandScMcGen> rowMCMatchScGen;
 
-  /// @brief init function
-  void init(InitContext const&) {}
-
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using TracksMC = soa::Join<aod::Tracks, aod::McTrackLabels>;
+
+  /// @brief init function
+  void init(InitContext const&) {}
 
   /// @brief dummy process function, to be run on data
   /// @param
@@ -309,14 +307,13 @@ struct HfCandidateSc0plusplusMc {
 
     } /// end loop over particlesMc
   }   /// end processMc
-  PROCESS_SWITCH(HfCandidateSc0plusplusMc, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateSigmac0plusplusMc, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<HfCandidateCreatorSigmac0plusplus>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorScExpressions>(cfgc)};
-  workflow.push_back(adaptAnalysisTask<HfCandidateSc0plusplusMc>(cfgc));
+    adaptAnalysisTask<HfCandidateSigmac0plusplusMc>(cfgc)};
   return workflow;
 }
