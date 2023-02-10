@@ -173,8 +173,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
 struct HfCandidateSigmac0plusplusMc {
 
-  Spawns<aod::HfCandScExt> rowCandidateSc;
-
+  Spawns<aod::HfCandScExt> candidatesSigmac;
   Produces<aod::HfCandScMcRec> rowMCMatchScRec;
   Produces<aod::HfCandScMcGen> rowMCMatchScGen;
 
@@ -192,9 +191,12 @@ struct HfCandidateSigmac0plusplusMc {
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param particlesMc table of generated particles
-  void processMc(const aod::HfCandSc& candidatesSigmac, aod::McParticles const& particlesMc,
-                 LambdacMc const&, const TracksMC& /*, const LambdacMcGen&*/)
+  void processMc(aod::McParticles const& particlesMc, const TracksMC& tracks,
+                 LambdacMc const& /*, const LambdacMcGen&*/)
   {
+
+    // Match reconstructed candidates.
+    candidatesSigmac->bindExternalIndices(&tracks);
 
     int indexRec = -1;
     int8_t sign = 0;
