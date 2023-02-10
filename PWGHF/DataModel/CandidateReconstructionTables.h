@@ -1803,14 +1803,14 @@ enum DecayType { Sc0ToPKPiPi = 0,
 template <typename T, typename U>
 auto invMassScRecoLcToPKPi(const T& candidateSc, const U& candidateLc)
 {
-  return candidateSc.m(array{(double)hf_cand_3prong::invMassLcToPKPi(candidateLc), RecoDecay::getMassPDG(kPiPlus)});
+  return candidateSc.m(array{static_cast<double>(hf_cand_3prong::invMassLcToPKPi(candidateLc)), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 /// @brief Sc inv. mass using reco mass for Lc in piKp and PDG mass for pion
 template <typename T, typename U>
 auto invMassScRecoLcToPiKP(const T& candidateSc, const U& candidateLc)
 {
-  return candidateSc.m(array{(double)hf_cand_3prong::invMassLcToPiKP(candidateLc), RecoDecay::getMassPDG(kPiPlus)});
+  return candidateSc.m(array{static_cast<double>(hf_cand_3prong::invMassLcToPiKP(candidateLc)), RecoDecay::getMassPDG(kPiPlus)});
 }
 
 template <typename T>

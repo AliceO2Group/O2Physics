@@ -608,10 +608,9 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
-      }   /// end reconstructed Σc0 signal
-
-      /// Reconstructed Σc++ signal
-      else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
+        /// end reconstructed Σc0 signal
+      } else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
+        /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);

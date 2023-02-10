@@ -75,7 +75,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     LOG(info) << "    >>> set_softPiItsHitMap.size(): " << set_softPiItsHitMap.size();
     LOG(info) << "    >>> Custom ITS hitmap checked: ";
     for (std::set<uint8_t>::iterator it = set_softPiItsHitMap.begin(); it != set_softPiItsHitMap.end(); it++) {
-      LOG(info) << "        Layer " << (int)(*it) << " ";
+      LOG(info) << "        Layer " << static_cast<int>(*it) << " ";
     }
     LOG(info) << "############";
     softPiCuts.SetRequireITSRefit();
@@ -230,7 +230,7 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaC0, array{(int)kProton, (int)kKMinus, (int)kPiPlus, (int)kPiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaC0, array{static_cast<int>(kProton), static_cast<int>(kKMinus), static_cast<int>(kPiPlus), static_cast<int>(kPiMinus)}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
@@ -240,7 +240,7 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaCPlusPlus, array{(int)kProton, (int)kKMinus, (int)kPiPlus, (int)kPiPlus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaCPlusPlus, array{static_cast<int>(kProton), static_cast<int>(kKMinus), static_cast<int>(kPiPlus), static_cast<int>(kPiPlus)}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
         }
@@ -266,7 +266,7 @@ struct HfCandidateSigmac0plusplusMc {
       ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
       ///   3. in case of (ii): resonant channel to pK-π+
       /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{(int)pdg::Code::kLambdaCPlus, (int)kPiMinus}, true, &sign, 1)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{static_cast<int>(pdg)::Code::kLambdaCPlus, static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0
         // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
         for (auto& daughter : particle.daughters_as<aod::McParticles>()) {
@@ -280,7 +280,7 @@ struct HfCandidateSigmac0plusplusMc {
             break;
           }
         }
-      } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{(int)pdg::Code::kLambdaCPlus, (int)kPiPlus}, true, &sign, 1)) {
+      } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{static_cast<int>(pdg)::Code::kLambdaCPlus, static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++
         // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
         for (auto& daughter : particle.daughters_as<aod::McParticles>()) {
