@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-/// \file HFFilterMLTrainings.cxx
+/// \file HFFilterPrepareMLSamples.cxx
 /// \brief task for trainings of ML models to be used in the HFFilter.cxx task
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
@@ -39,7 +39,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hffilters;
 
-struct HfFilterMlTrainings { // Main struct for HF triggers
+struct HfFilterPrepareMlSamples { // Main struct
 
   Produces<aod::HFTrigTrain2P> train2P;
   Produces<aod::HFTrigTrain3P> train3P;
@@ -150,7 +150,6 @@ struct HfFilterMlTrainings { // Main struct for HF triggers
       auto trackThird = cand3Prong.prong2_as<BigTracksMCPID>();  // third daughter
       auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
 
-
       auto trackParFirst = getTrackPar(trackFirst);
       auto trackParSecond = getTrackPar(trackSecond);
       auto trackParThird = getTrackPar(trackThird);
@@ -248,7 +247,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
 
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfFilterMlTrainings>(cfg));
+  workflow.push_back(adaptAnalysisTask<HfFilterPrepareMlSamples>(cfg));
 
   return workflow;
 }
