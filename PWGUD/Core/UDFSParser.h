@@ -23,9 +23,9 @@ class UDFSParser
 {
  public:
   // constructor/destructor
-  UDFSParser(){};
-  UDFSParser(const char* filename);
-  ~UDFSParser(){};
+  UDFSParser(){}
+  explicit UDFSParser(const char* filename);
+  ~UDFSParser(){}
 
   // read filleingScheme from file
   bool readFS(const char* filename);
