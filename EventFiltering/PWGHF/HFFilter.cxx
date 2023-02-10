@@ -44,8 +44,6 @@ using namespace hf_cuts_bdt_multiclass;
 struct HfFilter { // Main struct for HF triggers
 
   Produces<aod::HfFilters> tags;
-  Produces<aod::HFTrigTrain2P> train2P;
-  Produces<aod::HFTrigTrain3P> train3P;
   Produces<aod::HFOptimisationTreeBeauty> optimisationTreeBeauty;
   Produces<aod::HFOptimisationTreeCharm> optimisationTreeCharm;
   Produces<aod::HFOptimisationTreeFemto> optimisationTreeFemto;
@@ -85,11 +83,6 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> femtoMinProtonPt{"femtoMinProtonPt", 0.5, "Minimal required transverse momentum for proton in GeV/c"};
   Configurable<bool> femtoProtonOnlyTOF{"femtoProtonOnlyTOF", false, "Use only TOF information for proton identification if true"};
   Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum value for PID proton Nsigma for femto triggers"};
-
-  // parameters for production of training samples
-  Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
-  Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
-  Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   // parameters for ML application with ONNX
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
@@ -778,127 +771,6 @@ struct HfFilter { // Main struct for HF triggers
       }
     }
   }
-
-  void processTraining(aod::Hf2Prongs const& cand2Prongs,
-                       aod::Hf3Prongs const& cand3Prongs,
-                       aod::McParticles const& particlesMC,
-                       BigTracksMCPID const&)
-  {
-    for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
-
-      auto trackPos = cand2Prong.prong0_as<BigTracksMCPID>(); // positive daughter
-      auto trackNeg = cand2Prong.prong1_as<BigTracksMCPID>(); // negative daughter
-
-      std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
-      std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
-      auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
-      auto pt2Prong = RecoDecay::pt(pVec2Prong);
-
-      auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massPi, massK});
-      auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massK, massPi});
-
-      int8_t sign = 0;
-      int8_t flag = RecoDecay::OriginType::None;
-
-      // D0(bar) → π± K∓
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
-      if (indexRec > -1) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-        if (flag < RecoDecay::OriginType::Prompt) {
-          continue;
-        }
-      }
-
-      float pseudoRndm = trackPos.pt() * 1000. - (long)(trackPos.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train2P(invMassD0, invMassD0bar, pt2Prong, trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
-                trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
-                flag);
-      }
-    } // end loop over 2-prong candidates
-
-    for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
-
-      auto trackFirst = cand3Prong.prong0_as<BigTracksMCPID>();  // first daughter
-      auto trackSecond = cand3Prong.prong1_as<BigTracksMCPID>(); // second daughter
-      auto trackThird = cand3Prong.prong2_as<BigTracksMCPID>();  // third daughter
-      auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
-
-      std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-      std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-      std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
-
-      auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
-      auto pt3Prong = RecoDecay::pt(pVec3Prong);
-
-      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massPi});
-
-      auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massK, massK, massPi});
-      auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massK});
-
-      auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massK, massPi});
-      auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massProton});
-
-      auto invMassXicToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massK, massPi});
-      auto invMassXicToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massProton});
-
-      float deltaMassKKFirst = -1.f;
-      float deltaMassKKSecond = -1.f;
-      if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi)) {
-        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massK, massK}) - massPhi);
-        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massK, massK}) - massPhi);
-      }
-      int8_t sign = 0;
-      int8_t flag = RecoDecay::OriginType::None;
-      int8_t channel = -1;
-
-      // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
-      if (indexRec >= 0) {
-        channel = kDplus;
-      }
-      if (indexRec < 0) {
-        // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2); // TODO: replace hard coded pdg code
-        if (indexRec >= 0) {
-          channel = kDs;
-        }
-      }
-      if (indexRec < 0) {
-        // Λc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        if (indexRec >= 0) {
-          channel = kLc;
-        }
-      }
-      if (indexRec < 0) {
-        // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        if (indexRec >= 0) {
-          channel = kXic;
-        }
-      }
-
-      if (indexRec > -1) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-        if (flag < RecoDecay::OriginType::Prompt) {
-          continue;
-        }
-      }
-
-      float pseudoRndm = trackFirst.pt() * 1000. - (long)(trackFirst.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train3P(invMassDplus, invMassDsToKKPi, invMassDsToPiKK, invMassLcToPKPi, invMassLcToPiKP, invMassXicToPKPi, invMassXicToPiKP, pt3Prong, deltaMassKKFirst, deltaMassKKSecond, trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
-                trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
-                trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
-                flag, channel, cand3Prong.hfflag());
-      }
-    } // end loop over 3-prong candidates
-  }
-
-  PROCESS_SWITCH(HfFilter, processTraining, "Process MC for training samples", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
