@@ -202,7 +202,7 @@ struct HfCandidateSc0plusplusMc {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    int8_t chargeSigmac = 999;
+    int8_t chargeSigmac = 10;
     // std::vector<int> arrDaughIndex; /// index of daughters of MC particle
 
     /// Match reconstructed Σc0,++ candidates
