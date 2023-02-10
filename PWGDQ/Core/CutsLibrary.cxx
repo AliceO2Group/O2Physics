@@ -716,6 +716,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("excludePairPhiV")) {
+    AnalysisCompositeCut* cut_pairlowPhiV = new AnalysisCompositeCut("cut_pairlowPhiV", "cut_pairlowPhiV", kFALSE);
+    cut_pairlowPhiV->AddCut(GetAnalysisCut("excludePairLowMass"));
+    cut_pairlowPhiV->AddCut(GetAnalysisCut("excludePairPhiV"));
+    cut->AddCut(cut_pairlowPhiV);
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   // Muon cuts
 
@@ -1800,8 +1808,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("excludePairPhiV")) {
+    cut->AddCut(VarManager::kPairPhiv, 2., 3.2, true);
+    return cut;
+  }
+
   if (!nameStr.compare("pairLowMass")) {
     cut->AddCut(VarManager::kMass, 0., 0.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("excludePairLowMass")) {
+    cut->AddCut(VarManager::kMass, 0., 0.1, true);
     return cut;
   }
 
