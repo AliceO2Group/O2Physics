@@ -92,7 +92,6 @@ static const int nTracks = 2;
 static const int nPidAvg = 4;
 static const int nPidCutsDaughers = 2;
 static const int nPtCuts = 3;
-static const int nAllTriggers = 6;
 
 static const float pidcutsTable[nTracks][kNPIDLimits]{
   {-6.f, 6.f, -6.f, 6.f, 6.f},
