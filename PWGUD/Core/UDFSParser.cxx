@@ -83,7 +83,7 @@ bool UDFSParser::readFS(const char* filename)
 // -----------------------------------------------------------------------------
 std::string UDFSParser::patternString(int ibeam)
 {
-  
+
   // A or C beam?
   std::vector<int> P2BCs2use;
   switch (ibeam) {
@@ -97,7 +97,7 @@ std::string UDFSParser::patternString(int ibeam)
       LOGF(info, "Value of parameter ibeam must be 0 or 1!");
       return std::string("Not defined");
   }
-  
+
   // convert P2BCs to buckets
   std::vector<int> buckets;
   for (auto bcnum : P2BCs2use) {

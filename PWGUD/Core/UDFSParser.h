@@ -43,16 +43,16 @@ class UDFSParser
   bool isP2BCA(int nBC);
   bool isP2BCC(int nBC);
   bool isP2BCBB(int nBC);
-  
+
   // get pattern string
   std::string patternString(int ibeam);
-  
+
   void print();
 
  private:
   // has been loaded with filling scheme
   bool fisActive = false;
-  
+
   // vectors with BCs of different type
   std::vector<int> fP2BCsE;  // empty
   std::vector<int> fP2BCsA;  // A-side
