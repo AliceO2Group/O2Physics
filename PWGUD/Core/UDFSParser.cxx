@@ -152,7 +152,7 @@ std::vector<std::string> UDFSParser::tokenize(std::string& str,
 
   // tokenize
   char* p = str.data();
-  while (token = strtok_r(p, separator.data(), &p)) {
+  while ((token = strtok_r(p, separator.data(), &p))) {
     tokens.push_back(trim(std::string(token)));
   }
   return tokens;
