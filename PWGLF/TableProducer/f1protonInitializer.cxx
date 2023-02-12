@@ -69,6 +69,7 @@ struct f1protoninitializer {
   Configurable<double> cMaxMassKKs0{"cMaxMassKKs0", 1.04, "Mass cut on K-KS0 pair"};
   Configurable<double> cMaxMassF1{"cMaxMassF1", 1.80001, "Mass cut on F1 resonance"};
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
+  Configurable<double> cMinF1Pt{"cMinF1Pt", 1.0, "Minimum pT cut on F1"};
 
   /// PID///////////
   Configurable<double> pionMomentumPID{"pionMomentumPID", 0.5, "pi momentum range for TPC PID selection"};
@@ -80,6 +81,7 @@ struct f1protoninitializer {
   HistogramRegistry qaRegistry{"QAHistos", {
                                              {"hEventstat", "hEventstat", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
                                              {"hInvMassf1", "hInvMassf1", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
+                                             {"hInvMassf1Like", "hInvMassf1Like", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassKKs0", "hInvMassKKs0", {HistType::kTH1F, {{200, 0.9f, 1.1f}}}},
                                              {"hkstarDist", "hkstarDist", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
                                              {"hDCAxy", "hDCAxy", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
@@ -268,9 +270,6 @@ struct f1protoninitializer {
         }
         int track1Sign = track1.sign();
         int track2Sign = track2.sign();
-        if (track1Sign * track2Sign > 0) {
-          continue;
-        }
         numberPiKpair = numberPiKpair + 1;
 
         for (auto track3 : V0s) {
@@ -296,7 +295,11 @@ struct f1protoninitializer {
           masskKs0 = RecoDecay::m(arrMom23, array{massKa, massK0s});
           massF1 = RecoDecay::m(arrMomF1, array{massPi, massKa, massK0s});
           qaRegistry.fill(HIST("hInvMassKKs0"), masskKs0);
-          if ((masskKs0 > cMaxMassKKs0) || (massF1 > cMaxMassF1)) {
+          if ((masskKs0 > cMaxMassKKs0) || (massF1 > cMaxMassF1) || (pT < cMinF1Pt)) {
+            continue;
+          }
+          if (track1Sign * track2Sign > 0) {
+            qaRegistry.fill(HIST("hInvMassf1Like"), massF1, pT);
             continue;
           }
           qaRegistry.fill(HIST("hInvMassf1"), massF1, pT);
