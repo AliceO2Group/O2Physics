@@ -609,7 +609,7 @@ struct DGBCCandProducer {
     LOGF(info, "bcs %d tibcs %d ftibcs %d", bcs.size(), tibcs.size(), ftibcs.size());
 
     for (auto bcnum = minGlobalBC; bcnum <= maxGlobalBC; bcnum++) {
-      LOGF(info, "max %d now %d", maxGlobalBC, bcnum);
+      LOGF(debug, "max %d now %d", maxGlobalBC, bcnum);
 
       // reset counters
       bcFlag = 1; // bit 0 is always set
