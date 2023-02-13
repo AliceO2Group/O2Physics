@@ -38,6 +38,7 @@
 #include "DetectorsBase/GeometryManager.h"     // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "Framework/runDataProcessing.h"
 
 #include <algorithm>
 
@@ -71,14 +72,6 @@ static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const double massProton = RecoDecay::getMassPDG(kProton);
 static const double massElectron = RecoDecay::getMassPDG(kElectron);
 static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionEvSel{"doTrigSel", VariantType::Bool, false, {"Apply trigger selection"}};
-  workflowOptions.push_back(optionEvSel);
-}
-
-#include "Framework/runDataProcessing.h"
 
 // #define MY_DEBUG
 
@@ -2986,18 +2979,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-
-  const bool doTrigSel = cfgc.options().get<bool>("doTrigSel");
-  if (doTrigSel) {
-    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc));
-  } else {
-    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
-  }
-
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorLfCascades>(cfgc));
-
   return workflow;
 }
