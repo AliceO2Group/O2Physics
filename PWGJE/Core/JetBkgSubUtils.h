@@ -17,6 +17,8 @@
 #ifndef PWGJE_CORE_JETBKGSUBUTILS_H_
 #define PWGJE_CORE_JETBKGSUBUTILS_H_
 
+#include <string>
+#include <memory>
 #include <vector>
 #include <TMath.h>
 

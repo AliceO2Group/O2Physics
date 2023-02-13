@@ -168,7 +168,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
                 jet.E(), jet.m(), jet.area(), std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         // need to add seperate thing for constituent subtraction
-        if (DoConstSub) { // FIXME: needs to be addressed in Haadi's PR
+        if (DoConstSub) {
           constituentsSubTable(jetsTable.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi(),
                                constituent.E(), constituent.m(), constituent.user_index());
         }

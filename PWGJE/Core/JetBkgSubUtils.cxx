@@ -12,11 +12,12 @@
 // jet finder task
 //
 // Author: Hadi Hassan, Universiy of Jväskylä, hadi.hassan@cern.ch
-#include "PWGJE/Core/FastJetUtilities.h"
+// #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "Framework/Logger.h"
 #include "TVector2.h"
+#include <memory>
 
 JetBkgSubUtils::JetBkgSubUtils(float jetBkgR, float bkgPhiMin, float bkgPhiMax, float bkgEtaMin, float bkgEtaMax, float constSubAlpha, float constSubRMax, fastjet::GhostedAreaSpec ghostAreaSpec) : mJetBkgR(jetBkgR),
                                                                                                                                                                                                      mBkgPhiMin(bkgPhiMin),
@@ -137,7 +138,8 @@ fastjet::Subtractor JetBkgSubUtils::setSub(std::vector<fastjet::PseudoJet>& inpu
   }
 
   fastjet::Subtractor sub;
-  fastjet::Selector removeHFCand = !FastJetUtilities::SelectorIsHFCand();
+  // fastjet::Selector removeHFCand = !FastJetUtilities::SelectorIsHFCand();
+  fastjet::Selector removeHFCand;
 
   if (bkgSubMode == BkgSubMode::rhoMedianAreaSub || bkgSubMode == BkgSubMode::rhoSparseSub) {
 

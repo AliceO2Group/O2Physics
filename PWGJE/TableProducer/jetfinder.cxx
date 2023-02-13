@@ -27,13 +27,10 @@ struct JetFinderTask {
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
 
-  OutputObj<TH2F> hJetRho{"h2_jet_rho"};
   Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-
-  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
 
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
@@ -66,21 +63,24 @@ struct JetFinderTask {
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
 
-  BkgSubMode _bkgSubMode;
-
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
 
+  BkgSubMode _bkgSubMode;
+
+  bool doConstSub = false;
+
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
 
     _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
-    if (_bkgSubMode != BkgSubMode::none) {
-      hJetRho.setObject(new TH2F("h_jet_rho", "Underlying event density;#rho", 200, 0., 200., 10, 0.05, 1.05));
+
+    if (_bkgSubMode == BkgSubMode::constSub || _bkgSubMode == BkgSubMode::jetconstSub) {
+      doConstSub = true;
     }
 
     jetFinder.setBkgSubMode(_bkgSubMode);
@@ -116,13 +116,9 @@ struct JetFinderTask {
     if (!selectCollision(collision)) {
       return;
     }
-<<<<<<< HEAD
-=======
-
->>>>>>> 98d27c5d (PWGJE: Debugging jet task and adding QA and tutorial tasks (#2481))
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedJets, "Data jet finding for charged jets", false);
@@ -135,7 +131,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     analyseClusters(inputParticles, &clusters);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processNeutralJets, "Data jet finding for neutral jets", false);
 
@@ -149,7 +145,7 @@ struct JetFinderTask {
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     analyseClusters(inputParticles, &clusters);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data jet finding for full and neutral jets", false);
@@ -158,7 +154,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance());
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevelJets, "Particle level jet finding", false);
