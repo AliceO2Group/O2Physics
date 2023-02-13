@@ -246,6 +246,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
     return cut;
   }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_noITSCuts_debug2")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_noITSCuts_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
+    return cut;
+  }
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug3")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug3"));
@@ -256,6 +261,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug4"));
     return cut;
   }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_noITSCuts_debug4")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_noITSCuts_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug4"));
+    return cut;
+  }
+
   if (!nameStr.compare("LMee_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("lmee_trackCut_debug"));
     cut->AddCut(GetAnalysisCut("lmee_TPCPID_debug1"));
@@ -1160,6 +1171,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCncls, 90., 159);
     cut->AddCut(VarManager::kITSncls, 2.5, 7.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_trackCut_noITSCuts_debug")) {
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 90., 159);
     return cut;
   }
 
