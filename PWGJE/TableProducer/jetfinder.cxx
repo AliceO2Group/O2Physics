@@ -63,8 +63,6 @@ struct JetFinderTask {
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
-  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
-  Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   std::string trackSelection;
@@ -74,18 +72,13 @@ struct JetFinderTask {
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
 
+  bool doConstSub = false;
+
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
     eventSelection = static_cast<std::string>(eventSelections);
     particleSelection = static_cast<std::string>(particleSelections);
-
-    if (DoRhoAreaSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
-    }
-    if (DoConstSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
-    }
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
@@ -125,7 +118,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedJets, "Data jet finding for charged jets", false);
@@ -138,7 +131,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     analyseClusters(inputParticles, &clusters);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processNeutralJets, "Data jet finding for neutral jets", false);
 
@@ -152,7 +145,7 @@ struct JetFinderTask {
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     analyseClusters(inputParticles, &clusters);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data jet finding for full and neutral jets", false);
 
@@ -160,7 +153,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
 
@@ -168,7 +161,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
 
@@ -176,7 +169,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
-    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevelFullJets, "Particle level full jet finding", false);
