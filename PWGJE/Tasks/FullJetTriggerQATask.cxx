@@ -75,12 +75,13 @@ struct JetTriggerQA {
   OutputObj<TH3F> hSelectedJetRPtZTheta{"hSelectedJetRPtZTheta"};
   OutputObj<TH3F> hSelectedJetRPtZSqTheta{"hSelectedJetRPtZSqTheta"};
   OutputObj<TH3F> hSelectedJetRPtZThetaSq{"hSelectedJetRPtZThetaSq"};
-  OutputObj<TH3F> hSelectedJetRMaxPtClusterMaxPt{"hJetRMaxPtClusterMaxPt"};
+  OutputObj<TH3F> hSelectedJetRMaxPtClusterMaxPt{"hSelectedJetRMaxPtClusterMaxPt"};
 
   OutputObj<TH2F> hSelectedGammaPtEta{"hSelectedGammaPtEta"};
   OutputObj<TH2F> hSelectedGammaPtPhi{"hSelectedGammaPtPhi"};
   OutputObj<TH2F> hSelectedGammaMaxPtEta{"hSelectedGammaMaxPtEta"};
   OutputObj<TH2F> hSelectedGammaMaxPtPhi{"hSelectedGammaMaxPtPhi"};
+  OutputObj<TH2F> hClusterMaxPtClusterPt{"hClusterMaxPtClusterPt"};
 
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_SD_zCut{"f_SD_zCut", 0.1, "soft drop z cut"};
@@ -88,7 +89,7 @@ struct JetTriggerQA {
   Configurable<float> f_jetR{"f_jetR", 0.4, "jet resolution parameter"};
   Configurable<std::vector<float>> f_ang_kappa{"f_ang_kappa", {1.0, 1.0, 2.0}, "angularity momentum exponent"};
   Configurable<std::vector<float>> f_ang_alpha{"f_ang_alpha", {1.0, 2.0, 1.0}, "angularity angle exponent"};
-  Configurable<bool> b_JetsInEmcalOnly{"b_JetsInEmcalOnly", false, "fill histograms only for jets inside the EMCAL"};
+  Configurable<bool> b_JetsInEmcalOnly{"b_JetsInEmcalOnly", true, "fill histograms only for jets inside the EMCAL"};
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
 
@@ -163,6 +164,8 @@ struct JetTriggerQA {
     hSelectedGammaMaxPtEta.setObject(new TH2F("hSelectedGammaMaxPtEta", "Leading selected gammas #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaMaxPtPhi.setObject(new TH2F("hSelectedGammaMaxPtPhi", "Leading selected gammas #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetRMaxPtClusterMaxPt.setObject(new TH3F("hSelectedJetRMaxPtClusterMaxPt", "Leading selected jets and clusters;#it{R};#it{p}_{T};#it{p}_{T}^{clus}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
+
+    hClusterMaxPtClusterPt.setObject(new TH2F("hClusterMaxPtClusterPt", "Leading cluster #it{p}_{T} vs cluster #it{p}_{T};#it{p}_{T}^{max};#it{p}_{T}", nPtBins, kMinPt, kMaxPt / 2, nPtBins, kMinPt, kMaxPt / 2));
 
     if (b_JetsInEmcalOnly) {
       hJetRPtEta->SetTitle("Jets (in emcal only) #it{p}_{T} and #eta;it{R};#it{p}_{T};#eta");
@@ -353,6 +356,10 @@ struct JetTriggerQA {
     if (maxClusterPt > 0) {
       hClusterMaxPtEta->Fill(maxClusterPt, maxCluster.eta());
       hClusterMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
+      for (const auto& cluster : clusters) {
+        double clusterPt = cluster.energy() / std::cosh(cluster.eta());
+        hClusterMaxPtClusterPt->Fill(maxClusterPt, clusterPt);
+      }
       if (isEvtSelected) {
         hSelectedClusterMaxPtEta->Fill(maxClusterPt, maxCluster.eta());
         hSelectedClusterMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
