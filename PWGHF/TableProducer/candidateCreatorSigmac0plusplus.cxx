@@ -65,21 +65,21 @@ struct HfCandidateCreatorSigmac0plusplus {
     softPiCuts.SetMaxDcaXY(softPiDcaXYMax);              // dcaXY
     softPiCuts.SetMaxDcaZ(softPiDcaZMax);                // dcaZ
     // ITS hitmap
-    std::set<uint8_t> set_softPiItsHitMap; // = {};
-    for (int ITSlayerId = 0; ITSlayerId < 7; ITSlayerId++) {
-      if ((softPiItsHitMap & (1 << ITSlayerId)) > 0) {
-        set_softPiItsHitMap.insert(static_cast<uint8_t>(ITSlayerId));
+    std::set<uint8_t> setSoftPiItsHitMap; // = {};
+    for (int idItsLayer = 0; idItsLayer < 7; idItsLayer++) {
+      if (TESTBIT(softPiItsHitMap, idItsLayer)) {
+        setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
       }
     }
     LOG(info) << "### ITS hitmap for soft pion";
-    LOG(info) << "    >>> set_softPiItsHitMap.size(): " << set_softPiItsHitMap.size();
-    LOG(info) << "    >>> Custom ITS hitmap checked: ";
-    for (std::set<uint8_t>::iterator it = set_softPiItsHitMap.begin(); it != set_softPiItsHitMap.end(); it++) {
+    LOG(info) << "    >>> setSoftPiItsHitMap.size(): " << setSoftPiItsHitMap.size();
+    LOG(info) << "    >>> Custom ITS hitmap dfchecked: ";
+    for (std::set<uint8_t>::iterator it = setSoftPiItsHitMap.begin(); it != setSoftPiItsHitMap.end(); it++) {
       LOG(info) << "        Layer " << static_cast<int>(*it) << " ";
     }
     LOG(info) << "############";
     softPiCuts.SetRequireITSRefit();
-    softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, set_softPiItsHitMap);
+    softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, setSoftPiItsHitMap);
   }
 
   /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction
@@ -90,7 +90,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   {
 
     /// loop over Λc+ → pK-π+ (and charge conj.) candidates
-    for (auto& candLc : candidates) {
+    for (auto const& candLc : candidates) {
 
       /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
       /// if not selected, skip it and go to the next one
@@ -118,7 +118,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       }
 
       /// loop over tracks
-      for (auto& trackSoftPi : tracks) {
+      for (auto const& trackSoftPi : tracks) {
 
         /////////////////////////////////////////////////////////////////////////////////
         ///                       Σc0,++ candidate creation                           ///
@@ -137,8 +137,9 @@ struct HfCandidateCreatorSigmac0plusplus {
         int indexProng1 = candLc.prong1_as<aod::Tracks>().globalIndex();
         int indexProng2 = candLc.prong2_as<aod::Tracks>().globalIndex();
         int indexSoftPi = trackSoftPi.globalIndex();
-        if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2)
+        if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2) {
           continue;
+        }
 
         /// determine the Σc candidate charge
         int chargeLc = candLc.prong0_as<TracksSigmac>().sign() + candLc.prong1_as<TracksSigmac>().sign() + candLc.prong2_as<TracksSigmac>().sign();
@@ -232,7 +233,7 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaC0, array{static_cast<int>(kProton), static_cast<int>(kKMinus), static_cast<int>(kPiPlus), static_cast<int>(kPiMinus)}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaC0, array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
@@ -242,7 +243,7 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaCPlusPlus, array{static_cast<int>(kProton), static_cast<int>(kKMinus), static_cast<int>(kPiPlus), static_cast<int>(kPiPlus)}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughters, pdg::Code::kSigmaCPlusPlus, array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
         }
@@ -259,7 +260,7 @@ struct HfCandidateSigmac0plusplusMc {
     } /// end loop over reconstructed Σc0,++ candidates
 
     /// Match generated Σc0,++ candidates
-    for (auto& particle : particlesMc) {
+    for (auto const& particle : particlesMc) {
       flag = 0;
       origin = 0;
 
@@ -271,7 +272,7 @@ struct HfCandidateSigmac0plusplusMc {
       if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0
         // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
-        for (auto& daughter : particle.daughters_as<aod::McParticles>()) {
+        for (auto const& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
@@ -285,7 +286,7 @@ struct HfCandidateSigmac0plusplusMc {
       } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++
         // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
-        for (auto& daughter : particle.daughters_as<aod::McParticles>()) {
+        for (auto const& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
