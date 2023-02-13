@@ -43,6 +43,7 @@ struct JetFinderTask {
   OutputObj<TH2F> h2JetPt{"h2_jet_pt"};
   OutputObj<TH2F> h2JetPhi{"h2_jet_phi"};
   OutputObj<TH2F> h2JetEta{"h2_jet_eta"};
+  OutputObj<TH2F> hJetRho{"h2_jet_rho"};
   OutputObj<TH2F> h2JetNTracks{"h2_jet_ntracks"};
   OutputObj<TH1F> hJetPt{"h_jet_pt"};
   OutputObj<TH1F> hJetPhi{"h_jet_phi"};
@@ -55,6 +56,8 @@ struct JetFinderTask {
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;
   JetFinder jetFinder;
+
+  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -89,8 +92,8 @@ struct JetFinderTask {
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
-  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
-  Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
+
+  BkgSubMode _bkgSubMode;
 
   void init(InitContext const&)
   {
@@ -117,12 +120,12 @@ struct JetFinderTask {
     hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
                                    150, -0.5, 99.5));
 
-    if (DoRhoAreaSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
+    _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
+    if (_bkgSubMode != BkgSubMode::none) {
+      hJetRho.setObject(new TH2F("h_jet_rho", "Underlying event density;#rho", 200, 0., 200., 10, 0.05, 1.05));
     }
-    if (DoConstSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
-    }
+
+    jetFinder.setBkgSubMode(_bkgSubMode);
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
@@ -189,6 +192,12 @@ struct JetFinderTask {
       jetFinder.jetR = R;
       jets.clear();
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
+
+      if (_bkgSubMode != BkgSubMode::none) {
+        double rho = jetFinder.getRho();
+        hJetRho->Fill(rho, R);
+      }
+
       for (const auto& jet : jets) {
         std::vector<int> trackconst;
         std::vector<int> clusterconst;
@@ -196,7 +205,7 @@ struct JetFinderTask {
                   jet.E(), jet.m(), jet.area(), std::round(R * 100));
         for (const auto& constituent : sorted_by_pt(jet.constituents())) {
           // need to add seperate thing for constituent subtraction
-          if (DoConstSub) { // FIXME: needs to be addressed in Haadi's PR
+          if (_bkgSubMode == BkgSubMode::constSub || _bkgSubMode == BkgSubMode::jetconstSub) {
             constituentsSubTable(jetsTable.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi(),
                                  constituent.E(), constituent.m(), constituent.user_index());
           }

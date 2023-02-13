@@ -23,13 +23,13 @@
 #include <TPDGCode.h>
 #include <TMath.h>
 
+#include "JetBkgSubUtils.h"
+
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/AreaDefinition.hh"
 #include "fastjet/JetDefinition.hh"
-#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 #include "fastjet/tools/Subtractor.hh"
-#include "fastjet/contrib/ConstituentSubtractor.hh"
 
 enum class JetType {
   full = 0,
@@ -41,9 +41,6 @@ class JetFinder
 {
 
  public:
-  enum class BkgSubMode { none,
-                          rhoAreaSub,
-                          constSub };
   BkgSubMode bkgSubMode;
 
   void setBkgSubMode(BkgSubMode bSM) { bkgSubMode = bSM; }
@@ -83,7 +80,7 @@ class JetFinder
   float bkgPhiMax;
   float bkgEtaMin;
   float bkgEtaMax;
-
+  float bkgRho;
   float constSubAlpha;
   float constSubRMax;
 
@@ -102,11 +99,6 @@ class JetFinder
 
   fastjet::JetAlgorithm algorithmBkg;
   fastjet::RecombinationScheme recombSchemeBkg;
-  fastjet::Strategy strategyBkg;
-  fastjet::AreaType areaTypeBkg;
-  fastjet::JetDefinition jetDefBkg;
-  fastjet::AreaDefinition areaDefBkg;
-  fastjet::Selector selRho;
 
   /// Default constructor
   explicit JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : bkgSubMode(BkgSubMode::none),
@@ -133,6 +125,7 @@ class JetFinder
                                                                                                                  bkgPhiMax(phi_Max),
                                                                                                                  bkgEtaMin(eta_Min),
                                                                                                                  bkgEtaMax(eta_Max),
+                                                                                                                 bkgRho(0.),
                                                                                                                  constSubAlpha(1.0),
                                                                                                                  constSubRMax(0.6),
                                                                                                                  isReclustering(false),
@@ -142,9 +135,7 @@ class JetFinder
                                                                                                                  strategy(fastjet::Best),
                                                                                                                  areaType(fastjet::active_area),
                                                                                                                  algorithmBkg(fastjet::JetAlgorithm(fastjet::kt_algorithm)),
-                                                                                                                 recombSchemeBkg(fastjet::RecombinationScheme(fastjet::E_scheme)),
-                                                                                                                 strategyBkg(fastjet::Best),
-                                                                                                                 areaTypeBkg(fastjet::active_area)
+                                                                                                                 recombSchemeBkg(fastjet::RecombinationScheme(fastjet::E_scheme))
   {
 
     // default constructor
@@ -153,14 +144,13 @@ class JetFinder
   /// Default destructor
   ~JetFinder() = default;
 
+  float getRho() const
+  {
+    return bkgRho;
+  }
+
   /// Sets the jet finding parameters
   void setParams();
-
-  /// Sets the background subtraction estimater pointer
-  void setBkgE();
-
-  /// Sets the background subtraction pointer
-  void setSub();
 
   /// Performs jet finding
   /// \note the input particle and jet lists are passed by reference
@@ -170,11 +160,8 @@ class JetFinder
   fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets); // ideally find a way of passing the cluster sequence as a reeference
 
  private:
-  // void setParams();
-  // void setBkgSub();
-  std::unique_ptr<fastjet::BackgroundEstimatorBase> bkgE;
-  std::unique_ptr<fastjet::Subtractor> sub;
-  std::unique_ptr<fastjet::contrib::ConstituentSubtractor> constituentSub;
+  fastjet::Subtractor sub;
+  std::unique_ptr<JetBkgSubUtils> subUtils;
 
   ClassDefNV(JetFinder, 1);
 };
