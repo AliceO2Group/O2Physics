@@ -66,13 +66,22 @@ struct JetFinderTask {
   OutputObj<TH2F> hJetPhi{"h_jet_phi"};
   OutputObj<TH2F> hJetEta{"h_jet_eta"};
   OutputObj<TH2F> hJetN{"h_jet_n"};
+  OutputObj<TH2F> hJetRho{"h_jet_rho"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackPtCut{"trackPtCut", 0.1, "minimum constituent pT"};
   Configurable<float> trackEtaCut{"trackEtaCut", 0.9, "constituent eta cut"};
-  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
+
+  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction (fastjet)"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
+  Configurable<bool> DoRhoSparseSub{"DoRhoSparseSub", false, "do sparse event subtraction"};
+  Configurable<bool> DoPerpConeSub{"DoPerpConeSub", false, "do perpendicular subtraction"};
+  Configurable<bool> DoRhoMedianAreaSub{"DoRhoMedianAreaSub", false, "do median bkg sub, similar to AliPhysics"};
+
+  bool DoBkgSub = false;
+
   Configurable<float> jetPtMin{"jetPtMin", 10.0, "minimum jet pT"};
+
   Configurable<std::vector<double>> jetR{"jetR", {0.4}, "jet resolution parameters"};
   // FIXME: This should be named jetType. However, as of Aug 2021, it doesn't appear possible
   //        to set both global and task level options. This should be resolved when workflow
@@ -84,7 +93,7 @@ struct JetFinderTask {
 
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;
-  JetFinder jetFinder; //should be a configurable but for now this cant be changed on hyperloop
+  JetFinder jetFinder; // should be a configurable but for now this cant be changed on hyperloop
   // FIXME: Once configurables support enum, ideally we can
   JetType_t _jetType;
 
@@ -98,12 +107,27 @@ struct JetFinderTask {
                                70, -0.7, 0.7, 10, 0.05, 1.05));
     hJetN.setObject(new TH2F("h_jet_n", "jet n;n constituents",
                              30, 0., 30., 10, 0.05, 1.05));
+
+    if (DoRhoAreaSub || DoConstSub || DoRhoSparseSub || DoPerpConeSub || DoRhoMedianAreaSub) {
+      DoBkgSub = true;
+    }
+
+    if (DoBkgSub) {
+      hJetRho.setObject(new TH2F("h_jet_rho", "Underlying event density;#rho", 200, 0., 200., 10, 0.05, 1.05));
+    }
+
     if (DoRhoAreaSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
+      jetFinder.setBkgSubMode(BkgSubMode::rhoAreaSub);
+    } else if (DoConstSub) {
+      jetFinder.setBkgSubMode(BkgSubMode::constSub);
+    } else if (DoRhoSparseSub) {
+      jetFinder.setBkgSubMode(BkgSubMode::rhoSparseSub);
+    } else if (DoPerpConeSub) {
+      jetFinder.setBkgSubMode(BkgSubMode::rhoPerpConeSub);
+    } else if (DoRhoMedianAreaSub) {
+      jetFinder.setBkgSubMode(BkgSubMode::rhoMedianAreaSub);
     }
-    if (DoConstSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
-    }
+
     jetFinder.jetPtMin = jetPtMin;
   }
 
@@ -137,6 +161,11 @@ struct JetFinderTask {
       jetFinder.jetR = R;
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
 
+      if (DoBkgSub) {
+        double rho = jetFinder.getRho();
+        hJetRho->Fill(rho, R);
+      }
+
       for (const auto& jet : jets) {
         jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                   jet.E(), jet.m(), jet.area(), std::round(R * 100));
@@ -144,7 +173,7 @@ struct JetFinderTask {
         hJetPhi->Fill(jet.phi(), R);
         hJetEta->Fill(jet.eta(), R);
         hJetN->Fill(jet.constituents().size(), R);
-        for (const auto& constituent : jet.constituents()) { //event or jetwise
+        for (const auto& constituent : jet.constituents()) { // event or jetwise
           if (DoConstSub) {
             // Since we're copying the consituents, we can combine the tracks and clusters together
             // We only have to keep the uncopied versions separated due to technical constraints.
