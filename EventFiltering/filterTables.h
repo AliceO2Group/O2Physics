@@ -65,6 +65,7 @@ DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
 
 // full jets
 DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool); //! high-pT full jet
+DECLARE_SOA_COLUMN(GammaHighPt, hasGammaHighPt, bool);     //! high-pT photon
 
 // strangeness (lf)
 DECLARE_SOA_COLUMN(Omega, hasOmega, bool);             //! at leat 1 Omega
@@ -144,7 +145,7 @@ DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
 using JetFilter = JetFilters::iterator;
 
 DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
-                  filtering::JetFullHighPt);
+                  filtering::JetFullHighPt, filtering::GammaHighPt);
 
 using FullJetFilter = FullJetFilters::iterator;
 

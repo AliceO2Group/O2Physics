@@ -103,17 +103,17 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>; // generally always need DCA, will have Tracks too
 
 // For dE/dx association in pre-selection
-using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
+using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
 
 // For MC and dE/dx association
-using TracksWithPIDandLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::McTrackLabels>;
+using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::McTrackLabels>;
 
 // Pre-selected V0s
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
 
 // For MC association in pre-selection
-using LabeledTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
+using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
@@ -150,6 +150,15 @@ struct cascadeBuilder {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
+  // generate and fill extra QA histograms if requested
+  Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
+  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
+  Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
+  Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
+  Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
+  Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
+  Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
 
   int mRunNumber;
   float d_bz;
@@ -249,6 +258,37 @@ struct cascadeBuilder {
   void init(InitContext& context)
   {
     resetHistos();
+
+    // Optionally, add extra QA histograms to processing chain
+    if (d_doQA) {
+      // Basic histograms containing invariant masses of all built candidates
+      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisXiMass{(int)dQANBinsMass, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisOmegaMass{(int)dQANBinsMass, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+
+      registry.add("h2dXiMinusMass", "h2dXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+      registry.add("h2dXiPlusMass", "h2dXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+      registry.add("h2dOmegaMinusMass", "h2dOmegaMinusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+      registry.add("h2dOmegaPlusMass", "h2dOmegaPlusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+
+      // bit packed ITS cluster map
+      const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+
+      // Histogram to bookkeep cluster maps
+      registry.add("h2dITSCluMap_XiMinusPositive", "h2dITSCluMap_XiMinusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiMinusNegative", "h2dITSCluMap_XiMinusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiMinusBachelor", "h2dITSCluMap_XiMinusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiPlusPositive", "h2dITSCluMap_XiPlusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiPlusNegative", "h2dITSCluMap_XiPlusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_XiPlusBachelor", "h2dITSCluMap_XiPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaMinusPositive", "h2dITSCluMap_OmegaMinusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaMinusNegative", "h2dITSCluMap_OmegaMinusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaMinusBachelor", "h2dITSCluMap_OmegaMinusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaPlusPositive", "h2dITSCluMap_OmegaPlusPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaPlusNegative", "h2dITSCluMap_OmegaPlusNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_OmegaPlusBachelor", "h2dITSCluMap_OmegaPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+    }
 
     mRunNumber = 0;
     d_bz = 0;
@@ -600,6 +640,47 @@ struct cascadeBuilder {
         statisticsRegistry.bachITSclu[bachTrack.itsNCls()]++;
     }
 
+    if (d_doQA) {
+      // Calculate masses
+      auto lXiMass = RecoDecay::m(array{array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}, array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
+      auto lOmegaMass = RecoDecay::m(array{array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}, array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
+
+      auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[0]);
+
+      // Fill basic mass histograms
+      // Note: all presel bools are true if unchecked
+      if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
+        registry.fill(HIST("h2dXiMinusMass"), lPt, lXiMass);
+      if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
+        registry.fill(HIST("h2dXiPlusMass"), lPt, lXiMass);
+      if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
+        registry.fill(HIST("h2dOmegaMinusMass"), lPt, lOmegaMass);
+      if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
+        registry.fill(HIST("h2dOmegaPlusMass"), lPt, lOmegaMass);
+
+      // Fill ITS cluster maps with specific mass cuts
+      if (TMath::Abs(lXiMass - 1.322) < dQAXiMassWindow && cascade.isXiMinusCandidate() && cascade.isTrueXiMinus()) {
+        registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+      if (TMath::Abs(lXiMass - 1.322) < dQAXiMassWindow && cascade.isXiPlusCandidate() && cascade.isTrueXiPlus()) {
+        registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+      if (TMath::Abs(lXiMass - 1.672) < dQAOmegaMassWindow && cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus()) {
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+      if (TMath::Abs(lXiMass - 1.672) < dQAOmegaMassWindow && cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus()) {
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+      }
+    }
+
     return true;
   }
 
@@ -625,6 +706,32 @@ struct cascadeBuilder {
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
+
+      // populate cascade covariance matrices if required by any other task
+      if (createCascCovMats) {
+        // Calculate position covariance matrix
+        auto covVtxV = fitter.calcPCACovMatrix(0);
+        // std::array<float, 6> positionCovariance;
+        float positionCovariance[6];
+        positionCovariance[0] = covVtxV(0, 0);
+        positionCovariance[1] = covVtxV(1, 0);
+        positionCovariance[2] = covVtxV(1, 1);
+        positionCovariance[3] = covVtxV(2, 0);
+        positionCovariance[4] = covVtxV(2, 1);
+        positionCovariance[5] = covVtxV(2, 2);
+        // store momentum covariance matrix
+        std::array<float, 21> covTv0 = {0.};
+        std::array<float, 21> covTbachelor = {0.};
+        // std::array<float, 6> momentumCovariance;
+        float momentumCovariance[6];
+        lV0Track.getCovXYZPxPyPzGlo(covTv0);
+        lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+        }
+        casccovs(positionCovariance, momentumCovariance);
+      }
     }
     // En masse filling at end of process call
     fillHistos();
@@ -827,11 +934,11 @@ struct cascadePreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
-  void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithExtra const&)
+  void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, aod::TracksExtra const&)
   {
     for (auto& casc : cascades) {
       bool lIsQualityInteresting = false;
-      checkTrackQuality<TracksWithExtra>(casc, lIsQualityInteresting, true, true, true, true);
+      checkTrackQuality<aod::TracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
       casctags(lIsQualityInteresting,
                true, true, true, true,
                true, true, true, true);
@@ -839,7 +946,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -849,8 +956,8 @@ struct cascadePreselector {
       bool lIsTrueOmegaMinus = false;
       bool lIsTrueOmegaPlus = false;
 
-      checkPDG<LabeledTracks>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkTrackQuality<LabeledTracks>(casc, lIsQualityInteresting, true, true, true, true);
+      checkPDG<LabeledTracksExtra>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
+      checkTrackQuality<LabeledTracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
       casctags(lIsInteresting * lIsQualityInteresting,
                lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
                true, true, true, true);
@@ -858,7 +965,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPID const&)
+  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPID const&)
   {
     for (auto& casc : cascades) {
       bool lIsInteresting = false;
@@ -868,8 +975,8 @@ struct cascadePreselector {
       bool lIsdEdxOmegaMinus = false;
       bool lIsdEdxOmegaPlus = false;
 
-      checkdEdx<TracksWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksWithPID>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkdEdx<TracksExtraWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkTrackQuality<TracksExtraWithPID>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
       casctags(lIsInteresting * lIsQualityInteresting,
                true, true, true, true,
                lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
@@ -877,7 +984,7 @@ struct cascadePreselector {
   }
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&)
   {
     for (auto& casc : cascades) {
       bool lIsdEdxInteresting = false;
@@ -893,9 +1000,9 @@ struct cascadePreselector {
       bool lIsTrueOmegaMinus = false;
       bool lIsTrueOmegaPlus = false;
 
-      checkPDG<TracksWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkdEdx<TracksWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksWithPIDandLabels>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkPDG<TracksExtraWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
+      checkdEdx<TracksExtraWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
       casctags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
                lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
                lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
