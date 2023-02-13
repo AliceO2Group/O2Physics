@@ -28,6 +28,10 @@ struct JetFinderHFTask {
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
 
+  OutputObj<TH2F> hJetRho{"h2_jet_rho"};
+
+  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
+
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -83,16 +87,18 @@ struct JetFinderHFTask {
   int candPDG;
   int candDecay;
 
+  BkgSubMode _bkgSubMode;
+
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
 
-    if (DoRhoAreaSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
+    _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
+    if (_bkgSubMode != BkgSubMode::none) {
+      hJetRho.setObject(new TH2F("h_jet_rho", "Underlying event density;#rho", 200, 0., 200., 10, 0.05, 1.05));
     }
-    if (DoConstSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
-    }
+
+    jetFinder.setBkgSubMode(_bkgSubMode);
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
