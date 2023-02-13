@@ -346,7 +346,7 @@ struct HfTaskSingleMuonSelection {
   }
 
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processDummy, "do nothing", false);
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", false);
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonLite, "run a ligter version of muon selection with real data", true);
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMc, "run muon selection with MC data", false);
 };
