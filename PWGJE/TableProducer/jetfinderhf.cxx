@@ -28,6 +28,8 @@ struct JetFinderHFTask {
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
 
+  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
+
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -71,14 +73,16 @@ struct JetFinderHFTask {
   Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
-  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
-  Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
+
+  BkgSubMode _bkgSubMode;
+
+  bool doConstSub = false;
 
   int candPDG;
   int candDecay;
@@ -87,12 +91,13 @@ struct JetFinderHFTask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
 
-    if (DoRhoAreaSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
+    _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
+
+    if (_bkgSubMode == BkgSubMode::constSub || _bkgSubMode == BkgSubMode::jetconstSub) {
+      doConstSub = true;
     }
-    if (DoConstSub) {
-      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
-    }
+
+    jetFinder.setBkgSubMode(_bkgSubMode);
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
@@ -152,7 +157,7 @@ struct JetFinderHFTask {
         continue;
       }
       analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
-      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub, true);
     }
   }
 
@@ -170,7 +175,7 @@ struct JetFinderHFTask {
         continue;
       }
       analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
-      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub, true);
     }
   }
 
@@ -193,7 +198,7 @@ struct JetFinderHFTask {
     for (auto& candidate : candidates) {
       analyseParticles(inputParticles, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance(), std::optional{candidate});
       FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candidate.pdgCode()));
-      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, doConstSub, true);
     }
   }
 

@@ -23,16 +23,19 @@
 #include <tuple>
 #include <vector>
 
-#include "PWGJE/Core/JetFinder.h"
+#include "fastjet/PseudoJet.hh"
+#include "fastjet/Selector.hh"
 
 enum class JetConstituentStatus {
   track = 0,
   cluster = 1,
-  candidateHF = 2,
+  candidateHF = 2
 };
 
 namespace FastJetUtilities
 {
+
+static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 // Class defined to store additional info which is passed to the FastJet object
 class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
@@ -85,6 +88,31 @@ void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index
   }
 }
 
+// Class defined to select the HF candidate particle
+class SW_IsHFCand : public fastjet::SelectorWorker
+{
+ public:
+  // default ctor
+  SW_IsHFCand() {}
+
+  // the selector's description
+  std::string description() const
+  {
+    return "HF candidate selector";
+  }
+
+  bool pass(const fastjet::PseudoJet& p) const
+  {
+    return (p.user_info<fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF));
+  }
+};
+
+// Selector of HF candidates
+fastjet::Selector SelectorIsHFCand()
+{
+  return fastjet::Selector(new SW_IsHFCand());
+}
+
 /**
  * Add track as a pseudojet object to the fastjet vector
  *
@@ -96,7 +124,7 @@ void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index
  */
 
 template <typename T>
-void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), double mass = JetFinder::mPion)
+void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), double mass = mPion)
 {
   if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidateHF)) {
     auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
