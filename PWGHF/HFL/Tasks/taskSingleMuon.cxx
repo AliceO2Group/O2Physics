@@ -334,7 +334,7 @@ struct HfTaskSingleMuonSelection {
   }
 
   void processMuonLite(MyEventsSelected::iterator const& event, aod::BCs const& bcs,
-                   MyMuons const& tracks)
+                       MyMuons const& tracks)
   {
     runMuonSelLite<gEventFillMap, gMuonFillMap>(event, bcs, tracks);
   }
