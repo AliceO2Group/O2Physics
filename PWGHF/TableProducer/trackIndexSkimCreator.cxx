@@ -19,26 +19,27 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Inha University
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 
+#include "CCDB/BasicCCDBManager.h"             // for PV refit
+#include "Common/Core/trackUtilities.h"
+// #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "DataFormatsParameters/GRPMagField.h" // for PV refit
+#include "DataFormatsParameters/GRPObject.h"   // for PV refit
+#include "DCAFitter/DCAFitterN.h"
+#include "DetectorsBase/GeometryManager.h"     // for PV refit
+#include "DetectorsBase/Propagator.h"          // for PV refit
+#include "DetectorsVertexing/PVertexer.h"      // for PV refit
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
-#include "DetectorsVertexing/PVertexer.h"      // for PV refit
-#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
-#include "CCDB/BasicCCDBManager.h"             // for PV refit
-#include "DataFormatsParameters/GRPObject.h"   // for PV refit
-#include "DetectorsBase/Propagator.h"          // for PV refit
-#include "DetectorsBase/GeometryManager.h"     // for PV refit
-#include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "Framework/runDataProcessing.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
+#include "ReconstructionDataFormats/V0.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 #include <algorithm>
 
