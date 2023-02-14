@@ -23,10 +23,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
-
-// O2Physics includes
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"

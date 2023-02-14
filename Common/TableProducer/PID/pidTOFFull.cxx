@@ -54,14 +54,18 @@ struct tofPidFull {
   Produces<o2::aod::pidTOFFullAl> tablePIDAl;
   // Detector response parameters
   o2::pid::tof::TOFResoParams mRespParams;
+  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFResoParams", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
+  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
   Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
+  Configurable<bool> useParamCollection{"useParamCollection", false, "Flag to use the parameter collection instead of the legacy parameter distribution chain"};
+  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -110,13 +114,36 @@ struct tofPidFull {
     const std::string fname = paramfile.value;
     if (!fname.empty()) { // Loading the parametrization from file
       LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
-      mRespParams.LoadParamFromFile(fname.data(), sigmaname.value);
+      if (useParamCollection) {
+        mRespParamsV2.loadParamFromFile(fname.data(), sigmaname.value);
+      } else {
+        mRespParams.LoadParamFromFile(fname.data(), sigmaname.value);
+      }
     } else { // Loading it from CCDB
       parametrizationPath = ccdbPath.value + "/" + sigmaname.value;
       if (!enableTimeDependentResponse) {
         LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: '" << parametrizationPath << "' for timestamp " << timestamp.value;
-        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp.value));
-        mRespParams.Print();
+        if (useParamCollection) {
+          // TODO: implement the automatic pass name detection from metadata
+          if (passName.value == "") {
+            passName.value = "unanchored"; // temporary default
+            LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << passName.value << "'";
+          }
+          LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
+          o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath, timestamp.value);
+          paramCollection->print();
+          if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
+            if (fatalOnPassNotAvailable) {
+              LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            } else {
+              LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            }
+          }
+          mRespParamsV2.print();
+        } else {
+          mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp.value));
+          mRespParams.Print();
+        }
       }
     }
   }
@@ -187,7 +214,17 @@ struct tofPidFull {
       timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
       if (enableTimeDependentResponse) {
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
-        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+        if (useParamCollection) {
+          if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
+            if (fatalOnPassNotAvailable) {
+              LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            } else {
+              LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            }
+          }
+        } else {
+          mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+        }
       }
 
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
@@ -197,8 +234,13 @@ struct tofPidFull {
           if (flag.value != 1) {
             return;
           }
-          table(responsePID.GetExpectedSigma(mRespParams, trkInColl),
-                responsePID.GetSeparation(mRespParams, trkInColl));
+          if (useParamCollection) {
+            table(responsePID.GetExpectedSigma(mRespParamsV2, trkInColl),
+                  responsePID.GetSeparation(mRespParamsV2, trkInColl));
+          } else {
+            table(responsePID.GetExpectedSigma(mRespParams, trkInColl),
+                  responsePID.GetSeparation(mRespParams, trkInColl));
+          }
         };
 
         makeTable(pidEl, tablePIDEl, responseEl);
@@ -271,7 +313,17 @@ struct tofPidFull {
         lastCollisionId = track.collisionId();                                       // Cache last collision ID
         timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
-        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+        if (useParamCollection) {
+          if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
+            if (fatalOnPassNotAvailable) {
+              LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            } else {
+              LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            }
+          }
+        } else {
+          mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+        }
       }
 
       // Check and fill enabled tables
@@ -279,8 +331,13 @@ struct tofPidFull {
         if (flag.value != 1) {
           return;
         }
-        table(responsePID.GetExpectedSigma(mRespParams, track),
-              responsePID.GetSeparation(mRespParams, track));
+        if (useParamCollection) {
+          table(responsePID.GetExpectedSigma(mRespParamsV2, track),
+                responsePID.GetSeparation(mRespParamsV2, track));
+        } else {
+          table(responsePID.GetExpectedSigma(mRespParams, track),
+                responsePID.GetSeparation(mRespParams, track));
+        }
       };
 
       makeTable(pidEl, tablePIDEl, responseEl);
