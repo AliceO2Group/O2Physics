@@ -19,6 +19,8 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Inha University
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 
+#include <algorithm>
+
 #include "CCDB/BasicCCDBManager.h"             // for PV refit
 #include "Common/Core/trackUtilities.h"
 // #include "Common/DataModel/Centrality.h"
@@ -40,8 +42,6 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-
-#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -114,7 +114,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
     if (fillHistograms) {
-      const int nBinsEvents = 2 + EventRejection::NEventRejection;
+      constexpr int nBinsEvents = 2 + EventRejection::NEventRejection;
       std::string labels[nBinsEvents];
       labels[0] = "processed";
       labels[1] = "selected";
@@ -217,7 +217,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
     // fill table row
     rowSelectedCollision(statusCollision);
-  };
+  }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
@@ -243,7 +243,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
     // fill table row
     rowSelectedCollision(statusCollision);
-  };
+  }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 };
 
@@ -665,7 +665,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         auto primVtxRefitted = vertexer.refitVertex(vecPvRefitContributorUsed, primVtx); // vertex refit
         // LOG(info) << "refit " << cnt << "/" << ntr << " result = " << primVtxRefitted.asString();
         if (debug) {
-          LOG(info) << "refit for track with global index " << (int)myTrack.globalIndex() << " " << primVtxRefitted.asString();
+          LOG(info) << "refit for track with global index " << static_cast<int>(myTrack.globalIndex()) << " " << primVtxRefitted.asString();
         }
         if (primVtxRefitted.getChi2() < 0) {
           if (debug) {
@@ -1382,7 +1382,7 @@ struct HfTrackIndexSkimCreator {
       }
       auto primVtxRefitted = vertexer.refitVertex(vecPvRefitContributorUsed, primVtx); // vertex refit
       // LOG(info) << "refit " << cnt << "/" << ntr << " result = " << primVtxRefitted.asString();
-      // LOG(info) << "refit for track with global index " << (int) myTrack.globalIndex() << " " << primVtxRefitted.asString();
+      // LOG(info) << "refit for track with global index " << static_cast<int>(myTrack.globalIndex()) << " " << primVtxRefitted.asString();
       if (primVtxRefitted.getChi2() < 0) {
         if (debug) {
           LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
@@ -1402,7 +1402,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("PvRefit/hChi2vsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
       }
 
-      for (int i = 0; i < (int)vecPvContributorGlobId.size(); i++) {
+      for (size_t i = 0; i < vecPvContributorGlobId.size(); i++) {
         vecPvRefitContributorUsed[i] = true; /// restore the tracks for the next PV refitting (probably not necessary here)
       }
 
