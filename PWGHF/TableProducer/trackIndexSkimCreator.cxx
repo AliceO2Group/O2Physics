@@ -21,7 +21,7 @@
 
 #include <algorithm>
 
-#include "CCDB/BasicCCDBManager.h"             // for PV refit
+#include "CCDB/BasicCCDBManager.h" // for PV refit
 #include "Common/Core/trackUtilities.h"
 // #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -37,7 +37,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
+#include "ReconstructionDataFormats/Vertex.h" // for PV refit
 #include "ReconstructionDataFormats/V0.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -2736,12 +2736,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoLfCascades, "Do not skim LF cascades", true);
 
   void processLfCascades(SelectedCollisions const& collisions,
-                       aod::BCsWithTimestamps const&,
-                       aod::V0sLinked const&,
-                       V0Full const&,
-                       aod::CascDataFull const& cascades,
-                       FilteredHfTrackAssocSel const& trackIndices,
-                       TracksWithPVRefitAndDCA const& tracks)
+                         aod::BCsWithTimestamps const&,
+                         aod::V0sLinked const&,
+                         V0Full const&,
+                         aod::CascDataFull const& cascades,
+                         FilteredHfTrackAssocSel const& trackIndices,
+                         TracksWithPVRefitAndDCA const& tracks)
   {
     for (const auto& collision : collisions) {
 
