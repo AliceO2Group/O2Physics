@@ -136,7 +136,7 @@ struct HfCandidateSelectorToXiPi {
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
 
-      bool resultSelections = true; //True if the candidate passes all the selections, False otherwise
+      bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
       auto trackV0PosDau = candidate.posTrack_as<MyTrackInfo>();    // positive V0 daughter
       auto trackV0NegDau = candidate.negTrack_as<MyTrackInfo>();    // negative V0 daughter
