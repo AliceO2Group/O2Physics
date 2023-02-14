@@ -218,8 +218,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     // fill table row
     rowSelectedCollision(statusCollision);
   };
-
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
   void processNoTrigSel(aod::Collision const& collision)
@@ -245,8 +244,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     // fill table row
     rowSelectedCollision(statusCollision);
   };
-
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 };
 
 /// Track selection
