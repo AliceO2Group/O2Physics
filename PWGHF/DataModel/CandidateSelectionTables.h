@@ -240,10 +240,12 @@ DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, int);
 DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, int);
 DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, int);
 DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, int);
+DECLARE_SOA_COLUMN(ResultSelections, resultSelections, int);
 } // namespace hf_sel_toxipi
 DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
                   hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidOmegac,
-                  hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac);
+                  hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac,
+                  hf_sel_toxipi::ResultSelections);
 
 } // namespace o2::aod
 #endif // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_

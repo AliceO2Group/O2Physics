@@ -87,7 +87,6 @@ struct HfCandidateSelectorToXiPi {
 
   using MyTrackInfo = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 
-  OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
@@ -137,6 +136,8 @@ struct HfCandidateSelectorToXiPi {
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
 
+      int resultSelections = 0; //0 if the candidate passes all the selections, -9 otherwise
+
       auto trackV0PosDau = candidate.posTrack_as<MyTrackInfo>();    // positive V0 daughter
       auto trackV0NegDau = candidate.negTrack_as<MyTrackInfo>();    // negative V0 daughter
       auto trackPiFromCasc = candidate.bachelor_as<MyTrackInfo>();  // pion <- cascade
@@ -151,7 +152,7 @@ struct HfCandidateSelectorToXiPi {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
       } else if (signDecay == 0) {
-        continue;
+        resultSelections = -9;
       }
 
       // eta selection
@@ -160,100 +161,100 @@ struct HfCandidateSelectorToXiPi {
       double etaPiFromCasc = candidate.etaPiFromCasc();
       double etaPiFromOme = candidate.etaPiFromOme();
       if (std::abs(etaV0PosDau) > etaTrackMax) {
-        continue;
+        resultSelections = -9;
       }
       if (std::abs(etaV0NegDau) > etaTrackMax) {
-        continue;
+        resultSelections = -9;
       }
       if (std::abs(etaPiFromCasc) > etaTrackMax) {
-        continue;
+        resultSelections = -9;
       }
       if (std::abs(etaPiFromOme) > etaTrackMax) {
-        continue;
+        resultSelections = -9;
       }
 
       // minimum radius cut (LFcut)
       if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade()) < radiusCascMin) {
-        continue;
+        resultSelections = -9;
       }
       if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0()) < radiusV0Min) {
-        continue;
+        resultSelections = -9;
       }
       // cosPA (LFcut)
       if (candidate.cosPACasc() < cosPACascMin) {
-        continue;
+        resultSelections = -9;
       }
       if (candidate.cosPAV0() < cosPAV0Min) {
-        continue;
+        resultSelections = -9;
       }
       // cascade and v0 daughters dca cut (LF cut)
       if (candidate.dcaCascDau() > dcaCascDauMax) {
-        continue;
+        resultSelections = -9;
       }
       if (candidate.dcaV0Dau() > dcaV0DauMax) {
-        continue;
+        resultSelections = -9;
       }
 
       // dca omegac daughters cut
       if (candidate.dcaOmegacDau() > dcaOmegacDauMax) {
-        continue;
+        resultSelections = -9;
       }
 
       // cut on primary pion dcaXY
       if ((candidate.dcaXYToPVPrimaryPi() < dcaXYPriPiMin) || (candidate.dcaXYToPVPrimaryPi() > dcaXYPriPiMax)) {
-        continue;
+        resultSelections = -9;
       }
 
       // pT selections
       double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCasc(), candidate.pyPiFromCasc());
       double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPi(), candidate.pyPrimaryPi());
       if (std::abs(ptPiFromCasc) > ptPiFromCascMin) {
-        continue;
+        resultSelections = -9;
       }
       if (std::abs(ptPiFromOme) > ptPiFromOmeMin) {
-        continue;
+        resultSelections = -9;
       }
 
       //  TPC clusters selections
       if (trackPiFromOmeg.tpcNClsFound() < nClustersTpcMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPiFromLam.tpcNClsFound() < nClustersTpcMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPrFromLam.tpcNClsFound() < nClustersTpcMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPiFromCasc.tpcNClsFound() < nClustersTpcMin) {
-        continue;
+        resultSelections = -9;
       }
 
       if (trackPiFromOmeg.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPiFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPrFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPiFromCasc.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        continue;
+        resultSelections = -9;
       }
 
       if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
-        continue;
+        resultSelections = -9;
       }
 
       //  ITS clusters selection
       if (trackPiFromOmeg.itsNCls() < nClustersItsMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPiFromOmeg.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
-        continue;
+        resultSelections = -9;
       }
       if (trackPiFromCasc.itsNCls() < nClustersItsMin) {
-        continue;
+        resultSelections = -9;
       }
 
       // track-level PID selection
@@ -282,17 +283,23 @@ struct HfCandidateSelectorToXiPi {
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
         statusPidLambda = 1;
-        hTest2->Fill(0.5);
+        if(resultSelections == 0){
+          hTest2->Fill(0.5);
+        }
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
         statusPidCascade = 1;
+      if(resultSelections == 0){
         hTest2->Fill(1.5);
+      }
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && pidPiFromOme == TrackSelectorPID::Status::PIDAccepted) {
         statusPidOmegac = 1;
+      if(resultSelections == 0){
         hTest2->Fill(2.5);
+      }
       }
 
       // invariant mass cuts
@@ -311,27 +318,28 @@ struct HfCandidateSelectorToXiPi {
 
       if (std::abs(invMassLambda - massLambdaFromPDG) < (nSigmaInvMassCut * sigmaInvMassLambda)) {
         statusInvMassLambda = 1;
-        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1) {
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && resultSelections == 0) {
           hTest2->Fill(3.5);
         }
       }
 
       if (std::abs(invMassCascade - massXiFromPDG) < (nSigmaInvMassCut * sigmaInvMassCascade)) {
         statusInvMassCascade = 1;
-        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1) {
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && resultSelections == 0) {
           hTest2->Fill(4.5);
         }
       }
 
       if ((invMassOmegac >= invMassOmegacMin) && (invMassOmegac <= invMassOmegacMax)) {
         statusInvMassOmegac = 1;
-        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1) {
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1&& resultSelections == 0 ) {
           hTest2->Fill(5.5);
         }
       }
 
-      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac);
+      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections);
 
+      if(resultSelections == 0){
       if (statusPidLambda == -1) {
         hTest1->Fill(0.5);
       }
@@ -368,9 +376,9 @@ struct HfCandidateSelectorToXiPi {
       if (statusInvMassOmegac == 1) {
         hTest1->Fill(11.5);
       }
+      }
 
-      if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1 && statusInvMassOmegac == 1) {
-        hPtPrimaryPi->Fill(ptPiFromOme);
+      if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1 && statusInvMassOmegac == 1 && resultSelections == 0) {
         hxVertexOmegac->Fill(candidate.xDecayVtxOmegac());
         hInvMassOmegac->Fill(invMassOmegac);
         hCTauOmegac->Fill(candidate.ctauOmegac());
