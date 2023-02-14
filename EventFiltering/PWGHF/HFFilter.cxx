@@ -396,7 +396,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
-        for (const auto& trackId : trackIndices) { // start loop over tracks
+        for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
           auto track = trackId.track_as<BigTracksPID>();
 
           if (track.globalIndex() == trackPos.globalIndex() || track.globalIndex() == trackNeg.globalIndex()) {
@@ -430,7 +430,7 @@ struct HfFilter { // Main struct for HF triggers
                 if (activateQA) {
                   hMassVsPtC[kNCharmParticles]->Fill(ptCand, massCand);
                 }
-                for (const auto& trackIdB : trackIndices) { // start loop over tracks
+                for (const auto& trackIdB : trackIdsThisCollision) { // start loop over tracks
                   auto trackB = trackIdB.track_as<BigTracksPID>();
                   if (track.globalIndex() == trackB.globalIndex()) {
                     continue;
@@ -464,7 +464,7 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 2-prong femto
-          if (!keepEvent[kFemto2P] && isCharmTagged) {
+          if (!keepEvent[kFemto2P] && isCharmTagged && track.collisionId() == thisCollId) {
             bool isProton = isSelectedProton4Femto(track, trackParThird, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, activateQA, hProtonTPCPID, hProtonTOFPID);
             if (isProton) {
               float relativeMomentum = computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
@@ -484,7 +484,7 @@ struct HfFilter { // Main struct for HF triggers
 
         // 2-prong with Gamma (conversion photon)
         for (auto& gamma : theV0s) {
-          if (!keepEvent[kGammaCharm2P] && (isCharmTagged || isBeautyTagged)) {
+          if (!keepEvent[kGammaCharm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || (TESTBIT(selD0, 1)))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
             if (isGamma) {
@@ -657,7 +657,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
-        for (const auto& trackId : trackIndices) { // start loop over track indices as associated to this collision in HF code
+        for (const auto& trackId : trackIdsThisCollision) { // start loop over track indices as associated to this collision in HF code
           auto track = trackId.track_as<BigTracksPID>();
           if (track.globalIndex() == trackFirst.globalIndex() || track.globalIndex() == trackSecond.globalIndex() || track.globalIndex() == trackThird.globalIndex()) {
             continue;
@@ -697,7 +697,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // 3-prong femto
           bool isProton = isSelectedProton4Femto(track, trackParFourth, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, activateQA, hProtonTPCPID, hProtonTOFPID);
-          if (isProton) {
+          if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
               if (isCharmTagged[iHypo]) {
                 float relativeMomentum = computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
@@ -718,7 +718,7 @@ struct HfFilter { // Main struct for HF triggers
 
         // 3-prong with Gamma (conversion photon)
         for (auto& gamma : theV0s) {
-          if (!keepEvent[kGammaCharm3P] && (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1])) {
+          if (!keepEvent[kGammaCharm3P] && (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && (TESTBIT(is3ProngInMass[kDs - 1], 0) || TESTBIT(is3ProngInMass[kDs - 1], 1))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
             if (isGamma) {
