@@ -283,23 +283,23 @@ struct HfCandidateSelectorToXiPi {
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
         statusPidLambda = 1;
-        if(resultSelections == 0){
+        if (resultSelections == 0) {
           hTest2->Fill(0.5);
         }
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
         statusPidCascade = 1;
-      if(resultSelections == 0){
-        hTest2->Fill(1.5);
-      }
+        if (resultSelections == 0) {
+          hTest2->Fill(1.5);
+        }
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && pidPiFromOme == TrackSelectorPID::Status::PIDAccepted) {
         statusPidOmegac = 1;
-      if(resultSelections == 0){
-        hTest2->Fill(2.5);
-      }
+        if (resultSelections == 0) {
+          hTest2->Fill(2.5);
+        }
       }
 
       // invariant mass cuts
@@ -332,50 +332,50 @@ struct HfCandidateSelectorToXiPi {
 
       if ((invMassOmegac >= invMassOmegacMin) && (invMassOmegac <= invMassOmegacMax)) {
         statusInvMassOmegac = 1;
-        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1&& resultSelections == 0 ) {
+        if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1 && resultSelections == 0) {
           hTest2->Fill(5.5);
         }
       }
 
       hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections);
 
-      if(resultSelections == 0){
-      if (statusPidLambda == -1) {
-        hTest1->Fill(0.5);
-      }
-      if (statusPidLambda == 1) {
-        hTest1->Fill(1.5);
-      }
-      if (statusPidCascade == -1) {
-        hTest1->Fill(2.5);
-      }
-      if (statusPidCascade == 1) {
-        hTest1->Fill(3.5);
-      }
-      if (statusPidOmegac == -1) {
-        hTest1->Fill(4.5);
-      }
-      if (statusPidOmegac == 1) {
-        hTest1->Fill(5.5);
-      }
-      if (statusInvMassLambda == -1) {
-        hTest1->Fill(6.5);
-      }
-      if (statusInvMassLambda == 1) {
-        hTest1->Fill(7.5);
-      }
-      if (statusInvMassCascade == -1) {
-        hTest1->Fill(8.5);
-      }
-      if (statusInvMassCascade == 1) {
-        hTest1->Fill(9.5);
-      }
-      if (statusInvMassOmegac == -1) {
-        hTest1->Fill(10.5);
-      }
-      if (statusInvMassOmegac == 1) {
-        hTest1->Fill(11.5);
-      }
+      if (resultSelections == 0) {
+        if (statusPidLambda == -1) {
+          hTest1->Fill(0.5);
+        }
+        if (statusPidLambda == 1) {
+          hTest1->Fill(1.5);
+        }
+        if (statusPidCascade == -1) {
+          hTest1->Fill(2.5);
+        }
+        if (statusPidCascade == 1) {
+          hTest1->Fill(3.5);
+        }
+        if (statusPidOmegac == -1) {
+          hTest1->Fill(4.5);
+        }
+        if (statusPidOmegac == 1) {
+          hTest1->Fill(5.5);
+        }
+        if (statusInvMassLambda == -1) {
+          hTest1->Fill(6.5);
+        }
+        if (statusInvMassLambda == 1) {
+          hTest1->Fill(7.5);
+        }
+        if (statusInvMassCascade == -1) {
+          hTest1->Fill(8.5);
+        }
+        if (statusInvMassCascade == 1) {
+          hTest1->Fill(9.5);
+        }
+        if (statusInvMassOmegac == -1) {
+          hTest1->Fill(10.5);
+        }
+        if (statusInvMassOmegac == 1) {
+          hTest1->Fill(11.5);
+        }
       }
 
       if (statusPidLambda == 1 && statusPidCascade == 1 && statusPidOmegac == 1 && statusInvMassLambda == 1 && statusInvMassCascade == 1 && statusInvMassOmegac == 1 && resultSelections == 0) {
