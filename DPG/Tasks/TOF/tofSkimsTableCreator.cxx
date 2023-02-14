@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::dataformats;
 
-struct tofSimsTableCreator {
+struct tofSkimsTableCreator {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TOFSignal, aod::pidEvTimeFlags,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -86,6 +86,7 @@ struct tofSimsTableCreator {
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
 
+    int lastLayer = 0;
     for (auto const& trk : tracks) {
       switch (applyTrkSel.value) {
         case 0:
@@ -102,6 +103,15 @@ struct tofSimsTableCreator {
       if (!keepTpcOnly.value && !trk.hasTOF()) {
         continue;
       }
+
+      lastLayer = 0;
+      for (int l = 7; l >= 0; l--) {
+        if (trk.trdPattern() & (1 << l)) {
+          lastLayer = l;
+          break;
+        }
+      }
+
       tableRow(trk.collisionId(),
                trk.p(),
                trk.pt(),
@@ -111,18 +121,20 @@ struct tofSimsTableCreator {
                trk.tofExpMom(),
                trk.length(),
                trk.tofChi2(),
+               trk.tpcSignal(),
                trk.tofSignal(),
                trk.evTimeTOF(),
                trk.evTimeTOFErr(),
                evTimeT0AC,
                evTimeT0ACErr,
                trk.tofFlags(),
-               trk.hasTRD());
+               trk.hasTRD(),
+               lastLayer);
     }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<tofSimsTableCreator>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<tofSkimsTableCreator>(cfgc)};
 }
