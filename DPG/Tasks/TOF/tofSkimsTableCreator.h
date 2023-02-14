@@ -37,6 +37,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                         //! Phi of the trac
 DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t); //! Index for mass hypothesis used in tracking see PID.h for definition
 DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);           //! Event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);     //! Resolution of the event time of the track computed with the T0AC
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                    //! Flag if track has TRD information
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
 
@@ -59,6 +60,7 @@ DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF 
                   tofskims::EvTimeT0AC,
                   tofskims::EvTimeT0ACErr,
                   pidflags::TOFFlags,
+                  tofskims::HasTRD,
                   tofskims::HasTOF<pidtofsignal::TOFSignal>,
                   pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
                   pidflags::IsEvTimeTOF<pidflags::TOFFlags>,

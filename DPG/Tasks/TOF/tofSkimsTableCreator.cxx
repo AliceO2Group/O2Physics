@@ -49,6 +49,7 @@ struct tofSimsTableCreator {
   // Configurables
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
+  Configurable<bool> keepTpcOnly{"keepTpcOnly", false, "Flag to keep the TPC only tracks as well"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
 
   void init(o2::framework::InitContext& initContext) {}
@@ -86,6 +87,21 @@ struct tofSimsTableCreator {
     }
 
     for (auto const& trk : tracks) {
+      switch (applyTrkSel.value) {
+        case 0:
+          break;
+        case 1:
+          if (!trk.isGlobalTrack()) {
+            continue;
+          }
+          break;
+        default:
+          LOG(fatal) << "Invalid track selection flag: " << applyTrkSel.value;
+          break;
+      }
+      if (!keepTpcOnly.value && !trk.hasTOF()) {
+        continue;
+      }
       tableRow(trk.collisionId(),
                trk.p(),
                trk.pt(),
@@ -100,7 +116,8 @@ struct tofSimsTableCreator {
                trk.evTimeTOFErr(),
                evTimeT0AC,
                evTimeT0ACErr,
-               trk.tofFlags());
+               trk.tofFlags(),
+               trk.hasTRD());
     }
   }
 };

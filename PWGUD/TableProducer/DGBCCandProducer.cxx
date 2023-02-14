@@ -66,7 +66,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all tracks and fill tracksInBCList
-    LOGF(debug, "Number of barrel tracks: %d", tracks.size());
+    LOGF(info, "Number of barrel tracks: %d", tracks.size());
     for (auto const& track : tracks) {
       registry.get<TH1>(HIST("barrelTracks"))->Fill(0., 1.);
       auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
@@ -90,8 +90,6 @@ struct tracksWGTInBCs {
           closestBC = (uint64_t)(firstCompatibleBC +
                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
-          // registry.get<TH1>(HIST("barrelTracks"))->Fill(2., 1.);
-
           // this track is not ambiguous, has hence a unique association to a collision/BC
           closestBC = track.collision_as<CCs>().foundBC_as<BCs>().globalBC();
         }
@@ -124,7 +122,7 @@ struct tracksWGTInBCs {
       }
     }
   }
-  PROCESS_SWITCH(tracksWGTInBCs, processBarrel, "Process barrel tracks", true);
+  PROCESS_SWITCH(tracksWGTInBCs, processBarrel, "Process barrel tracks", false);
 
   void processForward(BCs& bcs, CCs& collisions, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
   {
@@ -136,7 +134,7 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all forward tracks and fill fwdTracksWGTInBCList
-    LOGF(debug, "Number of forward tracks: %d", fwdTracks.size());
+    LOGF(info, "Number of forward tracks: %d", fwdTracks.size());
     for (auto const& fwdTrack : fwdTracks) {
       registry.get<TH1>(HIST("forwardTracks"))->Fill(0., 1.);
       auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
@@ -161,8 +159,6 @@ struct tracksWGTInBCs {
           closestBC = (uint64_t)(firstCompatibleBC +
                                  (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
-          // registry.get<TH1>(HIST("forwardTracks"))->Fill(2., 1.);
-
           // this track is not ambiguous, has hence a unique association to a collision/BC
           closestBC = fwdTrack.collision_as<CCs>().bc_as<BCs>().globalBC();
         }
@@ -195,7 +191,13 @@ struct tracksWGTInBCs {
       }
     }
   }
-  PROCESS_SWITCH(tracksWGTInBCs, processForward, "Process forward tracks", true);
+  PROCESS_SWITCH(tracksWGTInBCs, processForward, "Process forward tracks", false);
+
+  void processNone(BCs&)
+  {
+    LOGF(info, "Tables tibcs and ftibcs are not filled!");
+  }
+  PROCESS_SWITCH(tracksWGTInBCs, processNone, "Process dummy task", true);
 };
 
 // -----------------------------------------------------------------------------
@@ -409,7 +411,7 @@ struct DGBCCandProducer {
   {
     diffCuts = (DGCutparHolder)DGCuts;
 
-    if (context.mOptions.get<bool>("processData") || context.mOptions.get<bool>("processMC")) {
+    if (context.mOptions.get<bool>("processTable") || context.mOptions.get<bool>("processData")) {
       registry.add("bcFlag", "#bcFlag", {HistType::kTH1F, {{64, -0.5, 63.5}}});
       registry.add("candCase", "#candCase", {HistType::kTH1F, {{4, -0.5, 3.5}}});
       registry.add("isDG1vsisDG2", "#isDG1vsisDG2", {HistType::kTH2F, {{13, -1.5, 11.5}, {13, -1.5, 11.5}}});
@@ -473,9 +475,7 @@ struct DGBCCandProducer {
 
           // update DGTracks tables
           for (auto const& track : colTracks) {
-            if (track.isPVContributor()) {
-              updateUDTrackTables(track, bc.globalBC());
-            }
+            updateUDTrackTables(track, bc.globalBC());
           }
         }
       } else {
@@ -606,8 +606,10 @@ struct DGBCCandProducer {
     auto lastbc = bcs.iteratorAt(bcs.size() - 1);
     auto lasttibc = tibcs.iteratorAt(tibcs.size() - 1);
     auto lastftibc = ftibcs.iteratorAt(ftibcs.size() - 1);
+    LOGF(info, "bcs %d tibcs %d ftibcs %d", bcs.size(), tibcs.size(), ftibcs.size());
 
     for (auto bcnum = minGlobalBC; bcnum <= maxGlobalBC; bcnum++) {
+      LOGF(debug, "max %d now %d", maxGlobalBC, bcnum);
 
       // reset counters
       bcFlag = 1; // bit 0 is always set
@@ -642,44 +644,52 @@ struct DGBCCandProducer {
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-            updateUDTables(true, bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
+            updateUDTables(false, bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
           }
         }
       }
 
       // find BC in TIBCs table
-      while (tibc.bcnum() < bcnum && tibc != lasttibc) {
-        ++tibc;
-      }
-      if (tibc.bcnum() == bcnum) {
-        SETBIT(bcFlag, 4);
-
-        auto bcRange = udhelpers::compatibleBCs(bc, bcnum, diffCuts.minNBCs(), bcs);
-        auto tracksArray = tibc.track_as<TCs>();
-        ntr2 = tracksArray.size();
-
-        // find BC in FTIBCs table
-        while (ftibc.bcnum() < bcnum && ftibc != lastftibc) {
-          ++ftibc;
+      if (ftibcs.size() > 0) {
+        while (tibc.bcnum() < bcnum && tibc != lasttibc) {
+          ++tibc;
         }
-        if (ftibc.bcnum() == bcnum) {
-          auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
-          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-        } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-          isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
-        }
-        if (isDG2 == 0) {
-          // this is a DG candidate with tracks-in-BC
-          SETBIT(bcFlag, 5);
-          registry.get<TH1>(HIST("candCase"))->Fill(2, 1.);
+        if (tibc.bcnum() == bcnum) {
+          SETBIT(bcFlag, 4);
 
-          auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
-          auto nCharge = udhelpers::netCharge<false>(tracksArray);
-          auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-          updateUDTables(false, bcnum, tibc.runNumber(), -1., 1., -1,
-                         tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
+          auto bcRange = udhelpers::compatibleBCs(bc, bcnum, diffCuts.minNBCs(), bcs);
+          auto tracksArray = tibc.track_as<TCs>();
+          ntr2 = tracksArray.size();
+
+          // find BC in FTIBCs table
+          if (ftibcs.size() > 0) {
+            while (ftibc.bcnum() < bcnum && ftibc != lastftibc) {
+              ++ftibc;
+            }
+            if (ftibc.bcnum() == bcnum) {
+              auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
+              isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
+            } else {
+              auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+              isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
+            }
+          } else {
+            auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+            isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
+          }
+
+          if (isDG2 == 0) {
+            // this is a DG candidate with tracks-in-BC
+            SETBIT(bcFlag, 5);
+            registry.get<TH1>(HIST("candCase"))->Fill(2, 1.);
+
+            auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
+            auto nCharge = udhelpers::netCharge<false>(tracksArray);
+            auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
+            updateUDTables(false, bcnum, tibc.runNumber(), -1., 1., -1,
+                           tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
+          }
         }
       }
 
@@ -694,6 +704,18 @@ struct DGBCCandProducer {
   }
 
   PROCESS_SWITCH(DGBCCandProducer, processData, "Produce UDTables", true);
+
+  void processDummy(BCs const& bcs, CCs const& collisions,
+                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
+                    aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  {
+    LOGF(info, "size of");
+    LOGF(info, "bcs %d", bcs.size());
+    LOGF(info, "collisions %d", collisions.size());
+    LOGF(info, "tracks %d", tracks.size());
+    LOGF(info, "fwdtracks %d", fwdtracks.size());
+  }
+  PROCESS_SWITCH(DGBCCandProducer, processDummy, "Dummy task", true);
 };
 
 // -----------------------------------------------------------------------------

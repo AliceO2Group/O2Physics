@@ -25,12 +25,12 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_omegac;
-using namespace o2::aod::hf_sel_omegac;
+using namespace o2::aod::hf_cand_toxipi;
+using namespace o2::aod::hf_sel_toxipi;
 
 /// Struct for applying Omegac selection cuts
-struct HfCandidateSelectorOmegac {
-  Produces<aod::HFSelOmegacCandidate> hfSelOmegacCandidate;
+struct HfCandidateSelectorToXiPi {
+  Produces<aod::HfSelToXiPi> hfSelToXiPi;
 
   // LF analysis selections
   // zPV -> can be already set in HFeventselection -> 10 cm
@@ -44,8 +44,8 @@ struct HfCandidateSelectorOmegac {
   Configurable<double> dcaOmegacDauMax{"dcaOmegacDauMax", 5.0, "Max DCA omegac daughters"};
 
   // limit charm baryon invariant mass spectrum
-  Configurable<double> invMassOmegacMin{"invMassOmegacMin", 2.4, "Lower limit invariant mass spectrum charm baryon"};
-  Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.0, "Upper limit invariant mass spectrum charm baryon"};
+  Configurable<double> invMassOmegacMin{"invMassOmegacMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
+  Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
   Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "Max absolute value of eta"};
@@ -91,13 +91,13 @@ struct HfCandidateSelectorOmegac {
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hInvMassOmegacNotFixed{TH1F("hInvMassOmegacNotFixed", "Omegac invariant mass (not fixed);inv mass;entries", 500, 2.2, 3.1)};
+  OutputObj<TH1F> hCTauXic{TH1F("hCTauXic", "Xic ctau;ctau;entries", 500, 0., 10.)};
 
   // temporary histo for debugging (to be removed after test on hyperloop)
   OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
   OutputObj<TH1F> hTest2{TH1F("hTest2", "Test status consecutive;status;entries", 12, 0., 12.)};
 
-  void process(aod::HfCandOmegac const& candidates, MyTrackInfo const&)
+  void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
     TrackSelectorPID selectorPionFromOme(kPiPlus);
     selectorPionFromOme.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -145,7 +145,7 @@ struct HfCandidateSelectorOmegac {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int signDecay = candidate.signDecay(); // sign of pi <- cascade
+      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
@@ -205,8 +205,8 @@ struct HfCandidateSelectorOmegac {
       }
 
       // pT selections
-      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCascAtProd(), candidate.pyPiFromCascAtProd());
-      double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPiAtProd(), candidate.pyPrimaryPiAtProd());
+      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCasc(), candidate.pyPiFromCasc());
+      double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPi(), candidate.pyPrimaryPi());
       if (std::abs(ptPiFromCasc) > ptPiFromCascMin) {
         continue;
       }
@@ -330,7 +330,7 @@ struct HfCandidateSelectorOmegac {
         }
       }
 
-      hfSelOmegacCandidate(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac);
+      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac);
 
       if (statusPidLambda == -1) {
         hTest1->Fill(0.5);
@@ -374,7 +374,7 @@ struct HfCandidateSelectorOmegac {
         hxVertexOmegac->Fill(candidate.xDecayVtxOmegac());
         hInvMassOmegac->Fill(invMassOmegac);
         hCTauOmegac->Fill(candidate.ctauOmegac());
-        hInvMassOmegacNotFixed->Fill(candidate.massOmegacNotFixed());
+        hCTauXic->Fill(candidate.ctauXic());
       }
     }
   }
@@ -383,5 +383,5 @@ struct HfCandidateSelectorOmegac {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorOmegac>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorToXiPi>(cfgc)};
 }

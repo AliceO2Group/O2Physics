@@ -49,9 +49,9 @@ using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskFlow {
   //  configurables for processing options
-  Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
-  Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
-  Configurable<bool> processMc{"processMc", "false", "Flag to run on MC"};
+  Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
+  Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
+  Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
   //  configurables for collisions
   Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};

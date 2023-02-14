@@ -24,7 +24,11 @@
 #include "Framework/DataTypes.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/Propagator.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -132,20 +136,22 @@ static const AxisSpec kstarAxis{100, 0.f, 1.f};
 static const AxisSpec etaAxis{30, -1.5f, 1.5f};
 static const AxisSpec nSigmaAxis{100, -10.f, 10.f};
 static const AxisSpec alphaAxis{100, -10.f, 10.f};
+static const AxisSpec qtAxis{100, 0.f, 0.25f};
 static const AxisSpec bdtAxis{100, 0.f, 1.f};
 static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
 static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.3f, 5.9f}, AxisSpec{100, 5.3f, 5.9f}};
 
 /// Single-track cuts for bachelor track of beauty candidates
-/// \param track is a track
+/// \param trackPar is a track parameter
+/// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \param pTMinSoftPion min pT for soft pions
 /// \param pTMinBeautyBachelor min pT for beauty bachelor pions
 /// \param cutsSingleTrackBeauty cuts for all tracks
 /// \return 0 if track is rejected, 1 if track is soft pion, 2 if it is regular beauty
-template <typename T1, typename T2, typename T3>
-int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T2& pTBinsTrack, const T3& cutsSingleTrackBeauty)
+template <typename T1, typename T2, typename T3, typename T4>
+int isSelectedTrackForBeauty(const T1& trackPar, const T2& dca, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T3& pTBinsTrack, const T4& cutsSingleTrackBeauty)
 {
-  auto pT = track.pt();
+  auto pT = trackPar.getPt();
   auto pTBinTrack = findBin(pTBinsTrack, pT);
   if (pTBinTrack == -1) {
     return kRejected;
@@ -155,18 +161,18 @@ int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const 
     return kRejected;
   }
 
-  if (std::abs(track.eta()) > 0.8) {
+  if (std::abs(trackPar.getEta()) > 0.8) {
     return kRejected;
   }
 
-  if (std::abs(track.dcaZ()) > 2.f) {
+  if (std::abs(dca[1]) > 2.f) {
     return kRejected;
   }
 
-  if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
+  if (std::abs(dca[0]) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
     return kRejected; // minimum DCAxy
   }
-  if (std::abs(track.dcaXY()) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
+  if (std::abs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
     return kRejected; // maximum DCAxy
   }
 
@@ -180,6 +186,7 @@ int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const 
 
 /// Basic selection of proton candidates
 /// \param track is a track
+/// \param trackPar is a track parameter
 /// \param femtoMinProtonPt min pT for proton candidates
 /// \param femtoMaxNsigmaProton max Nsigma for proton candidates
 /// \param femtoProtonOnlyTOF flag to activate PID selection with TOF only
@@ -190,17 +197,18 @@ int isSelectedTrackForBeauty(const T1& track, const float& pTMinSoftPion, const 
 /// \param hProtonTPCPID histo with NsigmaTPC vs. p
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
 /// \return true if track passes all cuts
-template <typename T, typename H2, typename H3>
-bool isSelectedProton4Femto(const T& track, const float& femtoMinProtonPt, const float& femtoMaxNsigmaProton, const bool femtoProtonOnlyTOF, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
+template <typename T1, typename T2, typename H2, typename H3>
+bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& femtoMinProtonPt, const float& femtoMaxNsigmaProton, const bool femtoProtonOnlyTOF, const bool computeTPCPostCalib, H3 hMapProtonMean, H3 hMapProtonSigma, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
 {
-  if (track.pt() < femtoMinProtonPt) {
+  if (trackPar.getPt() < femtoMinProtonPt) {
     return false;
   }
 
-  if (std::abs(track.eta()) > 0.8) {
+  if (std::abs(trackPar.getEta()) > 0.8) {
     return false;
   }
 
+  // FIXME: this is applied to the wrong dca for ambiguous tracks!
   if (track.isGlobalTrack() != (uint8_t) true) {
     return false; // use only global tracks
   }
@@ -423,7 +431,7 @@ int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg, const float& nsi
 /// \param pTrackNeg is the negative track momentum
 /// \param ptD is the pt of the D0 meson candidate
 /// \param isSelected is the flag containing the selection tag for the D0 candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return 1 for D0, 2 for D0bar, 3 for both
@@ -436,7 +444,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0);
     }
-    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
     }
   }
@@ -445,7 +453,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0bar);
     }
-    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
     }
   }
@@ -458,7 +466,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
 /// \param pTrackSameChargeFirst is the second same-charge track momentum
 /// \param pTrackSameChargeFirst is the opposite charge track momentum
 /// \param ptD is the pt of the D+ meson candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) (==1) for D+, 0 otherwise
@@ -470,7 +478,7 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
     hMassVsPt->Fill(ptD, invMassDplus);
   }
 
-  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty) {
+  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty || ptD > 10) {
     return 0;
   }
 
@@ -483,7 +491,7 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
 /// \param pTrackSameChargeFirst is the opposite charge track momentum
 /// \param ptD is the pt of the Ds meson candidate
 /// \param isSelected is the flag containing the selection tag for the Ds candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
@@ -496,7 +504,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToKKPi);
     }
-    if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
     }
   }
@@ -505,7 +513,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToPiKK);
     }
-    if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
     }
   }
@@ -519,7 +527,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
 /// \param pTrackOppositeCharge is the opposite charge track momentum
 /// \param ptLc is the pt of the D0 meson candidate
 /// \param isSelected is the flag containing the selection tag for the D0 candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
@@ -532,7 +540,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPKPi);
     }
-    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(0);
     }
   }
@@ -541,7 +549,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPiKP);
     }
-    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(1);
     }
   }
@@ -555,7 +563,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
 /// \param pTrackOppositeCharge is the opposite charge track momentum
 /// \param ptXic is the pt of the D0 meson candidate
 /// \param isSelected is the flag containing the selection tag for the D0 candidate
-/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value
+/// \param deltaMassCharmHadronForBeauty is the maximum delta mass value (for candidates with pT < 10 GeV/c)
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
@@ -568,7 +576,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPKPi);
     }
-    if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(0);
     }
   }
@@ -577,7 +585,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPiKP);
     }
-    if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty) {
+    if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(1);
     }
   }
@@ -666,15 +674,15 @@ int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores)
 }
 
 /// Computation of the relative momentum between particle pairs
-/// \param track is a track
+/// \param pTrack is the track momentum array
 /// \param ProtonMass is the mass of a proton
 /// \param CharmCandMomentum is the three momentum of a charm candidate
 /// \param CharmMass is the mass of the charm hadron
 /// \return relative momentum of pair
 template <typename T>
-float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
+T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass)
 {
-  ROOT::Math::PxPyPzMVector part1(track.px(), track.py(), track.pz(), massProton);
+  ROOT::Math::PxPyPzMVector part1(pTrack[0], pTrack[1], pTrack[2], massProton);
   ROOT::Math::PxPyPzMVector part2(CharmCandMomentum[0], CharmCandMomentum[1], CharmCandMomentum[2], CharmMass);
 
   ROOT::Math::PxPyPzMVector trackSum = part1 + part2;
@@ -683,7 +691,7 @@ float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmC
   ROOT::Math::PxPyPzMVector part2CM = boostv12(part2);
   ROOT::Math::PxPyPzMVector trackRelK = part1CM - part2CM;
 
-  float kStar = 0.5 * trackRelK.P();
+  T kStar = 0.5 * trackRelK.P();
   return kStar;
 } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
@@ -846,18 +854,6 @@ float getTPCPostCalib(const TH3F* hCalibMean, const TH3F* hCalibSigma, const T& 
 } // namespace hffilters
 
 /// definition of tables
-
-namespace extra2Prong
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace extra2Prong
-namespace extra3Prong
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace extra3Prong
-DECLARE_SOA_TABLE(Colls2Prong, "AOD", "COLLSID2P", o2::aod::extra2Prong::CollisionId);
-DECLARE_SOA_TABLE(Colls3Prong, "AOD", "COLLSID3P", o2::aod::extra3Prong::CollisionId);
-
 namespace hftraining
 {
 DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                 //!
