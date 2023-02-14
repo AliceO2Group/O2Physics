@@ -13,11 +13,11 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Framework/runDataProcessing.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,7 +31,7 @@ using namespace o2::constants::math;
 
 double getDeltaPhi(double phiD, double phiHadron)
 {
-  return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PI / 2.);
+  return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PIHalf);
 }
 
 /// definition of variables for Ds hadron pairs (in data-like, MC-reco and MC-kine tasks)
@@ -44,8 +44,8 @@ const int massAxisBins = 300;
 const double massAxisMin = 1.7;
 const double massAxisMax = 2.2;
 const int phiAxisBins = 128;
-const double phiAxisMin = -o2::constants::math::PI / 2.;
-const double phiAxisMax = 3. * o2::constants::math::PI / 2.;
+const double phiAxisMin = -o2::constants::math::PIHalf;
+const double phiAxisMax = 3. * o2::constants::math::PIHalf;
 const int yAxisBins = 100;
 const double yAxisMin = -2.;
 const double yAxisMax = 2.;
@@ -162,7 +162,7 @@ struct HfCorrelatorDsHadrons {
         registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
         registry.fill(HIST("hPtProng2"), candidate1.ptProng2());
         registry.fill(HIST("hEta"), candidate1.eta());
-        registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PI / 2.));
+        registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PIHalf));
         registry.fill(HIST("hY"), yDs(candidate1));
         registry.fill(HIST("hSelectionStatus"), candidate1.isSelDsToKKPi());
 
@@ -246,7 +246,7 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hPtProng1MCRec"), candidate1.ptProng1());
           registry.fill(HIST("hPtProng2MCRec"), candidate1.ptProng2());
           registry.fill(HIST("hEtaMCRec"), candidate1.eta());
-          registry.fill(HIST("hPhiMCRec"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PI / 2.));
+          registry.fill(HIST("hPhiMCRec"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PIHalf));
           registry.fill(HIST("hYMCRec"), yDs(candidate1));
           registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelDsToKKPi());
         }
@@ -308,7 +308,7 @@ struct HfCorrelatorDsHadrons {
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMCGen"), particle1.eta());
-      registry.fill(HIST("hPhiMCGen"), RecoDecay::constrainAngle(particle1.phi(), -o2::constants::math::PI / 2.));
+      registry.fill(HIST("hPhiMCGen"), RecoDecay::constrainAngle(particle1.phi(), -o2::constants::math::PIHalf));
       registry.fill(HIST("hYMCGen"), yD);
       counterDsHadron++;
       // Ds Hadron correlation dedicated section
