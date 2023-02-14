@@ -172,7 +172,7 @@ std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestam
 /// \param paraBetheBloch  vector for the parameters of BetheBloch formula
 /// \return updated nsigma value for TPC PID
 template <typename T>
-double updateTPCPID(const T& track, const float mMassPar, const std::vector<double> paraBetheBloch)
+double getTPCSplineCalib(const T& track, const float mMassPar, const std::vector<double> paraBetheBloch)
 {
   auto bgScaling = 1 / mMassPar;
   double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), paraBetheBloch[0], paraBetheBloch[1], paraBetheBloch[2], paraBetheBloch[3], paraBetheBloch[4]);
@@ -259,7 +259,7 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
   if (setTPCCalib == 1) {
     NSigmaTPC = getTPCPostCalib(hMapProton, track, kPr);
   } else if (setTPCCalib == 2) {
-    NSigmaTPC = updateTPCPID(track, massProton, hSplineProton[0]);
+    NSigmaTPC = getTPCSplineCalib(track, massProton, hSplineProton[0]);
   }
 
   if (femtoProtonOnlyTOF) {
@@ -297,7 +297,7 @@ bool isSelectedProton4CharmBaryons(const T& track, const float& nsigmaTPCProtonL
   if (setTPCCalib == 1) {
     NSigmaTPC = getTPCPostCalib(hMapProton, track, kPr);
   } else if (setTPCCalib == 2) {
-    NSigmaTPC = updateTPCPID(track, massProton, hSplineProton[0]);
+    NSigmaTPC = getTPCSplineCalib(track, massProton, hSplineProton[0]);
   }
 
   if (std::abs(NSigmaTPC) > nsigmaTPCProtonLc) {
@@ -327,7 +327,7 @@ bool isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon3Prong
   if (setTPCCalib == 1) {
     NSigmaTPC = getTPCPostCalib(hMapPion, track, kKa); // use pion correction map for kaon for the moment
   } else if (setTPCCalib == 2) {
-    NSigmaTPC = updateTPCPID(track, massK, hSplinePion[0]);
+    NSigmaTPC = getTPCSplineCalib(track, massK, hSplinePion[0]);
   }
 
   if (std::abs(NSigmaTPC) > nsigmaTPCKaon3Prong) {
@@ -460,10 +460,10 @@ int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg, const float& nsi
     NSigmaKaTPCPos = getTPCPostCalib(hMapPion, trackPos, kKa); // use pion correction map for kaon for the moment
     NSigmaKaTPCNeg = getTPCPostCalib(hMapPion, trackNeg, kKa); // use pion correction map for kaon for the moment
   } else if (setTPCCalib == 2) {
-    NSigmaPiTPCPos = updateTPCPID(trackPos, massPi, hSplinePion[0]);
-    NSigmaPiTPCNeg = updateTPCPID(trackNeg, massPi, hSplinePion[1]);
-    NSigmaKaTPCPos = updateTPCPID(trackPos, massK, hSplinePion[0]); // use pion correction for kaon for the moment
-    NSigmaKaTPCNeg = updateTPCPID(trackNeg, massK, hSplinePion[1]); // use pion correction for kaon for the moment
+    NSigmaPiTPCPos = getTPCSplineCalib(trackPos, massPi, hSplinePion[0]);
+    NSigmaPiTPCNeg = getTPCSplineCalib(trackNeg, massPi, hSplinePion[1]);
+    NSigmaKaTPCPos = getTPCSplineCalib(trackPos, massK, hSplinePion[0]); // use pion correction for kaon for the moment
+    NSigmaKaTPCNeg = getTPCSplineCalib(trackNeg, massK, hSplinePion[1]); // use pion correction for kaon for the moment
   }
 
   if ((std::abs(NSigmaPiTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaPiTOFPos) <= nsigmaTOFPionKaonDzero)) && (std::abs(NSigmaKaTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaKaTOFNeg) <= nsigmaTOFPionKaonDzero))) {
