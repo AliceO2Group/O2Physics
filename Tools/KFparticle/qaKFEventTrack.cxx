@@ -603,7 +603,7 @@ struct qaKFEvent {
   }
 
   template <typename T4>
-  void writeVarTreeColl(const T4& collision, float timeColl)
+  void writeVarTreeColl(const T4& collision, uint64_t timeColl)
   {
     if (writeTree) {
       /// Filling the tree
@@ -623,7 +623,9 @@ struct qaKFEvent {
   /// Process function for data
   void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
   {
-    float timeColl = 0;
+    uint64_t timeColl = 0;
+    uint64_t timestamp = 0;
+    float timeDiff = 0;
 
     for (auto& collisionIndex : collisions) {
       auto bc = collisionIndex.bc_as<aod::BCsWithTimestamps>();
@@ -635,7 +637,9 @@ struct qaKFEvent {
       if (!isSelectedCollision(collisionIndex)) {
         continue;
       }
-      timeColl = bc.timestamp() + collisionIndex.collisionTime();
+      timestamp = bc.timestamp();
+      timeDiff = collisionIndex.collisionTime() *1.e6;
+      timeColl = timestamp + timeDiff;
       writeVarTreeColl(collisionIndex, timeColl);
     }
   }
