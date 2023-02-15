@@ -241,6 +241,7 @@ struct HfFilter { // Main struct for HF triggers
   using BigTracksPID = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   Preslice<aod::HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
   Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::hf_track_association::collisionId;
   Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::hf_track_association::collisionId;
 
@@ -483,7 +484,8 @@ struct HfFilter { // Main struct for HF triggers
         } // end loop over tracks
 
         // 2-prong with Gamma (conversion photon)
-        for (auto& gamma : theV0s) {
+        auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
+        for (auto& gamma : v0sThisCollision) {
           if (!keepEvent[kGammaCharm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || (TESTBIT(selD0, 1)))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
@@ -717,7 +719,8 @@ struct HfFilter { // Main struct for HF triggers
         } // end loop over tracks
 
         // 3-prong with Gamma (conversion photon)
-        for (auto& gamma : theV0s) {
+        auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
+        for (auto& gamma : v0sThisCollision) {
           if (!keepEvent[kGammaCharm3P] && (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && (TESTBIT(is3ProngInMass[kDs - 1], 0) || TESTBIT(is3ProngInMass[kDs - 1], 1))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
