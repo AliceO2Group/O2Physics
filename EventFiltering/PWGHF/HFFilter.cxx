@@ -113,8 +113,12 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<string> ccdbPathTPC{"ccdbPathTPC", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
 
-  // TPC PID post calibrations
-  Configurable<bool> computeTPCPostCalib{"computeTPCPostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  // TPC PID calibrations
+  Configurable<int> setTPCCalib{"setTPCCalib", 0, "0 is not use re-calibrations, 1 is compute TPC post-calibrated n-sigmas, 2 is using TPC Spline"};
+  Configurable<std::string> ccdbBBProton{"ccdbBBProton", "Users/l/lserksny/PIDProton", "Path to the CCDB ocject for proton BB param"};
+  Configurable<std::string> ccdbBBAntiProton{"ccdbBBAntiProton", "Users/l/lserksny/PIDAntiProton", "Path to the CCDB ocject for antiproton BB param"};
+  Configurable<std::string> ccdbBBPion{"ccdbBBPion", "Users/l/lserksny/PIDPion", "Path to the CCDB ocject for Pion BB param"};
+  Configurable<std::string> ccdbBBAntiPion{"ccdbBBAntiPion", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiPion BB param"};
 
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
@@ -140,12 +144,11 @@ struct HfFilter { // Main struct for HF triggers
   std::shared_ptr<TH1> hGammaSelected, hGammaEtaBefore, hGammaEtaAfter;
   std::shared_ptr<TH2> hGammaArmPodBefore, hGammaArmPodAfter;
 
-  // Histogram of TPC postcalibration map for pion and proton
-  TH3F* hMapPionMean = nullptr;
-  TH3F* hMapPionSigma = nullptr;
-  TH3F* hMapProtonMean = nullptr;
-  TH3F* hMapProtonSigma = nullptr;
-
+  // Histograms of TPC calibration for pion and proton
+  std::array<TH3F*, 2> hMapPion = {nullptr, nullptr};
+  std::array<TH3F*, 2> hMapProton = {nullptr, nullptr};
+  std::array<std::vector<double>, 2> hBBProton{};
+  std::array<std::vector<double>, 2> hBBPion{};
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> inputShapesML{};
@@ -276,20 +279,26 @@ struct HfFilter { // Main struct for HF triggers
         o2::base::Propagator::initFieldFromGRP(grpo);
 
         // needed for TPC PID postcalibrations
-        if (computeTPCPostCalib) {
+        if (setTPCCalib == 1) {
           auto calibList = ccdb->getForTimeStamp<TList>(ccdbPathTPC.value, bc.timestamp());
           if (!calibList) {
             LOG(fatal) << "Can not find the TPC Post Calibration object!";
           }
 
-          hMapPionMean = (TH3F*)calibList->FindObject("mean_map_pion");
-          hMapPionSigma = (TH3F*)calibList->FindObject("sigma_map_pion");
-          hMapProtonMean = (TH3F*)calibList->FindObject("mean_map_proton");
-          hMapProtonSigma = (TH3F*)calibList->FindObject("sigma_map_proton");
+          hMapPion[0] = (TH3F*)calibList->FindObject("mean_map_pion");
+          hMapPion[1] = (TH3F*)calibList->FindObject("sigma_map_pion");
+          hMapProton[0] = (TH3F*)calibList->FindObject("mean_map_proton");
+          hMapProton[1] = (TH3F*)calibList->FindObject("sigma_map_proton");
 
-          if (!hMapPionMean || !hMapPionSigma || !hMapProtonMean || !hMapProtonSigma) {
+          if (!hMapPion[0] || !hMapPion[1] || !hMapProton[0] || !hMapProton[1]) {
             LOG(fatal) << "Can not find histograms!";
           }
+        } else if (setTPCCalib > 1) {
+
+          hBBProton[0] = setValuesBB(ccdbApi, bc, ccdbBBProton);
+          hBBProton[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiProton);
+          hBBPion[0] = setValuesBB(ccdbApi, bc, ccdbBBPion);
+          hBBPion[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiPion);
         }
 
         currentRun = bc.runNumber();
@@ -312,7 +321,7 @@ struct HfFilter { // Main struct for HF triggers
         auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
         auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
 
-        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, computeTPCPostCalib, hMapPionMean, hMapPionSigma);
+        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, setTPCCalib, hMapPion, hBBPion);
         if (!preselD0) {
           continue;
         }
@@ -466,7 +475,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // 2-prong femto
           if (!keepEvent[kFemto2P] && isCharmTagged && track.collisionId() == thisCollId) {
-            bool isProton = isSelectedProton4Femto(track, trackParThird, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, activateQA, hProtonTPCPID, hProtonTOFPID);
+            bool isProton = isSelectedProton4Femto(track, trackParThird, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, setTPCCalib, hMapProton, hBBProton, activateQA, hProtonTPCPID, hProtonTOFPID);
             if (isProton) {
               float relativeMomentum = computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
@@ -545,13 +554,13 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         if (is3Prong[0]) { // D+ preselections
-          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma);
+          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBPion);
         }
         if (is3Prong[1]) { // Ds preselections
-          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma);
+          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBPion);
         }
         if (is3Prong[2] || is3Prong[3]) { // charm baryon preselections
-          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, hMapPionMean, hMapPionSigma);
+          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapProton, hBBProton, hMapPion, hBBPion);
           if (is3Prong[2]) {
             is3Prong[2] = presel;
           }
@@ -698,7 +707,7 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 3-prong femto
-          bool isProton = isSelectedProton4Femto(track, trackParFourth, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, activateQA, hProtonTPCPID, hProtonTOFPID);
+          bool isProton = isSelectedProton4Femto(track, trackParFourth, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, setTPCCalib, hMapProton, hBBProton, activateQA, hProtonTPCPID, hProtonTOFPID);
           if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
               if (isCharmTagged[iHypo]) {
