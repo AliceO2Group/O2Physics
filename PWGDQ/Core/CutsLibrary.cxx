@@ -1156,11 +1156,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   // ---------------------------------------------------
   // Barrel track kine cuts
   if (!nameStr.compare("negTrack")) {
-    cut->AddCut(VarManager::kCharge, -99.,0.);
+    cut->AddCut(VarManager::kCharge, -99., 0.);
     return cut;
   }
+
   if (!nameStr.compare("posTrack")) {
-    cut->AddCut(VarManager::kCharge, 0.,99.);
+    cut->AddCut(VarManager::kCharge, 0., 99.);
     return cut;
   }
 
