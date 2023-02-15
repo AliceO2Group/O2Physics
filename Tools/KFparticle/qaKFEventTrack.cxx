@@ -603,7 +603,7 @@ struct qaKFEvent {
   }
 
   template <typename T4>
-  void writeVarTreeColl(const T4& collision)
+  void writeVarTreeColl(const T4& collision, float timeColl)
   {
     if (writeTree) {
       /// Filling the tree
@@ -616,17 +616,14 @@ struct qaKFEvent {
                       collision.numContrib(),
                       collision.multNTracksPV(),
                       collision.chi2(),
-                      runNumber);
+                      runNumber,
+                      timeColl);
     }
   }
   /// Process function for data
   void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
   {
-    float time = 0;
-    uint64_t time_bc = 0;
-    uint64_t bc_number = 0;
-    int bcID = 0;
-
+    float timeColl = 0;
 
     for (auto& collisionIndex : collisions) {
       auto bc = collisionIndex.bc_as<aod::BCsWithTimestamps>();
@@ -638,16 +635,8 @@ struct qaKFEvent {
       if (!isSelectedCollision(collisionIndex)) {
         continue;
       }
-      writeVarTreeColl(collisionIndex);
-
-      time_bc = bc.timestamp();
-      time = collisionIndex.collisionTime();
-      bc_number = bc.globalBC();
-      bcID = collisionIndex.bcId();
-      cout << "relative time collision: " << time << endl;
-      cout << "timestamp bc: " << time_bc << endl;
-      cout << "bc number: " << bc_number << endl;
-      cout << "bc ID collision: " << bcID << endl;
+      timeColl = bc.timestamp() + collisionIndex.collisionTime();
+      writeVarTreeColl(collisionIndex, timeColl);
     }
   }
   PROCESS_SWITCH(qaKFEvent, processCollisions, "process collision", true);
