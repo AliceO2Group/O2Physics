@@ -136,7 +136,7 @@ static const AxisSpec pAxis{50, 0.f, 10.f};
 static const AxisSpec kstarAxis{100, 0.f, 1.f};
 static const AxisSpec etaAxis{30, -1.5f, 1.5f};
 static const AxisSpec nSigmaAxis{100, -10.f, 10.f};
-static const AxisSpec alphaAxis{100, -10.f, 10.f};
+static const AxisSpec alphaAxis{100, -1.f, 1.f};
 static const AxisSpec qtAxis{100, 0.f, 0.25f};
 static const AxisSpec bdtAxis{100, 0.f, 1.f};
 static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
