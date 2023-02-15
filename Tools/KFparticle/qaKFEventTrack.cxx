@@ -638,7 +638,7 @@ struct qaKFEvent {
         continue;
       }
       timestamp = bc.timestamp();
-      timeDiff = collisionIndex.collisionTime() *1.e6;
+      timeDiff = collisionIndex.collisionTime() * 1.e6;
       timeColl = timestamp + timeDiff;
       writeVarTreeColl(collisionIndex, timeColl);
     }
