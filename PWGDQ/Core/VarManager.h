@@ -191,6 +191,7 @@ class VarManager : public TObject
 
     // Basic track/muon/pair wise variables
     kPt,
+    kInvPt,
     kEta,
     kPhi,
     kP,
@@ -818,6 +819,9 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     if (fgUsedVars[kPz]) {
       values[kPz] = track.pz();
+    }
+    if (fgUsedVars[kInvPt]) {
+      values[kInvPt] = 1. / track.pt();
     }
     values[kEta] = track.eta();
     values[kPhi] = track.phi();
