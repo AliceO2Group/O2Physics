@@ -59,8 +59,8 @@ struct createEMReducedEvent {
     "registry"};
 
   Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
-  Preslice<aod::PHOSClusters> perCollision_phos = aod::phoscluster::collisionId;
-  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::gammacaloreco::collisionId;
+  Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
+  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   void init(o2::framework::InitContext&)
   {

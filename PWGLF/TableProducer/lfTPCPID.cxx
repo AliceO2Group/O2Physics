@@ -181,9 +181,11 @@ struct bbParams {
   bool updateValues(aod::BCsWithTimestamps::iterator const& bunchCrossing, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
     if (!takeFromCcdb) {
+      LOG(debug) << "bbParams `" << name << "` :: Not taking parameters from CCDB";
       return false;
     }
     if (lastRunNumber == bunchCrossing.runNumber()) {
+      LOG(debug) << "bbParams `" << name << "` :: Not updating parameters of " << name << " from run number " << lastRunNumber << " as they are already up to date";
       return false;
     }
     LOG(info) << "bbParams `" << name << "` :: Updating parameters of " << name << " from run number " << lastRunNumber << " to " << bunchCrossing.runNumber() << ". Taking them from CCDB path '" << ccdbPath << "' with timestamp " << bunchCrossing.timestamp();
@@ -589,9 +591,8 @@ struct lfTpcPid {
         tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                                                         \
       }                                                                                                                                             \
     } else {                                                                                                                                        \
-      if (bb##Particle.takeFromCcdb) {                                                                                                              \
-        bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                                                  \
-      }                                                                                                                                             \
+      bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                                                    \
+      bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                                                 \
       for (auto const& trk : tracks) {                                                                                                              \
         if (trk.sign() > 0) {                                                                                                                       \
           aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - BetheBloch##Particle(trk)) / BetheBlochRes##Particle(trk),       \
@@ -618,35 +619,34 @@ struct lfTpcPid {
 #undef makeProcess
 
 // Full tables
-#define makeProcess(Particle)                                                                      \
-  void processFull##Particle(Colls const& collisions,                                              \
-                             soa::Join<Trks, aod::pidTPCFull##Particle> const& tracks,             \
-                             aod::BCsWithTimestamps const&)                                        \
-  {                                                                                                \
-    LOG(debug) << "Filling full table for particle: " << #Particle;                                \
-    tablePIDFull##Particle.reserve(tracks.size());                                                 \
-    if (bbParameters->get(#Particle, "Use default full") >= 1.5f) {                                \
-      for (auto const& trk : tracks) {                                                             \
-        tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());            \
-      }                                                                                            \
-    } else {                                                                                       \
-      if (bb##Particle.takeFromCcdb) {                                                             \
-        bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
-      }                                                                                            \
-      float expSigma = 1.f;                                                                        \
-      for (auto const& trk : tracks) {                                                             \
-        if (trk.sign() > 0) {                                                                      \
-          expSigma = BetheBlochRes##Particle(trk);                                                 \
-          tablePIDFull##Particle(expSigma,                                                         \
-                                 (trk.tpcSignal() - BetheBloch##Particle(trk)) / expSigma);        \
-        } else {                                                                                   \
-          expSigma = BetheBlochResNeg##Particle(trk);                                              \
-          tablePIDFull##Particle(expSigma,                                                         \
-                                 (trk.tpcSignal() - BetheBlochNeg##Particle(trk)) / expSigma);     \
-        }                                                                                          \
-      }                                                                                            \
-    }                                                                                              \
-  }                                                                                                \
+#define makeProcess(Particle)                                                                       \
+  void processFull##Particle(Colls const& collisions,                                               \
+                             soa::Join<Trks, aod::pidTPCFull##Particle> const& tracks,              \
+                             aod::BCsWithTimestamps const&)                                         \
+  {                                                                                                 \
+    LOG(debug) << "Filling full table for particle: " << #Particle;                                 \
+    tablePIDFull##Particle.reserve(tracks.size());                                                  \
+    if (bbParameters->get(#Particle, "Use default full") >= 1.5f) {                                 \
+      for (auto const& trk : tracks) {                                                              \
+        tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());             \
+      }                                                                                             \
+    } else {                                                                                        \
+      bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);    \
+      bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
+      float expSigma = 1.f;                                                                         \
+      for (auto const& trk : tracks) {                                                              \
+        if (trk.sign() > 0) {                                                                       \
+          expSigma = BetheBlochRes##Particle(trk);                                                  \
+          tablePIDFull##Particle(expSigma,                                                          \
+                                 (trk.tpcSignal() - BetheBloch##Particle(trk)) / expSigma);         \
+        } else {                                                                                    \
+          expSigma = BetheBlochResNeg##Particle(trk);                                               \
+          tablePIDFull##Particle(expSigma,                                                          \
+                                 (trk.tpcSignal() - BetheBlochNeg##Particle(trk)) / expSigma);      \
+        }                                                                                           \
+      }                                                                                             \
+    }                                                                                               \
+  }                                                                                                 \
   PROCESS_SWITCH(lfTpcPid, processFull##Particle, "Produce a full table for the " #Particle " hypothesis", false);
 
   makeProcess(El);

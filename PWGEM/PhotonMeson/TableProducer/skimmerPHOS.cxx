@@ -45,10 +45,6 @@ struct skimmerPHOS {
   void process(aod::Collisions const&, aod::BCs const&, aod::CaloClusters const& clusters, aod::Tracks const& tracks)
   {
     for (auto& cluster : clusters) {
-      if (cluster.caloType() != 0) { // 0 is PHOS, 1 is EMCal
-        continue;
-      }
-
       registry.fill(HIST("hPHOSClusterFilter"), 1);
 
       if (cluster.e() < minE) {
@@ -67,7 +63,7 @@ struct skimmerPHOS {
       registry.fill(HIST("hPHOSClusterFilter"), 5);
       // TODO change track variable to propagated track variables when avaiable!
       tablePHOS(
-        cluster.colId(), cluster.bcId(), cluster.trackIndex(),
+        cluster.collisionId(), cluster.trackIndex(),
         cluster.e(), cluster.globalx(), cluster.globaly(), cluster.globalz(),
         cluster.m02(), cluster.m20(), cluster.ncell(), cluster.time(), cluster.distBad(), cluster.nlm());
       // cluster.trackIndex().eta(), cluster.trackIndex().phi(), cluster.trackIndex().p(), cluster.trackIndex().pt());

@@ -36,7 +36,7 @@ class FemtoDreamEventHisto
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
     mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
-    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", kTH1F, {{200, 0, 200}});
   }
 
   /// Some basic QA of the event
@@ -47,8 +47,8 @@ class FemtoDreamEventHisto
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNtrPV());
       mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multV0M());
+      mHistogramRegistry->fill(HIST("Event/MultNTr"), col.multNtr());
     }
   }
 
