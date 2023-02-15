@@ -18,6 +18,8 @@
 # - input files
 # - warnings
 # - errors
+# If a missing tree is reported, the find_dependencies.py script is executed if possible,
+# otherwise corresponding instructions are provided.
 #
 # @author Vít Kučera <vit.kucera@cern.ch>, Inha University
 # @date 2023-02-15
@@ -61,6 +63,19 @@ PrintErrors() {
   -e "Error:" \
   -e "Error in " \
   "$LOG" | sort -u
+  # Try to get the producers of the missing table.
+  if grep -q "Couldn't get TTree " "$LOG"; then
+    table=$(grep "Couldn't get TTree " "$LOG" | cut -d\" -f2 | cut -d/ -f2)
+    table=${table:2} # Remove "O2"
+    if [ "$O2PHYSICS_ROOT" ]; then
+      echo -e "\nTrying to find the producers of the missing table: $table"
+      "$O2PHYSICS_ROOT/share/scripts/find_dependencies.py" -t "$table"
+    else
+      echo -e "\nTo find the producers of the missing table: $table"
+      echo "- Load the O2Physics environment"
+      echo "- Execute: \$O2PHYSICS_ROOT/share/scripts/find_dependencies.py -t $table"
+    fi
+  fi
 }
 
 # Print out a help message.
