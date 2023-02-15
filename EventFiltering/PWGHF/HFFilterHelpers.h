@@ -646,6 +646,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
 
 /// Basic selection of gamma candidates
 /// \param gamma is the gamma candidate
+/// \param minGammaCosinePA is the minimum required cosp of the gamma
 /// \param gammaCosinePA is the cosp of the gamma
 /// \param hGammaSelected is the pointer to the QA histo for selected gammas
 /// \param hGammaEtaBefore is the pointer to the QA histo for gamma eta before selection
@@ -654,7 +655,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
 /// \param hGammaArmPodAfter is the pointer to the QA histo AP plot before selection
 /// \return true if gamma passes all cuts
 template <typename T, typename H1, typename H2>
-bool isSelectedGamma(const T& gamma, const float& gammaCosinePA, const int& activateQA, H1 hGammaSelected, H1 hGammaEtaBefore, H1 hGammaEtaAfter, H2 hGammaArmPodBefore, H2 hGammaArmPodAfter)
+bool isSelectedGamma(const T& gamma, const float& minGammaCosinePA, const float& gammaCosinePA, const int& activateQA, H1 hGammaSelected, H1 hGammaEtaBefore, H1 hGammaEtaAfter, H2 hGammaArmPodBefore, H2 hGammaArmPodAfter)
 {
   if (activateQA > 1) {
     hGammaSelected->Fill(0);
@@ -685,7 +686,7 @@ bool isSelectedGamma(const T& gamma, const float& gammaCosinePA, const int& acti
     return false;
   }
 
-  if (gammaCosinePA < 0.85) {
+  if (gammaCosinePA < minGammaCosinePA) {
     if (activateQA > 1)
       hGammaSelected->Fill(5);
     return false;
