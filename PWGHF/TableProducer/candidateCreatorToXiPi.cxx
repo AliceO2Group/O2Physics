@@ -81,8 +81,6 @@ struct HfCandidateCreatorToXiPi {
   using MyCascTable = soa::Join<aod::CascDataExt, aod::CascCovs>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
-  OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
 
   void init(InitContext const&)
@@ -91,9 +89,6 @@ struct HfCandidateCreatorToXiPi {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
@@ -265,12 +260,6 @@ struct HfCandidateCreatorToXiPi {
         double dcaxyV0Dau1 = trackV0Dau1.dcaXY();
         double dcaxyCascDau = trackXiDauCharged.dcaXY();
 
-        hxVertexOmegac->Fill(vertexOmegacFromFitter[0]);
-
-        // primary pi  pT spectrum
-        double ptPrimaryPi = std::sqrt((pVecPionFromOmegac[0] * pVecPionFromOmegac[0]) + (pVecPionFromOmegac[1] * pVecPionFromOmegac[1]));
-        hPtPrimaryPi->Fill(ptPrimaryPi);
-
         // invariant mass under the hypothesis of particles ID corresponding to the decay chain
         double mLambda = v0Element.mLambda();         // from LF table, V0 mass under lambda hypothesis
         double mAntiLambda = v0Element.mAntiLambda(); // from LF table, V0 mass under anti-lambda hypothesis
@@ -336,7 +325,6 @@ struct HfCandidateCreatorToXiPi {
                      v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
                      casc.globalIndex(), trackPion.globalIndex(), trackXiDauCharged.globalIndex(),
                      impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
-                     ptPrimaryPi,
                      mLambda, mAntiLambda, mCasc, mOmegac,
                      cpaV0, cpaOmegac, cpaCasc, cpaxyV0, cpaxyOmegac, cpaxyCasc,
                      ctOmegac, ctCascade, ctV0, ctXic,
