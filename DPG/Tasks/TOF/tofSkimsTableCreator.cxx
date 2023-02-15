@@ -18,12 +18,9 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-/// O2Physics
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 
@@ -33,7 +30,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
-using namespace o2::dataformats;
 
 struct tofSkimsTableCreator {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
@@ -49,6 +45,7 @@ struct tofSkimsTableCreator {
   // Configurables
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
+  Configurable<unsigned int> randomSeed{"randomSeed", static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()), "Seed to initialize the random number generator"};
   Configurable<bool> keepTpcOnly{"keepTpcOnly", false, "Flag to keep the TPC only tracks as well"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
 
@@ -57,7 +54,7 @@ struct tofSkimsTableCreator {
   void process(Coll::iterator const& collision,
                Trks const& tracks)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed.value)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
     }
 
@@ -86,7 +83,7 @@ struct tofSkimsTableCreator {
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
 
-    int lastLayer = 0;
+    uint8_t lastTRDLayer = 0;
     for (auto const& trk : tracks) {
       switch (applyTrkSel.value) {
         case 0:
@@ -104,10 +101,10 @@ struct tofSkimsTableCreator {
         continue;
       }
 
-      lastLayer = 0;
-      for (int l = 7; l >= 0; l--) {
+      lastTRDLayer = 0;
+      for (uint8_t l = 7; l >= 0; l--) {
         if (trk.trdPattern() & (1 << l)) {
-          lastLayer = l;
+          lastTRDLayer = l;
           break;
         }
       }
@@ -129,12 +126,9 @@ struct tofSkimsTableCreator {
                evTimeT0ACErr,
                trk.tofFlags(),
                trk.hasTRD(),
-               lastLayer);
+               lastTRDLayer);
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<tofSkimsTableCreator>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSkimsTableCreator>(cfgc)}; }
