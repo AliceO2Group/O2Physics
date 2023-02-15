@@ -119,6 +119,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> ccdbBBAntiProton{"ccdbBBAntiProton", "Users/l/lserksny/PIDAntiProton", "Path to the CCDB ocject for antiproton BB param"};
   Configurable<std::string> ccdbBBPion{"ccdbBBPion", "Users/l/lserksny/PIDPion", "Path to the CCDB ocject for Pion BB param"};
   Configurable<std::string> ccdbBBAntiPion{"ccdbBBAntiPion", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiPion BB param"};
+  Configurable<std::string> ccdbBBKaon{"ccdbBBKaon", "Users/l/lserksny/PIDPion", "Path to the CCDB ocject for Kaon BB param"};
+  Configurable<std::string> ccdbBBAntiKaon{"ccdbBBAntiKaon", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiKaon BB param"};
 
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
@@ -149,6 +151,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<TH3F*, 2> hMapProton = {nullptr, nullptr};
   std::array<std::vector<double>, 2> hBBProton{};
   std::array<std::vector<double>, 2> hBBPion{};
+  std::array<std::vector<double>, 2> hBBKaon{};
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> inputShapesML{};
@@ -299,6 +302,8 @@ struct HfFilter { // Main struct for HF triggers
           hBBProton[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiProton);
           hBBPion[0] = setValuesBB(ccdbApi, bc, ccdbBBPion);
           hBBPion[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiPion);
+          hBBKaon[0] = setValuesBB(ccdbApi, bc, ccdbBBKaon);
+          hBBKaon[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiKaon);
         }
 
         currentRun = bc.runNumber();
@@ -321,7 +326,7 @@ struct HfFilter { // Main struct for HF triggers
         auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
         auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
 
-        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, setTPCCalib, hMapPion, hBBPion);
+        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, setTPCCalib, hMapPion, hBBPion, hBBKaon);
         if (!preselD0) {
           continue;
         }
@@ -554,13 +559,13 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         if (is3Prong[0]) { // D+ preselections
-          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBPion);
+          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBKaon);
         }
         if (is3Prong[1]) { // Ds preselections
-          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBPion);
+          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBKaon);
         }
         if (is3Prong[2] || is3Prong[3]) { // charm baryon preselections
-          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapProton, hBBProton, hMapPion, hBBPion);
+          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapProton, hBBProton, hMapPion, hBBKaon);
           if (is3Prong[2]) {
             is3Prong[2] = presel;
           }
