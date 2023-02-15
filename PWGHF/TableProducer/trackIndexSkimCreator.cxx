@@ -19,27 +19,29 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Inha University
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 
+#include <algorithm>
+
+#include "CCDB/BasicCCDBManager.h" // for PV refit
+#include "Common/Core/trackUtilities.h"
+// #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "DataFormatsParameters/GRPMagField.h" // for PV refit
+#include "DataFormatsParameters/GRPObject.h"   // for PV refit
+#include "DCAFitter/DCAFitterN.h"
+#include "DetectorsBase/GeometryManager.h"     // for PV refit
+#include "DetectorsBase/Propagator.h"          // for PV refit
+#include "DetectorsVertexing/PVertexer.h"      // for PV refit
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "ReconstructionDataFormats/V0.h"
+#include "Framework/runDataProcessing.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
-#include "DetectorsVertexing/PVertexer.h"      // for PV refit
-#include "ReconstructionDataFormats/Vertex.h"  // for PV refit
-#include "CCDB/BasicCCDBManager.h"             // for PV refit
-#include "DataFormatsParameters/GRPObject.h"   // for PV refit
-#include "DetectorsBase/Propagator.h"          // for PV refit
-#include "DetectorsBase/GeometryManager.h"     // for PV refit
-#include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "ReconstructionDataFormats/Vertex.h" // for PV refit
+#include "ReconstructionDataFormats/V0.h"
 
-#include <algorithm>
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -71,14 +73,6 @@ static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const double massProton = RecoDecay::getMassPDG(kProton);
 static const double massElectron = RecoDecay::getMassPDG(kElectron);
 static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionEvSel{"doTrigSel", VariantType::Bool, false, {"Apply trigger selection"}};
-  workflowOptions.push_back(optionEvSel);
-}
-
-#include "Framework/runDataProcessing.h"
 
 // #define MY_DEBUG
 
@@ -120,7 +114,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
     if (fillHistograms) {
-      const int nBinsEvents = 2 + EventRejection::NEventRejection;
+      constexpr int nBinsEvents = 2 + EventRejection::NEventRejection;
       std::string labels[nBinsEvents];
       labels[0] = "processed";
       labels[1] = "selected";
@@ -223,9 +217,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
     // fill table row
     rowSelectedCollision(statusCollision);
-  };
-
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", true);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
   void processNoTrigSel(aod::Collision const& collision)
@@ -250,9 +243,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
     // fill table row
     rowSelectedCollision(statusCollision);
-  };
-
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", false);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 };
 
 /// Track selection
@@ -673,7 +665,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         auto primVtxRefitted = vertexer.refitVertex(vecPvRefitContributorUsed, primVtx); // vertex refit
         // LOG(info) << "refit " << cnt << "/" << ntr << " result = " << primVtxRefitted.asString();
         if (debug) {
-          LOG(info) << "refit for track with global index " << (int)myTrack.globalIndex() << " " << primVtxRefitted.asString();
+          LOG(info) << "refit for track with global index " << static_cast<int>(myTrack.globalIndex()) << " " << primVtxRefitted.asString();
         }
         if (primVtxRefitted.getChi2() < 0) {
           if (debug) {
@@ -1390,7 +1382,7 @@ struct HfTrackIndexSkimCreator {
       }
       auto primVtxRefitted = vertexer.refitVertex(vecPvRefitContributorUsed, primVtx); // vertex refit
       // LOG(info) << "refit " << cnt << "/" << ntr << " result = " << primVtxRefitted.asString();
-      // LOG(info) << "refit for track with global index " << (int) myTrack.globalIndex() << " " << primVtxRefitted.asString();
+      // LOG(info) << "refit for track with global index " << static_cast<int>(myTrack.globalIndex()) << " " << primVtxRefitted.asString();
       if (primVtxRefitted.getChi2() < 0) {
         if (debug) {
           LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
@@ -1410,7 +1402,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("PvRefit/hChi2vsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
       }
 
-      for (int i = 0; i < (int)vecPvContributorGlobId.size(); i++) {
+      for (size_t i = 0; i < vecPvContributorGlobId.size(); i++) {
         vecPvRefitContributorUsed[i] = true; /// restore the tracks for the next PV refitting (probably not necessary here)
       }
 
@@ -2345,8 +2337,7 @@ struct HfTrackIndexSkimCreatorCascades {
   {
     // dummy
   }
-
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not do v0", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not skim HF -> V0 cascades", true);
 
   void processCascades(SelectedCollisions const& collisions,
                        aod::BCsWithTimestamps const&,
@@ -2543,7 +2534,7 @@ struct HfTrackIndexSkimCreatorCascades {
       }   // loop over tracks
     }     // loop over collisions
   }       // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim also V0", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim HF -> V0 cascades", false);
 };
 
 struct HfTrackIndexSkimCreatorLfCascades {
@@ -2614,7 +2605,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   void init(InitContext const&)
   {
-    if (!doprocessCascades) {
+    if (!doprocessLfCascades) {
       return;
     }
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = array{array{massXi, massPi},
@@ -2738,20 +2729,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
     return false;
   }
 
-  void processNoCascades(SelectedCollisions const&)
+  void processNoLfCascades(SelectedCollisions const&)
   {
     // dummy
   }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoLfCascades, "Do not skim LF cascades", true);
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoCascades, "Do not do cascade", true);
-
-  void processCascades(SelectedCollisions const& collisions,
-                       aod::BCsWithTimestamps const&,
-                       aod::V0sLinked const&,
-                       V0Full const&,
-                       aod::CascDataFull const& cascades,
-                       FilteredHfTrackAssocSel const& trackIndices,
-                       TracksWithPVRefitAndDCA const& tracks)
+  void processLfCascades(SelectedCollisions const& collisions,
+                         aod::BCsWithTimestamps const&,
+                         aod::V0sLinked const&,
+                         V0Full const&,
+                         aod::CascDataFull const& cascades,
+                         FilteredHfTrackAssocSel const& trackIndices,
+                         TracksWithPVRefitAndDCA const& tracks)
   {
     for (const auto& collision : collisions) {
 
@@ -2981,25 +2971,17 @@ struct HfTrackIndexSkimCreatorLfCascades {
       }   // loop over cascade
     }     // loop over collisions
   }       // process
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processCascades, "Skim also cascades", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processLfCascades, "Skim LF cascades", false);
 };
 
 //________________________________________________________________________________________________________________________
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-
-  const bool doTrigSel = cfgc.options().get<bool>("doTrigSel");
-  if (doTrigSel) {
-    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc));
-  } else {
-    workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
-  }
-
+  workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelCollisions>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorCascades>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimCreatorLfCascades>(cfgc));
-
   return workflow;
 }
