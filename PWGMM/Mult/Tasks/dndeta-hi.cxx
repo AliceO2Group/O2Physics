@@ -163,8 +163,6 @@ struct MultiplicityCounter {
   std::vector<int> usedTracksIds;
   void init(InitContext&)
   {
-    if (doprocessEventStat) {
-    }
     if (doprocessCountingWithCent) {
       registry.add({"Tracks/ProcessCounting/Centrality/Centrality", " ; centrality_FT0C (%) ", {HistType::kTH1F, {CentAxis}}});
       registry.add({"Tracks/ProcessCounting/Centrality/Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis, CentAxis}}});
@@ -364,7 +362,8 @@ struct MultiplicityCounter {
           }
         }
 
-        else { // without centrality
+        else {
+          // without centrality
           registry.fill(HIST("Events/Selection"), 2.);
           registry.fill(HIST("Tracks/ProcessCounting/Multiplicity"), multV0A, multT0A, multT0C);
 
