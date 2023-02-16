@@ -158,9 +158,7 @@ struct MultiplicityCounter {
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}
-    }};
+    {{"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}}};
 
   std::vector<int> usedTracksIds;
   void init(InitContext&)
@@ -484,7 +482,7 @@ struct MultiplicityCounter {
     Particles const& mcParticles,
     // aod::McParticles const& mcParticles,
     soa::Filtered<LabeledTracksEx> const&,
-    DaughterTracks const& ,
+    DaughterTracks const&,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
     for (auto& collision : collisions) {
