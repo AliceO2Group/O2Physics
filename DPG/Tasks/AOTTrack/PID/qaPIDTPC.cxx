@@ -91,10 +91,11 @@ struct tpcPidQa {
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
+  Configurable<float> minTPCNcls{"minTPCNcls", 0.f, "Minimum number or TPC Clusters for tracks"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
@@ -195,7 +196,6 @@ struct tpcPidQa {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec multAxis{1000, 0.f, 1000.f, "Track multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec phiAxis{phiBins, "#it{#phi}"};
@@ -213,8 +213,7 @@ struct tpcPidQa {
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
-    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
-    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
+    h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
 
     h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -227,7 +226,6 @@ struct tpcPidQa {
     for (int i = 0; i < 9; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
     }
-    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
     if (enableDeDxPlot) {
       if (splitSignalPerCharge) {
         histos.add("event/tpcsignal", "", kTH3F, {pAxis, dedxAxis, chargeAxis});
@@ -270,24 +268,12 @@ struct tpcPidQa {
       histos.fill(HIST("event/evsel"), 2);
     }
 
-    // Computing Multiplicity first
-    int ntracks = 0;
-    if constexpr (fillHistograms) {
-      for (auto t : tracks) {
-        if (applyTrackCut && !t.isGlobalTrack()) {
-          continue;
-        }
-        ntracks += 1;
-      }
-      histos.fill(HIST("event/evsel"), 3);
-    }
     if (abs(collision.posZ()) > 10.f) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 4);
+      histos.fill(HIST("event/evsel"), 3);
       histos.fill(HIST("event/vertexz"), collision.posZ());
-      histos.fill(HIST("event/trackmultiplicity"), ntracks);
     }
     return true;
   }
@@ -336,10 +322,20 @@ struct tpcPidQa {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  Filter eventFilter = (applyEvSel.node() == 0) ||
+                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
+                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
+  Filter trackFilter = ((trackSelection.node() == 0) ||
+                        ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                        ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter())) &&
+                       ((o2::aod::track::tpcNClsFindable - o2::aod::track::tpcNClsFindableMinusFound) > minTPCNcls);
+  using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::TrackSelection> const& tracks)
+               soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
@@ -413,13 +409,12 @@ struct tpcPidQa {
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                        \
-  void process##particleId(CollisionCandidate const& collision,                          \
-                           soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, \
-                                     inputPid> const& tracks)                            \
-  {                                                                                      \
-    processSingleParticle<PID::particleId, false, false>(collision, tracks);             \
-  }                                                                                      \
+#define makeProcessFunction(inputPid, particleId)                                             \
+  void process##particleId(CollisionCandidate const& collision,                               \
+                           soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                           \
+    processSingleParticle<PID::particleId, false, false>(collision, tracks);                  \
+  }                                                                                           \
   PROCESS_SWITCH(tpcPidQa, process##particleId, Form("Process for the %s hypothesis for TPC NSigma QA", #particleId), false);
 
   makeProcessFunction(aod::pidTPCEl, Electron);
@@ -434,13 +429,12 @@ struct tpcPidQa {
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                            \
-  void processFull##particleId(CollisionCandidate const& collision,                          \
-                               soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, \
-                                         inputPid> const& tracks)                            \
-  {                                                                                          \
-    processSingleParticle<PID::particleId, true, false>(collision, tracks);                  \
-  }                                                                                          \
+#define makeProcessFunction(inputPid, particleId)                                                 \
+  void processFull##particleId(CollisionCandidate const& collision,                               \
+                               soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                               \
+    processSingleParticle<PID::particleId, true, false>(collision, tracks);                       \
+  }                                                                                               \
   PROCESS_SWITCH(tpcPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
 
   makeProcessFunction(aod::pidTPCFullEl, Electron);
@@ -455,13 +449,13 @@ struct tpcPidQa {
 #undef makeProcessFunction
 
   // QA of full tables with TOF information
-#define makeProcessFunction(inputPid, inputPidTOF, particleId)                                                                            \
-  void processFullWithTOF##particleId(CollisionCandidate const& collision,                                                                \
-                                      soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, inputPid, inputPidTOF> const& tracks) \
-  {                                                                                                                                       \
-    processSingleParticle<PID::particleId, true, true>(collision, tracks);                                                                \
-  }                                                                                                                                       \
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOF##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
+#define makeProcessFunction(inputPid, inputPidTOF, particleId)                                                        \
+  void processFullWithTOF##particleId(CollisionCandidate const& collision,                                            \
+                                      soa::Filtered<soa::Join<TrackCandidates, inputPid, inputPidTOF>> const& tracks) \
+  {                                                                                                                   \
+    processSingleParticle<PID::particleId, true, true>(collision, tracks);                                            \
+  }                                                                                                                   \
+  PROCESS_SWITCH(tpcPidQa, processFullWithTOF##particleId, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #particleId), false);
 
   makeProcessFunction(aod::pidTPCFullEl, aod::pidTOFFullEl, Electron);
   makeProcessFunction(aod::pidTPCFullMu, aod::pidTOFFullMu, Muon);

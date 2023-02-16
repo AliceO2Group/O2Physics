@@ -683,7 +683,28 @@ struct QaEfficiency {
     h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
     h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
     h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
-    h->GetXaxis()->SetBinLabel(18, "Passed globalCut");
+    switch (globalTrackSelection) {
+      case 0:
+        h->GetXaxis()->SetBinLabel(18, "No extra selection");
+        break;
+      case 1:
+        h->GetXaxis()->SetBinLabel(18, "isGlobalTrack");
+        break;
+      case 2:
+        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoPtEta");
+        break;
+      case 3:
+        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoDCA");
+        break;
+      case 4:
+        h->GetXaxis()->SetBinLabel(18, "isQualityTrack");
+        break;
+      case 5:
+        h->GetXaxis()->SetBinLabel(18, "isInAcceptanceTrack");
+        break;
+      default:
+        LOG(fatal) << "Can't interpret track asked selection";
+    }
 
     for (int i = 0; i < nSpecies; i++) {
       h->GetXaxis()->SetBinLabel(19 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
