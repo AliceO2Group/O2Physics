@@ -761,7 +761,7 @@ struct qaMatchEff {
           case 211:
             specind = 2;
             break;
-	  case 321:
+          case 321:
             specind = 3;
             break;
           case 2212:
