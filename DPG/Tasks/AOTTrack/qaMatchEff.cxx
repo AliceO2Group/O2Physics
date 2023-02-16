@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -8,12 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+
 /// \file qaMatchEff.cxx
-/// \author Rosario Turrisi (rosario.turrisi@pd.infn.it)
-/// \author Mattia Faggin (mfaggin@cern.ch)
-/// \brief ITS-TPC track-matching efficiency check and primaries/secondaries
-/// analysis
+/// \brief ITS-TPC track matching and prim/sec separation checks
+///
+/// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
+/// \author Mattia Faggin <mattia.faggin@pd.infn.it>, UniPd & INFN-PD
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
@@ -33,8 +33,8 @@ struct qaMatchEff {
   //
   // histogram registry
   HistogramRegistry histos{
-      "Histos", 
-      {}, 
+      "Histos",
+      {},
       OutputObjHandlingPolicy::AnalysisObject};
   //
   // Track selections
@@ -118,8 +118,8 @@ struct qaMatchEff {
   //
   Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
   ConfigurableAxis thnd0{
-      "thnd0", 
-      {600, -3.0f, 3.0f}, 
+      "thnd0",
+      {600, -3.0f, 3.0f},
       "impact parameter in xy [cm]"};
   ConfigurableAxis thnPt{"thnPt", {30, 0.0f, 15.0f}, "pt [GeV/c]"};
   ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
@@ -129,8 +129,8 @@ struct qaMatchEff {
       {3, -0.5f, 2.5f},
       "0: primary, 1: physical secondary, 2: sec. from material"};
   ConfigurableAxis thnLabelSign{
-      "thnLabelSign", 
-      {3, -1.5f, 1.5f}, 
+      "thnLabelSign",
+      {3, -1.5f, 1.5f},
       "-1/+1 antip./particle"};
   ConfigurableAxis thnSpec{"thnSpec",
                            {5, 0.5f, 5.5f},
@@ -152,7 +152,7 @@ struct qaMatchEff {
   float trackPtInParamTPC = -1.;
   // Init function
   //
-  void init(InitContext &) 
+  void init(InitContext &)
   {
     if (doDebug)
       LOG(info) << "===========================================>>>>>>>>>>>>>>>>"
@@ -167,9 +167,9 @@ struct qaMatchEff {
 
     if ((!isitMC && (doprocessMC || doprocessMCNoColl)) ||
         (isitMC && (doprocessData && doprocessDataNoColl)))
-      LOGF(fatal, 
-	   "Initialization set for MC and processData function flagged "
-	   "(or viceversa)! Fix the configuration.");
+      LOGF(fatal,
+           "Initialization set for MC and processData function flagged "
+           "(or viceversa)! Fix the configuration.");
     if ((doprocessMC && doprocessMCNoColl) ||
         (doprocessData && doprocessDataNoColl))
       LOGF(fatal, 
