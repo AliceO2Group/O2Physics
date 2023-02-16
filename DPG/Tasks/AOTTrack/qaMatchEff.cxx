@@ -600,8 +600,8 @@ struct qaMatchEff {
   } // end initMC
 
   /// Function calculatind the pt at inner wall of TPC
-  template <typename T> 
-  float computePtInParamTPC(T &track) 
+  template <typename T>
+  float computePtInParamTPC(T &track)
   {
     /// Using pt calculated at the inner wall of TPC
     /// Caveat: tgl still from tracking: this is not the value of tgl at the
@@ -610,8 +610,8 @@ struct qaMatchEff {
   }
 
   /// Function applying the kinematic selections
-  template <typename T> 
-  bool isTrackSelectedKineCuts(T &track) 
+  template <typename T>
+  bool isTrackSelectedKineCuts(T &track)
   {
     if (!b_useTrackSelections)
       return true; // no track selections applied
@@ -633,8 +633,8 @@ struct qaMatchEff {
     return true;
   }
   /// Function applying the TPC selections
-  template <typename T> 
-  bool isTrackSelectedTPCCuts(T &track) 
+  template <typename T>
+  bool isTrackSelectedTPCCuts(T &track)
   {
     if (!b_useTrackSelections)
       return true; // no track selections applied
@@ -651,7 +651,7 @@ struct qaMatchEff {
     return true;
   }
   /// Function applying the ITS selections
-  template <typename T> 
+  template <typename T>
   bool isTrackSelectedITSCuts(T &track) {
     if (!b_useTrackSelections)
       return true; // no track selections applied
@@ -756,19 +756,19 @@ struct qaMatchEff {
         int signPDGCode = siPDGCode / tpPDGCode;
         switch (tpPDGCode) {
           case 11:
-	    specind = 1;
-	    break;
+            specind = 1;
+             break;
           case 211:
-	    specind = 2;
-	    break;
+            specind = 2;
+            break;
 	  case 321:
-	    specind = 3;
-	    break;
+            specind = 3;
+            break;
           case 2212:
-	    specind = 4;
-	    break;
+            specind = 4;
+            break;
           default:
-	    specind = 5;
+            specind = 5;
         }
         histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
                     jT.eta(), sayPrim, signPDGCode, specind);
@@ -1089,19 +1089,19 @@ struct qaMatchEff {
         int signPDGCode = siPDGCode / tpPDGCode;
         switch (tpPDGCode) {
           case 11:
-	    specind = 1;
-	    break;
+            specind = 1;
+            break;
           case 211:
-	    specind = 2;
-	    break;
+            specind = 2;
+            break;
           case 321:
-	    specind = 3;
-	    break;
+            specind = 3;
+            break;
           case 2212:
-	    specind = 4;
-	    break;
+            specind = 4;
+            break;
           default:
-	    specind = 5;
+            specind = 5;
         }
         histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
                     jT.eta(), sayPrim, signPDGCode, specind);
