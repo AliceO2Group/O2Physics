@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 #include <cmath>
 
 #include "CCDB/BasicCCDBManager.h"
@@ -54,7 +55,11 @@ struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
 
+  // Preslices
   Preslice<myGlobTracks> perCollision = o2::aod::track::collisionId;
+  Preslice<collEventSels> collisionsPerFoundBC = aod::evsel::foundBCId;
+  Preslice<filteredCells> cellsPerFoundBC = aod::calo::bcId;
+
   // Options for the clusterization
   // 1 corresponds to EMCAL cells based on the Run2 definition.
   Configurable<int> selectedCellType{"selectedCellType", 1, "EMCAL Cell type"};
@@ -78,19 +83,7 @@ struct EmcalCorrectionTask {
 
   std::vector<o2::aod::EMCALClusterDefinition> mClusterDefinitions;
   // QA
-  // NOTE: This is not comprehensive.
-  OutputObj<TH1F> hCellE{"hCellE"};
-  OutputObj<TH1I> hCellTowerID{"hCellTowerID"};
-  OutputObj<TH2F> hCellEtaPhi{"hCellEtaPhi"};
-  OutputObj<TH2I> hCellRowCol{"hCellRowCol"};
-  OutputObj<TH1F> hClusterE{"hClusterE"};
-  OutputObj<TH2F> hClusterEtaPhi{"hClusterEtaPhi"};
-  OutputObj<TH2F> hGlobalTrackEtaPhi{"hGlobalTrackEtaPhi"};
-  OutputObj<TH1I> hGlobalTrackMult{"hGlobalTrackMult"};
-  OutputObj<TH1I> hCollisionType{"hCollisionType"};
-  OutputObj<TH1I> hClusterType{"hClusterType"};
-  OutputObj<TH1I> hCollPerBC{"hCollPerBC"};
-  OutputObj<TH1I> hBC{"hBC"};
+  o2::framework::HistogramRegistry mHistManager{"EMCALCorrectionTaskQAHistograms"};
 
   void init(InitContext const&)
   {
@@ -145,25 +138,34 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Completed init!";
 
     // Setup QA hists.
-    hCellE.setObject(new TH1F("hCellE", "hCellE", 200, 0.0, 100));
-    hCellTowerID.setObject(new TH1I("hCellTowerID", "hCellTowerID", 20000, 0, 20000));
-    hCellEtaPhi.setObject(new TH2F("hCellEtaPhi", "hCellEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
+    // NOTE: This is not comprehensive.
+    using o2HistType = o2::framework::HistType;
+    using o2Axis = o2::framework::AxisSpec;
+    o2Axis energyAxis{200, 0., 100., "E (GeV)"},
+      etaAxis{160, -0.8, 0.8, "#eta"},
+      phiAxis{72, 0, 2 * 3.14159, "phi"};
+    mHistManager.add("hCellE", "hCellE", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1I, {{20000, 0, 20000}});
+    mHistManager.add("hCellEtaPhi", "hCellEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     // NOTE: Reversed column and row because it's more natural for presentation.
-    hCellRowCol.setObject(new TH2I("hCellRowCol", "hCellRowCol;Column;Row", 97, 0, 97, 600, 0, 600));
-    hClusterE.setObject(new TH1F("hClusterE", "hClusterE", 200, 0.0, 100));
-    hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
-    hGlobalTrackEtaPhi.setObject(new TH2F("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", 160, -0.8, 0.8, 72, 0, 2. * 3.14159));
-    hGlobalTrackMult.setObject(new TH1I("hGlobalTrackMult", "hGlobalTrackMult", 200, -0.5, 199.5));
-    hCollisionType.setObject(new TH1I("hCollisionType", "hCollisionType;;#it{count}", 3, -0.5, 2.5));
+    mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2I, {{97, 0, 97}, {600, 0, 600}});
+    mHistManager.add("hClusterE", "hClusterE", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
+    mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
+    mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", o2HistType::kTH1I, {{200, -0.5, 199.5, "N_{trk}"}});
+    mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", o2HistType::kTH1I, {{3, -0.5, 2.5}});
+    auto hCollisionType = mHistManager.get<TH1>(HIST("hCollisionType"));
     hCollisionType->GetXaxis()->SetBinLabel(1, "no collision");
     hCollisionType->GetXaxis()->SetBinLabel(2, "normal collision");
     hCollisionType->GetXaxis()->SetBinLabel(3, "mult. collisions");
-    hClusterType.setObject(new TH1I("hClusterType", "hClusterType;;#it{count}", 3, -0.5, 2.5));
+    mHistManager.add("hClusterType", "hClusterType;;#it{count}", o2HistType::kTH1I, {{3, -0.5, 2.5}});
+    auto hClusterType = mHistManager.get<TH1>(HIST("hClusterType"));
     hClusterType->GetXaxis()->SetBinLabel(1, "no collision");
     hClusterType->GetXaxis()->SetBinLabel(2, "normal collision");
     hClusterType->GetXaxis()->SetBinLabel(3, "mult. collisions");
-    hCollPerBC.setObject(new TH1I("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", 100, -0.5, 99.5));
-    hBC.setObject(new TH1I("hBC", "hBC;;#it{count}", 8, -0.5, 7.5));
+    mHistManager.add("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", o2HistType::kTH1I, {{100, -0.5, 99.5}});
+    mHistManager.add("hBC", "hBC;;#it{count}", o2HistType::kTH1I, {{8, -0.5, 7.5}});
+    auto hBC = mHistManager.get<TH1>(HIST("hBC"));
     hBC->GetXaxis()->SetBinLabel(1, "with EMCal cells");
     hBC->GetXaxis()->SetBinLabel(2, "with EMCal cells but no collision");
     hBC->GetXaxis()->SetBinLabel(3, "with EMCal cells and collision");
@@ -178,41 +180,10 @@ struct EmcalCorrectionTask {
   // void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
   // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
 
-  Preslice<collEventSels> collisionsPerFoundBC = aod::evsel::foundBCId;
-  // Use Preslice once binding node is available
-  // Preslice<filteredCells> calosPerFoundBC = aod::calo::BCId;
-
   //  Appears to need the BC to be accessed to be available in the collision table...
   void process(bcEvSels const& bcs, collEventSels const& collisions, myGlobTracks const& tracks, filteredCells const& cells)
   {
     LOG(debug) << "Starting process.";
-
-    // Preprocess cells
-    // Sort them according to BC indices, later made use of in the loop over BCs
-    // Struct must be a pair of vector of cells - vector of global indices of cells with 1-1 correspondence of vector
-    // indices between cell and cellindex
-    std::map<int, std::pair<std::shared_ptr<std::vector<o2::emcal::Cell>>, std::shared_ptr<std::vector<int64_t>>>> cellContainer;
-    LOG(detail) << "Input contains " << cells.size() << " Cells";
-    for (auto& cell : cells) {
-      auto bcGlobal = cell.bc_as<bcEvSels>().globalBC();
-      auto foundBC = cellContainer.find(bcGlobal);
-      std::shared_ptr<std::vector<o2::emcal::Cell>> cellsBC;
-      std::shared_ptr<std::vector<int64_t>> cellIndicesBC;
-      if (foundBC != cellContainer.end()) {
-        cellsBC = foundBC->second.first;
-        cellIndicesBC = foundBC->second.second;
-      } else {
-        cellsBC = std::make_shared<std::vector<o2::emcal::Cell>>();
-        cellIndicesBC = std::make_shared<std::vector<int64_t>>();
-        cellContainer[bcGlobal] = {cellsBC, cellIndicesBC};
-      }
-      cellsBC->emplace_back(cell.cellNumber(),
-                            cell.amplitude(),
-                            cell.time(),
-                            o2::emcal::intToChannelType(cell.cellType()));
-      cellIndicesBC->emplace_back(cell.globalIndex());
-    }
-    LOG(detail) << "Cells sorted, found " << cellContainer.size() << "BCs with EMCAL cells in TF";
 
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
@@ -223,65 +194,52 @@ struct EmcalCorrectionTask {
 
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
-      // auto cellsInBC = cells.sliceBy(calosPerFoundBC, bc.globalIndex());
+      auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
-      hBC->Fill(7);
-      auto foundCellsBC = cellContainer.find(bc.globalBC());
-      std::shared_ptr<std::vector<o2::emcal::Cell>> cellsBC;
-      std::shared_ptr<std::vector<int64_t>> cellIndicesBC;
-      if (foundCellsBC != cellContainer.end()) {
-        cellsBC = foundCellsBC->second.first;
-        cellIndicesBC = foundCellsBC->second.second;
-        // Counters for BCs with matched collisions
-        hBC->Fill(0);
-        if (collisionsInFoundBC.size() == 0) {
-          hBC->Fill(1);
-        } else if (collisionsInFoundBC.size() == 1) {
-          hBC->Fill(2);
-        } else {
-          hBC->Fill(3);
-        }
-      } else {
-        // Not EMCAL data in BC - only fill counters for BC with unmatched collisions
-        // Skip further processing of BC
+      if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
-        if (collisionsInFoundBC.size() == 0) {
-          hBC->Fill(4);
-        } else if (collisionsInFoundBC.size() == 1) {
-          hBC->Fill(5);
-        } else {
-          hBC->Fill(6);
-        }
+        countBC(bc.globalBC(), collisionsInFoundBC.size(), false);
         continue;
       }
-      LOG(detail) << "Number of cells for BC (CF): " << cellsBC->size();
-      nCellsProcessed += cellsBC->size();
+      // Counters for BCs with matched collisions
+      countBC(bc.globalBC(), collisionsInFoundBC.size(), true);
+      std::vector<o2::emcal::Cell> cellsBC;
+      std::vector<int64_t> cellIndicesBC;
+      for (auto& cell : cellsInBC) {
+        cellsBC.emplace_back(cell.cellNumber(),
+                             cell.amplitude(),
+                             cell.time(),
+                             o2::emcal::intToChannelType(cell.cellType()));
+        cellIndicesBC.emplace_back(cell.globalIndex());
+      }
+      LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
+      nCellsProcessed += cellsBC.size();
 
       // Cell QA
       // For convenience, use the clusterizer stored geometry to get the eta-phi
-      for (auto& cell : *cellsBC) {
-        hCellE->Fill(cell.getEnergy());
-        hCellTowerID->Fill(cell.getTower());
+      for (auto& cell : cellsBC) {
+        mHistManager.fill(HIST("hCellE"), cell.getEnergy());
+        mHistManager.fill(HIST("hCellTowerID"), cell.getTower());
         auto res = mClusterizers.at(0)->getGeometry()->EtaPhiFromIndex(cell.getTower());
-        hCellEtaPhi->Fill(std::get<0>(res), TVector2::Phi_0_2pi(std::get<1>(res)));
+        mHistManager.fill(HIST("hCellEtaPhi"), std::get<0>(res), TVector2::Phi_0_2pi(std::get<1>(res)));
         res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cell.getTower());
         // NOTE: Reversed column and row because it's more natural for presentation.
-        hCellRowCol->Fill(std::get<1>(res), std::get<0>(res));
+        mHistManager.fill(HIST("hCellRowCol"), std::get<1>(res), std::get<0>(res));
       }
 
       // TODO: Helpful for now, but should be removed.
       LOG(debug) << "Converted EMCAL cells";
-      for (auto& cell : *cellsBC) {
+      for (auto& cell : cellsBC) {
         LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
       }
 
-      // LOG(debug) << "Converted cells. Contains: " << mEmcalCells.size() << ". Originally " << cells.size() << ". About to run clusterizer.";
+      LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
       //  Run the clusterizers
       LOG(debug) << "Running clusterizers";
       Int_t i = 0;
       for (auto& clusterizer : mClusterizers) {
-        clusterizer->findClusters(*cellsBC);
+        clusterizer->findClusters(cellsBC);
 
         auto emcalClusters = clusterizer->getFoundClusters();
         auto emcalClustersInputIndices = clusterizer->getFoundClustersInputIndices();
@@ -292,7 +250,7 @@ struct EmcalCorrectionTask {
         mAnalysisClusters.clear();
         mClusterFactories.at(i)->reset();
         mClusterFactories.at(i)->setClustersContainer(*emcalClusters);
-        mClusterFactories.at(i)->setCellsContainer(*cellsBC);
+        mClusterFactories.at(i)->setCellsContainer(cellsBC);
         mClusterFactories.at(i)->setCellsIndicesContainer(*emcalClustersInputIndices);
 
         LOG(debug) << "Cluster factory set up.";
@@ -311,8 +269,8 @@ struct EmcalCorrectionTask {
         } else {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
-            hCollPerBC->Fill(1);
-            hCollisionType->Fill(1);
+            mHistManager.fill(HIST("hCollPerBC"), 1);
+            mHistManager.fill(HIST("hCollisionType"), 1);
             vx = col.posX();
             vy = col.posY();
             vz = col.posZ();
@@ -334,15 +292,15 @@ struct EmcalCorrectionTask {
               if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
                 trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
                 trackEta.emplace_back(track.trackEtaEmcal());
-                hGlobalTrackEtaPhi->Fill(track.trackEtaEmcal(), TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+                mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(), TVector2::Phi_0_2pi(track.trackPhiEmcal()));
               } else {
                 trackPhi.emplace_back(TVector2::Phi_0_2pi(track.phi()));
                 trackEta.emplace_back(track.eta());
-                hGlobalTrackEtaPhi->Fill(track.eta(), TVector2::Phi_0_2pi(track.phi()));
+                mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.eta(), TVector2::Phi_0_2pi(track.phi()));
               }
               trackGlobalIndex.emplace_back(track.globalIndex());
             }
-            hGlobalTrackMult->Fill(NTrack);
+            mHistManager.fill(HIST("hGlobalTrackMult"), NTrack);
 
             std::vector<double> clusterPhi;
             std::vector<double> clusterEta;
@@ -364,7 +322,6 @@ struct EmcalCorrectionTask {
 
             unsigned int k = 0;
             for (const auto& cluster : mAnalysisClusters) {
-
               // Determine the cluster eta, phi, correcting for the vertex position.
               auto pos = cluster.getGlobalPosition();
               pos = pos - math_utils::Point3D<float>{vx, vy, vz};
@@ -373,7 +330,7 @@ struct EmcalCorrectionTask {
 
               // save to table
               LOG(debug) << "Writing cluster definition " << static_cast<int>(mClusterDefinitions.at(i)) << " to table.";
-              hClusterType->Fill(1);
+              mHistManager.fill(HIST("hClusterType"), 1);
               clusters(col, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
                        cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
                        cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(i)));
@@ -383,11 +340,11 @@ struct EmcalCorrectionTask {
               for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
                 cellindex = cluster.getCellIndex(ncell);
                 LOG(debug) << "trying to find cell index " << cellindex << " in map";
-                clustercells(clusters.lastIndex(), cellIndicesBC->at(cellindex));
+                clustercells(clusters.lastIndex(), cellIndicesBC.at(cellindex));
               }
               // fill histograms
-              hClusterE->Fill(cluster.E());
-              hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
+              mHistManager.fill(HIST("hClusterE"), cluster.E());
+              mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
               for (unsigned int iTrack = 0; iTrack < clusterToTrackIndexMap[k].size(); iTrack++) {
                 if (clusterToTrackIndexMap[k][iTrack] >= 0) {
                   LOG(debug) << "Found track " << trackGlobalIndex[clusterToTrackIndexMap[k][iTrack]] << " in cluster " << cluster.getID();
@@ -404,12 +361,12 @@ struct EmcalCorrectionTask {
         if (!hasCollision) { // ambiguous
           bool hasNoCollision = false;
           // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
-          hCollPerBC->Fill(collisionsInFoundBC.size());
+          mHistManager.fill(HIST("hCollPerBC"), collisionsInFoundBC.size());
           if (collisionsInFoundBC.size() == 0) {
             hasNoCollision = true;
-            hCollisionType->Fill(0);
+            mHistManager.fill(HIST("hCollisionType"), 0);
           } else {
-            hCollisionType->Fill(2);
+            mHistManager.fill(HIST("hCollisionType"), 2);
           }
           int cellindex = -1;
           clustersAmbiguous.reserve(mAnalysisClusters.size());
@@ -423,9 +380,9 @@ struct EmcalCorrectionTask {
 
             // LOG(debug) << "Cluster E: " << cluster.E();
             if (hasNoCollision) {
-              hClusterType->Fill(0);
+              mHistManager.fill(HIST("hClusterType"), 0);
             } else {
-              hClusterType->Fill(2);
+              mHistManager.fill(HIST("hClusterType"), 2);
             }
             clustersAmbiguous(bc, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
                               cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
@@ -433,7 +390,7 @@ struct EmcalCorrectionTask {
             clustercellsambiguous.reserve(cluster.getNCells());
             for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
               cellindex = cluster.getCellIndex(ncell);
-              clustercellsambiguous(clustersAmbiguous.lastIndex(), cellIndicesBC->at(cellindex));
+              clustercellsambiguous(clustersAmbiguous.lastIndex(), cellIndicesBC.at(cellindex));
             }
           }
         }
@@ -444,6 +401,28 @@ struct EmcalCorrectionTask {
       nBCsProcessed++;
     }
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
+  }
+
+  void countBC(int bcID, int numberOfCollisions, bool hasEMCcells)
+  {
+    int emcDataOffset = hasEMCcells ? 0 : 3;
+    int collisionOffset = 2;
+    switch (numberOfCollisions) {
+      case 0:
+        collisionOffset = 0;
+        break;
+      case 1:
+        collisionOffset = 1;
+        break;
+      default:
+        collisionOffset = 2;
+        break;
+    }
+    mHistManager.fill(HIST("hBC"), 7); // All collisions
+    if (hasEMCcells) {
+      mHistManager.fill(HIST("hBC"), 0);
+    }
+    mHistManager.fill(HIST("hBC"), 1 + emcDataOffset + collisionOffset);
   }
 };
 
