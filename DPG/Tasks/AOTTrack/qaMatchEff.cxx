@@ -172,10 +172,10 @@ struct qaMatchEff {
            "(or viceversa)! Fix the configuration.");
     if ((doprocessMC && doprocessMCNoColl) ||
         (doprocessData && doprocessDataNoColl))
-      LOGF(fatal, 
-	   "Cannot process for both without collision tag and with "
-	   "collision tag at the same time! Fix the configuration.");
-
+      LOGF(fatal,
+           "Cannot process for both without collision tag and with "
+           "collision tag at the same time! Fix the configuration.");
+    //
     /// initialize the track selections
     if (b_useTrackSelections) {
       // kinematics
@@ -187,7 +187,7 @@ struct qaMatchEff {
       cutObject.SetMinNClustersTPC(tpcNClusterMin);
       cutObject.SetMinNCrossedRowsTPC(tpcNCrossedRowsMin);
       cutObject.SetMinNCrossedRowsOverFindableClustersTPC(
-	tpcNCrossedRowsOverFindableClstMin);
+        tpcNCrossedRowsOverFindableClstMin);
       cutObject.SetMaxChi2PerClusterTPC(tpcChi2Max);
       // ITS
       cutObject.SetMaxChi2PerClusterITS(itsChi2Max);
@@ -216,12 +216,12 @@ struct qaMatchEff {
   //
   //
   // Init Data function - define data histograms
-  void initData() 
+  void initData()
   {
     if (doDebug)
-      LOGF(info, 
-	   "*********************************************************** "
-	   "DATA  ***************************************************");
+      LOGF(info,
+           "*********************************************************** "
+           "DATA  ***************************************************");
     //
     // data histos
     //
@@ -305,9 +305,9 @@ struct qaMatchEff {
   // Init MC function
   void initMC() {
     if (doDebug)
-      LOGF(info, 
-	   " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    MC  "
-	   "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+      LOGF(info,
+           " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    MC  "
+           "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 
     //
     // adding histos to the registry
