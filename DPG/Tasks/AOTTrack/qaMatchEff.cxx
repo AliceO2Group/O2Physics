@@ -8,12 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \file qaMatchEff.cxx
-/// \brief ITS-TPC track matching and prim/sec separation checks
-///
-/// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
-/// \author Mattia Faggin <mattia.faggin@pd.infn.it>, UniPd & INFN-PD
+//
+/// \brief Checks on ITS-TPC track-matching efficiency and prim/sec fractions
+/// analysis \author Rosario Turrisi (rosario.turrisi@pd.infn.it) \author Mattia
+/// Faggin (mfaggin@cern.ch) \since 2022
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
@@ -52,6 +50,7 @@ struct qaMatchEff {
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
   Configurable<float> dcaXYMaxCut{"dcaXYMaxCut", 1000000.0f,
                                   "Maximum dcaXY (cm)"};
+  // Configurable<float> dcaMaxCut{"dcaMaxCut", 1000000.0f, "Maximum dca (cm)"};
   Configurable<bool> b_useTPCinnerWallPt{
       "b_useTPCinnerWallPt", false,
       "Boolean to switch the usage of pt calculated at the inner wall of TPC "
@@ -83,7 +82,7 @@ struct qaMatchEff {
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
   // Histogram configuration
   //
-  // histos axes limits
+  // histo x axes limits
   Configurable<float> etaMin{"eta-min", -2.0f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 2.0f, "Upper limit in eta"};
   Configurable<float> phiMin{"phi-min", 0.0f, "Lower limit in phi"};
@@ -121,11 +120,9 @@ struct qaMatchEff {
   ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
   ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
   ConfigurableAxis thnType{
-      "thnType",
-      {3, -0.5f, 2.5f},
-      "0: primary, 1: physical secondary, 2: sec. from material"};
+      "thnType", {3, -0.5f, 2.5f}, "0,1,2 -> primaries, phys. sec., mat. sec."};
   ConfigurableAxis thnLabelSign{
-      "thnLabelSign", {3, -1.5f, 1.5f}, "-1/+1 antip./particle"};
+      "thnLabelSign", {3, -1.5f, 1.5f}, "+/- -> part./antipart."};
   ConfigurableAxis thnSpec{"thnSpec",
                            {5, 0.5f, 5.5f},
                            "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
@@ -133,14 +130,15 @@ struct qaMatchEff {
   AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
   AxisSpec thnPhiAxis{thnPhi, "#varphi"};
   AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
-  AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
-  AxisSpec thnLabelSignAxis{thnLabelSign, "+/- 1 for part./antipart."};
+  AxisSpec thnTypeAxis{thnType, "0:prim/1:sec/2:matsec"};
+  AxisSpec thnLabelSignAxis{thnLabelSign, "-1/+1 antip./part."};
   AxisSpec thnSpecAxis{thnSpec,
                        "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
   //
   //
-  // Tracks selection object
+  // Track selection object
   TrackSelection cutObject;
+  //
   //
   // pt calculated at the inner wall of TPC
   float trackPtInParamTPC = -1.;
@@ -166,7 +164,7 @@ struct qaMatchEff {
         (doprocessData && doprocessDataNoColl))
       LOGF(fatal, "Cannot process for both without collision tag and with "
                   "collision tag at the same time! Fix the configuration.");
-    //
+
     /// initialize the track selections
     if (b_useTrackSelections) {
       // kinematics
