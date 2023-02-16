@@ -360,9 +360,7 @@ struct MultiplicityCounter {
             registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda(), cent);
             registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda(), cent);
           }
-        }
-
-        else {
+        } else {
           // without centrality
           registry.fill(HIST("Events/Selection"), 2.);
           registry.fill(HIST("Tracks/ProcessCounting/Multiplicity"), multV0A, multT0A, multT0C);
