@@ -895,13 +895,6 @@ struct AnalysisSameEventPairing {
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
-    if (fConfigUseKFVertexing.value) {
-      VarManager::SetupTwoProngKFParticle(5.0f);
-    } else {
-      VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-      VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
-    }
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
@@ -915,11 +908,19 @@ struct AnalysisSameEventPairing {
       } else {
         LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
       }
-      VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-      VarManager::SetupTwoProngFwdDCAFitter(mMagField, true, 200.0f, 1.0e-3f, 0.9f, true);
+      if (fConfigUseKFVertexing.value) {
+        VarManager::SetupTwoProngKFParticle(mMagField);
+      } else {
+        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
+        VarManager::SetupTwoProngFwdDCAFitter(mMagField, true, 200.0f, 1.0e-3f, 0.9f, true);
+      }
     } else {
-      VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-      VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, true, 200.0f, 1.0e-3f, 0.9f, true);
+      if (fConfigUseKFVertexing.value) {
+        VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
+      } else {
+        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
+        VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, true, 200.0f, 1.0e-3f, 0.9f, true);
+      }
     }
 
     TString cutNames = fConfigTrackCuts.value;
