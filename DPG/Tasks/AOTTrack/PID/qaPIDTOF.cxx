@@ -344,7 +344,6 @@ struct tofPidQa {
       histos.fill(HIST("event/evsel"), 2);
     }
 
-    // Computing Multiplicity first
     int tofmult = 0;
     float evtime = 0.f;
     float evtimereso = 0.f;

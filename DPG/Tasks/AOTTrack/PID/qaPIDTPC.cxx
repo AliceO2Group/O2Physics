@@ -95,6 +95,7 @@ struct tpcPidQa {
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
+  Configurable<float> minTPCNcls{"minTPCNcls", 0.f, "Minimum number or TPC Clusters for tracks"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
@@ -324,15 +325,16 @@ struct tpcPidQa {
   Filter eventFilter = (applyEvSel.node() == 0) ||
                        ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
                        ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
-  Filter trackFilter = (trackSelection.node() == 0) ||
-                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
-                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                       ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter());
+  Filter trackFilter = ((trackSelection.node() == 0) ||
+                        ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                        ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter())) &&
+                       ((o2::aod::track::tpcNClsFindable - o2::aod::track::tpcNClsFindableMinusFound) > minTPCNcls);
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-  void process(soa::Filtered<CollisionCandidate> const& collision,
+  void process(CollisionCandidate const& collision,
                soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
