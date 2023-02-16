@@ -536,7 +536,6 @@ struct QaImpactPar {
       o2::dataformats::VertexBase PVbase_recalculated;
       bool recalc_imppar = false;
       if (doPVrefit && PVrefit_doable) {
-        recalc_imppar = true;
         auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
         // if( it_trk==vec_globID_contr.end() ) {
         //   /// not found: this track did not contribute to the initial PV fitting
@@ -552,6 +551,9 @@ struct QaImpactPar {
           if (fDebug) {
             LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           }
+
+          /// enable the dca recalculation for the current PV contributor, after removing it from the PV refit
+          recalc_imppar = true;
 
           if (Pvtx_refitted.getChi2() < 0) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();

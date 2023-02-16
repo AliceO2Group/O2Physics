@@ -153,6 +153,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Px", "p_{x} distribution", false, 200, 0.0, 20.0, VarManager::kPx);
       hm->AddHistogram(histClass, "Py", "p_{y} distribution", false, 200, 0.0, 20.0, VarManager::kPy);
       hm->AddHistogram(histClass, "Pz", "p_{z} distribution", false, 200, 0.0, 20.0, VarManager::kPz);
+      hm->AddHistogram(histClass, "InvPt", "1/p_{T} distribution", false, 2000, 0.0, 20.0, VarManager::kInvPt);
     }
     if (subGroupStr.Contains("its")) {
       hm->AddHistogram(histClass, "ITSncls", "Number of cluster in ITS", false, 8, -0.5, 7.5, VarManager::kITSncls);

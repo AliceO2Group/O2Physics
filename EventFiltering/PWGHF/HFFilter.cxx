@@ -84,6 +84,9 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> femtoProtonOnlyTOF{"femtoProtonOnlyTOF", false, "Use only TOF information for proton identification if true"};
   Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum value for PID proton Nsigma for femto triggers"};
 
+  // parameters for photon triggers
+  Configurable<float> photonMinCosPA{"photonMinCosPA", 0.85, "Minimal required cosine of pointing angle for photons"};
+
   // parameters for ML application with ONNX
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
   Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "track pT bin limits for BDT cut"};
@@ -172,7 +175,7 @@ struct HfFilter { // Main struct for HF triggers
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
-    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p float charm", "w/ 2p and 3p float charm", "w/ 2p soft gamma", "w/ 3p soft gamma"};
+    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p double charm", "w/ 2p and 3p double charm", "w/ 2p soft gamma", "w/ 3p soft gamma"};
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
       hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
@@ -502,7 +505,7 @@ struct HfFilter { // Main struct for HF triggers
         for (auto& gamma : v0sThisCollision) {
           if (!keepEvent[kGammaCharm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || (TESTBIT(selD0, 1)))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
+            bool isGamma = isSelectedGamma(gamma, photonMinCosPA, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
             if (isGamma) {
               std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
               auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gammaVec}, std::array{massD0, massGamma});
@@ -737,7 +740,7 @@ struct HfFilter { // Main struct for HF triggers
         for (auto& gamma : v0sThisCollision) {
           if (!keepEvent[kGammaCharm3P] && (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && (TESTBIT(is3ProngInMass[kDs - 1], 0) || TESTBIT(is3ProngInMass[kDs - 1], 1))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
+            bool isGamma = isSelectedGamma(gamma, photonMinCosPA, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
             if (isGamma) {
               std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
               auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massDs, massGamma});

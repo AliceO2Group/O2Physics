@@ -250,6 +250,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventImpParam] = "b";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
+  fgVariableNames[kInvPt] = "1/p_{T}";
+  fgVariableUnits[kInvPt] = "1/(GeV/c)";
   fgVariableNames[kP] = "p";
   fgVariableUnits[kP] = "GeV/c";
   fgVariableNames[kPx] = "p_{x}";
