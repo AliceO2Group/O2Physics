@@ -155,13 +155,15 @@ struct tofOfflineCalib {
           if (track1.hasTRD()) {
             if (track2.tofChi2() < maxTOFChi2) {
               hGood->Fill(delta2 - delta1);
-            } else if (track2.tofChi2() > maxTOFChi2 + 2)
+            } else if (track2.tofChi2() > maxTOFChi2 + 2) {
               hBad->Fill(delta2 - delta1);
+            }
           } else {
             if (track2.tofChi2() < maxTOFChi2) {
               hGoodRefWithTRD->Fill(delta2 - delta1);
-            } else if (track2.tofChi2() > maxTOFChi2 + 2)
+            } else if (track2.tofChi2() > maxTOFChi2 + 2) {
               hBadRefWithTRD->Fill(delta2 - delta1);
+            }
           }
         }
         lastTRDLayer = -1;
