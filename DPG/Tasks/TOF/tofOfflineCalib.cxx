@@ -51,6 +51,8 @@ struct tofOfflineCalib {
   Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
   Configurable<bool> makeTable{"makeTable", false, "Make an output table"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<unsigned int> randomSeed{"randomSeed", static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()), "Seed to initialize the random number generator"};
   Configurable<float> pRefMin{"pRefMin", 0.6, "Reference momentum minimum"};
   Configurable<float> pRefMax{"pRefMax", 0.7, "Reference momentum maximum"};
   Configurable<float> maxTOFChi2{"maxTOFChi2", 5.f, "Maximum TOF Chi2 to accept tracks"};
@@ -72,12 +74,25 @@ struct tofOfflineCalib {
   }
 
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
+  using ResponseImplementation = o2::pid::tof::ExpTimes<soa::Filtered<Trks>::iterator, pid>;
 
-  void process(Coll::iterator const& collision,
-               Trks const& tracks,
+  Filter eventFilter = (applyEvSel.node() == 0) ||
+                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
+                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter());
+
+  void process(soa::Filtered<Coll>::iterator const& collision,
+               soa::Filtered<Trks> const& tracks,
                aod::BCs const&)
   {
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed.value)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+      return;
+    }
     histos.fill(HIST("events"), 0);
     if (!collision.sel8()) {
       return;
@@ -111,8 +126,7 @@ struct tofOfflineCalib {
 
     constexpr auto responsePi = ResponseImplementation<PID::Pion>();
 
-    uint8_t lastTRDLayer = 0;
-
+    int8_t lastTRDLayer = -1;
     for (auto& track1 : tracks) {
       if (!track1.isGlobalTrack()) {
         continue;
@@ -150,9 +164,9 @@ struct tofOfflineCalib {
               hBadRefWithTRD->Fill(delta2 - delta1);
           }
         }
-        lastTRDLayer = 0;
+        lastTRDLayer = -1;
         if (track2.hasTRD()) {
-          for (uint8_t l = 7; l >= 0; l--) {
+          for (int8_t l = 7; l >= 0; l--) {
             if (track2.trdPattern() & (1 << l)) {
               lastTRDLayer = l;
               break;
@@ -181,7 +195,6 @@ struct tofOfflineCalib {
                  evTimeT0AC,
                  evTimeT0ACErr,
                  track2.tofFlags(),
-                 track2.hasTRD(),
                  lastTRDLayer);
 
         // float doubleDelta = delta2 - delta1;
