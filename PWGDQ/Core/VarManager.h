@@ -435,8 +435,6 @@ class VarManager : public TObject
   {
     KFParticle::SetField(magField);
     fgUsedKF = true;
-    LOG(info) << "~~~~~~~~~~~~~~~~ It is using KFParticle !!!!!!!!!!!!!!!!!!!"
-              << " with fgUsedKF: " << fgUsedKF;
   }
 
   // Setup the 2 prong DCAFitterN
