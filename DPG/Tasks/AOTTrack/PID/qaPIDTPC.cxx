@@ -331,7 +331,7 @@ struct tpcPidQa {
                         ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                         ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                         ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter())) &&
-                       ((1 * o2::aod::track::tpcNClsFindable - 1 * o2::aod::track::tpcNClsFindableMinusFound) > minTPCNcls);
+                       (1.f * (1 * o2::aod::track::tpcNClsFindable - 1 * o2::aod::track::tpcNClsFindableMinusFound) > minTPCNcls);
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   void process(CollisionCandidate const& collision,
