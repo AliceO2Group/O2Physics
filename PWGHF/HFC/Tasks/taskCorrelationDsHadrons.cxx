@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskCorrelationDsHadrons.cxx
+/// \author Grazia Luparello <Grazia.Luparello@cern.ch>
+/// \author Samuele Cattaruzzi <Samuele.Cattaruzzi@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -28,19 +30,15 @@ using namespace o2::constants::math;
 namespace o2::aod
 {
 using DsHadronPairFull = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo>;
-} // namespace o2::aod
+}
 
-///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
-///
 double getDeltaPhi(double phiD, double phiHadron)
 {
   return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PIHalf);
 }
 
-///
 /// Returns phi of candidate/particle evaluated from x and y components of segment connecting primary and secondary vertices
-///
 double evaluatePhiByVertex(double xVertex1, double xVertex2, double yVertex1, double yVertex2)
 {
   return RecoDecay::phi(xVertex2 - xVertex1, yVertex2 - yVertex1);
@@ -57,39 +55,39 @@ const TString stringSideband = "sidebands;";
 const TString stringMCParticles = "MC gen - D,Hadron particles;";
 const TString stringMCReco = "MC reco - D,Hadron candidates ";
 
-const int npTBinsCorrelations = 8;
-const double pTBinsCorrelations[npTBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
-auto pTBinsCorrelations_v = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
-const double signalRegionInnerDefault[npTBinsCorrelations] = {1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440};
-const double signalRegionOuterDefault[npTBinsCorrelations] = {1.9920, 1.9920, 1.9920, 1.9920, 1.9920, 1.9920, 1.9920, 1.9920};
-const double sidebandLeftOuterDefault[npTBinsCorrelations] = {1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040};
-const double sidebandLeftInnerDefault[npTBinsCorrelations] = {1.9360, 1.9360, 1.9360, 1.9360, 1.9360, 1.9360, 1.9360, 1.9360};
-const double sidebandRightInnerDefault[npTBinsCorrelations] = {2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000};
-const double sidebandRightOuterDefault[npTBinsCorrelations] = {2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320};
-auto signalRegionInner_v = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
-auto signalRegionOuter_v = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
-auto sidebandLeftInner_v = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
-auto sidebandLeftOuter_v = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
-auto sidebandRightInner_v = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
-auto sidebandRightOuter_v = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
-const int npTBinsEfficiency = o2::analysis::hf_cuts_ds_to_k_k_pi::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsEfficiency};
+const int nBinsPtCorrelations = 8;
+const double pTBinsCorrelations[nBinsPtCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
+auto vecBinsPtCorrelations = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + nBinsPtCorrelations + 1};
+const double signalRegionInnerDefault[nBinsPtCorrelations] = {1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440};
+const double signalRegionOuterDefault[nBinsPtCorrelations] = {1.9920, 1.9920, 1.9920, 1.9920, 1.9920, 1.9920, 1.9920, 1.9920};
+const double sidebandLeftOuterDefault[nBinsPtCorrelations] = {1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040};
+const double sidebandLeftInnerDefault[nBinsPtCorrelations] = {1.9360, 1.9360, 1.9360, 1.9360, 1.9360, 1.9360, 1.9360, 1.9360};
+const double sidebandRightInnerDefault[nBinsPtCorrelations] = {2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000};
+const double sidebandRightOuterDefault[nBinsPtCorrelations] = {2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320};
+auto vecSignalRegionInner = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + nBinsPtCorrelations};
+auto vecSignalRegionOuter = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + nBinsPtCorrelations};
+auto vecSidebandLeftInner = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + nBinsPtCorrelations};
+auto vecSidebandLeftOuter = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nBinsPtCorrelations};
+auto vecSidebandRightInner = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nBinsPtCorrelations};
+auto vecSidebandRightOuter = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelations};
+const int nBinsPtEfficiency = o2::analysis::hf_cuts_ds_to_k_k_pi::nBinsPt;
+const double efficiencyDmesonDefault[nBinsPtEfficiency] = {};
+auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nBinsPtEfficiency};
 
 /// Ds-Hadron correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfTaskCorrelationDsHadrons {
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_ds_to_k_k_pi (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelations}, "pT bin limits for correlation plots"};
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
-  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
-  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
-  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInner_v}, "Inner values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
+  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{vecSignalRegionInner}, "Inner values of signal region vs pT"};
+  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{vecSignalRegionOuter}, "Outer values of signal region vs pT"};
+  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{vecSidebandLeftInner}, "Inner values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{vecSidebandLeftOuter}, "Outer values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{vecSidebandRightInner}, "Inner values of right sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{vecSidebandRightOuter}, "Outer values of right sideband vs pT"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D meson specie under study"};
 
   HistogramRegistry registry{
     "registry",
@@ -142,7 +140,7 @@ struct HfTaskCorrelationDsHadrons {
 
   void processData(aod::DsHadronPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (auto const& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -155,7 +153,7 @@ struct HfTaskCorrelationDsHadrons {
       if (pTBinD < 0 || effBinD < 0) {
         continue;
       }
-      if (ptHadron > 10.0) { //??
+      if (ptHadron > 10.0) { // all Hadrons with pT > 10 are put in the 11th bin of the axis of the histograms filled with them
         ptHadron = 10.5;
       }
       double efficiencyWeight = 1.;
@@ -188,7 +186,7 @@ struct HfTaskCorrelationDsHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRec(aod::DsHadronPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (auto const& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -200,7 +198,7 @@ struct HfTaskCorrelationDsHadrons {
       if (pTBinD < 0 || effBinD < 0) {
         continue;
       }
-      if (ptHadron > 10.0) {
+      if (ptHadron > 10.0) { // all Hadrons with pT > 10 are put in the 11th bin of the axis of the histograms filled with them
         ptHadron = 10.5;
       }
       double efficiencyWeight = 1.;
@@ -240,7 +238,7 @@ struct HfTaskCorrelationDsHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(aod::DsHadronPair const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (auto const& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -250,7 +248,7 @@ struct HfTaskCorrelationDsHadrons {
       if (o2::analysis::findBin(binsPtCorrelations, ptD) < 0) {
         continue;
       }
-      if (ptHadron > 10.0) {
+      if (ptHadron > 10.0) { // all Hadrons with pT > 10 are put in the 11th bin of the axis of the histograms filled with them
         ptHadron = 10.5;
       }
 

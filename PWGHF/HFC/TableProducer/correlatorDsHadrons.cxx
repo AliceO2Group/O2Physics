@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorDsHadrons.cxx
+/// \author Grazia Luparello <grazia.luparello@cern.ch>
+/// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -28,16 +30,15 @@ using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
 using namespace o2::constants::math;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
-
 double getDeltaPhi(double phiD, double phiHadron)
 {
   return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PIHalf);
 }
 
 /// definition of variables for Ds hadron pairs (in data-like, MC-reco and MC-kine tasks)
-const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_ds_to_k_k_pi::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
+const int nBinsPtMassAndEfficiency = o2::analysis::hf_cuts_ds_to_k_k_pi::nBinsPt;
+const double efficiencyDmesonDefault[nBinsPtMassAndEfficiency] = {};
+auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nBinsPtMassAndEfficiency};
 
 // histogram binning definition
 const int massAxisBins = 300;
@@ -72,7 +73,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Ds meson"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for Ds meson"};
 
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>> selectedDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
@@ -192,7 +193,6 @@ struct HfCorrelatorDsHadrons {
       }   // end outer Ds loop
     }
   }
-
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processData, "Process data", true);
 
   /// Ds-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
@@ -285,16 +285,15 @@ struct HfCorrelatorDsHadrons {
       } // end outer Ds loop
     }
   }
-
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcRec, "Process MC Reco mode", false);
 
   /// Ds-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mccollision, MCParticlesPlus3Prong const& particlesMC)
+  void processMcGen(aod::McCollision const&, MCParticlesPlus3Prong const& particlesMc)
   {
     int counterDsHadron = 0;
-    registry.fill(HIST("hMCEvtCount"), 0); //??
+    registry.fill(HIST("hMCEvtCount"), 0);
     // MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (auto const& particle1 : particlesMc) {
       // check if the particle is Ds  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -318,7 +317,7 @@ struct HfCorrelatorDsHadrons {
       }
       registry.fill(HIST("hcountDstriggersMCGen"), 0, particle1.pt()); // to count trigger Ds for normalisation
 
-      for (auto& particle2 : particlesMC) {
+      for (auto const& particle2 : particlesMc) {
         if (std::abs(particle2.eta()) > etaTrackMax) {
           continue;
         }
@@ -326,7 +325,7 @@ struct HfCorrelatorDsHadrons {
           continue;
         }
 
-        if ((std::abs(particle2.pdgCode()) != 11) && (std::abs(particle2.pdgCode()) != 13) && (std::abs(particle2.pdgCode()) != 211) && (std::abs(particle2.pdgCode()) != 321) && (std::abs(particle2.pdgCode()) != 2212)) {
+        if ((std::abs(particle2.pdgCode()) != kElectron) && (std::abs(particle2.pdgCode()) != kMuonMinus) && (std::abs(particle2.pdgCode()) != kPiPlus) && (std::abs(particle2.pdgCode()) != kKPlus) && (std::abs(particle2.pdgCode()) != kProton)) {
           continue;
         }
 
