@@ -923,7 +923,7 @@ class RecoDecay
     return true;
   }
 
-  /// Finds the origin (from charm hadronisation or beauty-hadron decay) of charm hadrons. It can be used also to verify whether a hadron derives from charm or beauty decay.
+  /// Finds the origin (from charm hadronisation or beauty-hadron decay) of charm hadrons. It can be used also to verify whether a particle derives from a charm or beauty decay.
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on the presence of a b-hadron or c-hadron, with c-hadrons themselves marked as prompt
