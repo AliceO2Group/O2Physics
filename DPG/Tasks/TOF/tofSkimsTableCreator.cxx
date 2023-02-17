@@ -45,12 +45,13 @@ struct tofSkimsTableCreator {
   // Configurables
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-  Configurable<unsigned int> randomSeed{"randomSeed", static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()), "Seed to initialize the random number generator"};
   Configurable<bool> keepTpcOnly{"keepTpcOnly", false, "Flag to keep the TPC only tracks as well"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
 
+  unsigned int randomSeed = 0;
   void init(o2::framework::InitContext& initContext)
   {
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     switch (applyEvSel.value) {
       case 0:
       case 1:
@@ -87,7 +88,7 @@ struct tofSkimsTableCreator {
   void process(soa::Filtered<Coll>::iterator const& collision,
                soa::Filtered<Trks> const& tracks)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed.value)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
     }
     tableRow.reserve(tracks.size());
@@ -129,6 +130,11 @@ struct tofSkimsTableCreator {
                evTimeT0AC,
                evTimeT0ACErr,
                trk.tofFlags(),
+               trk.tpcInnerParam(),
+               trk.tpcNClsFindable(),
+               trk.tpcNClsFindableMinusFound(),
+               trk.tpcNClsFindableMinusCrossedRows(),
+               trk.tpcNClsShared(),
                lastTRDLayer);
     }
   }
