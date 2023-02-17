@@ -315,7 +315,7 @@ struct EmcalCorrectionTask {
               clusterPhi.emplace_back(TVector2::Phi_0_2pi(pos.Phi()));
               clusterEta.emplace_back(pos.Eta());
             }
-            auto&& [clusterToTrackIndexMap, trackToClusterIndexMap] = JetUtilities::MatchClustersAndTracks(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 10);
+            auto&& [clusterToTrackIndexMap, trackToClusterIndexMap] = JetUtilities::MatchClustersAndTracks(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 20);
             // we found a collision, put the clusters into the none ambiguous table
             clusters.reserve(mAnalysisClusters.size());
             int cellindex = -1;
