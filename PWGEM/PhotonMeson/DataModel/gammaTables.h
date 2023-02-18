@@ -238,50 +238,45 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
-namespace gammacaloreco
+namespace skimmedcluster
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
 DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
 DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
-DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
-DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(E, e, float);                                       //! cluster energy (GeV)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
 DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
 DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
 DECLARE_SOA_COLUMN(M20, m20, float);                                   //! shower shape short axis
 DECLARE_SOA_COLUMN(NCells, nCells, int);                               //! number of cells in cluster
 DECLARE_SOA_COLUMN(Time, time, float);                                 //! cluster time (ns)
-DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
 DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
-DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
-// DECLARE_SOA_INDEX_COLUMN(Calo, calo);                                  //! linked to calo cells
-// DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
-// DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! transverse momentum of a photon candidate 2
-//                               (gammacaloreco::energy * 2.f) / (nexp(gammacaloreco::eta) + nexp(gammacaloreco::eta * -1.f)));
-// DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pz, float E) { return atanh(pz / E); });  //! pseudorapidity of the cluster
-// DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) { return atan2(py, px); }); //! phi angle of the cluster
-} // namespace gammacaloreco
-DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimmed EMCal clusters
-                  o2::soa::Index<>, gammacaloreco::CollisionId, gammacaloreco::ID, gammacaloreco::Energy, gammacaloreco::CoreEnergy,
-                  gammacaloreco::Eta, gammacaloreco::Phi, gammacaloreco::M02, gammacaloreco::M20, gammacaloreco::NCells, gammacaloreco::Time,
-                  gammacaloreco::IsExotic, gammacaloreco::DistanceToBadChannel, gammacaloreco::NLM, gammacaloreco::Definition);
+} // namespace skimmedcluster
 
+namespace emccluster
+{
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                        //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(Time, time, float);                                                                                    //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                             //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(Definition, definition, int);                                                                          //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
+// DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! transverse momentum of a photon candidate
+//                               (emccluster::energy * 2.f) / (nexp(emccluster::eta) + nexp(emccluster::eta * -1.f)));
+} // namespace emccluster
+DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimmed EMCal clusters
+                  o2::soa::Index<>, skimmedcluster::CollisionId, skimmedcluster::BCId, skimmedcluster::E, emccluster::CoreEnergy,
+                  skimmedcluster::Eta, skimmedcluster::Phi, skimmedcluster::M02, skimmedcluster::M20, skimmedcluster::NCells, skimmedcluster::Time,
+                  emccluster::IsExotic, skimmedcluster::DistanceToBadChannel, skimmedcluster::NLM, emccluster::Definition,
+                  // dynamic column
+                  emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+using SkimEMCCluster = SkimEMCClusters::iterator;
 namespace phoscluster
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                     //! collisionID used as index for matched clusters
-DECLARE_SOA_INDEX_COLUMN(BC, bc);                                                   //! bunch crossing ID used as index for ambiguous clusters
 DECLARE_SOA_INDEX_COLUMN_FULL(MatchedTrack, matchedTrack, int, Tracks, "_Matched"); //! matched track index
-DECLARE_SOA_COLUMN(E, e, float);                                                    //! cluster energy (GeV)
 DECLARE_SOA_COLUMN(X, x, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Y, y, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Z, z, float);                                                    //! cluster hit position in ALICE global coordinate
-DECLARE_SOA_COLUMN(M02, m02, float);                                                //! shower shape long axis
-DECLARE_SOA_COLUMN(M20, m20, float);                                                //! shower shape short axis
-DECLARE_SOA_COLUMN(NCells, nCells, int);                                            //! number of cells in cluster
-DECLARE_SOA_COLUMN(Time, time, float);                                              //! cluster time (ns)
-DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float);              //! distance to bad channel in cm
-DECLARE_SOA_COLUMN(NLM, nlm, int);                                                  //! number of local maxima
 // DECLARE_SOA_COLUMN(TrackEta, tracketa, float);                                      //! eta of the matched track
 // DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
 // DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
@@ -295,39 +290,39 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float x, float y) -> float { return Reco
 } // namespace phoscluster
 
 DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
-                  o2::soa::Index<>, phoscluster::CollisionId, phoscluster::MatchedTrackId,
-                  phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
-                  phoscluster::M02, phoscluster::M20, phoscluster::NCells,
-                  phoscluster::Time, phoscluster::DistanceToBadChannel, phoscluster::NLM,
+                  o2::soa::Index<>, skimmedcluster::CollisionId, phoscluster::MatchedTrackId,
+                  skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
+                  skimmedcluster::M02, skimmedcluster::M20, skimmedcluster::NCells,
+                  skimmedcluster::Time, skimmedcluster::DistanceToBadChannel, skimmedcluster::NLM,
                   // phoscluster::TrackEta, phoscluster::TrackPhi, phoscluster::TrackP, phoscluster::TrackPt,
                   // dynamic column
-                  phoscluster::Px<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
-                  phoscluster::Py<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
-                  phoscluster::Pz<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
-                  phoscluster::Pt<phoscluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Px<skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Py<skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Pz<skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
+                  phoscluster::Pt<skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
                   phoscluster::Eta<phoscluster::X, phoscluster::Y, phoscluster::Z>,
                   phoscluster::Phi<phoscluster::X, phoscluster::Y>);
 using PHOSCluster = PHOSClusters::iterator;
 
-using SkimEMCCluster = SkimEMCClusters::iterator;
-
-namespace gammacellsreco
+namespace caloextra
 {
-DECLARE_SOA_INDEX_COLUMN(SkimEMCCluster, skimEMCCluster); //! SkimEMCClusterID
-DECLARE_SOA_INDEX_COLUMN(Calo, calo);                     //! CaloID (CellID)
-// DECLARE_SOA_INDEX_COLUMN(Track, track);                   //! CaloID (CellID)
+DECLARE_SOA_INDEX_COLUMN_FULL(Cluster, cluster, int, SkimEMCClusters, ""); //! reference to the gamma in the skimmed EMCal table
+DECLARE_SOA_INDEX_COLUMN_FULL(Cell, cell, int, Calos, "");                 //! reference to the gamma in the skimmed EMCal table
+// DECLARE_SOA_INDEX_COLUMN(Track, track);                   //! TrackID
 DECLARE_SOA_COLUMN(TrackEta, tracketa, float); //! eta of the matched track
 DECLARE_SOA_COLUMN(TrackPhi, trackphi, float); //! phi of the matched track
 DECLARE_SOA_COLUMN(TrackP, trackp, float);     //! momentum of the matched track
 DECLARE_SOA_COLUMN(TrackPt, trackpt, float);   //! pt of the matched track
-} // namespace gammacellsreco
+} // namespace caloextra
 
-DECLARE_SOA_TABLE(SkimEMCCells, "AOD", "SKIMEMCCELLS",                                         //! table of link between skimmed EMCal clusters and their cells
-                  o2::soa::Index<>, gammacellsreco::SkimEMCClusterId, gammacellsreco::CaloId); //!
+DECLARE_SOA_TABLE(SkimEMCCells, "AOD", "SKIMEMCCELLS",                        //! table of link between skimmed EMCal clusters and their cells
+                  o2::soa::Index<>, caloextra::ClusterId, caloextra::CellId); //!
+using SkimEMCCell = SkimEMCCells::iterator;
 
 DECLARE_SOA_TABLE(SkimEMCMTs, "AOD", "SKIMEMCMTS", //! table of link between skimmed EMCal clusters and their matched tracks
-                  o2::soa::Index<>, gammacellsreco::SkimEMCClusterId, gammacellsreco::TrackEta,
-                  gammacellsreco::TrackPhi, gammacellsreco::TrackP, gammacellsreco::TrackPt);
+                  o2::soa::Index<>, caloextra::ClusterId, caloextra::TrackEta,
+                  caloextra::TrackPhi, caloextra::TrackP, caloextra::TrackPt);
+using SkimEMCMT = SkimEMCMTs::iterator;
 
 namespace gammareco
 {
@@ -340,8 +335,8 @@ DECLARE_SOA_COLUMN(PHOSCutBit, phoscutbit, uint64_t);                           
 DECLARE_SOA_COLUMN(EMCCutBit, emccutbit, uint64_t);                              //! cut bit for EMCal photon candidates
 } // namespace gammareco
 DECLARE_SOA_TABLE(SkimGammas, "AOD", "SKIMGAMMAS", //! table of all gamma candidates (PCM, EMCal and PHOS) after cuts
-                  o2::soa::Index<>, gammacaloreco::CollisionId, gammareco::Method,
-                  gammacaloreco::Energy, gammacaloreco::Eta, gammacaloreco::Phi,
+                  o2::soa::Index<>, skimmedcluster::CollisionId, gammareco::Method,
+                  skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
                   gammareco::SkimmedEMCId, gammareco::SkimmedPHOSId);
 DECLARE_SOA_TABLE(SkimPCMCuts, "AOD", "SKIMPCMCUTS",                                  //! table of link between skimmed PCM photon candidates and their cuts
                   o2::soa::Index<>, gammareco::SkimmedPCMId, gammareco::PCMCutBit);   //!

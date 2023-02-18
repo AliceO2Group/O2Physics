@@ -279,6 +279,32 @@ struct QaEfficiency {
                                                                   "MC/ka/neg/eta/generated", "MC/pr/neg/eta/generated", "MC/de/neg/eta/generated",
                                                                   "MC/tr/neg/eta/generated", "MC/he/neg/eta/generated", "MC/al/neg/eta/generated"};
 
+  // Eta for primaries
+  static constexpr std::string_view hEtaItsTpcPrm[nHistograms] = {"MC/el/pos/eta/prm/its_tpc", "MC/mu/pos/eta/prm/its_tpc", "MC/pi/pos/eta/prm/its_tpc",
+                                                                  "MC/ka/pos/eta/prm/its_tpc", "MC/pr/pos/eta/prm/its_tpc", "MC/de/pos/eta/prm/its_tpc",
+                                                                  "MC/tr/pos/eta/prm/its_tpc", "MC/he/pos/eta/prm/its_tpc", "MC/al/pos/eta/prm/its_tpc",
+                                                                  "MC/el/neg/eta/prm/its_tpc", "MC/mu/neg/eta/prm/its_tpc", "MC/pi/neg/eta/prm/its_tpc",
+                                                                  "MC/ka/neg/eta/prm/its_tpc", "MC/pr/neg/eta/prm/its_tpc", "MC/de/neg/eta/prm/its_tpc",
+                                                                  "MC/tr/neg/eta/prm/its_tpc", "MC/he/neg/eta/prm/its_tpc", "MC/al/neg/eta/prm/its_tpc"};
+  static constexpr std::string_view hEtaTrkItsTpcPrm[nHistograms] = {"MC/el/pos/eta/prm/trk/its_tpc", "MC/mu/pos/eta/prm/trk/its_tpc", "MC/pi/pos/eta/prm/trk/its_tpc",
+                                                                     "MC/ka/pos/eta/prm/trk/its_tpc", "MC/pr/pos/eta/prm/trk/its_tpc", "MC/de/pos/eta/prm/trk/its_tpc",
+                                                                     "MC/tr/pos/eta/prm/trk/its_tpc", "MC/he/pos/eta/prm/trk/its_tpc", "MC/al/pos/eta/prm/trk/its_tpc",
+                                                                     "MC/el/neg/eta/prm/trk/its_tpc", "MC/mu/neg/eta/prm/trk/its_tpc", "MC/pi/neg/eta/prm/trk/its_tpc",
+                                                                     "MC/ka/neg/eta/prm/trk/its_tpc", "MC/pr/neg/eta/prm/trk/its_tpc", "MC/de/neg/eta/prm/trk/its_tpc",
+                                                                     "MC/tr/neg/eta/prm/trk/its_tpc", "MC/he/neg/eta/prm/trk/its_tpc", "MC/al/neg/eta/prm/trk/its_tpc"};
+  static constexpr std::string_view hEtaItsTpcTofPrm[nHistograms] = {"MC/el/pos/eta/prm/its_tpc_tof", "MC/mu/pos/eta/prm/its_tpc_tof", "MC/pi/pos/eta/prm/its_tpc_tof",
+                                                                     "MC/ka/pos/eta/prm/its_tpc_tof", "MC/pr/pos/eta/prm/its_tpc_tof", "MC/de/pos/eta/prm/its_tpc_tof",
+                                                                     "MC/tr/pos/eta/prm/its_tpc_tof", "MC/he/pos/eta/prm/its_tpc_tof", "MC/al/pos/eta/prm/its_tpc_tof",
+                                                                     "MC/el/neg/eta/prm/its_tpc_tof", "MC/mu/neg/eta/prm/its_tpc_tof", "MC/pi/neg/eta/prm/its_tpc_tof",
+                                                                     "MC/ka/neg/eta/prm/its_tpc_tof", "MC/pr/neg/eta/prm/its_tpc_tof", "MC/de/neg/eta/prm/its_tpc_tof",
+                                                                     "MC/tr/neg/eta/prm/its_tpc_tof", "MC/he/neg/eta/prm/its_tpc_tof", "MC/al/neg/eta/prm/its_tpc_tof"};
+  static constexpr std::string_view hEtaGeneratedPrm[nHistograms] = {"MC/el/pos/eta/prm/generated", "MC/mu/pos/eta/prm/generated", "MC/pi/pos/eta/prm/generated",
+                                                                     "MC/ka/pos/eta/prm/generated", "MC/pr/pos/eta/prm/generated", "MC/de/pos/eta/prm/generated",
+                                                                     "MC/tr/pos/eta/prm/generated", "MC/he/pos/eta/prm/generated", "MC/al/pos/eta/prm/generated",
+                                                                     "MC/el/neg/eta/prm/generated", "MC/mu/neg/eta/prm/generated", "MC/pi/neg/eta/prm/generated",
+                                                                     "MC/ka/neg/eta/prm/generated", "MC/pr/neg/eta/prm/generated", "MC/de/neg/eta/prm/generated",
+                                                                     "MC/tr/neg/eta/prm/generated", "MC/he/neg/eta/prm/generated", "MC/al/neg/eta/prm/generated"};
+
   // Y
   static constexpr std::string_view hYItsTpc[nHistograms] = {"MC/el/pos/y/its_tpc", "MC/mu/pos/y/its_tpc", "MC/pi/pos/y/its_tpc",
                                                              "MC/ka/pos/y/its_tpc", "MC/pr/pos/y/its_tpc", "MC/de/pos/y/its_tpc",
@@ -324,6 +350,32 @@ struct QaEfficiency {
                                                                   "MC/el/neg/phi/generated", "MC/mu/neg/phi/generated", "MC/pi/neg/phi/generated",
                                                                   "MC/ka/neg/phi/generated", "MC/pr/neg/phi/generated", "MC/de/neg/phi/generated",
                                                                   "MC/tr/neg/phi/generated", "MC/he/neg/phi/generated", "MC/al/neg/phi/generated"};
+
+  // Phi for primaries
+  static constexpr std::string_view hPhiItsTpcPrm[nHistograms] = {"MC/el/pos/phi/prm/its_tpc", "MC/mu/pos/phi/prm/its_tpc", "MC/pi/pos/phi/prm/its_tpc",
+                                                                  "MC/ka/pos/phi/prm/its_tpc", "MC/pr/pos/phi/prm/its_tpc", "MC/de/pos/phi/prm/its_tpc",
+                                                                  "MC/tr/pos/phi/prm/its_tpc", "MC/he/pos/phi/prm/its_tpc", "MC/al/pos/phi/prm/its_tpc",
+                                                                  "MC/el/neg/phi/prm/its_tpc", "MC/mu/neg/phi/prm/its_tpc", "MC/pi/neg/phi/prm/its_tpc",
+                                                                  "MC/ka/neg/phi/prm/its_tpc", "MC/pr/neg/phi/prm/its_tpc", "MC/de/neg/phi/prm/its_tpc",
+                                                                  "MC/tr/neg/phi/prm/its_tpc", "MC/he/neg/phi/prm/its_tpc", "MC/al/neg/phi/prm/its_tpc"};
+  static constexpr std::string_view hPhiTrkItsTpcPrm[nHistograms] = {"MC/el/pos/phi/prm/trk/its_tpc", "MC/mu/pos/phi/prm/trk/its_tpc", "MC/pi/pos/phi/prm/trk/its_tpc",
+                                                                     "MC/ka/pos/phi/prm/trk/its_tpc", "MC/pr/pos/phi/prm/trk/its_tpc", "MC/de/pos/phi/prm/trk/its_tpc",
+                                                                     "MC/tr/pos/phi/prm/trk/its_tpc", "MC/he/pos/phi/prm/trk/its_tpc", "MC/al/pos/phi/prm/trk/its_tpc",
+                                                                     "MC/el/neg/phi/prm/trk/its_tpc", "MC/mu/neg/phi/prm/trk/its_tpc", "MC/pi/neg/phi/prm/trk/its_tpc",
+                                                                     "MC/ka/neg/phi/prm/trk/its_tpc", "MC/pr/neg/phi/prm/trk/its_tpc", "MC/de/neg/phi/prm/trk/its_tpc",
+                                                                     "MC/tr/neg/phi/prm/trk/its_tpc", "MC/he/neg/phi/prm/trk/its_tpc", "MC/al/neg/phi/prm/trk/its_tpc"};
+  static constexpr std::string_view hPhiItsTpcTofPrm[nHistograms] = {"MC/el/pos/phi/prm/its_tpc_tof", "MC/mu/pos/phi/prm/its_tpc_tof", "MC/pi/pos/phi/prm/its_tpc_tof",
+                                                                     "MC/ka/pos/phi/prm/its_tpc_tof", "MC/pr/pos/phi/prm/its_tpc_tof", "MC/de/pos/phi/prm/its_tpc_tof",
+                                                                     "MC/tr/pos/phi/prm/its_tpc_tof", "MC/he/pos/phi/prm/its_tpc_tof", "MC/al/pos/phi/prm/its_tpc_tof",
+                                                                     "MC/el/neg/phi/prm/its_tpc_tof", "MC/mu/neg/phi/prm/its_tpc_tof", "MC/pi/neg/phi/prm/its_tpc_tof",
+                                                                     "MC/ka/neg/phi/prm/its_tpc_tof", "MC/pr/neg/phi/prm/its_tpc_tof", "MC/de/neg/phi/prm/its_tpc_tof",
+                                                                     "MC/tr/neg/phi/prm/its_tpc_tof", "MC/he/neg/phi/prm/its_tpc_tof", "MC/al/neg/phi/prm/its_tpc_tof"};
+  static constexpr std::string_view hPhiGeneratedPrm[nHistograms] = {"MC/el/pos/phi/prm/generated", "MC/mu/pos/phi/prm/generated", "MC/pi/pos/phi/prm/generated",
+                                                                     "MC/ka/pos/phi/prm/generated", "MC/pr/pos/phi/prm/generated", "MC/de/pos/phi/prm/generated",
+                                                                     "MC/tr/pos/phi/prm/generated", "MC/he/pos/phi/prm/generated", "MC/al/pos/phi/prm/generated",
+                                                                     "MC/el/neg/phi/prm/generated", "MC/mu/neg/phi/prm/generated", "MC/pi/neg/phi/prm/generated",
+                                                                     "MC/ka/neg/phi/prm/generated", "MC/pr/neg/phi/prm/generated", "MC/de/neg/phi/prm/generated",
+                                                                     "MC/tr/neg/phi/prm/generated", "MC/he/neg/phi/prm/generated", "MC/al/neg/phi/prm/generated"};
 
   // Pt-Eta
   static constexpr std::string_view hPtEtaItsTpc[nHistograms] = {"MC/el/pos/pteta/its_tpc", "MC/mu/pos/pteta/its_tpc", "MC/pi/pos/pteta/its_tpc",
@@ -460,6 +512,11 @@ struct QaEfficiency {
     registry->add(hEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagEta, kTH1F, {axisEta});
     registry->add(hEtaGenerated[histogramIndex].data(), "Generated " + tagEta, kTH1F, {axisEta});
 
+    registry->add(hEtaItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagEta, kTH1F, {axisEta});
+    registry->add(hEtaTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagEta, kTH1F, {axisEta});
+    registry->add(hEtaItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagEta, kTH1F, {axisEta});
+    registry->add(hEtaGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagEta, kTH1F, {axisEta});
+
     registry->add(hYItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagY, kTH1F, {axisY});
     registry->add(hYItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagY, kTH1F, {axisY});
     registry->add(hYGenerated[histogramIndex].data(), "Generated " + tagY, kTH1F, {axisY});
@@ -468,6 +525,11 @@ struct QaEfficiency {
     registry->add(hPhiTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPhi, kTH1F, {axisPhi});
     registry->add(hPhiItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPhi, kTH1F, {axisPhi});
     registry->add(hPhiGenerated[histogramIndex].data(), "Generated " + tagPhi, kTH1F, {axisPhi});
+
+    registry->add(hPhiItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPhi, kTH1F, {axisPhi});
+    registry->add(hPhiTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPhi, kTH1F, {axisPhi});
+    registry->add(hPhiItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPhi, kTH1F, {axisPhi});
+    registry->add(hPhiGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPhi, kTH1F, {axisPhi});
 
     if (doPtEta) {
       registry->add(hPtEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
@@ -556,13 +618,19 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsP_Trk", HIST(hPTrkItsTpc[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsP", HIST(hPItsTpcTof[histogramIndex]));
     makeEfficiency("ITS-TPC_vsEta", HIST(hEtaItsTpc[histogramIndex]));
-    makeEfficiency("ITS-Tpc_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsEta", HIST(hEtaItsTpcTof[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsEta_Prm", HIST(hEtaItsTpcPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsEta_Prm_Trk", HIST(hEtaTrkItsTpcPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC-TOF_vsEta_Prm", HIST(hEtaItsTpcTofPrm[histogramIndex]));
     makeEfficiency("ITS-TPC_vsY", HIST(hYItsTpc[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsY", HIST(hYItsTpcTof[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPhi", HIST(hPhiItsTpc[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPhi_Trk", HIST(hPhiTrkItsTpc[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPhi", HIST(hPhiItsTpcTof[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsPhi_Prm", HIST(hPhiItsTpcPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsPhi_Prm_Trk", HIST(hPhiTrkItsTpcPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC-TOF_vsPhi_Prm", HIST(hPhiItsTpcTofPrm[histogramIndex]));
 
     auto makeEfficiency2D = [&](const TString effname, auto templateHisto) { // 2D efficiencies
       const auto h = registry->get<TH2>(templateHisto);
@@ -615,7 +683,28 @@ struct QaEfficiency {
     h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
     h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
     h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
-    h->GetXaxis()->SetBinLabel(18, "Passed globalCut");
+    switch (globalTrackSelection) {
+      case 0:
+        h->GetXaxis()->SetBinLabel(18, "No extra selection");
+        break;
+      case 1:
+        h->GetXaxis()->SetBinLabel(18, "isGlobalTrack");
+        break;
+      case 2:
+        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoPtEta");
+        break;
+      case 3:
+        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoDCA");
+        break;
+      case 4:
+        h->GetXaxis()->SetBinLabel(18, "isQualityTrack");
+        break;
+      case 5:
+        h->GetXaxis()->SetBinLabel(18, "isInAcceptanceTrack");
+        break;
+      default:
+        LOG(fatal) << "Can't interpret track asked selection";
+    }
 
     for (int i = 0; i < nSpecies; i++) {
       h->GetXaxis()->SetBinLabel(19 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
@@ -824,7 +913,7 @@ struct QaEfficiency {
     auto doLimits = [&](double& min, double& max, const ConfigurableAxis& binning) {
       const AxisSpec a{binning, "dummy"};
       min = a.binEdges[0];
-      max = a.binEdges[1];
+      max = a.binEdges[a.binEdges.size() - 1];
       LOG(info) << "Making limits from " << min << ", " << max << " size " << a.getNbins();
     };
 
@@ -850,7 +939,7 @@ struct QaEfficiency {
     static_assert(charge == 0 || charge == 1);
     static_assert(id > 0 || id < nSpecies);
 
-    // Selecting a specific PDGs
+    // Selecting a specific PDG
     if constexpr (charge == 0) {
       return mcParticle.pdgCode() == PDGs[id];
     } else {
@@ -951,8 +1040,14 @@ struct QaEfficiency {
       if (passedITS && passedTPC) {
         h->fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
         h->fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
+        h->fill(HIST(hEtaItsTpcPrm[histogramIndex]), mcParticle.eta());
+        h->fill(HIST(hEtaTrkItsTpcPrm[histogramIndex]), track.eta());
+        h->fill(HIST(hPhiItsTpcPrm[histogramIndex]), mcParticle.phi());
+        h->fill(HIST(hPhiTrkItsTpcPrm[histogramIndex]), track.phi());
         if (passedTOF) {
           h->fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
+          h->fill(HIST(hEtaItsTpcTofPrm[histogramIndex]), mcParticle.eta());
+          h->fill(HIST(hPhiItsTpcTofPrm[histogramIndex]), mcParticle.phi());
         }
       }
     } else if (mcParticle.getProcess() == 4) { // Particle decay
@@ -1016,6 +1111,8 @@ struct QaEfficiency {
 
     if (isPhysicalPrimary) {
       h->fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hEtaGeneratedPrm[histogramIndex]), mcParticle.eta());
+      h->fill(HIST(hPhiGeneratedPrm[histogramIndex]), mcParticle.phi());
     } else {
       if (mcParticle.getProcess() == 4) { // Particle deday
         h->fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
@@ -1107,8 +1204,16 @@ struct QaEfficiency {
     doFillEfficiency("ITS-TPC-TOF_vsP", HIST(hPItsTpcTof[histogramIndex]), HIST(hPGenerated[histogramIndex]));
 
     doFillEfficiency("ITS-TPC_vsEta", HIST(hEtaItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
-    doFillEfficiency("ITS-Tpc_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsEta", HIST(hEtaItsTpcTof[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsEta_Prm", HIST(hEtaItsTpcPrm[histogramIndex]), HIST(hEtaGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsEta_Prm_Trk", HIST(hEtaTrkItsTpcPrm[histogramIndex]), HIST(hEtaGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsEta_Prm", HIST(hEtaItsTpcTofPrm[histogramIndex]), HIST(hEtaGeneratedPrm[histogramIndex]));
+
+    doFillEfficiency("ITS-TPC_vsPhi_Prm", HIST(hPhiItsTpcPrm[histogramIndex]), HIST(hPhiGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPhi_Prm_Trk", HIST(hPhiTrkItsTpcPrm[histogramIndex]), HIST(hPhiGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPhi_Prm", HIST(hPhiItsTpcTofPrm[histogramIndex]), HIST(hPhiGeneratedPrm[histogramIndex]));
 
     doFillEfficiency("ITS-TPC_vsY", HIST(hYItsTpc[histogramIndex]), HIST(hYGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsY", HIST(hYItsTpcTof[histogramIndex]), HIST(hYGenerated[histogramIndex]));
@@ -1167,7 +1272,7 @@ struct QaEfficiency {
 
   // Global process
   void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>& tracks)
+               o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension> const& tracks)
   {
     isCollisionSelected<true>(collision);
   }
@@ -1176,20 +1281,20 @@ struct QaEfficiency {
   template <bool isMC = true, typename particleType, typename histoType>
   bool isInAcceptance(const particleType& particle, const histoType& countingHisto, const int offset = 0)
   {
-    if ((particle.pt() < ptMin || particle.pt() > ptMax)) { // Check pt
+    if (particle.pt() < ptMin || particle.pt() > ptMax) { // Check pt
       return false;
     }
     histos.fill(countingHisto, 1 + offset);
-    if ((particle.eta() < etaMin || particle.eta() > etaMax)) { // Check eta
+    if (particle.eta() < etaMin || particle.eta() > etaMax) { // Check eta
       return false;
     }
     histos.fill(countingHisto, 2 + offset);
-    if ((particle.phi() < phiMin || particle.phi() > phiMax)) { // Check phi
+    if (particle.phi() < phiMin || particle.phi() > phiMax) { // Check phi
       return false;
     }
     histos.fill(countingHisto, 3 + offset);
     if constexpr (isMC) {
-      if ((particle.y() < yMin || particle.y() > yMax)) { // Check rapidity
+      if (particle.y() < yMin || particle.y() > yMax) { // Check rapidity
         return false;
       }
       histos.fill(countingHisto, 4 + offset);
@@ -1222,6 +1327,7 @@ struct QaEfficiency {
       histos.fill(countingHisto, 2); // Tracks with particles (i.e. no fakes)
       const auto mcParticle = track.mcParticle();
       if (!isInAcceptance(mcParticle, countingHisto, 2)) {
+        // 2: pt cut 3: eta cut 4: phi cut 5: y cut
         return false;
       }
 

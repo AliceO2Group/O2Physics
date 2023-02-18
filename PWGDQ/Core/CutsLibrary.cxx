@@ -246,6 +246,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
     return cut;
   }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_noITSCuts_debug2")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_noITSCuts_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
+    return cut;
+  }
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug3")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug3"));
@@ -256,6 +261,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug4"));
     return cut;
   }
+  if (!nameStr.compare("Jpsi_TPCPost_calib_noITSCuts_debug4")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_noITSCuts_debug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug4"));
+    return cut;
+  }
+
   if (!nameStr.compare("LMee_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("lmee_trackCut_debug"));
     cut->AddCut(GetAnalysisCut("lmee_TPCPID_debug1"));
@@ -654,6 +665,82 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("lmee_eNSigmaRun3_tight")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_posNSigmaRun3_posEta_tight")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("posEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_negNSigmaRun3_posEta_tight")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("posEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_posNSigmaRun3_negEta_tight")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("negEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_negNSigmaRun3_negEta_tight")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("negEtaSel"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
 
@@ -1070,6 +1157,31 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   // ---------------------------------------------------
   // Barrel track kine cuts
+  if (!nameStr.compare("negTrack")) {
+    cut->AddCut(VarManager::kCharge, -99., 0.);
+    return cut;
+  }
+
+  if (!nameStr.compare("posTrack")) {
+    cut->AddCut(VarManager::kCharge, 0., 99.);
+    return cut;
+  }
+
+  if (!nameStr.compare("posEtaSel")) {
+    cut->AddCut(VarManager::kEta, 0., 0.8);
+    return cut;
+  }
+
+  if (!nameStr.compare("negEtaSel")) {
+    cut->AddCut(VarManager::kEta, -0.8, 0.);
+    return cut;
+  }
+
+  if (!nameStr.compare("etaSel")) {
+    cut->AddCut(VarManager::kEta, -0.8, 0.8);
+    return cut;
+  }
+
   if (!nameStr.compare("lowMultTrackCut")) {
     cut->AddCut(VarManager::kPt, 0.15, 1000.0);
     cut->AddCut(VarManager::kTPCncls, 50.0, 159);
@@ -1160,6 +1272,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCncls, 90., 159);
     cut->AddCut(VarManager::kITSncls, 2.5, 7.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_trackCut_noITSCuts_debug")) {
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 90., 159);
     return cut;
   }
 

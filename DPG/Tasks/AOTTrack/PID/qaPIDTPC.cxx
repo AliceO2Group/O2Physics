@@ -15,13 +15,13 @@
 /// \brief  Implementation for QA tasks of the TPC PID quantities
 ///
 
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -38,12 +38,9 @@ struct tpcPidQa {
   static constexpr std::string_view hdelta[Np] = {"delta/El", "delta/Mu", "delta/Pi",
                                                   "delta/Ka", "delta/Pr", "delta/De",
                                                   "delta/Tr", "delta/He", "delta/Al"};
-  static constexpr std::string_view hdelta_pt_pos[Np] = {"delta/pt/pos/El", "delta/pt/pos/Mu", "delta/pt/pos/Pi",
-                                                         "delta/pt/pos/Ka", "delta/pt/pos/Pr", "delta/pt/pos/De",
-                                                         "delta/pt/pos/Tr", "delta/pt/pos/He", "delta/pt/pos/Al"};
-  static constexpr std::string_view hdelta_pt_neg[Np] = {"delta/pt/neg/El", "delta/pt/neg/Mu", "delta/pt/neg/Pi",
-                                                         "delta/pt/neg/Ka", "delta/pt/neg/Pr", "delta/pt/neg/De",
-                                                         "delta/pt/neg/Tr", "delta/pt/neg/He", "delta/pt/neg/Al"};
+  static constexpr std::string_view hdelta_pt[Np] = {"delta/pt/El", "delta/pt/Mu", "delta/pt/Pi",
+                                                     "delta/pt/Ka", "delta/pt/Pr", "delta/pt/De",
+                                                     "delta/pt/Tr", "delta/pt/He", "delta/pt/Al"};
   static constexpr std::string_view hexpsigma[Np] = {"expsigma/El", "expsigma/Mu", "expsigma/Pi",
                                                      "expsigma/Ka", "expsigma/Pr", "expsigma/De",
                                                      "expsigma/Tr", "expsigma/He", "expsigma/Al"};
@@ -53,12 +50,6 @@ struct tpcPidQa {
   static constexpr std::string_view hnsigma_pt[Np] = {"nsigma/pt/El", "nsigma/pt/Mu", "nsigma/pt/Pi",
                                                       "nsigma/pt/Ka", "nsigma/pt/Pr", "nsigma/pt/De",
                                                       "nsigma/pt/Tr", "nsigma/pt/He", "nsigma/pt/Al"};
-  static constexpr std::string_view hnsigma_pt_pos[Np] = {"nsigma/pt/pos/El", "nsigma/pt/pos/Mu", "nsigma/pt/pos/Pi",
-                                                          "nsigma/pt/pos/Ka", "nsigma/pt/pos/Pr", "nsigma/pt/pos/De",
-                                                          "nsigma/pt/pos/Tr", "nsigma/pt/pos/He", "nsigma/pt/pos/Al"};
-  static constexpr std::string_view hnsigma_pt_neg[Np] = {"nsigma/pt/neg/El", "nsigma/pt/neg/Mu", "nsigma/pt/neg/Pi",
-                                                          "nsigma/pt/neg/Ka", "nsigma/pt/neg/Pr", "nsigma/pt/neg/De",
-                                                          "nsigma/pt/neg/Tr", "nsigma/pt/neg/He", "nsigma/pt/neg/Al"};
 
   // With TOF
   static constexpr std::string_view hexpected_wTOF[Np] = {"wTOF/expected/El", "wTOF/expected/Mu", "wTOF/expected/Pi",
@@ -82,12 +73,6 @@ struct tpcPidQa {
   static constexpr std::string_view hnsigma_pt_wTOF[Np] = {"wTOF/nsigma/pt/El", "wTOF/nsigma/pt/Mu", "wTOF/nsigma/pt/Pi",
                                                            "wTOF/nsigma/pt/Ka", "wTOF/nsigma/pt/Pr", "wTOF/nsigma/pt/De",
                                                            "wTOF/nsigma/pt/Tr", "wTOF/nsigma/pt/He", "wTOF/nsigma/pt/Al"};
-  static constexpr std::string_view hnsigma_pt_pos_wTOF[Np] = {"wTOF/nsigma/pt/pos/El", "wTOF/nsigma/pt/pos/Mu", "wTOF/nsigma/pt/pos/Pi",
-                                                               "wTOF/nsigma/pt/pos/Ka", "wTOF/nsigma/pt/pos/Pr", "wTOF/nsigma/pt/pos/De",
-                                                               "wTOF/nsigma/pt/pos/Tr", "wTOF/nsigma/pt/pos/He", "wTOF/nsigma/pt/pos/Al"};
-  static constexpr std::string_view hnsigma_pt_neg_wTOF[Np] = {"wTOF/nsigma/pt/neg/El", "wTOF/nsigma/pt/neg/Mu", "wTOF/nsigma/pt/neg/Pi",
-                                                               "wTOF/nsigma/pt/neg/Ka", "wTOF/nsigma/pt/neg/Pr", "wTOF/nsigma/pt/neg/De",
-                                                               "wTOF/nsigma/pt/neg/Tr", "wTOF/nsigma/pt/neg/He", "wTOF/nsigma/pt/neg/Al"};
   static constexpr std::string_view hsignal_wTOF[Np] = {"wTOF/signal/El", "wTOF/signal/Mu", "wTOF/signal/Pi",
                                                         "wTOF/signal/Ka", "wTOF/signal/Pr", "wTOF/signal/De",
                                                         "wTOF/signal/Tr", "wTOF/signal/He", "wTOF/signal/Al"};
@@ -98,24 +83,25 @@ struct tpcPidQa {
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
-  Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
-  Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
-  Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
-  Configurable<int> nBinsExpSigma{"nBinsExpSigma", 200, "Number of bins for the ExpSigma"};
-  Configurable<float> minExpSigma{"minExpSigma", 0.f, "Minimum ExpSigma in range"};
-  Configurable<float> maxExpSigma{"maxExpSigma", 200.f, "Maximum ExpSigma in range"};
-  Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
-  Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
-  Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
+  ConfigurableAxis etaBins{"etaBins", {100, -1.f, 1.f}, "Binning in eta"};
+  ConfigurableAxis phiBins{"phiBins", {100, 0, TMath::TwoPi()}, "Binning in eta"};
+  ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
+  ConfigurableAxis deltaBins{"deltaBins", {200, -1000.f, 1000.f}, "Binning in Delta (dEdx - expected dEdx)"};
+  ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
+  ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
+  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
-
-  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
+  Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
+  Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
 
   template <o2::track::PID::ID id>
-  void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis, const AxisSpec& dedxAxis)
+  void initPerParticle(const AxisSpec& pAxis,
+                       const AxisSpec& ptAxis,
+                       const AxisSpec& dedxAxis,
+                       const AxisSpec& chargeAxis)
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     bool enableTOFHistos = false;
@@ -159,11 +145,13 @@ struct tpcPidQa {
 
     // NSigma
     const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[id]);
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
+    const AxisSpec nSigmaAxis{nSigmaBins, axisTitle};
     histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigma_pt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_pos[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_neg[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    if (splitSignalPerCharge) {
+      histos.add(hnsigma_pt[id].data(), axisTitle, kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
+    } else {
+      histos.add(hnsigma_pt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    }
 
     if (!enableFullHistos) { // Enabling only NSigma for tiny tables
       return;
@@ -174,14 +162,17 @@ struct tpcPidQa {
     histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
 
     // Signal - Expected signal
-    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
+    const AxisSpec deltaAxis{deltaBins, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
     axisTitle = Form("#Delta^{TPC}(%s)", pT[id]);
     histos.add(hdelta[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
-    histos.add(hdelta_pt_pos[id].data(), Form("%s Positive tracks", axisTitle), kTH2F, {ptAxis, deltaAxis});
-    histos.add(hdelta_pt_neg[id].data(), Form("%s Negative tracks", axisTitle), kTH2F, {ptAxis, deltaAxis});
+    if (splitSignalPerCharge) {
+      histos.add(hdelta_pt[id].data(), axisTitle, kTH3F, {ptAxis, deltaAxis, chargeAxis});
+    } else {
+      histos.add(hdelta_pt[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    }
 
     // Exp Sigma
-    const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
+    const AxisSpec expSigmaAxis{expSigmaBins, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
     histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
 
     if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
@@ -194,25 +185,21 @@ struct tpcPidQa {
     histos.add(hdelta_pt_neg_wTOF[id].data(), "With TOF Negative", kTH2F, {ptAxis, deltaAxis});
     histos.add(hexpsigma_wTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigma_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_pos_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_neg_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
-
     if (splitSignalPerCharge) {
-      const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
+      histos.add(hnsigma_pt_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
       histos.add(hsignal_wTOF[id].data(), "With TOF", kTH3F, {pAxis, dedxAxis, chargeAxis});
     } else {
+      histos.add(hnsigma_pt_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
       histos.add(hsignal_wTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
     }
   }
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec multAxis{1000, 0.f, 1000.f, "Track multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
-    const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
-    const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
+    const AxisSpec etaAxis{etaBins, "#it{#eta}"};
+    const AxisSpec phiAxis{phiBins, "#it{#phi}"};
+    const AxisSpec lAxis{trackLengthBins, "Track length (cm)"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T}/|Z| (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p}/|Z| (GeV/#it{c})"};
     if (logAxis) {
@@ -220,33 +207,34 @@ struct tpcPidQa {
       pAxis.makeLogarithmic();
     }
     const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
+    const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
-    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
-    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
+    h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
 
     h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "isGlobalTrack");
     h->GetXaxis()->SetBinLabel(3, "hasITS");
     h->GetXaxis()->SetBinLabel(4, "hasTPC");
+    h->GetXaxis()->SetBinLabel(5, Form("tpcNClsFound > %i", minTPCNcls.value));
 
     histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
     h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
     for (int i = 0; i < 9; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
     }
-    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
-    if (splitSignalPerCharge) {
-      const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
-      histos.add("event/tpcsignal", "", kTH3F, {pAxis, dedxAxis, chargeAxis});
-      histos.add("event/tpcsignalvspt", "", kTH3F, {ptAxis, dedxAxis, chargeAxis});
-    } else {
-      histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
-      histos.add("event/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
+    if (enableDeDxPlot) {
+      if (splitSignalPerCharge) {
+        histos.add("event/tpcsignal", "", kTH3F, {pAxis, dedxAxis, chargeAxis});
+        histos.add("event/tpcsignalvspt", "", kTH3F, {ptAxis, dedxAxis, chargeAxis});
+      } else {
+        histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
+        histos.add("event/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
+      }
     }
     histos.add("event/eta", "", kTH1F, {etaAxis});
     histos.add("event/phi", "", kTH1F, {phiAxis});
@@ -256,7 +244,7 @@ struct tpcPidQa {
     histos.add("event/p", "", kTH1F, {pAxis});
 
     static_for<0, 8>([&](auto i) {
-      initPerParticle<i>(pAxis, ptAxis, dedxAxis);
+      initPerParticle<i>(pAxis, ptAxis, dedxAxis, chargeAxis);
     });
   }
 
@@ -281,24 +269,12 @@ struct tpcPidQa {
       histos.fill(HIST("event/evsel"), 2);
     }
 
-    // Computing Multiplicity first
-    int ntracks = 0;
-    if constexpr (fillHistograms) {
-      for (auto t : tracks) {
-        if (applyTrackCut && !t.isGlobalTrack()) {
-          continue;
-        }
-        ntracks += 1;
-      }
-      histos.fill(HIST("event/evsel"), 3);
-    }
     if (abs(collision.posZ()) > 10.f) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 4);
+      histos.fill(HIST("event/evsel"), 3);
       histos.fill(HIST("event/vertexz"), collision.posZ());
-      histos.fill(HIST("event/trackmultiplicity"), ntracks);
     }
     return true;
   }
@@ -326,13 +302,22 @@ struct tpcPidQa {
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 4.f);
+    }
+    if (track.tpcNClsFound() < minTPCNcls) { // Skipping tracks without enough TPC clusters
+      return false;
+    }
+
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("event/trackselection"), 5.f);
       histos.fill(HIST("event/particlehypo"), track.pidForTracking());
-      if (splitSignalPerCharge) {
-        histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal(), track.sign());
-        histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal(), track.sign());
-      } else {
-        histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
-        histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
+      if (enableDeDxPlot) {
+        if (splitSignalPerCharge) {
+          histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal(), track.sign());
+          histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal(), track.sign());
+        } else {
+          histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
+          histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
+        }
       }
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/phi"), track.phi());
@@ -345,10 +330,19 @@ struct tpcPidQa {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  Filter eventFilter = (applyEvSel.node() == 0) ||
+                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
+                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
+  Filter trackFilter = ((trackSelection.node() == 0) ||
+                        ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                        ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter()));
+  using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::TrackSelection> const& tracks)
+               soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
@@ -379,11 +373,10 @@ struct tpcPidQa {
 
       const auto nsigma = o2::aod::pidutils::tpcNSigma<id>(t);
       histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
-      histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma);
-      if (t.sign() > 0) {
-        histos.fill(HIST(hnsigma_pt_pos[id]), t.pt(), nsigma);
+      if (splitSignalPerCharge) {
+        histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma, t.sign());
       } else {
-        histos.fill(HIST(hnsigma_pt_neg[id]), t.pt(), nsigma);
+        histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma);
       }
 
       if constexpr (fillFullHistograms) {
@@ -391,10 +384,10 @@ struct tpcPidQa {
         // Fill histograms
         histos.fill(HIST(hexpected[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
         histos.fill(HIST(hdelta[id]), t.tpcInnerParam(), diff);
-        if (t.sign() > 0) {
-          histos.fill(HIST(hdelta_pt_pos[id]), t.pt(), diff);
+        if (splitSignalPerCharge) {
+          histos.fill(HIST(hdelta_pt[id]), t.pt(), diff, t.sign());
         } else {
-          histos.fill(HIST(hdelta_pt_neg[id]), t.pt(), diff);
+          histos.fill(HIST(hdelta_pt[id]), t.pt(), diff);
         }
         histos.fill(HIST(hexpsigma[id]), t.tpcInnerParam(), o2::aod::pidutils::tpcExpSigma<id>(t));
         if constexpr (fillWithTOFHistograms) {
@@ -409,10 +402,11 @@ struct tpcPidQa {
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
           histos.fill(HIST(hnsigma_wTOF[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigma_pt_wTOF[id]), t.pt(), nsigma);
           if (splitSignalPerCharge) {
+            histos.fill(HIST(hnsigma_pt_wTOF[id]), t.pt(), nsigma, t.sign());
             histos.fill(HIST(hsignal_wTOF[id]), t.tpcInnerParam(), t.tpcSignal(), t.sign());
           } else {
+            histos.fill(HIST(hnsigma_pt_wTOF[id]), t.pt(), nsigma);
             histos.fill(HIST(hsignal_wTOF[id]), t.tpcInnerParam(), t.tpcSignal());
           }
           // histos.fill(HIST("event/signedtpcsignal"), t.tpcInnerParam() * t.sign(), t.tpcSignal());
@@ -422,13 +416,12 @@ struct tpcPidQa {
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                        \
-  void process##particleId(CollisionCandidate const& collision,                          \
-                           soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, \
-                                     inputPid> const& tracks)                            \
-  {                                                                                      \
-    processSingleParticle<PID::particleId, false, false>(collision, tracks);             \
-  }                                                                                      \
+#define makeProcessFunction(inputPid, particleId)                                             \
+  void process##particleId(CollisionCandidate const& collision,                               \
+                           soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                           \
+    processSingleParticle<PID::particleId, false, false>(collision, tracks);                  \
+  }                                                                                           \
   PROCESS_SWITCH(tpcPidQa, process##particleId, Form("Process for the %s hypothesis for TPC NSigma QA", #particleId), false);
 
   makeProcessFunction(aod::pidTPCEl, Electron);
@@ -443,13 +436,12 @@ struct tpcPidQa {
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                            \
-  void processFull##particleId(CollisionCandidate const& collision,                          \
-                               soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, \
-                                         inputPid> const& tracks)                            \
-  {                                                                                          \
-    processSingleParticle<PID::particleId, true, false>(collision, tracks);                  \
-  }                                                                                          \
+#define makeProcessFunction(inputPid, particleId)                                                 \
+  void processFull##particleId(CollisionCandidate const& collision,                               \
+                               soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                               \
+    processSingleParticle<PID::particleId, true, false>(collision, tracks);                       \
+  }                                                                                               \
   PROCESS_SWITCH(tpcPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
 
   makeProcessFunction(aod::pidTPCFullEl, Electron);
@@ -464,13 +456,13 @@ struct tpcPidQa {
 #undef makeProcessFunction
 
   // QA of full tables with TOF information
-#define makeProcessFunction(inputPid, inputPidTOF, particleId)                                                                            \
-  void processFullWithTOF##particleId(CollisionCandidate const& collision,                                                                \
-                                      soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, inputPid, inputPidTOF> const& tracks) \
-  {                                                                                                                                       \
-    processSingleParticle<PID::particleId, true, true>(collision, tracks);                                                                \
-  }                                                                                                                                       \
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOF##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
+#define makeProcessFunction(inputPid, inputPidTOF, particleId)                                                        \
+  void processFullWithTOF##particleId(CollisionCandidate const& collision,                                            \
+                                      soa::Filtered<soa::Join<TrackCandidates, inputPid, inputPidTOF>> const& tracks) \
+  {                                                                                                                   \
+    processSingleParticle<PID::particleId, true, true>(collision, tracks);                                            \
+  }                                                                                                                   \
+  PROCESS_SWITCH(tpcPidQa, processFullWithTOF##particleId, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #particleId), false);
 
   makeProcessFunction(aod::pidTPCFullEl, aod::pidTOFFullEl, Electron);
   makeProcessFunction(aod::pidTPCFullMu, aod::pidTOFFullMu, Muon);

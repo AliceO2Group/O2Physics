@@ -448,6 +448,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processMain, "Process Main", true);
 
   // ...............................................................................................................
+  // Distribution of number of PV contributors for all collisions and those with empty FT0
   void processFewProng(CC const& collision, BCs const& bct0s,
                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -468,6 +469,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processFewProng, "Process FewProng", true);
 
   // ...............................................................................................................
+  // Fraction of collisions with empty FIT as function of NDtcoll
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -548,9 +550,12 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processCleanFIT2, "Process CleanFitTest2", true);
 
   // ...............................................................................................................
-  void processFV0(aod::FV0As const& fv0s, aod::BCs const&)
+  void processFV0(aod::FV0As const& fv0s, BCs const&)
   {
-    LOGF(debug, "<FV0Signals> %d", fv0s.size());
+    LOGF(info, "<FV0Signals> %d", fv0s.size());
+    if (fv0s.size() <= 0) {
+      return;
+    }
 
     int64_t lastBCwFV0 = fv0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFV0 / nBCpOrbit;
@@ -774,7 +779,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processFT0, "Process FT0", true);
 
   // ...............................................................................................................
-  void processFDD(aod::FDDs const& fdds, aod::BCs const&)
+  void processFDD(aod::FDDs const& fdds, BCs const&)
   {
     LOGF(debug, "<FDDSignals> %d", fdds.size());
 
