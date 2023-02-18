@@ -123,7 +123,7 @@ struct ALICE3pidTOFTask {
     if (!track.hasTOF()) {
       return -999.f;
     }
-    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - tof::ExpTimes<Trks::iterator, id>::ComputeExpectedTime(track.tofExpMom() / o2::pid::tof::kCSPEED,
+    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - o2::pid::tof::ExpTimes<Trks::iterator, id>::ComputeExpectedTime(track.tofExpMom() / o2::pid::tof::kCSPEED,
                                                                                                                                       track.length())) /
            sigma<id>(track);
   }
