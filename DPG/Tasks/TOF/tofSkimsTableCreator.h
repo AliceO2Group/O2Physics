@@ -43,8 +43,7 @@ DECLARE_SOA_COLUMN(DoubleDelta, doubleDelta, float);         //! Double differen
 DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t); //! Index for mass hypothesis used in tracking see PID.h for definition
 DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);           //! Event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);     //! Resolution of the event time of the track computed with the T0AC
-DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                    //! Flag if track has TRD information
-DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, uint8_t); //! Index of the last cluster in the TRD
+DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);  //! Index of the last cluster in the TRD, -1 if no TRD information
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
 // Calibration information
@@ -69,7 +68,11 @@ DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF 
                   tofskims::EvTimeT0AC,
                   tofskims::EvTimeT0ACErr,
                   pidflags::TOFFlags,
-                  tofskims::HasTRD,
+                  track::TPCInnerParam,
+                  track::TPCNClsFindable,
+                  track::TPCNClsFindableMinusFound,
+                  track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCNClsShared,
                   tofskims::LastTRDCluster,
                   tofskims::HasTOF<pidtofsignal::TOFSignal>,
                   pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
@@ -97,7 +100,6 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   tofskims::EvTimeT0AC,
                   tofskims::EvTimeT0ACErr,
                   pidflags::TOFFlags,
-                  tofskims::HasTRD,
                   tofskims::LastTRDCluster);
 
 } // namespace o2::aod

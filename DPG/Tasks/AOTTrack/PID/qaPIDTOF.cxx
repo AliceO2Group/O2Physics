@@ -128,7 +128,7 @@ struct tofPidQa {
   ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
   Configurable<bool> produceDeltaTEtaPhiMap{"produceDeltaTEtaPhiMap", false, "Produces the map of the delta time as a function of eta and phi"};
@@ -279,8 +279,7 @@ struct tofPidQa {
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
-    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
-    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
+    h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
 
     h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -294,8 +293,6 @@ struct tofPidQa {
     for (int i = 0; i < 9; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
     }
-    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
-    histos.add("event/tofmultiplicity", "", kTH1F, {multAxis});
 
     histos.add("event/evtime/colltime", "collisionTime()", kTH1F, {colTimeAxis});
     histos.add("event/evtime/colltimereso", "collisionTimeRes()", kTH2F, {multAxis, colTimeResoAxis});
@@ -347,8 +344,6 @@ struct tofPidQa {
       histos.fill(HIST("event/evsel"), 2);
     }
 
-    // Computing Multiplicity first
-    int ntracks = 0;
     int tofmult = 0;
     float evtime = 0.f;
     float evtimereso = 0.f;
@@ -356,10 +351,6 @@ struct tofPidQa {
 
     if constexpr (fillHistograms) {
       for (auto t : tracks) {
-        if (applyTrackCut && !t.isGlobalTrack()) {
-          continue;
-        }
-        ntracks += 1;
         if (!t.hasTOF()) { // Skipping tracks without TOF
           continue;
         }
@@ -378,16 +369,13 @@ struct tofPidQa {
           evtimeflag = 4;
         }
       }
-      histos.fill(HIST("event/evsel"), 3);
     }
     if (abs(collision.posZ()) > 10.f) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 4);
+      histos.fill(HIST("event/evsel"), 3);
       histos.fill(HIST("event/vertexz"), collision.posZ());
-      histos.fill(HIST("event/trackmultiplicity"), ntracks);
-      histos.fill(HIST("event/tofmultiplicity"), tofmult);
 
       histos.fill(HIST("event/evtime/colltime"), collision.collisionTime() * 1000.f);
       histos.fill(HIST("event/evtime/colltimereso"), tofmult, collision.collisionTimeRes() * 1000.f);
@@ -468,11 +456,21 @@ struct tofPidQa {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  Filter eventFilter = (applyEvSel.node() == 0) ||
+                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
+                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter());
+  using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+                                    aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime>;
+
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags,
-                         aod::TrackSelection> const& tracks)
+               soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
@@ -604,14 +602,12 @@ struct tofPidQa {
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                         \
-  void process##particleId(CollisionCandidate const& collision,                           \
-                           soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,  \
-                                     aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime, \
-                                     inputPid> const& tracks)                             \
-  {                                                                                       \
-    processSingleParticle<PID::particleId, false>(collision, tracks);                     \
-  }                                                                                       \
+#define makeProcessFunction(inputPid, particleId)                                             \
+  void process##particleId(CollisionCandidate const& collision,                               \
+                           soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                           \
+    processSingleParticle<PID::particleId, false>(collision, tracks);                         \
+  }                                                                                           \
   PROCESS_SWITCH(tofPidQa, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
   makeProcessFunction(aod::pidTOFEl, Electron);
@@ -626,14 +622,12 @@ struct tofPidQa {
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                             \
-  void processFull##particleId(CollisionCandidate const& collision,                           \
-                               soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,  \
-                                         aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime, \
-                                         inputPid> const& tracks)                             \
-  {                                                                                           \
-    processSingleParticle<PID::particleId, true>(collision, tracks);                          \
-  }                                                                                           \
+#define makeProcessFunction(inputPid, particleId)                                                 \
+  void processFull##particleId(CollisionCandidate const& collision,                               \
+                               soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                               \
+    processSingleParticle<PID::particleId, true>(collision, tracks);                              \
+  }                                                                                               \
   PROCESS_SWITCH(tofPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
 
   makeProcessFunction(aod::pidTOFFullEl, Electron);

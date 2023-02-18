@@ -734,6 +734,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
   float mMagField = 0.0;
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
@@ -771,6 +772,8 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
+    fCurrentRun = 0;
+
     ccdb->setURL(ccdburl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -895,31 +898,35 @@ struct AnalysisSameEventPairing {
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
-    if (fConfigUseKFVertexing.value) {
-      VarManager::SetupTwoProngKFParticle(5.0f);
-    } else {
-      VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-      VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
-    }
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2>
   void runSameEventPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
-    if (fUseRemoteField.value) {
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPath, event.timestamp());
-      if (grpo != nullptr) {
-        mMagField = grpo->getNominalL3Field();
+    if (fCurrentRun != event.runNumber()) {
+      if (fUseRemoteField.value) {
+        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPath, event.timestamp());
+        if (grpo != nullptr) {
+          mMagField = grpo->getNominalL3Field();
+        } else {
+          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
+        }
+        if (fConfigUseKFVertexing.value) {
+          VarManager::SetupTwoProngKFParticle(mMagField);
+        } else {
+          VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
+          VarManager::SetupTwoProngFwdDCAFitter(mMagField, true, 200.0f, 1.0e-3f, 0.9f, true);
+        }
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
+        if (fConfigUseKFVertexing.value) {
+          VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
+        } else {
+          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
+          VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, true, 200.0f, 1.0e-3f, 0.9f, true);
+        }
       }
-      VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-      VarManager::SetupTwoProngFwdDCAFitter(mMagField, true, 200.0f, 1.0e-3f, 0.9f, true);
-    } else {
-      VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-      VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, true, 200.0f, 1.0e-3f, 0.9f, true);
+      fCurrentRun = event.runNumber();
     }
 
     TString cutNames = fConfigTrackCuts.value;
