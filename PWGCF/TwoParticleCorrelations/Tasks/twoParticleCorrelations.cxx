@@ -10,14 +10,6 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsFiltered.h"
-#include "PWGCF/Core/PairCuts.h"
 #include <DataFormatsParameters/GRPObject.h>
 #include <TROOT.h>
 #include <TDatabasePDG.h>
@@ -29,6 +21,14 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <TProfile3D.h>
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsFiltered.h"
+#include "PWGCF/Core/PairCuts.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,18 +77,17 @@ float philow = 0.0;
 float phiup = constants::math::TwoPI;
 
 float phibinshift = 0.5;
-float etabinwidth = (etaup - etalow) / float(etabins);
-float phibinwidth = (phiup - philow) / float(phibins);
+float etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
+float phibinwidth = (phiup - philow) / static_cast<float>(phibins);
 int deltaetabins = etabins * 2 - 1;
 float deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
-float deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
+float deltaetabinwidth = (deltaetaup - deltaetalow) / static_cast<float>(deltaetabins);
 int deltaphibins = phibins;
 float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
 bool processpairs = false;
-std::string fTaskConfigurationString = "PendingToConfigure";
 std::vector<trackid> tracksids; // the tracks id storage
 
 PairCuts fPairCuts;              // pair suppression engine
@@ -147,7 +146,7 @@ struct twoParticleCorrelations {
     float GetShiftedPhi(float phi)
     {
       using namespace twopcorrelations;
-      if (not(phi < phiup)) {
+      if (!(phi < phiup)) {
         return phi - constants::math::TwoPI;
       } else {
         return phi;
@@ -171,10 +170,10 @@ struct twoParticleCorrelations {
     {
       using namespace twopcorrelations;
 
-      int etaix = int((t.eta() - etalow) / etabinwidth);
+      int etaix = static_cast<int>((t.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       float phi = GetShiftedPhi(t.phi());
-      int phiix = int((phi - philow) / phibinwidth);
+      int phiix = static_cast<int>((phi - philow) / phibinwidth);
       return etaix * phibins + phiix;
     }
 
@@ -193,14 +192,14 @@ struct twoParticleCorrelations {
       using namespace twopcorrelations;
 
       /* rule: ix are always zero based while bins are always one based */
-      int etaix_1 = int((t1.eta() - etalow) / etabinwidth);
+      int etaix_1 = static_cast<int>((t1.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       float phi = GetShiftedPhi(t1.phi());
-      int phiix_1 = int((phi - philow) / phibinwidth);
-      int etaix_2 = int((t2.eta() - etalow) / etabinwidth);
+      int phiix_1 = static_cast<int>((phi - philow) / phibinwidth);
+      int etaix_2 = static_cast<int>((t2.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       phi = GetShiftedPhi(t2.phi());
-      int phiix_2 = int((phi - philow) / phibinwidth);
+      int phiix_2 = static_cast<int>((phi - philow) / phibinwidth);
 
       int deltaeta_ix = etaix_1 - etaix_2 + etabins - 1;
       int deltaphi_ix = phiix_1 - phiix_2;
@@ -338,7 +337,7 @@ struct twoParticleCorrelations {
               }
               /* get the global bin for filling the differential histograms */
               int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
-              if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut and fPairCuts.twoTrackCut(track1, track2, bfield))) {
+              if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
                 /* suppress the pair */
                 fhSupN1N1_vsDEtaDPhi[tid1.id][tid2.id]->AddBinContent(globalbin, tid1.corr * tid2.corr);
                 fhSupPt1Pt1_vsDEtaDPhi[tid1.id][tid2.id]->AddBinContent(globalbin, track1.pt() * track2.pt() * tid1.corr * tid2.corr);
@@ -391,7 +390,7 @@ struct twoParticleCorrelations {
       /* now let's fill the potential correction and pT averages for the current zvtx */
       getTrackPtAvgAndCorrections(Tracks, tracksids, zvtx);
 
-      if (not processpairs) {
+      if (!processpairs) {
         /* process single tracks */
         fhVertexZA->Fill(zvtx);
         processSingles(Tracks, tracksids, zvtx);
@@ -475,10 +474,10 @@ struct twoParticleCorrelations {
           TH1::SetDefaultSumw2(false);
           fhN1_vsZEtaPhiPt[i] = new TH3F(TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
                                          TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)", tname[i].c_str(), tname[i].c_str(), tname[i].c_str()).Data(),
-                                         zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, double(etabins * phibins), ptbins, ptlow, ptup);
+                                         zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, static_cast<double>(etabins * phibins), ptbins, ptlow, ptup);
           fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
                                              TString::Format("#LT #Sigma p_{t,%s}#GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)", tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str()).Data(),
-                                             zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, double(etabins * phibins), ptbins, ptlow, ptup);
+                                             zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, static_cast<double>(etabins * phibins), ptbins, ptlow, ptup);
           /* we return it back to previuos state */
           TH1::SetDefaultSumw2(defSumw2);
 
@@ -530,7 +529,7 @@ struct twoParticleCorrelations {
             bool defSumw2 = TH1::GetDefaultSumw2();
             TH1::SetDefaultSumw2(false);
             char pname[256];
-            sprintf(pname, "%s%s", tname[i].c_str(), tname[j].c_str());
+            snprintf(pname, tname[i].length() + tname[j].length() + 1, "%s%s", tname[i].c_str(), tname[j].c_str());
             fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSum2PtPt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
@@ -646,13 +645,13 @@ struct twoParticleCorrelations {
     processpairs = cfgProcessPairs.value;
     loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
     /* update the potential binning change */
-    etabinwidth = (etaup - etalow) / float(etabins);
-    phibinwidth = (phiup - philow) / float(phibins);
+    etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
+    phibinwidth = (phiup - philow) / static_cast<float>(phibins);
 
     /* the differential bining */
     deltaetabins = etabins * 2 - 1;
     deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
-    deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
+    deltaetabinwidth = (deltaetaup - deltaetalow) / static_cast<float>(deltaetabins);
     deltaphibins = phibins;
     deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
@@ -715,7 +714,7 @@ struct twoParticleCorrelations {
     }
     /* two-track cut and conversion suppression */
     fPairCuts.SetHistogramRegistry(nullptr); // not histogram registry for the time being, incompatible with TList when it is empty
-    if (processpairs and (cfgPairCut->get("Photon") > 0 or cfgPairCut->get("K0") > 0 or cfgPairCut->get("Lambda") > 0 or cfgPairCut->get("Phi") > 0 or cfgPairCut->get("Rho") > 0)) {
+    if (processpairs && (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 || cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0)) {
       fPairCuts.SetPairCut(PairCuts::Photon, cfgPairCut->get("Photon"));
       fPairCuts.SetPairCut(PairCuts::K0, cfgPairCut->get("K0"));
       fPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCut->get("Lambda"));
@@ -723,7 +722,7 @@ struct twoParticleCorrelations {
       fPairCuts.SetPairCut(PairCuts::Rho, cfgPairCut->get("Rho"));
       fUseConversionCuts = true;
     }
-    if (processpairs and (cfgTwoTrackCut > 0)) {
+    if (processpairs && (cfgTwoTrackCut > 0)) {
       fPairCuts.SetTwoTrackCuts(cfgTwoTrackCut, cfgTwoTrackCutMinRadius);
       fUseTwoTrackCut = true;
     }
@@ -793,7 +792,7 @@ struct twoParticleCorrelations {
     std::stringstream ss(ccdbdate);
     ss >> std::get_time(&cfgtm, "%Y%m%d");
     cfgtm.tm_hour = 12;
-    long timestamp = std::mktime(&cfgtm) * 1000;
+    uint64_t timestamp = std::mktime(&cfgtm) * 1000;
 
     TList* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
     if (lst != nullptr) {
@@ -860,11 +859,11 @@ struct twoParticleCorrelations {
       if (nAcceptedTracks > 0) {
         int ixDCE = getDCEindex(collision);
         if (!(ixDCE < 0)) {
-          if (ccdblst != nullptr and not dataCE[ixDCE]->isCCDBstored()) {
-            dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{(TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                                   (TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
-            dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{(TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                             (TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+          if (ccdblst != nullptr && !dataCE[ixDCE]->isCCDBstored()) {
+            dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{(TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()),
+                                                                   (TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())});
+            dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{(TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()),
+                                                             (TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())});
           }
         }
         /* magnetic field equal to zero for the time being */
