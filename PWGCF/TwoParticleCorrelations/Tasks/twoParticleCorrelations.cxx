@@ -54,9 +54,9 @@ uint64_t pidmask_forced = 0UL;
 /// \struct trackid
 /// \brief Stores the track species id, its potential correction, its potential pT average, and its global index to the track table
 struct trackid {
-  int id;          ///< the species internal id
-  float corr;      ///< correction to apply
-  float ptavg;     ///< species pT average in eta phi
+  int id;      ///< the species internal id
+  float corr;  ///< correction to apply
+  float ptavg; ///< species pT average in eta phi
 };
 
 PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
