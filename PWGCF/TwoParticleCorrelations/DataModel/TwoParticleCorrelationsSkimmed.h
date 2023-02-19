@@ -69,8 +69,8 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                      //! The track transverse
 DECLARE_SOA_COLUMN(Eta, eta, float);                    //! The track pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                    //! The track azimuthal angle
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,                  //! Charge: positive: 1, negative: -1
-                           [](uint64_t mask) -> short { return ((mask & 0x1L) == 0x1L) ? 1 : ((mask & 0x2L) == 0x2L) ? -1
-                                                                                                                     : 0; });
+                           [](uint64_t mask) -> int8_t { return ((mask & 0x1L) == 0x1L) ? 1 : ((mask & 0x2L) == 0x2L) ? -1
+                                                                                                                      : 0; });
 
 } // namespace cfskim
 DECLARE_SOA_TABLE(CFTracks, "AOD", "CFTRACK", //! The reconstructed tracks filtered table
