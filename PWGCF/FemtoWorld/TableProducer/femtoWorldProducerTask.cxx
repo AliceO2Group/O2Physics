@@ -428,9 +428,9 @@ struct femtoWorldProducerTask {
 
     // now the table is filled
     if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multFT0M(), spher, mMagField,-1);
+      outputCollision(vtxZ, col.multFT0M(), spher, mMagField, -1);
     } else {
-      outputCollision(vtxZ, mult, spher, mMagField,centrality);
+      outputCollision(vtxZ, mult, spher, mMagField, centrality);
     }
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children

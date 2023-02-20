@@ -91,15 +91,15 @@ struct FemtoWorldIdenticalPionPair {
   // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgCentBins{"CfgCentBins",{VARIABLE_WIDTH,0.0f,5.0f,10.0f,20.0f,30.0f,40.0f,50.0f},"Centrality Bins"};
-  ConfigurableAxis CfgCentBinsMixing{"CfgCentBinsMixing",{VARIABLE_WIDTH,0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f},"Mixing-Bins Centrality Bins"};
+  ConfigurableAxis CfgCentBins{"CfgCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f}, "Centrality Bins"};
+  ConfigurableAxis CfgCentBinsMixing{"CfgCentBinsMixing", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f}, "Mixing-Bins Centrality Bins"};
 
   // Configurable<std::vector<float>> CfgMultBins{"CfgMultBins",{0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f},"Mixing bins - multiplicity"};
   // Configurable<std::vector<float>> CfgVtxBins{"CfgVtxBins",{-10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f},"Mixing bins - z-vertex"};
   // Configurable<std::vector<float>> CfgCentBins{"CfgCentBins",{5.0f,10.0f,20.0f,30.0f,40.0f,50.0f},"Centrality Bins"};
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M > colBinning2{{CfgVtxBins, CfgCentBinsMixing}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M> colBinning2{{CfgVtxBins, CfgCentBinsMixing}, true};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
@@ -123,19 +123,19 @@ struct FemtoWorldIdenticalPionPair {
   // HistogramRegistry qaRegistryFail{"TrackQAFailed", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry SameEvPairWithCentReg{"SameEvPairWithCentReg",{},OutputObjHandlingPolicy::AnalysisObject,true,true};
-  HistogramRegistry MixedEvPairWithCentReg{"MixedEvPairWithCentReg",{},OutputObjHandlingPolicy::AnalysisObject,true,true};
+  HistogramRegistry SameEvPairWithCentReg{"SameEvPairWithCentReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MixedEvPairWithCentReg{"MixedEvPairWithCentReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(InitContext&)
   {
     qaRegistry.add("ChargeInfo/TrackOne", "Sign of track one", kTH1F, {{4, -2, 2}});
     qaRegistry.add("ChargeInfo/TrackTwo", "Sign of track two", kTH1F, {{4, -2, 2}});
 
-    mMassOne= TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-    mMassTwo= TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+    mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
+    mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
 
-    SameEvCorrWithCent.init(&SameEvPairWithCentReg,CfgkstarBins,CfgCentBins);
-    MixedEvCorrWithCent.init(&MixedEvPairWithCentReg,CfgkstarBins,CfgCentBins);
+    SameEvCorrWithCent.init(&SameEvPairWithCentReg, CfgkstarBins, CfgCentBins);
+    MixedEvCorrWithCent.init(&MixedEvPairWithCentReg, CfgkstarBins, CfgCentBins);
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
@@ -238,11 +238,11 @@ struct FemtoWorldIdenticalPionPair {
       }
 
       sameEventCont.setPair(p1, p2, multCol);
-      
-      float kstar=FemtoWorldMath::getkstar(p1, mMassOne, p2, mMassTwo);
+
+      float kstar = FemtoWorldMath::getkstar(p1, mMassOne, p2, mMassTwo);
       // float kT=FemtoWorldMath::getkT(p1, mMassOne, p2, mMassTwo)
       float v0mCent = col.centRun2V0M();
-      SameEvCorrWithCent.fill<float>(kstar,v0mCent);
+      SameEvCorrWithCent.fill<float>(kstar, v0mCent);
     }
   }
 
@@ -304,17 +304,16 @@ struct FemtoWorldIdenticalPionPair {
         }
         mixedEventCont.setPair(p1, p2, collision1.multV0M());
 
-        float kstar=FemtoWorldMath::getkstar(p1, mMassOne, p2, mMassTwo);
-        float v0mCent=collision1.centRun2V0M();
+        float kstar = FemtoWorldMath::getkstar(p1, mMassOne, p2, mMassTwo);
+        float v0mCent = collision1.centRun2V0M();
         // float kT=FemtoWorldMath::getkT(p1, mMassOne, p2, mMassTwo)
-        MixedEvCorrWithCent.fill<float>(kstar,v0mCent);
+        MixedEvCorrWithCent.fill<float>(kstar, v0mCent);
       }
     }
   }
   PROCESS_SWITCH(FemtoWorldIdenticalPionPair, processMixedEvent, "Enable processing mixed events", true);
 
-  float mMassOne=-999.,mMassTwo=-999.;
-  
+  float mMassOne = -999., mMassTwo = -999.;
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
