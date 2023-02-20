@@ -77,7 +77,6 @@ struct HfCandidateCreatorXicc {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(true);
 
     // 2-prong vertex fitter to build the Xicc vertex
     o2::vertexing::DCAFitterN<2> df2;
@@ -87,7 +86,6 @@ struct HfCandidateCreatorXicc {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
 
     for (auto& xicCand : xicCands) {
       if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {

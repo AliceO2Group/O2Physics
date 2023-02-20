@@ -891,7 +891,8 @@ struct HfTrackIndexSkimCreator {
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -1540,6 +1541,7 @@ struct HfTrackIndexSkimCreator {
       df2.setMinParamChange(minParamChange);
       df2.setMinRelChi2Change(minRelChi2Change);
       df2.setUseAbsDCA(useAbsDCA);
+      df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
       // 3-prong vertex fitter
       o2::vertexing::DCAFitterN<3> df3;
@@ -1550,6 +1552,7 @@ struct HfTrackIndexSkimCreator {
       df3.setMinParamChange(minParamChange);
       df3.setMinRelChi2Change(minRelChi2Change);
       df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
       // used to calculate number of candidiates per event
       auto nCand2 = rowTrackIndexProng2.lastIndex();
@@ -2252,7 +2255,8 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   // track cuts for bachelor
@@ -2366,6 +2370,7 @@ struct HfTrackIndexSkimCreatorCascades {
       // fitter.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
       // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
       fitter.setUseAbsDCA(useAbsDCA);
+      fitter.setWeightedFinalPCA(useWeightedFinalPCA);
 
       // fist we loop over the bachelor candidate
 
@@ -2551,7 +2556,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
 
   // quality cut
@@ -2759,6 +2765,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       df2.setMinParamChange(minParamChange);
       df2.setMinRelChi2Change(minRelChi2Change);
       df2.setUseAbsDCA(useAbsDCA);
+      df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
       // 3-prong vertex fitter
       o2::vertexing::DCAFitterN<3> df3;
@@ -2769,6 +2776,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       df3.setMinParamChange(minParamChange);
       df3.setMinRelChi2Change(minRelChi2Change);
       df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
       // cascade loop
       auto thisCollId = collision.globalIndex();
@@ -2812,6 +2820,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
         dfc.setMinParamChange(minParamChange);
         dfc.setMinRelChi2Change(minRelChi2Change);
         dfc.setUseAbsDCA(useAbsDCA);
+        dfc.setWeightedFinalPCA(useWeightedFinalPCA);
 
         auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
 

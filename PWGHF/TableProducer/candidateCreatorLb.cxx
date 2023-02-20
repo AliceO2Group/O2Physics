@@ -84,7 +84,6 @@ struct HfCandidateCreatorLb {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
 
     // 3-prong vertex fitter (to rebuild Lc vertex)
     o2::vertexing::DCAFitterN<3> df3;
@@ -94,7 +93,6 @@ struct HfCandidateCreatorLb {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(true);
 
     // loop over Lc candidates
     for (auto& lcCand : lcCands) {

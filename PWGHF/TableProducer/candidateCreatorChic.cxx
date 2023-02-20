@@ -88,7 +88,6 @@ struct HfCandidateCreatorChic {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
 
     // loop over Jpsi candidates
     for (auto& jpsiCand : jpsiCands) {
