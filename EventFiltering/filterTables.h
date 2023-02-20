@@ -106,8 +106,8 @@ DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decis
 
 namespace bcrange
 {
-DECLARE_SOA_COLUMN(BCstart, hasBCstart, uint64_t);    //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);      //! CEFP bcrange
+DECLARE_SOA_COLUMN(BCstart, hasBCstart, uint64_t); //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
 
 } // namespace bcrange
 
