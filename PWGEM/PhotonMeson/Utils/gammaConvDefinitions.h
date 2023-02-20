@@ -12,8 +12,8 @@
 /// \brief commonly used definitions for gammaConv tasks
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
-#ifndef GammaConvDefinitions_H
-#define GammaConvDefinitions_H
+#ifndef PWGEM_PHOTONMESON_UTILS_GAMMACONVDEFINITIONS_H_
+#define PWGEM_PHOTONMESON_UTILS_GAMMACONVDEFINITIONS_H_
 
 #include "Framework/AnalysisTask.h"
 
