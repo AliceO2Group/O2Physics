@@ -104,6 +104,13 @@ DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decis
 
 } // namespace decision
 
+namespace bcrange
+{
+DECLARE_SOA_COLUMN(BCstart, hasBCstart, uint64_t); //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
+
+} // namespace bcrange
+
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
                   filtering::H2, filtering::H3, filtering::He);
@@ -171,6 +178,11 @@ using PhotFilter = PhotFilters::iterator;
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
                   decision::BCId, decision::GlobalBCId, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
+
+// cefp decision
+DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
+                  bcrange::BCstart, bcrange::BCend);
+using BCRange = BCRanges::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{11};

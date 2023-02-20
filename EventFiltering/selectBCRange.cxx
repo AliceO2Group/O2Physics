@@ -43,6 +43,7 @@ struct BCRangeSelector {
 
   // buffer for task output
   std::vector<o2::dataformats::IRFrame> res;
+  Produces<aod::BCRanges> tags;
 
   void init(o2::framework::InitContext&)
   {
@@ -102,6 +103,7 @@ struct BCRangeSelector {
       IR1.setFromLong(limit.first);
       IR2.setFromLong(limit.second);
       res.emplace_back(IR1, IR2);
+      tags(limit.first, limit.second);
     }
     // make res an output
     pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);
