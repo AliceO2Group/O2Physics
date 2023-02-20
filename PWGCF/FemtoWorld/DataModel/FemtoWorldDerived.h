@@ -21,6 +21,7 @@
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Centrality.h"
 
 namespace o2::aod
 {
@@ -38,7 +39,8 @@ DECLARE_SOA_TABLE(FemtoWorldCollisions, "AOD", "FEMTOWORLDCOLS",
                   o2::aod::collision::PosZ,
                   femtoworldcollision::MultV0M,
                   femtoworldcollision::Sphericity,
-                  femtoworldcollision::MagField);
+                  femtoworldcollision::MagField,
+                  o2::aod::cent::CentRun2V0M);
 using FemtoWorldCollision = FemtoWorldCollisions::iterator;
 
 /// FemtoWorldTrack
