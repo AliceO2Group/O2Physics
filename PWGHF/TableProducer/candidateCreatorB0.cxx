@@ -369,11 +369,11 @@ struct HfCandidateCreatorB0Expressions {
       flag = 0;
       origin = 0;
       // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kB0, array{-int(pdg::Code::kDPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kB0, array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
         // Match D- -> π- K+ π-
         auto candDMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D- -> π- K+ π-");
-        if (RecoDecay::isMatchedMCGen(particlesMC, candDMC, -int(pdg::Code::kDPlus), array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, candDMC, -static_cast<int>(pdg::Code::kDPlus), array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }

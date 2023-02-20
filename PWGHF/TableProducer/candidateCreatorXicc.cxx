@@ -56,7 +56,7 @@ struct HfCandidateCreatorXicc {
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
-  double massXic = RecoDecay::getMassPDG(int(pdg::Code::kXiCPlus));
+  double massXic = RecoDecay::getMassPDG(static_cast<int>(pdg::Code::kXiCPlus));
   double massXicc{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -244,11 +244,11 @@ struct HfCandidateCreatorXiccMc {
       flag = 0;
       origin = 0;
       // Xicc → Xic + π+
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCCPlusPlus, array{int(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCCPlusPlus, array{static_cast<int>(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
         // Match Xic -> pKπ
         auto XicCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking Ξc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, int(pdg::Code::kXiCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, static_cast<int>(pdg::Code::kXiCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::XiccToXicPi);
         }
       }
