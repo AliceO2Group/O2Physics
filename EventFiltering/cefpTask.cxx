@@ -232,8 +232,8 @@ struct centralEventFilterTask {
 
     mScalers->GetXaxis()->SetBinLabel(1, "Total number of events");
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
-    mScalers->GetXaxis()->SetBinLabel(nCols + 1, "Triggered events");
-    mFiltered->GetXaxis()->SetBinLabel(nCols + 1, "Filtered events");
+    mScalers->GetXaxis()->SetBinLabel(nCols + 2, "Triggered events");
+    mFiltered->GetXaxis()->SetBinLabel(nCols + 2, "Filtered events");
     int bin{2};
 
     for (auto& table : mDownscaling) {
