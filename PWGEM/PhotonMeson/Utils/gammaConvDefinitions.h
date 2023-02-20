@@ -12,6 +12,9 @@
 /// \brief commonly used definitions for gammaConv tasks
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
+#ifndef GammaConvDefinitions_H
+#define GammaConvDefinitions_H
+
 #include "Framework/AnalysisTask.h"
 
 using namespace o2::framework;
@@ -36,3 +39,5 @@ AxisSpec gAxis_pT_log{800, 0.01f, 25.f};
 HistogramSpec const gHistoSpec_hCollisionZ_all_MCTrue{"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
 HistogramSpec const gHistoSpec_hCollisionZ_MCTrue{"hCollisionZ_MCTrue", "hCollisionZ_MCTrue;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
 HistogramSpec const gHistoSpec_hCollisionZ_MCRec{"hCollisionZ_MCRec", "hCollisionZ_MCRec;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
+
+#endif
