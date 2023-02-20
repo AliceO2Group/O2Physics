@@ -40,4 +40,4 @@ HistogramSpec const gHistoSpec_hCollisionZ_all_MCTrue{"hCollisionZ_all_MCTrue", 
 HistogramSpec const gHistoSpec_hCollisionZ_MCTrue{"hCollisionZ_MCTrue", "hCollisionZ_MCTrue;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
 HistogramSpec const gHistoSpec_hCollisionZ_MCRec{"hCollisionZ_MCRec", "hCollisionZ_MCRec;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
 
-#endif  // PWGEM_PHOTONMESON_UTILS_GAMMACONVDEFINITIONS_H_
+#endif // PWGEM_PHOTONMESON_UTILS_GAMMACONVDEFINITIONS_H_
