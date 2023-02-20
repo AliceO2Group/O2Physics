@@ -1209,14 +1209,22 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/proton/h1ProtonSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/proton/h2TPCsignVsTPCmomentumProton"), track.tpcInnerParam(), track.tpcSignal());
+<<<<<<< HEAD
           if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPi()) > 2) && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
+=======
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
+>>>>>>> 9500548b ([PWGLF] LightNucleiSpectra - Add DCA custom cut)
             histos.fill(HIST("tracks/proton/hc/h2TPCsignVsTPCmomentumProton_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         } else {
           histos.fill(HIST("tracks/proton/h1antiProtonSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/proton/h2TPCsignVsTPCmomentumantiProton"), track.tpcInnerParam(), track.tpcSignal());
+<<<<<<< HEAD
           if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPi()) > 2) && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
+=======
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
+>>>>>>> 9500548b ([PWGLF] LightNucleiSpectra - Add DCA custom cut)
             histos.fill(HIST("tracks/proton/hc/h2TPCsignVsTPCmomentumantiProton_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         }
