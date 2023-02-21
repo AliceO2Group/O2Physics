@@ -65,7 +65,7 @@ struct LFNucleiBATask {
   Configurable<bool> enableStrongCut{"enableStrongCut", false, "Flag to change | NSigma TPC(nucl)| < nSigmaTPC --> NOT | NSigma TPC(p)| > nStrongCut"};
   Configurable<float> nsigmaTPCStrongCut{"nsigmaTPCStrongCut", 3.f, "Value of the Nsigma TPC (Strong) proton cut, if enabled"};
   Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
-  Configurable<bool> enableNucleiHardCut{"enableNucleiHardCut", false, "Flag to enable TPC sigma histograms filled without the 'nearby' particle"};
+  Configurable<bool> enableNucleiHardCut{"enableNucleiHardCut", false, "Flag to enable TPC sigma histograms filled without the 'nearby' particle (at low momentum)"};
 
   static constexpr int PDGPion = 211;
   static constexpr int PDGKaon = 321;
@@ -1209,14 +1209,14 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/proton/h1ProtonSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/proton/h2TPCsignVsTPCmomentumProton"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPi()) > 2) && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
             histos.fill(HIST("tracks/proton/hc/h2TPCsignVsTPCmomentumProton_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         } else {
           histos.fill(HIST("tracks/proton/h1antiProtonSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/proton/h2TPCsignVsTPCmomentumantiProton"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPi()) > 2) && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaDe()) > 2)) {
             histos.fill(HIST("tracks/proton/hc/h2TPCsignVsTPCmomentumantiProton_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         }
@@ -1227,14 +1227,14 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/deuteron/h1DeuteronSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/deuteron/h2TPCsignVsTPCmomentumDeuteron"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPr()) > 2) && (std::abs(track.tpcNSigmaTr()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPi()) > 2) && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaPr()) > 1) && (std::abs(track.tpcNSigmaTr()) > 1) && (std::abs(track.tpcNSigmaDe()) < nsigmaTPCStrongCut)) {
             histos.fill(HIST("tracks/deuteron/hc/h2TPCsignVsTPCmomentumDeuteron_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         } else {
           histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/deuteron/h2TPCsignVsTPCmomentumantiDeuteron"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPr()) > 2) && (std::abs(track.tpcNSigmaTr()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaPi()) > 2) && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaPr()) > 1) && (std::abs(track.tpcNSigmaTr()) > 1) && (std::abs(track.tpcNSigmaDe()) < nsigmaTPCStrongCut)) {
             histos.fill(HIST("tracks/deuteron/hc/h2TPCsignVsTPCmomentumantiDeuteron_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         }
@@ -1244,14 +1244,14 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/triton/h1TritonSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/triton/h2TPCsignVsTPCmomentumTriton"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaDe()) > 2) && (std::abs(track.tpcNSigmaHe()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaPr()) > 2) && (std::abs(track.tpcNSigmaDe()) > 1) && (std::abs(track.tpcNSigmaHe()) > 1) && (std::abs(track.tpcNSigmaTr()) < nsigmaTPCStrongCut)) {
             histos.fill(HIST("tracks/triton/hc/h2TPCsignVsTPCmomentumTriton_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         } else {
           histos.fill(HIST("tracks/triton/h1antiTritonSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/triton/h2TPCsignVsTPCmomentumantiTriton"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaDe()) > 2) && (std::abs(track.tpcNSigmaHe()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaPr()) > 2) && (std::abs(track.tpcNSigmaDe()) > 1) && (std::abs(track.tpcNSigmaHe()) > 1) && (std::abs(track.tpcNSigmaTr()) < nsigmaTPCStrongCut)) {
             histos.fill(HIST("tracks/triton/hc/h2TPCsignVsTPCmomentumantiTriton_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         }
@@ -1261,14 +1261,14 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/helium/h1HeliumSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/helium/h2TPCsignVsTPCmomentumHelium"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaTr()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaPr()) > 2) && (std::abs(track.tpcNSigmaTr()) > 1) && (std::abs(track.tpcNSigmaHe()) < nsigmaTPCStrongCut)) {
             histos.fill(HIST("tracks/helium/hc/h2TPCsignVsTPCmomentumHelium_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         } else {
           histos.fill(HIST("tracks/helium/h1antiHeliumSpectra"), track.pt());
           if (enablePIDplot)
             histos.fill(HIST("tracks/helium/h2TPCsignVsTPCmomentumantiHelium"), track.tpcInnerParam(), track.tpcSignal());
-          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaTr()) > 2)) {
+          if (enableNucleiHardCut && (std::abs(track.tpcNSigmaKa()) > 2) && (std::abs(track.tpcNSigmaPr()) > 2) && (std::abs(track.tpcNSigmaTr()) > 1) && (std::abs(track.tpcNSigmaHe()) < nsigmaTPCStrongCut)) {
             histos.fill(HIST("tracks/helium/hc/h2TPCsignVsTPCmomentumantiHelium_hard"), track.tpcInnerParam(), track.tpcSignal());
           }
         }
