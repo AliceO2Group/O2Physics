@@ -25,6 +25,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
@@ -56,6 +57,7 @@ using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::it
 using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
+using tracksPID = o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks>;
 struct ClusterMonitor {
   HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
@@ -145,7 +147,11 @@ struct ClusterMonitor {
     mHistManager.add("clusterTM_dPhiTNAli", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.1, 0.1}, {MaxMatched, 0.5, MaxMatched + 0.5}});                     // dPhi compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
     mHistManager.add("clusterTM_dRTNAli", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, 0.0, 0.1}, {MaxMatched, 0.5, MaxMatched + 0.5}});                                      // dR compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
     mHistManager.add("clusterTM_NTrackAli", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{11, -0.5, 10.5}});                                                                                               // how many tracks are matched with cuts from latest Pi0 Run2 analysis
-    mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05)", o2HistType::kTH3F, {{500, 0, 10}, {200, 0, 100}, {MaxMatched, 0.5, MaxMatched + 0.5}});                                                         // E/p vs p vs # matched track
+    mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05);#it{E}_{cluster}/#it{p}_{track};#it{E}_{cluster} (GeV)", o2HistType::kTH3F, {{500, 0, 10}, {200, 0, 100}, {MaxMatched, 0.5, MaxMatched + 0.5}});  // E/p vs p vs # matched track
+    mHistManager.add("clusterTM_EvsP", "cluster E/track p (dEtadPhi<0.05);#it{E}_{cluster} (GeV);#it{p}_{track} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});                                         // E vs p for closest track with dEta,dPhi<0.05
+    mHistManager.add("clusterTM_EoverP_electron", "cluster E/electron p (dEtadPhi<0.05);#it{E}_{cluster} (GeV);#it{p}_{e^{#pm}} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});                         // E over p vs track pT for closest electron/positron track with dEta,dPhi<0.05
+    mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p (dEtadPhi<0.05);#it{E}_{cluster} (GeV);#it{p}_{e^{#pm}} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});                             // E over p vs track pT for closest hadron track with dEta,dPhi<0.05
+    mHistManager.add("clusterTM_EoverP_Pt", "cluster E/track vs track pT (dEtadPhi<0.05);#it{E}_{cluster}/#it{p}_{track};#it{p}_{T,track} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});               // E vs p vs track pTfor closest track with dEta,dPhi<0.05
 
     // add histograms per supermodule
     for (int ism = 0; ism < 20; ++ism) {
@@ -183,7 +189,7 @@ struct ClusterMonitor {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, o2::aod::FullTracks const& alltrack)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, tracksPID const& alltrack)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
@@ -287,29 +293,29 @@ struct ClusterMonitor {
       int tAli = 0;
       for (const auto& match : tracksofcluster) {
         // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
-        LOG(debug) << "Pt of match" << match.track_as<o2::aod::FullTracks>().pt();
+        LOG(debug) << "Pt of match" << match.track_as<tracksPID>().pt();
         // only consider closest match
         if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
-          dEta = match.track_as<o2::aod::FullTracks>().trackEtaEmcal() - cluster.eta();
-          dPhi = match.track_as<o2::aod::FullTracks>().trackPhiEmcal() - cluster.phi();
+          dEta = match.track_as<tracksPID>().trackEtaEmcal() - cluster.eta();
+          dPhi = match.track_as<tracksPID>().trackPhiEmcal() - cluster.phi();
         } else {
-          dEta = match.track_as<o2::aod::FullTracks>().eta() - cluster.eta();
-          dPhi = match.track_as<o2::aod::FullTracks>().phi() - cluster.phi();
+          dEta = match.track_as<tracksPID>().eta() - cluster.eta();
+          dPhi = match.track_as<tracksPID>().phi() - cluster.phi();
         }
         if (t == 0) {
-          if (match.track_as<o2::aod::FullTracks>().eta() > 0.0) {
+          if (match.track_as<tracksPID>().eta() > 0.0) {
             mHistManager.fill(HIST("clusterTM_dEtadPhi_ASide"), dEta, dPhi);
-          } else if (match.track_as<o2::aod::FullTracks>().eta() < 0.0) {
+          } else if (match.track_as<tracksPID>().eta() < 0.0) {
             mHistManager.fill(HIST("clusterTM_dEtadPhi_CSide"), dEta, dPhi);
           }
           mHistManager.fill(HIST("clusterEMatched"), cluster.energy());
           mHistManager.fill(HIST("clusterTM_dEtaPt"), dEta, pT);
-          if (match.track_as<o2::aod::FullTracks>().sign() == 1) {
+          if (match.track_as<tracksPID>().sign() == 1) {
             mHistManager.fill(HIST("clusterTM_PosdEtadPhi"), dEta, dPhi);
             mHistManager.fill(HIST("clusterTM_PosdPhiPt"), dPhi, pT);
-            if (match.track_as<o2::aod::FullTracks>().p() < 0.75) {
+            if (match.track_as<tracksPID>().p() < 0.75) {
               mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pl0_75"), dEta, dPhi);
-            } else if (match.track_as<o2::aod::FullTracks>().p() >= 1.25) {
+            } else if (match.track_as<tracksPID>().p() >= 1.25) {
               mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pgeq1_25"), dEta, dPhi);
             } else {
               mHistManager.fill(HIST("clusterTM_PosdEtadPhi_0_75leqPl1_25"), dEta, dPhi);
@@ -317,21 +323,28 @@ struct ClusterMonitor {
           } else {
             mHistManager.fill(HIST("clusterTM_NegdEtadPhi"), dEta, dPhi);
             mHistManager.fill(HIST("clusterTM_NegdPhiPt"), dPhi, pT);
-            if (match.track_as<o2::aod::FullTracks>().p() < 0.75) {
+            if (match.track_as<tracksPID>().p() < 0.75) {
               mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pl0_75"), dEta, dPhi);
-            } else if (match.track_as<o2::aod::FullTracks>().p() >= 1.25) {
+            } else if (match.track_as<tracksPID>().p() >= 1.25) {
               mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pgeq1_25"), dEta, dPhi);
             } else {
               mHistManager.fill(HIST("clusterTM_NegdEtadPhi_0_75leqPl1_25"), dEta, dPhi);
             }
           }
+          mHistManager.fill(HIST("clusterTM_EvsP"), cluster.energy(), match.track_as<tracksPID>().p());
+          mHistManager.fill(HIST("clusterTM_EoverP_Pt"), cluster.energy() / abs(match.track_as<tracksPID>().p()), match.track_as<tracksPID>().pt());
+          if (match.track_as<tracksPID>().tpcNSigmaEl() >= -3.0 && match.track_as<tracksPID>().tpcNSigmaEl() <= 2.0 && !(std::fabs(match.track_as<tracksPID>().tpcNSigmaPi()) <= 3.0)) { // E/p for e+/e- with pion rejection
+            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs(match.track_as<tracksPID>().p()), match.track_as<tracksPID>().pt());
+          } else if (match.track_as<tracksPID>().tpcNSigmaEl() < -3.0) { // E/p for hadrons / background
+            mHistManager.fill(HIST("clusterTM_EoverP_hadron"), cluster.energy() / abs(match.track_as<tracksPID>().p()), match.track_as<tracksPID>().pt());
+          }
         }
         t++;
-        mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track_as<o2::aod::FullTracks>().p(), cluster.energy(), t);
+        mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / abs(match.track_as<tracksPID>().p()), cluster.energy(), t);
         mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi, t);
-        if ((fabs(dEta) <= 0.01 + pow(match.track_as<o2::aod::FullTracks>().pt() + 4.07, -2.5)) &&
-            (fabs(dPhi) <= 0.015 + pow(match.track_as<o2::aod::FullTracks>().pt() + 3.65, -2.)) &&
-            cluster.energy() / match.track_as<o2::aod::FullTracks>().p() < 1.75) {
+        if ((fabs(dEta) <= 0.01 + pow(match.track_as<tracksPID>().pt() + 4.07, -2.5)) &&
+            (fabs(dPhi) <= 0.015 + pow(match.track_as<tracksPID>().pt() + 3.65, -2.)) &&
+            cluster.energy() / match.track_as<tracksPID>().p() < 1.75) {
           tAli++;
           mHistManager.fill(HIST("clusterTM_dEtaTNAli"), dEta, tAli);
           mHistManager.fill(HIST("clusterTM_dPhiTNAli"), dPhi, tAli);
