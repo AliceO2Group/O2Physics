@@ -53,16 +53,6 @@ o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cf-twobodyfemto-filter
-                            SOURCES PWGCF/CFFilterTwoN.cxx
-                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                            COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(cf-threebodyfemto-filter
-                            SOURCES PWGCF/CFFilter.cxx
-                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                            COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(cf-filter
                             SOURCES PWGCF/CFFilterAll.cxx
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

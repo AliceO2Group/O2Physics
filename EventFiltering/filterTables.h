@@ -136,13 +136,8 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
 
 using HfFilter = HfFilters::iterator;
 
-// correlations
-DECLARE_SOA_TABLE(CFFiltersTwoN, "AOD", "CFFiltersTwoN", //!
-                  filtering::PD, filtering::LD);
-using CFFilterTwoN = CFFiltersTwoN::iterator;
-
 DECLARE_SOA_TABLE(CFFilters, "AOD", "CFFilters", //!
-                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
+                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL, filtering::PD, filtering::LD);
 using CfFilter = CFFilters::iterator;
 
 // jets
