@@ -215,6 +215,8 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(JetFilters);
   FILTER_CONFIGURABLE(StrangenessFilters);
   FILTER_CONFIGURABLE(MultFilters);
+  FILTER_CONFIGURABLE(FullJetFilters);
+  FILTER_CONFIGURABLE(PhotFilters);
 
   void init(o2::framework::InitContext& initc)
   {
