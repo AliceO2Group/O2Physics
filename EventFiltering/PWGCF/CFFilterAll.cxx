@@ -1664,8 +1664,8 @@ struct CFFilter {
         for (auto iDeuteron = deuterons.begin(); iDeuteron != deuterons.end(); ++iDeuteron) {
           for (auto iLambda = lambdas.begin(); iLambda != lambdas.end(); ++iLambda) {
             kstar = getkstar(*iDeuteron, *iLambda);
+            registry.fill(HIST("ld/fSE_particle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kLD)) {
-              registry.fill(HIST("ld/fSE_particle"), kstar);
               lowKstarPairs[CFTrigger::kLD] += 1;
             }
           }
@@ -1673,8 +1673,8 @@ struct CFFilter {
         for (auto iAntiDeuteron = antideuterons.begin(); iAntiDeuteron != antideuterons.end(); ++iAntiDeuteron) {
           for (auto iAntiLambda = antilambdas.begin(); iAntiLambda != antilambdas.end(); ++iAntiLambda) {
             kstar = getkstar(*iAntiDeuteron, *iAntiLambda);
+            registry.fill(HIST("ld/fSE_antiparticle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kLD)) {
-              registry.fill(HIST("ld/fSE_antiparticle"), kstar);
               lowKstarPairs[CFTrigger::kLD] += 1;
             }
           }
