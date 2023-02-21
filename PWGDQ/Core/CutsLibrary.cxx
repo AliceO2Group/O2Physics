@@ -681,6 +681,40 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  // 4 cuts to separate pos & neg tracks in pos & neg eta range
+  if (!nameStr.compare("lmee_posTrack_posEta_selection")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("posEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_negTrack_posEta_selection")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("posEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_posTrack_negEta_selection")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("negEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_negTrack_negEta_selection")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("negEtaSel"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  // 4 cuts to separate pos & neg tracks in pos & neg eta range applying electron PID
   if (!nameStr.compare("lmee_posNSigmaRun3_posEta_tight")) {
     cut->AddCut(GetAnalysisCut("posTrack"));
     cut->AddCut(GetAnalysisCut("posEtaSel"));
