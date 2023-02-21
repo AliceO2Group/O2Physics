@@ -1152,8 +1152,6 @@ struct CFFilterQA {
 
     if (isSelectedEvent(col)) {
 
-      outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), -2, -2);
-
       registry.fill(HIST("EventCuts/fMultiplicityAfter"), col.multNTracksPV());
       registry.fill(HIST("EventCuts/fZvtxAfter"), col.posZ());
 
@@ -1658,6 +1656,8 @@ struct CFFilterQA {
     if (ConfKeepAllSelectedParticles.value ||
         keepEvent3N[CFTrigger::kPPP] || keepEvent3N[CFTrigger::kPPL] || keepEvent3N[CFTrigger::kPLL] || keepEvent3N[CFTrigger::kLLL] ||
         keepEvent2N[CFTrigger::kPP] || keepEvent2N[CFTrigger::kPL]) {
+
+      outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), -2, -2);
 
       registry.fill(HIST("fProcessedEvents"), 1);
 
