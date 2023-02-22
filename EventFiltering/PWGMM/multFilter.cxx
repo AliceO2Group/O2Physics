@@ -98,9 +98,9 @@ struct multFilter {
     multiplicity.add("hFT0C", "FT0C", HistType::kTH1F, {{600, -0.5, 599.5, "FT0C amplitudes"}});
     multiplicity.add("hFT0A", "FT0A", HistType::kTH1F, {{600, -0.5, 599.5, "FT0A amplitudes"}});
 
-    multiplicity.add("hMultFT0C", "hMultFT0C", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0C amplitudes"}});
-    multiplicity.add("hMultFT0A", "hMultFT0A", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0A amplitudes"}});
-
+    multiplicity.add("hMultFT0C", "hMultFT0C", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0C amplitude"}});
+    multiplicity.add("hMultFT0A", "hMultFT0A", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0A amplitude"}});
+    multiplicity.add("hMultFV0", "hMultFV0", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude"}});
     multiplicity.add("hT0C_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
     multiplicity.add("hT0A_time", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
     multiplicity.add("hT0Cafter_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
@@ -223,11 +223,7 @@ struct multFilter {
     if (nevFV0 > min_n_ev) {
       fac_FV0_ebe = avPyFV0 / (MultFV0 / nevFV0);
     }
-    /*
-            LOGP(info, "****************    f_FT0A={}", fac_FT0A_ebe);
-            LOGP(info, "****************    f_FT0C={}", fac_FT0C_ebe);
-              LOGP(info, "****************    f_FV0={}", fac_FV0_ebe);
-    */
+
     bool keepEvent[kNtriggersMM]{false};
     auto vtxZ = collision.posZ();
     multiplicity.fill(HIST("fProcessedEvents"), 0);
@@ -472,7 +468,11 @@ struct multFilter {
   // aqui
   void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
-
+    MultFV0 = 0.f;
+    totFT0A = 0.f;
+    totFT0C = 0.f;
+    nevFT0 = 0;
+    nevFV0 = 0;
     // LOGP(info, "****************    processing processFT0", nevFT0);
     //  get FT0 average multiplicity
     for (auto& collision : collisions) {
@@ -495,8 +495,6 @@ struct multFilter {
           nevFT0++;
           for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
             float amplitude = ft0.amplitudeA()[i_a];
-            // uint8_t channel = ft0.channelA()[i_a];
-            // int sector = getT0ASector(channel);
             MultFT0A += amplitude;
           }
           for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
@@ -511,16 +509,19 @@ struct multFilter {
       }
 
       if (collision.has_foundFV0()) {
-        float sumAmpFV0 = 0;
-        auto fv0 = collision.foundFV0();
-        // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
-        for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
+        if (sel8 && collision.sel8()) {
+          float sumAmpFV0 = 0;
+          auto fv0 = collision.foundFV0();
+          // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
+          for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
 
-          float ampl_ch = fv0.amplitude()[ich];
-          sumAmpFV0 += ampl_ch;
+            float ampl_ch = fv0.amplitude()[ich];
+            sumAmpFV0 += ampl_ch;
+          }
+          MultFV0 += sumAmpFV0;
+          nevFV0++;
+          multiplicity.fill(HIST("hMultFV0"), sumAmpFV0);
         }
-        MultFV0 += sumAmpFV0;
-        nevFV0++;
       }
     }
   }
