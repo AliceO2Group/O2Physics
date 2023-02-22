@@ -1555,7 +1555,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kKFTrack0DCAxy] = trk0KF.GetDistanceFromVertexXY(KFPV);
       values[kKFTrack1DCAxy] = trk1KF.GetDistanceFromVertexXY(KFPV);
       values[kKFTracksDCAxyMax] = TMath::Abs(values[kKFTrack0DCAxy]) > TMath::Abs(values[kKFTrack1DCAxy]) ? values[kKFTrack0DCAxy] : values[kKFTrack1DCAxy];
-      values[kKFDCAxyBetweenProngs] = trk0KF.GetDistanceFromVertexXY(trk1KF);
+      values[kKFDCAxyBetweenProngs] = trk0KF.GetDistanceFromParticle(trk1KF);
     }
   }
 }
