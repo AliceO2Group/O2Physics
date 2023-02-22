@@ -65,6 +65,7 @@ struct QaImpactPar {
   ConfigurableAxis binningCharge{"binningCharge", {2, -2.f, 2.f}, "charge binning (-1: negative; +1: positive)"};
   ConfigurableAxis binsNumPvContrib{"binsNumPvContrib", {200, 0, 200}, "Number of original PV contributors"};
   Configurable<bool> keepOnlyPhysPrimary{"keepOnlyPhysPrimary", false, "Consider only phys. primary particles (MC)"};
+  Configurable<bool> keepOnlyPvContrib{"keepOnlyPvContrib", false, "Consider only PV contributor tracks"};
   // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<bool> useTriggerkINT7{"useTriggerkINT7", false, "Use kINT7 trigger"};
   Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0A & T0C) event selection"};
@@ -439,6 +440,12 @@ struct QaImpactPar {
     int ntr = tracks.size();
     int cnt = 0;
     for (const auto& track : tracks) {
+
+      if (keepOnlyPvContrib && !track.isPVContributor()) {
+        /// let's skip all tracks that were not PV contributors originally
+        /// this let us ignore tracks flagged as ambiguous
+        continue;
+      }
 
       /// Specific MC selections
       int pdgIndex = -1;
