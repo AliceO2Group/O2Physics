@@ -265,6 +265,7 @@ struct QaImpactPar {
     const AxisSpec trackPDGAxis{binningPDG, "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
     const AxisSpec trackChargeAxis{binningCharge, "charge binning (-1: negative; +1: positive)"};
     const AxisSpec axisVertexNumContrib{binsNumPvContrib, "Number of original PV contributors"};
+    const AxisSpec trackIsPvContrib{2, -0.5f, 1.5f, "is PV contributor: 1=yes, 0=no"};
 
     histograms.add("Reco/pt", "", kTH1D, {trackPtAxis});
     histograms.add("Reco/itsHits", "Number of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5, "ITS layer"}, {8, -0.5, 7.5, "Number of hits"}});
@@ -274,19 +275,19 @@ struct QaImpactPar {
     histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(3, "hasTPC && !hasITS");
     histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(4, "!hasTPC && hasITS");
     histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(5, "hasTPC && hasITS");
-    histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
-    histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
+    histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+    histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     if (isPIDPionApplied) {
-      histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
-      histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
+      histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+      histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     if (isPIDKaonApplied) {
-      histograms.add("Reco/h4ImpPar_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
-      histograms.add("Reco/h4ImpParZ_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
+      histograms.add("Reco/h4ImpPar_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+      histograms.add("Reco/h4ImpParZ_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     if (isPIDProtonApplied) {
-      histograms.add("Reco/h4ImpPar_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
-      histograms.add("Reco/h4ImpParZ_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib});
+      histograms.add("Reco/h4ImpPar_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+      histograms.add("Reco/h4ImpParZ_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     histograms.add("Reco/hNSigmaTPCPion", "", kTH2D, {trackPtAxis, trackNSigmaTPCPionAxis});
     histograms.add("Reco/hNSigmaTPCKaon", "", kTH2D, {trackPtAxis, trackNSigmaTPCKaonAxis});
@@ -613,27 +614,27 @@ struct QaImpactPar {
       }
 
       /// all tracks
-      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
-      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
+      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
         /// PID selected pions
-        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
-        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
+        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
         histograms.fill(HIST("Reco/hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
       }
       if (isPIDKaonApplied && nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax && nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax) {
         /// PID selected kaons
-        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
-        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
+        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
         histograms.fill(HIST("Reco/hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
       }
       if (isPIDProtonApplied && nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax && nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax) {
         /// PID selected Protons
-        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
-        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib());
+        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("Reco/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
