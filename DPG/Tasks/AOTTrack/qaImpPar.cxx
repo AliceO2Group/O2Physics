@@ -243,7 +243,7 @@ struct QaImpactPar {
       LOG(info) << "### set_customITShitmap.size(): " << set_customITShitmap.size();
       LOG(info) << "### Custom ITS hitmap checked: ";
       for (std::set<uint8_t>::iterator it = set_customITShitmap.begin(); it != set_customITShitmap.end(); it++) {
-        LOG(info) << "Layer " << (int)(*it) << " ";
+        LOG(info) << "Layer " << static_cast<int>(*it) << " ";
       }
       LOG(info) << "############";
 
