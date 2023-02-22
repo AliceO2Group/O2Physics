@@ -246,6 +246,8 @@ struct tpcPidQa {
     static_for<0, 8>([&](auto i) {
       initPerParticle<i>(pAxis, ptAxis, dedxAxis, chargeAxis);
     });
+    LOG(info) << "QA PID TPC histograms:";
+    histos.print();
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>
