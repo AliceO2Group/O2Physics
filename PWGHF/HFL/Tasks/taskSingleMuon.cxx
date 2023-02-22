@@ -176,18 +176,18 @@ struct HfTaskSingleMuonSelection {
     HistogramConfigSpec hTHnMuLite{HistType::kTHnSparseD, {axispT, axisEta, axisDCA, axisTrkType, axisChi2MatchMCHMFT}, 5};
 
     if (fillLiteHist) {
-      registry.add("hMuLiteBeforecuts", "", hTHnMuLite);
-      registry.add("hMuLiteAftercuts", "", hTHnMuLite);
+      registry.add("hMuLiteBeforeCuts", "", hTHnMuLite);
+      registry.add("hMuLiteAfterCuts", "", hTHnMuLite);
     } else {
-      registry.add("hMuBeforecuts", "", hTHnMu);
-      registry.add("hMuAftercuts", "", hTHnMu);
+      registry.add("hMuBeforeCuts", "", hTHnMu);
+      registry.add("hMuAfterCuts", "", hTHnMu);
       if (fillMcHist) {
-        registry.add("hPtBeforecuts", "", hTHnPt);
-        registry.add("hPtAftercuts", "", hTHnPt);
-        registry.add("hEtaBeforecuts", "", hTHnEta);
-        registry.add("hEtaAftercuts", "", hTHnEta);
-        registry.add("hPBeforecuts", "", hTHnP);
-        registry.add("hPAftercuts", "", hTHnP);
+        registry.add("hPtBeforeCuts", "", hTHnPt);
+        registry.add("hPtAfterCuts", "", hTHnPt);
+        registry.add("hEtaBeforeCuts", "", hTHnEta);
+        registry.add("hEtaAfterCuts", "", hTHnEta);
+        registry.add("hPBeforeCuts", "", hTHnP);
+        registry.add("hPAfterCuts", "", hTHnP);
       }
     }
 
@@ -220,19 +220,19 @@ struct HfTaskSingleMuonSelection {
 
       if (fillLiteHist) {
         // Before Muon Cuts
-        registry.fill(HIST("hMuLiteBeforecuts"),
+        registry.fill(HIST("hMuLiteBeforeCuts"),
                       values[VarManager::kPt],
                       values[VarManager::kEta], dcaXY,
                       values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT]);
         // After Muon Cuts
         if (trackCut->IsSelected(values))
-          registry.fill(HIST("hMuLiteAftercuts"),
+          registry.fill(HIST("hMuLiteAfterCuts"),
                         values[VarManager::kPt],
                         values[VarManager::kEta], dcaXY,
                         values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT]);
       } else {
         // Before Muon Cuts
-        registry.fill(HIST("hMuBeforecuts"),
+        registry.fill(HIST("hMuBeforeCuts"),
                       values[VarManager::kPt],
                       values[VarManager::kEta], dcaXY,
                       values[VarManager::kCharge], track.p(),
@@ -240,7 +240,7 @@ struct HfTaskSingleMuonSelection {
                       values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
         // After Muon Cuts
         if (trackCut->IsSelected(values))
-          registry.fill(HIST("hMuAftercuts"),
+          registry.fill(HIST("hMuAfterCuts"),
                         values[VarManager::kPt],
                         values[VarManager::kEta], dcaXY,
                         values[VarManager::kCharge], track.p(),
@@ -275,7 +275,7 @@ struct HfTaskSingleMuonSelection {
       const auto dcaXY(std::sqrt(values[VarManager::kMuonDCAx] * values[VarManager::kMuonDCAx] + values[VarManager::kMuonDCAy] * values[VarManager::kMuonDCAy]));
 
       // Before Muon Cuts
-      registry.fill(HIST("hMuBeforecuts"),
+      registry.fill(HIST("hMuBeforeCuts"),
                     values[VarManager::kPt],
                     values[VarManager::kEta], dcaXY,
                     values[VarManager::kCharge], track.p(),
@@ -284,16 +284,16 @@ struct HfTaskSingleMuonSelection {
                     track.mcMask());
 
       if (fillMcHist) {
-        registry.fill(HIST("hPtBeforecuts"),
+        registry.fill(HIST("hPtBeforeCuts"),
                       values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
-        registry.fill(HIST("hEtaBeforecuts"),
+        registry.fill(HIST("hEtaBeforeCuts"),
                       values[VarManager::kEta], values[VarManager::kMCEta], values[VarManager::kMCEta] - values[VarManager::kEta], values[VarManager::kMuonTrackType]);
-        registry.fill(HIST("hPBeforecuts"),
+        registry.fill(HIST("hPBeforeCuts"),
                       values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
       }
       // After Muon Cuts
       if (trackCut->IsSelected(values)) {
-        registry.fill(HIST("hMuAftercuts"),
+        registry.fill(HIST("hMuAfterCuts"),
                       values[VarManager::kPt],
                       values[VarManager::kEta], dcaXY,
                       values[VarManager::kCharge], track.p(),
@@ -302,11 +302,11 @@ struct HfTaskSingleMuonSelection {
                       track.mcMask());
 
         if (fillMcHist) {
-          registry.fill(HIST("hPtAftercuts"),
+          registry.fill(HIST("hPtAfterCuts"),
                         values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
-          registry.fill(HIST("hEtaAftercuts"),
+          registry.fill(HIST("hEtaAfterCuts"),
                         values[VarManager::kEta], values[VarManager::kMCEta], values[VarManager::kMCEta] - values[VarManager::kEta], values[VarManager::kMuonTrackType]);
-          registry.fill(HIST("hPAftercuts"),
+          registry.fill(HIST("hPAfterCuts"),
                         values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
         }
       }
