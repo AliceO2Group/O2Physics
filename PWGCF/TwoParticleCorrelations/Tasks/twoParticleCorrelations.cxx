@@ -27,7 +27,6 @@
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsFiltered.h"
 #include "PWGCF/Core/PairCuts.h"
 
 using namespace o2;
@@ -38,8 +37,8 @@ using namespace o2::analysis;
 
 namespace o2::analysis::twopcorrelations
 {
-#define TWOPCORRLOGCOLLISIONS info
-#define TWOPCORRLOGTRACKS info
+#define TWOPCORRLOGCOLLISIONS debug
+#define TWOPCORRLOGTRACKS debug
 
 uint64_t collisionmask = 0UL;
 std::vector<uint64_t> collisionmask_opt;
@@ -54,9 +53,10 @@ uint64_t pidmask_forced = 0UL;
 /// \struct trackid
 /// \brief Stores the track species id, its potential correction, its potential pT average, and its global index to the track table
 struct trackid {
-  int id;      ///< the species internal id
-  float corr;  ///< correction to apply
-  float ptavg; ///< species pT average in eta phi
+  int id;         ///< the species internal id
+  float corr;     ///< correction to apply
+  float ptavg;    ///< species pT average in eta phi
+  uint64_t index; ///< the index to the table row
 };
 
 PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
@@ -88,6 +88,8 @@ float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
 bool processpairs = false;
+int bankinitialcapacity = 10000;
+int bankcapacitystep = 2000;
 std::vector<trackid> tracksids; // the tracks id storage
 
 PairCuts fPairCuts;              // pair suppression engine
@@ -225,11 +227,10 @@ struct twoParticleCorrelations {
     }
 
     template <typename TrackListObject>
-    void getTrackPtAvgAndCorrections(TrackListObject const& tracks, std::vector<trackid>& tracksids, float zvtx)
+    void getTrackPtAvgAndCorrections(TrackListObject& tracks, std::vector<trackid>& tracksids, float zvtx)
     {
-      uint index = 0;
-      for (auto& track : tracks) {
-        auto tid = tracksids[index++];
+      for (auto& tid : tracksids) {
+        auto const& track = tracks.iteratorAt(tid.index);
         if (!(tid.id < 0)) {
           if (fhNuaNue_vsZEtaPhiPt[tid.id] != nullptr) {
             tid.corr = fhNuaNue_vsZEtaPhiPt[tid.id]->GetBinContent(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt());
@@ -238,13 +239,9 @@ struct twoParticleCorrelations {
           }
           if (fhPtAvg_vsEtaPhi[tid.id] != nullptr) {
             tid.ptavg = fhPtAvg_vsEtaPhi[tid.id]->GetBinContent(fhPtAvg_vsEtaPhi[tid.id]->FindBin(track.eta(), track.phi()));
-            ;
           } else {
             tid.ptavg = 0;
           }
-        } else {
-          tid.corr = 1;
-          tid.ptavg = 0;
         }
       }
     }
@@ -254,11 +251,10 @@ struct twoParticleCorrelations {
     /// \param tracksids id, index to the track table, correction, and average pT the passed track table
     /// \param zvtx the z vertex coordinate for singles analysis on zvtx bins
     template <typename TrackListObject>
-    void processSingles(TrackListObject const& passedtracks, std::vector<trackid>& tracksids, float zvtx)
+    void processSingles(TrackListObject& passedtracks, std::vector<trackid>& tracksids, float zvtx)
     {
-      uint index = 0;
-      for (auto& track : passedtracks) {
-        auto tid = tracksids[index++];
+      for (auto& tid : tracksids) {
+        auto const& track = passedtracks.iteratorAt(tid.index);
         if (!(tid.id < 0)) {
           fhN1_vsPt[tid.id]->Fill(track.pt(), tid.corr);
           fhN1_vsZEtaPhiPt[tid.id]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), tid.corr);
@@ -272,7 +268,7 @@ struct twoParticleCorrelations {
     /// \param tracksids id, index to the track table, correction, and average pT the passed track table
     /// \param cmul centrality - multiplicity for the collision being analyzed
     template <typename TrackListObject>
-    void processTracks(TrackListObject const& passedtracks, std::vector<trackid>& tracksids, float cmul)
+    void processTracks(TrackListObject& passedtracks, std::vector<trackid>& tracksids, float cmul)
     {
       LOGF(TWOPCORRLOGCOLLISIONS, "Processing %d tracks in a collision with cent/mult %f ", passedtracks.size(), cmul);
 
@@ -282,9 +278,8 @@ struct twoParticleCorrelations {
       std::vector<double> n1nw(tname.size(), 0.0);     ///< not weighted number of tracks for current collision
       std::vector<double> sum1Ptnw(tname.size(), 0.0); ///< accumulated sum of not weighted track \f$p_T\f$ for current collision
 
-      uint index = 0;
-      for (auto& track : passedtracks) {
-        auto tid = tracksids[index++];
+      for (auto& tid : tracksids) {
+        auto const& track = passedtracks.iteratorAt(tid.index);
         if (!(tid.id < 0)) {
           n1[tid.id] += tid.corr;
           sum1Pt[tid.id] += track.pt() * tid.corr;
@@ -310,7 +305,7 @@ struct twoParticleCorrelations {
     /// \param cmul centrality - multiplicity for the collision being analyzed
     /// Be aware that at least in half of the cases traks1 and trks2 will have the same content
     template <typename TrackListObject>
-    void processTrackPairs(TrackListObject const& tracks, std::vector<trackid>& tracksids, float cmul, int bfield)
+    void processTrackPairs(TrackListObject& tracks, std::vector<trackid>& tracksids, float cmul, int bfield)
     {
       using namespace twopcorrelations;
 
@@ -323,15 +318,13 @@ struct twoParticleCorrelations {
       std::vector<std::vector<double>> sum2PtPtnw(tname.size(), std::vector<double>(tname.size(), 0.0));   ///< accumulated sum of not weighted paisr  \f${p_T}_1 {p_T}_2\f$ for current collision
       std::vector<std::vector<double>> sum2DptDptnw(tname.size(), std::vector<double>(tname.size(), 0.0)); ///< accumulated sum of not weighted pairs \f$\Delta p_T \Delta p_T\f$ for current collision
 
-      uint index1 = 0;
-      for (auto& track1 : tracks) {
-        auto tid1 = tracksids[index1];
+      for (auto& tid1 : tracksids) {
+        auto const& track1 = tracks.iteratorAt(tid1.index);
         if (!(tid1.id < 0)) {
-          uint index2 = 0;
-          for (auto& track2 : tracks) {
-            auto tid2 = tracksids[index2];
+          for (auto& tid2 : tracksids) {
+            auto const& track2 = tracks.iteratorAt(tid2.index);
             if (!(tid2.id < 0)) {
-              if (index1 == index2) {
+              if (tid1.index == tid2.index) {
                 /* exclude auto correlations */
                 continue;
               }
@@ -357,10 +350,8 @@ struct twoParticleCorrelations {
                 fhN2_vsPtPt[tid1.id][tid2.id]->Fill(track1.pt(), track2.pt(), tid1.corr * tid2.corr);
               }
             }
-            index2++;
           }
         }
-        index1++;
       }
       for (uint i = 0; i < tname.size(); ++i) {
         for (uint j = 0; j < tname.size(); ++j) {
@@ -381,7 +372,7 @@ struct twoParticleCorrelations {
     }
 
     template <typename TrackListObject>
-    void processCollision(TrackListObject const& Tracks, float zvtx, float centmult, int bfield)
+    void processCollision(TrackListObject& Tracks, float zvtx, float centmult, int bfield)
     {
       /* TODO: the centrality should be chosen non detector dependent */
       using namespace twopcorrelations;
@@ -439,24 +430,24 @@ struct twoParticleCorrelations {
           fhSupPt1Pt1_vsDEtaDPhi.reserve(tname.size());
           fhN2_vsPtPt.reserve(tname.size());
           fhN2_vsC.reserve(tname.size());
-          fhSum2DptDpt_vsC.reserve(tname.size());
+          fhSum2PtPt_vsC.reserve(tname.size());
           fhSum2DptDpt_vsC.reserve(tname.size());
           fhN2nw_vsC.reserve(tname.size());
           fhSum2PtPtnw_vsC.reserve(tname.size());
           fhSum2DptDptnw_vsC.reserve(tname.size());
           for (uint j = 0; j < tname.size(); ++j) {
-            fhN2_vsDEtaDPhi[j].reserve(tname.size());
-            fhSum2PtPt_vsDEtaDPhi[j].reserve(tname.size());
-            fhSum2DptDpt_vsDEtaDPhi[j].reserve(tname.size());
-            fhSupN1N1_vsDEtaDPhi[j].reserve(tname.size());
-            fhSupPt1Pt1_vsDEtaDPhi[j].reserve(tname.size());
-            fhN2_vsPtPt[j].reserve(tname.size());
-            fhN2_vsC[j].reserve(tname.size());
-            fhSum2DptDpt_vsC[j].reserve(tname.size());
-            fhSum2DptDpt_vsC[j].reserve(tname.size());
-            fhN2nw_vsC[j].reserve(tname.size());
-            fhSum2PtPtnw_vsC[j].reserve(tname.size());
-            fhSum2DptDptnw_vsC[j].reserve(tname.size());
+            fhN2_vsDEtaDPhi.push_back({tname.size(), nullptr});
+            fhSum2PtPt_vsDEtaDPhi.push_back({tname.size(), nullptr});
+            fhSum2DptDpt_vsDEtaDPhi.push_back({tname.size(), nullptr});
+            fhSupN1N1_vsDEtaDPhi.push_back({tname.size(), nullptr});
+            fhSupPt1Pt1_vsDEtaDPhi.push_back({tname.size(), nullptr});
+            fhN2_vsPtPt.push_back({tname.size(), nullptr});
+            fhN2_vsC.push_back({tname.size(), nullptr});
+            fhSum2PtPt_vsC.push_back({tname.size(), nullptr});
+            fhSum2DptDpt_vsC.push_back({tname.size(), nullptr});
+            fhN2nw_vsC.push_back({tname.size(), nullptr});
+            fhSum2PtPtnw_vsC.push_back({tname.size(), nullptr});
+            fhSum2DptDptnw_vsC.push_back({tname.size(), nullptr});
           }
         }
       }
@@ -768,7 +759,7 @@ struct twoParticleCorrelations {
     }
 
     /* initial size for the tracks ids bank */
-    tracksids.resize(10000);
+    tracksids.reserve(bankinitialcapacity);
   }
 
   /// \brief Get the data collecting engine index corresponding to the passed collision
@@ -819,7 +810,7 @@ struct twoParticleCorrelations {
   }
 
   template <typename CollisionObject, typename TracksObject>
-  void processTheTask(CollisionObject const& collision, TracksObject const& tracks)
+  void processTheTask(CollisionObject const& collision, TracksObject& tracks)
   {
     using namespace twopcorrelations;
     LOGF(TWOPCORRLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
@@ -835,26 +826,31 @@ struct twoParticleCorrelations {
       LOGF(TWOPCORRLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
       int nAcceptedTracks = 0;
       int nRejectedTracks = 0;
-      int nTrackIndex = 0;
+      tracksids.clear();
+      if (static_cast<int64_t>(tracksids.capacity()) < tracks.size()) {
+        tracksids.reserve(tracksids.capacity() + bankcapacitystep);
+        LOGF(warning, "Increased tracks bank size to %d", tracksids.size());
+      }
       for (const auto& track : tracks) {
+        int trackid = -1;
         if ((track.trackflags() & trackmask_forced) == trackmask_forced && passOptions(trackmask_opt, track.trackflags())) {
           if ((track.trackflags() & 0x1L) == 0x1L) {
             /* positive track */
-            tracksids[nTrackIndex].id = 0;
+            trackid = 0;
             nAcceptedTracks++;
           } else if ((track.trackflags() & 0x2L) == 0x2L) {
             /* negative track */
-            tracksids[nTrackIndex].id = 1;
+            trackid = 1;
             nAcceptedTracks++;
           } else {
-            tracksids[nTrackIndex].id = -1;
             nRejectedTracks++;
           }
         } else {
-          tracksids[nTrackIndex].id = -1;
           nRejectedTracks++;
         }
-        nTrackIndex++;
+        if (!(trackid < 0)) {
+          tracksids.push_back({trackid, 1.0, 0.0, static_cast<uint64_t>(track.filteredIndex())});
+        }
       }
       if (nAcceptedTracks > 0) {
         int ixDCE = getDCEindex(collision);
@@ -874,16 +870,16 @@ struct twoParticleCorrelations {
     }
   }
 
-  Filter tracksfilter = (aod::track::eta < etaup) && (aod::track::eta > etalow) && (aod::track::pt < ptup) && (aod::track::pt > ptlow);
+  Filter tracksfilter = (aod::track::eta < cfgBinning->mEtamax) && (aod::track::eta > cfgBinning->mEtamin) && (aod::track::pt < cfgBinning->mPTmax) && (aod::track::pt > cfgBinning->mPTmin);
 
   void processRun2(soa::Join<aod::Collisions, aod::CFCollMasks>::iterator const& collision,
-                   soa::Filtered<soa::Join<aod::FullTracks, aod::CFTrackMasks>> const& tracks)
+                   soa::Filtered<soa::Join<aod::FullTracks, aod::CFTrackMasks>>& tracks)
   {
     processTheTask(collision, tracks);
   }
   PROCESS_SWITCH(twoParticleCorrelations, processRun2, "Process Run 2, i.e. over NOT stored derived data, two particle correlations", true);
 
-  void processRun3(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  void processRun3(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks>& tracks)
   {
     processTheTask(collision, tracks);
   }
