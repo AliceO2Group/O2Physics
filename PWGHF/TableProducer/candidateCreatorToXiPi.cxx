@@ -55,8 +55,6 @@ struct HfCandidateCreatorToXiPi {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "use absolute DCA for vertexing"};
-  Configurable<bool> useWeightedPCA{"useWeightedPCA", false, "vertices use cov matrices"};
   Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
 
@@ -113,8 +111,6 @@ struct HfCandidateCreatorToXiPi {
     df.setMaxDZIni(maxDZIni);
     df.setMinParamChange(minParamChange);
     df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedPCA);
     df.setRefitWithMatCorr(refitWithMatCorr);
 
     double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
