@@ -51,16 +51,18 @@ DECLARE_SOA_COLUMN(MCPosY, mcposY, float); //!
 DECLARE_SOA_COLUMN(MCPosZ, mcposZ, float); //!
 } // namespace mycollision
 DECLARE_SOA_TABLE(MyCollisions, "AOD", "MYCOLLISION", //! vertex information of collision
-                  o2::soa::Index<>, bc::RunNumber, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, evsel::Sel8,
+                  o2::soa::Index<>, bc::GlobalBC, bc::RunNumber, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, evsel::Sel8,
                   mccollision::GeneratorsID, mycollision::MCPosX, mycollision::MCPosY, mycollision::MCPosZ,
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV);
+                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1);
 using MyCollision = MyCollisions::iterator;
 
 namespace mytrack
 {
 DECLARE_SOA_INDEX_COLUMN(MyCollision, mycollision);              //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                             //!
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int);             //!
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int); //!
 DECLARE_SOA_COLUMN(MCPt, mcpt, float);                           //!
 DECLARE_SOA_COLUMN(MCEta, mceta, float);                         //!
 DECLARE_SOA_COLUMN(MCPhi, mcphi, float);                         //!
@@ -77,7 +79,8 @@ DECLARE_SOA_TABLE(MyTracks, "AOD", "MYTRACK", //!
                   o2::soa::Index<>, mytrack::MyCollisionId, mytrack::Sign,
                   track::Pt, track::Eta, track::Phi,
                   track::DcaXY, track::DcaZ,
-                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  // track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCNClsFindable, mytrack::TPCNClsFound, mytrack::TPCNClsCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
@@ -86,7 +89,7 @@ DECLARE_SOA_TABLE(MyTracks, "AOD", "MYTRACK", //!
                   mytrack::MCVx, mytrack::MCVy, mytrack::MCVz,
                   mcparticle::PdgCode, mytrack::IsPhysicalPrimary, mytrack::MotherPdgCode, mytrack::GrandMotherPdgCode,
                   // dynamic column
-                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  // track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -134,10 +137,10 @@ struct TreeCreatorElectronML {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       auto mccollision = collision.mcCollision();
-      mycollision(bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.sel8(),
+      mycollision(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.sel8(),
                   mccollision.generatorsID(), mccollision.posX(), mccollision.posY(), mccollision.posZ(),
                   collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
-                  collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV());
+                  collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1());
 
       auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : tracks_coll) {
@@ -160,7 +163,7 @@ struct TreeCreatorElectronML {
 
         mytrack(mycollision.lastIndex(),
                 track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
-                track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                 track.tpcChi2NCl(), track.tpcInnerParam(),
                 track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                 track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
