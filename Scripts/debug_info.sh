@@ -59,6 +59,7 @@ PrintErrors() {
   -e "\\[FATAL\\]" \
   -e "segmentation" \
   -e "Segmentation" \
+  -e "SEGMENTATION" \
   -e "command not found" \
   -e "Error:" \
   -e "Error in " \
