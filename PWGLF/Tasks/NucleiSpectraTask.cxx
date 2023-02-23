@@ -43,19 +43,35 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-int8_t getBinnedValue(double val, double max)
+uint8_t getBinnedValue(double val, double max)
 {
-  if (val > max) {
-    return 127;
+  if (val >= max) {
+    return 255u;
   } else if (val < -max) {
-    return -127;
+    return 0u;
   } else {
-    return std::round(val / 254);
+    return 1u + static_cast<uint8_t>(254 * (val - max) / (2 * max));
+  }
+}
+
+float getBinCenter(uint8_t bin, double max)
+{
+  if (bin == 0u) {
+    return -max;
+  } else if (bin == 255u) {
+    return max;
+  } else {
+    return -max + (bin + 0.5) / (2 * max);
   }
 }
 
 namespace nuclei
 {
+constexpr double bbMomScalingDefault[4][2]{
+  {1., 1.},
+  {1., 1.},
+  {1., 1.},
+  {1., 1.}};
 constexpr double betheBlochDefault[4][6]{
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
@@ -101,6 +117,7 @@ static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> binnedVariableNames{"DCAxy", "DCAz", "TPCnsigma", "TOFnsigma", "TOFmass"};
 static const std::vector<std::string> binnedLabelNames{"Maximum value of binned variables"};
+static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"};
 
 float pidCuts[2][4][2];
 std::shared_ptr<TH3> hNsigma[2][4][2];
@@ -119,9 +136,9 @@ DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
 DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
 DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
-DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, int8_t);
-DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, int8_t);
-DECLARE_SOA_COLUMN(TOFmass, tofmass, int8_t);
+DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
+DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, uint8_t);
+DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
 } // namespace NucleiTableNS
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
@@ -156,6 +173,7 @@ struct NucleiSpectraTask {
   Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 4, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
 
+  Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 4, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 4, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgNsigmaTOF{"cfgNsigmaTOF", {nuclei::nSigmaTOFdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TOF nsigma selection for light nuclei"};
@@ -230,6 +248,12 @@ struct NucleiSpectraTask {
     }
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
+    const double bgScalings[4][2]{
+      {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
+      {nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / nuclei::masses[1], nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / nuclei::masses[1]},
+      {nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / nuclei::masses[2], nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / nuclei::masses[2]},
+      {nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[3], nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[3]}};
+
     for (auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC ||
@@ -254,7 +278,7 @@ struct NucleiSpectraTask {
         }
 
         if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / nuclei::masses[iS]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
           nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }

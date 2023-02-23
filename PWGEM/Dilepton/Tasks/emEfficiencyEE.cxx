@@ -1234,7 +1234,7 @@ struct AnalysisSameEventPairing {
         recfidcut = kFALSE;
 
       //
-      VarManager::FillPair<VarManager::kJpsiToEE, TTrackFillMap>(t1, t2);
+      VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2);
 
       // run MC matching for this pair
       uint32_t mcDecision = 0;

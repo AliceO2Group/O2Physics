@@ -1,0 +1,136 @@
+{
+  "IsMC": false,
+  "InFileName": "input file directory ",
+  "ReflFileName": "input reflection file directory",
+  "OutFileName": "output file directory",
+  "InputHistoName": [
+    "name array of the input data histogram for fit",
+    "once the projection macro is ready",
+    "these names will no longer need to be input manually"
+  ],
+  "PromptHistoName": [
+    "MC prompt histogram name array"
+  ],
+  "FDHistoName": [
+    "MC FD histogram name array"
+  ],
+  "ReflHistoName": [
+    "MC reflection histogram name array"
+  ],
+  "PromptSecPeakHistoName": [
+    "MC prompt second peak histogram name array"
+  ],
+  "FDSecPeakHistoName": [
+    "MC FD second peak histogram name array"
+  ],
+  "Particle": "D0",
+  "_Particles": [
+    "Dplus",
+    "Ds",
+    "LcToPKPi",
+    "LcToPK0s",
+    "Dstar"
+  ],
+  "EnableRefl": true,
+  "FixSigma": false,
+  "SigmaFile": "",
+  "_SigmaFile": "fix sigma from file",
+  "FixSigmaManual": [
+    0.012,
+    0.012,
+    0.013,
+    0.015,
+    0.017,
+    0.02
+  ],
+  "_FixSigmaManual": "fix sigma mannually",
+  "FixMean": false,
+  "MeanFile": "",
+  "_MeanFile": "fix mean from file",
+  "PtMin": [
+    1.0,
+    2.0,
+    4.0,
+    6.0,
+    8.0,
+    12.0
+  ],
+  "PtMax": [
+    2.0,
+    4.0,
+    6.0,
+    8.0,
+    12.0,
+    24.0
+  ],
+  "MassMin": [
+    1.72,
+    1.72,
+    1.72,
+    1.72,
+    1.72,
+    1.72
+  ],
+  "MassMax": [
+    2.03,
+    2.03,
+    2.03,
+    2.03,
+    2.03,
+    2.03
+  ],
+  "Rebin": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+  ],
+  "InclSecPeak": false,
+  "SigmaSecPeak": "",
+  "SigmaFileSecPeak": "",
+  "SigmaMultFactorSecPeak": 1.0,
+  "FixSigmaToFirstPeak": false,
+  "UseLikelihood": true,
+  "_UseLikelihood": [
+    "true: likelihood fit",
+    "false: chi2 fit"
+  ],
+  "BkgFunc": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "_BkgFuncs": [
+    "0 for Expo",
+    "1 for Poly1",
+    "2 for Poly2",
+    "3 for Pow",
+    "4 for PowEx",
+    "5 for Poly3",
+    "6 for NoBkg"
+  ],
+  "SgnFunc": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "_SgnFuncs": [
+    "0 for SingleGaus",
+    "1 for DoubleGaus",
+    "2 for DoubleGausSigmaRatioPar",
+    "3 for GausSec"
+  ],
+  "BoundMean": false,
+  "_BoundMean": [
+    "false: Do not set limits on mean range",
+    "true: the mean is set to be between MassMin[i] and MassMax[i]"
+  ]
+}

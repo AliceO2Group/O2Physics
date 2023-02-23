@@ -17,7 +17,7 @@
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
 #include "Framework/AnalysisTask.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -86,7 +86,6 @@ struct HfCandidateCreatorX {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
 
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df3;
@@ -96,7 +95,6 @@ struct HfCandidateCreatorX {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(true);
 
     // loop over Jpsi candidates
     for (auto& jpsiCand : jpsiCands) {

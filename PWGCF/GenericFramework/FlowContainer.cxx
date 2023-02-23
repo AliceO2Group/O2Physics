@@ -228,7 +228,8 @@ void FlowContainer::ReadAndMerge(const char* filelist)
     return;
   };
   for (int i = 0; i < nFiles; i++) {
-    fscanf(flist, "%s\n", str);
+    auto retVal = fscanf(flist, "%s\n", str);
+    (void)retVal;
     TFile* tf = new TFile(str, "READ");
     if (tf->IsZombie()) {
       printf("Could not open file %s!\n", str);

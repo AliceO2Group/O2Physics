@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "CommonConstants/MathConstants.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 
 using namespace o2;
@@ -41,7 +42,7 @@ struct VertexDistribution {
 // Simple analysis of PhysicalPrimary particles
 struct PhysicalPrimaryCharge {
   OutputObj<TH1F> charge{TH1F("charge_prim", "charge_prim", 100, -5, 5)};
-  Service<TDatabasePDG> pdgDB;
+  Service<O2DatabasePDG> pdgDB;
 
   void process(aod::McParticles const& mcParticles)
   {

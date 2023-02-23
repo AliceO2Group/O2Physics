@@ -12,8 +12,8 @@
 /// \file CandidateSelectionTables.h
 /// \brief Definitions of tables produced by candidate selectors
 
-#ifndef O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
-#define O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
+#ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
+#define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
 namespace o2::aod
 {
@@ -231,5 +231,21 @@ DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
 } // namespace hf_sel_candidate_xicc
 DECLARE_SOA_TABLE(HfSelXiccToPKPiPi, "AOD", "HFSELXICC", //!
                   hf_sel_candidate_xicc::IsSelXiccToPKPiPi);
+
+namespace hf_sel_toxipi
+{
+DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
+DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
+DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, bool);
+DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
+DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
+DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, bool);
+DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
+} // namespace hf_sel_toxipi
+DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
+                  hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidOmegac,
+                  hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac,
+                  hf_sel_toxipi::ResultSelections);
+
 } // namespace o2::aod
-#endif // O2_ANALYSIS_CANDIDATESELECTIONTABLES_H_
+#endif // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_

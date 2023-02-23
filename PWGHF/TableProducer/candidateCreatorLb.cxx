@@ -16,7 +16,7 @@
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
 #include "Framework/AnalysisTask.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -84,7 +84,6 @@ struct HfCandidateCreatorLb {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
 
     // 3-prong vertex fitter (to rebuild Lc vertex)
     o2::vertexing::DCAFitterN<3> df3;
@@ -94,7 +93,6 @@ struct HfCandidateCreatorLb {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(true);
 
     // loop over Lc candidates
     for (auto& lcCand : lcCands) {
@@ -272,11 +270,11 @@ struct HfCandidateCreatorLbMc {
       flag = 0;
       origin = 0;
       // Λb → Λc+ π-
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{int(pdg::Code::kLambdaCPlus), -kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{static_cast<int>(pdg::Code::kLambdaCPlus), -kPiPlus}, true)) {
         // Match Λc+ -> pKπ
         auto LcCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking Λc+ → p K- π+");
-        if (RecoDecay::isMatchedMCGen(particlesMC, LcCandMC, int(pdg::Code::kLambdaCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, LcCandMC, static_cast<int>(pdg::Code::kLambdaCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
         }
       }

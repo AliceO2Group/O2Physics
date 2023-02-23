@@ -11,6 +11,12 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <TH1F.h>
+#include <THashList.h>
+#include <TString.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -24,12 +30,6 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MixingLibrary.h"
-#include <TH1F.h>
-#include <THashList.h>
-#include <TString.h>
-#include <iostream>
-#include <vector>
-#include <algorithm>
 
 using std::cout;
 using std::endl;
@@ -285,7 +285,7 @@ struct DQEventMixing {
       auto muons2 = std::get<soa::Filtered<MyMuonTracksSelected>>(im2.associatedTables());
       muons2.bindExternalIndices(&events);
 
-      constexpr static int pairType = VarManager::kJpsiToMuMu;
+      constexpr static int pairType = VarManager::kDecayToMuMu;
       for (auto& muon1 : muons1) {
         for (auto& muon2 : muons2) {
           twoTrackFilter = muon1.isMuonSelected() & muon2.isMuonSelected();
@@ -347,7 +347,7 @@ struct DQDileptonMuMu {
 
     // Run the same event pairing for barrel tracks
     uint8_t twoTrackFilter = 0;
-    constexpr static int pairType = VarManager::kJpsiToMuMu;
+    constexpr static int pairType = VarManager::kDecayToMuMu;
 
     // same event pairing for muons
     for (auto& [muon1, muon2] : combinations(muons, muons)) {

@@ -211,45 +211,37 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(DiffractionFilters);
   FILTER_CONFIGURABLE(DqFilters);
   FILTER_CONFIGURABLE(HfFilters);
-  FILTER_CONFIGURABLE(CFFiltersTwoN);
   FILTER_CONFIGURABLE(CFFilters);
   FILTER_CONFIGURABLE(JetFilters);
   FILTER_CONFIGURABLE(StrangenessFilters);
   FILTER_CONFIGURABLE(MultFilters);
+  FILTER_CONFIGURABLE(FullJetFilters);
+  FILTER_CONFIGURABLE(PhotFilters);
 
   void init(o2::framework::InitContext& initc)
   {
-    LOG(info) << "Start init";
+    LOG(debug) << "Start init";
     int nCols{0};
     for (auto& table : mDownscaling) {
       nCols += table.second.size();
     }
-    LOG(info) << "Middle init, total number of columns " << nCols;
+    LOG(debug) << "Middle init, total number of columns " << nCols;
 
-    auto mScalers = std::get<std::shared_ptr<TH1>>(scalers.add("mScalers", ";;Number of events", HistType::kTH1F, {{nCols + 1, -0.5, 0.5 + nCols}}));
-    auto mFiltered = std::get<std::shared_ptr<TH1>>(scalers.add("mFiltered", ";;Number of filtered events", HistType::kTH1F, {{nCols + 1, -0.5, 0.5 + nCols}}));
+    auto mScalers = std::get<std::shared_ptr<TH1>>(scalers.add("mScalers", ";;Number of events", HistType::kTH1D, {{nCols + 2, -0.5, 1.5 + nCols}}));
+    auto mFiltered = std::get<std::shared_ptr<TH1>>(scalers.add("mFiltered", ";;Number of filtered events", HistType::kTH1D, {{nCols + 2, -0.5, 1.5 + nCols}}));
+    auto mCovariance = std::get<std::shared_ptr<TH2>>(scalers.add("mCovariance", "Selection covariance", HistType::kTH2D, {{nCols, -0.5, nCols - 0.5}, {nCols, -0.5, nCols - 0.5}}));
 
     mScalers->GetXaxis()->SetBinLabel(1, "Total number of events");
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
+    mScalers->GetXaxis()->SetBinLabel(nCols + 2, "Triggered events");
+    mFiltered->GetXaxis()->SetBinLabel(nCols + 2, "Filtered events");
     int bin{2};
-
-    // for (auto& spec : reinterpret_cast<std::unique_ptr<ConfigParamStore>*>(&(initc.mOptions))->get()->specs()) {
-    //   std::cout << "Configuration available: " << spec.name << "\t" << int(spec.type) << std::endl;
-    //   auto filterOpt = initc.mOptions.get<LabeledArray<float>>(spec.name.data());
-    //   std::cout << " -- row labs: ";
-    //   for (auto& lab : filterOpt.labels_rows) {
-    //     std::cout << lab << "\t";
-    //   }
-    //   std::cout << "\n -- col labs: ";
-    //   for (auto& lab : filterOpt.labels_cols) {
-    //     std::cout << lab << "\t";
-    //   }
-    //   std::cout << std::endl;
-    // }
 
     for (auto& table : mDownscaling) {
       LOG(info) << "Setting downscalings for table " << table.first;
       for (auto& column : table.second) {
+        mCovariance->GetXaxis()->SetBinLabel(bin - 1, column.first.data());
+        mCovariance->GetYaxis()->SetBinLabel(bin - 1, column.first.data());
         mScalers->GetXaxis()->SetBinLabel(bin, column.first.data());
         mFiltered->GetXaxis()->SetBinLabel(bin++, column.first.data());
       }
@@ -268,9 +260,11 @@ struct centralEventFilterTask {
   {
     auto mScalers{scalers.get<TH1>(HIST("mScalers"))};
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
+    auto mCovariance{scalers.get<TH2>(HIST("mCovariance"))};
 
     int64_t nEvents{-1};
-    std::vector<bool> outDecision;
+    std::vector<uint64_t> outTrigger, outDecision;
+
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -283,13 +277,16 @@ struct centralEventFilterTask {
         LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
-      if (outDecision.size() == 0)
-        outDecision.resize(nEvents, false);
+      if (outDecision.size() == 0) {
+        outDecision.resize(nEvents, 0u);
+        outTrigger.resize(nEvents, 0u);
+      }
 
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
         int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
         double binCenter{mScalers->GetXaxis()->GetBinCenter(bin)};
+        uint64_t triggerBit{BIT(bin - 2)};
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
@@ -300,9 +297,10 @@ struct centralEventFilterTask {
             for (int64_t iS{0}; iS < chunk->length(); ++iS) {
               if (boolArray->Value(iS)) {
                 mScalers->Fill(binCenter);
+                outTrigger[entry] |= triggerBit;
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
-                  outDecision[entry] = true;
+                  outDecision[entry] |= triggerBit;
                 }
               }
               entry++;
@@ -314,18 +312,42 @@ struct centralEventFilterTask {
     mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents);
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
 
+    for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
+      for (int iB{0}; iB < 64; ++iB) {
+        if (!(outTrigger[iE] & BIT(iB))) {
+          continue;
+        }
+        for (int iC{iB}; iC < 64; ++iC) {
+          if (outTrigger[iE] & BIT(iC)) {
+            mCovariance->Fill(iB, iC);
+          }
+        }
+      }
+      if (outTrigger[iE]) {
+        mScalers->Fill(mScalers->GetNbinsX() - 1);
+      }
+      if (outDecision[iE]) {
+        mFiltered->Fill(mFiltered->GetNbinsX() - 1);
+      }
+    }
+
     // Filling output table
-    auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto bcTabPtr{bcTabConsumer->asArrowTable()};
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
     auto collTabPtr{collTabConsumer->asArrowTable()};
     if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
     }
+    auto columnGloBCId{bcTabPtr->GetColumnByName("fGlobalBC")};
     auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
     auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
     auto columnCollTimeRes{collTabPtr->GetColumnByName("fCollisionTimeRes")};
 
-    std::unordered_map<int32_t, int64_t> decisions;
+    std::unordered_map<int32_t, int64_t> triggers, decisions;
+    auto GloBCId = -999.;
 
+    LOG(debug) << "columnBCId has " << columnBCId->num_chunks() << " chunks";
     for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
       auto chunkBC{columnBCId->chunk(iC)};
       auto chunkCollTime{columnCollTime->chunk(iC)};
@@ -335,23 +357,24 @@ struct centralEventFilterTask {
       auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
       auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTimeRes);
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
-        auto collTime = CollTimeArray->Value(iD);
-        auto collTimeRes = CollTimeResArray->Value(iD);
-        int32_t startBC{BCArray->Value(iD) - static_cast<int>(std::floor(collTime - cfgTimingCut * collTimeRes))};
-        int32_t endBC{BCArray->Value(iD) + static_cast<int>(std::ceil((collTime + cfgTimingCut * collTimeRes) / 25.f))};
-        for (int32_t iB{startBC}; iB < endBC; ++iB) {
-          if (decisions.find(iB) == decisions.end()) {
-            decisions[iB] = static_cast<int64_t>(outDecision[iD]);
-          } else {
-            decisions[iB] |= static_cast<int64_t>(outDecision[iD]);
-          }
+        for (int64_t iB{0}; iB < columnGloBCId->num_chunks(); ++iB) {
+          auto chunkGloBC{columnGloBCId->chunk(iB)};
+          auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkGloBC);
+          if (GloBCArray->Value(BCArray->Value(iD)))
+            GloBCId = GloBCArray->Value(BCArray->Value(iD));
         }
+        tags(BCArray->Value(iD), GloBCId, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
       }
     }
 
-    for (auto& decision : decisions) {
-      tags(decision.first, decision.second);
-    }
+    // for (auto& decision : decisions) {
+    // tags(decision.first, triggers[decision.first], decision.second);
+    // }
+  }
+
+  /// Trivial process to have automatically the collision and BC input tables
+  void process(aod::Collisions const&, aod::BCs const&)
+  {
   }
 
   std::mt19937_64 mGeneratorEngine;
@@ -361,8 +384,6 @@ struct centralEventFilterTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
   std::vector<InputSpec> inputs;
-  inputs.emplace_back("Collisions", "AOD", "COLLISION", 0, Lifetime::Timeframe);
-
   auto config = cfg.options().get<std::string>("train_config");
   Document d;
   std::unordered_map<std::string, std::unordered_map<std::string, float>> downscalings;
