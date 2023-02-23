@@ -453,11 +453,11 @@ struct HfTaskLc {
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto const& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
         registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
         registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
