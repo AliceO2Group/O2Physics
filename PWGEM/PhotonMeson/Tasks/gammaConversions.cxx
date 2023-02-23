@@ -24,6 +24,10 @@
 
 #include <TVector3.h>
 #include <TMath.h> // for ATan2, Cos, Sin, Sqrt
+#include <map>
+#include <vector>
+#include <string>
+#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,8 +68,8 @@ struct GammaConversions {
   Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.125, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
   Configurable<float> fLineCutZ0{"fLineCutZ0", 12.0, "The offset for the linecute used in the Z vs R plot"};
-  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
-  Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
+  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", static_cast<float>(TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax)))), "The slope for the line cut"};
+  Configurable<bool>  fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
     {ePhotonCuts::kV0In, "kV0In"},
@@ -882,9 +886,8 @@ struct GammaConversions {
           fillV0SelectionHisto(ePhotonCuts::kPionRejLowMom);
           return kFALSE;
         }
-      }
       // High Pt Pion rej
-      else {
+      } else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejHighMom);
           return kFALSE;
