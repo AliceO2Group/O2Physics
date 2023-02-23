@@ -286,7 +286,7 @@ struct HfTaskSingleMuonSelection {
       // compute DCAXY
       const auto dcaXY(std::sqrt(values[VarManager::kMuonDCAx] * values[VarManager::kMuonDCAx] + values[VarManager::kMuonDCAy] * values[VarManager::kMuonDCAy]));
 
-      if(fillLiteHist) {
+      if (fillLiteHist) {
         // Before Muon Cuts
         registry.fill(HIST("hMuLiteBeforeCuts"),
                       values[VarManager::kPt],
