@@ -148,63 +148,48 @@ class TrackSelection
 
     switch (cut) {
       case TrackCuts::kTrackType:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kTrackType: " << track.trackType() << " == " << mTrackType << " -> " << (track.trackType() == mTrackType);
         return track.trackType() == mTrackType;
 
       case TrackCuts::kPtRange:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kPtRange: " << mMinPt << " <= " << track.pt() << " <= " << mMaxPt << " -> " << (track.pt() >= mMinPt && track.pt() <= mMaxPt);
         return track.pt() >= mMinPt && track.pt() <= mMaxPt;
 
       case TrackCuts::kEtaRange:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kEtaRange: " << mMinEta << " <= " << track.eta() << " <= " << mMaxEta << " -> " << (track.eta() >= mMinEta && track.eta() <= mMaxEta);
         return track.eta() >= mMinEta && track.eta() <= mMaxEta;
 
       case TrackCuts::kTPCNCls:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kTPCNCls: " << track.tpcNClsFound() << " >= " << mMinNClustersTPC << " -> " << (track.tpcNClsFound() >= mMinNClustersTPC);
         return track.tpcNClsFound() >= mMinNClustersTPC;
 
       case TrackCuts::kTPCCrossedRows:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kTPCCrossedRows: " << track.tpcNClsCrossedRows() << " >= " << mMinNCrossedRowsTPC << " -> " << (track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC);
         return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
 
       case TrackCuts::kTPCCrossedRowsOverNCls:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kTPCCrossedRowsOverNCls: " << track.tpcCrossedRowsOverFindableCls() << " >= " << mMinNCrossedRowsOverFindableClustersTPC << " -> " << (track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC);
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
       case TrackCuts::kTPCChi2NDF:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kTPCChi2NDF: " << track.tpcChi2NCl() << " <= " << mMaxChi2PerClusterTPC << " -> " << (track.tpcChi2NCl() <= mMaxChi2PerClusterTPC);
         return track.tpcChi2NCl() <= mMaxChi2PerClusterTPC;
 
       case TrackCuts::kTPCRefit:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kTPCRefit: -> " << (mRequireTPCRefit ? (isRun2 ? (track.flags() & o2::aod::track::TPCrefit) : track.hasTPC()) : true);
         return (mRequireTPCRefit ? (isRun2 ? (track.flags() & o2::aod::track::TPCrefit) : track.hasTPC()) : true);
 
       case TrackCuts::kITSNCls:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kITSNCls: " << track.itsNCls() << " >= " << mMinNClustersITS << " -> " << (track.itsNCls() >= mMinNClustersITS);
         return track.itsNCls() >= mMinNClustersITS;
 
       case TrackCuts::kITSChi2NDF:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kITSChi2NDF: " << track.itsChi2NCl() << " <= " << mMaxChi2PerClusterITS << " -> " << (track.itsChi2NCl() <= mMaxChi2PerClusterITS);
         return track.itsChi2NCl() <= mMaxChi2PerClusterITS;
 
       case TrackCuts::kITSRefit:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kITSRefit: -> " << (mRequireITSRefit ? (isRun2 ? (track.flags() & o2::aod::track::ITSrefit) : track.hasITS()) : true);
         return (mRequireITSRefit ? (isRun2 ? (track.flags() & o2::aod::track::ITSrefit) : track.hasITS()) : true);
 
       case TrackCuts::kITSHits:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kITSHits: -> " << (FulfillsITSHitRequirements(track.itsClusterMap()));
         return FulfillsITSHitRequirements(track.itsClusterMap());
 
       case TrackCuts::kGoldenChi2:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kGoldenChi2: -> " << ((isRun2 && mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true);
         return (isRun2 && mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true;
 
       case TrackCuts::kDCAxy:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kDCAxy: " << abs(track.dcaXY()) << " <= " << ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY) << " -> " << (abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY));
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case TrackCuts::kDCAz:
-        // LOG(info) << "Track selection, cut " << static_cast<int>(cut) << " kDCAz: " << abs(track.dcaZ()) << " <= " << mMaxDcaZ << " -> " << (abs(track.dcaZ()) <= mMaxDcaZ);
         return abs(track.dcaZ()) <= mMaxDcaZ;
 
       default:
