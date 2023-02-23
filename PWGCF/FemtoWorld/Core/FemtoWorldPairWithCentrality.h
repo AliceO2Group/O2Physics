@@ -10,11 +10,12 @@
 // or submit itself to any jurisdiction.
 /// \author Deependra Sharma, IITB, deependra.sharma@cern.ch
 
-#ifndef FEMTOWORLDPAIRWITHCENTRALITY_H_
-#define FEMTOWORLDPAIRWITHCENTRALITY_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRWITHCENTRALITY_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRWITHCENTRALITY_H_
 
 #include <string>
 #include <iostream>
+#include <vector>
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2;
@@ -39,7 +40,7 @@ class PairWithCentrality
     CentBins = centbins;
     CentBins.erase(CentBins.begin());
 
-    for (int i = 0; i < (int)(CentBins.size() - 1); i++) {
+    for (int i = 0; i < static_cast<int>(CentBins.size() - 1); i++) {
       std::string HistTitle = "kstar_cent_" + std::to_string(CentBins[i]) + "_" + std::to_string(CentBins[i + 1]);
       std::string HistSuffix1 = static_cast<std::string>(HistSuffix[i]);
       std::string HistSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
@@ -86,4 +87,4 @@ class PairWithCentrality
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /*FEMTOWORLDPAIRWITHCENTRALITY_H_*/
+#endif  // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRWITHCENTRALITY_H_
