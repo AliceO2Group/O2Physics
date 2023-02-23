@@ -38,7 +38,7 @@ struct propagatorQa {
 
   int mRunNumber;
   float d_bz;
-  
+
   o2::base::Propagator::MatCorrType matCorr;
 
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
@@ -50,13 +50,13 @@ struct propagatorQa {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> dQANBinsRadius{"dQANBinsRadius", 100, "binning for radius x itsmap histo"};
-  
+
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
-  
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   o2::track::TrackPar lTrackParametrization;
@@ -107,7 +107,7 @@ struct propagatorQa {
     // Used in vertexer
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
-    
+
     // bit packed ITS cluster map
     const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
     const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
@@ -115,7 +115,7 @@ struct propagatorQa {
     // Histogram to bookkeep cluster maps
     histos.add("h2dITSCluMap", "h2dITSCluMap", kTH2D, {axisITSCluMap, axisRadius});
     histos.add("h2dITSCluMapPrimaries", "h2dITSCluMapPrimaries", kTH2D, {axisITSCluMap, axisRadius});
-  
+
     // Material correction
     matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1)
@@ -163,7 +163,7 @@ struct propagatorQa {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     gpu::gpustd::array<float, 2> dcaInfo;
-    
+
     for (auto& track : tracks) {
       if (!track.has_mcParticle())
         continue;
@@ -199,7 +199,7 @@ struct propagatorQa {
 
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
-      
+
       //*+-+*
       // Recalculate the propagation
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lTrackParametrization, maxPropagStep, matCorr, &dcaInfo);
@@ -219,11 +219,11 @@ struct propagatorQa {
       histos.fill(HIST("hDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
       histos.fill(HIST("hRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
 
-      //ITS cluster map
+      // ITS cluster map
       float lMCCreation = TMath::Sqrt(mctrack.vx() * mctrack.vx() + mctrack.vy() * mctrack.vy());
-      
+
       histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation);
-      
+
       if (lIsPrimary) {
         histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
         histos.fill(HIST("hPrimaryTrackX"), lTrackParametrization.getX());
