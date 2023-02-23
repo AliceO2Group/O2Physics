@@ -239,7 +239,7 @@ struct HfTaskLc {
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
+      for (auto const& track : tracks) {
         if (std::abs(track.eta()) > 4.0) {
           continue;
         }
@@ -251,7 +251,7 @@ struct HfTaskLc {
     }
     registry.fill(HIST("Data/hMultiplicity"), nTracks);
 
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -308,7 +308,7 @@ struct HfTaskLc {
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const& /*tracks*/)
   {
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       /// Select Lc
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
@@ -451,7 +451,7 @@ struct HfTaskLc {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (auto const& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
