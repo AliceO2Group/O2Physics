@@ -45,7 +45,8 @@ struct propagatorQa {
   Configurable<float> maxXtoConsider{"maxXtoConsider", 10000, "max X to consider"};
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-
+  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 100, "binning for radius x itsmap histo"};
+  
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -99,6 +100,15 @@ struct propagatorQa {
     // Used in vertexer
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
+    
+    // bit packed ITS cluster map
+    const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+    const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+
+    // Histogram to bookkeep cluster maps
+    histos.add("h2dITSCluMap", "h2dITSCluMap", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMapPrimaries", "h2dITSCluMapPrimaries", kTH2D, {axisITSCluMap, axisRadius});
+  
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -185,6 +195,11 @@ struct propagatorQa {
       histos.fill(HIST("hDeltaDCAs"), lCircleDCA - lDCA);
       histos.fill(HIST("hDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
 
+      //ITS cluster map
+      float lMCCreation = TMath::Sqrt(mctrack.vx() * mctrack.vx() + mctrack.vy() * mctrack.vy());
+      
+      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation);
+      
       if (lIsPrimary) {
         histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
         histos.fill(HIST("hPrimaryTrackX"), lTrackParametrization.getX());
@@ -197,8 +212,8 @@ struct propagatorQa {
         histos.fill(HIST("hPrimaryCircleDCAVsDCA"), lDCA, lCircleDCA);
         histos.fill(HIST("hPrimaryDeltaDCAs"), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
+        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation);
       }
-
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
