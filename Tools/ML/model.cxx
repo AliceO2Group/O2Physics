@@ -103,13 +103,11 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
 float* OnnxModel::evalModel(std::vector<Ort::Value> input)
 {
   try {
-    LOG(debug) << "Shape of input (tensor): " << printShape(input[0].GetTensorTypeAndShapeInfo().GetShape());
-    assert(input[0].GetTensorTypeAndShapeInfo().GetShape() == getInputDimensions());
+    LOG(debug) << "Shape of input (tensor): " << printShape(input[0].GetTensorTypeAndShapeInfo().GetShape()); // assert(input[0].GetTensorTypeAndShapeInfo().GetShape() == getNumInputNodes()); --> Fails build in debug mode, TODO: assertion should be checked somehow
 
     auto outputTensors = mSession->Run(mInputNames, input, mOutputNames);
     float* outputValues = outputTensors[0].GetTensorMutableData<float>();
-    LOG(debug) << "Shape of output (tensor): " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
-    assert(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == getOutputDimensions());
+    LOG(debug) << "Shape of output (tensor): " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape()); // assert(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == getNumOutputNodes());
 
     return outputValues;
 

@@ -97,13 +97,24 @@ struct DiffQA {
     }
     if (context.mOptions.get<bool>("processFewProng")) {
       registry.add("fpStat", "#fpStat", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+      registry.add("allPVC", "#allPVC", {HistType::kTH1F, {{100, 0.5, 100.5}}});
       registry.add("fpPVC", "#fpPVC", {HistType::kTH1F, {{100, 0.5, 100.5}}});
     }
     if (context.mOptions.get<bool>("processCleanFIT1")) {
       registry.add("cleanFIT1", "#cleanFIT1", {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+      registry.add("cF1FV0Aamp", "#cF1FV0Aamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF1FT0Aamp", "#cF1FT0Aamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF1FT0Camp", "#cF1FT0Camp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF1FDDAamp", "#cF1FDDAamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF1FDDCamp", "#cF1FDDCamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
     }
     if (context.mOptions.get<bool>("processCleanFIT2")) {
       registry.add("cleanFIT2", "#cleanFIT2", {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+      registry.add("cF2FV0Aamp", "#cF2FV0Aamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF2FT0Aamp", "#cF2FT0Aamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF2FT0Camp", "#cF2FT0Camp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF2FDDAamp", "#cF2FDDAamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+      registry.add("cF2FDDCamp", "#cF2FDDCamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
     }
     if (context.mOptions.get<bool>("processFV0")) {
       registry.add("FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {2000, 0., 2000.}}});
@@ -437,11 +448,13 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processMain, "Process Main", true);
 
   // ...............................................................................................................
+  // Distribution of number of PV contributors for all collisions and those with empty FT0
   void processFewProng(CC const& collision, BCs const& bct0s,
                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     // count collisions
     registry.get<TH1>(HIST("fpStat"))->Fill(1., 1.);
+    registry.get<TH1>(HIST("allPVC"))->Fill(collision.numContrib(), 1.);
 
     // check FT0 to be empty
     auto bc = collision.foundBC_as<BCs>();
@@ -456,20 +469,42 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processFewProng, "Process FewProng", true);
 
   // ...............................................................................................................
+  // Fraction of collisions with empty FIT as function of NDtcoll
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
 
     // test influence of BCrange width using a series of NDtcoll
+    float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
     bool isDGcandidate = true;
     for (int NDtcoll = 0; NDtcoll < 20; NDtcoll++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, NDtcoll, bct0s, 0);
+      ampFV0A = ampFT0A = ampFT0C = ampFDDA = ampFDDC = 0.;
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
         isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+
+        if (bc.has_foundFV0()) {
+          ampFV0A += udhelpers::FV0AmplitudeA(bc.foundFV0());
+        }
+        if (bc.has_foundFT0()) {
+          ampFT0A += udhelpers::FT0AmplitudeA(bc.foundFT0());
+          ampFT0C += udhelpers::FT0AmplitudeA(bc.foundFT0());
+        }
+        if (bc.has_foundFDD()) {
+          ampFDDA += udhelpers::FDDAmplitudeA(bc.foundFDD());
+          ampFDDC += udhelpers::FDDAmplitudeA(bc.foundFDD());
+        }
       }
       registry.get<TH2>(HIST("cleanFIT1"))->Fill(NDtcoll, isDGcandidate * 1.);
+      if (isDGcandidate) {
+        registry.get<TH2>(HIST("cF1FV0Aamp"))->Fill(NDtcoll, ampFV0A);
+        registry.get<TH2>(HIST("cF1FT0Aamp"))->Fill(NDtcoll, ampFT0A);
+        registry.get<TH2>(HIST("cF1FT0Camp"))->Fill(NDtcoll, ampFT0C);
+        registry.get<TH2>(HIST("cF1FDDAamp"))->Fill(NDtcoll, ampFDDA);
+        registry.get<TH2>(HIST("cF1FDDCamp"))->Fill(NDtcoll, ampFDDC);
+      }
     }
   }
   PROCESS_SWITCH(DiffQA, processCleanFIT1, "Process CleanFitTest1", true);
@@ -481,22 +516,46 @@ struct DiffQA {
     LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
 
     // test influence of BCrange width using a series of nMinBC
+    float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
     bool isDGcandidate = true;
     for (int nMinBC = 0; nMinBC < 20; nMinBC++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, 0, bct0s, nMinBC);
+      ampFV0A = ampFT0A = ampFT0C = ampFDDA = ampFDDC = 0.;
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
         isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+
+        if (bc.has_foundFV0()) {
+          ampFV0A += udhelpers::FV0AmplitudeA(bc.foundFV0());
+        }
+        if (bc.has_foundFT0()) {
+          ampFT0A += udhelpers::FT0AmplitudeA(bc.foundFT0());
+          ampFT0C += udhelpers::FT0AmplitudeA(bc.foundFT0());
+        }
+        if (bc.has_foundFDD()) {
+          ampFDDA += udhelpers::FDDAmplitudeA(bc.foundFDD());
+          ampFDDC += udhelpers::FDDAmplitudeA(bc.foundFDD());
+        }
       }
       registry.get<TH2>(HIST("cleanFIT2"))->Fill(nMinBC, isDGcandidate * 1.);
+      if (isDGcandidate) {
+        registry.get<TH2>(HIST("cF2FV0Aamp"))->Fill(nMinBC, ampFV0A);
+        registry.get<TH2>(HIST("cF2FT0Aamp"))->Fill(nMinBC, ampFT0A);
+        registry.get<TH2>(HIST("cF2FT0Camp"))->Fill(nMinBC, ampFT0C);
+        registry.get<TH2>(HIST("cF2FDDAamp"))->Fill(nMinBC, ampFDDA);
+        registry.get<TH2>(HIST("cF2FDDCamp"))->Fill(nMinBC, ampFDDC);
+      }
     }
   }
   PROCESS_SWITCH(DiffQA, processCleanFIT2, "Process CleanFitTest2", true);
 
   // ...............................................................................................................
-  void processFV0(aod::FV0As const& fv0s, aod::BCs const&)
+  void processFV0(aod::FV0As const& fv0s, BCs const&)
   {
-    LOGF(debug, "<FV0Signals> %d", fv0s.size());
+    LOGF(info, "<FV0Signals> %d", fv0s.size());
+    if (fv0s.size() <= 0) {
+      return;
+    }
 
     int64_t lastBCwFV0 = fv0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFV0 / nBCpOrbit;
@@ -526,7 +585,7 @@ struct DiffQA {
   // ...............................................................................................................
   void processFT0(aod::FT0s const& ft0s, BCs const&)
   {
-    LOGF(info, "<processFT0> %d", ft0s.size());
+    LOGF(debug, "<processFT0> %d", ft0s.size());
     int nc = 0;
     int64_t fBC = 0; // first BC with FIT activity
     int64_t aBC = 0; // actually processed BC
@@ -720,7 +779,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processFT0, "Process FT0", true);
 
   // ...............................................................................................................
-  void processFDD(aod::FDDs const& fdds, aod::BCs const&)
+  void processFDD(aod::FDDs const& fdds, BCs const&)
   {
     LOGF(debug, "<FDDSignals> %d", fdds.size());
 

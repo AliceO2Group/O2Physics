@@ -56,7 +56,17 @@ o2physics_add_dpl_workflow(qa-k0s-tracking-efficiency
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(perf-k0s-resolution
+                           SOURCES perfK0sResolution.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(monitorfilterbit
                            SOURCES MonitorFilterBit.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qa-prim-vtx-vs-time
+                           SOURCES qaPrimVtxVsTime.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
