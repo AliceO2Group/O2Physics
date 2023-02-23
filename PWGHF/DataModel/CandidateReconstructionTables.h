@@ -1255,12 +1255,12 @@ DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO",
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);       //! DeltaPhi between Ds and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);       //! DeltaEta between Ds and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                 //! Transverse momentum of Ds
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);       //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);                   //! Invariant mass of Ds
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int); //! Used in MC, Ds Signal
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between Ds and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between Ds and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of Ds
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of Ds
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, Ds Signal
 } // namespace hf_correlation_ds_hadron
 DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informations
                   aod::hf_correlation_ds_hadron::DeltaPhi,

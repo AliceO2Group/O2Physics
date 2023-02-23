@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorDsHadrons.cxx
+/// \brief Ds-Hadrons correlator task - data-like, MC-reco and MC-Gen analyses
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
@@ -47,6 +48,9 @@ const double massAxisMax = 2.2;
 const int phiAxisBins = 128;
 const double phiAxisMin = -o2::constants::math::PIHalf;
 const double phiAxisMax = 3. * o2::constants::math::PIHalf;
+const int etaAxisBins = 100;
+const double etaAxisMin = -2.;
+const double etaAxisMax = 2.;
 const int yAxisBins = 100;
 const double yAxisMin = -2.;
 const double yAxisMax = 2.;
@@ -85,7 +89,7 @@ struct HfCorrelatorDsHadrons {
      {"hPtProng1", "Ds,Hadron candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hPtProng2", "Ds,Hadron candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hSelectionStatus", "Ds,Hadron candidates;selection status;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-     {"hEta", "Ds,Hadron candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEta", "Ds,Hadron candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{etaAxisBins, etaAxisMin, etaAxisMax}}}},
      {"hPhi", "Ds,Hadron candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
      {"hY", "Ds,Hadron candidates;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hPtCandMCRec", "Ds,Hadron candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
@@ -93,12 +97,12 @@ struct HfCorrelatorDsHadrons {
      {"hPtProng1MCRec", "Ds,Hadron candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hPtProng2MCRec", "Ds,Hadron candidates - MC reco;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hSelectionStatusMCRec", "Ds,Hadron candidates - MC reco;selection status;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-     {"hEtaMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEtaMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{etaAxisBins, etaAxisMin, etaAxisMax}}}},
      {"hPhiMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
      {"hYMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hMCEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
      {"hPtCandMCGen", "Ds,Hadron particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hEtaMCGen", "Ds,Hadron particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEtaMCGen", "Ds,Hadron particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{etaAxisBins, etaAxisMin, etaAxisMax}}}},
      {"hPhiMCGen", "Ds,Hadron particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
      {"hYMCGen", "Ds,Hadron candidates - MC gen;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hcountDsHadronPerEvent", "Ds,Hadron particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}},
@@ -108,7 +112,7 @@ struct HfCorrelatorDsHadrons {
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("hMassDs_2D", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDs2D", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDsData", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
     registry.add("hMassDsMCRec", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
     registry.add("hMassDsMCRecSig", "Ds signal candidates - MC reco;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -156,7 +160,7 @@ struct HfCorrelatorDsHadrons {
         }
 
         // fill invariant mass plots and generic info from all Ds candidates
-        registry.fill(HIST("hMassDs_2D"), invMassDsToKKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassDs2D"), invMassDsToKKPi(candidate1), candidate1.pt(), efficiencyWeight);
         registry.fill(HIST("hMassDsData"), invMassDsToKKPi(candidate1), efficiencyWeight);
         registry.fill(HIST("hPtCand"), candidate1.pt());
         registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
@@ -188,7 +192,7 @@ struct HfCorrelatorDsHadrons {
                             track.eta() - candidate1.eta(),
                             candidate1.pt(),
                             track.pt());
-          entryDsHadronRecoInfo(invMassDsToKKPi(candidate1), 0);
+          entryDsHadronRecoInfo(invMassDsToKKPi(candidate1), false);
         } // Hadron Tracks loop
       }   // end outer Ds loop
     }
@@ -279,7 +283,7 @@ struct HfCorrelatorDsHadrons {
                             track.eta() - candidate1.eta(),
                             candidate1.pt(),
                             track.pt());
-          entryDsHadronRecoInfo(invMassDsToKKPi(candidate1), static_cast<int>(flagDsSignal));
+          entryDsHadronRecoInfo(invMassDsToKKPi(candidate1), flagDsSignal);
         } // end inner loop (Tracks)
 
       } // end outer Ds loop

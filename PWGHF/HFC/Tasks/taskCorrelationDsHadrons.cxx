@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskCorrelationDsHadrons.cxx
+/// \brief Ds-Hadrons azimuthal correlations analysis task - data-like, MC-reco and MC-Gen analyses
 /// \author Grazia Luparello <Grazia.Luparello@cern.ch>
 /// \author Samuele Cattaruzzi <Samuele.Cattaruzzi@cern.ch>
 
@@ -55,6 +56,20 @@ const TString stringSideband = "sidebands;";
 const TString stringMCParticles = "MC gen - D,Hadron particles;";
 const TString stringMCReco = "MC reco - D,Hadron candidates ";
 
+// histogram binning definition
+const int deltaEtaPtIntAxisBins = 200;
+const double deltaEtaPtIntAxisMin = -4.;
+const double deltaEtaPtIntAxisMax = 4.;
+const int deltaPhiPtIntAxisBins = 64;
+const double deltaPhiPtIntAxisMin = -o2::constants::math::PIHalf;
+const double deltaPhiPtIntAxisMax = 3. * o2::constants::math::PIHalf;
+const int ptDAxisBins = 10;
+const double ptDAxisMin = 0.;
+const double ptDAxisMax = 10.;
+const int ptHadronsAxisBins = 11;
+const double ptHadronsAxisMin = 0.;
+const double ptHadronsAxisMax = 11.;
+
 const int nBinsPtCorrelations = 8;
 const double pTBinsCorrelations[nBinsPtCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
 auto vecBinsPtCorrelations = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + nBinsPtCorrelations + 1};
@@ -92,49 +107,49 @@ struct HfTaskCorrelationDsHadrons {
   HistogramRegistry registry{
     "registry",
     {
-      {"hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -4., 4.}}}},
-      {"hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}},
-      {"hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -4., 4.}}}},
-      {"hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
-      {"hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -4., 4.}}}},
-      {"hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}},
-      {"hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -4., 4.}}}},
-      {"hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
-      {"hDeltaEtaPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -4., 4.}}}},
-      {"hDeltaPhiPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}},
-      {"hDeltaEtaPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -4., 4.}}}},
-      {"hCorrel2DPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -4., 4.}}}},
-      {"hCorrel2DVsPtSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}},
-      {"hCorrel2DVsPtSignalMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}},
-      {"hCorrel2DVsPtBkgMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}},
-      {"hDeltaPhiPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}},
-      {"hCorrel2DPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -4., 4.}}}},
-      {"hCorrel2DVsPtSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}},
-      {"hDeltaEtaPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -4., 4.}}}},
-      {"hDeltaPhiPtIntMCGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}},
-      {"hCorrel2DPtIntMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -4., 4.}}}},
-      {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+      {"hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}}}},
+      {"hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+      {"hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}}}},
+      {"hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+      {"hDeltaEtaPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hDeltaPhiPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}}}},
+      {"hDeltaEtaPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hCorrel2DPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hCorrel2DVsPtSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}},
+      {"hCorrel2DVsPtSignalMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}},
+      {"hCorrel2DVsPtBkgMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}},
+      {"hDeltaPhiPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}}}},
+      {"hCorrel2DPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hCorrel2DVsPtSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}},
+      {"hDeltaEtaPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hDeltaPhiPtIntMCGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}}}},
+      {"hCorrel2DPtIntMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}}}},
+      {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{deltaPhiPtIntAxisBins, deltaPhiPtIntAxisMin, deltaPhiPtIntAxisMax}, {deltaEtaPtIntAxisBins, deltaEtaPtIntAxisMin, deltaEtaPtIntAxisMax}, {ptDAxisBins, ptDAxisMin, ptDAxisMax}, {ptHadronsAxisBins, ptHadronsAxisMin, ptHadronsAxisMax}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
     }};
 
   void init(o2::framework::InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
-    int nBinspTaxis = binsPtCorrelations->size() - 1;
-    const double* valuespTaxis = binsPtCorrelations->data();
+    int nBinsPtAxis = binsPtCorrelations->size() - 1;
+    const double* valuesPtAxis = binsPtCorrelations->data();
 
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->Sumw2();
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRec"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRec"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRec"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRec"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRec"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRec"))->Sumw2();
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalMCRec"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalMCRec"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalMCRec"))->Sumw2();
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMCRec"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMCRec"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMCRec"))->Sumw2();
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->GetAxis(2)->Set(nBinspTaxis, valuespTaxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->Sumw2();
   }
 
@@ -152,9 +167,6 @@ struct HfTaskCorrelationDsHadrons {
       // reject entries outside pT ranges of interest
       if (pTBinD < 0 || effBinD < 0) {
         continue;
-      }
-      if (ptHadron > 10.0) { // all Hadrons with pT > 10 are put in the 11th bin of the axis of the histograms filled with them
-        ptHadron = 10.5;
       }
       double efficiencyWeight = 1.;
       double efficiencyHadron = 1.; // Note: To be implemented later on ??
@@ -197,9 +209,6 @@ struct HfTaskCorrelationDsHadrons {
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
       if (pTBinD < 0 || effBinD < 0) {
         continue;
-      }
-      if (ptHadron > 10.0) { // all Hadrons with pT > 10 are put in the 11th bin of the axis of the histograms filled with them
-        ptHadron = 10.5;
       }
       double efficiencyWeight = 1.;
       double efficiencyHadron = 1.; // Note: To be implemented later on
@@ -247,9 +256,6 @@ struct HfTaskCorrelationDsHadrons {
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsPtCorrelations, ptD) < 0) {
         continue;
-      }
-      if (ptHadron > 10.0) { // all Hadrons with pT > 10 are put in the 11th bin of the axis of the histograms filled with them
-        ptHadron = 10.5;
       }
 
       registry.fill(HIST("hCorrel2DVsPtMCGen"), deltaPhi, deltaEta, ptD, ptHadron);
