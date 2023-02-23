@@ -112,29 +112,13 @@ struct HfCandidateSelectorToXiPi {
 
   void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
-    TrackSelectorPID selectorPionFromOme(kPiPlus);
-    selectorPionFromOme.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
-    selectorPionFromOme.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
-    selectorPionFromOme.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
-    selectorPionFromOme.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
-    selectorPionFromOme.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
-    selectorPionFromOme.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
-
-    TrackSelectorPID selectorPionFromCasc(kPiPlus);
-    selectorPionFromCasc.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
-    selectorPionFromCasc.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
-    selectorPionFromCasc.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
-    selectorPionFromCasc.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
-    selectorPionFromCasc.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
-    selectorPionFromCasc.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
-
-    TrackSelectorPID selectorPionFromV0(kPiPlus);
-    selectorPionFromV0.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
-    selectorPionFromV0.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
-    selectorPionFromV0.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
-    selectorPionFromV0.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
-    selectorPionFromV0.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
-    selectorPionFromV0.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
+    TrackSelectorPID selectorPion(kPiPlus);
+    selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
+    selectorPion.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
 
     TrackSelectorPID selectorProton(kProton);
     selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
@@ -287,14 +271,14 @@ struct HfCandidateSelectorToXiPi {
       }
       if (usePidTpcOnly) {
         pidProton = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
-        pidPiFromLam = selectorPionFromV0.getStatusTrackPIDTPC(trackPiFromLam);
-        pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDTPC(trackPiFromCasc);
-        pidPiFromOme = selectorPionFromOme.getStatusTrackPIDTPC(trackPiFromOmeg);
+        pidPiFromLam = selectorPion.getStatusTrackPIDTPC(trackPiFromLam);
+        pidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
+        pidPiFromOme = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
       } else if (usePidTpcTofCombined) {
         pidProton = selectorProton.getStatusTrackPIDAll(trackPrFromLam);
-        pidPiFromLam = selectorPionFromV0.getStatusTrackPIDAll(trackPiFromLam);
-        pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDAll(trackPiFromCasc);
-        pidPiFromOme = selectorPionFromOme.getStatusTrackPIDAll(trackPiFromOmeg);
+        pidPiFromLam = selectorPion.getStatusTrackPIDAll(trackPiFromLam);
+        pidPiFromCasc = selectorPion.getStatusTrackPIDAll(trackPiFromCasc);
+        pidPiFromOme = selectorPion.getStatusTrackPIDAll(trackPiFromOmeg);
       }
 
       bool statusPidLambda = false;
