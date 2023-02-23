@@ -71,7 +71,7 @@ struct GammaConversions {
   Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
   Configurable<float> fLineCutZ0{"fLineCutZ0", 12.0, "The offset for the linecute used in the Z vs R plot"};
   Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", static_cast<float>(TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax)))), "The slope for the line cut"};
-  Configurable<bool>  fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
+  Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
     {ePhotonCuts::kV0In, "kV0In"},
