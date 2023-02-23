@@ -87,4 +87,4 @@ class PairWithCentrality
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif  // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRWITHCENTRALITY_H_
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRWITHCENTRALITY_H_
