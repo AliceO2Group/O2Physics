@@ -265,8 +265,9 @@ struct HfTaskSingleMuonSelection {
   void runMuonSelMc(TEvent const& event, aod::BCs const& bcs, TMuons const& tracks, TMC const& mc)
   {
     // select muons in MC
-    if (event.isEventSelected() == 0)
+    if (event.isEventSelected() == 0) {
       return;
+    }
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables, values);
     VarManager::FillEvent<gEventFillMap>(event, values);
@@ -373,7 +374,7 @@ struct HfTaskSingleMuonSelection {
   void processMuonMc(MyMcEventsSelected::iterator const& event, aod::BCs const& bcs,
                      MyMcMuons const& tracks, aod::McParticles const& mc)
   {
-    runMuonSelM<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
+    runMuonSelMc<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
   }
 
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processDummy, "do nothing", false);
