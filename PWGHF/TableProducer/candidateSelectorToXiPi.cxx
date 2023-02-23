@@ -103,7 +103,7 @@ struct HfCandidateSelectorToXiPi {
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
   OutputObj<TH1F> hCTauXic{TH1F("hCTauXic", "Xic ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hNeventsSaved{TH1F("hNeventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)};
+  OutputObj<TH1F> hNEventsSaved{TH1F("hNEventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)};
   // bin1 -> number of events taking collisionId from cascade, bin2 -> number of events taking collisionId from primary pion, bin3 -> number of times collId cascade id different from collId primary pi
 
   // temporary histo for debugging (to be removed after test on hyperloop)
@@ -389,15 +389,15 @@ struct HfCandidateSelectorToXiPi {
         hCTauXic->Fill(candidate.ctauXic());
 
         if (trackPiFromCasc.collisionId() != collIdCasc) {
-          hNeventsSaved->Fill(0.5);
+          hNEventsSaved->Fill(0.5);
           collIdCasc = trackPiFromCasc.collisionId();
         }
         if (trackPiFromOmeg.collisionId() != collIdPrimaryPi) {
-          hNeventsSaved->Fill(1.5);
+          hNEventsSaved->Fill(1.5);
           collIdPrimaryPi = trackPiFromOmeg.collisionId();
         }
         if (trackPiFromOmeg.collisionId() != trackPiFromCasc.collisionId()) {
-          hNeventsSaved->Fill(2.5);
+          hNEventsSaved->Fill(2.5);
         }
       }
     }
