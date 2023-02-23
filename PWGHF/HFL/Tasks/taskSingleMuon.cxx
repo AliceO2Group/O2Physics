@@ -178,25 +178,17 @@ struct HfTaskSingleMuonSelection {
     if (fillLiteHist) {
       registry.add("hMuLiteBeforeCuts", "", hTHnMuLite);
       registry.add("hMuLiteAfterCuts", "", hTHnMuLite);
-      if (fillMcHist) {
-        registry.add("hPtBeforeCuts", "", hTHnPt);
-        registry.add("hPtAfterCuts", "", hTHnPt);
-        registry.add("hEtaBeforeCuts", "", hTHnEta);
-        registry.add("hEtaAfterCuts", "", hTHnEta);
-        registry.add("hPBeforeCuts", "", hTHnP);
-        registry.add("hPAfterCuts", "", hTHnP);
-      }
     } else {
       registry.add("hMuBeforeCuts", "", hTHnMu);
       registry.add("hMuAfterCuts", "", hTHnMu);
-      if (fillMcHist) {
+    }
+    if (fillMcHist) {
         registry.add("hPtBeforeCuts", "", hTHnPt);
         registry.add("hPtAfterCuts", "", hTHnPt);
         registry.add("hEtaBeforeCuts", "", hTHnEta);
         registry.add("hEtaAfterCuts", "", hTHnEta);
         registry.add("hPBeforeCuts", "", hTHnP);
         registry.add("hPAfterCuts", "", hTHnP);
-      }
     }
 
     VarManager::SetDefaultVarNames();
