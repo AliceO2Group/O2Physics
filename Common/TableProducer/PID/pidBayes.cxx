@@ -295,7 +295,7 @@ struct bayesPid {
 
   /// Response of the TOF detector
   template <o2::track::PID::ID pid>
-  using respTOF = tof::ExpTimes<Trks::iterator, pid>;
+  using respTOF = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
 
   /// Compute PID probabilities for TOF
   template <o2::track::PID::ID pid>

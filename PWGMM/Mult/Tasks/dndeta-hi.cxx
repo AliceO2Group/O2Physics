@@ -83,6 +83,7 @@ enum {
 enum {
   kTrigbegin = 0,
   kMBAND = 1,
+  kBackground,
   kTrigend
 };
 enum {
@@ -120,7 +121,10 @@ AxisSpec SpeciesAxis = {kSpeciesend - 1, kSpeciesbegin + 0.5, kSpeciesend - 0.5,
 AxisSpec MassAxis = {600, 0.3f, 1.3f, "Mass (GeV/c^{2})", "Inv. Mass (GeV/c^{2})"};
 AxisSpec SignAxis = {kSignend - 1, kSignbegin + 0.5, kSignend - 0.5, "", "sign"};
 AxisSpec StepAxis = {kStepend - 1, kStepbegin + 0.5, kStepend - 0.5, "", "step"};
-AxisSpec testAxis = {2, 0.5, 2.5, "", "test"};
+AxisSpec testAxis = {4, 0.5, 4.5, "", "test"};
+AxisSpec particleIDAxis = {10000, 0.5, 10000.5, "", "particleID"};
+AxisSpec StatusCodeAxis = {3, -1.5, 2.5, "", "StatusCode"};
+AxisSpec ProcessCodeAxis = {45, -1.5, 44.5, "", "StatusCode"};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -154,28 +158,59 @@ struct MultiplicityCounter {
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                                                          //
-      {"hrecdndeta", "evntclass; triggerclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis, EtaAxis}}}, //
-      {"hgendndeta", "evntclass; centrality, zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis, EtaAxis}}},                              //
-      {"hreczvtx", "evntclass; triggerclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, CentAxis, ZAxis}}},                 //
-      {"hgenzvtx", "evntclass; centrality, zvtex", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, ZAxis}}},                                              //
-      {"PhiEta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {EvtClassAxis, PhiAxis, EtaAxis}}},                                                    //
-      {"DCAXY", " ; DCA_{XY} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis}}},                                                                     //
-      {"DCAZ", " ; DCA_{Z} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis}}},                                                                       //
-      {"Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis}}},                                       //
-      {"Centrality", " ; centrality_FT0C (%) ", {HistType::kTH1F, {CentAxis}}},                                                                            //
-      {"Centrality_MBAND", " ; centrality_MBAND_FT0C (%) ", {HistType::kTH1F, {CentAxis}}},                                                                //
-      {"hrecpt", " eventclass; centrality; pt_gen; pt_rec ", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, PtAxis, PtAxis}}},                           //
-      {"hgenpt", " eventclass; centrality; pt;  ", {HistType::kTHnSparseD, {EvtClassAxis, CentAxis, PtAxis}}},                                             //
-      {"hV0Mass", "species ; evntclass; K0shortMass; LambdaMass; AntiLambdaMass", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, MassAxis}}},         //
-      {"hV0DauEta", "", {HistType::kTHnSparseD, {EvtClassAxis, SignAxis, SpeciesAxis, EtaAxis}}},                                                          //
-      {"hMCTrackCount", "", {HistType::kTHnSparseD, {EvtClassAxis, StepAxis, testAxis}}},                                                                  //
-      {"hV0Count", "", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, StepAxis}}}                                                                     //
-    }};
+    {{"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}}};
 
   std::vector<int> usedTracksIds;
+  void init(InitContext&)
+  {
+    if (doprocessCountingWithCent) {
+      registry.add({"Tracks/ProcessCounting/Centrality/Centrality", " ; centrality_FT0C (%) ", {HistType::kTH1F, {CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/hrecpt", " eventclass;  pt_gen; pt_rec ", {HistType::kTHnSparseD, {EvtClassAxis, PtAxis, PtAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/hreczvtx", "evntclass; triggerclass;  zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/PhiEta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {EvtClassAxis, PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/DCAZ", " ; DCA_{Z} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/hV0Count", "", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, StepAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/hV0DauEta", "", {HistType::kTHnSparseD, {EvtClassAxis, SignAxis, SpeciesAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/ProcessCounting/Centrality/hV0Mass", "species ; evntclass; K0shortMass; LambdaMass; AntiLambdaMass", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, MassAxis, CentAxis}}});
+    }
+    if (doprocessCountingWithoutCent) {
+      registry.add({"Tracks/ProcessCounting/Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis}}});
+      registry.add({"Tracks/ProcessCounting/hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcessCounting/hrecpt", " eventclass; pt_gen; pt_rec ", {HistType::kTHnSparseD, {EvtClassAxis, PtAxis, PtAxis}}});
+      registry.add({"Tracks/ProcessCounting/hreczvtx", "evntclass; triggerclass; zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis}}});
+      registry.add({"Tracks/ProcessCounting/PhiEta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {EvtClassAxis, PhiAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcessCounting/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis}}});
+      registry.add({"Tracks/ProcessCounting/DCAZ", " ; DCA_{Z} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis}}});
+      registry.add({"Tracks/ProcessCounting/hV0Count", "", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, StepAxis}}});
+      registry.add({"Tracks/ProcessCounting/hV0DauEta", "", {HistType::kTHnSparseD, {EvtClassAxis, SignAxis, SpeciesAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcessCounting/hV0Mass", "species ; evntclass; K0shortMass; LambdaMass; AntiLambdaMass", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, MassAxis}}});
+    }
+    if (doprocessMCCounting) {
+      registry.add({"Tracks/ProcessMCCounting/Multiplicity", " ; FV0A (#); FT0A (#); FT0C (#) ", {HistType::kTHnSparseD, {MultAxis, MultAxis, MultAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hreczvtx", "evntclass; triggerclass; zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hrecpt", " eventclass; pt_gen; pt_rec ", {HistType::kTHnSparseD, {EvtClassAxis, PtAxis, PtAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hgenpt", " eventclass; centrality; pt;  ", {HistType::kTHnSparseD, {EvtClassAxis, PtAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/PhiEta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {EvtClassAxis, PhiAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/DCAZ", " ; DCA_{Z} (cm)", {HistType::kTHnSparseD, {EvtClassAxis, DCAAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hV0Count", "", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, StepAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hV0DauEta", "", {HistType::kTHnSparseD, {EvtClassAxis, SignAxis, SpeciesAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hV0Mass", "species ; evntclass; K0shortMass; LambdaMass; AntiLambdaMass", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis, MassAxis}}});
 
+      registry.add({"Tracks/ProcessMCCounting/hStatusCode", "", {HistType::kTHnSparseD, {EvtClassAxis, StepAxis, StatusCodeAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hMCStatusCode", "", {HistType::kTHnSparseD, {EvtClassAxis, StepAxis, StatusCodeAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hProcessCode", "", {HistType::kTHnSparseD, {EvtClassAxis, StepAxis, ProcessCodeAxis}}});
+      registry.add({"Tracks/ProcessMCCounting/hMotherV0Count", "", {HistType::kTHnSparseD, {EvtClassAxis, SpeciesAxis}}});
+    }
+    if (doprocessGen) {
+      registry.add({"Tracks/ProcesGen/hgendndeta", "evntclass;  zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, ZAxis, EtaAxis}}});
+      registry.add({"Tracks/ProcesGen/hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseD, {EvtClassAxis, ZAxis}}});
+    }
+  }
   void processEventStat(
     FullBCs const& bcs,
     soa::Join<aod::Collisions, aod::EvSels> const& collisions)
@@ -218,20 +253,19 @@ struct MultiplicityCounter {
                                      (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
 
   std::vector<Double_t> tracketas;
-  template <typename CollisionTypes, typename bcsTypes, typename ft0sTypes, typename fv0asTypes, typename tracksTypes, typename fullV0sTypes, typename atracksTypes>
-  void runCounting(CollisionTypes const& collision, bcsTypes const& bcs, ft0sTypes const& ft0s, fv0asTypes const& fv0as, tracksTypes const& tracks, fullV0sTypes const& fullV0s, atracksTypes const& atracks, float cent)
+  template <typename CollisionTypes>
+  void runCounting(typename CollisionTypes::iterator const& collision, BCsRun3 const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, FiTracks const& tracks, soa::Filtered<aod::V0Datas> const& fullV0s, soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
+
     const auto& foundBC = collision.template foundBC_as<BCsRun3>();
     float multT0A = 0;
     float multT0C = 0;
     float multV0A = 0;
 
-    registry.fill(HIST("Centrality"), cent);
     registry.fill(HIST("Events/Selection"), 1.);
     auto z = collision.posZ();
-
-    if (!useEvSel || collision.sel8()) {
-      if (std::abs(z) < 10) {
+    if (!useEvSel || collision.sel8()) { // event selection cut
+      if (std::abs(z) < 10) {            // z-vtx cut
         if (foundBC.has_ft0()) {
           for (auto amplitude : foundBC.ft0().amplitudeA()) {
             multT0A += amplitude;
@@ -250,78 +284,155 @@ struct MultiplicityCounter {
         } else {
           multV0A = -999;
         }
-        registry.fill(HIST("Multiplicity"), multV0A, multT0A, multT0C);
-        registry.fill(HIST("Centrality_MBAND"), cent);
+        float cent = 0;
+        if constexpr (CollisionTypes::template contains<aod::CentFT0Cs>()) { // with centrality
+          cent = collision.centFT0C();
+          registry.fill(HIST("Tracks/ProcessCounting/Centrality/Centrality"), cent);
 
-        registry.fill(HIST("Events/Selection"), 2.);
+          registry.fill(HIST("Events/Selection"), 2.);
+          registry.fill(HIST("Tracks/ProcessCounting/Centrality/Multiplicity"), multV0A, multT0A, multT0C, cent);
 
-        registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(kMBAND), cent, z);
-        usedTracksIds.clear();
+          registry.fill(HIST("Tracks/ProcessCounting/Centrality/hreczvtx"), Double_t(kDATA), Double_t(kMBAND), z, cent);
 
-        tracketas.clear();
+          usedTracksIds.clear();
+          tracketas.clear();
 
-        for (auto& track : atracks) {
-          auto otrack = track.template track_as<FiTracks>();
-          tracketas.push_back(otrack.eta());
-          registry.fill(HIST("PhiEta"), Double_t(kDATA), otrack.phi(), otrack.eta());
-          registry.fill(HIST("DCAXY"), Double_t(kDATA), otrack.dcaXY());
-          registry.fill(HIST("DCAZ"), Double_t(kDATA), otrack.dcaZ());
-          registry.fill(HIST("hrecpt"), Double_t(kDATA), cent, -1, otrack.pt());
-        }
-
-        for (auto& track : tracks) {
-          if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
-            continue;
-          }
-          registry.fill(HIST("PhiEta"), Double_t(kDATA), track.phi(), track.eta());
-          registry.fill(HIST("DCAXY"), Double_t(kDATA), track.dcaXY());
-          registry.fill(HIST("DCAZ"), Double_t(kDATA), track.dcaZ());
-          registry.fill(HIST("hrecpt"), Double_t(kDATA), cent, -1, track.pt());
-          tracketas.push_back(track.eta());
-        }
-
-        for (auto& eta : tracketas) {
-          registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), cent, z, eta);
-        }
-
-        for (auto& v0 : fullV0s) {
-          registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kAll));
-          registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kAll));
-          registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kAll));
-
-          auto pTrack = v0.template posTrack_as<FiTracks>();
-          auto nTrack = v0.template negTrack_as<FiTracks>();
-
-          if (v0.v0radius() > v0radius &&
-              v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
-              abs(pTrack.eta()) < etadau &&
-              abs(nTrack.eta()) < etadau) {
-            registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kBasiccut));
-            registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kBasiccut));
-            registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kBasiccut));
-
-            if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
-              registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut));
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
-            }
-
-            if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-              registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut));
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
-            }
-
-            if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-              registry.fill(HIST("hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut));
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
-              registry.fill(HIST("hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
-            }
+          for (auto& track : atracks) {
+            auto otrack = track.template track_as<FiTracks>();
+            tracketas.push_back(otrack.eta());
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/PhiEta"), Double_t(kDATA), otrack.phi(), otrack.eta(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/DCAXY"), Double_t(kDATA), otrack.dcaXY(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/DCAZ"), Double_t(kDATA), otrack.dcaZ(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hrecpt"), Double_t(kDATA), -1, otrack.pt(), cent);
           }
 
-          registry.fill(HIST("hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short());
-          registry.fill(HIST("hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda());
-          registry.fill(HIST("hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda());
+          for (auto& track : tracks) {
+            if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
+              continue;
+            }
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/PhiEta"), Double_t(kDATA), track.phi(), track.eta(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/DCAXY"), Double_t(kDATA), track.dcaXY(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/DCAZ"), Double_t(kDATA), track.dcaZ(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hrecpt"), Double_t(kDATA), -1, track.pt(), cent);
+            tracketas.push_back(track.eta());
+          }
+
+          for (auto& eta : tracketas) {
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), z, eta, cent);
+          }
+
+          for (auto& v0 : fullV0s) {
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kAll), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kAll), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kAll), cent);
+
+            auto pTrack = v0.template posTrack_as<FiTracks>();
+            auto nTrack = v0.template negTrack_as<FiTracks>();
+
+            if (v0.v0radius() > v0radius &&
+                v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+                abs(pTrack.eta()) < etadau &&
+                abs(nTrack.eta()) < etadau) {
+              registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kBasiccut), cent);
+              registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kBasiccut), cent);
+              registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kBasiccut), cent);
+
+              if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut), cent);
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta(), cent);
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta(), cent);
+              }
+
+              if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut), cent);
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta(), cent);
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta(), cent);
+              }
+
+              if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut), cent);
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta(), cent);
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta(), cent);
+              }
+            }
+
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda(), cent);
+            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda(), cent);
+          }
+        } else {
+          // without centrality
+          registry.fill(HIST("Events/Selection"), 2.);
+          registry.fill(HIST("Tracks/ProcessCounting/Multiplicity"), multV0A, multT0A, multT0C);
+
+          registry.fill(HIST("Tracks/ProcessCounting/hreczvtx"), Double_t(kDATA), Double_t(kMBAND), z);
+
+          usedTracksIds.clear();
+          tracketas.clear();
+
+          for (auto& track : atracks) {
+            auto otrack = track.template track_as<FiTracks>();
+            tracketas.push_back(otrack.eta());
+            registry.fill(HIST("Tracks/ProcessCounting/PhiEta"), Double_t(kDATA), otrack.phi(), otrack.eta());
+            registry.fill(HIST("Tracks/ProcessCounting/DCAXY"), Double_t(kDATA), otrack.dcaXY());
+            registry.fill(HIST("Tracks/ProcessCounting/DCAZ"), Double_t(kDATA), otrack.dcaZ());
+            registry.fill(HIST("Tracks/ProcessCounting/hrecpt"), Double_t(kDATA), -1, otrack.pt());
+          }
+
+          for (auto& track : tracks) {
+            if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
+              continue;
+            }
+            registry.fill(HIST("Tracks/ProcessCounting/PhiEta"), Double_t(kDATA), track.phi(), track.eta());
+            registry.fill(HIST("Tracks/ProcessCounting/DCAXY"), Double_t(kDATA), track.dcaXY());
+            registry.fill(HIST("Tracks/ProcessCounting/DCAZ"), Double_t(kDATA), track.dcaZ());
+            registry.fill(HIST("Tracks/ProcessCounting/hrecpt"), Double_t(kDATA), -1, track.pt());
+            tracketas.push_back(track.eta());
+          }
+
+          for (auto& eta : tracketas) {
+            registry.fill(HIST("Tracks/ProcessCounting/hrecdndeta"), Double_t(kDATA), Double_t(kMBAND), z, eta);
+          }
+
+          for (auto& v0 : fullV0s) {
+            registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kAll));
+            registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kAll));
+            registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kAll));
+
+            auto pTrack = v0.template posTrack_as<FiTracks>();
+            auto nTrack = v0.template negTrack_as<FiTracks>();
+
+            if (v0.v0radius() > v0radius &&
+                v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+                abs(pTrack.eta()) < etadau &&
+                abs(nTrack.eta()) < etadau) {
+              registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kBasiccut));
+              registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kBasiccut));
+              registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kBasiccut));
+
+              if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut));
+                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
+                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
+              }
+
+              if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut));
+                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
+                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
+              }
+
+              if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut));
+                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
+                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
+              }
+            }
+
+            registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short());
+            registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda());
+            registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda());
+          }
         }
       }
     }
@@ -335,12 +446,10 @@ struct MultiplicityCounter {
     aod::FT0s const& ft0s,
     aod::FV0As const& fv0as,
     FiTracks const& tracks,
-    // DaughterTracks const&,
     soa::Filtered<aod::V0Datas> const& fullV0s,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
-    auto cent = collision.centFT0C();
-    runCounting(collision, bcs, ft0s, fv0as, tracks, fullV0s, atracks, cent);
+    runCounting<MyCollisionsCent>(collision, bcs, ft0s, fv0as, tracks, fullV0s, atracks);
   }
   PROCESS_SWITCH(MultiplicityCounter, processCountingWithCent, "Count tracks with Centrality", false);
 
@@ -350,17 +459,16 @@ struct MultiplicityCounter {
     aod::FT0s const& ft0s,
     aod::FV0As const& fv0as,
     FiTracks const& tracks,
-    // DaughterTracks const&,
     soa::Filtered<aod::V0Datas> const& fullV0s,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
-    auto cent = 50.;
-    runCounting(collision, bcs, ft0s, fv0as, tracks, fullV0s, atracks, cent);
+    runCounting<MyCollisions>(collision, bcs, ft0s, fv0as, tracks, fullV0s, atracks);
   }
   PROCESS_SWITCH(MultiplicityCounter, processCountingWithoutCent, "Count tracks with No Centrality", false);
 
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
+  Partition<aod::Tracks> tSample = nabs(aod::track::eta) < estimatorEta;
   Preslice<FiTracks> perCol = aod::track::collisionId;
   Partition<soa::Filtered<LabeledTracksEx>> lsample = nabs(aod::track::eta) < estimatorEta;
 
@@ -369,28 +477,26 @@ struct MultiplicityCounter {
     aod::McCollisions const&,
     soa::Filtered<aod::V0Datas> const& fullV0s,
     Particles const& mcParticles,
+    // aod::McParticles const& mcParticles,
     soa::Filtered<LabeledTracksEx> const&,
     DaughterTracks const&,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
-    auto cent = 50.;
-
     for (auto& collision : collisions) {
-
       auto z = collision.posZ();
-      if (useEvSel && !collision.sel8()) {
+      if (useEvSel && !collision.sel8()) { // event selection cut
         continue;
       }
-      if (!collision.has_mcCollision()) {
+      if (!collision.has_mcCollision()) { // check mc particle
         continue;
       }
-      if (std::abs(z) > 10) {
+      if (std::abs(z) > 10) { // z-vtx cut
         continue;
       }
       for (auto& v0 : fullV0s) {
-        registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kAll));
-        registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kAll));
-        registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kAll));
+        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kAll));
+        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kAll));
+        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kAll));
 
         auto pTrack = v0.template posTrack_as<DaughterTracks>();
         auto nTrack = v0.template negTrack_as<DaughterTracks>();
@@ -399,32 +505,32 @@ struct MultiplicityCounter {
             v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau) {
-          registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kBasiccut));
-          registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kBasiccut));
-          registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kBasiccut));
+          registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kBasiccut));
+          registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kBasiccut));
+          registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kBasiccut));
 
           if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
-            registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kMasscut));
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kMasscut));
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
           }
           if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-            registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kMasscut));
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kMasscut));
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
           }
           if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-            registry.fill(HIST("hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kMasscut));
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
-            registry.fill(HIST("hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kMasscut));
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
           }
         }
-        registry.fill(HIST("hV0Mass"), Double_t(kINEL), Double_t(kK0short), v0.mK0Short());
-        registry.fill(HIST("hV0Mass"), Double_t(kINEL), Double_t(kLambda), v0.mLambda());
-        registry.fill(HIST("hV0Mass"), Double_t(kINEL), Double_t(kAntilambda), v0.mAntiLambda());
+        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kK0short), v0.mK0Short());
+        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kLambda), v0.mLambda());
+        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kAntilambda), v0.mAntiLambda());
       }
 
-      registry.fill(HIST("hreczvtx"), Double_t(kINEL), Double_t(kMBAND), cent, z);
+      registry.fill(HIST("Tracks/ProcessMCCounting/hreczvtx"), Double_t(kINEL), Double_t(kMBAND), z);
       auto mcCollision = collision.mcCollision();
       auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
       auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex());
@@ -435,16 +541,34 @@ struct MultiplicityCounter {
         auto ttrack = track.track_as<soa::Filtered<LabeledTracksEx>>();
         usedTracksIds.emplace_back(ttrack.globalIndex());
         if (ttrack.has_mcParticle()) {
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), cent, z, ttrack.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecpt"), Double_t(kINEL), cent, ttrack.mcParticle_as<Particles>().pt(), ttrack.pt());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), z, ttrack.mcParticle_as<Particles>().eta());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hrecpt"), Double_t(kINEL), ttrack.mcParticle_as<Particles>().pt(), ttrack.pt());
+          registry.fill(HIST("Tracks/ProcessMCCounting/PhiEta"), Double_t(kINEL), ttrack.phi(), ttrack.eta());
+          registry.fill(HIST("Tracks/ProcessMCCounting/DCAXY"), Double_t(kINEL), ttrack.dcaXY());
+          registry.fill(HIST("Tracks/ProcessMCCounting/DCAZ"), Double_t(kINEL), ttrack.dcaZ());
 
-          registry.fill(HIST("PhiEta"), Double_t(kINEL), ttrack.phi(), ttrack.eta());
-          registry.fill(HIST("DCAXY"), Double_t(kINEL), ttrack.dcaXY());
-          registry.fill(HIST("DCAZ"), Double_t(kINEL), ttrack.dcaZ());
-          registry.fill(HIST("hMCTrackCount"), Double_t(kINEL), Double_t(kAll), 1);
+          registry.fill(HIST("Tracks/ProcessMCCounting/hStatusCode"), Double_t(kINEL), Double_t(kAll), ttrack.mcParticle_as<Particles>().getGenStatusCode());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hMCStatusCode"), Double_t(kINEL), Double_t(kAll), ttrack.mcParticle_as<Particles>().getHepMCStatusCode());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hProcessCode"), Double_t(kINEL), Double_t(kAll), ttrack.mcParticle_as<Particles>().getProcess());
 
+          if (ttrack.mcParticle_as<Particles>().getProcess() != 0) {
+            registry.fill(HIST("Tracks/ProcessMCCounting/hrecdndeta"), Double_t(kINEL), Double_t(kBackground), z, ttrack.mcParticle_as<Particles>().eta());
+          }
+
+          for (auto MotherIDs = ttrack.mcParticle_as<Particles>().mothersIds().front(); MotherIDs <= ttrack.mcParticle_as<Particles>().mothersIds().back(); MotherIDs++) {
+            auto mother = mcParticles.rawIteratorAt(MotherIDs);
+            auto pdg_mother = mother.pdgCode();
+            if (pdg_mother == 310) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hMotherV0Count"), Double_t(kINEL), Double_t(kK0short));
+            }
+            if (pdg_mother == 3122) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hMotherV0Count"), Double_t(kINEL), Double_t(kLambda));
+            }
+            if (pdg_mother == -3122) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hMotherV0Count"), Double_t(kINEL), Double_t(kAntilambda));
+            }
+          }
         } else {
-          registry.fill(HIST("hMCTrackCount"), Double_t(kINEL), Double_t(kBasiccut), 1);
           // when secondary
         }
       }
@@ -453,17 +577,34 @@ struct MultiplicityCounter {
           continue;
         }
         if (track.has_mcParticle()) {
-          registry.fill(HIST("hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), cent, z, track.mcParticle_as<Particles>().eta());
-          registry.fill(HIST("hrecpt"), Double_t(kINEL), cent, track.mcParticle_as<Particles>().pt(), track.pt());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hrecdndeta"), Double_t(kINEL), Double_t(kMBAND), z, track.mcParticle_as<Particles>().eta());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hrecpt"), Double_t(kINEL), track.mcParticle_as<Particles>().pt(), track.pt());
+          registry.fill(HIST("Tracks/ProcessMCCounting/PhiEta"), Double_t(kINEL), track.phi(), track.eta());
+          registry.fill(HIST("Tracks/ProcessMCCounting/DCAXY"), Double_t(kINEL), track.dcaXY());
+          registry.fill(HIST("Tracks/ProcessMCCounting/DCAZ"), Double_t(kINEL), track.dcaZ());
 
-          registry.fill(HIST("PhiEta"), Double_t(kINEL), track.phi(), track.eta());
-          registry.fill(HIST("DCAXY"), Double_t(kINEL), track.dcaXY());
-          registry.fill(HIST("DCAZ"), Double_t(kINEL), track.dcaZ());
-          registry.fill(HIST("hMCTrackCount"), Double_t(kINEL), Double_t(kAll), 2);
+          registry.fill(HIST("Tracks/ProcessMCCounting/hStatusCode"), Double_t(kINEL), Double_t(kAll), track.mcParticle_as<Particles>().getGenStatusCode());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hMCStatusCode"), Double_t(kINEL), Double_t(kAll), track.mcParticle_as<Particles>().getHepMCStatusCode());
+          registry.fill(HIST("Tracks/ProcessMCCounting/hProcessCode"), Double_t(kINEL), Double_t(kAll), track.mcParticle_as<Particles>().getProcess());
 
+          if (track.mcParticle_as<Particles>().getProcess() != 0) {
+            registry.fill(HIST("Tracks/ProcessMCCounting/hrecdndeta"), Double_t(kINEL), Double_t(kBackground), z, track.mcParticle_as<Particles>().eta());
+          }
+
+          for (auto MotherIDs = track.mcParticle_as<Particles>().mothersIds().front(); MotherIDs <= track.mcParticle_as<Particles>().mothersIds().back(); MotherIDs++) {
+            auto mother = mcParticles.rawIteratorAt(MotherIDs);
+            auto pdg_mother = mother.pdgCode();
+            if (pdg_mother == 310) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hMotherV0Count"), Double_t(kINEL), Double_t(kK0short));
+            }
+            if (pdg_mother == 3122) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hMotherV0Count"), Double_t(kINEL), Double_t(kLambda));
+            }
+            if (pdg_mother == -3122) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hMotherV0Count"), Double_t(kINEL), Double_t(kAntilambda));
+            }
+          }
         } else {
-          registry.fill(HIST("hMCTrackCount"), Double_t(kINEL), Double_t(kBasiccut), 2);
-
           // when secondary
         }
       }
@@ -471,7 +612,7 @@ struct MultiplicityCounter {
         auto p = pdg->GetParticle(particle.pdgCode());
         if (p != nullptr) {
           if (std::abs(p->Charge()) >= 3) {
-            registry.fill(HIST("hgenpt"), Double_t(kINEL), cent, particle.pt());
+            registry.fill(HIST("Tracks/ProcessMCCounting/hgenpt"), Double_t(kINEL), particle.pt());
           }
         }
       }
@@ -482,17 +623,16 @@ struct MultiplicityCounter {
   void processGen(
     aod::McCollisions::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& mcParticles, FiTracks const& tracks)
   {
-    auto cent = 50.;
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto genz = mcCollision.posZ();
-    registry.fill(HIST("hgenzvtx"), Double_t(kINEL), cent, genz);
+    registry.fill(HIST("Tracks/ProcesGen/hgenzvtx"), Double_t(kINEL), genz);
     for (auto& particle : perCollisionMCSample) {
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
         if (std::abs(p->Charge()) >= 3) {
-          registry.fill(HIST("hgendndeta"), Double_t(kINEL), cent, genz, particle.eta());
+          registry.fill(HIST("Tracks/ProcesGen/hgendndeta"), Double_t(kINEL), genz, particle.eta());
         }
       }
     }

@@ -138,21 +138,18 @@ struct skimmerGammaConversions {
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = nullptr;
 
-    if(grpo) {
+    if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-    }
-    else {
+    } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
       if (!grpmag) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << ccdbPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      else
-      {
+      } else {
         LOG(info) << "Magnetic field initialized from GRPMagField";
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
-    
+
     runNumber = bc.runNumber();
   }
 
@@ -182,7 +179,7 @@ struct skimmerGammaConversions {
       recalculatedVtx[0],
       recalculatedVtx[1],
       recalculatedVtx[2],
-      0.0);                 // temporarily add 0
+      0.0); // temporarily add 0
   }
 
   template <typename TTRACK>

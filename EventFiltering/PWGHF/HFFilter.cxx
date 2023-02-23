@@ -44,8 +44,6 @@ using namespace hf_cuts_bdt_multiclass;
 struct HfFilter { // Main struct for HF triggers
 
   Produces<aod::HfFilters> tags;
-  Produces<aod::HFTrigTrain2P> train2P;
-  Produces<aod::HFTrigTrain3P> train3P;
   Produces<aod::HFOptimisationTreeBeauty> optimisationTreeBeauty;
   Produces<aod::HFOptimisationTreeCharm> optimisationTreeCharm;
   Produces<aod::HFOptimisationTreeFemto> optimisationTreeFemto;
@@ -86,10 +84,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> femtoProtonOnlyTOF{"femtoProtonOnlyTOF", false, "Use only TOF information for proton identification if true"};
   Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum value for PID proton Nsigma for femto triggers"};
 
-  // parameters for production of training samples
-  Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
-  Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
-  Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  // parameters for photon triggers
+  Configurable<float> photonMinCosPA{"photonMinCosPA", 0.85, "Minimal required cosine of pointing angle for photons"};
 
   // parameters for ML application with ONNX
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
@@ -120,8 +116,14 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<string> ccdbPathTPC{"ccdbPathTPC", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
 
-  // TPC PID post calibrations
-  Configurable<bool> computeTPCPostCalib{"computeTPCPostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  // TPC PID calibrations
+  Configurable<int> setTPCCalib{"setTPCCalib", 0, "0 is not use re-calibrations, 1 is compute TPC post-calibrated n-sigmas, 2 is using TPC Spline"};
+  Configurable<std::string> ccdbBBProton{"ccdbBBProton", "Users/l/lserksny/PIDProton", "Path to the CCDB ocject for proton BB param"};
+  Configurable<std::string> ccdbBBAntiProton{"ccdbBBAntiProton", "Users/l/lserksny/PIDAntiProton", "Path to the CCDB ocject for antiproton BB param"};
+  Configurable<std::string> ccdbBBPion{"ccdbBBPion", "Users/l/lserksny/PIDPion", "Path to the CCDB ocject for Pion BB param"};
+  Configurable<std::string> ccdbBBAntiPion{"ccdbBBAntiPion", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiPion BB param"};
+  Configurable<std::string> ccdbBBKaon{"ccdbBBKaon", "Users/l/lserksny/PIDPion", "Path to the CCDB ocject for Kaon BB param"};
+  Configurable<std::string> ccdbBBAntiKaon{"ccdbBBAntiKaon", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiKaon BB param"};
 
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
@@ -147,12 +149,12 @@ struct HfFilter { // Main struct for HF triggers
   std::shared_ptr<TH1> hGammaSelected, hGammaEtaBefore, hGammaEtaAfter;
   std::shared_ptr<TH2> hGammaArmPodBefore, hGammaArmPodAfter;
 
-  // Histogram of TPC postcalibration map for pion and proton
-  TH3F* hMapPionMean = nullptr;
-  TH3F* hMapPionSigma = nullptr;
-  TH3F* hMapProtonMean = nullptr;
-  TH3F* hMapProtonSigma = nullptr;
-
+  // Histograms of TPC calibration for pion and proton
+  std::array<TH3F*, 2> hMapPion = {nullptr, nullptr};
+  std::array<TH3F*, 2> hMapProton = {nullptr, nullptr};
+  std::array<std::vector<double>, 2> hBBProton{};
+  std::array<std::vector<double>, 2> hBBPion{};
+  std::array<std::vector<double>, 2> hBBKaon{};
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> inputShapesML{};
@@ -173,7 +175,7 @@ struct HfFilter { // Main struct for HF triggers
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
-    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p float charm", "w/ 2p and 3p float charm", "w/ 2p soft gamma", "w/ 3p soft gamma"};
+    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p double charm", "w/ 2p and 3p double charm", "w/ 2p soft gamma", "w/ 3p soft gamma"};
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
       hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
@@ -248,6 +250,7 @@ struct HfFilter { // Main struct for HF triggers
   using BigTracksPID = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   Preslice<aod::HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
   Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::hf_track_association::collisionId;
   Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::hf_track_association::collisionId;
 
@@ -282,20 +285,28 @@ struct HfFilter { // Main struct for HF triggers
         o2::base::Propagator::initFieldFromGRP(grpo);
 
         // needed for TPC PID postcalibrations
-        if (computeTPCPostCalib) {
+        if (setTPCCalib == 1) {
           auto calibList = ccdb->getForTimeStamp<TList>(ccdbPathTPC.value, bc.timestamp());
           if (!calibList) {
             LOG(fatal) << "Can not find the TPC Post Calibration object!";
           }
 
-          hMapPionMean = (TH3F*)calibList->FindObject("mean_map_pion");
-          hMapPionSigma = (TH3F*)calibList->FindObject("sigma_map_pion");
-          hMapProtonMean = (TH3F*)calibList->FindObject("mean_map_proton");
-          hMapProtonSigma = (TH3F*)calibList->FindObject("sigma_map_proton");
+          hMapPion[0] = (TH3F*)calibList->FindObject("mean_map_pion");
+          hMapPion[1] = (TH3F*)calibList->FindObject("sigma_map_pion");
+          hMapProton[0] = (TH3F*)calibList->FindObject("mean_map_proton");
+          hMapProton[1] = (TH3F*)calibList->FindObject("sigma_map_proton");
 
-          if (!hMapPionMean || !hMapPionSigma || !hMapProtonMean || !hMapProtonSigma) {
+          if (!hMapPion[0] || !hMapPion[1] || !hMapProton[0] || !hMapProton[1]) {
             LOG(fatal) << "Can not find histograms!";
           }
+        } else if (setTPCCalib > 1) {
+
+          hBBProton[0] = setValuesBB(ccdbApi, bc, ccdbBBProton);
+          hBBProton[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiProton);
+          hBBPion[0] = setValuesBB(ccdbApi, bc, ccdbBBPion);
+          hBBPion[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiPion);
+          hBBKaon[0] = setValuesBB(ccdbApi, bc, ccdbBBKaon);
+          hBBKaon[1] = setValuesBB(ccdbApi, bc, ccdbBBAntiKaon);
         }
 
         currentRun = bc.runNumber();
@@ -318,7 +329,7 @@ struct HfFilter { // Main struct for HF triggers
         auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
         auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
 
-        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, computeTPCPostCalib, hMapPionMean, hMapPionSigma);
+        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, setTPCCalib, hMapPion, hBBPion, hBBKaon);
         if (!preselD0) {
           continue;
         }
@@ -403,7 +414,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
-        for (const auto& trackId : trackIndices) { // start loop over tracks
+        for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
           auto track = trackId.track_as<BigTracksPID>();
 
           if (track.globalIndex() == trackPos.globalIndex() || track.globalIndex() == trackNeg.globalIndex()) {
@@ -437,7 +448,7 @@ struct HfFilter { // Main struct for HF triggers
                 if (activateQA) {
                   hMassVsPtC[kNCharmParticles]->Fill(ptCand, massCand);
                 }
-                for (const auto& trackIdB : trackIndices) { // start loop over tracks
+                for (const auto& trackIdB : trackIdsThisCollision) { // start loop over tracks
                   auto trackB = trackIdB.track_as<BigTracksPID>();
                   if (track.globalIndex() == trackB.globalIndex()) {
                     continue;
@@ -471,8 +482,8 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 2-prong femto
-          if (!keepEvent[kFemto2P] && isCharmTagged) {
-            bool isProton = isSelectedProton4Femto(track, trackParThird, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, activateQA, hProtonTPCPID, hProtonTOFPID);
+          if (!keepEvent[kFemto2P] && isCharmTagged && track.collisionId() == thisCollId) {
+            bool isProton = isSelectedProton4Femto(track, trackParThird, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, setTPCCalib, hMapProton, hBBProton, activateQA, hProtonTPCPID, hProtonTOFPID);
             if (isProton) {
               float relativeMomentum = computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
@@ -490,10 +501,11 @@ struct HfFilter { // Main struct for HF triggers
         } // end loop over tracks
 
         // 2-prong with Gamma (conversion photon)
-        for (auto& gamma : theV0s) {
-          if (!keepEvent[kGammaCharm2P] && isCharmTagged) {
+        auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
+        for (auto& gamma : v0sThisCollision) {
+          if (!keepEvent[kGammaCharm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || (TESTBIT(selD0, 1)))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
+            bool isGamma = isSelectedGamma(gamma, photonMinCosPA, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
             if (isGamma) {
               std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
               auto massGammaCharm = RecoDecay::m(std::array{pVec2Prong, gammaVec}, std::array{massD0, massGamma});
@@ -550,13 +562,13 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         if (is3Prong[0]) { // D+ preselections
-          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma);
+          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBKaon);
         }
         if (is3Prong[1]) { // Ds preselections
-          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapPionMean, hMapPionSigma);
+          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBKaon);
         }
         if (is3Prong[2] || is3Prong[3]) { // charm baryon preselections
-          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, hMapPionMean, hMapPionSigma);
+          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapProton, hBBProton, hMapPion, hBBKaon);
           if (is3Prong[2]) {
             is3Prong[2] = presel;
           }
@@ -664,7 +676,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
-        for (const auto& trackId : trackIndices) { // start loop over track indices as associated to this collision in HF code
+        for (const auto& trackId : trackIdsThisCollision) { // start loop over track indices as associated to this collision in HF code
           auto track = trackId.track_as<BigTracksPID>();
           if (track.globalIndex() == trackFirst.globalIndex() || track.globalIndex() == trackSecond.globalIndex() || track.globalIndex() == trackThird.globalIndex()) {
             continue;
@@ -703,8 +715,8 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 3-prong femto
-          bool isProton = isSelectedProton4Femto(track, trackParFourth, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, computeTPCPostCalib, hMapProtonMean, hMapProtonSigma, activateQA, hProtonTPCPID, hProtonTOFPID);
-          if (isProton) {
+          bool isProton = isSelectedProton4Femto(track, trackParFourth, femtoMinProtonPt, femtoMaxNsigmaProton, femtoProtonOnlyTOF, setTPCCalib, hMapProton, hBBProton, activateQA, hProtonTPCPID, hProtonTOFPID);
+          if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
               if (isCharmTagged[iHypo]) {
                 float relativeMomentum = computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
@@ -724,10 +736,11 @@ struct HfFilter { // Main struct for HF triggers
         } // end loop over tracks
 
         // 3-prong with Gamma (conversion photon)
-        for (auto& gamma : theV0s) {
-          if (!keepEvent[kGammaCharm3P] && isCharmTagged[kDs - 1]) {
+        auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
+        for (auto& gamma : v0sThisCollision) {
+          if (!keepEvent[kGammaCharm3P] && (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && (TESTBIT(is3ProngInMass[kDs - 1], 0) || TESTBIT(is3ProngInMass[kDs - 1], 1))) {
             float V0CosinePA = gamma.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            bool isGamma = isSelectedGamma(gamma, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
+            bool isGamma = isSelectedGamma(gamma, photonMinCosPA, V0CosinePA, activateQA, hGammaSelected, hGammaEtaBefore, hGammaEtaAfter, hGammaArmPodBefore, hGammaArmPodAfter);
             if (isGamma) {
               std::array<float, 3> gammaVec = {gamma.px(), gamma.py(), gamma.pz()};
               auto massGammaCharm = RecoDecay::m(std::array{pVec3Prong, gammaVec}, std::array{massDs, massGamma});
@@ -778,127 +791,6 @@ struct HfFilter { // Main struct for HF triggers
       }
     }
   }
-
-  void processTraining(aod::Hf2Prongs const& cand2Prongs,
-                       aod::Hf3Prongs const& cand3Prongs,
-                       aod::McParticles const& particlesMC,
-                       BigTracksMCPID const&)
-  {
-    for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
-
-      auto trackPos = cand2Prong.prong0_as<BigTracksMCPID>(); // positive daughter
-      auto trackNeg = cand2Prong.prong1_as<BigTracksMCPID>(); // negative daughter
-
-      std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
-      std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
-      auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
-      auto pt2Prong = RecoDecay::pt(pVec2Prong);
-
-      auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massPi, massK});
-      auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massK, massPi});
-
-      int8_t sign = 0;
-      int8_t flag = RecoDecay::OriginType::None;
-
-      // D0(bar) → π± K∓
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
-      if (indexRec > -1) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-        if (flag < RecoDecay::OriginType::Prompt) {
-          continue;
-        }
-      }
-
-      float pseudoRndm = trackPos.pt() * 1000. - (long)(trackPos.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train2P(invMassD0, invMassD0bar, pt2Prong, trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
-                trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
-                flag);
-      }
-    } // end loop over 2-prong candidates
-
-    for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
-
-      auto trackFirst = cand3Prong.prong0_as<BigTracksMCPID>();  // first daughter
-      auto trackSecond = cand3Prong.prong1_as<BigTracksMCPID>(); // second daughter
-      auto trackThird = cand3Prong.prong2_as<BigTracksMCPID>();  // third daughter
-      auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
-
-      std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-      std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-      std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
-
-      auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
-      auto pt3Prong = RecoDecay::pt(pVec3Prong);
-
-      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massPi});
-
-      auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massK, massK, massPi});
-      auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massK});
-
-      auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massK, massPi});
-      auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massProton});
-
-      auto invMassXicToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massK, massPi});
-      auto invMassXicToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massProton});
-
-      float deltaMassKKFirst = -1.f;
-      float deltaMassKKSecond = -1.f;
-      if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi)) {
-        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massK, massK}) - massPhi);
-        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massK, massK}) - massPhi);
-      }
-      int8_t sign = 0;
-      int8_t flag = RecoDecay::OriginType::None;
-      int8_t channel = -1;
-
-      // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
-      if (indexRec >= 0) {
-        channel = kDplus;
-      }
-      if (indexRec < 0) {
-        // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2); // TODO: replace hard coded pdg code
-        if (indexRec >= 0) {
-          channel = kDs;
-        }
-      }
-      if (indexRec < 0) {
-        // Λc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        if (indexRec >= 0) {
-          channel = kLc;
-        }
-      }
-      if (indexRec < 0) {
-        // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        if (indexRec >= 0) {
-          channel = kXic;
-        }
-      }
-
-      if (indexRec > -1) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-        if (flag < RecoDecay::OriginType::Prompt) {
-          continue;
-        }
-      }
-
-      float pseudoRndm = trackFirst.pt() * 1000. - (long)(trackFirst.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train3P(invMassDplus, invMassDsToKKPi, invMassDsToPiKK, invMassLcToPKPi, invMassLcToPiKP, invMassXicToPKPi, invMassXicToPiKP, pt3Prong, deltaMassKKFirst, deltaMassKKSecond, trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
-                trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
-                trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
-                flag, channel, cand3Prong.hfflag());
-      }
-    } // end loop over 3-prong candidates
-  }
-
-  PROCESS_SWITCH(HfFilter, processTraining, "Process MC for training samples", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)

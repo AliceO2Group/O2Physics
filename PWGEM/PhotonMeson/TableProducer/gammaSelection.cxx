@@ -38,7 +38,7 @@ struct gammaSelection {
 
   uint64_t EMC_CutModeBit;
 
-  Preslice<o2::aod::SkimEMCMTs> perEMCClusterMT = o2::aod::gammacellsreco::skimEMCClusterId;
+  Preslice<o2::aod::SkimEMCMTs> perEMCClusterMT = o2::aod::caloextra::clusterId;
 
   Produces<aod::SkimGammas> tableGammaReco;
   Produces<aod::SkimEMCCuts> tableEMCCuts;

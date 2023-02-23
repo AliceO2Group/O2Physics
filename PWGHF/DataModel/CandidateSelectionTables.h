@@ -232,18 +232,20 @@ DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
 DECLARE_SOA_TABLE(HfSelXiccToPKPiPi, "AOD", "HFSELXICC", //!
                   hf_sel_candidate_xicc::IsSelXiccToPKPiPi);
 
-namespace hf_sel_omegac
+namespace hf_sel_toxipi
 {
-DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, int);
-DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, int);
-DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, int);
-DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, int);
-DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, int);
-DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, int);
-} // namespace hf_sel_omegac
-DECLARE_SOA_TABLE(HFSelOmegacCandidate, "AOD", "HFSELOMECCAND",
-                  hf_sel_omegac::StatusPidLambda, hf_sel_omegac::StatusPidCascade, hf_sel_omegac::StatusPidOmegac,
-                  hf_sel_omegac::StatusInvMassLambda, hf_sel_omegac::StatusInvMassCascade, hf_sel_omegac::StatusInvMassOmegac);
+DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
+DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
+DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, bool);
+DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
+DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
+DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, bool);
+DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
+} // namespace hf_sel_toxipi
+DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
+                  hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidOmegac,
+                  hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac,
+                  hf_sel_toxipi::ResultSelections);
 
 } // namespace o2::aod
 #endif // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
