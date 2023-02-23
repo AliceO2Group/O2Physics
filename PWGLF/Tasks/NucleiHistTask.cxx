@@ -530,7 +530,7 @@ struct NucleiHistTask {
   template <typename CollisionType, typename TracksType>
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
-  
+
     for (auto track : tracks) { // start loop over tracks
 
       float TPCnumberCls = track.tpcNClsFound();
@@ -557,25 +557,24 @@ struct NucleiHistTask {
           lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax) {
         continue;
       }
-      
 
       // fill 3D centrality histograms
       if (track.sign() > 0) {
-        
+
         proton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaPr(), event.centFT0C());
         proton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
         deuteron_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaDe(), event.centFT0C());
         deuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
         Helium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
         Helium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
-          
+
         if (track.hasTOF()) {
           proton_erg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           deuteron_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           Helium3_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
         }
       }
-        
+
       if (track.sign() < 0) {
 
         aproton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaPr(), event.centFT0C());
@@ -584,7 +583,7 @@ struct NucleiHistTask {
         adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
         aHelium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
         aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
- 
+
         if (track.hasTOF()) {
           aproton_erg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           adeuteron_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
@@ -594,19 +593,18 @@ struct NucleiHistTask {
     }
   }
 
-//****************************************************************************************************
+  //****************************************************************************************************
 
   template <typename CollisionType, typename TracksType>
   void fillTable(const CollisionType& event, const TracksType& tracks)
   {
 
     for (auto track : tracks) {
-    
+
       if ((track.pt()) < pTmin || (track.pt()) > pTmax) {
         continue;
       }
-      
-      
+
       // fill table
       nucleiTable(
         track.pt(),
@@ -634,27 +632,22 @@ struct NucleiHistTask {
         track.mass() * track.mass(),
         0.0,
         track.dcaXY(),
-        track.dcaZ()
-      );
-
-      
-     
+        track.dcaZ());
     }
   }
 
-//****************************************************************************************************
+  //****************************************************************************************************
 
   template <typename CollisionType, typename TracksType>
   void fillTableCent(const CollisionType& event, const TracksType& tracks)
   {
 
     for (auto track : tracks) {
-    
+
       if ((track.pt()) < pTmin || (track.pt()) > pTmax) {
         continue;
       }
-      
-      
+
       // fill table
       nucleiTable(
         track.pt(),
@@ -682,15 +675,11 @@ struct NucleiHistTask {
         track.mass() * track.mass(),
         event.centFT0C(),
         track.dcaXY(),
-        track.dcaZ()
-      );
-
-      
-     
+        track.dcaZ());
     }
   }
 
-//****************************************************************************************************
+  //****************************************************************************************************
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
