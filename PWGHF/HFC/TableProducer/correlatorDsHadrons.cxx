@@ -41,22 +41,12 @@ const int nBinsPtMassAndEfficiency = o2::analysis::hf_cuts_ds_to_k_k_pi::nBinsPt
 const double efficiencyDmesonDefault[nBinsPtMassAndEfficiency] = {};
 auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nBinsPtMassAndEfficiency};
 
-// histogram binning definition
-const int massAxisBins = 300;
-const double massAxisMin = 1.7;
-const double massAxisMax = 2.2;
-const int phiAxisBins = 128;
-const double phiAxisMin = -o2::constants::math::PIHalf;
-const double phiAxisMax = 3. * o2::constants::math::PIHalf;
-const int etaAxisBins = 100;
-const double etaAxisMin = -2.;
-const double etaAxisMax = 2.;
-const int yAxisBins = 100;
-const double yAxisMin = -2.;
-const double yAxisMax = 2.;
-const int ptDAxisBins = 180;
-const double ptDAxisMin = 0.;
-const double ptDAxisMax = 36.;
+// histogram axes definition
+AxisSpec axisMassD = {300, 1.7, 2.2, ""};
+AxisSpec axisPhi = {128, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf, ""};
+AxisSpec axisEta = {100, -2., 2., ""};
+AxisSpec axisY = {100, -2., 2., ""};
+AxisSpec axisPtD = {180, 0., 36., ""};
 
 using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
@@ -84,27 +74,27 @@ struct HfCorrelatorDsHadrons {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtCand", "Ds,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng0", "Ds,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng1", "Ds,Hadron candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng2", "Ds,Hadron candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
+    {{"hPtCand", "Ds,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng0", "Ds,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng1", "Ds,Hadron candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng2", "Ds,Hadron candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
      {"hSelectionStatus", "Ds,Hadron candidates;selection status;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-     {"hEta", "Ds,Hadron candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{etaAxisBins, etaAxisMin, etaAxisMax}}}},
-     {"hPhi", "Ds,Hadron candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hY", "Ds,Hadron candidates;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPtCandMCRec", "Ds,Hadron candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng0MCRec", "Ds,Hadron candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng1MCRec", "Ds,Hadron candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng2MCRec", "Ds,Hadron candidates - MC reco;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hEta", "Ds,Hadron candidates;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}}},
+     {"hPhi", "Ds,Hadron candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {axisPhi}}},
+     {"hY", "Ds,Hadron candidates;candidate #it{#y};entries", {HistType::kTH1F, {axisY}}},
+     {"hPtCandMCRec", "Ds,Hadron candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng0MCRec", "Ds,Hadron candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng1MCRec", "Ds,Hadron candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng2MCRec", "Ds,Hadron candidates - MC reco;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
      {"hSelectionStatusMCRec", "Ds,Hadron candidates - MC reco;selection status;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-     {"hEtaMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{etaAxisBins, etaAxisMin, etaAxisMax}}}},
-     {"hPhiMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hYMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEtaMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}}},
+     {"hPhiMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {axisPhi}}},
+     {"hYMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#y};entries", {HistType::kTH1F, {axisY}}},
      {"hMCEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
-     {"hPtCandMCGen", "Ds,Hadron particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hEtaMCGen", "Ds,Hadron particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{etaAxisBins, etaAxisMin, etaAxisMax}}}},
-     {"hPhiMCGen", "Ds,Hadron particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hYMCGen", "Ds,Hadron candidates - MC gen;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hPtCandMCGen", "Ds,Hadron particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
+     {"hEtaMCGen", "Ds,Hadron particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {axisEta}}},
+     {"hPhiMCGen", "Ds,Hadron particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {axisPhi}}},
+     {"hYMCGen", "Ds,Hadron candidates - MC gen;candidate #it{#y};entries", {HistType::kTH1F, {axisY}}},
      {"hcountDsHadronPerEvent", "Ds,Hadron particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}}}};
@@ -112,11 +102,11 @@ struct HfCorrelatorDsHadrons {
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("hMassDs2D", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDsData", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
-    registry.add("hMassDsMCRec", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisBins, massAxisMin, massAxisMax}}});
-    registry.add("hMassDsMCRecSig", "Ds signal candidates - MC reco;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDsMCRecBkg", "Ds background candidates - MC reco;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDs2D", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassD}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDsData", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMassD}});
+    registry.add("hMassDsMCRec", "Ds candidates;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMassD}});
+    registry.add("hMassDsMCRecSig", "Ds signal candidates - MC reco;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassD}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDsMCRecBkg", "Ds background candidates - MC reco;inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassD}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hcountDstriggersMCGen", "Ds trigger particles - MC gen;;N of trigger Ds", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
