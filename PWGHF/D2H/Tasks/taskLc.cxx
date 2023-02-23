@@ -320,16 +320,18 @@ struct HfTaskLc {
 
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kLambdaCPlus, true);
+        auto mcParticleProng0 = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+        auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+        auto indexMother = RecoDecay::getMother(particlesMC, mcParticleProng0, pdg::Code::kLambdaCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
         auto pt = candidate.pt();
         /// MC reconstructed signal
-        if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+        if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), invMassLcToPKPi(candidate));
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), invMassLcToPKPi(candidate), pt);
         }
-        if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), invMassLcToPiKP(candidate));
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), invMassLcToPiKP(candidate), pt);
         }
@@ -367,11 +369,11 @@ struct HfTaskLc {
 
         /// reconstructed signal prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), invMassLcToPKPi(candidate));
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), invMassLcToPKPi(candidate), pt);
           }
-          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), invMassLcToPiKP(candidate));
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), invMassLcToPiKP(candidate), pt);
           }
@@ -406,11 +408,11 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2SigPrompt"), candidate.errorImpactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrSigPrompt"), candidate.errorDecayLength(), pt);
         } else {
-          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), invMassLcToPKPi(candidate));
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), invMassLcToPKPi(candidate), pt);
           }
-          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && std::abs(candidate.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), invMassLcToPiKP(candidate));
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), invMassLcToPiKP(candidate), pt);
           }
