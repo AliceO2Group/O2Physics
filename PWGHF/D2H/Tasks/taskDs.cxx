@@ -13,6 +13,7 @@
 /// \brief Ds± analysis task
 /// \note Extended from taskD0 and taskDplus
 ///
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
 
 #include "Framework/AnalysisTask.h"
@@ -32,26 +33,32 @@ struct HfTaskDs {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>> selectedDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Filter dsFlagFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0);
+
+  using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
+  using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
+  using candDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+
+  Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
+  Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
   HistogramRegistry registry{
     "registry",
-    {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"hCPARecSig", "3-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{100, -1., 1.}}}},
-     {"hCPARecBg", "3-prong candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{100, -1., 1.}}}},
+    {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hCPARecSig", "3-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
+     {"hCPARecBkg", "3-prong candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
      {"hEtaRecSig", "3-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+     {"hEtaRecBkg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
-    registry.add("hMass", "3-prong candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass", "3-prong candidates;inv. mass (KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{400, 1.77, 2.17}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCt", "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLength", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -61,6 +68,8 @@ struct HfTaskDs {
     registry.add("hCPAxy", "3-prong candidates;cos. pointing angle xy;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpactParameterXY", "3-prong candidates;impact parameter xy (cm);entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMaxNormalisedDeltaIP", "3-prong candidates;norm. IP;entries", {HistType::kTH2F, {{200, -20., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCos3PiK", "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDeltaMassPhi", "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{40, 0., 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpactParameterProngSqSum", "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthError", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthXYError", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -71,7 +80,7 @@ struct HfTaskDs {
     registry.add("hPtRecSig", "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtRecSigPrompt", "3-prong candidates (matched, prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtRecBkg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenSig", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -90,117 +99,180 @@ struct HfTaskDs {
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
   }
 
-  void process(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const& candidates)
+  /// Fill histograms of quantities independent from the daugther-mass hypothesis
+  /// \param candidate is candidate
+  template <typename T1>
+  void fillHisto(const T1& candidate)
   {
-    for (auto& candidate : selectedDsCandidates) {
-      // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        continue;
+    auto pt = candidate.pt();
+    registry.fill(HIST("hPt"), pt);
+    registry.fill(HIST("hEta"), candidate.eta(), pt);
+    registry.fill(HIST("hCt"), ctDs(candidate), pt);
+    registry.fill(HIST("hDecayLength"), candidate.decayLength(), pt);
+    registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), pt);
+    registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), pt);
+    registry.fill(HIST("hCPA"), candidate.cpa(), pt);
+    registry.fill(HIST("hCPAxy"), candidate.cpaXY(), pt);
+    registry.fill(HIST("hImpactParameterXY"), candidate.impactParameterXY(), pt);
+    registry.fill(HIST("hMaxNormalisedDeltaIP"), candidate.maxNormalisedDeltaIP(), pt);
+    registry.fill(HIST("hImpactParameterProngSqSum"), candidate.impactParameterProngSqSum(), pt);
+    registry.fill(HIST("hDecayLengthError"), candidate.errorDecayLength(), pt);
+    registry.fill(HIST("hDecayLengthXYError"), candidate.errorDecayLengthXY(), pt);
+    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter0(), pt);
+    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter1(), pt);
+    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter2(), pt);
+    registry.fill(HIST("hPtProng0"), candidate.ptProng0());
+    registry.fill(HIST("hPtProng1"), candidate.ptProng1());
+    registry.fill(HIST("hPtProng2"), candidate.ptProng2());
+    registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), pt);
+    registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), pt);
+    registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), pt);
+    return;
+  }
+
+  /// Fill histograms of quantities for the KKPi daugther-mass hypothesis
+  /// \param candidate is candidate
+  template <typename T1>
+  void fillHistoKKPi(const T1& candidate)
+  {
+    auto pt = candidate.pt();
+    registry.fill(HIST("hMass"), invMassDsToKKPi(candidate), pt);
+    registry.fill(HIST("hCos3PiK"), cos3PiKDsToKKPi(candidate), pt);
+    registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToKKPi(candidate), pt);
+    return;
+  }
+
+  /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
+  /// \param candidate is candidate
+  template <typename T1>
+  void fillHistoPiKK(const T1& candidate)
+  {
+    auto pt = candidate.pt();
+    registry.fill(HIST("hMass"), invMassDsToPiKK(candidate), pt);
+    registry.fill(HIST("hCos3PiK"), cos3PiKDsToPiKK(candidate), pt);
+    registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToPiKK(candidate), pt);
+    return;
+  }
+
+  /// Fill MC histograms at reconstruction level
+  /// \param candidate is candidate
+  /// \param flag is the selection flag, obtained from either isSelDsToKKPi() or isSelDsToPiKK()
+  template <typename T1>
+  void fillHistoMCRec(const T1& candidate, int flag)
+  {
+    auto pt = candidate.pt(); // rec. level pT
+    auto y = yDs(candidate);
+
+    registry.fill(HIST("hPtRecSig"), pt);
+    registry.fill(HIST("hCPARecSig"), candidate.cpa());
+    registry.fill(HIST("hEtaRecSig"), candidate.eta());
+    registry.fill(HIST("hPtVsYRecSigRecoSkim"), pt, y);
+    if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+      registry.fill(HIST("hPtVsYRecSigRecoTopol"), pt, y);
+    }
+    if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+      registry.fill(HIST("hPtVsYRecSigRecoPID"), pt, y);
+    }
+
+    // prompt
+    if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+      registry.fill(HIST("hPtRecSigPrompt"), pt);
+      registry.fill(HIST("hPtVsYRecSigPromptRecoSkim"), pt, y);
+      if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+        registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), pt, y);
       }
+      if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+        registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), pt, y);
+      }
+    }
+
+    // non-prompt
+    if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+      registry.fill(HIST("hPtRecSigNonPrompt"), pt);
+      registry.fill(HIST("hPtVsYRecSigNonPromptRecoSkim"), pt, y);
+      if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+        registry.fill(HIST("hPtVsYRecSigNonPromptRecoTopol"), pt, y);
+      }
+      if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+        registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), pt, y);
+      }
+    }
+
+    return;
+  }
+
+  void process(candDsData const& candidates)
+  {
+    for (auto& candidate : selectedDsToKKPiCand) {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
-      registry.fill(HIST("hMass"), invMassDsToKKPi(candidate), candidate.pt());
-      registry.fill(HIST("hPt"), candidate.pt());
-      registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hCt"), ctDs(candidate), candidate.pt());
-      registry.fill(HIST("hDecayLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), candidate.pt());
-      registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("hCPAxy"), candidate.cpaXY(), candidate.pt());
-      registry.fill(HIST("hImpactParameterXY"), candidate.impactParameterXY(), candidate.pt());
-      registry.fill(HIST("hMaxNormalisedDeltaIP"), candidate.maxNormalisedDeltaIP(), candidate.pt());
-      registry.fill(HIST("hImpactParameterProngSqSum"), candidate.impactParameterProngSqSum(), candidate.pt());
-      registry.fill(HIST("hDecayLengthError"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("hDecayLengthXYError"), candidate.errorDecayLengthXY(), candidate.pt());
-      registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter2(), candidate.pt());
-      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("hPtProng2"), candidate.ptProng2());
-      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), candidate.pt());
+      fillHisto(candidate);
+      fillHistoKKPi(candidate);
+    }
+
+    for (auto& candidate : selectedDsToPiKKCand) {
+      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
+        continue;
+      }
+      fillHisto(candidate);
+      fillHistoPiKK(candidate);
     }
   }
 
-  void processMc(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const&)
+  void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
-    for (auto& candidate : recoFlagDsCandidates) {
-      // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        continue;
-      }
+    for (auto& candidate : candidates) {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
-        // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDS, true);
+        auto prong0McPart = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>();
+        auto indexMother = RecoDecay::getMother(particlesMC, prong0McPart, pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
-        auto ptRec = candidate.pt();
-        auto yRec = yDs(candidate);
-        auto DsToKKPi = candidate.isSelDsToKKPi();
-        auto DsToPiKK = candidate.isSelDsToPiKK();
-        registry.fill(HIST("hPtvsYRecSigRecoSkim"), ptRec, yRec);
-        if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoTopol) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoTopol)) {
-          registry.fill(HIST("hPtvsYRecSigRecoTopol"), ptRec, yRec);
+
+        // KKPi
+        if (std::abs(prong0McPart.pdgCode()) == kKPlus) {
+          fillHistoMCRec(candidate, candidate.isSelDsToKKPi());
         }
-        if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoPID) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoPID)) {
-          registry.fill(HIST("hPtvsYRecSigRecoPID"), ptRec, yRec);
+        // TODO: add histograms for reflections
+
+        // PiKK
+        if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
+          fillHistoMCRec(candidate, candidate.isSelDsToPiKK());
         }
-        registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          registry.fill(HIST("hPtvsYRecSigPromptRecoSkim"), ptRec, yRec);
-          if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoTopol) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoTopol)) {
-            registry.fill(HIST("hPtvsYRecSigPromptRecoTopol"), ptRec, yRec);
-          }
-          if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoPID) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoPID)) {
-            registry.fill(HIST("hPtvsYRecSigPromptRecoPID"), ptRec, yRec);
-          }
-          registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-        } else {                                         // FD
-          registry.fill(HIST("hPtvsYRecSigNonPromptRecoSkim"), ptRec, yRec);
-          if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoTopol) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoTopol)) {
-            registry.fill(HIST("hPtvsYRecSigNonPromptRecoTopol"), ptRec, yRec);
-          }
-          if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoPID) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoPID)) {
-            registry.fill(HIST("hPtvsYRecSigNonPromptRecoPID"), ptRec, yRec);
-          }
-          registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
-        }
-        registry.fill(HIST("hCPARecSig"), candidate.cpa());
-        registry.fill(HIST("hEtaRecSig"), candidate.eta());
+        // TODO: add histograms for reflections
       } else {
-        registry.fill(HIST("hPtRecBg"), candidate.pt());
-        registry.fill(HIST("hCPARecBg"), candidate.cpa());
-        registry.fill(HIST("hEtaRecBg"), candidate.eta());
+        registry.fill(HIST("hPtRecBkg"), candidate.pt());
+        registry.fill(HIST("hCPARecBkg"), candidate.cpa());
+        registry.fill(HIST("hEtaRecBkg"), candidate.eta());
       }
     }
+
     // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
-        auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
+        auto pt = particle.pt();
+        auto y = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        if (yCandMax >= 0. && std::abs(y) > yCandMax) {
           continue;
         }
-        registry.fill(HIST("hPtGen"), ptGen);
-        registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
-        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          registry.fill(HIST("hPtGenPrompt"), ptGen);
-          registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
-        } else {
-          registry.fill(HIST("hPtGenNonPrompt"), ptGen);
-          registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
-        }
+
+        registry.fill(HIST("hPtGen"), pt);
+        registry.fill(HIST("hPtVsYGen"), pt, y);
         registry.fill(HIST("hEtaGen"), particle.eta());
+
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hPtGenPrompt"), pt);
+          registry.fill(HIST("hPtVsYGenPrompt"), pt, y);
+        }
+
+        if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+          registry.fill(HIST("hPtGenNonPrompt"), pt);
+          registry.fill(HIST("hPtVsYGenNonPrompt"), pt, y);
+        }
       }
     }
   }

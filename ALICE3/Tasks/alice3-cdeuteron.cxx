@@ -19,7 +19,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/RecoDecay.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
 

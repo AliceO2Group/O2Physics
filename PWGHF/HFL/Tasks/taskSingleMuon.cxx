@@ -97,13 +97,17 @@ struct HfTaskSingleMuonEventSelection {
   void runEventSel(TEvent const& event, aod::BCs const& bcs)
   {
     // select events
-    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-    VarManager::FillEvent<TEventFillMap>(event, values);
-    histMan->FillHistClass("EventBeforeCuts", values);
+    if (event.sel8()) {
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+      VarManager::FillEvent<TEventFillMap>(event, values);
+      histMan->FillHistClass("EventBeforeCuts", values);
 
-    if (eventCut->IsSelected(values)) {
-      histMan->FillHistClass("EventAfterCuts", values);
-      eventSel(1);
+      if (eventCut->IsSelected(values)) {
+        histMan->FillHistClass("EventAfterCuts", values);
+        eventSel(1);
+      } else {
+        eventSel(0);
+      }
     } else {
       eventSel(0);
     }
@@ -120,6 +124,14 @@ struct HfTaskSingleMuonEventSelection {
     runEventSel<gEventFillMap>(event, bcs);
   }
   PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMc, "run event selection with MC data", false);
+
+  void processNoEventSelection(MyCollisions::iterator const& event, aod::BCs const& bcs)
+  {
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    VarManager::FillEvent<gEventFillMap>(event, values);
+    eventSel(1);
+  }
+  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processNoEventSelection, "skip the event selection", false);
 };
 
 struct HfTaskSingleMuonSelection {
@@ -146,6 +158,7 @@ struct HfTaskSingleMuonSelection {
 
     AxisSpec axisTrkType{5, -0.5, 4.5, "TrackType"};
     AxisSpec axisMCmask{200, -0.5, 199.5, "mcMask"};
+    AxisSpec axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
     // kinematics for MC
     AxisSpec axispTGen{200, 0., 200., "#it{p}_{T} Truth (GeV/#it{c})"};
     AxisSpec axisEtaGen{500, -5., 5., "#eta_{Truth}"};
@@ -154,7 +167,7 @@ struct HfTaskSingleMuonSelection {
     AxisSpec axisEtaDif{200, -2., 2., "#eta diff"};
     AxisSpec axisPDif{200, -2., 2., "p diff (GeV/#it{c})"};
 
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseD, {axispT, axisEta, axisDCA, axisSign, axisP, axisVtxZ, axisTrkType, axisMCmask}, 8};
+    HistogramConfigSpec hTHnMu{HistType::kTHnSparseD, {axispT, axisEta, axisDCA, axisSign, axisP, axisVtxZ, axisTrkType, axisChi2MatchMCHMFT, axisMCmask}, 9};
     HistogramConfigSpec hTHnPt{HistType::kTHnSparseD, {axispT, axispTGen, axispTDif, axisTrkType}, 4};
     HistogramConfigSpec hTHnEta{HistType::kTHnSparseD, {axisEta, axisEtaGen, axisEtaDif, axisTrkType}, 4};
     HistogramConfigSpec hTHnP{HistType::kTHnSparseD, {axisP, axisPGen, axisPDif, axisTrkType}, 4};
@@ -202,7 +215,7 @@ struct HfTaskSingleMuonSelection {
                     values[VarManager::kEta], dcaXY,
                     values[VarManager::kCharge], track.p(),
                     values[VarManager::kVtxZ],
-                    values[VarManager::kMuonTrackType], 0);
+                    values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
       // After Muon Cuts
       if (trackCut->IsSelected(values))
         registry.fill(HIST("hMuAcuts"),
@@ -210,7 +223,7 @@ struct HfTaskSingleMuonSelection {
                       values[VarManager::kEta], dcaXY,
                       values[VarManager::kCharge], track.p(),
                       values[VarManager::kVtxZ],
-                      values[VarManager::kMuonTrackType], 0);
+                      values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
     } // end loop over muon tracks
   }
 
@@ -244,7 +257,7 @@ struct HfTaskSingleMuonSelection {
                     values[VarManager::kEta], dcaXY,
                     values[VarManager::kCharge], track.p(),
                     values[VarManager::kVtxZ],
-                    values[VarManager::kMuonTrackType],
+                    values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
                     track.mcMask());
 
       registry.fill(HIST("hPTBcuts"),
@@ -260,7 +273,7 @@ struct HfTaskSingleMuonSelection {
                       values[VarManager::kEta], dcaXY,
                       values[VarManager::kCharge], track.p(),
                       values[VarManager::kVtxZ],
-                      values[VarManager::kMuonTrackType],
+                      values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
                       track.mcMask());
 
         registry.fill(HIST("hPTAcuts"),
@@ -271,6 +284,11 @@ struct HfTaskSingleMuonSelection {
                       values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
       }
     } // end loop over muon tracks
+  }
+
+  void processDummy(MyEventsSelected&)
+  {
+    // do nothing
   }
 
   void processMuon(MyEventsSelected::iterator const& event, aod::BCs const& bcs,
@@ -285,6 +303,7 @@ struct HfTaskSingleMuonSelection {
     runMuonSelMC<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
   }
 
+  PROCESS_SWITCH(HfTaskSingleMuonSelection, processDummy, "do nothing", false);
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", true);
   PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMc, "run muon selection with MC data", false);
 };

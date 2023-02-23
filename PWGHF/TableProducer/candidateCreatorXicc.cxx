@@ -18,7 +18,7 @@
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
 #include "Framework/AnalysisTask.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -56,7 +56,7 @@ struct HfCandidateCreatorXicc {
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
-  double massXic = RecoDecay::getMassPDG(int(pdg::Code::kXiCPlus));
+  double massXic = RecoDecay::getMassPDG(static_cast<int>(pdg::Code::kXiCPlus));
   double massXicc{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -77,7 +77,6 @@ struct HfCandidateCreatorXicc {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(true);
 
     // 2-prong vertex fitter to build the Xicc vertex
     o2::vertexing::DCAFitterN<2> df2;
@@ -87,7 +86,6 @@ struct HfCandidateCreatorXicc {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
 
     for (auto& xicCand : xicCands) {
       if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
@@ -246,11 +244,11 @@ struct HfCandidateCreatorXiccMc {
       flag = 0;
       origin = 0;
       // Xicc → Xic + π+
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCCPlusPlus, array{int(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCCPlusPlus, array{static_cast<int>(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
         // Match Xic -> pKπ
         auto XicCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking Ξc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, int(pdg::Code::kXiCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, static_cast<int>(pdg::Code::kXiCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::XiccToXicPi);
         }
       }

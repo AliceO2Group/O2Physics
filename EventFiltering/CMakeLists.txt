@@ -30,12 +30,17 @@ o2physics_add_dpl_workflow(diffraction-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(diffraction-bcfilter
+                           SOURCES PWGUD/diffractionBCFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_header_only_library(HFFilterHelpers
                                   HEADERS PWGHF/HFFilterHelpers.h)
 
 o2physics_add_dpl_workflow(hf-filter
                            SOURCES PWGHF/HFFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-qc
@@ -43,13 +48,18 @@ o2physics_add_dpl_workflow(hf-filter-qc
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cf-twobodyfemto-filter
-                            SOURCES PWGCF/CFFilterTwoN.cxx
+o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
+                           SOURCES PWGHF/HFFilterPrepareMLSamples.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cf-filter
+                            SOURCES PWGCF/CFFilterAll.cxx
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cf-threebodyfemto-filter
-                            SOURCES PWGCF/CFFilter.cxx
+o2physics_add_dpl_workflow(cf-filter-qa
+                            SOURCES PWGCF/CFFilterQA.cxx
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
@@ -58,12 +68,22 @@ o2physics_add_dpl_workflow(je-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(fje-filter
+                           SOURCES PWGJE/fullJetFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lf-strangeness-filter
                            SOURCES PWGLF/strangenessFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mult-filter
                            SOURCES PWGMM/multFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(em-filter
+                           SOURCES PWGEM/photonFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)

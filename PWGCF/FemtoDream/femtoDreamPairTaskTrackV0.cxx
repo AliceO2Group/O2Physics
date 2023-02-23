@@ -83,6 +83,10 @@ struct femtoDreamPairTaskTrackV0 {
   /// The configurables need to be passed to an std::vector
   std::vector<int> vPIDPartOne;
 
+  /// particle part
+  ConfigurableAxis CfgTempFitVarBins{"CfgDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis CfgTempFitVarpTBins{"CfgTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+
   /// Correlation part
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -104,8 +108,8 @@ struct femtoDreamPairTaskTrackV0 {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry);
-    trackHistoPartTwo.init(&qaRegistry);
+    trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
+    trackHistoPartTwo.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
 
     sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
@@ -128,8 +132,10 @@ struct femtoDreamPairTaskTrackV0 {
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    const int multCol = col.multV0M();
+    const int multCol = col.multNtr();
+
     eventHisto.fillQA(col);
+
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
@@ -173,9 +179,11 @@ struct femtoDreamPairTaskTrackV0 {
   void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
                          o2::aod::FemtoDreamParticles& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      const int multCol = collision1.multNtr();
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
@@ -199,7 +207,7 @@ struct femtoDreamPairTaskTrackV0 {
             continue;
           }
         }
-        mixedEventCont.setPair(p1, p2, collision1.multV0M());
+        mixedEventCont.setPair(p1, p2, multCol);
       }
     }
   }

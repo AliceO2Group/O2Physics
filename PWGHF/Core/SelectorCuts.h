@@ -12,12 +12,12 @@
 /// \file SelectorCuts.h
 /// \brief Default pT bins and cut arrays for heavy-flavour selectors and analysis tasks
 
-#ifndef HF_SELECTOR_CUTS_H_
-#define HF_SELECTOR_CUTS_H_
+#ifndef PWGHF_CORE_SELECTORCUTS_H_
+#define PWGHF_CORE_SELECTORCUTS_H_
 
-#include "Framework/Configurable.h"
 #include <vector>
 #include <string>
+#include "Framework/Configurable.h"
 
 namespace o2::analysis
 {
@@ -31,8 +31,10 @@ enum Code {
   kD0Bar = -421,
   kDPlus = 411,
   kDMinus = -411,
+  kDStar = 413,
   kDS = 431,
   kLambdaCPlus = 4122,
+  kXiCZero = 4132,
   kXiCPlus = 4232,
   kXiCCPlusPlus = 4422,
   kLambdaB0 = 5122,
@@ -41,7 +43,11 @@ enum Code {
   kB0 = 511,
   kB0Bar = -511,
   kBPlus = 521,
-  kX3872 = 9920443
+  kX3872 = 9920443,
+  kSigmaC0 = 4112,
+  kSigmaCPlusPlus = 4222,
+  kOmegaC0 = 4332,
+  kPhi = 333
 };
 } // namespace pdg
 
@@ -411,37 +417,31 @@ static const std::vector<std::string> labelsCutVar = {"deltaM", "pT Pi", "pT K",
 
 namespace hf_cuts_ds_to_k_k_pi
 {
-static const int nBinsPt = 12;
-static const int nCutVars = 8;
+static const int nBinsPt = 8;
+static const int nCutVars = 10;
 // momentary cuts
 constexpr double binsPt[nBinsPt + 1] = {
-  1.,
   2.,
   3.,
   4.,
   5.,
   6.,
-  7.,
   8.,
-  10.,
   12.,
   16.,
-  24.,
-  36.};
+  24.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
-constexpr double cuts[nBinsPt][nCutVars] = {{0.2, 0.3, 0.3, 0.07, 6., 0.96, 0.985, 2.5},  /* 1  < pT < 2  */
-                                            {0.2, 0.3, 0.3, 0.07, 5., 0.96, 0.985, 2.5},  /* 2  < pT < 3  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.980, 2.5},  /* 3  < pT < 4  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 4  < pT < 5  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 5  < pT < 6  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 6  < pT < 7  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 7  < pT < 8  */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 8  < pT < 10 */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 10 < pT < 12 */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 12 < pT < 16 */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 16 < pT < 24 */
-                                            {0.2, 0.3, 0.3, 0.20, 5., 0.94, 0.000, 2.5}}; /* 24 < pT < 36 */
+// default values for the cuts
+// selections from pp at 5 TeV 2017 analysis https://alice-notes.web.cern.ch/node/808
+constexpr double cuts[nBinsPt][nCutVars] = {{0.2, 0.3, 0.3, 0.02, 4., 0.92, 0.92, 0.014, 0.010, 0.10},  /* 2  < pT < 3  */
+                                            {0.2, 0.3, 0.3, 0.02, 4., 0.92, 0.92, 0.014, 0.010, 0.10},  /* 3  < pT < 4  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.05},  /* 4  < pT < 5  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.05},  /* 5  < pT < 6  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.05},  /* 6  < pT < 8  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.00},  /* 8  < pT < 12 */
+                                            {0.2, 0.3, 0.3, 0.05, 4., 0.85, 0.85, 0.012, 0.015, 0.00},  /* 12 < pT < 16 */
+                                            {0.2, 0.3, 0.3, 0.05, 4., 0.85, 0.85, 0.012, 0.015, 0.00}}; /* 16 < pT < 24 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -452,14 +452,10 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 4",
   "pT bin 5",
   "pT bin 6",
-  "pT bin 7",
-  "pT bin 8",
-  "pT bin 9",
-  "pT bin 10",
-  "pT bin 11"};
+  "pT bin 7"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP"};
+static const std::vector<std::string> labelsCutVar = {"deltaM", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "impact parameter XY", "deltaM Phi", "cos^3 theta_PiK"};
 } // namespace hf_cuts_ds_to_k_k_pi
 
 namespace hf_cuts_xic_to_p_k_pi
@@ -870,4 +866,4 @@ static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 Jpsi", "d0
 
 } // namespace o2::analysis
 
-#endif // HF_SELECTOR_CUTS_H_
+#endif // PWGHF_CORE_SELECTORCUTS_H_

@@ -62,13 +62,18 @@ class FemtoDreamCollisionSelection
     mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
     mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{4096, 0, 8192}});
     mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
     mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
   }
 
   /// Print some debug information
   void printCuts()
   {
-    std::cout << "Debug information for FemtoDreamCollisionSelection \n Max. z-vertex: " << mZvtxMax << "\n Check trigger: " << mCheckTrigger << "\n Trigger: " << mTrigger << "\n Check offline: " << mCheckOffline << "\n";
+    LOG(info) << "Debug information for FemtoDreamCollisionSelection";
+    LOG(info) << "Max. z-vertex: " << mZvtxMax;
+    LOG(info) << "Check trigger: " << mCheckTrigger;
+    LOG(info) << "Trigger: " << mTrigger;
+    LOG(info) << " Check offline: " << mCheckOffline;
   }
 
   /// Check whether the collisions fulfills the specified selections
@@ -106,6 +111,7 @@ class FemtoDreamCollisionSelection
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultT0M"), col.multFT0M());
       mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNTracksPV());
+      mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
       mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
       if (mCheckIsRun3) {
         mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());

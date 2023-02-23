@@ -14,18 +14,18 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <bitset>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
-
-#include <bitset>
-
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <iostream>
 
 namespace o2::analysis::femtoDream
 {
@@ -39,7 +39,7 @@ class FemtoDreamCutculator
   /// \param configFile Path to the dpl-config.json file from the femtodream-producer task
   void init(const char* configFile)
   {
-    std::cout << "Welcome to the CutCulator!\n";
+    LOG(info) << "Welcome to the CutCulator!";
 
     boost::property_tree::ptree root;
     try {
@@ -47,7 +47,16 @@ class FemtoDreamCutculator
     } catch (const boost::property_tree::ptree_error& e) {
       LOG(fatal) << "Failed to read JSON config file " << configFile << " (" << e.what() << ")";
     }
-    mConfigTree = root.get_child("femto-dream-producer-task");
+
+    // check the config file for all known producer task
+    std::vector<const char*> ProducerTasks = {"femto-dream-producer-task", "femto-dream-producer-reduced-task"};
+    for (auto& Producer : ProducerTasks) {
+      if (root.count(Producer) > 0) {
+        mConfigTree = root.get_child(Producer);
+        LOG(info) << "Found " << Producer << " in " << configFile;
+        break;
+      }
+    }
   };
 
   /// Generic function that retrieves a given selection from the boost ptree and returns an std::vector in the proper format
@@ -108,7 +117,7 @@ class FemtoDreamCutculator
   /// \param prefix Prefix which is added to the name of the Configurable
   void setPIDSelectionFromFile(const char* prefix)
   {
-    std::string PIDnodeName = std::string(prefix) + "TPIDspecies";
+    std::string PIDnodeName = std::string(prefix) + "species";
     try {
       boost::property_tree::ptree& pidNode = mConfigTree.get_child(PIDnodeName);
       boost::property_tree::ptree& pidValues = pidNode.get_child("values");
@@ -177,7 +186,7 @@ class FemtoDreamCutculator
     /// First we check whether the input is actually contained within the options
     bool inputSane = false;
     for (auto sel : selVec) {
-      if (std::abs(sel.getSelectionValue() - input) < std::abs(1.e-6 * input)) {
+      if (std::abs(sel.getSelectionValue() - input) <= std::abs(1.e-6 * input)) {
         inputSane = true;
       }
     }
@@ -271,4 +280,4 @@ class FemtoDreamCutculator
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */

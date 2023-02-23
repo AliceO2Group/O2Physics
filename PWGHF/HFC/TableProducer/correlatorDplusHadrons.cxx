@@ -63,13 +63,13 @@ struct HfCorrelatorDplusHadrons {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> etaTrackMax{"etaTrackMax", -1., "max. eta of tracks"};
-  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", -1., "max. DCA_xy of tracks"};
-  Configurable<double> dcaZTrackMax{"dcaZTrackMax", -1., "max. DCA_z of tracks"};
-  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
-  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT"};
-  Configurable<double> ptTrackMax{"ptTrackMax", -1., "max. cand. pT"};
+  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
+  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
+  Configurable<double> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
+  Configurable<double> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<double> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
+  Configurable<double> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
@@ -99,7 +99,7 @@ struct HfCorrelatorDplusHadrons {
      {"hMCEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
      {"hPtCandMCGen", "Dplus,Hadron particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
      {"hEtaMCGen", "Dplus,Hadron particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhiMCGen", "Dplus,Hadron particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, 0., 2. * o2::constants::math::PI}}}},
+     {"hPhiMCGen", "Dplus,Hadron particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
      {"hYMCGen", "Dplus,Hadron candidates - MC gen;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hcountDplusHadronPerEvent", "Dplus,Hadron particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
@@ -119,78 +119,82 @@ struct HfCorrelatorDplusHadrons {
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > etaTrackMax) {
-          continue;
+    if (selectedDPlusCandidates.size() > 0) {
+      int nTracks = 0;
+      if (collision.numContrib() > 1) {
+        for (const auto& track : tracks) {
+          if (std::abs(track.eta()) > etaTrackMax) {
+            continue;
+          }
+          if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
+            continue;
+          }
+          nTracks++;
         }
-        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
-          continue;
-        }
-        nTracks++;
       }
+
+      registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
+      if (nTracks < multMin || nTracks > multMax) {
+        return;
+      }
+      registry.fill(HIST("hMultiplicity"), nTracks);
+
+      auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+
+      for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
+        if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
+          continue;
+        }
+        if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
+          continue;
+        }
+        if (candidate1.pt() > ptTrackMax) {
+          continue;
+        }
+        // check decay channel flag for candidate1
+        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+          continue;
+        }
+        double efficiencyWeight = 1.;
+        if (applyEfficiency) {
+          efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
+        }
+        // fill invariant mass plots and generic info from all Dplus candidates
+        registry.fill(HIST("hMassDplus_2D"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassDplusData"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
+        registry.fill(HIST("hPtCand"), candidate1.pt());
+        registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
+        registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
+        registry.fill(HIST("hPtProng2"), candidate1.ptProng2());
+        registry.fill(HIST("hEta"), candidate1.eta());
+        registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PI / 2.));
+        registry.fill(HIST("hY"), yDplus(candidate1));
+        registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
+
+        // Dplus-Hadron correlation dedicated section
+        // if the candidate is a Dplus, search for Hadrons and evaluate correlations
+        for (const auto& track : tracks) {
+          if (std::abs(track.eta()) > etaTrackMax) {
+            continue;
+          }
+          if (track.pt() < ptTrackMin) {
+            continue;
+          }
+          if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
+            continue; // Remove secondary tracks
+          }
+          // Removing Dplus daughters by checking track indices
+          if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex()) || (candidate1.prong2Id() == track.globalIndex())) {
+            continue;
+          }
+          entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
+                               track.eta() - candidate1.eta(),
+                               candidate1.pt(),
+                               track.pt());
+          entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), 0);
+        } // Hadron Tracks loop
+      }   // end outer Dplus loop
     }
-
-    registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
-    if (nTracks < multMin || nTracks > multMax) {
-      return;
-    }
-    registry.fill(HIST("hMultiplicity"), nTracks);
-
-    for (auto& candidate1 : selectedDPlusCandidates) {
-      if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
-        continue;
-      }
-      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
-        continue;
-      }
-      if (candidate1.pt() > ptTrackMax) {
-        continue;
-      }
-      // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
-        continue;
-      }
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
-      }
-      // fill invariant mass plots and generic info from all Dplus candidates
-      registry.fill(HIST("hMassDplus_2D"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
-      registry.fill(HIST("hMassDplusData"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
-      registry.fill(HIST("hPtCand"), candidate1.pt());
-      registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
-      registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
-      registry.fill(HIST("hPtProng2"), candidate1.ptProng2());
-      registry.fill(HIST("hEta"), candidate1.eta());
-      registry.fill(HIST("hPhi"), candidate1.phi());
-      registry.fill(HIST("hY"), yDplus(candidate1));
-      registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
-
-      // Dplus-Hadron correlation dedicated section
-      // if the candidate is a Dplus, search for Hadrons and evaluate correlations
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > etaTrackMax) {
-          continue;
-        }
-        if (track.pt() < ptTrackMin) {
-          continue;
-        }
-        if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
-          continue; // Remove secondary tracks
-        }
-        // Removing Dplus daughters by checking track indices
-        if ((candidate1.prong0Id() == track.mRowIndex) || (candidate1.prong1Id() == track.mRowIndex) || (candidate1.prong2Id() == track.mRowIndex)) {
-          continue;
-        }
-        entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
-                             track.eta() - candidate1.eta(),
-                             candidate1.pt(),
-                             track.pt());
-        entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), 0);
-      } // Hadron Tracks loop
-    }   // end outer Dplus loop
   }
 
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
@@ -198,89 +202,92 @@ struct HfCorrelatorDplusHadrons {
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > etaTrackMax) {
-          continue;
+    if (recoFlagDPlusCandidates.size() > 0) {
+      int nTracks = 0;
+      if (collision.numContrib() > 1) {
+        for (const auto& track : tracks) {
+          if (std::abs(track.eta()) > etaTrackMax) {
+            continue;
+          }
+          if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
+            continue;
+          }
+          nTracks++;
         }
-        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
-          continue;
-        }
-        nTracks++;
       }
+      registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
+      if (nTracks < multMin || nTracks > multMax) {
+        return;
+      }
+      registry.fill(HIST("hMultiplicity"), nTracks);
+
+      auto selectedDPlusCandidatesGroupedMC = recoFlagDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      // MC reco level
+      bool flagDplusSignal = false;
+      for (auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
+        // check decay channel flag for candidate1
+        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+          continue;
+        }
+        if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
+          continue;
+        }
+        if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
+          continue;
+        }
+        if (candidate1.pt() >= ptTrackMax) {
+          continue;
+        }
+        double efficiencyWeight = 1.;
+        if (applyEfficiency) {
+          efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
+        }
+
+        if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+          // fill per-candidate distributions from Dplus true candidates
+          registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
+          registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
+          registry.fill(HIST("hPtProng1MCRec"), candidate1.ptProng1());
+          registry.fill(HIST("hPtProng2MCRec"), candidate1.ptProng2());
+          registry.fill(HIST("hEtaMCRec"), candidate1.eta());
+          registry.fill(HIST("hPhiMCRec"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PI / 2.));
+          registry.fill(HIST("hYMCRec"), yDplus(candidate1));
+          registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelDplusToPiKPi());
+        }
+        // fill invariant mass plots from Dplus signal and background candidates
+        registry.fill(HIST("hMassDplusMCRec"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
+        if (candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
+          registry.fill(HIST("hMassDplusMCRecSig"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        } else {
+          registry.fill(HIST("hMassDplusMCRecBkg"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        }
+
+        // Dplus-Hadron correlation dedicated section
+        // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
+        flagDplusSignal = candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi;
+        for (const auto& track : tracks) {
+          if (std::abs(track.eta()) > etaTrackMax) {
+            continue;
+          }
+          if (track.pt() < ptTrackMin) {
+            continue;
+          }
+          // Removing Dplus daughters by checking track indices
+          if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex()) || (candidate1.prong2Id() == track.globalIndex())) {
+            continue;
+          }
+          if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
+            continue; // Remove secondary tracks
+          }
+          entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
+                               track.eta() - candidate1.eta(),
+                               candidate1.pt(),
+                               track.pt());
+          entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), static_cast<int>(flagDplusSignal));
+        } // end inner loop (Tracks)
+
+      } // end outer Dplus loop
     }
-    registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
-    if (nTracks < multMin || nTracks > multMax) {
-      return;
-    }
-    registry.fill(HIST("hMultiplicity"), nTracks);
-
-    // MC reco level
-    bool flagDplusSignal = false;
-    for (auto& candidate1 : recoFlagDPlusCandidates) {
-      // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
-        continue;
-      }
-      if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
-        continue;
-      }
-      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
-        continue;
-      }
-      if (candidate1.pt() >= ptTrackMax) {
-        continue;
-      }
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
-      }
-
-      if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
-        // fill per-candidate distributions from Dplus true candidates
-        registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
-        registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
-        registry.fill(HIST("hPtProng1MCRec"), candidate1.ptProng1());
-        registry.fill(HIST("hPtProng2MCRec"), candidate1.ptProng2());
-        registry.fill(HIST("hEtaMCRec"), candidate1.eta());
-        registry.fill(HIST("hPhiMCRec"), candidate1.phi());
-        registry.fill(HIST("hYMCRec"), yDplus(candidate1));
-        registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelDplusToPiKPi());
-      }
-      // fill invariant mass plots from Dplus signal and background candidates
-      registry.fill(HIST("hMassDplusMCRec"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
-      if (candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
-        registry.fill(HIST("hMassDplusMCRecSig"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
-      } else {
-        registry.fill(HIST("hMassDplusMCRecBkg"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
-      }
-
-      // Dplus-Hadron correlation dedicated section
-      // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
-      flagDplusSignal = candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi;
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > etaTrackMax) {
-          continue;
-        }
-        if (track.pt() < ptTrackMin) {
-          continue;
-        }
-        // Removing Dplus daughters by checking track indices
-        if ((candidate1.prong0Id() == track.mRowIndex) || (candidate1.prong1Id() == track.mRowIndex) || (candidate1.prong2Id() == track.mRowIndex)) {
-          continue;
-        }
-        if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
-          continue; // Remove secondary tracks
-        }
-        entryDplusHadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
-                             track.eta() - candidate1.eta(),
-                             candidate1.pt(),
-                             track.pt());
-        entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), (int)flagDplusSignal);
-      } // end inner loop (Tracks)
-
-    } // end outer Dplus loop
   }
 
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRec, "Process MC Reco mode", true);
@@ -304,7 +311,7 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMCGen"), particle1.eta());
-      registry.fill(HIST("hPhiMCGen"), particle1.phi());
+      registry.fill(HIST("hPhiMCGen"), RecoDecay::constrainAngle(particle1.phi(), -o2::constants::math::PI / 2.));
       registry.fill(HIST("hYMCGen"), yD);
       counterDplusHadron++;
       // Dplus Hadron correlation dedicated section

@@ -17,7 +17,9 @@
 #define PWGUD_CORE_UDHELPERS_H_
 
 #include <vector>
+#include <bitset>
 #include "Framework/Logger.h"
+#include "DataFormatsFT0/Digit.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -102,35 +104,43 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   // range of BCs to consider
   uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
   uint64_t maxBC = meanBC + (uint64_t)deltaBC;
-  LOGF(debug, "  minBC %llu maxBC %llu", minBC, maxBC);
+  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
 
   // find slice of BCs table with BC in [minBC, maxBC]
+  int64_t minBCId = bcIter.globalIndex();
   int64_t maxBCId = bcIter.globalIndex();
-  int64_t minBCId = bcs.size() - 1;
-  int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
-    LOGF(debug, "  UP  globalIndex %i globalBC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    if (bcIter.globalBC() >= minBC && bcIter.globalIndex() < minBCId) {
+
+  // lower limit
+  if (bcIter.globalBC() < minBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
+      ++bcIter;
       minBCId = bcIter.globalIndex();
     }
-    maxBCId = bcIter.globalIndex();
-    ++bcIter;
-    ++moveCount;
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
+      minBCId = bcIter.globalIndex();
+      --bcIter;
+    }
   }
 
-  bcIter.moveByIndex(-moveCount); // Move back to original position
-  while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
-    LOGF(debug, "  DOWN globalIndex %i globalBC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    if (bcIter.globalBC() <= maxBC && bcIter.globalIndex() > maxBCId) {
+  // upper limit limit
+  if (bcIter.globalBC() < maxBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
+      maxBCId = bcIter.globalIndex();
+      ++bcIter;
+    }
+
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
+      --bcIter;
       maxBCId = bcIter.globalIndex();
     }
-    minBCId = bcIter.globalIndex();
-    --bcIter;
   }
-  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
+  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
 
   T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
   bcs.copyIndexBindings(slice);
+  LOGF(debug, "  size of slice %d", slice.size());
   return slice;
 }
 
@@ -159,6 +169,7 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;
   }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -320,7 +331,8 @@ template <typename T>
 bool cleanFV0(T& bc, float limitA)
 {
   if (bc.has_foundFV0()) {
-    return (FV0AmplitudeA(bc.foundFV0()) < limitA);
+    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
+    return oma;
   } else {
     return true;
   }
@@ -331,7 +343,18 @@ template <typename T>
 bool cleanFT0(T& bc, float limitA, float limitC)
 {
   if (bc.has_foundFT0()) {
-    return (FT0AmplitudeA(bc.foundFT0()) < limitA) && (FT0AmplitudeC(bc.foundFT0()) < limitC);
+
+    // check amplitudes
+    bool oma = FT0AmplitudeA(bc.foundFT0()) <= limitA;
+    bool omc = FT0AmplitudeC(bc.foundFT0()) <= limitC;
+
+    // compare decisions with FT0 trigger decisions
+    std::bitset<8> triggers = bc.foundFT0().triggerMask();
+    bool ora = !triggers[o2::ft0::Triggers::bitA];
+    bool orc = !triggers[o2::ft0::Triggers::bitC];
+    LOGF(debug, "ora/FT0AmplitudeA %d/%d orc/FT0AmplitudeC %d/%d", ora, oma, orc, omc);
+
+    return oma && omc;
   } else {
     return true;
   }
@@ -342,13 +365,22 @@ template <typename T>
 bool cleanFDD(T& bc, float limitA, float limitC)
 {
   if (bc.has_foundFDD()) {
-    return (FDDAmplitudeA(bc.foundFDD()) < limitA) && (FDDAmplitudeC(bc.foundFDD()) < limitC);
+    bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
+    bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
+    return oma && omc;
   } else {
     return true;
   }
 }
 
 // -----------------------------------------------------------------------------
+// FIT amplitude limits
+//  lims[0]: FV0A
+//  lims[1]: FT0A
+//  lims[2]: FT0C
+//  lims[3]: FDDA
+//  lims[4]: FDDC
+
 template <typename T>
 bool cleanFIT(T& bc, std::vector<float> lims)
 {

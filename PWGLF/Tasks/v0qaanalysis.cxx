@@ -61,6 +61,8 @@ DECLARE_SOA_COLUMN(NTOFSigmaNegPr, ntofsigmanegpr, float);
 DECLARE_SOA_COLUMN(NTOFSigmaPosPr, ntofsigmapospr, float);
 DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
 DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
+DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
+DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
 
 } // namespace myv0candidates
 
@@ -72,7 +74,8 @@ DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
                   myv0candidates::V0PosEta, myv0candidates::V0NegEta, myv0candidates::V0PosPhi, myv0candidates::V0NegPhi,
                   myv0candidates::V0PosITSHits, myv0candidates::V0NegITSHits, myv0candidates::CtauLambda, myv0candidates::CtauAntiLambda, myv0candidates::CtauK0Short,
                   myv0candidates::NTPCSigmaNegPr, myv0candidates::NTPCSigmaPosPr, myv0candidates::NTPCSigmaNegPi, myv0candidates::NTPCSigmaPosPi,
-                  myv0candidates::NTOFSigmaNegPr, myv0candidates::NTOFSigmaPosPr, myv0candidates::NTOFSigmaNegPi, myv0candidates::NTOFSigmaPosPi);
+                  myv0candidates::NTOFSigmaNegPr, myv0candidates::NTOFSigmaPosPr, myv0candidates::NTOFSigmaNegPi, myv0candidates::NTOFSigmaPosPi,
+                  myv0candidates::PosHasTOF, myv0candidates::NegHasTOF);
 
 } // namespace o2::aod
 
@@ -148,7 +151,8 @@ struct v0qaanalysis {
               v0.negTrack_as<DauTracks>().tpcNSigmaPr(), v0.posTrack_as<DauTracks>().tpcNSigmaPr(),
               v0.negTrack_as<DauTracks>().tpcNSigmaPi(), v0.posTrack_as<DauTracks>().tpcNSigmaPi(),
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
-              v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi());
+              v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
+              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF());
       }
     }
   }
@@ -205,6 +209,7 @@ struct myV0s {
       registry.fill(HIST("TPCNSigmaPosPi"), candidate.ntpcsigmapospi());
       registry.fill(HIST("TPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
       registry.fill(HIST("TPCNSigmaPosPr"), candidate.ntpcsigmapospr());
+      registry.fill(HIST("TPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
       registry.fill(HIST("PosITSHits"), candidate.v0positshits());
       registry.fill(HIST("NegITSHits"), candidate.v0negitshits());
     }

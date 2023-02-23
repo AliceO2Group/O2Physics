@@ -9,12 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
+///
+/// \file    qa-singleparticle.cxx
+/// \author  Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief   Task to monitor the single particle QA, at the particle and track level, showing the tracked and the origin of particles
+///
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 
 using namespace o2;
@@ -22,7 +27,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct Alice3SingleParticle {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
   Configurable<int> PDG{"PDG", 2212, "PDG code of the particle of interest"};
   Configurable<int> IsStable{"IsStable", 0, "Flag to check stable particles"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -137,7 +142,7 @@ struct Alice3SingleParticle {
   }
 
   void process(const o2::aod::McCollisions& colls,
-               const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra>& tracks,
+               const soa::Join<o2::aod::TracksIU, o2::aod::McTrackLabels, o2::aod::TracksExtra>& tracks,
                const aod::McParticles& mcParticles)
   {
     for (const auto& col : colls) {

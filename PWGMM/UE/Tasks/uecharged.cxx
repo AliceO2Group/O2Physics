@@ -12,24 +12,28 @@
 /// \since November 2021
 /// \last update: October 2022
 
-#include "ReconstructionDataFormats/Track.h"
+#include <cmath>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
+#include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
+
 #include "TDatabasePDG.h"
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TF1.h>
 #include <TRandom.h>
-#include <cmath>
-#include <vector>
 
 // TODO: implement 50% stat for MC closure vs 50% for testing
 
@@ -41,7 +45,7 @@ struct ueCharged {
 
   TrackSelection myTrackSelection();
 
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
   float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   // acceptance cuts
@@ -216,6 +220,7 @@ void ueCharged::init(InitContext const&)
 
   ue.add("hPtLeadingData", " ", HistType::kTH1D, {{ptAxist}});
   ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
+  ue.add("hEtaLeadingVsPtLeading", " ", HistType::kTH2D, {{ptAxist}, {50, -2.5, 2.5, "#eta"}});
 }
 
 void ueCharged::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
@@ -423,6 +428,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
   // loop over selected tracks
   double flPt = 0; // leading pT
   double flPhi = 0;
+  double flEta = 0;
   int flIndex = 0;
   int multRec = 0;
   for (auto& track : tracks) {
@@ -439,11 +445,14 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
       flPt = track.pt();
       flPhi = track.phi();
       flIndex = track.globalIndex();
+      flEta = track.eta();
     }
   }
   ue.fill(HIST("hmultRec"), multRec);
   ue.fill(HIST("hPtLeadingMeasured"), flPt);
   ue.fill(HIST("hPtLeadingRecPS"), flPt);
+  ue.fill(HIST("hEtaLeadingVsPtLeading"), flPt, flEta);
+
   std::vector<double> ue_rec;
   ue_rec.clear();
   int nchm_top[3];

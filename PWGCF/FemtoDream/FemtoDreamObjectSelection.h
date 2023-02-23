@@ -21,10 +21,11 @@
 #include <vector>
 
 #include "FemtoDreamSelection.h"
-
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 
+using namespace o2;
 using namespace o2::framework;
 
 namespace o2::analysis
