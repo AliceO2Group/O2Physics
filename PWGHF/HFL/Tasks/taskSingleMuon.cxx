@@ -13,21 +13,21 @@
 /// \brief Task derived from the DQ framework and used to extract the observables on single muons needed for the HF-muon analysis.
 /// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -293,7 +293,6 @@ struct HfTaskSingleMuonSelection {
                       values[VarManager::kEta], dcaXY,
                       values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
                       track.mcMask());
-
         if (fillMcHist) {
           registry.fill(HIST("hPtBeforeCuts"),
                         values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
@@ -309,7 +308,6 @@ struct HfTaskSingleMuonSelection {
                         values[VarManager::kEta], dcaXY,
                         values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
                         track.mcMask());
-
           if (fillMcHist) {
             registry.fill(HIST("hPtAfterCuts"),
                           values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
@@ -328,7 +326,6 @@ struct HfTaskSingleMuonSelection {
                       values[VarManager::kVtxZ],
                       values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
                       track.mcMask());
-
         if (fillMcHist) {
           registry.fill(HIST("hPtBeforeCuts"),
                         values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
@@ -346,7 +343,6 @@ struct HfTaskSingleMuonSelection {
                         values[VarManager::kVtxZ],
                         values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
                         track.mcMask());
-
           if (fillMcHist) {
             registry.fill(HIST("hPtAfterCuts"),
                           values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
