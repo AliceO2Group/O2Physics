@@ -34,15 +34,16 @@ struct photonFilter {
 
   Produces<aod::PhotFilters> tags;
 
-  Configurable<float> ePhot{"ePhot", 2., "Minimal photon energy (GeV)"};
-  Configurable<float> eEl{"eEl", 2., "Minimal electron energy (GeV)"};
-  Configurable<float> ePair{"ePair", 0.5, "Minimal photon pair mass (GeV)"};
+  Configurable<float> ePhot{"ePhot", 2.2, "Minimal photon energy (GeV)"};
+  Configurable<float> eEl{"eEl", 1., "Minimal electron energy (GeV)"};
+  Configurable<float> ePair{"ePair", 0.35, "Minimal photon pair mass (GeV)"};
+  Configurable<int> nNbar{"nNbar", 2, "Minimal number of nbar clusters"};
 
   HistogramRegistry mHistManager{"events", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
   {
-    auto scalers{std::get<std::shared_ptr<TH1>>(mHistManager.add("fProcessedEvents", "Number of filtered events", HistType::kTH1F, {{10, -0.5, 9.5}}))};
+    auto scalers{std::get<std::shared_ptr<TH1>>(mHistManager.add("fProcessedEvents", "Number of filtered events", HistType::kTH1F, {{8, -0.5, 7.5}}))};
     scalers->GetXaxis()->SetBinLabel(1, "Processed events");
     scalers->GetXaxis()->SetBinLabel(2, "PHOS photon");
     scalers->GetXaxis()->SetBinLabel(3, "PHOS electron");
@@ -51,41 +52,25 @@ struct photonFilter {
     scalers->GetXaxis()->SetBinLabel(6, "PHOS photon & electron");
     scalers->GetXaxis()->SetBinLabel(7, "PHOS photon & pair");
     scalers->GetXaxis()->SetBinLabel(8, "events with PHOS");
-    scalers->GetXaxis()->SetBinLabel(9, "several BC collision");
   }
 
-  void process(o2::aod::CaloClusters const& clusters,
-               o2::aod::CPVClusters const& cpvs)
+  Filter phosCluFilter = (o2::aod::calocluster::e > 0.3f);
+
+  using CluCandidates = o2::soa::Filtered<o2::aod::CaloClusters>;
+
+  void process(aod::Collisions::iterator const& collision,
+               CluCandidates const& clusters)
   {
     // Process all clusters per TF and fill corresponding collisions
     bool keepEvent[nTrigs]{false};
 
-    mHistManager.fill(HIST("fProcessedEvents"), 1);
+    mHistManager.fill(HIST("fProcessedEvents"), 0);
 
-    // to trace switching to new BC
-    o2::InteractionRecord prevIr;
-    int prevColId = -2;
-    o2::InteractionRecord ir;
     // PHOS part
     int nPHOSclu = 0;
+    int nPHOSnbar = 0;
     for (const auto& clu : clusters) {
-      if (clu.caloType() != 0)
-        continue;
       nPHOSclu++;
-      if (prevColId == -2) { // first cluster
-        prevColId = clu.colId();
-        prevIr.setFromLong(clu.bc().globalBC());
-      }
-      ir.setFromLong(clu.bc().globalBC());
-      if (ir != prevIr) {                                // switch to next BC
-        mHistManager.fill(HIST("fProcessedEvents"), 9.); // Double BCs???
-        // reset everething
-        for (int i = 0; i < nTrigs; i++) {
-          keepEvent[i] = false;
-        }
-        prevIr = ir;
-        prevColId = clu.colId();
-      }
 
       // Scan current cluster
       //  photons
@@ -93,49 +78,54 @@ struct photonFilter {
       // charged clusters above threshold
       keepEvent[kEl] |= (clu.trackdist() < 2. && clu.e() > eEl); // 2: Distance to CPV cluster in sigmas
       // antineutrons
-      keepEvent[kNbar] |= (clu.ncell() > 2 && clu.m02() > 0.2 && clu.e() > 0.7 && clu.trackdist() > 2.) &&
-                          ((clu.e() < 2. && clu.m02() > 4.5 - clu.m20()) ||
-                           (clu.e() > 2. && clu.m02() > 4. - clu.m20()));
+      if ((clu.ncell() > 2 && clu.m02() > 0.2 && clu.e() > 0.7 && clu.trackdist() > 2.) &&
+          ((clu.e() < 2. && clu.m02() > 4.5 - clu.m20()) ||
+           (clu.e() > 2. && clu.m02() > 4. - clu.m20()))) {
+        nPHOSnbar++;
+      }
 
       // inv mass
-      auto clu2 = clu;
-      ++clu2;
-      for (; !keepEvent[kPair] && clu2 != clusters.end() && clu.bc().globalBC() == clu2.bc().globalBC(); clu2++) { // scan same event only
-        // cluster selections
-        if (clu.trackdist() < 1. || clu2.trackdist() < 1.) { // select neutral clusters. Disp, Ncell cuts?
-          continue;
-        }
-        double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
-                   pow(clu.py() + clu2.py(), 2) - pow(clu.pz() + clu2.pz(), 2);
-        if (m > ePair * ePair) {
-          keepEvent[kPair] |= true;
-          break;
+      if (clu.trackdist() < 1.) {
+        auto clu2 = clu;
+        ++clu2;
+        for (; !keepEvent[kPair] && clu2 != clusters.end(); clu2++) {
+          // cluster selections
+          if (clu2.trackdist() < 1.) { // select neutral clusters. Disp, Ncell cuts?
+            continue;
+          }
+          double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
+                     pow(clu.py() + clu2.py(), 2) - pow(clu.pz() + clu2.pz(), 2);
+          if (m > ePair * ePair) {
+            keepEvent[kPair] |= true;
+            break;
+          }
         }
       }
     }
+    keepEvent[kNbar] = (nPHOSnbar >= nNbar);
 
-    // Normally, one BC should be processed, fill scalers here
+    // Collision processed, fill scalers here
     if (nPHOSclu) {
-      mHistManager.fill(HIST("fProcessedEvents"), 8.);
+      mHistManager.fill(HIST("fProcessedEvents"), 7.);
     }
     // Can not fill with variable, have to fill manually
     if (keepEvent[kPhot]) {
-      mHistManager.fill(HIST("fProcessedEvents"), 2.);
+      mHistManager.fill(HIST("fProcessedEvents"), 1.);
       if (keepEvent[kEl]) {
-        mHistManager.fill(HIST("fProcessedEvents"), 6.);
+        mHistManager.fill(HIST("fProcessedEvents"), 5.);
       }
       if (keepEvent[kPair]) {
-        mHistManager.fill(HIST("fProcessedEvents"), 7.);
+        mHistManager.fill(HIST("fProcessedEvents"), 6.);
       }
     }
     if (keepEvent[kEl]) {
-      mHistManager.fill(HIST("fProcessedEvents"), 3.);
+      mHistManager.fill(HIST("fProcessedEvents"), 2.);
     }
     if (keepEvent[kPair]) {
-      mHistManager.fill(HIST("fProcessedEvents"), 4.);
+      mHistManager.fill(HIST("fProcessedEvents"), 3.);
     }
     if (keepEvent[kNbar]) {
-      mHistManager.fill(HIST("fProcessedEvents"), 5.);
+      mHistManager.fill(HIST("fProcessedEvents"), 4.);
     }
     // fill
     tags(keepEvent[kPhot], keepEvent[kEl], keepEvent[kPair], keepEvent[kNbar]);

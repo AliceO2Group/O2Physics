@@ -211,20 +211,21 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(DiffractionFilters);
   FILTER_CONFIGURABLE(DqFilters);
   FILTER_CONFIGURABLE(HfFilters);
-  FILTER_CONFIGURABLE(CFFiltersTwoN);
   FILTER_CONFIGURABLE(CFFilters);
   FILTER_CONFIGURABLE(JetFilters);
   FILTER_CONFIGURABLE(StrangenessFilters);
   FILTER_CONFIGURABLE(MultFilters);
+  FILTER_CONFIGURABLE(FullJetFilters);
+  FILTER_CONFIGURABLE(PhotFilters);
 
   void init(o2::framework::InitContext& initc)
   {
-    LOG(info) << "Start init";
+    LOG(debug) << "Start init";
     int nCols{0};
     for (auto& table : mDownscaling) {
       nCols += table.second.size();
     }
-    LOG(info) << "Middle init, total number of columns " << nCols;
+    LOG(debug) << "Middle init, total number of columns " << nCols;
 
     auto mScalers = std::get<std::shared_ptr<TH1>>(scalers.add("mScalers", ";;Number of events", HistType::kTH1D, {{nCols + 2, -0.5, 1.5 + nCols}}));
     auto mFiltered = std::get<std::shared_ptr<TH1>>(scalers.add("mFiltered", ";;Number of filtered events", HistType::kTH1D, {{nCols + 2, -0.5, 1.5 + nCols}}));
@@ -232,8 +233,8 @@ struct centralEventFilterTask {
 
     mScalers->GetXaxis()->SetBinLabel(1, "Total number of events");
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
-    mScalers->GetXaxis()->SetBinLabel(nCols + 1, "Triggered events");
-    mFiltered->GetXaxis()->SetBinLabel(nCols + 1, "Filtered events");
+    mScalers->GetXaxis()->SetBinLabel(nCols + 2, "Triggered events");
+    mFiltered->GetXaxis()->SetBinLabel(nCols + 2, "Filtered events");
     int bin{2};
 
     for (auto& table : mDownscaling) {
@@ -346,8 +347,8 @@ struct centralEventFilterTask {
     std::unordered_map<int32_t, int64_t> triggers, decisions;
     auto GloBCId = -999.;
 
+    LOG(debug) << "columnBCId has " << columnBCId->num_chunks() << " chunks";
     for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
-      LOG(info) << "columnBCId has " << columnBCId->num_chunks() << " chunks";
       auto chunkBC{columnBCId->chunk(iC)};
       auto chunkCollTime{columnCollTime->chunk(iC)};
       auto chunkCollTimeRes{columnCollTimeRes->chunk(iC)};

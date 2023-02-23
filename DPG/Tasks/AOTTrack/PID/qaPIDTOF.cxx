@@ -40,12 +40,10 @@ struct tofPidQa {
   static constexpr std::string_view hdelta[Np] = {"delta/El", "delta/Mu", "delta/Pi",
                                                   "delta/Ka", "delta/Pr", "delta/De",
                                                   "delta/Tr", "delta/He", "delta/Al"};
-  static constexpr std::string_view hdelta_pt_pos[Np] = {"delta/pt/pos/El", "delta/pt/pos/Mu", "delta/pt/pos/Pi",
-                                                         "delta/pt/pos/Ka", "delta/pt/pos/Pr", "delta/pt/pos/De",
-                                                         "delta/pt/pos/Tr", "delta/pt/pos/He", "delta/pt/pos/Al"};
-  static constexpr std::string_view hdelta_pt_neg[Np] = {"delta/pt/neg/El", "delta/pt/neg/Mu", "delta/pt/neg/Pi",
-                                                         "delta/pt/neg/Ka", "delta/pt/neg/Pr", "delta/pt/neg/De",
-                                                         "delta/pt/neg/Tr", "delta/pt/neg/He", "delta/pt/neg/Al"};
+  static constexpr std::string_view hdelta_pt[Np] = {"delta/pt/El", "delta/pt/Mu", "delta/pt/Pi",
+                                                     "delta/pt/Ka", "delta/pt/Pr", "delta/pt/De",
+                                                     "delta/pt/Tr", "delta/pt/He", "delta/pt/Al"};
+
   static constexpr std::string_view hdelta_etaphi[Np] = {"delta/etaphi/El", "delta/etaphi/Mu", "delta/etaphi/Pi",
                                                          "delta/etaphi/Ka", "delta/etaphi/Pr", "delta/etaphi/De",
                                                          "delta/etaphi/Tr", "delta/etaphi/He", "delta/etaphi/Al"};
@@ -54,42 +52,30 @@ struct tofPidQa {
   static constexpr std::string_view hdelta_evtime_fill[Np] = {"delta/evtime/fill/El", "delta/evtime/fill/Mu", "delta/evtime/fill/Pi",
                                                               "delta/evtime/fill/Ka", "delta/evtime/fill/Pr", "delta/evtime/fill/De",
                                                               "delta/evtime/fill/Tr", "delta/evtime/fill/He", "delta/evtime/fill/Al"};
-  static constexpr std::string_view hdelta_pt_pos_evtime_fill[Np] = {"delta/pt/pos/evtime/fill/El", "delta/pt/pos/evtime/fill/Mu", "delta/pt/pos/evtime/fill/Pi",
-                                                                     "delta/pt/pos/evtime/fill/Ka", "delta/pt/pos/evtime/fill/Pr", "delta/pt/pos/evtime/fill/De",
-                                                                     "delta/pt/pos/evtime/fill/Tr", "delta/pt/pos/evtime/fill/He", "delta/pt/pos/evtime/fill/Al"};
-  static constexpr std::string_view hdelta_pt_neg_evtime_fill[Np] = {"delta/pt/neg/evtime/fill/El", "delta/pt/neg/evtime/fill/Mu", "delta/pt/neg/evtime/fill/Pi",
-                                                                     "delta/pt/neg/evtime/fill/Ka", "delta/pt/neg/evtime/fill/Pr", "delta/pt/neg/evtime/fill/De",
-                                                                     "delta/pt/neg/evtime/fill/Tr", "delta/pt/neg/evtime/fill/He", "delta/pt/neg/evtime/fill/Al"};
+  static constexpr std::string_view hdelta_pt_evtime_fill[Np] = {"delta/pt/evtime/fill/El", "delta/pt/evtime/fill/Mu", "delta/pt/evtime/fill/Pi",
+                                                                 "delta/pt/evtime/fill/Ka", "delta/pt/evtime/fill/Pr", "delta/pt/evtime/fill/De",
+                                                                 "delta/pt/evtime/fill/Tr", "delta/pt/evtime/fill/He", "delta/pt/evtime/fill/Al"};
   // Ev. Time TOF
   static constexpr std::string_view hdelta_evtime_tof[Np] = {"delta/evtime/tof/El", "delta/evtime/tof/Mu", "delta/evtime/tof/Pi",
                                                              "delta/evtime/tof/Ka", "delta/evtime/tof/Pr", "delta/evtime/tof/De",
                                                              "delta/evtime/tof/Tr", "delta/evtime/tof/He", "delta/evtime/tof/Al"};
-  static constexpr std::string_view hdelta_pt_pos_evtime_tof[Np] = {"delta/pt/pos/evtime/tof/El", "delta/pt/pos/evtime/tof/Mu", "delta/pt/pos/evtime/tof/Pi",
-                                                                    "delta/pt/pos/evtime/tof/Ka", "delta/pt/pos/evtime/tof/Pr", "delta/pt/pos/evtime/tof/De",
-                                                                    "delta/pt/pos/evtime/tof/Tr", "delta/pt/pos/evtime/tof/He", "delta/pt/pos/evtime/tof/Al"};
-  static constexpr std::string_view hdelta_pt_neg_evtime_tof[Np] = {"delta/pt/neg/evtime/tof/El", "delta/pt/neg/evtime/tof/Mu", "delta/pt/neg/evtime/tof/Pi",
-                                                                    "delta/pt/neg/evtime/tof/Ka", "delta/pt/neg/evtime/tof/Pr", "delta/pt/neg/evtime/tof/De",
-                                                                    "delta/pt/neg/evtime/tof/Tr", "delta/pt/neg/evtime/tof/He", "delta/pt/neg/evtime/tof/Al"};
+  static constexpr std::string_view hdelta_pt_evtime_tof[Np] = {"delta/pt/evtime/tof/El", "delta/pt/evtime/tof/Mu", "delta/pt/evtime/tof/Pi",
+                                                                "delta/pt/evtime/tof/Ka", "delta/pt/evtime/tof/Pr", "delta/pt/evtime/tof/De",
+                                                                "delta/pt/evtime/tof/Tr", "delta/pt/evtime/tof/He", "delta/pt/evtime/tof/Al"};
   // Ev. Time FT0
   static constexpr std::string_view hdelta_evtime_ft0[Np] = {"delta/evtime/ft0/El", "delta/evtime/ft0/Mu", "delta/evtime/ft0/Pi",
                                                              "delta/evtime/ft0/Ka", "delta/evtime/ft0/Pr", "delta/evtime/ft0/De",
                                                              "delta/evtime/ft0/Tr", "delta/evtime/ft0/He", "delta/evtime/ft0/Al"};
-  static constexpr std::string_view hdelta_pt_pos_evtime_ft0[Np] = {"delta/pt/pos/evtime/ft0/El", "delta/pt/pos/evtime/ft0/Mu", "delta/pt/pos/evtime/ft0/Pi",
-                                                                    "delta/pt/pos/evtime/ft0/Ka", "delta/pt/pos/evtime/ft0/Pr", "delta/pt/pos/evtime/ft0/De",
-                                                                    "delta/pt/pos/evtime/ft0/Tr", "delta/pt/pos/evtime/ft0/He", "delta/pt/pos/evtime/ft0/Al"};
-  static constexpr std::string_view hdelta_pt_neg_evtime_ft0[Np] = {"delta/pt/neg/evtime/ft0/El", "delta/pt/neg/evtime/ft0/Mu", "delta/pt/neg/evtime/ft0/Pi",
-                                                                    "delta/pt/neg/evtime/ft0/Ka", "delta/pt/neg/evtime/ft0/Pr", "delta/pt/neg/evtime/ft0/De",
-                                                                    "delta/pt/neg/evtime/ft0/Tr", "delta/pt/neg/evtime/ft0/He", "delta/pt/neg/evtime/ft0/Al"};
+  static constexpr std::string_view hdelta_pt_evtime_ft0[Np] = {"delta/pt/evtime/ft0/El", "delta/pt/evtime/ft0/Mu", "delta/pt/evtime/ft0/Pi",
+                                                                "delta/pt/evtime/ft0/Ka", "delta/pt/evtime/ft0/Pr", "delta/pt/evtime/ft0/De",
+                                                                "delta/pt/evtime/ft0/Tr", "delta/pt/evtime/ft0/He", "delta/pt/evtime/ft0/Al"};
   // Ev. Time TOF+FT0
   static constexpr std::string_view hdelta_evtime_tofft0[Np] = {"delta/evtime/tofft0/El", "delta/evtime/tofft0/Mu", "delta/evtime/tofft0/Pi",
                                                                 "delta/evtime/tofft0/Ka", "delta/evtime/tofft0/Pr", "delta/evtime/tofft0/De",
                                                                 "delta/evtime/tofft0/Tr", "delta/evtime/tofft0/He", "delta/evtime/tofft0/Al"};
-  static constexpr std::string_view hdelta_pt_pos_evtime_tofft0[Np] = {"delta/pt/pos/evtime/tofft0/El", "delta/pt/pos/evtime/tofft0/Mu", "delta/pt/pos/evtime/tofft0/Pi",
-                                                                       "delta/pt/pos/evtime/tofft0/Ka", "delta/pt/pos/evtime/tofft0/Pr", "delta/pt/pos/evtime/tofft0/De",
-                                                                       "delta/pt/pos/evtime/tofft0/Tr", "delta/pt/pos/evtime/tofft0/He", "delta/pt/pos/evtime/tofft0/Al"};
-  static constexpr std::string_view hdelta_pt_neg_evtime_tofft0[Np] = {"delta/pt/neg/evtime/tofft0/El", "delta/pt/neg/evtime/tofft0/Mu", "delta/pt/neg/evtime/tofft0/Pi",
-                                                                       "delta/pt/neg/evtime/tofft0/Ka", "delta/pt/neg/evtime/tofft0/Pr", "delta/pt/neg/evtime/tofft0/De",
-                                                                       "delta/pt/neg/evtime/tofft0/Tr", "delta/pt/neg/evtime/tofft0/He", "delta/pt/neg/evtime/tofft0/Al"};
+  static constexpr std::string_view hdelta_pt_evtime_tofft0[Np] = {"delta/pt/evtime/tofft0/El", "delta/pt/evtime/tofft0/Mu", "delta/pt/evtime/tofft0/Pi",
+                                                                   "delta/pt/evtime/tofft0/Ka", "delta/pt/evtime/tofft0/Pr", "delta/pt/evtime/tofft0/De",
+                                                                   "delta/pt/evtime/tofft0/Tr", "delta/pt/evtime/tofft0/He", "delta/pt/evtime/tofft0/Al"};
   static constexpr std::string_view hexpsigma[Np] = {"expsigma/El", "expsigma/Mu", "expsigma/Pi",
                                                      "expsigma/Ka", "expsigma/Pr", "expsigma/De",
                                                      "expsigma/Tr", "expsigma/He", "expsigma/Al"};
@@ -99,12 +85,7 @@ struct tofPidQa {
   static constexpr std::string_view hnsigma_pt[Np] = {"nsigma/pt/El", "nsigma/pt/Mu", "nsigma/pt/Pi",
                                                       "nsigma/pt/Ka", "nsigma/pt/Pr", "nsigma/pt/De",
                                                       "nsigma/pt/Tr", "nsigma/pt/He", "nsigma/pt/Al"};
-  static constexpr std::string_view hnsigma_pt_pos[Np] = {"nsigma/pt/pos/El", "nsigma/pt/pos/Mu", "nsigma/pt/pos/Pi",
-                                                          "nsigma/pt/pos/Ka", "nsigma/pt/pos/Pr", "nsigma/pt/pos/De",
-                                                          "nsigma/pt/pos/Tr", "nsigma/pt/pos/He", "nsigma/pt/pos/Al"};
-  static constexpr std::string_view hnsigma_pt_neg[Np] = {"nsigma/pt/neg/El", "nsigma/pt/neg/Mu", "nsigma/pt/neg/Pi",
-                                                          "nsigma/pt/neg/Ka", "nsigma/pt/neg/Pr", "nsigma/pt/neg/De",
-                                                          "nsigma/pt/neg/Tr", "nsigma/pt/neg/He", "nsigma/pt/neg/Al"};
+
   // Ev. Time fill
   static constexpr std::string_view hnsigma_evtime_fill[Np] = {"nsigma/evtime/fill/El", "nsigma/evtime/fill/Mu", "nsigma/evtime/fill/Pi",
                                                                "nsigma/evtime/fill/Ka", "nsigma/evtime/fill/Pr", "nsigma/evtime/fill/De",
@@ -112,12 +93,6 @@ struct tofPidQa {
   static constexpr std::string_view hnsigma_pt_evtime_fill[Np] = {"nsigma/pt/evtime/fill/El", "nsigma/pt/evtime/fill/Mu", "nsigma/pt/evtime/fill/Pi",
                                                                   "nsigma/pt/evtime/fill/Ka", "nsigma/pt/evtime/fill/Pr", "nsigma/pt/evtime/fill/De",
                                                                   "nsigma/pt/evtime/fill/Tr", "nsigma/pt/evtime/fill/He", "nsigma/pt/evtime/fill/Al"};
-  static constexpr std::string_view hnsigma_pt_pos_evtime_fill[Np] = {"nsigma/pt/pos/evtime/fill/El", "nsigma/pt/pos/evtime/fill/Mu", "nsigma/pt/pos/evtime/fill/Pi",
-                                                                      "nsigma/pt/pos/evtime/fill/Ka", "nsigma/pt/pos/evtime/fill/Pr", "nsigma/pt/pos/evtime/fill/De",
-                                                                      "nsigma/pt/pos/evtime/fill/Tr", "nsigma/pt/pos/evtime/fill/He", "nsigma/pt/pos/evtime/fill/Al"};
-  static constexpr std::string_view hnsigma_pt_neg_evtime_fill[Np] = {"nsigma/pt/neg/evtime/fill/El", "nsigma/pt/neg/evtime/fill/Mu", "nsigma/pt/neg/evtime/fill/Pi",
-                                                                      "nsigma/pt/neg/evtime/fill/Ka", "nsigma/pt/neg/evtime/fill/Pr", "nsigma/pt/neg/evtime/fill/De",
-                                                                      "nsigma/pt/neg/evtime/fill/Tr", "nsigma/pt/neg/evtime/fill/He", "nsigma/pt/neg/evtime/fill/Al"};
   // Ev. Time TOF
   static constexpr std::string_view hnsigma_evtime_tof[Np] = {"nsigma/evtime/tof/El", "nsigma/evtime/tof/Mu", "nsigma/evtime/tof/Pi",
                                                               "nsigma/evtime/tof/Ka", "nsigma/evtime/tof/Pr", "nsigma/evtime/tof/De",
@@ -125,12 +100,6 @@ struct tofPidQa {
   static constexpr std::string_view hnsigma_pt_evtime_tof[Np] = {"nsigma/pt/evtime/tof/El", "nsigma/pt/evtime/tof/Mu", "nsigma/pt/evtime/tof/Pi",
                                                                  "nsigma/pt/evtime/tof/Ka", "nsigma/pt/evtime/tof/Pr", "nsigma/pt/evtime/tof/De",
                                                                  "nsigma/pt/evtime/tof/Tr", "nsigma/pt/evtime/tof/He", "nsigma/pt/evtime/tof/Al"};
-  static constexpr std::string_view hnsigma_pt_pos_evtime_tof[Np] = {"nsigma/pt/pos/evtime/tof/El", "nsigma/pt/pos/evtime/tof/Mu", "nsigma/pt/pos/evtime/tof/Pi",
-                                                                     "nsigma/pt/pos/evtime/tof/Ka", "nsigma/pt/pos/evtime/tof/Pr", "nsigma/pt/pos/evtime/tof/De",
-                                                                     "nsigma/pt/pos/evtime/tof/Tr", "nsigma/pt/pos/evtime/tof/He", "nsigma/pt/pos/evtime/tof/Al"};
-  static constexpr std::string_view hnsigma_pt_neg_evtime_tof[Np] = {"nsigma/pt/neg/evtime/tof/El", "nsigma/pt/neg/evtime/tof/Mu", "nsigma/pt/neg/evtime/tof/Pi",
-                                                                     "nsigma/pt/neg/evtime/tof/Ka", "nsigma/pt/neg/evtime/tof/Pr", "nsigma/pt/neg/evtime/tof/De",
-                                                                     "nsigma/pt/neg/evtime/tof/Tr", "nsigma/pt/neg/evtime/tof/He", "nsigma/pt/neg/evtime/tof/Al"};
   // Ev. Time FT0
   static constexpr std::string_view hnsigma_evtime_ft0[Np] = {"nsigma/evtime/ft0/El", "nsigma/evtime/ft0/Mu", "nsigma/evtime/ft0/Pi",
                                                               "nsigma/evtime/ft0/Ka", "nsigma/evtime/ft0/Pr", "nsigma/evtime/ft0/De",
@@ -138,12 +107,6 @@ struct tofPidQa {
   static constexpr std::string_view hnsigma_pt_evtime_ft0[Np] = {"nsigma/pt/evtime/ft0/El", "nsigma/pt/evtime/ft0/Mu", "nsigma/pt/evtime/ft0/Pi",
                                                                  "nsigma/pt/evtime/ft0/Ka", "nsigma/pt/evtime/ft0/Pr", "nsigma/pt/evtime/ft0/De",
                                                                  "nsigma/pt/evtime/ft0/Tr", "nsigma/pt/evtime/ft0/He", "nsigma/pt/evtime/ft0/Al"};
-  static constexpr std::string_view hnsigma_pt_pos_evtime_ft0[Np] = {"nsigma/pt/pos/evtime/ft0/El", "nsigma/pt/pos/evtime/ft0/Mu", "nsigma/pt/pos/evtime/ft0/Pi",
-                                                                     "nsigma/pt/pos/evtime/ft0/Ka", "nsigma/pt/pos/evtime/ft0/Pr", "nsigma/pt/pos/evtime/ft0/De",
-                                                                     "nsigma/pt/pos/evtime/ft0/Tr", "nsigma/pt/pos/evtime/ft0/He", "nsigma/pt/pos/evtime/ft0/Al"};
-  static constexpr std::string_view hnsigma_pt_neg_evtime_ft0[Np] = {"nsigma/pt/neg/evtime/ft0/El", "nsigma/pt/neg/evtime/ft0/Mu", "nsigma/pt/neg/evtime/ft0/Pi",
-                                                                     "nsigma/pt/neg/evtime/ft0/Ka", "nsigma/pt/neg/evtime/ft0/Pr", "nsigma/pt/neg/evtime/ft0/De",
-                                                                     "nsigma/pt/neg/evtime/ft0/Tr", "nsigma/pt/neg/evtime/ft0/He", "nsigma/pt/neg/evtime/ft0/Al"};
   // Ev. Time TOF+FT0
   static constexpr std::string_view hnsigma_evtime_tofft0[Np] = {"nsigma/evtime/tofft0/El", "nsigma/evtime/tofft0/Mu", "nsigma/evtime/tofft0/Pi",
                                                                  "nsigma/evtime/tofft0/Ka", "nsigma/evtime/tofft0/Pr", "nsigma/evtime/tofft0/De",
@@ -151,12 +114,6 @@ struct tofPidQa {
   static constexpr std::string_view hnsigma_pt_evtime_tofft0[Np] = {"nsigma/pt/evtime/tofft0/El", "nsigma/pt/evtime/tofft0/Mu", "nsigma/pt/evtime/tofft0/Pi",
                                                                     "nsigma/pt/evtime/tofft0/Ka", "nsigma/pt/evtime/tofft0/Pr", "nsigma/pt/evtime/tofft0/De",
                                                                     "nsigma/pt/evtime/tofft0/Tr", "nsigma/pt/evtime/tofft0/He", "nsigma/pt/evtime/tofft0/Al"};
-  static constexpr std::string_view hnsigma_pt_pos_evtime_tofft0[Np] = {"nsigma/pt/pos/evtime/tofft0/El", "nsigma/pt/pos/evtime/tofft0/Mu", "nsigma/pt/pos/evtime/tofft0/Pi",
-                                                                        "nsigma/pt/pos/evtime/tofft0/Ka", "nsigma/pt/pos/evtime/tofft0/Pr", "nsigma/pt/pos/evtime/tofft0/De",
-                                                                        "nsigma/pt/pos/evtime/tofft0/Tr", "nsigma/pt/pos/evtime/tofft0/He", "nsigma/pt/pos/evtime/tofft0/Al"};
-  static constexpr std::string_view hnsigma_pt_neg_evtime_tofft0[Np] = {"nsigma/pt/neg/evtime/tofft0/El", "nsigma/pt/neg/evtime/tofft0/Mu", "nsigma/pt/neg/evtime/tofft0/Pi",
-                                                                        "nsigma/pt/neg/evtime/tofft0/Ka", "nsigma/pt/neg/evtime/tofft0/Pr", "nsigma/pt/neg/evtime/tofft0/De",
-                                                                        "nsigma/pt/neg/evtime/tofft0/Tr", "nsigma/pt/neg/evtime/tofft0/He", "nsigma/pt/neg/evtime/tofft0/Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -164,28 +121,27 @@ struct tofPidQa {
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
+  ConfigurableAxis etaBins{"etaBins", {100, -1.f, 1.f}, "Binning in eta"};
+  ConfigurableAxis phiBins{"phiBins", {100, 0, TMath::TwoPi()}, "Binning in eta"};
   ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
-  Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
-  Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
-  Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
-  Configurable<int> nBinsExpSigma{"nBinsExpSigma", 200, "Number of bins for the ExpSigma"};
-  Configurable<float> minExpSigma{"minExpSigma", 0.f, "Minimum ExpSigma in range"};
-  Configurable<float> maxExpSigma{"maxExpSigma", 200.f, "Maximum ExpSigma in range"};
-  Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
-  Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
-  Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
+  ConfigurableAxis deltaBins{"deltaBins", {200, -1000.f, 1000.f}, "Binning in Delta (T-Texp-T0)"};
+  ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
+  ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
   Configurable<bool> produceDeltaTEtaPhiMap{"produceDeltaTEtaPhiMap", false, "Produces the map of the delta time as a function of eta and phi"};
   Configurable<float> ptDeltaTEtaPhiMap{"ptDeltaTEtaPhiMap", 3.f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
+  Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
+  Configurable<bool> enableVsMomentumHistograms{"enableVsMomentumHistograms", false, "Enables plots vs momentum instead of just pT (reduces memory footprint if off)"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
                        const AxisSpec& ptAxis,
                        const AxisSpec& etaAxis,
-                       const AxisSpec& phiAxis)
+                       const AxisSpec& phiAxis,
+                       const AxisSpec& chargeAxis)
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     bool enableFullHistos = false;
@@ -223,31 +179,30 @@ struct tofPidQa {
 
     // NSigma
     const char* axisTitle = Form("N_{#sigma}^{TOF}(%s)", pT[id]);
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
+    const AxisSpec nSigmaAxis{nSigmaBins, axisTitle};
     histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigma_pt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_pos[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigma_pt_neg[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    if (splitSignalPerCharge) {
+      histos.add(hnsigma_pt[id].data(), axisTitle, kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
+    } else {
+      histos.add(hnsigma_pt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    }
     if (enableEvTimeSplitting) {
       histos.add(hnsigma_evtime_fill[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_pos_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_neg_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-
       histos.add(hnsigma_evtime_tof[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_pos_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_neg_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-
       histos.add(hnsigma_evtime_ft0[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_pos_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_neg_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-
       histos.add(hnsigma_evtime_tofft0[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_pos_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigma_pt_neg_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+
+      if (splitSignalPerCharge) {
+        histos.add(hnsigma_pt_evtime_fill[id].data(), axisTitle, kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
+        histos.add(hnsigma_pt_evtime_tof[id].data(), axisTitle, kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
+        histos.add(hnsigma_pt_evtime_ft0[id].data(), axisTitle, kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
+        histos.add(hnsigma_pt_evtime_tofft0[id].data(), axisTitle, kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
+      } else {
+        histos.add(hnsigma_pt_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+        histos.add(hnsigma_pt_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+        histos.add(hnsigma_pt_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+        histos.add(hnsigma_pt_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+      }
     }
 
     if (!enableFullHistos) { // Enabling only NSigma for tiny tables
@@ -259,51 +214,58 @@ struct tofPidQa {
     histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
 
     // Signal - Expected signal
-    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("t-t_{ev}-t_{exp}(%s) (ps)", pT[id])};
+    const AxisSpec deltaAxis{deltaBins, Form("t-t_{ev}-t_{exp}(%s) (ps)", pT[id])};
     axisTitle = Form("#Delta^{TOF}(%s)", pT[id]);
     histos.add(hdelta[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
-    histos.add(hdelta_pt_pos[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-    histos.add(hdelta_pt_neg[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    if (splitSignalPerCharge) {
+      histos.add(hdelta_pt[id].data(), axisTitle, kTH3F, {ptAxis, deltaAxis, chargeAxis});
+    } else {
+      histos.add(hdelta_pt[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    }
     if (produceDeltaTEtaPhiMap) {
       histos.add(hdelta_etaphi[id].data(), Form("%s, #it{p}_{T} > %.2f", axisTitle, ptDeltaTEtaPhiMap.value), kTH3F, {etaAxis, phiAxis, deltaAxis});
     }
 
-    if (enableEvTimeSplitting) {
-      histos.add(hdelta_evtime_fill[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
-      histos.add(hdelta_pt_pos_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-      histos.add(hdelta_pt_neg_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    // Exp Sigma
+    const AxisSpec expSigmaAxis{expSigmaBins, Form("Exp_{#sigma}^{TOF}(%s) (ps)", pT[id])};
+    histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
 
-      histos.add(hdelta_evtime_tof[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
-      histos.add(hdelta_pt_pos_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-      histos.add(hdelta_pt_neg_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-
-      histos.add(hdelta_evtime_ft0[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
-      histos.add(hdelta_pt_pos_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-      histos.add(hdelta_pt_neg_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-
-      histos.add(hdelta_evtime_tofft0[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
-      histos.add(hdelta_pt_pos_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
-      histos.add(hdelta_pt_neg_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    if (!enableEvTimeSplitting) { // Returning if the plots with the different event time are not reqested
+      return;
     }
 
-    // Exp Sigma
-    const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TOF}(%s) (ps)", pT[id])};
-    histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
+    if (enableVsMomentumHistograms) {
+      histos.add(hdelta_evtime_fill[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
+      histos.add(hdelta_evtime_tof[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
+      histos.add(hdelta_evtime_ft0[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
+      histos.add(hdelta_evtime_tofft0[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
+    }
+
+    if (splitSignalPerCharge) {
+      histos.add(hdelta_pt_evtime_fill[id].data(), axisTitle, kTH3F, {ptAxis, deltaAxis, chargeAxis});
+      histos.add(hdelta_pt_evtime_tof[id].data(), axisTitle, kTH3F, {ptAxis, deltaAxis, chargeAxis});
+      histos.add(hdelta_pt_evtime_ft0[id].data(), axisTitle, kTH3F, {ptAxis, deltaAxis, chargeAxis});
+      histos.add(hdelta_pt_evtime_tofft0[id].data(), axisTitle, kTH3F, {ptAxis, deltaAxis, chargeAxis});
+    } else {
+      histos.add(hdelta_pt_evtime_fill[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+      histos.add(hdelta_pt_evtime_tof[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+      histos.add(hdelta_pt_evtime_ft0[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+      histos.add(hdelta_pt_evtime_tofft0[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
+    }
   }
 
   void init(o2::framework::InitContext&)
   {
     const AxisSpec multAxis{100, 0, 100, "TOF multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec etaAxis{100, -1, 1, "#it{#eta}"};
-    const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
+    const AxisSpec etaAxis{etaBins, "#it{#eta}"};
+    const AxisSpec phiAxis{phiBins, "#it{#phi}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec colTimeResoAxis{100, 0, 1000, "#sigma_{Collision time} (ps)"};
     const AxisSpec lAxis{trackLengthBins, "Track length (cm)"};
-
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T}/|Z| (GeV/#it{c})"};
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p}/|Z| (GeV/#it{c})"};
     AxisSpec pExpAxis{nBinsP, minP, maxP, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogarithmic();
@@ -311,13 +273,13 @@ struct tofPidQa {
       pExpAxis.makeLogarithmic();
     }
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal (ps)"};
+    const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
-    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
-    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
+    h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
 
     h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -331,8 +293,6 @@ struct tofPidQa {
     for (int i = 0; i < 9; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
     }
-    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
-    histos.add("event/tofmultiplicity", "", kTH1F, {multAxis});
 
     histos.add("event/evtime/colltime", "collisionTime()", kTH1F, {colTimeAxis});
     histos.add("event/evtime/colltimereso", "collisionTimeRes()", kTH2F, {multAxis, colTimeResoAxis});
@@ -359,7 +319,7 @@ struct tofPidQa {
     // histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
 
     static_for<0, 8>([&](auto i) {
-      initPerParticle<i>(pAxis, ptAxis, etaAxis, phiAxis);
+      initPerParticle<i>(pAxis, ptAxis, etaAxis, phiAxis, chargeAxis);
     });
   }
 
@@ -384,8 +344,6 @@ struct tofPidQa {
       histos.fill(HIST("event/evsel"), 2);
     }
 
-    // Computing Multiplicity first
-    int ntracks = 0;
     int tofmult = 0;
     float evtime = 0.f;
     float evtimereso = 0.f;
@@ -393,10 +351,6 @@ struct tofPidQa {
 
     if constexpr (fillHistograms) {
       for (auto t : tracks) {
-        if (applyTrackCut && !t.isGlobalTrack()) {
-          continue;
-        }
-        ntracks += 1;
         if (!t.hasTOF()) { // Skipping tracks without TOF
           continue;
         }
@@ -415,16 +369,13 @@ struct tofPidQa {
           evtimeflag = 4;
         }
       }
-      histos.fill(HIST("event/evsel"), 3);
     }
     if (abs(collision.posZ()) > 10.f) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 4);
+      histos.fill(HIST("event/evsel"), 3);
       histos.fill(HIST("event/vertexz"), collision.posZ());
-      histos.fill(HIST("event/trackmultiplicity"), ntracks);
-      histos.fill(HIST("event/tofmultiplicity"), tofmult);
 
       histos.fill(HIST("event/evtime/colltime"), collision.collisionTime() * 1000.f);
       histos.fill(HIST("event/evtime/colltimereso"), tofmult, collision.collisionTimeRes() * 1000.f);
@@ -505,11 +456,21 @@ struct tofPidQa {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  Filter eventFilter = (applyEvSel.node() == 0) ||
+                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
+                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter());
+  using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+                                    aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime>;
+
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags,
-                         aod::TrackSelection> const& tracks)
+               soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
@@ -539,57 +500,54 @@ struct tofPidQa {
 
       const auto nsigma = o2::aod::pidutils::tofNSigma<id>(t);
       histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
-      histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma);
-      if (t.sign() > 0) {
-        histos.fill(HIST(hnsigma_pt_pos[id]), t.pt(), nsigma);
+      if (splitSignalPerCharge) {
+        histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma, t.sign());
       } else {
-        histos.fill(HIST(hnsigma_pt_neg[id]), t.pt(), nsigma);
+        histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma);
       }
       // Filling info split per ev. time
       if (enableEvTimeSplitting) {
         if (t.isEvTimeTOF() && t.isEvTimeT0AC()) { // TOF + FT0 Ev. Time
           histos.fill(HIST(hnsigma_evtime_tofft0[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigma_pt_evtime_tofft0[id]), t.pt(), nsigma);
-          if (t.sign() > 0) {
-            histos.fill(HIST(hnsigma_pt_pos_evtime_tofft0[id]), t.pt(), nsigma);
+          if (splitSignalPerCharge) {
+            histos.fill(HIST(hnsigma_pt_evtime_tofft0[id]), t.pt(), nsigma, t.sign());
           } else {
-            histos.fill(HIST(hnsigma_pt_neg_evtime_tofft0[id]), t.pt(), nsigma);
+            histos.fill(HIST(hnsigma_pt_evtime_tofft0[id]), t.pt(), nsigma);
           }
         } else if (t.isEvTimeT0AC()) { // FT0 Ev. Time
           histos.fill(HIST(hnsigma_evtime_ft0[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigma_pt_evtime_ft0[id]), t.pt(), nsigma);
-          if (t.sign() > 0) {
-            histos.fill(HIST(hnsigma_pt_pos_evtime_ft0[id]), t.pt(), nsigma);
+          if (splitSignalPerCharge) {
+            histos.fill(HIST(hnsigma_pt_evtime_ft0[id]), t.pt(), nsigma, t.sign());
           } else {
-            histos.fill(HIST(hnsigma_pt_neg_evtime_ft0[id]), t.pt(), nsigma);
+            histos.fill(HIST(hnsigma_pt_evtime_ft0[id]), t.pt(), nsigma);
           }
         } else if (t.isEvTimeTOF()) { // TOF Ev. Time
           histos.fill(HIST(hnsigma_evtime_tof[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigma_pt_evtime_tof[id]), t.pt(), nsigma);
-          if (t.sign() > 0) {
-            histos.fill(HIST(hnsigma_pt_pos_evtime_tof[id]), t.pt(), nsigma);
+          if (splitSignalPerCharge) {
+            histos.fill(HIST(hnsigma_pt_evtime_tof[id]), t.pt(), nsigma, t.sign());
           } else {
-            histos.fill(HIST(hnsigma_pt_neg_evtime_tof[id]), t.pt(), nsigma);
+            histos.fill(HIST(hnsigma_pt_evtime_tof[id]), t.pt(), nsigma);
           }
         } else { // No Ev. Time -> Fill Ev. Time
           histos.fill(HIST(hnsigma_evtime_fill[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigma_pt_evtime_fill[id]), t.pt(), nsigma);
-          if (t.sign() > 0) {
-            histos.fill(HIST(hnsigma_pt_pos_evtime_fill[id]), t.pt(), nsigma);
+          if (splitSignalPerCharge) {
+            histos.fill(HIST(hnsigma_pt_evtime_fill[id]), t.pt(), nsigma, t.sign());
           } else {
-            histos.fill(HIST(hnsigma_pt_neg_evtime_fill[id]), t.pt(), nsigma);
+            histos.fill(HIST(hnsigma_pt_evtime_fill[id]), t.pt(), nsigma);
           }
         }
       }
+
       if constexpr (fillFullHistograms) {
-        const float tof = t.tofSignal() - t.tofEvTime();
-        const auto diff = o2::aod::pidutils::tofExpSignalDiff<id>(t);
+        const float& tof = t.tofSignal() - t.tofEvTime();
+        const auto& diff = o2::aod::pidutils::tofExpSignalDiff<id>(t);
+        // Fill histograms
         histos.fill(HIST(hexpected[id]), t.p(), tof - diff);
         histos.fill(HIST(hdelta[id]), t.p(), diff);
-        if (t.sign() > 0) {
-          histos.fill(HIST(hdelta_pt_pos[id]), t.p(), diff);
+        if (splitSignalPerCharge) {
+          histos.fill(HIST(hdelta_pt[id]), t.pt(), diff, t.sign());
         } else {
-          histos.fill(HIST(hdelta_pt_neg[id]), t.p(), diff);
+          histos.fill(HIST(hdelta_pt[id]), t.pt(), diff);
         }
 
         if (produceDeltaTEtaPhiMap) {
@@ -597,53 +555,59 @@ struct tofPidQa {
             histos.fill(HIST(hdelta_etaphi[id]), t.eta(), t.phi(), diff);
           }
         }
+        histos.fill(HIST(hexpsigma[id]), t.p(), o2::aod::pidutils::tofExpSigma<id>(t));
 
         // Filling info split per ev. time
         if (enableEvTimeSplitting) {
           if (t.isEvTimeTOF() && t.isEvTimeT0AC()) { // TOF + FT0 Ev. Time
-            histos.fill(HIST(hdelta_evtime_tofft0[id]), t.p(), diff);
-            if (t.sign() > 0) {
-              histos.fill(HIST(hdelta_pt_pos_evtime_tofft0[id]), t.p(), diff);
+            if (enableVsMomentumHistograms) {
+              histos.fill(HIST(hdelta_evtime_tofft0[id]), t.p(), diff);
+            }
+            if (splitSignalPerCharge) {
+              histos.fill(HIST(hdelta_pt_evtime_tofft0[id]), t.pt(), diff, t.sign());
             } else {
-              histos.fill(HIST(hdelta_pt_neg_evtime_tofft0[id]), t.p(), diff);
+              histos.fill(HIST(hdelta_pt_evtime_tofft0[id]), t.pt(), diff);
             }
           } else if (t.isEvTimeT0AC()) { // FT0 Ev. Time
-            histos.fill(HIST(hdelta_evtime_ft0[id]), t.p(), diff);
-            if (t.sign() > 0) {
-              histos.fill(HIST(hdelta_pt_pos_evtime_ft0[id]), t.p(), diff);
+            if (enableVsMomentumHistograms) {
+              histos.fill(HIST(hdelta_evtime_ft0[id]), t.p(), diff);
+            }
+            if (splitSignalPerCharge) {
+              histos.fill(HIST(hdelta_pt_evtime_ft0[id]), t.pt(), diff, t.sign());
             } else {
-              histos.fill(HIST(hdelta_pt_neg_evtime_ft0[id]), t.p(), diff);
+              histos.fill(HIST(hdelta_pt_evtime_ft0[id]), t.pt(), diff);
             }
           } else if (t.isEvTimeTOF()) { // TOF Ev. Time
-            histos.fill(HIST(hdelta_evtime_tof[id]), t.p(), diff);
-            if (t.sign() > 0) {
-              histos.fill(HIST(hdelta_pt_pos_evtime_tof[id]), t.p(), diff);
+            if (enableVsMomentumHistograms) {
+              histos.fill(HIST(hdelta_evtime_tof[id]), t.p(), diff);
+            }
+            if (splitSignalPerCharge) {
+              histos.fill(HIST(hdelta_pt_evtime_tof[id]), t.pt(), diff, t.sign());
             } else {
-              histos.fill(HIST(hdelta_pt_neg_evtime_tof[id]), t.p(), diff);
+              histos.fill(HIST(hdelta_pt_evtime_tof[id]), t.pt(), diff);
             }
           } else { // No Ev. Time -> Fill Ev. Time
-            histos.fill(HIST(hdelta_evtime_fill[id]), t.p(), diff);
-            if (t.sign() > 0) {
-              histos.fill(HIST(hdelta_pt_pos_evtime_fill[id]), t.p(), diff);
+            if (enableVsMomentumHistograms) {
+              histos.fill(HIST(hdelta_evtime_fill[id]), t.p(), diff);
+            }
+            if (splitSignalPerCharge) {
+              histos.fill(HIST(hdelta_pt_evtime_fill[id]), t.pt(), diff, t.sign());
             } else {
-              histos.fill(HIST(hdelta_pt_neg_evtime_fill[id]), t.p(), diff);
+              histos.fill(HIST(hdelta_pt_evtime_fill[id]), t.pt(), diff);
             }
           }
         }
-        histos.fill(HIST(hexpsigma[id]), t.p(), o2::aod::pidutils::tofExpSigma<id>(t));
       }
     }
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                         \
-  void process##particleId(CollisionCandidate const& collision,                           \
-                           soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,  \
-                                     aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime, \
-                                     inputPid> const& tracks)                             \
-  {                                                                                       \
-    processSingleParticle<PID::particleId, false>(collision, tracks);                     \
-  }                                                                                       \
+#define makeProcessFunction(inputPid, particleId)                                             \
+  void process##particleId(CollisionCandidate const& collision,                               \
+                           soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                           \
+    processSingleParticle<PID::particleId, false>(collision, tracks);                         \
+  }                                                                                           \
   PROCESS_SWITCH(tofPidQa, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
   makeProcessFunction(aod::pidTOFEl, Electron);
@@ -658,14 +622,12 @@ struct tofPidQa {
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                             \
-  void processFull##particleId(CollisionCandidate const& collision,                           \
-                               soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,  \
-                                         aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime, \
-                                         inputPid> const& tracks)                             \
-  {                                                                                           \
-    processSingleParticle<PID::particleId, true>(collision, tracks);                          \
-  }                                                                                           \
+#define makeProcessFunction(inputPid, particleId)                                                 \
+  void processFull##particleId(CollisionCandidate const& collision,                               \
+                               soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
+  {                                                                                               \
+    processSingleParticle<PID::particleId, true>(collision, tracks);                              \
+  }                                                                                               \
   PROCESS_SWITCH(tofPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
 
   makeProcessFunction(aod::pidTOFFullEl, Electron);

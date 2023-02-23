@@ -119,7 +119,6 @@ struct HfCandidateCreatorCascade {
     df.setMaxDZIni(maxDZIni);
     df.setMinParamChange(minParamChange);
     df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(true);
 
     // loop over pairs of track indeces
     for (const auto& casc : rowsTrackIndexCasc) {

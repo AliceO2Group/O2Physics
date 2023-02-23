@@ -48,7 +48,6 @@ struct HfCandidateCreatorBplus {
   Configurable<double> maxDZIni{"maxDZIni", 999, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "use absolute DCAs"};
   // selection
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -108,7 +107,6 @@ struct HfCandidateCreatorBplus {
     bfitter.setMaxR(maxR);
     bfitter.setMinParamChange(minParamChange);
     bfitter.setMinRelChi2Change(minRelChi2Change);
-    bfitter.setUseAbsDCA(useAbsDCA);
 
     // Initial fitter to redo D-vertex to get extrapolated daughter tracks
     o2::vertexing::DCAFitterN<2> df;
@@ -116,7 +114,6 @@ struct HfCandidateCreatorBplus {
     df.setMaxR(maxR);
     df.setMinParamChange(minParamChange);
     df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
 
     // loop over pairs of track indices
     for (auto& candidate : candidates) {
