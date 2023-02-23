@@ -363,7 +363,7 @@ struct NucleiHistTask {
           proton_erg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           proton_erg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           proton_erg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-          proton_erg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
+          proton_erg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           proton_erg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           proton_erg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
           proton_erg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
@@ -385,7 +385,7 @@ struct NucleiHistTask {
           aproton_erg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           aproton_erg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           aproton_erg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-          aproton_erg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
+          aproton_erg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           aproton_erg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           aproton_erg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
           aproton_erg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
@@ -417,7 +417,7 @@ struct NucleiHistTask {
           deuteron_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           deuteron_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           deuteron_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-          deuteron_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
+          deuteron_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           deuteron_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           deuteron_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
           deuteron_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
@@ -439,7 +439,7 @@ struct NucleiHistTask {
           adeuteron_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           adeuteron_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           adeuteron_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-          adeuteron_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
+          adeuteron_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           adeuteron_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           adeuteron_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
           adeuteron_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
@@ -471,7 +471,7 @@ struct NucleiHistTask {
           Helium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           Helium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
           Helium3_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-          Helium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsCrossedRows());
+          Helium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           Helium3_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           Helium3_reg.fill(HIST("histChi2TPC"), track.pt() * 2.0, track.tpcChi2NCl());
           Helium3_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
@@ -492,7 +492,7 @@ struct NucleiHistTask {
           aHelium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           aHelium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
           aHelium3_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-          aHelium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsCrossedRows());
+          aHelium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           aHelium3_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           aHelium3_reg.fill(HIST("histChi2TPC"), track.pt() * 2.0, track.tpcChi2NCl());
           aHelium3_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
@@ -579,11 +579,11 @@ struct NucleiHistTask {
       if (track.sign() < 0) {
 
         aproton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaPr(), event.centFT0C());
-        aproton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tpcNSigmaPr(), event.centFT0C());
+        aproton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
         adeuteron_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaDe(), event.centFT0C());
-        adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tpcNSigmaDe(), event.centFT0C());
+        adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
         aHelium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
-        aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
+        aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
  
         if (track.hasTOF()) {
           aproton_erg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
