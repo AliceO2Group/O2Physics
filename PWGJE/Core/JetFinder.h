@@ -74,7 +74,7 @@ class JetFinder
   float bkgPhiMax;
   float bkgEtaMin;
   float bkgEtaMax;
-  float mRho;
+  float bkgRho;
   float constSubAlpha;
   float constSubRMax;
 
@@ -118,7 +118,7 @@ class JetFinder
                                                                                                                  bkgPhiMax(phi_Max),
                                                                                                                  bkgEtaMin(eta_Min),
                                                                                                                  bkgEtaMax(eta_Max),
-                                                                                                                 mRho(0.),
+                                                                                                                 bkgRho(0.),
                                                                                                                  constSubAlpha(1.0),
                                                                                                                  constSubRMax(0.6),
                                                                                                                  isReclustering(false),
@@ -138,7 +138,7 @@ class JetFinder
 
   float getRho() const
   {
-    return mRho;
+    return bkgRho;
   }
 
   /// Sets the jet finding parameters
@@ -153,7 +153,7 @@ class JetFinder
 
  private:
   fastjet::Subtractor sub;
-  std::unique_ptr<JetBkgSubUtils> mSubUtils;
+  std::unique_ptr<JetBkgSubUtils> subUtils;
 
   ClassDefNV(JetFinder, 1);
 };

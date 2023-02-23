@@ -34,8 +34,8 @@ void JetFinder::setParams()
   areaDef = fastjet::AreaDefinition(areaType, ghostAreaSpec);
   selJets = fastjet::SelectorPtRange(jetPtMin, jetPtMax) && fastjet::SelectorEtaRange(jetEtaMin, jetEtaMax) && fastjet::SelectorPhiRange(jetPhiMin, jetPhiMax);
 
-  mSubUtils = std::make_unique<JetBkgSubUtils>(jetR, bkgPhiMin, bkgPhiMax, bkgEtaMin, bkgEtaMax, constSubAlpha, constSubRMax, ghostAreaSpec);
-  mSubUtils->setJetAlgorithmAndScheme(algorithmBkg, recombSchemeBkg);
+  subUtils = std::make_unique<JetBkgSubUtils>(jetR, bkgPhiMin, bkgPhiMax, bkgEtaMin, bkgEtaMax, constSubAlpha, constSubRMax, ghostAreaSpec);
+  subUtils->setJetAlgorithmAndScheme(algorithmBkg, recombSchemeBkg);
 }
 
 /// Performs jet finding
@@ -48,15 +48,20 @@ fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>
   setParams();
   jets.clear();
 
-  sub = mSubUtils->setSub(inputParticles, mRho, bkgSubMode);
+  std::vector<fastjet::PseudoJet> inclusiveJets;
+
+  // In case of constituentsub the subtraction is already done here in this line
+  sub = subUtils->setSub(inputParticles, bkgRho, bkgSubMode, inclusiveJets);
 
   fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDef, areaDef);
+  inclusiveJets = clusterSeq.inclusive_jets();
 
-  if (bkgSubMode == BkgSubMode::rhoPerpConeSub) {
-    sub = mSubUtils->setSub(inputParticles, mRho, bkgSubMode, clusterSeq.inclusive_jets());
+  // The perp cone method and jet constituent sub, both require a vector of jets
+  if (bkgSubMode == BkgSubMode::rhoPerpConeSub || bkgSubMode == BkgSubMode::jetconstSub) {
+    sub = subUtils->setSub(inputParticles, bkgRho, bkgSubMode, inclusiveJets);
   }
 
-  jets = (mRho > DBL_EPSILON && bkgSubMode != BkgSubMode::constSub) ? (sub)(clusterSeq.inclusive_jets()) : clusterSeq.inclusive_jets();
+  jets = (bkgRho > DBL_EPSILON && bkgSubMode != BkgSubMode::constSub) ? (sub)(inclusiveJets) : inclusiveJets;
   jets = selJets(jets);
   if (isReclustering) {
     jetR = jetR / 5.0;

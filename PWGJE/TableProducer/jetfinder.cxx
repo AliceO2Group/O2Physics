@@ -72,13 +72,7 @@ struct JetFinderTask {
   Configurable<float> trackPtCut{"trackPtCut", 0.1, "minimum constituent pT"};
   Configurable<float> trackEtaCut{"trackEtaCut", 0.9, "constituent eta cut"};
 
-  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction (fastjet)"};
-  Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
-  Configurable<bool> DoRhoSparseSub{"DoRhoSparseSub", false, "do sparse event subtraction"};
-  Configurable<bool> DoPerpConeSub{"DoPerpConeSub", false, "do perpendicular subtraction"};
-  Configurable<bool> DoRhoMedianAreaSub{"DoRhoMedianAreaSub", false, "do median bkg sub, similar to AliPhysics"};
-
-  bool DoBkgSub = false;
+  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
 
   Configurable<float> jetPtMin{"jetPtMin", 10.0, "minimum jet pT"};
 
@@ -97,6 +91,8 @@ struct JetFinderTask {
   // FIXME: Once configurables support enum, ideally we can
   JetType_t _jetType;
 
+  BkgSubMode _bkgSubMode;
+
   void init(InitContext const&)
   {
     hJetPt.setObject(new TH2F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
@@ -108,25 +104,12 @@ struct JetFinderTask {
     hJetN.setObject(new TH2F("h_jet_n", "jet n;n constituents",
                              30, 0., 30., 10, 0.05, 1.05));
 
-    if (DoRhoAreaSub || DoConstSub || DoRhoSparseSub || DoPerpConeSub || DoRhoMedianAreaSub) {
-      DoBkgSub = true;
-    }
-
-    if (DoBkgSub) {
+    _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
+    if (_bkgSubMode != BkgSubMode::none) {
       hJetRho.setObject(new TH2F("h_jet_rho", "Underlying event density;#rho", 200, 0., 200., 10, 0.05, 1.05));
     }
 
-    if (DoRhoAreaSub) {
-      jetFinder.setBkgSubMode(BkgSubMode::rhoAreaSub);
-    } else if (DoConstSub) {
-      jetFinder.setBkgSubMode(BkgSubMode::constSub);
-    } else if (DoRhoSparseSub) {
-      jetFinder.setBkgSubMode(BkgSubMode::rhoSparseSub);
-    } else if (DoPerpConeSub) {
-      jetFinder.setBkgSubMode(BkgSubMode::rhoPerpConeSub);
-    } else if (DoRhoMedianAreaSub) {
-      jetFinder.setBkgSubMode(BkgSubMode::rhoMedianAreaSub);
-    }
+    jetFinder.setBkgSubMode(_bkgSubMode);
 
     jetFinder.jetPtMin = jetPtMin;
   }
@@ -161,7 +144,7 @@ struct JetFinderTask {
       jetFinder.jetR = R;
       fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
 
-      if (DoBkgSub) {
+      if (_bkgSubMode != BkgSubMode::none) {
         double rho = jetFinder.getRho();
         hJetRho->Fill(rho, R);
       }
@@ -174,7 +157,7 @@ struct JetFinderTask {
         hJetEta->Fill(jet.eta(), R);
         hJetN->Fill(jet.constituents().size(), R);
         for (const auto& constituent : jet.constituents()) { // event or jetwise
-          if (DoConstSub) {
+          if (_bkgSubMode == BkgSubMode::constSub || _bkgSubMode == BkgSubMode::jetconstSub) {
             // Since we're copying the consituents, we can combine the tracks and clusters together
             // We only have to keep the uncopied versions separated due to technical constraints.
             constituentsSubTable(jetsTable.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi(),

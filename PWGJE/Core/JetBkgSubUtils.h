@@ -14,12 +14,12 @@
 ///
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, JYU
 
-#ifndef O2_ANALYSIS_JETBKGSUBUTILS_H
-#define O2_ANALYSIS_JETBKGSUBUTILS_H
+#ifndef PWGJE_CORE_JETBKGSUBUTILS_H
+#define PWGJE_CORE_JETBKGSUBUTILS_H
 
 #include <memory>
 #include <vector>
-
+#include <optional>
 #include <TMath.h>
 
 #include "fastjet/PseudoJet.hh"
@@ -32,12 +32,13 @@
 
 #include "Framework/Logger.h"
 
-enum class BkgSubMode { none,
-                        rhoAreaSub,
-                        constSub,
-                        rhoSparseSub,
-                        rhoPerpConeSub,
-                        rhoMedianAreaSub
+enum class BkgSubMode { none = 0,
+                        rhoAreaSub = 1,
+                        constSub = 2,
+                        rhoSparseSub = 3,
+                        rhoPerpConeSub = 4,
+                        rhoMedianAreaSub = 5,
+                        jetconstSub = 6
 };
 
 class JetBkgSubUtils
@@ -47,7 +48,8 @@ class JetBkgSubUtils
   // Default contructor
   JetBkgSubUtils() = default;
 
-  JetBkgSubUtils(float jetBkgR_out, float bkgPhiMin_out, float bkgPhiMax_out, float bkgEtaMin_out, float bkgEtaMax_out, float constSubAlpha_out, float constSubRMax_out, fastjet::GhostedAreaSpec ghostAreaSpec_out);
+  JetBkgSubUtils(float jetBkgR_out = 0.2, float bkgPhiMin_out = 0., float bkgPhiMax_out = 2 * M_PI, float bkgEtaMin_out = -0.9, float bkgEtaMax_out = 0.9,
+                 float constSubAlpha_out = 1., float constSubRMax_out = 0.6, fastjet::GhostedAreaSpec ghostAreaSpec_out = fastjet::GhostedAreaSpec());
 
   // Default destructor
   ~JetBkgSubUtils() = default;
@@ -61,9 +63,8 @@ class JetBkgSubUtils
 
   /// @brief Method for estimating the jet background density using the median method or the sparse method
   /// @param inputParticles (all particles in the event)
-  /// @param doAreaSparse flag whether to use the sparse area method
   /// @return Rho, the underlying event density
-  double estimateRhoAreaMedian(std::vector<fastjet::PseudoJet>& inputParticles, bool doAreaSparse = false);
+  double estimateRhoAreaMedian(std::vector<fastjet::PseudoJet>& inputParticles);
 
   /// @brief Background estimator using the perpendicular cone method
   /// @param inputParticles
@@ -78,10 +79,47 @@ class JetBkgSubUtils
   /// @param bkgSubMode the background subtraction method
   /// @param jets signal jets (needed for the perp cone method)
   /// @return sub, the background subtractor
-  fastjet::Subtractor setSub(std::vector<fastjet::PseudoJet>& inputParticles, float& rhoParam, BkgSubMode bkgSubMode = BkgSubMode::none, const std::vector<fastjet::PseudoJet>& jets = std::vector<fastjet::PseudoJet>());
+  fastjet::Subtractor setSub(std::vector<fastjet::PseudoJet>& inputParticles, float& rhoParam, BkgSubMode bkgSubMode, std::vector<fastjet::PseudoJet>& jets);
 
   /// Sets the background subtraction estimater pointer
   void setBkgE();
+
+  // Setters
+  void setJetBkgR(float jetbkgR) { mJetBkgR = jetbkgR; }
+  void setPhiMinMax(float phimin, float phimax)
+  {
+    mBkgPhiMin = phimin;
+    mBkgPhiMax = phimax;
+  }
+  void setEtaMinMax(float etamin, float etamax)
+  {
+    mBkgEtaMin = etamin;
+    mBkgEtaMax = etamax;
+  }
+  void setConstSubAlphaRMax(float alpha, float rmax)
+  {
+    mConstSubAlpha = alpha;
+    mConstSubRMax = rmax;
+  }
+  void setDoRhoSparseSub(bool dosparse = true) { mDoSparseSub = dosparse; }
+  void setGhostAreaSpec(fastjet::GhostedAreaSpec ghostAreaSpec) { mGhostAreaSpec = ghostAreaSpec; }
+  void setJetDefinition(fastjet::JetDefinition jetdefbkg) { mJetDefBkg = jetdefbkg; }
+  void setAreaDefinition(fastjet::AreaDefinition areaDefBkg) { mAreaDefBkg = areaDefBkg; }
+  void setRhoSelector(fastjet::Selector selRho) { mSelRho = selRho; }
+
+  // Getters
+  float getJetBkgR() const { return mJetBkgR; }
+  float getPhiMin() const { return mBkgPhiMin; }
+  float getPhiMax() const { return mBkgPhiMax; }
+  float getEtaMin() const { return mBkgEtaMin; }
+  float getEtaMax() const { return mBkgEtaMax; }
+  float getConstSubAlpha() const { return mConstSubAlpha; }
+  float getConstSubRMax() const { return mConstSubRMax; }
+  float getDoRhoSparseSub() const { return mDoSparseSub; }
+  fastjet::GhostedAreaSpec getGhostAreaSpec() const { return mGhostAreaSpec; }
+  fastjet::JetDefinition getJetDefinition() const { return mJetDefBkg; }
+  fastjet::AreaDefinition getAreaDefinition() const { return mAreaDefBkg; }
+  fastjet::Selector getRhoSelector() const { return mSelRho; }
 
  protected:
   float mJetBkgR = 0.2;
@@ -91,8 +129,9 @@ class JetBkgSubUtils
   float mBkgEtaMax = 0.9;
   float mConstSubAlpha = 1.0;
   float mConstSubRMax = 0.6;
+  bool mDoSparseSub = false; /// flag whether to do background subtraction for sparse systems.
 
-  std::unique_ptr<fastjet::BackgroundEstimatorBase> bkgE;
+  std::unique_ptr<fastjet::JetMedianBackgroundEstimator> mbkgE;
 
   fastjet::GhostedAreaSpec mGhostAreaSpec = fastjet::GhostedAreaSpec();
   fastjet::JetAlgorithm mAlgorithmBkg = fastjet::kt_algorithm;
@@ -103,4 +142,4 @@ class JetBkgSubUtils
 
 }; // class JetBkgSubUtils
 
-#endif
+#endif // PWGJE_CORE_JETBKGSUBUTILS_H
