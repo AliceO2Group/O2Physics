@@ -193,15 +193,15 @@ class VarManager : public TObject
 
     // Barrel track variables
     kPin,
-	kTOFExpMom,
-	kTrackTime,
-	kTrackTimeRes,
-	kTrackTimeResRelative,
-	kDetectorMap,
-	kHasITS,
-	kHasTRD,
-	kHasTOF,
-	kHasTPC,
+    kTOFExpMom,
+    kTrackTime,
+    kTrackTimeRes,
+    kTrackTimeResRelative,
+    kDetectorMap,
+    kHasITS,
+    kHasTRD,
+    kHasTOF,
+    kHasTPC,
     kIsGlobalTrack,
     kIsGlobalTrackSDD,
     kIsITSrefit,
@@ -258,7 +258,7 @@ class VarManager : public TObject
     kPVContributor,       // This track has contributed to the collision vertex fit (see Framework/DataTypes)
     kOrphanTrack,         // Track has no association with any collision vertex (see Framework/DataTypes)
     kIsAmbiguous,
-	kIsLegFromGamma,
+    kIsLegFromGamma,
     kIsLegFromK0S,
     kIsLegFromLambda,
     kIsLegFromAntiLambda,
@@ -285,9 +285,8 @@ class VarManager : public TObject
     kMuonTrackType,
     kMuonDCAx,
     kMuonDCAy,
-	kMuonTime,
-	kMuonTimeRes,
-
+    kMuonTime,
+    kMuonTimeRes,
 
     // MC particle variables
     kMCPdgCode,
@@ -807,7 +806,7 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     values[kTrackTime] = track.trackTime();
     values[kTrackTimeRes] = track.trackTimeRes();
-    values[kTrackTimeResRelative] = track.trackTimeRes()/track.trackTime();
+    values[kTrackTimeResRelative] = track.trackTimeRes() / track.trackTime();
     values[kTOFExpMom] = track.tofExpMom();
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
@@ -818,7 +817,7 @@ void VarManager::FillTrack(T const& track, float* values)
 
     values[kTPCsignal] = track.tpcSignal();
     values[kTRDsignal] = track.trdSignal();
-	
+
     values[kDetectorMap] = track.detectorMap();
     values[kHasITS] = track.hasITS();
     values[kHasTRD] = track.hasTRD();
@@ -1010,7 +1009,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonTrackType] = track.trackType();
     values[kMuonDCAx] = track.fwdDcaX();
     values[kMuonDCAy] = track.fwdDcaY();
-	values[kMuonTime] = track.trackTime();
+    values[kMuonTime] = track.trackTime();
     values[kMuonTimeRes] = track.trackTimeRes();
   }
   // Quantities based on the muon covariance table
