@@ -103,7 +103,7 @@ struct HfCandidateSelectorToXiPi {
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
   OutputObj<TH1F> hCTauXic{TH1F("hCTauXic", "Xic ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hNeventsSaved{TH1F("hNeventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 2, 0, 2)}; 
+  OutputObj<TH1F> hNeventsSaved{TH1F("hNeventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)}; 
   // bin1 -> number of events taking collisionId from cascade, bin2 -> number of events taking collisionId from primary pion, bin3 -> number of times collId cascade id different from collId primary pi
 
   // temporary histo for debugging (to be removed after test on hyperloop)
