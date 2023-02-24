@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorOmegac.cxx
-/// \brief Reconstruction of Omegac0 candidates
+/// \file candidateCreatorToXiPi.cxx
+/// \brief Reconstruction of Omegac0 and Xic0 -> xi pi candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, HEIDELBERG UNIVERSITY & GSI
 
 #include "CCDB/BasicCCDBManager.h"
