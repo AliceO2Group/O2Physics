@@ -86,8 +86,8 @@ struct BCRangeSelector {
 
         // update list of ranges
         auto bcfirst = bcRange.rawIteratorAt(0);
-        auto bclast = bcRange.rawIteratorAt(bcRange.size());
-        cbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+        auto bclast = bcRange.rawIteratorAt(bcRange.size() - 1);
+        cbcrs.add(bcfirst.globalBC(), bclast.globalBC());
       }
       filt++;
     }

@@ -173,19 +173,25 @@ DECLARE_SOA_INDEX_COLUMN(V0DaughterMcParticle, v0DaughterMcParticle);
 // DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
 DECLARE_SOA_TABLE(MCParticleIndex, "AOD", "MCPARTICLEINDEX", MCParticleTrueIndex::V0DaughterMcParticleId);
 
-namespace gammarecalculated
+namespace v0Recalculations
 {
 DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
 DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float); //! Recalculated conversion point
 DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated conversion point
 DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return TMath::Sqrt(x * x + y * y); });
-} // namespace gammarecalculated
+} // namespace v0Recalculations
 
-DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
-                  gammarecalculated::RecalculatedVtxX,
-                  gammarecalculated::RecalculatedVtxY,
-                  gammarecalculated::RecalculatedVtxZ,
-                  gammarecalculated::RecalculatedVtxR<o2::aod::gammarecalculated::RecalculatedVtxX, o2::aod::gammarecalculated::RecalculatedVtxY>);
+namespace v0KFParticle
+{
+DECLARE_SOA_COLUMN(ChiSquare, chiSquare, float); // Chi2 of the reconstructed V0
+} // namespace v0KFParticle
+
+DECLARE_SOA_TABLE(V0RecalculationAndKF, "AOD", "V0RECALCANDKF",
+                  v0Recalculations::RecalculatedVtxX,
+                  v0Recalculations::RecalculatedVtxY,
+                  v0Recalculations::RecalculatedVtxZ,
+                  v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>,
+                  v0KFParticle::ChiSquare);
 
 namespace gammamctrue
 {
