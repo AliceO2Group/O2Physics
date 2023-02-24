@@ -25,6 +25,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -38,18 +39,23 @@ struct propagatorQa {
   int mRunNumber;
   float d_bz;
 
+  o2::base::Propagator::MatCorrType matCorr;
+
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
   Configurable<int> NbinsDCA{"NbinsDCA", 2000, "NbinsDCA"};
   Configurable<int> NbinsPt{"NbinsPt", 100, "NbinsDCA"};
   Configurable<float> maxXtoConsider{"maxXtoConsider", 10000, "max X to consider"};
+  Configurable<float> maxPropagStep{"maxPropagStep", 2.0, "max propag step"};
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 100, "binning for radius x itsmap histo"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -82,6 +88,7 @@ struct propagatorQa {
     histos.add("hCircleDCAVsDCA", "hCircleDCAVsDCA", kTH2F, {axisDCAxy, axisDCAxy});
     histos.add("hDeltaDCAs", "hDeltaDCAs", kTH1F, {axisDCAxy});
     histos.add("hDeltaDCAsVsPt", "hDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
+    histos.add("hDeltaRecalculatedDCAsVsPt", "hDeltaRecalculatedDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
 
     // Primaries
     histos.add("hPrimaryTrackX", "hPrimaryTrackX", kTH1F, {axisX});
@@ -95,10 +102,26 @@ struct propagatorQa {
     histos.add("hPrimaryCircleDCAVsDCA", "hPrimaryCircleDCAVsDCA", kTH2F, {axisDCAxy, axisDCAxy});
     histos.add("hPrimaryDeltaDCAs", "hPrimaryDeltaDCAs", kTH1F, {axisDCAxy});
     histos.add("hPrimaryDeltaDCAsVsPt", "hPrimaryDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
+    histos.add("hPrimaryDeltaRecalculatedDCAsVsPt", "hPrimaryDeltaRecalculatedDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
 
     // Used in vertexer
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
+
+    // bit packed ITS cluster map
+    const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+    const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+
+    // Histogram to bookkeep cluster maps
+    histos.add("h2dITSCluMap", "h2dITSCluMap", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMapPrimaries", "h2dITSCluMapPrimaries", kTH2D, {axisITSCluMap, axisRadius});
+
+    // Material correction
+    matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+    if (useMatCorrType == 1)
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+    if (useMatCorrType == 2)
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -139,6 +162,7 @@ struct propagatorQa {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
       if (!track.has_mcParticle())
@@ -173,6 +197,15 @@ struct propagatorQa {
       float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
+      dcaInfo[0] = 999;
+      dcaInfo[1] = 999;
+
+      //*+-+*
+      // Recalculate the propagation
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lTrackParametrization, maxPropagStep, matCorr, &dcaInfo);
+      float lRecalculatedDCA = dcaInfo[0];
+      //*+-+*
+
       histos.fill(HIST("hUpdateRadii"), lRadiusOfLastUpdate);
       histos.fill(HIST("hTrackX"), lTrackParametrization.getX());
       histos.fill(HIST("hdcaXYall"), lDCA);
@@ -184,6 +217,12 @@ struct propagatorQa {
       histos.fill(HIST("hCircleDCAVsDCA"), lDCA, lCircleDCA);
       histos.fill(HIST("hDeltaDCAs"), lCircleDCA - lDCA);
       histos.fill(HIST("hDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
+      histos.fill(HIST("hRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
+
+      // ITS cluster map
+      float lMCCreation = TMath::Sqrt(mctrack.vx() * mctrack.vx() + mctrack.vy() * mctrack.vy());
+
+      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation);
 
       if (lIsPrimary) {
         histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
@@ -197,8 +236,9 @@ struct propagatorQa {
         histos.fill(HIST("hPrimaryCircleDCAVsDCA"), lDCA, lCircleDCA);
         histos.fill(HIST("hPrimaryDeltaDCAs"), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
+        histos.fill(HIST("hPrimaryRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
+        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation);
       }
-
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
