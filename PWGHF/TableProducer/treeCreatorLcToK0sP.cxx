@@ -167,6 +167,86 @@ struct HfTreeCreatorLcToK0sP {
   {
   }
 
+  void fillCandidate(auto const& candidate, auto const& bach, int8_t flagMc)
+  {
+    rowCandidateFull(
+      bach.collision().bcId(),
+      bach.collision().numContrib(),
+      candidate.posX(),
+      candidate.posY(),
+      candidate.posZ(),
+      candidate.xSecondaryVertex(),
+      candidate.ySecondaryVertex(),
+      candidate.zSecondaryVertex(),
+      candidate.errorDecayLength(),
+      candidate.errorDecayLengthXY(),
+      candidate.chi2PCA(),
+      candidate.rSecondaryVertex(),
+      candidate.decayLength(),
+      candidate.decayLengthXY(),
+      candidate.decayLengthNormalised(),
+      candidate.decayLengthXYNormalised(),
+      candidate.impactParameterNormalised0(),
+      candidate.ptProng0(),
+      RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+      candidate.impactParameterNormalised1(),
+      candidate.ptProng1(),
+      RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+      candidate.pxProng0(),
+      candidate.pyProng0(),
+      candidate.pzProng0(),
+      candidate.pxProng1(),
+      candidate.pyProng1(),
+      candidate.pzProng1(),
+      candidate.impactParameter0(),
+      candidate.impactParameter1(),
+      candidate.errorImpactParameter0(),
+      candidate.errorImpactParameter1(),
+      candidate.v0x(),
+      candidate.v0y(),
+      candidate.v0z(),
+      candidate.v0radius(),
+      candidate.v0cosPA(),
+      candidate.mLambda(),
+      candidate.mAntiLambda(),
+      candidate.mK0Short(),
+      candidate.mGamma(),
+      candidate.dcaV0daughters(),
+      candidate.pxpos(),
+      candidate.pypos(),
+      candidate.pzpos(),
+      candidate.ptV0Pos(),
+      candidate.dcapostopv(),
+      candidate.pxneg(),
+      candidate.pyneg(),
+      candidate.pzneg(),
+      candidate.ptV0Neg(),
+      candidate.dcanegtopv(),
+      bach.tpcNSigmaPr(),
+      bach.tofNSigmaPr(),
+      o2::aod::hf_cand_casc::invMassLcToK0sP(candidate),
+      candidate.pt(),
+      candidate.p(),
+      candidate.cpa(),
+      candidate.cpaXY(),
+      o2::aod::hf_cand_3prong::ctLc(candidate),
+      candidate.eta(),
+      candidate.phi(),
+      o2::aod::hf_cand_3prong::yLc(candidate),
+      o2::aod::hf_cand_3prong::eLc(candidate),
+      flagMc);
+  }
+
+  void fillEvent(auto const& collision)
+  {
+    rowCandidateFullEvents(
+      collision.bcId(),
+      collision.numContrib(),
+      collision.posX(),
+      collision.posY(),
+      collision.posZ());
+  }
+
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP> const& candidates,
@@ -177,12 +257,7 @@ struct HfTreeCreatorLcToK0sP {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto const& collision : collisions) {
-      rowCandidateFullEvents(
-        collision.bcId(),
-        collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ());
+      fillEvent(collision);
     }
 
     // Filling candidate properties
@@ -191,72 +266,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (long)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        rowCandidateFull(
-          bach.collision().bcId(),
-          bach.collision().numContrib(),
-          candidate.posX(),
-          candidate.posY(),
-          candidate.posZ(),
-          candidate.xSecondaryVertex(),
-          candidate.ySecondaryVertex(),
-          candidate.zSecondaryVertex(),
-          candidate.errorDecayLength(),
-          candidate.errorDecayLengthXY(),
-          candidate.chi2PCA(),
-          candidate.rSecondaryVertex(),
-          candidate.decayLength(),
-          candidate.decayLengthXY(),
-          candidate.decayLengthNormalised(),
-          candidate.decayLengthXYNormalised(),
-          candidate.impactParameterNormalised0(),
-          candidate.ptProng0(),
-          RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-          candidate.impactParameterNormalised1(),
-          candidate.ptProng1(),
-          RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-          candidate.pxProng0(),
-          candidate.pyProng0(),
-          candidate.pzProng0(),
-          candidate.pxProng1(),
-          candidate.pyProng1(),
-          candidate.pzProng1(),
-          candidate.impactParameter0(),
-          candidate.impactParameter1(),
-          candidate.errorImpactParameter0(),
-          candidate.errorImpactParameter1(),
-          candidate.v0x(),
-          candidate.v0y(),
-          candidate.v0z(),
-          candidate.v0radius(),
-          candidate.v0cosPA(),
-          candidate.mLambda(),
-          candidate.mAntiLambda(),
-          candidate.mK0Short(),
-          candidate.mGamma(),
-          candidate.dcaV0daughters(),
-          candidate.pxpos(),
-          candidate.pypos(),
-          candidate.pzpos(),
-          candidate.ptV0Pos(),
-          candidate.dcapostopv(),
-          candidate.pxneg(),
-          candidate.pyneg(),
-          candidate.pzneg(),
-          candidate.ptV0Neg(),
-          candidate.dcanegtopv(),
-          bach.tpcNSigmaPr(),
-          bach.tofNSigmaPr(),
-          o2::aod::hf_cand_casc::invMassLcToK0sP(candidate),
-          candidate.pt(),
-          candidate.p(),
-          candidate.cpa(),
-          candidate.cpaXY(),
-          o2::aod::hf_cand_3prong::ctLc(candidate),
-          candidate.eta(),
-          candidate.phi(),
-          o2::aod::hf_cand_3prong::yLc(candidate),
-          o2::aod::hf_cand_3prong::eLc(candidate),
-          candidate.flagMcMatchRec());
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec());
       }
     }
 
@@ -284,12 +294,7 @@ struct HfTreeCreatorLcToK0sP {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto const& collision : collisions) {
-      rowCandidateFullEvents(
-        collision.bcId(),
-        collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ());
+      fillEvent(collision);
     }
 
     // Filling candidate properties
@@ -298,72 +303,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (long)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        rowCandidateFull(
-          bach.collision().bcId(),
-          bach.collision().numContrib(),
-          candidate.posX(),
-          candidate.posY(),
-          candidate.posZ(),
-          candidate.xSecondaryVertex(),
-          candidate.ySecondaryVertex(),
-          candidate.zSecondaryVertex(),
-          candidate.errorDecayLength(),
-          candidate.errorDecayLengthXY(),
-          candidate.chi2PCA(),
-          candidate.rSecondaryVertex(),
-          candidate.decayLength(),
-          candidate.decayLengthXY(),
-          candidate.decayLengthNormalised(),
-          candidate.decayLengthXYNormalised(),
-          candidate.impactParameterNormalised0(),
-          candidate.ptProng0(),
-          RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-          candidate.impactParameterNormalised1(),
-          candidate.ptProng1(),
-          RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-          candidate.pxProng0(),
-          candidate.pyProng0(),
-          candidate.pzProng0(),
-          candidate.pxProng1(),
-          candidate.pyProng1(),
-          candidate.pzProng1(),
-          candidate.impactParameter0(),
-          candidate.impactParameter1(),
-          candidate.errorImpactParameter0(),
-          candidate.errorImpactParameter1(),
-          candidate.v0x(),
-          candidate.v0y(),
-          candidate.v0z(),
-          candidate.v0radius(),
-          candidate.v0cosPA(),
-          candidate.mLambda(),
-          candidate.mAntiLambda(),
-          candidate.mK0Short(),
-          candidate.mGamma(),
-          candidate.dcaV0daughters(),
-          candidate.pxpos(),
-          candidate.pypos(),
-          candidate.pzpos(),
-          candidate.ptV0Pos(),
-          candidate.dcapostopv(),
-          candidate.pxneg(),
-          candidate.pyneg(),
-          candidate.pzneg(),
-          candidate.ptV0Neg(),
-          candidate.dcanegtopv(),
-          bach.tpcNSigmaPr(),
-          bach.tofNSigmaPr(),
-          o2::aod::hf_cand_casc::invMassLcToK0sP(candidate),
-          candidate.pt(),
-          candidate.p(),
-          candidate.cpa(),
-          candidate.cpaXY(),
-          o2::aod::hf_cand_3prong::ctLc(candidate),
-          candidate.eta(),
-          candidate.phi(),
-          o2::aod::hf_cand_3prong::yLc(candidate),
-          o2::aod::hf_cand_3prong::eLc(candidate),
-          0.);
+        fillCandidate(candidate, bach, 0);
       }
     }
   }
