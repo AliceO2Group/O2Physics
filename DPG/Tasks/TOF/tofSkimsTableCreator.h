@@ -93,7 +93,7 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   tofskims::DeltaEta,
                   tofskims::Phi,
                   tofskims::DeltaPhi,
-                  tofskims::DoubleTPi,
+                  tofskims::DeltaTPi,
                   tofskims::DoubleDelta,
                   track::Length,
                   track::TOFChi2,
