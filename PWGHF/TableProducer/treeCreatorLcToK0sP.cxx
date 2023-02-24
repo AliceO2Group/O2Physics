@@ -264,7 +264,7 @@ struct HfTreeCreatorLcToK0sP {
     rowCandidateFull.reserve(candidates.size());
     for (auto const& candidate : candidates) {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - (long)(bach.pt() * 1000);
+      double pseudoRndm = bach.pt() * 1000. - (int32_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec());
       }
@@ -301,7 +301,7 @@ struct HfTreeCreatorLcToK0sP {
     rowCandidateFull.reserve(candidates.size());
     for (auto const& candidate : candidates) {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - (long)(bach.pt() * 1000);
+      double pseudoRndm = bach.pt() * 1000. - (int32_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, 0);
       }
