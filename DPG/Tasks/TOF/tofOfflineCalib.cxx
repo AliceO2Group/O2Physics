@@ -110,12 +110,12 @@ struct tofOfflineCalib {
     if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
     }
-    tableRow.reserve(tracks.size());
 
     histos.fill(HIST("events"), 0);
     if (!collision.sel8()) {
       return;
     }
+    tableRow.reserve(tracks.size());
     float evTimeT0AC = 0.f;
     float evTimeT0ACErr = 0.f;
     if (collision.t0ACValid()) {
@@ -139,7 +139,7 @@ struct tofOfflineCalib {
 
     int8_t lastTRDLayer = -1;
     for (auto& track1 : tracks) {
-      if (!track1.isGlobalTrack()) {
+      if (!track1.hasTOF()) {
         continue;
       }
       // Selecting good reference
@@ -149,7 +149,7 @@ struct tofOfflineCalib {
         continue;
       }
       for (auto& track2 : tracks) {
-        if (!track2.isGlobalTrack()) {
+        if (!track2.hasTOF()) {
           continue;
         }
         if (track1.globalIndex() == track2.globalIndex()) { // Skipping the same track
