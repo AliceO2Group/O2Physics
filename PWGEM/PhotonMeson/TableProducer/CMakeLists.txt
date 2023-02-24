@@ -40,7 +40,7 @@ o2physics_add_dpl_workflow(skimmer-phos
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(gamma-table-producer
-                    SOURCES GammaTableProducer.cxx
+                    SOURCES gammaSelection.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
