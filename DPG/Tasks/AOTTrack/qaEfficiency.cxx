@@ -719,7 +719,7 @@ struct QaEfficiency {
         h->GetXaxis()->SetBinLabel(18, "customTrackSelection");
         break;
       default:
-        LOG(fatal) << "Can't interpret track asked selection";
+        LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
 
     for (int i = 0; i < nSpecies; i++) {
@@ -1464,7 +1464,7 @@ struct QaEfficiency {
       case 6:
         return customTrackCuts.IsSelected(track);
       default:
-        LOG(fatal) << "Can't interpret track asked selection";
+        LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
     histos.fill(countingHisto, 18);
 
