@@ -167,7 +167,8 @@ struct HfTreeCreatorLcToK0sP {
   {
   }
 
-  void fillCandidate(auto const& candidate, auto const& bach, int8_t flagMc)
+  template <typename T, typename U>
+  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc)
   {
     rowCandidateFull(
       bach.collision().bcId(),
@@ -237,7 +238,8 @@ struct HfTreeCreatorLcToK0sP {
       flagMc);
   }
 
-  void fillEvent(auto const& collision)
+  template <typename T>
+  void fillEvent(const T& collision)
   {
     rowCandidateFullEvents(
       collision.bcId(),
@@ -264,7 +266,7 @@ struct HfTreeCreatorLcToK0sP {
     rowCandidateFull.reserve(candidates.size());
     for (auto const& candidate : candidates) {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - (int32_t)(bach.pt() * 1000);
+      double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec());
       }
@@ -301,7 +303,7 @@ struct HfTreeCreatorLcToK0sP {
     rowCandidateFull.reserve(candidates.size());
     for (auto const& candidate : candidates) {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - (int32_t)(bach.pt() * 1000);
+      double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, 0);
       }
