@@ -98,8 +98,8 @@ struct femtoWorldPairTaskTrackPhi {
 
   /// Partition for particle 2
   Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhi)) && (aod::femtoworldparticle::pt < cfgPtHighPart2) && (aod::femtoworldparticle::pt > cfgPtLowPart2) // pT cuts
-                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2)                                                                                         // Eta cuts
-                                                 && (aod::femtoworldparticle::sign < int8_t(0));
+                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);                                                                                        // Eta cuts
+
   /// Histogramming for particle 2
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 0> trackHistoPartTwo;
 

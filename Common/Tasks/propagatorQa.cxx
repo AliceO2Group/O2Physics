@@ -43,6 +43,8 @@ struct propagatorQa {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
 
+  o2::base::Propagator::MatCorrType matCorr;
+
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
   Configurable<int> NbinsDCA{"NbinsDCA", 2000, "NbinsDCA"};
@@ -58,7 +60,7 @@ struct propagatorQa {
   
   Configurable<int> NbinsDeltaPt{"NbinsDeltaPt", 100, "binning for delta-pt"};
   Configurable<float> DeltaPtLimit{"DeltaPtLimit", 1, "limit for delta-pt"};
-  
+
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -120,7 +122,7 @@ struct propagatorQa {
     histos.add("hDeltaPtVsPt", "hDeltaPtVsPt", kTH2F, {axisPt, axisDeltaPt});
     histos.add("hPrimaryDeltaTanLambdaVsPt", "hPrimaryDeltaTanLambdaVsPt", kTH2F, {axisPt, axisTanLambda});
     histos.add("hPrimaryDeltaPtVsPt", "hPrimaryDeltaPtVsPt", kTH2F, {axisPt, axisDeltaPt});
-    
+
     // Primaries
     histos.add("hPrimaryTrackX", "hPrimaryTrackX", kTH1F, {axisX});
     histos.add("hPrimaryUpdateRadii", "hPrimaryUpdateRadii", kTH1F, {axisX});
@@ -135,10 +137,10 @@ struct propagatorQa {
     histos.add("hPrimaryDeltaDCAsVsPt", "hPrimaryDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
     histos.add("hPrimaryRecalculatedDeltaDCAsVsPt", "hPrimaryRecalculatedDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
 
+
     // Used in vertexer
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
-    
     // bit packed ITS cluster map
     const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
     const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
@@ -146,7 +148,7 @@ struct propagatorQa {
     // Histogram to bookkeep cluster maps
     histos.add("h2dITSCluMap", "h2dITSCluMap", kTH2D, {axisITSCluMap, axisRadius});
     histos.add("h2dITSCluMapPrimaries", "h2dITSCluMapPrimaries", kTH2D, {axisITSCluMap, axisRadius});
-  
+
     // Material correction
     matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1)
@@ -204,6 +206,7 @@ struct propagatorQa {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     gpu::gpustd::array<float, 2> dcaInfo;
+
     for (auto& track : tracks) {
       if (!track.has_mcParticle())
         continue;
@@ -239,16 +242,15 @@ struct propagatorQa {
 
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
-      
+
       //*+-+*
       // Recalculate the propagation
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lTrackParametrization, maxPropagStep, matCorr, &dcaInfo);
       float lRecalculatedDCA = dcaInfo[0];
       //*+-+*
-  
       histos.fill(HIST("hDeltaTanLambdaVsPt"), track.tgl(), track.tgl()-lTrackParametrization.getTgl());
       histos.fill(HIST("hDeltaPtVsPt"), track.pt(), track.pt()-lTrackParametrization.getPt());
-      
+
       histos.fill(HIST("hUpdateRadii"), lRadiusOfLastUpdate);
       histos.fill(HIST("hTrackX"), lTrackParametrization.getX());
       histos.fill(HIST("hdcaXYall"), lDCA);
