@@ -37,7 +37,9 @@ struct PidMultiplicity {
   Produces<aod::PIDMults> mult;
 
   // For vertex-Z corrections in calibration
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  // using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  using Trks = aod::TracksExtra;
+  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
   bool enableTable = false;
 
   void init(InitContext& initContext)
@@ -50,7 +52,7 @@ struct PidMultiplicity {
     }
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra)
+  void process(aod::Collision const& collision, Trks const& tracksExtra)
   {
     if (!enableTable) {
       return;
