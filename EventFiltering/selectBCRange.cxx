@@ -85,6 +85,7 @@ struct BCRangeSelector {
         auto bcRange = udhelpers::compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
         if (bcRange.size() == 0) {
           LOGF(warning, "No compatible BCs found for collision that the framework assigned to BC %i", filt.hasGlobalBCId());
+          filt++;
           continue;
         }
         // update list of ranges
