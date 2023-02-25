@@ -23,6 +23,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
@@ -39,6 +40,7 @@ struct propagatorQa {
   int mRunNumber;
   float d_bz;
 
+  o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
 
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
@@ -51,10 +53,19 @@ struct propagatorQa {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> dQANBinsRadius{"dQANBinsRadius", 100, "binning for radius x itsmap histo"};
 
+  Configurable<int> NbinsTanLambda{"NbinsTanLambda", 100, "binning for tan(lambda)"};
+  Configurable<float> TanLambdaLimit{"TanLambdaLimit", 1, "limit for tan(lambda)"};
+
+  Configurable<int> NbinsDeltaPt{"NbinsDeltaPt", 100, "binning for delta-pt"};
+  Configurable<float> DeltaPtLimit{"DeltaPtLimit", 1, "limit for delta-pt"};
+
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -63,6 +74,17 @@ struct propagatorQa {
 
   void init(InitContext& context)
   {
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    }
+
     mRunNumber = 0;
     d_bz = 0;
 
@@ -76,6 +98,9 @@ struct propagatorQa {
     const AxisSpec axisDCAxy{(int)NbinsDCA, -windowDCA, windowDCA, "DCA_{xy} (cm)"};
     const AxisSpec axisPt{(int)NbinsPt, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
+    const AxisSpec axisTanLambda{(int)NbinsTanLambda, -TanLambdaLimit, +TanLambdaLimit, "tan(#lambda)"};
+    const AxisSpec axisDeltaPt{(int)NbinsDeltaPt, -DeltaPtLimit, +DeltaPtLimit, "#it{p}_{T} (GeV/#it{c})"};
+
     // All tracks
     histos.add("hTrackX", "hTrackX", kTH1F, {axisX});
     histos.add("hUpdateRadii", "hUpdateRadii", kTH1F, {axisX});
@@ -88,7 +113,13 @@ struct propagatorQa {
     histos.add("hCircleDCAVsDCA", "hCircleDCAVsDCA", kTH2F, {axisDCAxy, axisDCAxy});
     histos.add("hDeltaDCAs", "hDeltaDCAs", kTH1F, {axisDCAxy});
     histos.add("hDeltaDCAsVsPt", "hDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
-    histos.add("hDeltaRecalculatedDCAsVsPt", "hDeltaRecalculatedDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
+    histos.add("hRecalculatedDeltaDCAsVsPt", "hRecalculatedDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
+
+    // TPC PID checks: difference in tan(lambda) and q/pT between propagated and non propagated
+    histos.add("hDeltaTanLambdaVsPt", "hDeltaTanLambdaVsPt", kTH2F, {axisPt, axisTanLambda});
+    histos.add("hDeltaPtVsPt", "hDeltaPtVsPt", kTH2F, {axisPt, axisDeltaPt});
+    histos.add("hPrimaryDeltaTanLambdaVsPt", "hPrimaryDeltaTanLambdaVsPt", kTH2F, {axisPt, axisTanLambda});
+    histos.add("hPrimaryDeltaPtVsPt", "hPrimaryDeltaPtVsPt", kTH2F, {axisPt, axisDeltaPt});
 
     // Primaries
     histos.add("hPrimaryTrackX", "hPrimaryTrackX", kTH1F, {axisX});
@@ -102,12 +133,11 @@ struct propagatorQa {
     histos.add("hPrimaryCircleDCAVsDCA", "hPrimaryCircleDCAVsDCA", kTH2F, {axisDCAxy, axisDCAxy});
     histos.add("hPrimaryDeltaDCAs", "hPrimaryDeltaDCAs", kTH1F, {axisDCAxy});
     histos.add("hPrimaryDeltaDCAsVsPt", "hPrimaryDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
-    histos.add("hPrimaryDeltaRecalculatedDCAsVsPt", "hPrimaryDeltaRecalculatedDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
+    histos.add("hPrimaryRecalculatedDeltaDCAsVsPt", "hPrimaryRecalculatedDeltaDCAsVsPt", kTH2F, {axisPt, axisDCAxy});
 
     // Used in vertexer
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
-
     // bit packed ITS cluster map
     const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
     const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
@@ -129,32 +159,42 @@ struct propagatorQa {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto run3grp_timestamp = bc.timestamp();
 
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
       if (!grpmag) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
+
+    if (useMatCorrType == 2) {
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
   }
 
   void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
@@ -205,6 +245,8 @@ struct propagatorQa {
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lTrackParametrization, maxPropagStep, matCorr, &dcaInfo);
       float lRecalculatedDCA = dcaInfo[0];
       //*+-+*
+      histos.fill(HIST("hDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
+      histos.fill(HIST("hDeltaPtVsPt"), track.pt(), track.pt() - lTrackParametrization.getPt());
 
       histos.fill(HIST("hUpdateRadii"), lRadiusOfLastUpdate);
       histos.fill(HIST("hTrackX"), lTrackParametrization.getX());
@@ -225,6 +267,9 @@ struct propagatorQa {
       histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation);
 
       if (lIsPrimary) {
+        histos.fill(HIST("hPrimaryDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
+        histos.fill(HIST("hPrimaryDeltaPtVsPt"), track.pt(), track.pt() - lTrackParametrization.getPt());
+
         histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
         histos.fill(HIST("hPrimaryTrackX"), lTrackParametrization.getX());
         histos.fill(HIST("hPrimarydcaXYall"), lDCA);
