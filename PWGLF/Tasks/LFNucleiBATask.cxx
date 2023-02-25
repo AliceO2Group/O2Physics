@@ -185,7 +185,7 @@ struct LFNucleiBATask {
     histos.add<TH1>("tracks/helium/h1antiHeliumSpectra", "#it{p}_{T} (#bar{He})", HistType::kTH1F, {ptAxis});
     histos.add<TH1>("tracks/alpha/h1antiAlphaSpectra", "#it{p}_{T} (#bar{#alpha})", HistType::kTH1F, {ptAxis});
 
-    if (doprocessMCReco) {
+    if (doprocessMCReco || doprocessMCRecoFiltered) {
       // 1D pT
       histos.add<TH1>("tracks/proton/h1ProtonSpectraTrue", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/proton/h1ProtonSpectraTrueWPID", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
@@ -1649,12 +1649,11 @@ struct LFNucleiBATask {
             }
             break;
           case PDGDeuteron:
-            break;
             histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrue"), track.pt());
             histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrue"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrue"), track.pt(), track.dcaZ());
             if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe) {
-              histos.fill(HIST("tracks/deuterons/h1DeuteronSpectraTrueWPID"), track.pt());
+              histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrueWPID"), track.pt());
             }
             if (isPhysPrim) {
               histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTruePrim"), track.pt());
@@ -1671,6 +1670,7 @@ struct LFNucleiBATask {
               histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrueTransport"), track.pt(), track.dcaXY());
               histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrueTransport"), track.pt(), track.dcaZ());
             }
+            break;
           case -PDGDeuteron:
             histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrue"), track.pt());
             histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrue"), track.pt(), track.dcaXY());
