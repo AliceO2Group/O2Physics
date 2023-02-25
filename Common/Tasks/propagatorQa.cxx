@@ -46,7 +46,8 @@ struct propagatorQa {
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
   Configurable<int> NbinsDCA{"NbinsDCA", 2000, "NbinsDCA"};
-  Configurable<int> NbinsPt{"NbinsPt", 100, "NbinsDCA"};
+  Configurable<int> NbinsPt{"NbinsPt", 100, "NbinsPt"};
+  Configurable<int> NbinsPtCoarse{"NbinsPtCoarse", 100, "NbinsPtCoarse"};
   Configurable<float> maxXtoConsider{"maxXtoConsider", 10000, "max X to consider"};
   Configurable<float> maxPropagStep{"maxPropagStep", 2.0, "max propag step"};
   // Operation and minimisation criteria
@@ -97,7 +98,7 @@ struct propagatorQa {
     const AxisSpec axisX{(int)NbinsX, 0.0f, +250.0f, "X value"};
     const AxisSpec axisDCAxy{(int)NbinsDCA, -windowDCA, windowDCA, "DCA_{xy} (cm)"};
     const AxisSpec axisPt{(int)NbinsPt, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-
+    const AxisSpec axisPtCoarse{(int)NbinsPtCoarse, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisTanLambda{(int)NbinsTanLambda, -TanLambdaLimit, +TanLambdaLimit, "tan(#lambda)"};
     const AxisSpec axisDeltaPt{(int)NbinsDeltaPt, -DeltaPtLimit, +DeltaPtLimit, "#it{p}_{T} (GeV/#it{c})"};
 
@@ -143,8 +144,8 @@ struct propagatorQa {
     const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
 
     // Histogram to bookkeep cluster maps
-    histos.add("h2dITSCluMap", "h2dITSCluMap", kTH2D, {axisITSCluMap, axisRadius});
-    histos.add("h2dITSCluMapPrimaries", "h2dITSCluMapPrimaries", kTH2D, {axisITSCluMap, axisRadius});
+    histos.add("h2dITSCluMap", "h2dITSCluMap", kTH3D, {axisITSCluMap, axisRadius, axisPtCoarse});
+    histos.add("h2dITSCluMapPrimaries", "h2dITSCluMapPrimaries", kTH3D, {axisITSCluMap, axisRadius, axisPtCoarse});
 
     // Material correction
     matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -264,7 +265,7 @@ struct propagatorQa {
       // ITS cluster map
       float lMCCreation = TMath::Sqrt(mctrack.vx() * mctrack.vx() + mctrack.vy() * mctrack.vy());
 
-      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation);
+      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation, track.pt());
 
       if (lIsPrimary) {
         histos.fill(HIST("hPrimaryDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
@@ -282,7 +283,7 @@ struct propagatorQa {
         histos.fill(HIST("hPrimaryDeltaDCAs"), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
-        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation);
+        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation, track.pt());
       }
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
