@@ -197,17 +197,17 @@ struct TableMakerMC {
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCov") ||
-			       context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
+                               context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCent") || context.mOptions.get<bool>("processMuonOnlyWithCov") ||
-			     context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
+                             context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
     // TODO: switch on/off histogram classes depending on which process function we run
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_TrackBarrel_BeforeCuts;";
-	  histClasses += "Orphan_TrackBarrel;";
+          histClasses += "Orphan_TrackBarrel;";
         }
       }
       if (fConfigQA) {
@@ -225,8 +225,8 @@ struct TableMakerMC {
         histClasses += "Muons_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
-	  histClasses += "Orphan_Muons_MFTMCHMID;";
-	  histClasses += "Orphan_Muons_MCHMID;";
+          histClasses += "Orphan_Muons_MFTMCHMID;";
+          histClasses += "Orphan_Muons_MCHMID;";
         }
       }
       if (fConfigQA) {
@@ -304,34 +304,32 @@ struct TableMakerMC {
     uint16_t mcflags = 0;
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
-    //Process orphan tracks
-    if (fDoDetailedQA && fIsAmbiguous){
-        if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
-            for (auto& ambiTrack : ambiTracksMid) {
-                auto trk = ambiTrack.template track_as<TTracks>();
-                if (trk.collisionId()<0){
-                    VarManager::FillTrack<TTrackFillMap>(trk);
-                    fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
-	        }
-	    }
+    // Process orphan tracks
+    if (fDoDetailedQA && fIsAmbiguous) {
+      if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+        for (auto& ambiTrack : ambiTracksMid) {
+          auto trk = ambiTrack.template track_as<TTracks>();
+          if (trk.collisionId() < 0) {
+            VarManager::FillTrack<TTrackFillMap>(trk);
+            fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
+          }
         }
+      }
 
-        if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
-            for (auto& ambiTrackFwd : ambiTracksFwd) {
-                auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
-                if (muon.collisionId()<0){
-                    VarManager::FillTrack<TMuonFillMap>(muon);
-                    if ((static_cast<int>(muon.trackType()) == 0)){
-                        fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
-		    }else if ((static_cast<int>(muon.trackType()) == 3)){
-                        fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
-                    }
-	        }
-	    }
+      if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+        for (auto& ambiTrackFwd : ambiTracksFwd) {
+          auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
+          if (muon.collisionId() < 0) {
+            VarManager::FillTrack<TMuonFillMap>(muon);
+            if ((static_cast<int>(muon.trackType()) == 0)) {
+              fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+            } else if ((static_cast<int>(muon.trackType()) == 3)) {
+              fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
+            }
+          }
         }
+      }
     }
-
-
 
     for (auto& collision : collisions) {
       // TODO: investigate the collisions without corresponding mcCollision

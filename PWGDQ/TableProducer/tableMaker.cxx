@@ -176,19 +176,19 @@ struct TableMaker {
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
-			       context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
+                               context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter") ||
-			     context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
+                             context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
 
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_TrackBarrel_BeforeCuts;";
-	  histClasses += "Orphan_TrackBarrel;";
+          histClasses += "Orphan_TrackBarrel;";
         }
       }
       if (fConfigQA) {
@@ -205,7 +205,7 @@ struct TableMaker {
         histClasses += "Muons_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
-	  histClasses += "Orphan_Muons_MFTMCHMID;";
+          histClasses += "Orphan_Muons_MFTMCHMID;";
           histClasses += "Orphan_Muons_MCHMID;";
         }
       }
@@ -265,31 +265,31 @@ struct TableMaker {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
   void fullSkimming(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
-    //Process orphan tracks
-    if (fDoDetailedQA && fIsAmbiguous){
-        if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
-            for (auto& ambiTrack : ambiTracksMid) {
-                auto trk = ambiTrack.template track_as<TTracks>();
-                if (trk.collisionId()<0){
-                    VarManager::FillTrack<TTrackFillMap>(trk);
-                    fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
-                }
-            }
+    // Process orphan tracks
+    if (fDoDetailedQA && fIsAmbiguous) {
+      if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+        for (auto& ambiTrack : ambiTracksMid) {
+          auto trk = ambiTrack.template track_as<TTracks>();
+          if (trk.collisionId() < 0) {
+            VarManager::FillTrack<TTrackFillMap>(trk);
+            fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
+          }
         }
+      }
 
-        if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
-            for (auto& ambiTrackFwd : ambiTracksFwd) {
-                auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
-                if (muon.collisionId()<0){
-                    VarManager::FillTrack<TMuonFillMap>(muon);
-                    if ((static_cast<int>(muon.trackType()) == 0)){
-                        fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
-                    }else if ((static_cast<int>(muon.trackType()) == 3)){
-                        fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
-                    }
-                }
+      if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+        for (auto& ambiTrackFwd : ambiTracksFwd) {
+          auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
+          if (muon.collisionId() < 0) {
+            VarManager::FillTrack<TMuonFillMap>(muon);
+            if ((static_cast<int>(muon.trackType()) == 0)) {
+              fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+            } else if ((static_cast<int>(muon.trackType()) == 3)) {
+              fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
             }
+          }
         }
+      }
     }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();

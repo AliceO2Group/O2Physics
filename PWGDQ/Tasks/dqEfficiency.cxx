@@ -673,7 +673,7 @@ struct AnalysisSameEventPairing {
   {
     if (fCurrentRun != event.runNumber()) {
       if (fUseRemoteField.value) {
-	  grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
         if (grpmag != nullptr) {
           mMagField = grpmag->getNominalL3Field();
         } else {
@@ -684,7 +684,6 @@ struct AnalysisSameEventPairing {
         } else {
           VarManager::SetupTwoProngDCAFitter(mMagField, fPropToPCA.value, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // TODO: get these parameters from Configurables
           VarManager::SetupTwoProngFwdDCAFitter(mMagField, fPropToPCA.value, 200.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
-
         }
       } else {
         if (fConfigUseKFVertexing.value) {

@@ -912,7 +912,7 @@ struct AnalysisSameEventPairing {
   {
     if (fCurrentRun != event.runNumber()) {
       if (fUseRemoteField.value) {
-	grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
         if (grpmag != nullptr) {
           mMagField = grpmag->getNominalL3Field();
         } else {
