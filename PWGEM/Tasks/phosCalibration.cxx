@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 #include "TFile.h"
+#include "TGrid.h"
 #include "TLorentzVector.h"
 
 #include "DataFormatsPHOS/Cell.h"
@@ -70,6 +71,8 @@ struct phosCalibration {
   Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100.e-9, "Max. cell time of main bunch selection"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
   Configurable<uint32_t> mL1{"L1", 0, "L1 phase"};
+  Configurable<std::string> mBadMapPath{"badmapPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/BadMap/snapshot.root", "path to BadMap snapshot"};
+  Configurable<std::string> mCalibPath{"calibPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/CalibParams/snapshot.root", "path to Calibration snapshot"};
 
   HistogramRegistry mHistManager{"phosCallQAHistograms"};
 
@@ -146,8 +149,12 @@ struct phosCalibration {
     }
 
     if (!badMap) {
-      LOG(info) << "Reading local BadMap";
-      TFile* fBadMap = TFile::Open("localCCDB/PHS/Calib/BadMap/snapshot.root");
+      LOG(info) << "Reading BadMap from: " << mBadMapPath.value;
+      TFile* fBadMap = TFile::Open(mBadMapPath.value.data());
+      if (fBadMap == nullptr) { // probably, TGrid not connected yet?
+        TGrid::Connect("alien");
+        fBadMap = TFile::Open(mBadMapPath.value.data());
+      }
       o2::phos::BadChannelsMap* bm1 = (o2::phos::BadChannelsMap*)fBadMap->Get("ccdb_object");
       badMap.reset(bm1);
       fBadMap->Close();
@@ -155,8 +162,8 @@ struct phosCalibration {
       LOG(info) << "Read bad map";
     }
     if (!calibParams) {
-      LOG(info) << "Reading local Calibration";
-      TFile* fCalib = TFile::Open("localCCDB/PHS/Calib/CalibParams/snapshot.root");
+      LOG(info) << "Reading Calibration from: " << mCalibPath.value;
+      TFile* fCalib = TFile::Open(mCalibPath.value.data());
       o2::phos::CalibParams* calib1 = (o2::phos::CalibParams*)fCalib->Get("ccdb_object");
       calibParams.reset(calib1);
       fCalib->Close();
