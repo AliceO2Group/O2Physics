@@ -45,6 +45,8 @@
 #include <TMath.h>
 #include <TVector2.h>
 
+#include "Tools/KFparticle/KFUtilities.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -387,9 +389,9 @@ struct skimmerGammaConversions {
 
     //*******************************************************
 
-    // o2::track::TrackParametrization<TrackPrecision> = TrackPar, I use the full version to have control over the data type
-    o2::track::TrackParametrization<TrackPrecision> trackPosInformation = getTrackPar(lTrackPos); //first get an object that stores Track information (positive)
-    o2::track::TrackParametrization<TrackPrecision> trackNegInformation = getTrackPar(lTrackNeg); //first get an object that stores Track information (negative)
+    // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); //first get an object that stores Track information (positive)
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); //first get an object that stores Track information (negative)
 
     o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
     o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -398,8 +400,8 @@ struct skimmerGammaConversions {
     conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
 
     //I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
-    o2::track::TrackParametrization<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrization<TrackPrecision>(trackPosInformation);
-    o2::track::TrackParametrization<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrization<TrackPrecision>(trackNegInformation);
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackNegInformation);
 
     //I think this calculation gets the closest point on the track to the conversion point
     //This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
@@ -434,6 +436,21 @@ struct skimmerGammaConversions {
 
     // TODO: This is still off and needs to be checked...
     conversionPosition[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
+  
+    KFPTrack kFTrackPos = createKFPTrackFromTrackParametrizationWithError(trackPosInformationCopy, lTrackPos.sign(), lTrackPos.tpcNClsFound(), lTrackPos.tpcChi2NCl());
+    int pdg_ePlus = -11; //e+
+    KFParticle kFParticleEPlus(kFTrackPos, pdg_ePlus);
+
+    KFPTrack kFTrackNeg = createKFPTrackFromTrackParametrizationWithError(trackNegInformationCopy, lTrackNeg.sign(), lTrackNeg.tpcNClsFound(), lTrackNeg.tpcChi2NCl());
+    int pdg_eMinus = 11; //e-
+    KFParticle kFParticleEMinus(kFTrackNeg, pdg_eMinus);
+
+    KFParticle gammaKF;
+    gammaKF.SetConstructMethod(2);
+    gammaKF.AddDaughter(kFParticleEPlus);
+    gammaKF.AddDaughter(kFParticleEMinus);
+
+    float test = gammaKF.GetChi2();
   }
 };
 
