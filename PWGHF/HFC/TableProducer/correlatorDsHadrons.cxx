@@ -78,7 +78,7 @@ struct HfCorrelatorDsHadrons {
      {"hPtProng0", "Ds,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
      {"hPtProng1", "Ds,Hadron candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
      {"hPtProng2", "Ds,Hadron candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
-     {"hSelectionStatus", "Ds,Hadron candidates;selection status;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+     {"hSelectionStatus", "Ds,Hadron candidates;selection status;entries", {HistType::kTH1F, {{8, -0.5, 7.5}}}},
      {"hEta", "Ds,Hadron candidates;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}}},
      {"hPhi", "Ds,Hadron candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {axisPhi}}},
      {"hY", "Ds,Hadron candidates;candidate #it{#y};entries", {HistType::kTH1F, {axisY}}},
@@ -86,7 +86,7 @@ struct HfCorrelatorDsHadrons {
      {"hPtProng0MCRec", "Ds,Hadron candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
      {"hPtProng1MCRec", "Ds,Hadron candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
      {"hPtProng2MCRec", "Ds,Hadron candidates - MC reco;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}}},
-     {"hSelectionStatusMCRec", "Ds,Hadron candidates - MC reco;selection status;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+     {"hSelectionStatusMCRec", "Ds,Hadron candidates - MC reco;selection status;entries", {HistType::kTH1F, {{8, -0.5, 7.5}}}},
      {"hEtaMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}}},
      {"hPhiMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {axisPhi}}},
      {"hYMCRec", "Ds,Hadron candidates - MC reco;candidate #it{#y};entries", {HistType::kTH1F, {axisY}}},
@@ -130,7 +130,7 @@ struct HfCorrelatorDsHadrons {
 
       auto selectedDsCandidatesGrouped = selectedDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
 
-      for (auto& candidate1 : selectedDsCandidatesGrouped) {
+      for (const auto& candidate1 : selectedDsCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(yDs(candidate1)) > yCandMax) {
           continue;
         }
@@ -214,7 +214,7 @@ struct HfCorrelatorDsHadrons {
       auto selectedDsCandidatesGroupedMC = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
       // MC reco level
       bool flagDsSignal = false;
-      for (auto& candidate1 : selectedDsCandidatesGroupedMC) {
+      for (const auto& candidate1 : selectedDsCandidatesGroupedMC) {
         // check decay channel flag for candidate1
         if (!(candidate1.hfflag() & 1 << DecayType::DsToKKPi)) {
           continue;
