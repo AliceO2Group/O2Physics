@@ -305,8 +305,8 @@ struct TableMakerMC {
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
     // Process orphan tracks
-    if (fDoDetailedQA && fIsAmbiguous) {
-      if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+    if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+      if (fDoDetailedQA && fIsAmbiguous) {
         for (auto& ambiTrack : ambiTracksMid) {
           auto trk = ambiTrack.template track_as<TTracks>();
           if (trk.collisionId() < 0) {
@@ -315,8 +315,10 @@ struct TableMakerMC {
           }
         }
       }
+    }
 
-      if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+    if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+      if (fDoDetailedQA && fIsAmbiguous) {
         for (auto& ambiTrackFwd : ambiTracksFwd) {
           auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
           if (muon.collisionId() < 0) {

@@ -266,8 +266,8 @@ struct TableMaker {
   void fullSkimming(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
     // Process orphan tracks
-    if (fDoDetailedQA && fIsAmbiguous) {
-      if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+    if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+      if (fDoDetailedQA && fIsAmbiguous) {
         for (auto& ambiTrack : ambiTracksMid) {
           auto trk = ambiTrack.template track_as<TTracks>();
           if (trk.collisionId() < 0) {
@@ -276,8 +276,9 @@ struct TableMaker {
           }
         }
       }
-
-      if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+    }
+    if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+      if (fDoDetailedQA && fIsAmbiguous) {
         for (auto& ambiTrackFwd : ambiTracksFwd) {
           auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
           if (muon.collisionId() < 0) {
