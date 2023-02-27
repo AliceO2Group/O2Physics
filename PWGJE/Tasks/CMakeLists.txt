@@ -32,6 +32,10 @@ if(FastJet_FOUND)
                         SOURCES jetsubstructure.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-fragmentation
+                        SOURCES jetfragmentation.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-output
                         SOURCES jetsubstructureoutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
