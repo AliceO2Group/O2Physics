@@ -72,6 +72,10 @@ struct TrackMatchingMonitor {
   Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   ConfigurableAxis mClusterTimeBinning{"clustertime-binning", {1500, -600, 900}, ""};
   Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
+  Configurable<bool> usePionRejection{"usePionRejection", false, "demand pion rection for electron signal with TPC PID"};
+  Configurable<std::vector<float>> tpcNsigmaElectron{"tpcNsigmaElectron", {-1., +3.}, "TPC PID NSigma range for electron signal"};
+  Configurable<std::vector<float>> tpcNsigmaBack{"tpcNsigmaBack", {-10., -4.}, "TPC PID NSigma range for electron background"};
+  Configurable<std::vector<float>> tpcNsigmaPion{"tpcNsigmaPion", {-3., +3.}, "TPC PID NSigma range for pions for rejection if usePionRejection is enabled"};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -297,9 +301,13 @@ struct TrackMatchingMonitor {
             mHistManager.fill(HIST("clusterTM_NegdEtadPhi_0_75leqPl1_25"), dEta, dPhi, t);
           }
         }
-        if (match.track_as<tracksPID>().tpcNSigmaEl() >= -3.0 && match.track_as<tracksPID>().tpcNSigmaEl() <= 2.0 && !(std::fabs(match.track_as<tracksPID>().tpcNSigmaPi()) <= 3.0)) { // E/p for e+/e- with pion rejection
-          mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
-        } else if (match.track_as<tracksPID>().tpcNSigmaEl() < -3.0) { // E/p for hadrons / background
+        if (match.track_as<tracksPID>().tpcNSigmaEl() >= tpcNsigmaElectron->at(0) && match.track_as<tracksPID>().tpcNSigmaEl() <= tpcNsigmaElectron->at(1)) {                 // E/p for e+/e-
+          if (usePionRejection && (match.track_as<tracksPID>().tpcNSigmaPi() <= tpcNsigmaPion->at(0) || match.track_as<tracksPID>().tpcNSigmaPi() >= tpcNsigmaPion->at(1))) { // with pion rejection
+            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          } else {
+            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          }
+        } else if (match.track_as<tracksPID>().tpcNSigmaEl() >= tpcNsigmaBack->at(0) && match.track_as<tracksPID>().tpcNSigmaEl() >= tpcNsigmaBack->at(1)) { // E/p for hadrons / background
           mHistManager.fill(HIST("clusterTM_EoverP_hadron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
         }
         if ((fabs(dEta) <= 0.01 + pow(match.track_as<tracksPID>().pt() + 4.07, -2.5)) &&
