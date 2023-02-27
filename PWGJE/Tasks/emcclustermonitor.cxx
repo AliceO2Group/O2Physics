@@ -57,14 +57,12 @@ using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::it
 using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
-using tracksPID = o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks>;
 struct ClusterMonitor {
   HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
 
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
@@ -74,7 +72,6 @@ struct ClusterMonitor {
   Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   ConfigurableAxis mClusterTimeBinning{"clustertime-binning", {1500, -600, 900}, ""};
   ConfigurableAxis mNumberClusterBinning{"numclusters-binning", {201, -0.5, 200.5}, ""};
-  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -189,7 +186,7 @@ struct ClusterMonitor {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, tracksPID const& alltrack)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
@@ -278,84 +275,6 @@ struct ClusterMonitor {
       }
       ampfraction = maxamp / cluster.energy();
       mHistManager.fill(HIST("clusterAmpFractionLeadingCell"), ampfraction);
-
-      // Example of loop over tracks matched to cluster within dR=0.4, where only the
-      // 5 most closest tracks are stored. If needed the number of tracks can be later
-      // increased in the correction framework. Access to all track properties via match.track()
-      // If you want to access tracks from a joined table you can access all track properties via
-      // match.track_as<globTracks>() with
-      // using globTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>;
-      // In this example the counter t is just used to only look at the closest match
-      double dEta, dPhi, pT;
-      pT = cluster.energy() / cosh(cluster.eta());
-      auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
-      int t = 0;
-      int tAli = 0;
-      for (const auto& match : tracksofcluster) {
-        // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
-        LOG(debug) << "Pt of match" << match.track_as<tracksPID>().pt();
-        // only consider closest match
-        if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
-          dEta = match.track_as<tracksPID>().trackEtaEmcal() - cluster.eta();
-          dPhi = match.track_as<tracksPID>().trackPhiEmcal() - cluster.phi();
-        } else {
-          dEta = match.track_as<tracksPID>().eta() - cluster.eta();
-          dPhi = match.track_as<tracksPID>().phi() - cluster.phi();
-        }
-        if (t == 0) {
-          if (match.track_as<tracksPID>().eta() > 0.0) {
-            mHistManager.fill(HIST("clusterTM_dEtadPhi_ASide"), dEta, dPhi);
-          } else if (match.track_as<tracksPID>().eta() < 0.0) {
-            mHistManager.fill(HIST("clusterTM_dEtadPhi_CSide"), dEta, dPhi);
-          }
-          mHistManager.fill(HIST("clusterEMatched"), cluster.energy());
-          mHistManager.fill(HIST("clusterTM_dEtaPt"), dEta, pT);
-          if (match.track_as<tracksPID>().sign() == 1) {
-            mHistManager.fill(HIST("clusterTM_PosdEtadPhi"), dEta, dPhi);
-            mHistManager.fill(HIST("clusterTM_PosdPhiPt"), dPhi, pT);
-            if (match.track_as<tracksPID>().p() < 0.75) {
-              mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pl0_75"), dEta, dPhi);
-            } else if (match.track_as<tracksPID>().p() >= 1.25) {
-              mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pgeq1_25"), dEta, dPhi);
-            } else {
-              mHistManager.fill(HIST("clusterTM_PosdEtadPhi_0_75leqPl1_25"), dEta, dPhi);
-            }
-          } else {
-            mHistManager.fill(HIST("clusterTM_NegdEtadPhi"), dEta, dPhi);
-            mHistManager.fill(HIST("clusterTM_NegdPhiPt"), dPhi, pT);
-            if (match.track_as<tracksPID>().p() < 0.75) {
-              mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pl0_75"), dEta, dPhi);
-            } else if (match.track_as<tracksPID>().p() >= 1.25) {
-              mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pgeq1_25"), dEta, dPhi);
-            } else {
-              mHistManager.fill(HIST("clusterTM_NegdEtadPhi_0_75leqPl1_25"), dEta, dPhi);
-            }
-          }
-          mHistManager.fill(HIST("clusterTM_EvsP"), cluster.energy(), match.track_as<tracksPID>().p());
-          mHistManager.fill(HIST("clusterTM_EoverP_Pt"), cluster.energy() / abs(match.track_as<tracksPID>().p()), match.track_as<tracksPID>().pt());
-          if (match.track_as<tracksPID>().tpcNSigmaEl() >= -3.0 && match.track_as<tracksPID>().tpcNSigmaEl() <= 2.0 && !(std::fabs(match.track_as<tracksPID>().tpcNSigmaPi()) <= 3.0)) { // E/p for e+/e- with pion rejection
-            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs(match.track_as<tracksPID>().p()), match.track_as<tracksPID>().pt());
-          } else if (match.track_as<tracksPID>().tpcNSigmaEl() < -3.0) { // E/p for hadrons / background
-            mHistManager.fill(HIST("clusterTM_EoverP_hadron"), cluster.energy() / abs(match.track_as<tracksPID>().p()), match.track_as<tracksPID>().pt());
-          }
-        }
-        t++;
-        mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / abs(match.track_as<tracksPID>().p()), cluster.energy(), t);
-        mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi, t);
-        if ((fabs(dEta) <= 0.01 + pow(match.track_as<tracksPID>().pt() + 4.07, -2.5)) &&
-            (fabs(dPhi) <= 0.015 + pow(match.track_as<tracksPID>().pt() + 3.65, -2.)) &&
-            cluster.energy() / match.track_as<tracksPID>().p() < 1.75) {
-          tAli++;
-          mHistManager.fill(HIST("clusterTM_dEtaTNAli"), dEta, tAli);
-          mHistManager.fill(HIST("clusterTM_dPhiTNAli"), dPhi, tAli);
-          mHistManager.fill(HIST("clusterTM_dRTNAli"), std::sqrt(dPhi * dPhi + dEta * dEta), tAli);
-        }
-        mHistManager.fill(HIST("clusterTM_dEtaTN"), dEta, t);
-        mHistManager.fill(HIST("clusterTM_dPhiTN"), dPhi, t);
-        mHistManager.fill(HIST("clusterTM_dRTN"), std::sqrt(dPhi * dPhi + dEta * dEta), t);
-      }
-      mHistManager.fill(HIST("clusterTM_NTrackAli"), tAli);
-      mHistManager.fill(HIST("clusterTM_NTrack"), t);
     }
     for (int supermoduleID = 0; supermoduleID < 20; supermoduleID++) {
       mHistManager.fill(HIST("numberOfClustersSMEvents"), numberOfClustersSM[supermoduleID], supermoduleID);
