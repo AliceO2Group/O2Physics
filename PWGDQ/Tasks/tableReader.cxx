@@ -1024,8 +1024,7 @@ struct AnalysisSameEventPairing {
               }
             }
           } // end loop (pair cuts)
-        }   // end if (filter bits)
-        else {
+        } else { // end if (filter bits)
           iCut++;
         }
       } // end loop (cuts)
