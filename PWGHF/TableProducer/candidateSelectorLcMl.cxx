@@ -9,12 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorLc.cxx
-/// \brief Λc± → p± K∓ π± selection task
+/// \file candidateSelectorLcMl.cxx
+/// \brief Λc± → p± K∓ π± selection task using BDT
 ///
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
+/// \author Maja Kabus <maja.kabus@cern.ch>, CERN, Warsaw University of Technology
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -32,7 +33,7 @@ using namespace hf_cuts_bdt_multiclass;
 using namespace o2::ml;
 
 /// Struct for applying Lc selection cuts
-struct HfCandidateSelectorLc {
+struct HfCandidateSelectorLcMl {
   Produces<aod::HfSelLc> hfSelLcCandidate;
 
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
@@ -62,7 +63,7 @@ struct HfCandidateSelectorLc {
   o2::ccdb::CcdbApi ccdbApi;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/Lc", "Path on CCDB"};
-  Configurable<long> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA)"};
@@ -321,5 +322,5 @@ struct HfCandidateSelectorLc {
   WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   {
     return WorkflowSpec{
-      adaptAnalysisTask<HfCandidateSelectorLc>(cfgc)};
+      adaptAnalysisTask<HfCandidateSelectorLcMl>(cfgc)};
   }
