@@ -44,11 +44,6 @@ namespace NucleiTableHist
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(IsPVContributor, isPVcontributor, bool);
-DECLARE_SOA_COLUMN(HasITS, hasITS, bool);
-DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);
-DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
 DECLARE_SOA_COLUMN(ITSnCls, itsNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int16_t);
@@ -58,11 +53,7 @@ DECLARE_SOA_COLUMN(PassedTPCRefit, passedTPCRefit, bool);
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
 DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float);
-DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float);
 DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float);
-DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float);
-DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float);
-DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float);
 DECLARE_SOA_COLUMN(TOFmass2, tofmass2, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
@@ -72,11 +63,6 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableHist::Pt,
                   NucleiTableHist::Sign,
                   NucleiTableHist::Eta,
-                  NucleiTableHist::IsPVContributor,
-                  NucleiTableHist::HasITS,
-                  NucleiTableHist::HasTPC,
-                  NucleiTableHist::HasTRD,
-                  NucleiTableHist::HasTOF,
                   NucleiTableHist::ITSnCls,
                   NucleiTableHist::TPCNClsFound,
                   NucleiTableHist::TPCNClsCrossedRows,
@@ -86,11 +72,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableHist::ITSChi2NCl,
                   NucleiTableHist::TPCChi2NCl,
                   NucleiTableHist::TPCNSigmaPr,
-                  NucleiTableHist::TOFNSigmaPr,
                   NucleiTableHist::TPCNSigmaDe,
-                  NucleiTableHist::TOFNSigmaDe,
-                  NucleiTableHist::TPCNSigmaHe,
-                  NucleiTableHist::TOFNSigmaHe,
                   NucleiTableHist::TOFmass2,
                   NucleiTableHist::CentFT0C,
                   NucleiTableHist::DCAxy,
@@ -610,11 +592,6 @@ struct NucleiHistTask {
         track.pt(),
         track.sign(),
         track.eta(),
-        track.isPVContributor(),
-        track.hasITS(),
-        track.hasTPC(),
-        track.hasTRD(),
-        track.hasTOF(),
         track.itsNCls(),
         track.tpcNClsFound(),
         track.tpcNClsCrossedRows(),
@@ -624,11 +601,7 @@ struct NucleiHistTask {
         track.itsChi2NCl(),
         track.tpcChi2NCl(),
         track.tpcNSigmaPr(),
-        track.tofNSigmaPr(),
         track.tpcNSigmaDe(),
-        track.tofNSigmaDe(),
-        track.tpcNSigmaHe(),
-        track.tofNSigmaHe(),
         track.mass() * track.mass(),
         0.0,
         track.dcaXY(),
@@ -653,11 +626,6 @@ struct NucleiHistTask {
         track.pt(),
         track.sign(),
         track.eta(),
-        track.isPVContributor(),
-        track.hasITS(),
-        track.hasTPC(),
-        track.hasTRD(),
-        track.hasTOF(),
         track.itsNCls(),
         track.tpcNClsFound(),
         track.tpcNClsCrossedRows(),
@@ -667,11 +635,7 @@ struct NucleiHistTask {
         track.itsChi2NCl(),
         track.tpcChi2NCl(),
         track.tpcNSigmaPr(),
-        track.tofNSigmaPr(),
         track.tpcNSigmaDe(),
-        track.tofNSigmaDe(),
-        track.tpcNSigmaHe(),
-        track.tofNSigmaHe(),
         track.mass() * track.mass(),
         event.centFT0C(),
         track.dcaXY(),
