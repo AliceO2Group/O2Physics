@@ -81,6 +81,8 @@ struct JetTriggerQA {
   OutputObj<TH2F> hSelectedGammaPtPhi{"hSelectedGammaPtPhi"};
   OutputObj<TH2F> hSelectedGammaMaxPtEta{"hSelectedGammaMaxPtEta"};
   OutputObj<TH2F> hSelectedGammaMaxPtPhi{"hSelectedGammaMaxPtPhi"};
+
+  OutputObj<TH3F> hJetRMaxPtJetPt{"hJetRMaxPtJetPt"};
   OutputObj<TH2F> hClusterMaxPtClusterPt{"hClusterMaxPtClusterPt"};
 
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
@@ -165,6 +167,7 @@ struct JetTriggerQA {
     hSelectedGammaMaxPtPhi.setObject(new TH2F("hSelectedGammaMaxPtPhi", "Leading selected gammas #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetRMaxPtClusterMaxPt.setObject(new TH3F("hSelectedJetRMaxPtClusterMaxPt", "Leading selected jets and clusters;#it{R};#it{p}_{T};#it{p}_{T}^{clus}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
 
+    hJetRMaxPtJetPt.setObject(new TH3F("hJetRMaxPtJetPt", "Leading jet #it{p}_{T} vs jet #it{p}_{T};#it{R};#it{p}_{T}^{max};#it{p}_{T}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
     hClusterMaxPtClusterPt.setObject(new TH2F("hClusterMaxPtClusterPt", "Leading cluster #it{p}_{T} vs cluster #it{p}_{T};#it{p}_{T}^{max};#it{p}_{T}", nPtBins, kMinPt, kMaxPt / 2, nPtBins, kMinPt, kMaxPt / 2));
 
     if (b_JetsInEmcalOnly) {
@@ -195,6 +198,8 @@ struct JetTriggerQA {
       hSelectedJetRMaxPtEta->SetTitle("Leading selected jets (in emcal only) #it{p}_{T} and #eta;#it{R};#it{p}_{T};#eta");
       hSelectedJetRMaxPtPhi->SetTitle("Leading selected jets (in emcal only) #it{p}_{T} and #phi;#it{R};#it{p}_{T};#phi");
       hSelectedJetRMaxPtClusterMaxPt->SetTitle("Leading selected jets (in emcal only) and clusters;#it{R};#it{p}_{T};#it{p}_{T}^{clus}");
+
+      hJetRMaxPtJetPt.setObject(new TH3F("hJetRMaxPtJetPt", "Leading jet #it{p}_{T} vs jet #it{p}_{T};#it{R};#it{p}_{T}^{max};#it{p}_{T}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
     }
   } // init
 
@@ -384,8 +389,13 @@ struct JetTriggerQA {
           hSelectedJetRMaxPtClusterMaxPt->Fill(jetR, jetPt, maxClusterPt);
         }
       } // if maxClusterPt
-    }   // for maxJet
-  }     // process
+      if (maxJet.r() == 20) {
+        for (const auto& jet : jets) {
+          hJetRMaxPtJetPt->Fill(jet.r() * 1e-2, jetPt, jet.pt());
+        } // for jets
+      }   // if maxJet.r() == 20
+    }     // for maxJet
+  }       // process
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

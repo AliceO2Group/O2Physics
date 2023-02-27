@@ -30,7 +30,7 @@ AxisSpec const gAxis_r{800, 0.f, 200.f};
 AxisSpec const gAxis_r_extended{800, 0.f, 500.f};
 AxisSpec const gAxis_dr{200, -100.f, 100.f};
 AxisSpec const gAxis_r2d{400, 0.f, 250.f};
-AxisSpec const gAxis_z2d{400, -250.f, 250.f};
+AxisSpec const gAxis_z2d{1000, -250.f, 250.f};
 AxisSpec const gAxis_TPCdEdxSig{401, -10.025f, 10.025f};
 AxisSpec const gAxis_radRes{800, -PI, PI};
 AxisSpec const gAxis_xyz{2400, -300.f, 300.f};

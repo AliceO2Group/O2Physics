@@ -41,6 +41,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> cosPACascMin{"cosPACascMin", 0.95, "Min value CosPA cascade"};
   Configurable<double> dcaCascDauMax{"dcaCascDauMax", 5.0, "Max DCA cascade daughters"};
   Configurable<double> dcaV0DauMax{"dcaV0DauMax", 5.0, "Max DCA V0 daughters"};
+
   Configurable<double> dcaOmegacDauMax{"dcaOmegacDauMax", 5.0, "Max DCA omegac daughters"};
 
   // limit charm baryon invariant mass spectrum
@@ -53,6 +54,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> ptPiFromOmeMin{"ptPiFromOmeMin", 0.2, "Min pT pi <- omegac"};
   Configurable<double> dcaXYPriPiMin{"dcaXYPriPiMin", 0., "Min dcaxy primary pi track to PV"};
   Configurable<double> dcaXYPriPiMax{"dcaXYPriPiMax", 10., "Max dcaxy primary pi track to PV"};
+  Configurable<double> impactParameterZPriPiMax{"impactParameterZPriPiMax", 10., "Max impact parameter primary pi track to PV in Z direction"};
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -62,16 +64,26 @@ struct HfCandidateSelectorToXiPi {
   Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC & TOF"};
 
   // PID - TPC selections
-  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
-  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for pion selection"};
+  Configurable<double> ptPiPidTpcMax{"ptPiPidTpcMax", 5., "Upper bound of track pT for TPC PID for pion selection"};
+  Configurable<double> nSigmaTpcPiMax{"nSigmaTpcPiMax", 3., "Nsigma cut on TPC only for pion selection"};
+  Configurable<double> nSigmaTpcCombinedPiMax{"nSigmaTpcCombinedPiMax", 5., "Nsigma cut on TPC combined with TOF for pion selection"};
+
+  Configurable<double> ptPrPidTpcMin{"ptPrPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for proton selection"};
+  Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 5., "Upper bound of track pT for TPC PID for proton selection"};
+  Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 3., "Nsigma cut on TPC only for proton selection"};
+  Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 5., "Nsigma cut on TPC combined with TOF for proton selection"};
 
   // PID - TOF selections
-  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
-  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPiPidTofMin{"ptPiPidTofMin", 0.15, "Lower bound of track pT for TOF PID for pion selection"};
+  Configurable<double> ptPiPidTofMax{"ptPiPidTofMax", 5., "Upper bound of track pT for TOF PID for pion selection"};
+  Configurable<double> nSigmaTofPiMax{"nSigmaTofPiMax", 3., "Nsigma cut on TOF only for pion selection"};
+  Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 5., "Nsigma cut on TOF combined with TPC for pion selection"};
+
+  Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", 0.15, "Lower bound of track pT for TOF PID for proton selection"};
+  Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 5., "Upper bound of track pT for TOF PID for proton selection"};
+  Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 3., "Nsigma cut on TOF only for proton selection"};
+  Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 5., "Nsigma cut on TOF combined with TPC for proton selection"};
 
   // invariant mass cuts
   Configurable<double> sigmaInvMassLambda{"sigmaInvMassLambda", 0.0025, "Invariant mass cut for lambda (sigma)"};
@@ -91,6 +103,8 @@ struct HfCandidateSelectorToXiPi {
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
   OutputObj<TH1F> hCTauXic{TH1F("hCTauXic", "Xic ctau;ctau;entries", 500, 0., 10.)};
+  OutputObj<TH1F> hNEventsSaved{TH1F("hNEventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)};
+  // bin1 -> number of events taking collisionId from cascade, bin2 -> number of events taking collisionId from primary pion, bin3 -> number of times collId cascade id different from collId primary pi
 
   // temporary histo for debugging (to be removed after test on hyperloop)
   OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
@@ -98,40 +112,27 @@ struct HfCandidateSelectorToXiPi {
 
   void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
-    TrackSelectorPID selectorPionFromOme(kPiPlus);
-    selectorPionFromOme.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPionFromOme.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPionFromOme.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPionFromOme.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPionFromOme.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPionFromOme.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
-    TrackSelectorPID selectorPionFromCasc(kPiPlus);
-    selectorPionFromCasc.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPionFromCasc.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPionFromCasc.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPionFromCasc.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPionFromCasc.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPionFromCasc.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
-    TrackSelectorPID selectorPionFromV0(kPiPlus);
-    selectorPionFromV0.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPionFromV0.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPionFromV0.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPionFromV0.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPionFromV0.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPionFromV0.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    TrackSelectorPID selectorPion(kPiPlus);
+    selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
+    selectorPion.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
 
     TrackSelectorPID selectorProton(kProton);
-    selectorProton.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorProton.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorProton.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorProton.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
+    selectorProton.setRangeNSigmaTPC(-nSigmaTpcPrMax, nSigmaTpcPrMax);
+    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
+    selectorProton.setRangePtTOF(ptPrPidTofMin, ptPrPidTofMax);
+    selectorProton.setRangeNSigmaTOF(-nSigmaTofPrMax, nSigmaTofPrMax);
+    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
 
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
+
+    int collIdCasc = -999;
+    int collIdPrimaryPi = -999;
 
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
@@ -200,8 +201,11 @@ struct HfCandidateSelectorToXiPi {
         resultSelections = false;
       }
 
-      // cut on primary pion dcaXY
+      // cut on primary pion dcaXY and impact parameter
       if ((candidate.dcaXYToPVPrimaryPi() < dcaXYPriPiMin) || (candidate.dcaXYToPVPrimaryPi() > dcaXYPriPiMax)) {
+        resultSelections = false;
+      }
+      if (candidate.impactParPrimaryPiZ() > impactParameterZPriPiMax) {
         resultSelections = false;
       }
 
@@ -267,14 +271,14 @@ struct HfCandidateSelectorToXiPi {
       }
       if (usePidTpcOnly) {
         pidProton = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
-        pidPiFromLam = selectorPionFromV0.getStatusTrackPIDTPC(trackPiFromLam);
-        pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDTPC(trackPiFromCasc);
-        pidPiFromOme = selectorPionFromOme.getStatusTrackPIDTPC(trackPiFromOmeg);
+        pidPiFromLam = selectorPion.getStatusTrackPIDTPC(trackPiFromLam);
+        pidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
+        pidPiFromOme = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
       } else if (usePidTpcTofCombined) {
         pidProton = selectorProton.getStatusTrackPIDAll(trackPrFromLam);
-        pidPiFromLam = selectorPionFromV0.getStatusTrackPIDAll(trackPiFromLam);
-        pidPiFromCasc = selectorPionFromCasc.getStatusTrackPIDAll(trackPiFromCasc);
-        pidPiFromOme = selectorPionFromOme.getStatusTrackPIDAll(trackPiFromOmeg);
+        pidPiFromLam = selectorPion.getStatusTrackPIDAll(trackPiFromLam);
+        pidPiFromCasc = selectorPion.getStatusTrackPIDAll(trackPiFromCasc);
+        pidPiFromOme = selectorPion.getStatusTrackPIDAll(trackPiFromOmeg);
       }
 
       bool statusPidLambda = false;
@@ -383,6 +387,18 @@ struct HfCandidateSelectorToXiPi {
         hInvMassOmegac->Fill(invMassOmegac);
         hCTauOmegac->Fill(candidate.ctauOmegac());
         hCTauXic->Fill(candidate.ctauXic());
+
+        if (trackPiFromCasc.collisionId() != collIdCasc) {
+          hNEventsSaved->Fill(0.5);
+          collIdCasc = trackPiFromCasc.collisionId();
+        }
+        if (trackPiFromOmeg.collisionId() != collIdPrimaryPi) {
+          hNEventsSaved->Fill(1.5);
+          collIdPrimaryPi = trackPiFromOmeg.collisionId();
+        }
+        if (trackPiFromOmeg.collisionId() != trackPiFromCasc.collisionId()) {
+          hNEventsSaved->Fill(2.5);
+        }
       }
     }
   }
