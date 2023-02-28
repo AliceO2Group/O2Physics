@@ -16,6 +16,9 @@
 /// \brief  Header for the spectraTOF task for the analysis of the spectra with the TOF and TPC detectors.
 ///
 
+#ifndef PWGLF_TASKS_SPECTRATOF_H_
+#define PWGLF_TASKS_SPECTRATOF_H_
+
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -185,3 +188,5 @@ static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazm
                                                         "dcazmat/neg/el", "dcazmat/neg/mu", "dcazmat/neg/pi",
                                                         "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                         "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
+
+#endif

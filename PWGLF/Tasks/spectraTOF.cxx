@@ -210,18 +210,19 @@ struct tofSpectra {
     const AxisSpec dcaZAxis{binsDca, "DCA_{z} (cm)"};
 
     if (enableTrackCutHistograms) {
+      const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
       // its histograms
-      histos.add("track/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
-      histos.add("track/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
+      histos.add("track/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH2D, {{8, -0.5, 7.5}, chargeAxis});
+      histos.add("track/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH2D, {{100, 0, 40}, chargeAxis});
 
       // tpc histograms
-      histos.add("track/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-      histos.add("track/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-      histos.add("track/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-      histos.add("track/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
-      histos.add("track/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
-      histos.add("track/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
-      histos.add("track/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
+      histos.add("track/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH2D, {{165, -0.5, 164.5}, chargeAxis});
+      histos.add("track/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH2D, {{165, -0.5, 164.5}, chargeAxis});
+      histos.add("track/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH2D, {{165, -0.5, 164.5}, chargeAxis});
+      histos.add("track/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH2D, {{165, -0.5, 164.5}, chargeAxis});
+      histos.add("track/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH2D, {{100, 0., 1.}, chargeAxis});
+      histos.add("track/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH2D, {{60, 0.7, 1.3}, chargeAxis});
+      histos.add("track/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH2D, {{100, 0, 10}, chargeAxis});
 
       histos.addClone("track/ITS/itsNCls", "track/selected/ITS/itsNCls");
       histos.addClone("track/ITS/itsChi2NCl", "track/selected/ITS/itsChi2NCl");
@@ -683,18 +684,18 @@ struct tofSpectra {
       histos.fill(HIST("tracksel"), 2);
       if (enableTrackCutHistograms) {
         if (track.hasITS() && track.hasTPC()) {
-          histos.fill(HIST("track/ITS/itsNCls"), track.itsNCls());
-          histos.fill(HIST("track/ITS/itsChi2NCl"), track.itsChi2NCl());
+          histos.fill(HIST("track/ITS/itsNCls"), track.itsNCls(), track.sign());
+          histos.fill(HIST("track/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
 
-          histos.fill(HIST("track/TPC/tpcNClsFindable"), track.tpcNClsFindable());
-          histos.fill(HIST("track/TPC/tpcNClsFound"), track.tpcNClsFound());
-          histos.fill(HIST("track/TPC/tpcNClsShared"), track.tpcNClsShared());
-          histos.fill(HIST("track/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
-          histos.fill(HIST("track/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-          histos.fill(HIST("track/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls());
-          histos.fill(HIST("track/TPC/tpcChi2NCl"), track.tpcChi2NCl());
+          histos.fill(HIST("track/TPC/tpcNClsFindable"), track.tpcNClsFindable(), track.sign());
+          histos.fill(HIST("track/TPC/tpcNClsFound"), track.tpcNClsFound(), track.sign());
+          histos.fill(HIST("track/TPC/tpcNClsShared"), track.tpcNClsShared(), track.sign());
+          histos.fill(HIST("track/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows(), track.sign());
+          histos.fill(HIST("track/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), track.sign());
+          histos.fill(HIST("track/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls(), track.sign());
+          histos.fill(HIST("track/TPC/tpcChi2NCl"), track.tpcChi2NCl(), track.sign());
 
-          histos.fill(HIST("track/TRD/trdSignal"), track.p(), track.trdSignal());
+          histos.fill(HIST("track/TRD/trdSignal"), track.p(), track.trdSignal(), track.sign());
         }
       }
     }
@@ -709,16 +710,16 @@ struct tofSpectra {
         histos.fill(HIST("tracksel"), 4);
       }
       if (enableTrackCutHistograms) {
-        histos.fill(HIST("track/selected/ITS/itsNCls"), track.itsNCls());
-        histos.fill(HIST("track/selected/ITS/itsChi2NCl"), track.itsChi2NCl());
+        histos.fill(HIST("track/selected/ITS/itsNCls"), track.itsNCls(), track.sign());
+        histos.fill(HIST("track/selected/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
 
-        histos.fill(HIST("track/selected/TPC/tpcNClsFindable"), track.tpcNClsFindable());
-        histos.fill(HIST("track/selected/TPC/tpcNClsFound"), track.tpcNClsFound());
-        histos.fill(HIST("track/selected/TPC/tpcNClsShared"), track.tpcNClsShared());
-        histos.fill(HIST("track/selected/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
-        histos.fill(HIST("track/selected/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        histos.fill(HIST("track/selected/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls());
-        histos.fill(HIST("track/selected/TPC/tpcChi2NCl"), track.tpcChi2NCl());
+        histos.fill(HIST("track/selected/TPC/tpcNClsFindable"), track.tpcNClsFindable(), track.sign());
+        histos.fill(HIST("track/selected/TPC/tpcNClsFound"), track.tpcNClsFound(), track.sign());
+        histos.fill(HIST("track/selected/TPC/tpcNClsShared"), track.tpcNClsShared(), track.sign());
+        histos.fill(HIST("track/selected/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows(), track.sign());
+        histos.fill(HIST("track/selected/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), track.sign());
+        histos.fill(HIST("track/selected/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls(), track.sign());
+        histos.fill(HIST("track/selected/TPC/tpcChi2NCl"), track.tpcChi2NCl(), track.sign());
       }
     }
     if constexpr (fillHistograms) {
