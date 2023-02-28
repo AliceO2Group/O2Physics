@@ -65,6 +65,76 @@ static const std::vector<std::string> particleNames{"He3"};
 float kHyperPDG = 1010010030;
 } // namespace
 
+namespace o2::aod
+{
+/// FemtoDreamCollision
+namespace hyperrec
+{
+DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);      //! bool: true for matter
+DECLARE_SOA_COLUMN(Px, px, float);                 //! Momentum of the candidate (x direction)
+DECLARE_SOA_COLUMN(Py, py, float);                 //! Momentum of the candidate (y direction)
+DECLARE_SOA_COLUMN(Pz, pz, float);                 //! Momentum of the candidate (z direction)
+DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);       //! Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);       //! Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);       //! Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(DcaV0Daug, dcaV0Daug, float);   //! DCA between daughters
+DECLARE_SOA_COLUMN(CosPA, cosPA, double);          //! Cosine of the pointing angle
+DECLARE_SOA_COLUMN(NSigmaHe, nSigmaHe, float);     //! Number of sigmas of the He daughter
+DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, int);   //! Number of TPC clusters of the He daughter
+DECLARE_SOA_COLUMN(DcaHe, dcaHe, float);           //! DCA between He daughter and V0
+DECLARE_SOA_COLUMN(DcaPi, dcaPi, float);           //! DCA between pi daughter and V0
+DECLARE_SOA_COLUMN(GenPx, genPx, float);           //! Momentum of the candidate (x direction)
+DECLARE_SOA_COLUMN(GenPy, genPy, float);           //! Momentum of the candidate (y direction)
+DECLARE_SOA_COLUMN(GenPz, genPz, float);           //! Momentum of the candidate (z direction)
+DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float); //! Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float); //! Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float); //! Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(IsReco, isReco, bool);          //! bool: true for reco
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);      //! bool: true for signal
+} // namespace hyperrec
+
+DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
+                  o2::soa::Index<>,
+                  o2::aod::hyperrec::Px,
+                  o2::aod::hyperrec::Py,
+                  o2::aod::hyperrec::Pz,
+                  o2::aod::hyperrec::XDecVtx,
+                  o2::aod::hyperrec::YDecVtx,
+                  o2::aod::hyperrec::ZDecVtx,
+                  o2::aod::hyperrec::DcaV0Daug,
+                  o2::aod::hyperrec::CosPA,
+                  o2::aod::hyperrec::NSigmaHe,
+                  o2::aod::hyperrec::NTPCclusHe,
+                  o2::aod::hyperrec::DcaHe,
+                  o2::aod::hyperrec::DcaPi);
+
+DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
+                  o2::soa::Index<>,
+                  o2::aod::hyperrec::Px,
+                  o2::aod::hyperrec::Py,
+                  o2::aod::hyperrec::Pz,
+                  o2::aod::hyperrec::XDecVtx,
+                  o2::aod::hyperrec::YDecVtx,
+                  o2::aod::hyperrec::ZDecVtx,
+                  o2::aod::hyperrec::DcaV0Daug,
+                  o2::aod::hyperrec::CosPA,
+                  o2::aod::hyperrec::NSigmaHe,
+                  o2::aod::hyperrec::NTPCclusHe,
+                  o2::aod::hyperrec::DcaHe,
+                  o2::aod::hyperrec::DcaPi,
+                  o2::aod::hyperrec::GenPx,
+                  o2::aod::hyperrec::GenPy,
+                  o2::aod::hyperrec::GenPz,
+                  o2::aod::hyperrec::GenXDecVtx,
+                  o2::aod::hyperrec::GenYDecVtx,
+                  o2::aod::hyperrec::GenZDecVtx,
+                  o2::aod::hyperrec::IsReco,
+                  o2::aod::hyperrec::IsSignal);
+
+using DataHypCand = o2::aod::DataHypCands::iterator;
+using MCHypCand = o2::aod::MCHypCands::iterator;
+} // namespace o2::aod
+
 struct hyperCandidate {
   int posTrackID; // TODO: check whether int is enough
   int negTrackID;
@@ -88,6 +158,9 @@ struct hyperCandidate {
 };
 
 struct hyperRecoTask {
+
+  Produces<aod::DataHypCands> outputDataTable;
+  Produces<aod::MCHypCands> outputMCTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Selection criteria
@@ -351,7 +424,9 @@ struct hyperRecoTask {
 
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
-    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
     if (!collision.sel8())
       return;
 
@@ -361,14 +436,20 @@ struct hyperRecoTask {
       fillCandidateData(collision, V0s, tracks);
     }
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    for (auto& hypCand : hyperCandidates) {
+      outputDataTable(hypCand.mom[0], hypCand.mom[1], hypCand.mom[2],
+                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                      hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
+                      hypCand.nTPCClustersHe3, hypCand.he3DCAXY, hypCand.piDCAXY);
+    }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
 
   void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
     if (!collision.sel8())
       return;
 
@@ -378,8 +459,14 @@ struct hyperRecoTask {
       fillMCinfo(trackLabelsMC, particlesMC);
     }
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    for (auto& hypCand : hyperCandidates) {
+      outputMCTable(hypCand.mom[0], hypCand.mom[1], hypCand.mom[2],
+                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                    hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
+                    hypCand.nTPCClustersHe3, hypCand.he3DCAXY, hypCand.piDCAXY,
+                    hypCand.gMom[0], hypCand.gMom[1], hypCand.gMom[2],
+                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
+    }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", true);
 };
