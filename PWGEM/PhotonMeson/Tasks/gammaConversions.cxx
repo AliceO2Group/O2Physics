@@ -159,6 +159,7 @@ struct GammaConversions {
     std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
       {"hConvPointR_recalc", "hConvPointR_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
       {"hConvPointZ_recalc", "hConvPointZ_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
+      {"hKFParticleChi2", "hKFParticleChi2;chi2;counts", {HistType::kTH1F, {gAxis_chi2}}},
     };
     // PDG code of all particles to analyize the purity. Only for MC and only for Rec
     std::vector<MyHistogramSpec> lMcPDGCode{
@@ -751,6 +752,7 @@ struct GammaConversions {
   {
     fillTH1(theContainer, "hConvPointR_recalc", theV0.recalculatedVtxR());
     fillTH1(theContainer, "hConvPointZ_recalc", theV0.recalculatedVtxZ());
+    fillTH1(theContainer, "hConvPointZ_recalc", theV0.chiSquare());
   }
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
