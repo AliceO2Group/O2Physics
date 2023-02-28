@@ -51,8 +51,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::TracksCov>;
+using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels, aod::TracksCov>;
 
 struct skimmerGammaConversions {
 
@@ -95,6 +95,11 @@ struct skimmerGammaConversions {
     {kNotSameMothers, "kNotSameMothers"},
     {kMotherHasNoDaughter, "kMotherHasNoDaughter"},
     {kGoodMcMother, "kGoodMcMother"}};
+
+  struct recalculatedVertexParameters{
+    float recalculatedConversionPoint[3];
+    float KFParticleChi2;
+  };
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
@@ -175,13 +180,13 @@ struct skimmerGammaConversions {
   }
 
   template <typename TV0>
-  void fillV0RecalculatedTable(TV0 const& theV0, float* recalculatedVtx)
+  void fillV0RecalculatedTable(TV0 const& theV0, recalculatedVertexParameters recalculatedVertex)
   {
     fFuncTableV0Recalculated(
-      recalculatedVtx[0],
-      recalculatedVtx[1],
-      recalculatedVtx[2],
-      0.0); // temporarily add 0
+      recalculatedVertex.recalculatedConversionPoint[0],
+      recalculatedVertex.recalculatedConversionPoint[1],
+      recalculatedVertex.recalculatedConversionPoint[2],
+      recalculatedVertex.KFParticleChi2);
   }
 
   template <typename TTRACK>
@@ -216,12 +221,12 @@ struct skimmerGammaConversions {
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
 
-      float recalculatedVtx[3];
-      Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
+      recalculatedVertexParameters recalculatedVertex;
+      Vtx_recalculation(lTrackPos, lTrackNeg, &recalculatedVertex);
 
       fillTrackTable(lV0, lTrackPos, true);
       fillTrackTable(lV0, lTrackNeg, false);
-      fillV0RecalculatedTable(lV0, recalculatedVtx);
+      fillV0RecalculatedTable(lV0, recalculatedVertex);
     }
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
@@ -263,12 +268,12 @@ struct skimmerGammaConversions {
 
         fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(lV0Status);
 
-        float recalculatedVtx[3];
-        Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
+        recalculatedVertexParameters recalculatedVertex;
+        Vtx_recalculation(lTrackPos, lTrackNeg, &recalculatedVertex);
 
         fillTrackTable(lV0, lTrackPos, true);
         fillTrackTable(lV0, lTrackNeg, false);
-        fillV0RecalculatedTable(lV0, recalculatedVtx);
+        fillV0RecalculatedTable(lV0, recalculatedVertex);
       }
     }
   }
@@ -382,7 +387,7 @@ struct skimmerGammaConversions {
   }
 
   template <typename TrackPrecision = float, typename T>
-  void Vtx_recalculation(T lTrackPos, T lTrackNeg, float* conversionPosition)
+  void Vtx_recalculation(T lTrackPos, T lTrackNeg, recalculatedVertexParameters* recalculatedVertex)
   {
     o2::base::Propagator* prop = o2::base::Propagator::Instance(); //This singleton propagator requires some initialisation of the CCDB object.
     float bz = prop->getNominalBz();
@@ -396,8 +401,8 @@ struct skimmerGammaConversions {
     o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
     o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
 
-    conversionPosition[0] = (helixPos.xC * helixNeg.rC + helixNeg.xC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
-    conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
+    recalculatedVertex->recalculatedConversionPoint[0] = (helixPos.xC * helixNeg.rC + helixNeg.xC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
+    recalculatedVertex->recalculatedConversionPoint[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
 
     //I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
     o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
@@ -405,8 +410,8 @@ struct skimmerGammaConversions {
 
     //I think this calculation gets the closest point on the track to the conversion point
     //This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-    Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
-    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixNeg.yC), (conversionPosition[0] - helixNeg.xC));
+    Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(recalculatedVertex->recalculatedConversionPoint[1] - helixPos.yC), (recalculatedVertex->recalculatedConversionPoint[0] - helixPos.xC));
+    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(recalculatedVertex->recalculatedConversionPoint[1] - helixNeg.yC), (recalculatedVertex->recalculatedConversionPoint[0] - helixNeg.xC));
 
     Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
     Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
@@ -435,13 +440,12 @@ struct skimmerGammaConversions {
                        o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
 
     // TODO: This is still off and needs to be checked...
-    conversionPosition[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
-  
-    KFPTrack kFTrackPos = createKFPTrackFromTrackParametrizationWithError(trackPosInformationCopy, lTrackPos.sign(), lTrackPos.tpcNClsFound(), lTrackPos.tpcChi2NCl());
+    recalculatedVertex->recalculatedConversionPoint[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
+    KFPTrack kFTrackPos = createKFPTrackFromTrackParCov(trackPosInformationCopy, lTrackPos.sign(), lTrackPos.tpcNClsFound(), lTrackPos.tpcChi2NCl());
     int pdg_ePlus = -11; //e+
     KFParticle kFParticleEPlus(kFTrackPos, pdg_ePlus);
 
-    KFPTrack kFTrackNeg = createKFPTrackFromTrackParametrizationWithError(trackNegInformationCopy, lTrackNeg.sign(), lTrackNeg.tpcNClsFound(), lTrackNeg.tpcChi2NCl());
+    KFPTrack kFTrackNeg = createKFPTrackFromTrackParCov(trackNegInformationCopy, lTrackNeg.sign(), lTrackNeg.tpcNClsFound(), lTrackNeg.tpcChi2NCl());
     int pdg_eMinus = 11; //e-
     KFParticle kFParticleEMinus(kFTrackNeg, pdg_eMinus);
 
@@ -449,8 +453,7 @@ struct skimmerGammaConversions {
     gammaKF.SetConstructMethod(2);
     gammaKF.AddDaughter(kFParticleEPlus);
     gammaKF.AddDaughter(kFParticleEMinus);
-
-    float test = gammaKF.GetChi2();
+    recalculatedVertex->KFParticleChi2 = gammaKF.GetChi2();
   }
 };
 

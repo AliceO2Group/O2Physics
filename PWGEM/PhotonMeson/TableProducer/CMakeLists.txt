@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(skimmergammaconversions
                     SOURCES skimmerGammaConversions.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmergammaconversionstruthonlymc
