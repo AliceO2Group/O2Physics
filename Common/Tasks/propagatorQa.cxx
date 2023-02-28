@@ -59,6 +59,7 @@ struct propagatorQa {
 
   Configurable<int> NbinsDeltaPt{"NbinsDeltaPt", 100, "binning for delta-pt"};
   Configurable<float> DeltaPtLimit{"DeltaPtLimit", 1, "limit for delta-pt"};
+  Configurable<int> minTPCClusters{"minTPCClusters", -1, "minimum number of TPC clusters"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -198,7 +199,7 @@ struct propagatorQa {
     }
   }
 
-  void process(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processMC(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -206,6 +207,9 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
+      if (track.tpcNClsFound() < minTPCClusters)
+        continue;
+
       if (!track.has_mcParticle())
         continue;
       auto mctrack = track.mcParticle();
@@ -313,6 +317,123 @@ struct propagatorQa {
         histos.fill(HIST("hdcaXYusedInSVertexer"), lDCA);
     }
   }
+  PROCESS_SWITCH(propagatorQa, processMC, "process MC", true);
+
+  void processData(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks, aod::BCsWithTimestamps const&)
+  {
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    gpu::gpustd::array<float, 2> dcaInfo;
+
+    for (auto& track : tracks) {
+      if (track.tpcNClsFound() < minTPCClusters)
+        continue;
+
+      if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
+        continue;
+
+      std::array<float, 3> pos;
+      lTrackParametrization = getTrackPar(track);
+      lTrackParametrization.getXYZGlo(pos);
+      float lRadiusOfLastUpdate = TMath::Sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
+      float lDCA = track.dcaXY();
+
+      //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+      // Simple snippet for analytical DCA (no e-loss)
+      // |<----L---->|
+      // |<-R->|<-d->|
+      // *-----)     X
+      // |           ^ primary vertex
+      // ^ circle center
+
+      o2::math_utils::CircleXYf_t lCircle;
+      float sna, csa;
+      lTrackParametrization.getCircleParams(d_bz, lCircle, sna, csa);
+      float lR = lCircle.rC;
+      float lL = TMath::Sqrt(
+        TMath::Power(lCircle.xC - collision.posX(), 2) +
+        TMath::Power(lCircle.yC - collision.posY(), 2));
+      float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
+      //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+
+      dcaInfo[0] = 999;
+      dcaInfo[1] = 999;
+
+      //*+-+*
+      // Recalculate the propagation
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lTrackParametrization, maxPropagStep, matCorr, &dcaInfo);
+      float lRecalculatedDCA = dcaInfo[0];
+      //*+-+*
+      histos.fill(HIST("hDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
+      histos.fill(HIST("hDeltaPtVsPt"), track.pt(), track.pt() - lTrackParametrization.getPt());
+
+      histos.fill(HIST("hUpdateRadii"), lRadiusOfLastUpdate);
+      histos.fill(HIST("hTrackX"), lTrackParametrization.getX());
+      histos.fill(HIST("hdcaXYall"), lDCA);
+      histos.fill(HIST("hCircleDCA"), lCircleDCA);
+      histos.fill(HIST("hLastUpdateRadiusVsDCA"), lDCA, lRadiusOfLastUpdate);
+      histos.fill(HIST("hTrackXVsDCA"), lDCA, lTrackParametrization.getX());
+      histos.fill(HIST("hLastUpdateRadiusVsCircleDCA"), lCircleDCA, lRadiusOfLastUpdate);
+      histos.fill(HIST("hTrackXVsCircleDCA"), lCircleDCA, lTrackParametrization.getX());
+      histos.fill(HIST("hCircleDCAVsDCA"), lDCA, lCircleDCA);
+      histos.fill(HIST("hDeltaDCAs"), lCircleDCA - lDCA);
+      histos.fill(HIST("hDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
+      histos.fill(HIST("hRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
+
+      // ITS cluster map
+      float lMCCreation = 0.1; // dummy value, we don't know
+
+      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation, track.pt());
+
+      // A hack: use DCA as equiv to primary
+      if (TMath::Abs(lDCA) < 0.05) { // 500 microns
+        histos.fill(HIST("hPrimaryDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
+        histos.fill(HIST("hPrimaryDeltaPtVsPt"), track.pt(), track.pt() - lTrackParametrization.getPt());
+        histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
+        histos.fill(HIST("hPrimaryTrackX"), lTrackParametrization.getX());
+        histos.fill(HIST("hPrimarydcaXYall"), lDCA);
+        histos.fill(HIST("hPrimaryCircleDCA"), lCircleDCA);
+        histos.fill(HIST("hPrimaryLastUpdateRadiusVsDCA"), lDCA, lRadiusOfLastUpdate);
+        histos.fill(HIST("hPrimaryTrackXVsDCA"), lDCA, lTrackParametrization.getX());
+        histos.fill(HIST("hPrimaryLastUpdateRadiusVsCircleDCA"), lCircleDCA, lRadiusOfLastUpdate);
+        histos.fill(HIST("hPrimaryTrackXVsCircleDCA"), lCircleDCA, lTrackParametrization.getX());
+        histos.fill(HIST("hPrimaryCircleDCAVsDCA"), lDCA, lCircleDCA);
+        histos.fill(HIST("hPrimaryDeltaDCAs"), lCircleDCA - lDCA);
+        histos.fill(HIST("hPrimaryDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
+        histos.fill(HIST("hPrimaryRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
+        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation, track.pt());
+      }
+
+      // determine if track was used in svertexer
+      bool usedInSVertexer = false;
+      bool lUsedByV0 = false, lUsedByCascade = false;
+      for (auto& V0 : V0s) {
+        if (V0.posTrackId() == track.globalIndex()) {
+          lUsedByV0 = true;
+          break;
+        }
+        if (V0.negTrackId() == track.globalIndex()) {
+          lUsedByV0 = true;
+          break;
+        }
+      }
+      for (auto& cascade : cascades) {
+        if (cascade.bachelorId() == track.globalIndex()) {
+          lUsedByCascade = true;
+          break;
+        }
+      }
+      if (lUsedByV0 || lUsedByCascade)
+        usedInSVertexer = true;
+
+      if (usedInSVertexer)
+        histos.fill(HIST("hUpdateRadiiusedInSVertexer"), lRadiusOfLastUpdate);
+      if (usedInSVertexer)
+        histos.fill(HIST("hdcaXYusedInSVertexer"), lDCA);
+    }
+  }
+  PROCESS_SWITCH(propagatorQa, processData, "process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
