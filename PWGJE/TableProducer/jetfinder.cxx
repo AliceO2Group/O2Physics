@@ -78,6 +78,7 @@ struct JetFinderTask {
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
   Configurable<float> jetPtMin{"jetPtMin", 10.0, "minimum jet pT"};
+  Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<std::vector<double>> jetR{"jetR", {0.4}, "jet resolution parameters"};
   // FIXME: This should be named jetType. However, as of Aug 2021, it doesn't appear possible
   //        to set both global and task level options. This should be resolved when workflow
@@ -116,6 +117,7 @@ struct JetFinderTask {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
     }
     jetFinder.jetPtMin = jetPtMin;
+    jetFinder.ghostRepeatN = ghostRepeat;
   }
 
   template <typename T>
