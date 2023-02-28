@@ -21,9 +21,9 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -34,14 +34,14 @@ using McMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksD
 namespace
 {
 enum ParticleType {
-  ParticleIsID = 0,
-  ParticleIsMuon,
-  ParticleIsSecondary,
-  ParticleHasLightParent,
-  ParticleHasCharmParent,
-  ParticleHasBeautyParent,
-  ParticleHasQuarkoniumParent,
-  ParticleHasTauParent
+  IsID = 0, // this particle is identified
+  IsMuon, // this is a muon
+  IsSecondary, // this is a secondary particle
+  HasLightParent, // this particle has a light flavor parent
+  HasCharmParent, // this particle has a charm parent
+  HasBeautyParent, // this particle has a beauty parent
+  HasQuarkoniumParent, // this particle has a quarkonium parent
+  HasTauParent // this particle has a tau parent
 };
 
 const auto nSrcs(7);
@@ -55,9 +55,11 @@ const TString muonSources[nSrcs]{
   "Unidentified"};
 } // namespace
 
-struct HfTaskMuonSourceMC {
-  Configurable<bool> mApplyMcMask{"mApplyMcMask", true, "Flag of apply the mcMask selection"};
-  Configurable<int> mTrackType{"mTrackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
+struct HfTaskMuonSourceMc {
+  Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
+  Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
+  
+  const double etaLow(-3.6), etaHigh(-2.5), edgeZ(10.);
 
   HistogramRegistry registry{
     "registry",
@@ -75,24 +77,26 @@ struct HfTaskMuonSourceMC {
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
 
-    for (auto& src : muonSources) {
+    for (auto const& src : muonSources) {
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
       registry.add(Form("h2%sPtChi2", src.Data()), "", h2PtChi2);
     }
   }
 
+  // get the bitmask for muon sources identification
   uint8_t getMask(const McMuons::iterator& muon)
   {
     uint8_t mask(0);
     if (muon.has_mcParticle()) {
-      SETBIT(mask, ParticleIsID);
+      SETBIT(mask, IsID);
     } else {
       return mask;
     }
 
     auto mcPart(muon.mcParticle());
-    if (abs(mcPart.pdgCode()) == 13) {
-      SETBIT(mask, ParticleIsMuon);
+    if (std::abs(mcPart.pdgCode()) == 13) {
+      // Muon
+      SETBIT(mask, IsMuon);
     } else {
       return mask;
     }
@@ -100,95 +104,110 @@ struct HfTaskMuonSourceMC {
     while (mcPart.has_mothers()) {
       mcPart = *(mcPart.mothers_first_as<aod::McParticles>());
 
-      const auto pdgAbs(abs(mcPart.pdgCode()));
+      const auto pdgAbs(std::abs(mcPart.pdgCode()));
       if (pdgAbs < 10)
         break; // Quark
 
       if (!mcPart.producedByGenerator()) { // Produced in transport code
-        SETBIT(mask, ParticleIsSecondary);
+        SETBIT(mask, IsSecondary);
         continue;
       }
 
       if (pdgAbs == 15) {
-        SETBIT(mask, ParticleHasTauParent);
+        // Tau
+        SETBIT(mask, HasTauParent);
         continue;
       }
 
       const int pdgRem(pdgAbs % 100000);
-      if ((pdgRem < 100) || (pdgRem >= 1000))
+      if ((pdgRem < 100) || (pdgRem >= 1000)) {
         continue;
+      }
+      // compute the flavor of constituent quark
       const int flv(pdgRem / TMath::Power(10, static_cast<int>(TMath::Log10(pdgRem))));
       if (flv > 6) {
+        // no more than 6 flavors
         continue;
       }
       if (flv < 4) {
-        SETBIT(mask, ParticleHasLightParent);
+        // light flavor
+        SETBIT(mask, HasLightParent);
         continue;
       }
 
       auto pdgData(TDatabasePDG::Instance()->GetParticle(mcPart.pdgCode()));
       if (pdgData && !pdgData->AntiParticle()) {
-        SETBIT(mask, ParticleHasQuarkoniumParent);
+        SETBIT(mask, HasQuarkoniumParent);
       } else if (flv == 4) {
-        SETBIT(mask, ParticleHasCharmParent);
+        SETBIT(mask, HasCharmParent);
       } else {
-        SETBIT(mask, ParticleHasBeautyParent);
+        SETBIT(mask, HasBeautyParent);
       }
     }
 
     return mask;
   }
 
+  // this particle is muon
   bool isMuon(const uint8_t& mask)
   {
-    return (TESTBIT(mask, ParticleIsID) && TESTBIT(mask, ParticleIsMuon));
+    return (TESTBIT(mask, IsID) && TESTBIT(mask, IsMuon));
   }
 
+  // this muon is come from beauty decay and does not have light flavor parent
   bool isBeautyMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, ParticleHasBeautyParent) && (!TESTBIT(mask, ParticleHasLightParent)));
+    return (isMuon(mask) && TESTBIT(mask, HasBeautyParent) && (!TESTBIT(mask, HasLightParent)));
   }
 
+  // this muon is directly come from beauty decay
   bool isBeautyDecayMu(const uint8_t& mask)
   {
-    return (isBeautyMu(mask) && (!TESTBIT(mask, ParticleHasCharmParent)));
+    return (isBeautyMu(mask) && (!TESTBIT(mask, HasCharmParent)));
   }
 
+  // this muon is come from non-prompt charm decay and does not have light flavor parent
   bool isNonpromptCharmMu(const uint8_t& mask)
   {
-    return (isBeautyMu(mask) && TESTBIT(mask, ParticleHasCharmParent));
+    return (isBeautyMu(mask) && TESTBIT(mask, HasCharmParent));
   }
 
+  // this muon is come from prompt charm decay and does not have light flavor parent
   bool isPromptCharmMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, ParticleHasCharmParent) && (!TESTBIT(mask, ParticleHasBeautyParent)) && (!TESTBIT(mask, ParticleHasLightParent)));
+    return (isMuon(mask) && TESTBIT(mask, HasCharmParent) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasLightParent)));
   }
 
+  // this muon is come from light flavor quark decay
   bool isLightDecayMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, ParticleHasLightParent) && (!TESTBIT(mask, ParticleIsSecondary)));
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)));
   }
 
+  // this muon is come from transport
   bool isSecondaryMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, ParticleIsSecondary));
+    return (isMuon(mask) && TESTBIT(mask, IsSecondary));
   }
 
+  // this is a hadron
   bool isHadron(const uint8_t& mask)
   {
-    return (TESTBIT(mask, ParticleIsID) && (!TESTBIT(mask, ParticleIsMuon)));
+    return (TESTBIT(mask, IsID) && (!TESTBIT(mask, IsMuon)));
   }
 
+  // this particle is undientified
   bool isUnidentified(const uint8_t& mask)
   {
-    return (!TESTBIT(mask, ParticleIsID));
+    return (!TESTBIT(mask, IsID));
   }
 
+  // fill the histograms of each particle types
   void fillHistograms(const McMuons::iterator& muon)
   {
     const auto mask(getMask(muon));
     const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT());
-    const auto dca(std::sqrt(pow(muon.fwdDcaX(), 2.) + pow(muon.fwdDcaY(), 2.)));
+    const auto dca(std::sqrt(std::pow(muon.fwdDcaX(), 2.) + std::pow(muon.fwdDcaY(), 2.)));
 
     if (isBeautyDecayMu(mask)) {
       registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
@@ -216,35 +235,35 @@ struct HfTaskMuonSourceMC {
 
   void process(MyCollisions::iterator const& collision, McMuons const& muons, aod::McParticles const&)
   {
+    // event selections
     if (!collision.sel8()) {
       return;
     }
-    if (abs(collision.posZ()) > 10.) {
+    if (std::abs(collision.posZ()) > edgeZ) {
       return;
     }
 
     for (const auto& muon : muons) {
-      if (muon.trackType() != mTrackType) {
+      // muon selections
+      if (muon.trackType() != trackType) {
         continue;
       }
-      if (mApplyMcMask && (muon.mcMask() != 0)) {
+      if (applyMcMask && (muon.mcMask() != 0)) {
         continue;
       }
       const auto eta(muon.eta());
-      if ((eta >= -2.5) || (eta < -3.6)) {
+      if ((eta >= etaHigh) || (eta < etaLow)) {
         continue;
       }
 
       fillHistograms(muon);
     } // loop over muons
-
-    return;
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskMuonSourceMC>(cfgc),
+    adaptAnalysisTask<HfTaskMuonSourceMc>(cfgc),
   };
 }
