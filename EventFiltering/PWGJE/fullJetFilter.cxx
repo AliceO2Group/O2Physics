@@ -67,6 +67,8 @@ struct fullJetFilter {
   Configurable<double> f_jetR{"f_jetR", 0.2, "jet R to trigger on"};
   Configurable<float> f_gammaPtMin{"f_gammaPtMin", 4.0, "minimum gamma pT cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  Configurable<bool> b_doJetTrigger{"b_doJetTrigger", true, "run the full jet trigger"};
+  Configurable<bool> b_doGammaTrigger{"b_doGammaTrigger", true, "run the gamma trigger"};
 
   void init(o2::framework::InitContext&)
   {
@@ -136,46 +138,48 @@ struct fullJetFilter {
       return; // Skip events where EMCAL is not live
     }
 
-    // Store pt of leading jet inside of the emcal to trigger on
-    for (const auto& jet : jets) {
-      hEmcJetPtEta->Fill(jet.pt(), jet.eta());
-      hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
-      if (isJetInEmcal(jet)) {
-        if (jet.pt() > maxSelectedJetPt)
-          maxSelectedJetPt = jet.pt();
-      }
-    }
-
-    for (const auto& cluster : clusters) {
-      double clusterPt = cluster.energy() / std::cosh(cluster.eta());
-      if (clusterPt > maxClusterPt) {
-        maxClusterPt = clusterPt;
-      }
-      hEmcClusterPtEta->Fill(clusterPt, cluster.eta());
-      hEmcClusterPtPhi->Fill(clusterPt, cluster.phi());
-    }
-
-    if (isEvtSelectedGamma(maxClusterPt)) {
-      keepEvent[kGammaHighPt] = true;
-      for (const auto& cluster : clusters) {
-        double clusterPt = cluster.energy() / std::cosh(cluster.eta());
-        hSelectedGammaPtEta->Fill(clusterPt, cluster.eta());
-        hSelectedGammaPtPhi->Fill(clusterPt, cluster.phi());
-      }
-    }
-
-    if (isEvtSelected(maxSelectedJetPt)) {
-      keepEvent[kJetFullHighPt] = true;
+    if (b_doJetTrigger) {
+      // Store pt of leading jet inside of the emcal to trigger on
       for (const auto& jet : jets) {
+        hEmcJetPtEta->Fill(jet.pt(), jet.eta());
+        hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
         if (isJetInEmcal(jet)) {
-          hSelectedJetPtEta->Fill(jet.pt(), jet.eta());
-          hSelectedJetPtPhi->Fill(jet.pt(), jet.phi());
+          if (jet.pt() > maxSelectedJetPt)
+            maxSelectedJetPt = jet.pt();
         }
       }
+      if (isEvtSelected(maxSelectedJetPt)) {
+        keepEvent[kJetFullHighPt] = true;
+        for (const auto& jet : jets) {
+          if (isJetInEmcal(jet)) {
+            hSelectedJetPtEta->Fill(jet.pt(), jet.eta());
+            hSelectedJetPtPhi->Fill(jet.pt(), jet.phi());
+          }
+        }
+        for (const auto& cluster : clusters) {
+          double clusterPt = cluster.energy() / std::cosh(cluster.eta());
+          hSelectedClusterPtEta->Fill(clusterPt, cluster.eta());
+          hSelectedClusterPtPhi->Fill(clusterPt, cluster.phi());
+        }
+      }
+    }
+
+    if (b_doGammaTrigger) {
       for (const auto& cluster : clusters) {
         double clusterPt = cluster.energy() / std::cosh(cluster.eta());
-        hSelectedClusterPtEta->Fill(clusterPt, cluster.eta());
-        hSelectedClusterPtPhi->Fill(clusterPt, cluster.phi());
+        if (clusterPt > maxClusterPt) {
+          maxClusterPt = clusterPt;
+        }
+        hEmcClusterPtEta->Fill(clusterPt, cluster.eta());
+        hEmcClusterPtPhi->Fill(clusterPt, cluster.phi());
+      }
+      if (isEvtSelectedGamma(maxClusterPt)) {
+        keepEvent[kGammaHighPt] = true;
+        for (const auto& cluster : clusters) {
+          double clusterPt = cluster.energy() / std::cosh(cluster.eta());
+          hSelectedGammaPtEta->Fill(clusterPt, cluster.eta());
+          hSelectedGammaPtPhi->Fill(clusterPt, cluster.phi());
+        }
       }
     }
 

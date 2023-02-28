@@ -150,8 +150,7 @@ using FemtoFullTracks =
 
 struct CFFilter {
 
-  Produces<aod::CFFilters> tags3N;
-  Produces<aod::CFFiltersTwoN> tags2N;
+  Produces<aod::CFFilters> tags;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
@@ -1665,8 +1664,8 @@ struct CFFilter {
         for (auto iDeuteron = deuterons.begin(); iDeuteron != deuterons.end(); ++iDeuteron) {
           for (auto iLambda = lambdas.begin(); iLambda != lambdas.end(); ++iLambda) {
             kstar = getkstar(*iDeuteron, *iLambda);
+            registry.fill(HIST("ld/fSE_particle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kLD)) {
-              registry.fill(HIST("ld/fSE_particle"), kstar);
               lowKstarPairs[CFTrigger::kLD] += 1;
             }
           }
@@ -1674,8 +1673,8 @@ struct CFFilter {
         for (auto iAntiDeuteron = antideuterons.begin(); iAntiDeuteron != antideuterons.end(); ++iAntiDeuteron) {
           for (auto iAntiLambda = antilambdas.begin(); iAntiLambda != antilambdas.end(); ++iAntiLambda) {
             kstar = getkstar(*iAntiDeuteron, *iAntiLambda);
+            registry.fill(HIST("ld/fSE_antiparticle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kLD)) {
-              registry.fill(HIST("ld/fSE_antiparticle"), kstar);
               lowKstarPairs[CFTrigger::kLD] += 1;
             }
           }
@@ -1710,11 +1709,6 @@ struct CFFilter {
       registry.fill(HIST("lll/fZvtx"), col.posZ());
     }
 
-    tags3N(keepEvent3N[CFTrigger::kPPP],
-           keepEvent3N[CFTrigger::kPPL],
-           keepEvent3N[CFTrigger::kPLL],
-           keepEvent3N[CFTrigger::kLLL]);
-
     // create tags for two body triggers
     if (lowKstarPairs[CFTrigger::kPD] > 0) {
       keepEvent2N[CFTrigger::kPD] = true;
@@ -1728,8 +1722,12 @@ struct CFFilter {
       registry.fill(HIST("ld/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ld/fZvtx"), col.posZ());
     }
-    tags2N(keepEvent2N[CFTrigger::kPD],
-           keepEvent2N[CFTrigger::kLD]);
+    tags(keepEvent3N[CFTrigger::kPPP],
+         keepEvent3N[CFTrigger::kPPL],
+         keepEvent3N[CFTrigger::kPLL],
+         keepEvent3N[CFTrigger::kLLL],
+         keepEvent2N[CFTrigger::kPD],
+         keepEvent2N[CFTrigger::kLD]);
 
     if (!keepEvent3N[CFTrigger::kPPP] && !keepEvent3N[CFTrigger::kPPL] && !keepEvent3N[CFTrigger::kPLL] && !keepEvent3N[CFTrigger::kLLL] &&
         !keepEvent2N[CFTrigger::kPD] && !keepEvent2N[CFTrigger::kLD]) {

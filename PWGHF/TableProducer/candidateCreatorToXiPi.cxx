@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorOmegac.cxx
-/// \brief Reconstruction of Omegac0 candidates
+/// \file candidateCreatorToXiPi.cxx
+/// \brief Reconstruction of Omegac0 and Xic0 -> xi pi candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, HEIDELBERG UNIVERSITY & GSI
 
 #include "CCDB/BasicCCDBManager.h"
@@ -51,12 +51,12 @@ struct HfCandidateCreatorToXiPi {
   Produces<aod::HfCandToXiPi> rowCandidate;
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "use absolute DCA for vertexing"};
-  Configurable<bool> useWeightedPCA{"useWeightedPCA", false, "vertices use cov matrices"};
   Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
 
@@ -81,8 +81,6 @@ struct HfCandidateCreatorToXiPi {
   using MyCascTable = soa::Join<aod::CascDataExt, aod::CascCovs>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
-  OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
 
   void init(InitContext const&)
@@ -91,9 +89,6 @@ struct HfCandidateCreatorToXiPi {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
@@ -119,7 +114,7 @@ struct HfCandidateCreatorToXiPi {
     df.setMinParamChange(minParamChange);
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedPCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
     df.setRefitWithMatCorr(refitWithMatCorr);
 
     double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
@@ -265,12 +260,6 @@ struct HfCandidateCreatorToXiPi {
         double dcaxyV0Dau1 = trackV0Dau1.dcaXY();
         double dcaxyCascDau = trackXiDauCharged.dcaXY();
 
-        hxVertexOmegac->Fill(vertexOmegacFromFitter[0]);
-
-        // primary pi  pT spectrum
-        double ptPrimaryPi = std::sqrt((pVecPionFromOmegac[0] * pVecPionFromOmegac[0]) + (pVecPionFromOmegac[1] * pVecPionFromOmegac[1]));
-        hPtPrimaryPi->Fill(ptPrimaryPi);
-
         // invariant mass under the hypothesis of particles ID corresponding to the decay chain
         double mLambda = v0Element.mLambda();         // from LF table, V0 mass under lambda hypothesis
         double mAntiLambda = v0Element.mAntiLambda(); // from LF table, V0 mass under anti-lambda hypothesis
@@ -336,7 +325,6 @@ struct HfCandidateCreatorToXiPi {
                      v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
                      casc.globalIndex(), trackPion.globalIndex(), trackXiDauCharged.globalIndex(),
                      impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
-                     ptPrimaryPi,
                      mLambda, mAntiLambda, mCasc, mOmegac,
                      cpaV0, cpaOmegac, cpaCasc, cpaxyV0, cpaxyOmegac, cpaxyCasc,
                      ctOmegac, ctCascade, ctV0, ctXic,

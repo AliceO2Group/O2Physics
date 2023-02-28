@@ -295,7 +295,7 @@ struct bayesPid {
 
   /// Response of the TOF detector
   template <o2::track::PID::ID pid>
-  using respTOF = tof::ExpTimes<Trks::iterator, pid>;
+  using respTOF = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
 
   /// Compute PID probabilities for TOF
   template <o2::track::PID::ID pid>
@@ -413,7 +413,7 @@ struct bayesPid {
       sum += Probability[kMerged][enabledPid] * Probability[kPrior][enabledPid];
     }
     if (sum <= 0) {
-      LOG(warning) << "Invalid probability densities or prior probabilities";
+      // LOG(warning) << "Invalid probability densities or prior probabilities";
       for (uint64_t i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }

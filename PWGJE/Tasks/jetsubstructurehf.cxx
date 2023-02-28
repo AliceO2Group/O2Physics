@@ -31,6 +31,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetSubstructureHF.h"
 #include "PWGJE/Core/JetFinder.h"
 
 using namespace o2;
@@ -51,22 +52,9 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-namespace o2::aod
-{
-namespace jetsubstructurehf
-{
-// add an index to the jet table
-// add a coloumn to make it unique for data, MC det and MC gen
-DECLARE_SOA_COLUMN(Zg, zg, float);
-DECLARE_SOA_COLUMN(Rg, rg, float);
-DECLARE_SOA_COLUMN(Nsd, nsd, float);
-} // namespace jetsubstructurehf
-DECLARE_SOA_TABLE(JetSubtructureHF, "AOD", "JETSUBSTRUCTHF", jetsubstructurehf::Zg, jetsubstructurehf::Rg, jetsubstructurehf::Nsd);
-} // namespace o2::aod
-
-template <typename JetTable, typename TrackConstituentTable> // add one more for output table type
+template <typename SubstructureTable>
 struct JetSubstructureHFTask {
-  // Produces<aod::JetSubtructureHF> jetSubstructurehf;
+  Produces<SubstructureTable> jetSubstructurehf;
   OutputObj<TH1F> hZg{"h_jet_zg"};
   OutputObj<TH1F> hRg{"h_jet_rg"};
   OutputObj<TH1F> hNsd{"h_jet_nsd"};
@@ -155,7 +143,7 @@ struct JetSubstructureHFTask {
       }
     }
     hNsd->Fill(nsd);
-    // jetSubstructurehf(zg, rg, nsd);
+    jetSubstructurehf(jet.globalIndex(), zg, rg, nsd);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processData, "HF jet substructure on data", true);
 
@@ -217,13 +205,13 @@ struct JetSubstructureHFTask {
       }
     }
     hNsd->Fill(nsd);
-    // jetSubstructurehf(zg, rg, nsd);
+    jetSubstructurehf(jet.globalIndex(), zg, rg, nsd);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processMCD, "HF jet substructure on MC detector level", true);
 
   void processMCP(soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>::iterator const& jet,
                   // aod::JetConstituentsSub const& constituentsSub,
-                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles)
+                  aod::McParticles const& particles)
   {
     jetConstituents.clear();
     jetReclustered.clear();
@@ -232,10 +220,10 @@ struct JetSubstructureHFTask {
     //  fillConstituents(constituent, jetConstituents);
     //  }
     // } else {
-    for (auto& jetConstituent : jet.tracks_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>()) {
+    for (auto& jetConstituent : jet.tracks_as<aod::McParticles>()) {
       fillConstituents(jetConstituent, jetConstituents, -2, RecoDecay::getMassPDG(jetConstituent.pdgCode()));
     }
-    for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>()) { // should only be one at the moment
+    for (auto& jetHFCandidate : jet.hfcandidates_as<aod::McParticles>()) { // should only be one at the moment
       fillConstituents(jetHFCandidate, jetConstituents, -1, RecoDecay::getMassPDG(jetHFCandidate.pdgCode()));
     }
     //}
@@ -278,13 +266,13 @@ struct JetSubstructureHFTask {
       }
     }
     hNsd->Fill(nsd);
-    // jetSubstructurehf(zg, rg, nsd);
+    jetSubstructurehf(jet.globalIndex(), zg, rg, nsd);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processMCP, "HF jet substructure on MC particle level", true);
 };
-using JetSubstructureHFData = JetSubstructureHFTask<aod::HFJets, aod::HFJetConstituents>;
-using JetSubstructureHFMCParticleLevel = JetSubstructureHFTask<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
-using JetSubstructureHFMCDetectorLevel = JetSubstructureHFTask<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
+using JetSubstructureHFDataLevel = JetSubstructureHFTask<o2::aod::JetSubtructureHFData>;
+using JetSubstructureHFMCParticleLevel = JetSubstructureHFTask<o2::aod::JetSubtructureHFMCGen>;
+using JetSubstructureHFMCDetectorLevel = JetSubstructureHFTask<o2::aod::JetSubtructureHFMCDet>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -293,9 +281,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   auto hfjetsubstructureMode = cfgc.options().get<std::string>("hfjetsubstructureMode");
 
   if (hfjetsubstructureMode.find("data") != std::string::npos || hfjetsubstructureMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<JetSubstructureHFData>(cfgc,
-                                                                SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},
-                                                                TaskName{"jet-substructure-hf-data"}));
+    tasks.emplace_back(adaptAnalysisTask<JetSubstructureHFDataLevel>(cfgc,
+                                                                     SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},
+                                                                     TaskName{"jet-substructure-hf-data"}));
 
   if (hfjetsubstructureMode.find("mcp") != std::string::npos || hfjetsubstructureMode.empty())
     tasks.emplace_back(adaptAnalysisTask<JetSubstructureHFMCParticleLevel>(cfgc,

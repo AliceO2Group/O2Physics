@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 struct BCRangeSelector {
 
   Configurable<int> nTimeRes{"nTimeRes", 4, "Range to consider for search of compatible BCs in units of vertex-time-resolution."};
-  Configurable<int> nMinBSs{"nMinBSs", 7, "Minimum width of time window to consider for search of compatible BCs in units of 2*BunchSpacing."};
+  Configurable<int> nMinBSs{"nMinBCs", 7, "Minimum width of time window to consider for search of compatible BCs in units of 2*BunchSpacing."};
   Configurable<double> fillFac{"fillFactor", 0.0, "Factor of MB events to add"};
 
   using FDs = aod::CefpDecisions;
@@ -43,6 +43,7 @@ struct BCRangeSelector {
 
   // buffer for task output
   std::vector<o2::dataformats::IRFrame> res;
+  Produces<aod::BCRanges> tags;
 
   void init(o2::framework::InitContext&)
   {
@@ -53,12 +54,18 @@ struct BCRangeSelector {
   void run(ProcessingContext& pc)
   {
     // get and prepare the input tables
-    auto t1 = pc.inputs().get<TableConsumer>("BCs")->asArrowTable();
-    auto t2 = pc.inputs().get<TableConsumer>("BcSels")->asArrowTable();
-    auto t3 = pc.inputs().get<TableConsumer>("Run3MatchedToBCSparse")->asArrowTable();
-    auto t4 = pc.inputs().get<TableConsumer>("Collisions")->asArrowTable();
-    auto t5 = pc.inputs().get<TableConsumer>("EvSels")->asArrowTable();
-    auto t6 = pc.inputs().get<TableConsumer>("CefpDecisions")->asArrowTable();
+    auto TabConsumer1 = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto t1{TabConsumer1->asArrowTable()};
+    auto TabConsumer2 = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BcSels>>::metadata::tableLabel());
+    auto t2{TabConsumer2->asArrowTable()};
+    auto TabConsumer3 = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Run3MatchedToBCSparse>>::metadata::tableLabel());
+    auto t3{TabConsumer3->asArrowTable()};
+    auto TabConsumer4 = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
+    auto t4{TabConsumer4->asArrowTable()};
+    auto TabConsumer5 = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto t5{TabConsumer5->asArrowTable()};
+    auto TabConsumer6 = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::CefpDecisions>>::metadata::tableLabel());
+    auto t6{TabConsumer6->asArrowTable()};
 
     // join tables
     auto bcs = BCs({t1, t2, t3});
@@ -76,11 +83,15 @@ struct BCRangeSelector {
 
         // get range of compatible BCs
         auto bcRange = udhelpers::compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
-
+        if (bcRange.size() == 0) {
+          LOGF(warning, "No compatible BCs found for collision that the framework assigned to BC %i", filt.hasGlobalBCId());
+          filt++;
+          continue;
+        }
         // update list of ranges
         auto bcfirst = bcRange.rawIteratorAt(0);
-        auto bclast = bcRange.rawIteratorAt(bcRange.size());
-        cbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+        auto bclast = bcRange.rawIteratorAt(bcRange.size() - 1);
+        cbcrs.add(bcfirst.globalBC(), bclast.globalBC());
       }
       filt++;
     }
@@ -96,6 +107,7 @@ struct BCRangeSelector {
       IR1.setFromLong(limit.first);
       IR2.setFromLong(limit.second);
       res.emplace_back(IR1, IR2);
+      tags(limit.first, limit.second);
     }
     // make res an output
     pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);

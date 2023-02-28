@@ -138,52 +138,52 @@ struct PCMQC {
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy"), v0.vx(), v0.vy());
   }
 
-  Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-  void process(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const&)
+  // Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
+  void process(aod::EMReducedEvents::iterator const& collision, aod::V0Datas const& v0photons)
   {
-    registry.fill(HIST("hCollisionCounter"), 1.0); // all
-    if (!collision.sel8()) {
-      return;
-    }
-    registry.fill(HIST("hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
+    // registry.fill(HIST("hCollisionCounter"), 1.0); // all
+    // if (!collision.sel8()) {
+    //   return;
+    // }
+    // registry.fill(HIST("hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
 
-    if (collision.numContrib() < 0.5) {
-      return;
-    }
-    registry.fill(HIST("hCollisionCounter"), 3.0); // Ncontrib > 0
+    // if (collision.numContrib() < 0.5) {
+    //   return;
+    // }
+    // registry.fill(HIST("hCollisionCounter"), 3.0); // Ncontrib > 0
 
-    if (abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
-    auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
+    // if (abs(collision.posZ()) > 10.0) {
+    //   return;
+    // }
+    // registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
+    // auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
 
-    int ng_nonamb = 0;
-    int ng_amb = 0;
-    for (auto& g : V0Photons_coll) {
-      auto pos = g.posTrack_as<aod::V0Legs>();
-      auto ele = g.negTrack_as<aod::V0Legs>();
+    // int ng_nonamb = 0;
+    // int ng_amb = 0;
+    // for (auto& g : V0Photons_coll) {
+    //   auto pos = g.posTrack_as<aod::V0Legs>();
+    //   auto ele = g.negTrack_as<aod::V0Legs>();
 
-      if (ele.isAmbTrack() || pos.isAmbTrack()) {
-        fillHistosV0<1>(g);
-        ng_amb++;
-      } else {
-        fillHistosV0<0>(g);
-        ng_nonamb++;
-      }
-      for (auto& leg : {pos, ele}) {
-        if (leg.isAmbTrack())
-          fillHistosLeg<1>(leg);
-        else
-          fillHistosLeg<0>(leg);
-      }
+    //   if (ele.isAmbTrack() || pos.isAmbTrack()) {
+    //     fillHistosV0<1>(g);
+    //     ng_amb++;
+    //   } else {
+    //     fillHistosV0<0>(g);
+    //     ng_nonamb++;
+    //   }
+    //   for (auto& leg : {pos, ele}) {
+    //     if (leg.isAmbTrack())
+    //       fillHistosLeg<1>(leg);
+    //     else
+    //       fillHistosLeg<0>(leg);
+    //   }
 
-    } // end of v0 loop
-    registry.fill(HIST("NonAmbV0/hNgamma"), ng_nonamb);
-    registry.fill(HIST("AmbV0/hNgamma"), ng_amb);
+    // } // end of v0 loop
+    // registry.fill(HIST("NonAmbV0/hNgamma"), ng_nonamb);
+    // registry.fill(HIST("AmbV0/hNgamma"), ng_amb);
   } // end of processSame
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Photons const& v0photons)
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& v0photons)
   {
     // do nothing
   }
@@ -221,8 +221,8 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
-  Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-  Preslice<aod::PHOSClusters> perCollision_phos = aod::phoscluster::collisionId;
+  Preslice<aod::V0Datas> perCollision = aod::v0photon::collisionId;
+  Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2)
@@ -424,7 +424,7 @@ struct Pi0EtaToGammaGamma {
 
   Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
   using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions_PCM_mix const& colls_mix, aod::V0Photons const& v0photons)
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions_PCM_mix const& colls_mix, aod::V0Datas const& v0photons)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
     MixedEventPairing<PairType::kPCMPCM>(colls_mix, v0photons, v0photons, perCollision, perCollision);
@@ -440,13 +440,13 @@ struct Pi0EtaToGammaGamma {
 
   Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
   using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions_PCM_mix const& colls_mix, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions_PCM_mix const& colls_mix, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
     MixedEventPairing<PairType::kPCMPHOS>(colls_mix, v0photons, phosclusters, perCollision, perCollision_phos);
   }
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Photons const& v0photons)
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Datas const& v0photons)
   {
     // do nothing
   }

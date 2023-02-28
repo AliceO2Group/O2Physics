@@ -18,12 +18,9 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-/// O2Physics
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 
@@ -33,9 +30,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
-using namespace o2::dataformats;
 
-struct tofSimsTableCreator {
+struct tofSkimsTableCreator {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TOFSignal, aod::pidEvTimeFlags,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -48,34 +44,52 @@ struct tofSimsTableCreator {
 
   // Configurables
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<bool> keepTpcOnly{"keepTpcOnly", false, "Flag to keep the TPC only tracks as well"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
 
-  void init(o2::framework::InitContext& initContext) {}
-
-  void process(Coll::iterator const& collision,
-               Trks const& tracks)
+  unsigned int randomSeed = 0;
+  void init(o2::framework::InitContext& initContext)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
-      return;
-    }
-
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     switch (applyEvSel.value) {
       case 0:
-        break;
       case 1:
-        if (!collision.sel7()) {
-          return;
-        }
-        break;
       case 2:
-        if (!collision.sel8()) {
-          return;
-        }
         break;
       default:
         LOG(fatal) << "Invalid event selection flag: " << applyEvSel.value;
         break;
+    }
+    switch (trackSelection.value) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        break;
+      default:
+        LOG(fatal) << "Invalid track selection flag: " << trackSelection.value;
+        break;
+    }
+  }
+
+  Filter eventFilter = (applyEvSel.node() == 0) ||
+                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
+                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter());
+
+  void process(soa::Filtered<Coll>::iterator const& collision,
+               soa::Filtered<Trks> const& tracks)
+  {
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+      return;
     }
     tableRow.reserve(tracks.size());
     float evTimeT0AC = 0.f;
@@ -85,7 +99,21 @@ struct tofSimsTableCreator {
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
 
+    int8_t lastTRDLayer = -1;
     for (auto const& trk : tracks) {
+      if (!keepTpcOnly.value && !trk.hasTOF()) {
+        continue;
+      }
+
+      lastTRDLayer = -1;
+      if (trk.hasTRD()) {
+        for (int8_t l = 7; l >= 0; l--) {
+          if (trk.trdPattern() & (1 << l)) {
+            lastTRDLayer = l;
+            break;
+          }
+        }
+      }
       tableRow(trk.collisionId(),
                trk.p(),
                trk.pt(),
@@ -95,17 +123,21 @@ struct tofSimsTableCreator {
                trk.tofExpMom(),
                trk.length(),
                trk.tofChi2(),
+               trk.tpcSignal(),
                trk.tofSignal(),
                trk.evTimeTOF(),
                trk.evTimeTOFErr(),
                evTimeT0AC,
                evTimeT0ACErr,
-               trk.tofFlags());
+               trk.tofFlags(),
+               trk.tpcInnerParam(),
+               trk.tpcNClsFindable(),
+               trk.tpcNClsFindableMinusFound(),
+               trk.tpcNClsFindableMinusCrossedRows(),
+               trk.tpcNClsShared(),
+               lastTRDLayer);
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<tofSimsTableCreator>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSkimsTableCreator>(cfgc)}; }
