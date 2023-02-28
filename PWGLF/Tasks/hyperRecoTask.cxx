@@ -62,8 +62,32 @@ namespace
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"He3"};
+// float kHyperMass = 2.99131;
+// float kHyperPDG = 1010010030;
 
 } // namespace
+
+struct hyperCandidate {
+  int posTrackID;
+  int negTrackID;
+  bool isMatter;
+  std::array<float, 3> mom;
+  std::array<float, 3> decVtx;
+  float dcaV0dau = -1;
+  float cosPA;
+  float rapidity;
+  float nSigmaHe3;
+  float nTPCClustersHe3;
+  float he3DCAXY;
+  float piDCAXY;
+
+  float gCt;
+  std::array<float, 3> gMom;
+
+  bool isSignal=false; // true MC signal
+  bool isReco=false;  // true if the candidate is actually reconstructed
+
+};
 
 struct hyperRecoTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -94,6 +118,9 @@ struct hyperRecoTask {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
+  // std vector of candidates
+  std::vector<hyperCandidate> hyperCandidates;
 
   void init(InitContext const&)
   {
@@ -157,21 +184,17 @@ struct hyperRecoTask {
   int mRunNumber;
   float d_bz;
 
-  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  void fillCandidateData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks)
   {
-    /* check the previous run number */
-    if (!collision.sel8())
-      return;
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
     for (auto& v0 : V0s) {
 
       LOG(info) << "collision: " << collision.globalIndex();
       LOG(info) << "V0 collision ID: " << v0.collisionId();
       auto posTrack = v0.posTrack_as<TracksFull>();
+      auto negTrack = v0.negTrack_as<TracksFull>();
       LOG(info) << "pos track: "
                 << " pt: " << posTrack.pt();
-      auto negTrack = v0.negTrack_as<TracksFull>();
+
       LOG(info) << "neg track: "
                 << " pt: " << negTrack.pt();
 
@@ -186,6 +209,12 @@ struct hyperRecoTask {
       if (abs(nSigmaTPCpos) > heliumNsigmaMax || abs(nSigmaTPCneg) > heliumNsigmaMax)
         continue;
 
+      hyperCandidate hyperCand;
+      hyperCand.isMatter = abs(nSigmaTPCpos) < abs(nSigmaTPCneg);
+
+      hyperCand.nSigmaHe3 = hyperCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
+      hyperCand.nTPCClustersHe3 = hyperCand.isMatter ? posTrack.tpcNClsFindable() : negTrack.tpcNClsFindable();
+
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
 
@@ -199,7 +228,72 @@ struct hyperRecoTask {
       if (nCand == 0) {
         continue;
       }
+
+      auto& propPosTrack = fitter.getTrack(0);
+      auto& propNegTrack = fitter.getTrack(1);
+
+      std::array<float, 3> posTrackP;
+      std::array<float, 3> negTrackP;
+
+      propPosTrack.getPxPyPzGlo(posTrackP);
+      propNegTrack.getPxPyPzGlo(negTrackP);
+
+      unsigned int posAbsCharge = hyperCand.isMatter ? 2 : 1;
+      unsigned int negAbsCharge = !hyperCand.isMatter ? 2 : 1;
+
+      posTrackP[0] *= posAbsCharge, posTrackP[1] *= posAbsCharge, posTrackP[2] *= posAbsCharge;
+      negTrackP[0] *= negAbsCharge, negTrackP[1] *= negAbsCharge, negTrackP[2] *= negAbsCharge;
+
+      // get decay vertex coordinates
+      const auto& vtx = fitter.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        hyperCand.decVtx[i] = vtx[i];
+        hyperCand.mom[i] = posTrackP[i] + negTrackP[i];
+      }
+
+      hyperCand.dcaV0dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+
+      // Apply selections so a skimmed table is created only
+      if (hyperCand.dcaV0dau > dcav0dau) {
+        continue;
+      }
+
+      hyperCand.cosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{hyperCand.decVtx[0], hyperCand.decVtx[1], hyperCand.decVtx[2]}, array{hyperCand.mom[0], hyperCand.mom[1], hyperCand.mom[2]});
+      if (hyperCand.cosPA < v0cospa) {
+        continue;
+      }
+
+      // if survived all selections, propagate decay daughters to PV
+
+      gpu::gpustd::array<float, 2> dcaInfo;
+
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      hyperCand.isMatter ? hyperCand.he3DCAXY = dcaInfo[0] : hyperCand.piDCAXY = dcaInfo[0];
+
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      hyperCand.isMatter ? hyperCand.piDCAXY = dcaInfo[0] : hyperCand.he3DCAXY = dcaInfo[0];
+
+      // finally, push back the candidate
+      hyperCand.isReco = true;
+      hyperCandidates.push_back(hyperCand);
     }
+  }
+
+  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  {
+    /* check the previous run number */
+    if (!collision.sel8())
+      return;
+
+    if (abs(collision.posZ()) > 10.f) {
+      return;
+    
+    fillCandidateData(collision, V0s, tracks);
+
+    }
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
   }
   PROCESS_SWITCH(hyperRecoTask, processRealData, "Regular analysis", true);
 };
