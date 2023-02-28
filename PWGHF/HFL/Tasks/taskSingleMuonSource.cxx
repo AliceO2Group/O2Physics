@@ -58,7 +58,7 @@ const TString muonSources[nSrcs]{
 struct HfTaskMuonSourceMc {
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
-  
+
   const double etaLow(-3.6), etaHigh(-2.5), edgeZ(10.);
 
   HistogramRegistry registry{
