@@ -34,14 +34,14 @@ using McMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksD
 namespace
 {
 enum ParticleType {
-  IsID = 0,        // this particle is identified
-  IsMuon,          // this is a muon
-  IsSecondary,     // this is a secondary particle
-  HasLightParent,  // this particle has a light flavor parent
-  HasCharmParent,  // this particle has a charm parent
-  HasBeautyParent, // this particle has a beauty parent
+  IsID = 0,            // this particle is identified
+  IsMuon,              // this is a muon
+  IsSecondary,         // this is a secondary particle
+  HasLightParent,      // this particle has a light flavor parent
+  HasCharmParent,      // this particle has a charm parent
+  HasBeautyParent,     // this particle has a beauty parent
   HasQuarkoniumParent, // this particle has a quarkonium parent
-  HasTauParent     // this particle has a tau parent
+  HasTauParent         // this particle has a tau parent
 };
 
 const auto nSrcs(7);
