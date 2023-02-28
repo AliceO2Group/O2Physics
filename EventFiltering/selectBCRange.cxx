@@ -43,6 +43,7 @@ struct BCRangeSelector {
 
   // buffer for task output
   std::vector<o2::dataformats::IRFrame> res;
+  Produces<aod::BCRanges> tags;
 
   void init(o2::framework::InitContext&)
   {
@@ -82,11 +83,15 @@ struct BCRangeSelector {
 
         // get range of compatible BCs
         auto bcRange = udhelpers::compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
-
+        if (bcRange.size() == 0) {
+          LOGF(warning, "No compatible BCs found for collision that the framework assigned to BC %i", filt.hasGlobalBCId());
+          filt++;
+          continue;
+        }
         // update list of ranges
         auto bcfirst = bcRange.rawIteratorAt(0);
-        auto bclast = bcRange.rawIteratorAt(bcRange.size());
-        cbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+        auto bclast = bcRange.rawIteratorAt(bcRange.size() - 1);
+        cbcrs.add(bcfirst.globalBC(), bclast.globalBC());
       }
       filt++;
     }
@@ -102,6 +107,7 @@ struct BCRangeSelector {
       IR1.setFromLong(limit.first);
       IR2.setFromLong(limit.second);
       res.emplace_back(IR1, IR2);
+      tags(limit.first, limit.second);
     }
     // make res an output
     pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);

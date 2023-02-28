@@ -87,8 +87,8 @@ constexpr static uint32_t gkEventFillMapWithMult = VarManager::ObjTypes::BC | Va
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
 // constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
-constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
@@ -175,17 +175,20 @@ struct TableMaker {
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits"));
+                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
+                               context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
-                             context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter"));
+                             context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter") ||
+                             context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
 
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_TrackBarrel_BeforeCuts;";
+          histClasses += "Orphan_TrackBarrel;";
         }
       }
       if (fConfigQA) {
@@ -202,6 +205,8 @@ struct TableMaker {
         histClasses += "Muons_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
+          histClasses += "Orphan_Muons_MFTMCHMID;";
+          histClasses += "Orphan_Muons_MCHMID;";
         }
       }
       if (fConfigQA) {
@@ -260,6 +265,34 @@ struct TableMaker {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
   void fullSkimming(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
+    // Process orphan tracks
+    if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+      if (fDoDetailedQA && fIsAmbiguous) {
+        for (auto& ambiTrack : ambiTracksMid) {
+          auto trk = ambiTrack.template track_as<TTracks>();
+          if (trk.collisionId() < 0) {
+            VarManager::FillTrack<TTrackFillMap>(trk);
+            fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
+          }
+        }
+      }
+    }
+    if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+      if (fDoDetailedQA && fIsAmbiguous) {
+        for (auto& ambiTrackFwd : ambiTracksFwd) {
+          auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
+          if (muon.collisionId() < 0) {
+            VarManager::FillTrack<TMuonFillMap>(muon);
+            if ((static_cast<int>(muon.trackType()) == 0)) {
+              fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+            } else if ((static_cast<int>(muon.trackType()) == 3)) {
+              fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
+            }
+          }
+        }
+      }
+    }
+
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
       auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
@@ -415,7 +448,9 @@ struct TableMaker {
                     track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.tpcChi2NCl(),
                     track.trdChi2(), track.trdPattern(), track.tofChi2(),
-                    track.length(), track.dcaXY(), track.dcaZ());
+                    track.length(), track.dcaXY(), track.dcaZ(),
+                    track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
+                    track.detectorMap());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
@@ -538,7 +573,9 @@ struct TableMaker {
         muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY());
+                  muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(),
+                  muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                  muon.trackTime(), muon.trackTimeRes());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
           muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
                   muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),

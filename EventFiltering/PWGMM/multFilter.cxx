@@ -30,6 +30,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFv0", "kHfFv0", "kHmFt0", "kHfFt0", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
+int nevFT0 = 0;
+float totFT0C = 0.f;
+float totFT0A = 0.f;
+int MultFV0 = 0.f;
+int nevFV0 = 0;
 
 struct multFilter {
   enum { kHighTrackMult = 0,
@@ -42,7 +47,7 @@ struct multFilter {
          kLeadingPtTrack,
          kNtriggersMM };
   // my track selection, discussed with Mesut and Matia
-  TrackSelection myTrackSelection();
+  TrackSelection mTrackSelector;
   // event selection cuts
   Configurable<float> selHTrkMult{"selHTrkMult", 30., "global trk multiplicity threshold"};
   Configurable<float> selHMFv0{"selHMFv0", 33559.5, "FV0-amplitude threshold"};
@@ -52,9 +57,13 @@ struct multFilter {
   Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 187.0, "FT0C+FV0 mult threshold"};
   Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.885, "1-flatenicity FT0C+FV0 threshold"};
   Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
-  Configurable<bool> sel8{"sel8", 0, "apply sel8 event selection"};
+  Configurable<bool> sel8{"sel8", 1, "apply sel8 event selection"};
   Configurable<bool> selt0time{"selt0time", 0, "apply 1ns cut T0A and T0C"};
   Configurable<bool> selt0vtx{"selt0vtx", 0, "apply T0 vertext trigger"};
+
+  Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
+  Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
+  Configurable<float> avPyFV0{"avPyFV0", 21.44, "nch from pythia FV0"};
 
   Produces<aod::MultFilters> tags;
 
@@ -76,6 +85,20 @@ struct multFilter {
 
   void init(o2::framework::InitContext&)
   {
+    mTrackSelector.SetPtRange(0.15f, 1e10f);
+    mTrackSelector.SetEtaRange(-0.8f, 0.8f);
+    mTrackSelector.SetRequireITSRefit(true);
+    mTrackSelector.SetRequireTPCRefit(true);
+    mTrackSelector.SetRequireGoldenChi2(false);
+    mTrackSelector.SetMinNClustersTPC(60);
+    mTrackSelector.SetMinNCrossedRowsTPC(70);
+    mTrackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+    mTrackSelector.SetMaxChi2PerClusterTPC(4.f);
+    mTrackSelector.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+    mTrackSelector.SetMaxChi2PerClusterITS(36.f);
+    mTrackSelector.SetMaxDcaXY(1.f);
+    mTrackSelector.SetMaxDcaZ(1.f);
+
     int nBinsEst[8] = {100, 1000, 102, 700, 102, 700, 102, 150};
     float lowEdgeEst[8] = {-0.5, -0.5, -0.01, -0.5, -0.01, -0.5, -0.01, .0};
     float upEdgeEst[8] = {99.5, 99999.5, 1.01, 699.5, 1.01, 699.5, 1.01, 150.0};
@@ -88,6 +111,10 @@ struct multFilter {
     multiplicity.add("hAmpT0CVsCh", "", HistType::kTH2F, {{28, -0.5, 27.5, "ch"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
     multiplicity.add("hFT0C", "FT0C", HistType::kTH1F, {{600, -0.5, 599.5, "FT0C amplitudes"}});
     multiplicity.add("hFT0A", "FT0A", HistType::kTH1F, {{600, -0.5, 599.5, "FT0A amplitudes"}});
+
+    multiplicity.add("hMultFT0C", "hMultFT0C", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0C amplitude"}});
+    multiplicity.add("hMultFT0A", "hMultFT0A", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0A amplitude"}});
+    multiplicity.add("hMultFV0", "hMultFV0", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude"}});
     multiplicity.add("hT0C_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
     multiplicity.add("hT0A_time", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
     multiplicity.add("hT0Cafter_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
@@ -195,8 +222,21 @@ struct multFilter {
     }
     return flat;
   }
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+
+  void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
+
+    int min_n_ev = 100;
+    float fac_FT0A_ebe = 1.;
+    float fac_FT0C_ebe = 1.;
+    float fac_FV0_ebe = 1.;
+    if (nevFT0 > min_n_ev) {
+      fac_FT0A_ebe = avPyT0A / (totFT0A / nevFT0);
+      fac_FT0C_ebe = avPyT0C / (totFT0C / nevFT0);
+    }
+    if (nevFV0 > min_n_ev) {
+      fac_FV0_ebe = avPyFV0 / (MultFV0 / nevFV0);
+    }
 
     bool keepEvent[kNtriggersMM]{false};
     auto vtxZ = collision.posZ();
@@ -316,7 +356,7 @@ struct multFilter {
     // Globaltracks
 
     for (auto& track : tracks) {
-      if (!myTrackSelection().IsSelected(track)) {
+      if (!mTrackSelector.IsSelected(track)) {
         continue;
       }
       // Has this track contributed to the collision vertex fit
@@ -355,32 +395,28 @@ struct multFilter {
     cut[7] = selPtTrig;
     // option 5
     const int nEta5 = 2; // FT0C + FT0A
-    // float weigthsEta5[nEta5] = {0.0569502, 0.014552069};// values for pilot run, 900 GeV
     float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
-    float ampl5[nEta5] = {0, 0};
-    ampl5[0] = sumAmpFT0C;
-    ampl5[1] = sumAmpFT0A;
     if (sumAmpFT0C > 0 && sumAmpFT0A > 0) {
       isOK_estimator5 = true;
     }
     if (isOK_estimator5) {
-      for (int i_5 = 0; i_5 < nEta5; ++i_5) {
-        combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+      if (nevFT0 > min_n_ev) {
+        combined_estimator5 = sumAmpFT0C * fac_FT0C_ebe + sumAmpFT0A * fac_FT0A_ebe;
+      } else {
+        combined_estimator5 = sumAmpFT0C * weigthsEta5[0] + sumAmpFT0A * weigthsEta5[1];
       }
     }
     // option 6
     const int nEta6 = 2; //  FT0C + FV0
-    // float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
     float weigthsEta6[nEta6] = {0.0490638, 0.00353962};
-    float ampl6[nEta6] = {0, 0};
-    ampl6[0] = sumAmpFT0C;
-    ampl6[1] = sumAmpFV0;
     if (sumAmpFT0C > 0 && sumAmpFV0 > 0) {
       isOK_estimator6 = true;
     }
     if (isOK_estimator6) {
-      for (int i_6 = 0; i_6 < nEta6; ++i_6) {
-        combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+      if (nevFV0 > min_n_ev) {
+        combined_estimator6 = sumAmpFT0C * fac_FT0C_ebe + sumAmpFV0 * fac_FV0_ebe;
+      } else {
+        combined_estimator6 = sumAmpFT0C * weigthsEta6[0] + sumAmpFV0 * weigthsEta6[1];
       }
     }
 
@@ -441,27 +477,73 @@ struct multFilter {
       }
     }
   }
+
+  PROCESS_SWITCH(multFilter, processMult, "Process Mult Filt", true);
+  // aqui
+  void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  {
+    MultFV0 = 0.f;
+    totFT0A = 0.f;
+    totFT0C = 0.f;
+    nevFT0 = 0;
+    nevFV0 = 0;
+    // LOGP(info, "****************    processing processFT0", nevFT0);
+    //  get FT0 average multiplicity
+    for (auto& collision : collisions) {
+      if (collision.has_foundFT0()) {
+        bool isOkTimeFT0 = false;
+        bool isOkvtxtrig = false;
+
+        auto ft0 = collision.foundFT0();
+        std::bitset<8> triggers = ft0.triggerMask();
+        isOkvtxtrig = triggers[o2::fit::Triggers::bitVertex];
+        float t0_a = ft0.timeA();
+        float t0_c = ft0.timeC();
+        if (abs(t0_a) < 1. && abs(t0_c) < 1.) {
+          isOkTimeFT0 = true;
+        }
+        float MultFT0A = 0.f;
+        float MultFT0C = 0.f;
+        if (isOkTimeFT0 && isOkvtxtrig) {
+
+          nevFT0++;
+          for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+            float amplitude = ft0.amplitudeA()[i_a];
+            MultFT0A += amplitude;
+          }
+          for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
+            float amplitude = ft0.amplitudeC()[i_c];
+            MultFT0C += amplitude;
+          }
+          totFT0A += MultFT0A;
+          totFT0C += MultFT0C;
+          multiplicity.fill(HIST("hMultFT0A"), MultFT0A);
+          multiplicity.fill(HIST("hMultFT0C"), MultFT0C);
+        }
+      }
+
+      if (collision.has_foundFV0()) {
+        if (sel8 && collision.sel8()) {
+          float sumAmpFV0 = 0;
+          auto fv0 = collision.foundFV0();
+          // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
+          for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
+
+            float ampl_ch = fv0.amplitude()[ich];
+            sumAmpFV0 += ampl_ch;
+          }
+          MultFV0 += sumAmpFV0;
+          nevFV0++;
+          multiplicity.fill(HIST("hMultFV0"), sumAmpFV0);
+        }
+      }
+    }
+  }
 };
-TrackSelection multFilter::myTrackSelection()
-{
-  TrackSelection selectedTracks;
-  selectedTracks.SetPtRange(0.15f, 1e10f);
-  selectedTracks.SetEtaRange(-0.8f, 0.8f);
-  selectedTracks.SetRequireITSRefit(true);
-  selectedTracks.SetRequireTPCRefit(true);
-  selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMinNClustersTPC(60);
-  selectedTracks.SetMinNCrossedRowsTPC(70);
-  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
-  selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  selectedTracks.SetMaxDcaXY(1.f);
-  selectedTracks.SetMaxDcaZ(1.f);
-  return selectedTracks;
-}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-  return WorkflowSpec{adaptAnalysisTask<multFilter>(cfg)};
+  WorkflowSpec workflow{};
+  workflow.push_back(adaptAnalysisTask<multFilter>(cfg));
+  return workflow;
 }

@@ -14,6 +14,12 @@
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
 #include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
+
+#include <map>
+#include <vector>
+#include <string>
+#include <memory>
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
@@ -29,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
+using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0RecalculationAndKF>;
 using V0DaughterTracksWithMC = soa::Join<aod::V0DaughterTracks, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
@@ -64,7 +70,7 @@ struct GammaConversions {
   Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.125, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
   Configurable<float> fLineCutZ0{"fLineCutZ0", 12.0, "The offset for the linecute used in the Z vs R plot"};
-  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
+  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", static_cast<float>(TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax)))), "The slope for the line cut"};
   Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
@@ -146,6 +152,7 @@ struct GammaConversions {
       {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
       {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
+      {"hXVsY", "hXVsY;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {gAxis_z2d, gAxis_z2d}}},
       {"hpeDivpGamma", "hpeDivpGamma;p_{T} (GeV/c);p_{T, e}/p_{T, #gamma};counts", {HistType::kTH2F, {gAxis_pT, {220, 0.f, 1.1f}}}}};
 
     // recalculated conversion Point for V0, only Rec and MCVal need this
@@ -732,7 +739,8 @@ struct GammaConversions {
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
-    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
+    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.recalculatedVtxZ());
+    fillTH2(theContainer, "hXVsY", theV0.recalculatedVtxX(), theV0.recalculatedVtxY());
     fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracpos());
     fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracneg());
   }
@@ -880,9 +888,8 @@ struct GammaConversions {
           fillV0SelectionHisto(ePhotonCuts::kPionRejLowMom);
           return kFALSE;
         }
-      }
       // High Pt Pion rej
-      else {
+      } else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejHighMom);
           return kFALSE;
