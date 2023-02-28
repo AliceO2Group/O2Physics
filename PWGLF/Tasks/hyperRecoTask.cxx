@@ -172,6 +172,8 @@ struct hyperRecoTask {
   Configurable<float> etaMax{"eta", 0.8, "eta daughter"};
   Configurable<float> heliumNsigmaMax{"heliumNsigmaMax", 8, "helium dEdx cut (n sigma)"};
 
+  Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
+
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
 
@@ -460,6 +462,8 @@ struct hyperRecoTask {
     }
 
     for (auto& hypCand : hyperCandidates) {
+      if (!hypCand.isSignal && mcSignalOnly)
+        continue;
       outputMCTable(hypCand.mom[0], hypCand.mom[1], hypCand.mom[2],
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                     hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
