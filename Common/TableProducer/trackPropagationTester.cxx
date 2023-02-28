@@ -12,9 +12,11 @@
 //
 // Task to add a table of track parameters propagated to the primary vertex
 //
-// WARNING: THIS IS AN EXPERIMENTAL TASK, MEANT ONLY FOR EXPLORATORY PURPOSES.
-// PLEASE ONLY USE IT WITH EXTREME CARE. IF IN DOUBT, STICK WITH THE DEFAULT
-// TRACKPROPAGATION
+// FIXME: THIS IS AN EXPERIMENTAL TASK, MEANT ONLY FOR EXPLORATORY PURPOSES.
+// FIXME: PLEASE ONLY USE IT WITH EXTREME CARE. IF IN DOUBT, STICK WITH THE DEFAULT
+// FIXME: TRACKPROPAGATION
+//
+// WARNING: THIS TASK WILL BE DELETED ONCE ALL TESTS ARE DONE !
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -57,6 +59,8 @@ struct TrackPropagationTester {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   bool fillTracksDCA = false;
   int runNumber = -1;
 
@@ -74,13 +78,16 @@ struct TrackPropagationTester {
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
 
   //Configurables regarding what to propagate
-  // FIXME: This is dangerous and error prone. A better way needs to be found
+  // FIXME: This is dangerous and error prone for general purpose use. It is meant ONLY for testing.
   Configurable<bool> propagateUnassociated{"propagateUnassociated", false, "propagate tracks with no collision assoc"};
   Configurable<int> minTPCClusters{"minTPCClusters", 70, "min number of TPC clusters to propagate"};
   Configurable<float> maxPropagStep{"maxPropagStep", 2.0, "max propag step"}; // to be checked systematically
   
   void init(o2::framework::InitContext& initContext)
   {
+    const AxisSpec axisX{(int)3, 0.0f, +3.0f, "Track counter"};
+    histos.add("hTrackCounter", "hTrackCounter", kTH1F, {axisX});
+    
     if (doprocessCovariance == true && doprocessStandard == true) {
       LOGF(fatal, "Cannot enable processStandard and processCovariance at the same time. Please choose one.");
     }
@@ -132,10 +139,15 @@ struct TrackPropagationTester {
 
     gpu::gpustd::array<float, 2> dcaInfo;
 
+    int lNAll = 0;
+    int lNaccTPC = 0;
+    int lNPropagated = 0;
+    
     for (auto& track : tracks) {
       // Selection criteria
+      lNAll++;
       if (track.tpcNClsFound() < minTPCClusters) continue;
-
+      lNaccTPC++;
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
@@ -146,10 +158,12 @@ struct TrackPropagationTester {
           auto const& collision = track.collision();
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, maxPropagStep, matCorr, &dcaInfo);
           trackType = aod::track::Track;
+          lNPropagated++;
         } else {
           if( propagateUnassociated ){
             o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, maxPropagStep, matCorr, &dcaInfo);
             trackType = aod::track::Track;
+            lNPropagated++;
           }
         }
       }
@@ -158,6 +172,10 @@ struct TrackPropagationTester {
         tracksDCA(dcaInfo[0], dcaInfo[1]);
       }
     }
+    // Fill only per table (not per track). ROOT FindBin is slow
+    histos.fill(HIST("hTrackCounter"), 0.5, lNAll);
+    histos.fill(HIST("hTrackCounter"), 1.5, lNaccTPC);
+    histos.fill(HIST("hTrackCounter"), 2.5, lNPropagated);
   }
   PROCESS_SWITCH(TrackPropagationTester, processStandard, "Process without covariance", true);
 
@@ -171,10 +189,15 @@ struct TrackPropagationTester {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
 
+    int lNAll = 0;
+    int lNaccTPC = 0;
+    int lNPropagated = 0;
+    
     for (auto& track : tracks) {
       // Selection criteria
+      lNAll++;
       if (track.tpcNClsFound() < minTPCClusters) continue;
-
+      lNaccTPC++;
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
@@ -186,12 +209,14 @@ struct TrackPropagationTester {
           vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, maxPropagStep, matCorr, &dcaInfoCov);
           trackType = aod::track::Track;
+          lNPropagated++;
         } else {
           if( propagateUnassociated ){
             vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
             vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
             o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, maxPropagStep, matCorr, &dcaInfoCov);
             trackType = aod::track::Track;
+            lNPropagated++;
           }
         }
       }
@@ -207,6 +232,10 @@ struct TrackPropagationTester {
                                       trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                                       trackParCov.getSigma1Pt2());
     }
+    // Fill only per table (not per track). ROOT FindBin is slow
+    histos.fill(HIST("hTrackCounter"), 0.5, lNAll);
+    histos.fill(HIST("hTrackCounter"), 1.5, lNaccTPC);
+    histos.fill(HIST("hTrackCounter"), 2.5, lNPropagated);
   }
   PROCESS_SWITCH(TrackPropagationTester, processCovariance, "Process with covariance", false);
 };
