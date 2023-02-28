@@ -117,7 +117,7 @@ struct HfTaskMuonSourceMC {
       const int pdgRem(pdgAbs % 100000);
       if ((pdgRem < 100) || (pdgRem >= 1000))
         continue;
-      const int flv(pdgRem / TMath::Power(10, int(TMath::Log10(pdgRem))));
+      const int flv(pdgRem / TMath::Power(10, static_cast<int>(TMath::Log10(pdgRem))));
       if (flv > 6) {
         continue;
       }
