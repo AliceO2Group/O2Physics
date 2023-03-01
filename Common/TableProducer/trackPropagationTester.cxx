@@ -75,17 +75,17 @@ struct TrackPropagationTester {
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
 
-  //Configurables regarding what to propagate
-  // FIXME: This is dangerous and error prone for general purpose use. It is meant ONLY for testing.
+  // Configurables regarding what to propagate
+  //  FIXME: This is dangerous and error prone for general purpose use. It is meant ONLY for testing.
   Configurable<bool> propagateUnassociated{"propagateUnassociated", false, "propagate tracks with no collision assoc"};
   Configurable<int> minTPCClusters{"minTPCClusters", 70, "min number of TPC clusters to propagate"};
   Configurable<float> maxPropagStep{"maxPropagStep", 2.0, "max propag step"}; // to be checked systematically
-  
+
   void init(o2::framework::InitContext& initContext)
   {
     const AxisSpec axisX{(int)3, 0.0f, +3.0f, "Track counter"};
     histos.add("hTrackCounter", "hTrackCounter", kTH1F, {axisX});
-    
+
     if (doprocessCovariance == true && doprocessStandard == true) {
       LOGF(fatal, "Cannot enable processStandard and processCovariance at the same time. Please choose one.");
     }
@@ -116,7 +116,7 @@ struct TrackPropagationTester {
     LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
     o2::base::Propagator::initFieldFromGRP(grpmag);
     o2::base::Propagator::Instance()->setMatLUT(lut);
-    if( propagateUnassociated)
+    if (propagateUnassociated)
       mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
     runNumber = bc.runNumber();
   }
@@ -141,12 +141,12 @@ struct TrackPropagationTester {
     int lNaccTPC = 0;
     int lNPropagated = 0;
     bool passTPCclu = kFALSE;
-    
+
     for (auto& track : tracks) {
       // Selection criteria
       passTPCclu = kFALSE;
       lNAll++;
-      if (track.tpcNClsFound() >= minTPCClusters){
+      if (track.tpcNClsFound() >= minTPCClusters) {
         passTPCclu = kTRUE;
         lNaccTPC++;
       }
@@ -162,7 +162,7 @@ struct TrackPropagationTester {
           trackType = aod::track::Track;
           lNPropagated++;
         } else {
-          if( propagateUnassociated ){
+          if (propagateUnassociated) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, maxPropagStep, matCorr, &dcaInfo);
             trackType = aod::track::Track;
             lNPropagated++;
@@ -195,12 +195,12 @@ struct TrackPropagationTester {
     int lNaccTPC = 0;
     int lNPropagated = 0;
     bool passTPCclu = kFALSE;
-    
+
     for (auto& track : tracks) {
       // Selection criteria
       passTPCclu = kFALSE;
       lNAll++;
-      if (track.tpcNClsFound() >= minTPCClusters){
+      if (track.tpcNClsFound() >= minTPCClusters) {
         passTPCclu = kTRUE;
         lNaccTPC++;
       }
@@ -217,7 +217,7 @@ struct TrackPropagationTester {
           trackType = aod::track::Track;
           lNPropagated++;
         } else {
-          if( propagateUnassociated ){
+          if (propagateUnassociated) {
             vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
             vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
             o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, maxPropagStep, matCorr, &dcaInfoCov);
