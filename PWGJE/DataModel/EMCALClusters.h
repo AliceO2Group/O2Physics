@@ -13,9 +13,10 @@
 //
 // Author: Raymond Ehlers
 
-#ifndef O2_ANALYSIS_DATAMODEL_EMCALCLUSTERS
-#define O2_ANALYSIS_DATAMODEL_EMCALCLUSTERS
+#ifndef PWGJE_DATAMODEL_EMCALCLUSTERS_H_
+#define PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 
+#include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "EMCALClusterDefinition.h"
 
@@ -27,9 +28,9 @@ namespace emcalcluster
 // define global cluster definitions
 // the V1 algorithm is not yet implemented, but the V3 algorithm is
 // New definitions should be added here!
-const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, true, 0.03);       //dummy
-const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, true, 0.03); //dummy
-const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, true, 0.03); //dummy
+const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, true, 0.03);       // dummy
+const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, true, 0.03); // dummy
+const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, true, 0.03); // dummy
 const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, true, 0.03);
 const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
 const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
@@ -61,6 +62,7 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch
 DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
 DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
 DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(RawEnergy, rawEnergy, float);                       //! raw cluster energy (GeV)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
 DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
 DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
@@ -76,14 +78,14 @@ DECLARE_SOA_COLUMN(Definition, definition, int);                       //! clust
 // table of clusters that could be matched to a collision
 DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTERS", //!
                   o2::soa::Index<>, emcalcluster::CollisionId, emcalcluster::ID, emcalcluster::Energy,
-                  emcalcluster::CoreEnergy, emcalcluster::Eta, emcalcluster::Phi, emcalcluster::M02,
-                  emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
+                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
+                  emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
                   emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
 // table of ambiguous clusters that could not be matched to a collision
 DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
                   o2::soa::Index<>, emcalcluster::BCId, emcalcluster::ID, emcalcluster::Energy,
-                  emcalcluster::CoreEnergy, emcalcluster::Eta, emcalcluster::Phi, emcalcluster::M02,
-                  emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
+                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
+                  emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
                   emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
 
 using EMCALCluster = EMCALClusters::iterator;
@@ -112,4 +114,4 @@ DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS",                  
                   o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId); //!
 using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
 } // namespace o2::aod
-#endif
+#endif // PWGJE_DATAMODEL_EMCALCLUSTERS_H_
