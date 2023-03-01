@@ -192,6 +192,8 @@ struct hyperRecoTask {
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
+  HistogramRegistry qaRegistry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   void init(InitContext const&)
   {
 
@@ -212,6 +214,10 @@ struct hyperRecoTask {
     fitter.setUseAbsDCA(true);
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+
+    qaRegistry.add("hNsigma3HeSel", "; p^{TPC}/z; n_{#sigma} ({}^{3}He) (GeV/#it{c})", HistType::kTH2F, {{200, -10, 10}, {200, -5, 5}});
+    qaRegistry.add("hDeDx3HeSel", ";p^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {{200, -10, 10}, {200, 0, 1000}});
+    qaRegistry.add("hDeDxTot", ";p^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {{200, -10, 10}, {200, 0, 1000}});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -261,21 +267,36 @@ struct hyperRecoTask {
       auto posTrack = v0.posTrack_as<T>();
       auto negTrack = v0.negTrack_as<T>();
 
+      qaRegistry.fill(HIST("hDeDxTot"), posTrack.tpcInnerParam(), posTrack.tpcSignal());
+      qaRegistry.fill(HIST("hDeDxTot"), -negTrack.tpcInnerParam(), negTrack.tpcSignal());
+
+      // LOG(info) << "posTrack: " << posTrack.globalIndex() << " negTrack: " << negTrack.globalIndex() << ", collision: " << collision.globalIndex();
+
       if (abs(posTrack.eta()) > etaMax || abs(negTrack.eta()) > etaMax)
         continue;
 
       double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), cfgBetheBlochParams->get("He3", "p0"), cfgBetheBlochParams->get("He3", "p1"), cfgBetheBlochParams->get("He3", "p2"), cfgBetheBlochParams->get("He3", "p3"), cfgBetheBlochParams->get("He3", "p4"))};
       double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), cfgBetheBlochParams->get("He3", "p0"), cfgBetheBlochParams->get("He3", "p1"), cfgBetheBlochParams->get("He3", "p2"), cfgBetheBlochParams->get("He3", "p3"), cfgBetheBlochParams->get("He3", "p4"))};
-
       double expSigmaPos{expBethePos * cfgBetheBlochParams->get("He3", "resolution")};
       double expSigmaNeg{expBetheNeg * cfgBetheBlochParams->get("He3", "resolution")};
       auto nSigmaTPCpos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
-      if (abs(nSigmaTPCpos) > heliumNsigmaMax && abs(nSigmaTPCneg) > heliumNsigmaMax)
+
+      // ITS only tracks do not have TPC information
+      if (!((abs(nSigmaTPCpos) < heliumNsigmaMax && posTrack.hasTPC()) || (abs(nSigmaTPCneg) < heliumNsigmaMax && negTrack.hasTPC())))
         continue;
 
       hyperCandidate hypCand;
-      hypCand.isMatter = abs(nSigmaTPCpos) < abs(nSigmaTPCneg);
+
+      bool matter = false;
+      if (posTrack.hasTPC() && !negTrack.hasTPC())
+        matter = true;
+      else if (!posTrack.hasTPC() && negTrack.hasTPC())
+        matter = false;
+      else
+        matter = abs(nSigmaTPCpos) < abs(nSigmaTPCneg);
+
+      hypCand.isMatter = matter;
       hypCand.nSigmaHe3 = hypCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
       hypCand.nTPCClustersHe3 = hypCand.isMatter ? posTrack.tpcNClsFindable() : negTrack.tpcNClsFindable();
 
@@ -345,6 +366,12 @@ struct hyperRecoTask {
       hypCand.posTrackID = posTrack.globalIndex();
       hypCand.negTrackID = negTrack.globalIndex();
 
+      auto& he3track = hypCand.isMatter ? posTrack : negTrack;
+      int chargeFactor = hypCand.isMatter ? 1 : -1;
+
+      qaRegistry.fill(HIST("hDeDx3HeSel"), chargeFactor * he3track.tpcInnerParam(), he3track.tpcSignal());
+      qaRegistry.fill(HIST("hNsigma3HeSel"), chargeFactor * he3track.tpcInnerParam(), hypCand.nSigmaHe3);
+
       hyperCandidates.push_back(hypCand);
     }
   }
@@ -377,6 +404,8 @@ struct hyperRecoTask {
               }
               hypCand.isSignal = true;
               filledMothers.push_back(posMother.globalIndex());
+              // LOG(info) << "Mother label: " << posMother.globalIndex() << " is signal";
+              // LOG(info) << "posTrackID: " << hypCand.posTrackID << " negTrackID: " << hypCand.negTrackID;
             }
           }
         }
@@ -436,7 +465,7 @@ struct hyperRecoTask {
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
       fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
-        }
+    }
     for (auto& hypCand : hyperCandidates) {
       outputDataTable(hypCand.isMatter, hypCand.mom[0], hypCand.mom[1], hypCand.mom[2],
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
@@ -467,6 +496,7 @@ struct hyperRecoTask {
 
       fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
     }
+
     fillMCinfo(trackLabelsMC, particlesMC);
     for (auto& hypCand : hyperCandidates) {
       if (!hypCand.isSignal && mcSignalOnly)
@@ -479,7 +509,7 @@ struct hyperRecoTask {
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }
   }
-  PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", true);
+  PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
 };
 
 WorkflowSpec
