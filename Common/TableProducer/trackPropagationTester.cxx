@@ -15,8 +15,6 @@
 // FIXME: THIS IS AN EXPERIMENTAL TASK, MEANT ONLY FOR EXPLORATORY PURPOSES.
 // FIXME: PLEASE ONLY USE IT WITH EXTREME CARE. IF IN DOUBT, STICK WITH THE DEFAULT
 // FIXME: TRACKPROPAGATION
-//
-// WARNING: THIS TASK WILL BE DELETED ONCE ALL TESTS ARE DONE !
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -142,19 +140,22 @@ struct TrackPropagationTester {
     int lNAll = 0;
     int lNaccTPC = 0;
     int lNPropagated = 0;
+    bool passTPCclu = kFALSE;
 
     for (auto& track : tracks) {
       // Selection criteria
+      passTPCclu = kFALSE;
       lNAll++;
-      if (track.tpcNClsFound() < minTPCClusters)
-        continue;
-      lNaccTPC++;
+      if (track.tpcNClsFound() >= minTPCClusters) {
+        passTPCclu = kTRUE;
+        lNaccTPC++;
+      }
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       auto trackPar = getTrackPar(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius && passTPCclu) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, maxPropagStep, matCorr, &dcaInfo);
@@ -193,18 +194,21 @@ struct TrackPropagationTester {
     int lNAll = 0;
     int lNaccTPC = 0;
     int lNPropagated = 0;
+    bool passTPCclu = kFALSE;
 
     for (auto& track : tracks) {
       // Selection criteria
+      passTPCclu = kFALSE;
       lNAll++;
-      if (track.tpcNClsFound() < minTPCClusters)
-        continue;
-      lNaccTPC++;
+      if (track.tpcNClsFound() >= minTPCClusters) {
+        passTPCclu = kTRUE;
+        lNaccTPC++;
+      }
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius && passTPCclu) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
