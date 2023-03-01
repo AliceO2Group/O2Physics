@@ -97,7 +97,6 @@ struct NucleiSpectraEfficiencyLightGen {
 
 struct NucleiSpectraEfficiencyLightRec {
 
-
   HistogramRegistry spectra{"spectraRec", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
