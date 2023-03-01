@@ -354,7 +354,7 @@ struct propagatorQa {
       float lL = TMath::Sqrt(
         TMath::Power(lCircle.xC - collision.posX(), 2) +
         TMath::Power(lCircle.yC - collision.posY(), 2));
-      float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
+      float lCircleDCA = TMath::Sign(-1,d_bz)*lTrackParametrization.getSign() * (lL - lR); // signed dca
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
       dcaInfo[0] = 999;
