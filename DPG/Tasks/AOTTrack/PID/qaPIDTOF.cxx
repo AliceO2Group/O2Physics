@@ -321,6 +321,8 @@ struct tofPidQa {
     static_for<0, 8>([&](auto i) {
       initPerParticle<i>(pAxis, ptAxis, etaAxis, phiAxis, chargeAxis);
     });
+    LOG(info) << "QA PID TOF histograms:";
+    histos.print();
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>

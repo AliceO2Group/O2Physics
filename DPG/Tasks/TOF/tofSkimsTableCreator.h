@@ -35,10 +35,12 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //! Index to the co
 DECLARE_SOA_COLUMN(P, p, float);                             //! Momentum of the track
 DECLARE_SOA_COLUMN(Pt, pt, float);                           //! Pt of the track
 DECLARE_SOA_COLUMN(DeltaP, deltaP, float);                   //! Momentum difference with respect to the reference track
+DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);                 //! Transverse momentum difference with respect to the reference track
 DECLARE_SOA_COLUMN(Eta, eta, float);                         //! Eta of the track
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);               //! Eta difference with respect to the reference track
 DECLARE_SOA_COLUMN(Phi, phi, float);                         //! Phi of the track
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);               //! Phi difference with respect to the reference track
+DECLARE_SOA_COLUMN(DeltaTPi, deltaTPi, float);               //! Difference between the tofSignal and the pion expected signal
 DECLARE_SOA_COLUMN(DoubleDelta, doubleDelta, float);         //! Double difference between DeltaT
 DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t); //! Index for mass hypothesis used in tracking see PID.h for definition
 DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);           //! Event time of the track computed with the T0AC
@@ -86,10 +88,12 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   tofskims::P,
                   tofskims::DeltaP,
                   tofskims::Pt,
+                  tofskims::DeltaPt,
                   tofskims::Eta,
                   tofskims::DeltaEta,
                   tofskims::Phi,
                   tofskims::DeltaPhi,
+                  tofskims::DeltaTPi,
                   tofskims::DoubleDelta,
                   track::Length,
                   track::TOFChi2,

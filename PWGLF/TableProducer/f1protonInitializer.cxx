@@ -60,12 +60,17 @@ struct f1protoninitializer {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cMaxDCAXY{"cMaxDCAXY", 1.0, "Maximum DCA XY cut of primary track"};
   Configurable<float> cMaxDCAZ{"cMaxDCAZ", 1.0, "Maximum DCA Z cut of primary track"};
+  Configurable<float> cMinTPCncls{"cMinTPCncls", 100.0, "Minimum number of TPC cluster"};
+  Configurable<float> cMinTPCncr{"cMinTPCncr", 100.0, "Minimum number of TPC crossed rows"};
+  Configurable<float> cMinTPCncrOverncls{"cMinTPCncrOverncls", 0.8, "Minimum number of TPC crossed rows over cluster"};
+  Configurable<float> cMaxFracTPCncls{"cMaxFracTPCcls", 1.0, "Maximum fraction of shared TPC cluster"};
 
   /// V0 selcection
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "Minimum V0 CosPA to PV"};
   Configurable<double> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
   /// F1 mass cut///////////
+  Configurable<double> cSigmaMassKs0{"cSigmaMassKs0", 2, "Sigma cut on KS0 mass"};
   Configurable<double> cMaxMassKKs0{"cMaxMassKKs0", 1.04, "Mass cut on K-KS0 pair"};
   Configurable<double> cMaxMassF1{"cMaxMassF1", 1.80001, "Mass cut on F1 resonance"};
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
@@ -75,8 +80,11 @@ struct f1protoninitializer {
   Configurable<double> pionMomentumPID{"pionMomentumPID", 0.5, "pi momentum range for TPC PID selection"};
   Configurable<double> kaonMomentumPID{"kaonMomentumPID", 0.45, "ka momentum range for TPC PID selection"};
   Configurable<double> protonMomentumPID{"protonMomentumPID", 0.75, "pr momentum range for TPC PID selection"};
-  Configurable<float> nsigmaCut{"nsigmaCut", 3, "nsigma cut"};
-  Configurable<int> strategyPID{"strategyPID", 0, "PID strategy"};
+  Configurable<float> nsigmaCutTPC{"nsigmaCutTPC", 3, "nsigma cut TPC"};
+  Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3, "nsigma cut TOF"};
+  Configurable<int> strategyPIDPion{"strategyPIDPion", 0, "PID strategy Pion"};
+  Configurable<int> strategyPIDKaon{"strategyPIDKaon", 0, "PID strategy Kaon"};
+  Configurable<int> strategyPIDProton{"strategyPIDProton", 0, "PID strategy Proton"};
 
   HistogramRegistry qaRegistry{"QAHistos", {
                                              {"hEventstat", "hEventstat", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
@@ -105,7 +113,7 @@ struct f1protoninitializer {
     if (!candidate.isGlobalTrack()) {
       return false;
     }
-    if (candidate.tpcNClsCrossedRows() < 70 || candidate.tpcNClsCrossedRows() / candidate.tpcNClsFound() < 0.8) {
+    if (candidate.tpcNClsCrossedRows() < cMinTPCncr || candidate.tpcNClsCrossedRows() / candidate.tpcNClsFound() < cMinTPCncrOverncls || candidate.tpcNClsFound() < cMinTPCncls || candidate.tpcFractionSharedCls() > cMaxFracTPCncls) {
       return false;
     }
     return true;
@@ -114,9 +122,9 @@ struct f1protoninitializer {
   template <typename T>
   bool SelectionPi(const T& candidate)
   {
-    if (std::abs(candidate.p()) < pionMomentumPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCut) {
+    if (std::abs(candidate.p()) < pionMomentumPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
       return true;
-    } else if (std::abs(candidate.p()) >= pionMomentumPID && candidate.hasTOF() && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) < nsigmaCut * nsigmaCut) {
+    } else if (std::abs(candidate.p()) >= pionMomentumPID && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -125,9 +133,9 @@ struct f1protoninitializer {
   template <typename T>
   bool SelectionKa(const T& candidate)
   {
-    if (std::abs(candidate.p()) < kaonMomentumPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCut) {
+    if (std::abs(candidate.p()) < kaonMomentumPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
-    } else if (std::abs(candidate.p()) >= kaonMomentumPID && candidate.hasTOF() && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCut * nsigmaCut) {
+    } else if (std::abs(candidate.p()) >= kaonMomentumPID && candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -136,9 +144,9 @@ struct f1protoninitializer {
   template <typename T>
   bool SelectionPr(const T& candidate)
   {
-    if (std::abs(candidate.p()) < protonMomentumPID && std::abs(candidate.tpcNSigmaPr()) < nsigmaCut) {
+    if (std::abs(candidate.p()) < protonMomentumPID && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
       return true;
-    } else if (std::abs(candidate.p()) >= protonMomentumPID && candidate.hasTOF() && (candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) < nsigmaCut * nsigmaCut) {
+    } else if (std::abs(candidate.p()) >= protonMomentumPID && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -148,19 +156,19 @@ struct f1protoninitializer {
   bool SelectionPID(const T& candidate, int PID)
   {
     if (candidate.hasTOF()) {
-      if (PID == 0 && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmaCut * nsigmaCut)) {
+      if (PID == 0 && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
         return true;
-      } else if (PID == 1 && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCut * nsigmaCut)) {
+      } else if (PID == 1 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
-      } else if (PID == 2 && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCut * nsigmaCut)) {
+      } else if (PID == 2 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
         return true;
       }
     } else {
-      if (PID == 0 && std::abs(candidate.tpcNSigmaPi()) < nsigmaCut) {
+      if (PID == 0 && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
         return true;
-      } else if (PID == 1 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCut) {
+      } else if (PID == 1 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
         return true;
-      } else if (PID == 2 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCut) {
+      } else if (PID == 2 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
         return true;
       }
     }
@@ -174,7 +182,9 @@ struct f1protoninitializer {
       return false;
     }
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
-    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < 0.487 || candidate.mK0Short() > 0.507) {
+    float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
+    float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
+    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
     return true;
@@ -229,10 +239,10 @@ struct f1protoninitializer {
       qaRegistry.fill(HIST("hDCAz"), track1.dcaZ());
       qaRegistry.fill(HIST("hEta"), track1.eta());
       qaRegistry.fill(HIST("hPhi"), track1.phi());
-      if (!SelectionPi(track1) && strategyPID == 0) {
+      if (!SelectionPi(track1) && strategyPIDPion == 0) {
         continue;
       }
-      if (!SelectionPID(track1, 0) && strategyPID == 1) {
+      if (!SelectionPID(track1, 0) && strategyPIDPion == 1) {
         continue;
       }
       numberPion = numberPion + 1;
@@ -245,10 +255,10 @@ struct f1protoninitializer {
         if (!SelectionTrack(track2)) {
           continue;
         }
-        if (!SelectionKa(track2) && strategyPID == 0) {
+        if (!SelectionKa(track2) && strategyPIDKaon == 0) {
           continue;
         }
-        if (!SelectionPID(track2, 1) && strategyPID == 1) {
+        if (!SelectionPID(track2, 1) && strategyPIDKaon == 1) {
           continue;
         }
         if (numberPion == 1) {
@@ -315,10 +325,10 @@ struct f1protoninitializer {
             if (!SelectionTrack(track4)) {
               continue;
             }
-            if (!SelectionPr(track4) && strategyPID == 0) {
+            if (!SelectionPr(track4) && strategyPIDProton == 0) {
               continue;
             }
-            if (!SelectionPID(track4, 2) && strategyPID == 1) {
+            if (!SelectionPID(track4, 2) && strategyPIDProton == 1) {
               continue;
             }
             if (numberF1 == 1) {
