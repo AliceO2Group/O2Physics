@@ -166,7 +166,7 @@ o2physics_add_dpl_workflow(candidate-selector-lc
 
 o2physics_add_dpl_workflow(candidate-selector-lc-ml
                     SOURCES candidateSelectorLcMl.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-jpsi

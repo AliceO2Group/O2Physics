@@ -19,9 +19,11 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "CCDB/CcdbApi.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Tools/ML/model.h"
 
@@ -71,7 +73,7 @@ struct HfCandidateSelectorLcMl {
   int dataTypeML;
   OnnxModel model;
 
-  using TrksPID = soa::Join<aod::BigTracksPID, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+  using TrksPID = soa::Join<aod::BigTracksPIDExtended, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   void init(o2::framework::InitContext&)
   {
@@ -89,7 +91,7 @@ struct HfCandidateSelectorLcMl {
     std::map<std::string, std::string> headers;
     bool retrieveSuccess = true;
     if (applyML) {
-      if (onnxFileLcToPiKPConf == "") {
+      if (onnxFileLcToPiKPConf.value == "") {
         LOG(error) << "Apply ML specified, but no name given to the local model file";
       }
       if (loadModelsFromCCDB && timestampCCDB > 0) {
@@ -103,12 +105,12 @@ struct HfCandidateSelectorLcMl {
       }
       if (retrieveSuccess) {
         auto session = model.getSession();
-        inputShapes = session->GetInputShapes();
+        auto inputShapes = session->GetInputShapes();
         if (inputShapes[0][0] < 0) {
-          LOGF(warning, Form("Model for %s with negative input shape likely because converted with hummingbird, setting it to 1.", partName.data()));
+          LOGF(warning, "Model for Lc with negative input shape likely because converted with hummingbird, setting it to 1.");
           inputShapes[0][0] = 1;
         }
-        model.evalModel(std::vector<float>(network.getInputDimensions(), 1.)); /// Init the model evaluations
+        model.evalModel(std::vector<float>(model.getNumInputNodes(), 1.)); /// Init the model evaluations
         dataTypeML = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementType();
       } else {
         LOG(fatal) << "Error encountered while fetching/loading the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
@@ -270,6 +272,9 @@ struct HfCandidateSelectorLcMl {
       std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
       std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
+      const float massPi = RecoDecay::getMassPDG(211);
+      const float massK = RecoDecay::getMassPDG(321);
+      const float massProton = RecoDecay::getMassPDG(2212);
       const float massLc = RecoDecay::getMassPDG(4122);
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
@@ -279,29 +284,27 @@ struct HfCandidateSelectorLcMl {
       }
       if (statusLcToPKPi == 1) {
         auto invMassLcToPKPi = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massProton, massK, massPi});
-        if (std::abs(invMassLcToPKPi - massLc) >= maxDeltaMass && &candidate.pt() < 10) {
+        if (std::abs(invMassLcToPKPi - massLc) >= maxDeltaMass && candidate.pt() < 10) {
           statusLcToPKPi = 0;
         }
       }
 
       if ((statusLcToPiKP == 1 || statusLcToPKPi == 1) && applyML) {
-        float scoresToFill[3] = {-1., -1., -1.};
         auto trackParPos1 = getTrackPar(trackPos1);
         auto trackParNeg = getTrackPar(trackNeg);
         auto trackParPos2 = getTrackPar(trackPos2);
         std::vector<float> inputFeatures{trackParPos1.getPt(), trackPos1.dcaXY(), trackPos1.dcaZ(), trackParNeg.getPt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackParPos2.getPt(), trackPos2.dcaXY(), trackPos2.dcaZ()};
-        int tagBDT = 0;
         if (dataTypeML == 1 || dataTypeML == 11) {
           auto scores = model.evalModel(inputFeatures);
-          if (scores[0] > thresholdBDTScoreLcToPiKP.get(0u, "BDTbkg")) {
+          if (scores[0] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTbkg")) {
             // background
             statusLcToPKPi = 0;
             statusLcToPiKP = 0;
           }
-          if (scores[1] > thresholdBDTScoreLcToPiKP.get(0u, "BDTprompt")) {
+          if (scores[1] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTprompt")) {
             // prompt
           }
-          if (scores[2] > thresholdBDTScoreLcToPiKP.get(0u, "BDTnonprompt")) {
+          if (scores[2] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTnonprompt")) {
             // non-prompt
             // NOTE: Can be both prompt and non-prompt!
           }
