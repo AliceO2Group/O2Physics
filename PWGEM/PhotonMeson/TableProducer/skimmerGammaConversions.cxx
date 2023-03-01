@@ -60,6 +60,7 @@ struct skimmerGammaConversions {
   Configurable<std::string> ccdbPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
   Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<float> kfMassConstrain{"KFParticleMassConstrain", 0.f, "mass constrain for the KFParticle mother particle"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -97,7 +98,7 @@ struct skimmerGammaConversions {
 
   struct recalculatedVertexParameters{
     float recalculatedConversionPoint[3];
-    float KFParticleChi2;
+    float KFParticleChi2DividedByNDF;
   };
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
@@ -182,7 +183,7 @@ struct skimmerGammaConversions {
       recalculatedVertex.recalculatedConversionPoint[0],
       recalculatedVertex.recalculatedConversionPoint[1],
       recalculatedVertex.recalculatedConversionPoint[2],
-      recalculatedVertex.KFParticleChi2);
+      recalculatedVertex.KFParticleChi2DividedByNDF);
   }
 
   template <typename TTRACK>
@@ -449,7 +450,16 @@ struct skimmerGammaConversions {
     gammaKF.SetConstructMethod(2);
     gammaKF.AddDaughter(kFParticleEPlus);
     gammaKF.AddDaughter(kFParticleEMinus);
-    recalculatedVertex->KFParticleChi2 = gammaKF.GetChi2();
+    gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
+    
+    if(gammaKF.GetNDF() == 0)
+    {
+      recalculatedVertex->KFParticleChi2DividedByNDF = -1.f;
+    }
+    else
+    {
+      recalculatedVertex->KFParticleChi2DividedByNDF = gammaKF.GetChi2() / gammaKF.GetNDF();
+    }
   }
 };
 
