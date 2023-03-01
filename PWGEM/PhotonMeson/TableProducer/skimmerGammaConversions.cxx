@@ -58,7 +58,6 @@ struct skimmerGammaConversions {
   Configurable<std::string> ccdbPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
   Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> ccdbNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -121,9 +120,6 @@ struct skimmerGammaConversions {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    // Not later than now, will be replaced by the value of the train creation
-    // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(ccdbNoLaterThan);
     ccdb->setFatalWhenNull(false);
   }
 
