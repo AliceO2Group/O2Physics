@@ -160,7 +160,7 @@ struct GammaConversions {
       {"hConvPointR_recalc", "hConvPointR_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
       {"hConvPointZ_recalc", "hConvPointZ_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
       {"hKFParticleChi2DividedByNDF", "hKFParticleChi2DividedByNDF;chi2;counts", {HistType::kTH1F, {gAxis_chi2}}}};
-      
+
     // PDG code of all particles to analyize the purity. Only for MC and only for Rec
     std::vector<MyHistogramSpec> lMcPDGCode{
       {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{6000, -3000.0f, 3000.0f}}}}, // first only cover useful range. Otherwise histogram will get rediculously large
