@@ -261,10 +261,12 @@ struct caloClusterProducerTask {
           float sigmaZ = 1. / TMath::Min(3.3, 1.12 + 0.35 * TMath::Exp(-0.032 * e * e) + 0.75 / TMath::Power(e + 0.24, 3)); // inverse sigma Z
 
           for (int indx : regions) {
-            for (auto p : cpvMatchPoints[indx]) {
-              float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
-              if (d < trackdist) {
-                trackdist = d;
+            if (indx >= 0 && indx < nCpvCells) {
+              for (auto p : cpvMatchPoints[indx]) {
+                float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
+                if (d < trackdist) {
+                  trackdist = d;
+                }
               }
             }
           }
