@@ -18,6 +18,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -56,6 +57,7 @@ struct CheckFilterBit {
     histos.add("Tracks/MCgen/histMCgen3dPhysPrimary", "MC Phys. Prim.;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/MCgen/histMCgen3dChargedProdRad1to15cm", "MC Prod Rad_xy 1 to 15 cm;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/MCgen/histMCgen3dChargedProdRad1mumto5mm", "MC Prod Rad_xy 1#mum to 5 mm ;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/MCgen/histMCgen3dChargedfromHFdecay", "MC Phys. Prim from HF decay ;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
 
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histpt", "pt", kTH1D, {axisPt});
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histptFB0", "FB0;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
@@ -75,6 +77,12 @@ struct CheckFilterBit {
     histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB2", "FB2;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3", "FB3;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4", "FB4;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+
+    histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB0", "FB0;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB1", "FB1;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB2", "FB2;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB3", "FB3;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB4", "FB4;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
   }
 
   void processData(soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension> const& tracks)
@@ -122,42 +130,69 @@ struct CheckFilterBit {
         // double pvZdiff = collision.posZ() - collMC.posZ();
         if (indexMatchOK) {
           double prodRadius2 = mcparticle.vx() * mcparticle.vx() + mcparticle.vy() * mcparticle.vy();
-          if (mcparticle.isPhysicalPrimary() && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
-            if (std::abs(track.eta()) < 0.9)
-              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histpt"), mcparticle.pt()); // note: one needs to avoid double counting of tracks reco both in TPC and ITS but not matched
-            if (track.isGlobalTrack())
-              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb1())
-              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb2())
-              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb3())
-              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb4())
-              histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
-          } else if (prodRadius2 > 1. && prodRadius2 < 15. && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
-            if (track.isGlobalTrack())
-              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb1())
-              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb2())
-              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb3())
-              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb4())
-              histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
-          }
-          if (prodRadius2 > 1.e-4 && prodRadius2 < 0.5 && (std::abs(mcparticle.pdgCode()) == 211 || std::abs(mcparticle.pdgCode()) == 321 || std::abs(mcparticle.pdgCode()) == 2212 || std::abs(mcparticle.pdgCode()) == 11 || std::abs(mcparticle.pdgCode()) == 13)) {
-            if (track.isGlobalTrack())
-              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb1())
-              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb2())
-              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb3())
-              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
-            if (track.trackCutFlagFb4())
-              histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+          int partpdg = std::abs(mcparticle.pdgCode());
+          if (partpdg == 211 || partpdg == 321 || partpdg == 2212 || partpdg == 11 || partpdg == 13) {
+            if (mcparticle.isPhysicalPrimary()) {
+              int isHF = RecoDecay::getCharmHadronOrigin(mcParticles, mcparticle, false);
+              if (std::abs(track.eta()) < 0.9) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histpt"), mcparticle.pt()); // note: one needs to avoid double counting of tracks reco both in TPC and ITS but not matched
+              }
+              if (track.isGlobalTrack()) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
+              }
+              if (track.trackCutFlagFb1()) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
+              }
+              if (track.trackCutFlagFb2()) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+              }
+              if (track.trackCutFlagFb3()) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+              }
+              if (track.trackCutFlagFb4()) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+              }
+              if (isHF == RecoDecay::OriginType::Prompt || isHF == RecoDecay::OriginType::NonPrompt) {
+                if (track.isGlobalTrack()) {
+                  histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
+                }
+                if (track.trackCutFlagFb1()) {
+                  histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
+                }
+                if (track.trackCutFlagFb2()) {
+                  histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+                }
+                if (track.trackCutFlagFb3()) {
+                  histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+                }
+                if (track.trackCutFlagFb4()) {
+                  histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+                }
+              }
+            } else if (prodRadius2 > 1. && prodRadius2 < 225.) {
+              if (track.isGlobalTrack())
+                histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb1())
+                histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb2())
+                histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb3())
+                histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb4())
+                histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+            }
+            if (prodRadius2 > 1.e-8 && prodRadius2 < 0.25) {
+              if (track.isGlobalTrack())
+                histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb1())
+                histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB1"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb2())
+                histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB2"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb3())
+                histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb4())
+                histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+            }
           }
         }
       }
@@ -175,14 +210,18 @@ struct CheckFilterBit {
     for (auto& mcpart : mcParticles) {
       double prodRadius2 = mcpart.vx() * mcpart.vx() + mcpart.vy() * mcpart.vy();
       if (std::abs(mcpart.pdgCode()) == 211 || std::abs(mcpart.pdgCode()) == 321 || std::abs(mcpart.pdgCode()) == 2212 || std::abs(mcpart.pdgCode()) == 11 || std::abs(mcpart.pdgCode()) == 13) {
+        int isHF = RecoDecay::getCharmHadronOrigin(mcParticles, mcpart, false);
         if (mcpart.isPhysicalPrimary()) {
-          if (std::abs(mcpart.eta()) < 0.9)
+          if (std::abs(mcpart.eta()) < 0.9) {
             histos.fill(HIST("Tracks/MCgen/histMCgenpt"), mcpart.pt());
+          }
           histos.fill(HIST("Tracks/MCgen/histMCgen3dPhysPrimary"), mcpart.pt(), mcpart.eta(), mcpart.phi());
-        } else if (prodRadius2 > 1. && prodRadius2 < 15.) {
+          if (isHF == RecoDecay::OriginType::Prompt || isHF == RecoDecay::OriginType::NonPrompt)
+            histos.fill(HIST("Tracks/MCgen/histMCgen3dChargedfromHFdecay"), mcpart.pt(), mcpart.eta(), mcpart.phi());
+        } else if (prodRadius2 > 1. && prodRadius2 < 225.) {
           histos.fill(HIST("Tracks/MCgen/histMCgen3dChargedProdRad1to15cm"), mcpart.pt(), mcpart.eta(), mcpart.phi());
         }
-        if (prodRadius2 > 1.e-4 && prodRadius2 < 0.5) {
+        if (prodRadius2 > 1.e-8 && prodRadius2 < 0.25) {
           histos.fill(HIST("Tracks/MCgen/histMCgen3dChargedProdRad1mumto5mm"), mcpart.pt(), mcpart.eta(), mcpart.phi());
         }
       }
