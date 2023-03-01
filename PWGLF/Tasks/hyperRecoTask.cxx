@@ -149,6 +149,7 @@ struct hyperRecoTask {
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> heliumNsigmaMax{"heliumNsigmaMax", 5, "helium dEdx cut (n sigma)"};
+  Configurable<float> heliumNtpcClusMin{"heliumNtpcClusMin", 80, "helium NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -280,6 +281,10 @@ struct hyperRecoTask {
         matter = abs(nSigmaTPCpos) < abs(nSigmaTPCneg);
 
       hypCand.isMatter = matter;
+      auto& he3track = hypCand.isMatter ? posTrack : negTrack;
+      if (he3track.tpcNClsFindable() < heliumNtpcClusMin)
+        continue;
+
       hypCand.nSigmaHe3 = hypCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
       hypCand.nTPCClustersHe3 = hypCand.isMatter ? posTrack.tpcNClsFindable() : negTrack.tpcNClsFindable();
 
@@ -349,7 +354,6 @@ struct hyperRecoTask {
       hypCand.posTrackID = posTrack.globalIndex();
       hypCand.negTrackID = negTrack.globalIndex();
 
-      auto& he3track = hypCand.isMatter ? posTrack : negTrack;
       int chargeFactor = hypCand.isMatter ? 1 : -1;
 
       qaRegistry.fill(HIST("hDeDx3HeSel"), chargeFactor * he3track.tpcInnerParam(), he3track.tpcSignal());
