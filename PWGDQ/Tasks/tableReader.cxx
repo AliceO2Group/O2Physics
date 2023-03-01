@@ -938,15 +938,15 @@ struct AnalysisSameEventPairing {
     TString cutNames = fConfigTrackCuts.value;
     std::vector<std::vector<TString>> histNames = fTrackHistNames;
     if constexpr (TPairType == pairTypeMuMu) {
-      TString cutNames = fConfigMuonCuts.value;
+      cutNames = fConfigMuonCuts.value;
       histNames = fMuonHistNames;
     }
     if constexpr (TPairType == pairTypeEMu) {
-      TString cutNames = fConfigMuonCuts.value;
+      cutNames = fConfigMuonCuts.value;
       histNames = fTrackMuonHistNames;
     }
     std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
-    unsigned int ncuts = objArray->GetEntries();
+    int ncuts = objArray->GetEntries();
 
     uint32_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
