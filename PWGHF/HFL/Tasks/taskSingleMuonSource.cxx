@@ -43,16 +43,6 @@ enum ParticleType {
   HasQuarkoniumParent, // this particle has a quarkonium parent
   HasTauParent         // this particle has a tau parent
 };
-
-const auto nSrcs(7);
-const TString muonSources[nSrcs]{
-  "BeautyDecayMu",
-  "NonpromptCharmMu",
-  "PromptCharmMu",
-  "LightDecayMu",
-  "SecondaryMu",
-  "Hadron",
-  "Unidentified"};
 } // namespace
 
 struct HfTaskMuonSourceMc {
@@ -72,6 +62,16 @@ struct HfTaskMuonSourceMc {
 
   void init(InitContext&)
   {
+    const auto nSrcs(7);
+    const TString muonSources[nSrcs]{
+      "BeautyDecayMu",
+      "NonpromptCharmMu",
+      "PromptCharmMu",
+      "LightDecayMu",
+      "SecondaryMu",
+      "Hadron",
+      "Unidentified"};
+
     AxisSpec axisDCA{500, 0., 5., "DCA (cm)"};
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
@@ -122,7 +122,12 @@ struct HfTaskMuonSourceMc {
       }
 
       const int pdgRem(pdgAbs % 100000);
-      if ((pdgRem < 100) || (pdgRem >= 1000)) {
+
+      if (pdgRem == 2122) {
+        continue;
+      } // Beam particle
+
+      if ((pdgRem < 100) || (pdgRem >= 10000)) {
         continue;
       }
       // compute the flavor of constituent quark
