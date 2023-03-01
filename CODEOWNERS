@@ -30,11 +30,11 @@
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
-/PWGHF @alibuild @ginnocen @vkucera @fcolamar @cterrevo
-/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @cterrevo @xinyepeng @lvermunt
-/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
-/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh @rvertesi
-/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo @NicoleBastid @mvolkl
+/PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @xinyepeng @lvermunt
+/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @mmazzilli
+/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @nzardosh @rvertesi
+/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @NicoleBastid @mvolkl
 /PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
