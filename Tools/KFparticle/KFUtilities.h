@@ -52,7 +52,7 @@ KFPVertex createKFPVertexFromCollision(const T& collision)
 /// @param track Track from o2::track::TrackParametrizationWithError
 /// @return KFPTrack
 KFPTrack createKFPTrack(const o2::track::TrackParametrizationWithError<float>& trackparCov,
-                        short trackSign,
+                        int16_t trackSign,
                         int16_t tpcNClsFound,
                         float tpcChi2NCl)
 {
@@ -95,7 +95,7 @@ KFPTrack createKFPTrackFromTrack(const T& track)
 /// @param track Track from o2::track::TrackParametrizationWithError
 /// @return KFPTrack
 KFPTrack createKFPTrackFromTrackParCov(const o2::track::TrackParametrizationWithError<float>& trackparCov,
-                                       short trackSign,
+                                       int16_t trackSign,
                                        int16_t tpcNClsFound,
                                        float tpcChi2NCl)
 {
