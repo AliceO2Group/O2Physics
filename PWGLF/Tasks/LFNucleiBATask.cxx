@@ -852,8 +852,14 @@ struct LFNucleiBATask {
 
       // DCA Cut
       if constexpr (!IsFilteredData) {
-        if ((!enableDCACustomCut && !track.isGlobalTrack()) || ((enableDCACustomCut && (!track.isGlobalTrackWoDCA() && (std::abs(track.dcaXY()) > DCAxyCustomCut) && (std::abs(track.dcaZ()) > DCAzCustomCut))))) {
-          continue;
+        if (!enableDCACustomCut) {
+          if (!track.isGlobalTrack())
+            continue;
+        } else {
+          if (!track.isGlobalTrackWoDCA())
+            continue;
+          if ((std::abs(track.dcaXY()) > DCAxyCustomCut) || (std::abs(track.dcaZ()) > DCAzCustomCut))
+            continue;
         }
       }
 
