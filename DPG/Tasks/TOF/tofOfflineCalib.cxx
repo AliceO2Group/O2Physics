@@ -65,7 +65,10 @@ struct tofOfflineCalib {
   void init(o2::framework::InitContext& initContext)
   {
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    histos.add("events", "Events", kTH1D, {{10, 0, 10, "Event selection"}});
+    auto h = histos.add<TH1>("events", "Events", kTH1D, {{10, 0, 10, "Event selection"}});
+    h->GetXaxis()->SetBinLabel(1, "Events read");
+    h->GetXaxis()->SetBinLabel(2, "Events sampled");
+
     switch (applyEvSel.value) {
       case 0:
       case 1:
@@ -107,22 +110,24 @@ struct tofOfflineCalib {
                soa::Filtered<Trks> const& tracks,
                aod::BCs const&)
   {
+    histos.fill(HIST("events"), 0.5);
     if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
     }
-    tableRow.reserve(tracks.size());
+    histos.fill(HIST("events"), 1.5);
 
-    histos.fill(HIST("events"), 0);
-    if (!collision.sel8()) {
-      return;
+    if (makeTable) { // Reserve room for the output table
+      tableRow.reserve(tracks.size());
     }
+
+    // Handle event times
     float evTimeT0AC = 0.f;
     float evTimeT0ACErr = 0.f;
     if (collision.t0ACValid()) {
       evTimeT0AC = collision.t0AC() * 1000.f;
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
-    histos.fill(HIST("events"), 1);
+
     if (lastRun != collision.bc().runNumber()) {
       lastRun = collision.bc().runNumber();
       const AxisSpec doubleDeltaAxis{1500, -3000, 3000, "#Deltat_{#pi} - #Deltat_{#pi}^{ref} (ps)"};
@@ -139,7 +144,7 @@ struct tofOfflineCalib {
 
     int8_t lastTRDLayer = -1;
     for (auto& track1 : tracks) {
-      if (!track1.isGlobalTrack()) {
+      if (!track1.hasTOF()) {
         continue;
       }
       // Selecting good reference
@@ -149,7 +154,7 @@ struct tofOfflineCalib {
         continue;
       }
       for (auto& track2 : tracks) {
-        if (!track2.isGlobalTrack()) {
+        if (!track2.hasTOF()) {
           continue;
         }
         if (track1.globalIndex() == track2.globalIndex()) { // Skipping the same track
@@ -165,15 +170,15 @@ struct tofOfflineCalib {
         if (track2.p() > pRefMin && track2.p() < pRefMax) {
           if (track1.hasTRD()) {
             if (track2.tofChi2() < maxTOFChi2) {
-              hGood->Fill(delta2 - delta1);
-            } else if (track2.tofChi2() > maxTOFChi2 + 2) {
-              hBad->Fill(delta2 - delta1);
-            }
-          } else {
-            if (track2.tofChi2() < maxTOFChi2) {
               hGoodRefWithTRD->Fill(delta2 - delta1);
             } else if (track2.tofChi2() > maxTOFChi2 + 2) {
               hBadRefWithTRD->Fill(delta2 - delta1);
+            }
+          } else {
+            if (track2.tofChi2() < maxTOFChi2) {
+              hGood->Fill(delta2 - delta1);
+            } else if (track2.tofChi2() > maxTOFChi2 + 2) {
+              hBad->Fill(delta2 - delta1);
             }
           }
         }
@@ -194,10 +199,12 @@ struct tofOfflineCalib {
                  track2.p(),
                  track1.p() - track2.p(),
                  track2.pt(),
+                 track1.pt() - track2.pt(),
                  track2.eta(),
                  track1.eta() - track2.eta(),
                  track2.phi(),
                  track1.phi() - track2.phi(),
+                 delta2,
                  delta2 - delta1,
                  track2.length(),
                  track2.tofChi2(),
