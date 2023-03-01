@@ -60,7 +60,7 @@ struct HfTaskMuonSourceMc {
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
 
   double etaLow = -3.6; // low edge of eta acceptance
-  double etaUp = -2.5;  // up edge of eta acceptance 
+  double etaUp = -2.5;  // up edge of eta acceptance
   double edgeZ = 10.0;  // edge of event position Z
 
   HistogramRegistry registry{
