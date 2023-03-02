@@ -52,13 +52,23 @@ void upload_trigger_aliases_run3()
     runs.push_back(r);
   }
 
+  if (1) {
+    ULong64_t sor = 1543767116001;
+    ULong64_t eor = 1669611662530;
+    TriggerAliases* aliases = new TriggerAliases();
+    metadata["runNumber"] = "default";
+    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor);
+  }
+
   for (auto& run : runs) {
     LOGP(info, "run = {}", run);
+    if (run < 519903)
+      continue; // no CTP info
     if (run == 527349)
       continue; // no CTP info
     if (run == 527963)
       continue; // no CTP info
-    if (run <= 528537)
+    if (run == 528537)
       continue; // no CTP info
     if (run == 528543)
       continue; // no CTP info
@@ -70,6 +80,12 @@ void upload_trigger_aliases_run3()
     // read CTP config
     metadata["runNumber"] = Form("%d", run);
     auto ctpcfg = ccdb.retrieveFromTFileAny<o2::ctp::CTPConfiguration>("CTP/Config/Config", metadata, ts);
+    if (!ctpcfg) continue;
+
+    if (run == 529414) { // adding tolerance to sor for this run
+      sor = 1668809980000;
+    }
+
     std::vector<o2::ctp::CTPClass> classes = ctpcfg->getCTPClasses();
     // ctpcfg->printConfigString();
     // create trigger aliases
@@ -91,6 +107,6 @@ void upload_trigger_aliases_run3()
       }
     }
     aliases->Print();
-    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor);
+    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor+10000); // adding tolerance of 10s to eor
   }
 }
