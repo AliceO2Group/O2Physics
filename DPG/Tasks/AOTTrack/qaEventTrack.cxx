@@ -321,6 +321,9 @@ struct qaEventTrack {
 
     // tracks vs tracks @ IU
     if (doprocessDataIU) {
+      // Events
+      histos.add("Events/nContribTracksIUWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+
       // Full distributions
       auto h1 = histos.add<TH1>("Tracks/IU/Pt", "IU: Pt", kTH1F, {axisPt});
       h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
@@ -522,9 +525,10 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processRun2ConvertedData, "process for run 2 converted data", false);
 
   // Process function for IU vs DCA track comparison
+  using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   void processDataIU(CollisionTableData::iterator const& collision,
                      aod::FullTracks const& tracksUnfiltered,
-                     aod::TracksIU const& tracksIU)
+                     FullTracksIU const& tracksIU)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
@@ -533,6 +537,22 @@ struct qaEventTrack {
     if (tracksUnfiltered.size() != tracksIU.size()) {
       LOG(fatal) << "Tables are of different size!!!!!!!!! " << tracksUnfiltered.size() << " vs " << tracksIU.size();
     }
+
+    /// look for PV contributors and check correlation between TRD and TOF
+    /// to check if TRD time shift creates issues or not
+    int nPvContrWithTOF = 0;
+    int nPvContrWithTRD = 0;
+    for (const auto& trk : tracksIU) {
+      if (trk.isPVContributor()) {
+        if (trk.hasTOF()) {
+          nPvContrWithTOF++;
+        }
+        if (trk.hasTRD()) {
+          nPvContrWithTRD++;
+        }
+      }
+    }
+    histos.fill(HIST("Events/nContribTracksIUWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
 
     uint64_t trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
