@@ -367,7 +367,6 @@ struct centralEventFilterTask {
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
       tags(BCArray->Value(iD), GloBCArray->Value(BCArray->Value(iD)), CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
     }
-
   }
 
   /// Trivial process to have automatically the collision and BC input tables

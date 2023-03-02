@@ -161,7 +161,7 @@ struct BCRangeSelector {
     InteractionRecord IR1, IR2;
     uint64_t first{bcs.iteratorAt(bcRanges[0].first).globalBC()};
     IR1.setFromLong(first);
-    while (nToBeAdded > 0 && bcRanges[0].first > 0) { ///TODO: decide if we want to extend the ranges to the beginning of the dataframe
+    while (nToBeAdded > 0 && bcRanges[0].first > 0) { /// TODO: decide if we want to extend the ranges to the beginning of the dataframe
       first = bcs.iteratorAt(bcRanges[0].first - 1).globalBC();
       IR2.setFromLong(first);
       if (IR1.differenceInBC(IR2) > o2::constants::lhc::LHCMaxBunches) { // protection against change of orbit in the DataFrame
