@@ -27,6 +27,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
+#include "trackSelectionRequest.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -43,6 +44,9 @@ struct propagatorQa {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
 
+  // Configurable based on a struct
+  Configurable<trackSelectionRequest> trackSels{"trackSels", {65, true}, "track selections"};
+  
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
   Configurable<int> NbinsDCA{"NbinsDCA", 2000, "NbinsDCA"};
@@ -207,9 +211,8 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
-        continue;
-
+      if (track.tpcNClsFound() < minTPCClusters) continue;
+      
       if (!track.has_mcParticle())
         continue;
       auto mctrack = track.mcParticle();
@@ -318,7 +321,7 @@ struct propagatorQa {
     }
   }
   PROCESS_SWITCH(propagatorQa, processMC, "process MC", true);
-
+  
   void processData(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
@@ -327,8 +330,7 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
-        continue;
+      if (track.tpcNClsFound() < minTPCClusters) continue;
 
       if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
         continue;
@@ -354,7 +356,7 @@ struct propagatorQa {
       float lL = TMath::Sqrt(
         TMath::Power(lCircle.xC - collision.posX(), 2) +
         TMath::Power(lCircle.yC - collision.posY(), 2));
-      float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
+      float lCircleDCA = TMath::Sign(-1,d_bz)*lTrackParametrization.getSign() * (lL - lR); // signed dca
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
       dcaInfo[0] = 999;
@@ -382,12 +384,12 @@ struct propagatorQa {
       histos.fill(HIST("hRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
 
       // ITS cluster map
-      float lMCCreation = 0.1; // dummy value, we don't know
+      float lMCCreation = 0.1; //dummy value, we don't know
 
       histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation, track.pt());
-
-      // A hack: use DCA as equiv to primary
-      if (TMath::Abs(lDCA) < 0.05) { // 500 microns
+      
+      //A hack: use DCA as equiv to primary
+      if( TMath::Abs(lDCA) < 0.05){ // 500 microns
         histos.fill(HIST("hPrimaryDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
         histos.fill(HIST("hPrimaryDeltaPtVsPt"), track.pt(), track.pt() - lTrackParametrization.getPt());
         histos.fill(HIST("hPrimaryUpdateRadii"), lRadiusOfLastUpdate);
@@ -404,7 +406,7 @@ struct propagatorQa {
         histos.fill(HIST("hPrimaryRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
         histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation, track.pt());
       }
-
+      
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
