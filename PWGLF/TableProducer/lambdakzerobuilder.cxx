@@ -590,8 +590,8 @@ struct lambdakzeroBuilder {
       auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
       auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
-      auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * (v0candidate.posP[0] + v0candidate.negP[0]), v0candidate.posP[1] + v0candidate.negP[1]);
-      auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], 2.0f * (v0candidate.posP[1] + v0candidate.negP[1]));
+      auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
+      auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
       // Note: all presel bools are true if unchecked
