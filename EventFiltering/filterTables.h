@@ -95,8 +95,8 @@ DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);         //! PHOS antineutrons
 namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, int);                           //! Bunch crossing Id
-DECLARE_SOA_COLUMN(GlobalBCId, hasGlobalBCId, int);               //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(BCId, hasBCId, uint64_t);                      //! Bunch crossing Id
+DECLARE_SOA_COLUMN(GlobalBCId, hasGlobalBCId, uint64_t);          //! Global Bunch crossing Id
 DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float);       //! Collision time
 DECLARE_SOA_COLUMN(CollisionTimeRes, hasCollisionTimeRes, float); //! Collision time resolution
 DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t);    //! CEFP triggers before downscalings

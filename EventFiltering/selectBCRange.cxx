@@ -10,14 +10,15 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
 #include "CommonDataFormat/InteractionRecord.h"
 #include "CommonDataFormat/IRFrame.h"
-#include "ReconstructionDataFormats/BCRange.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Logger.h"
+#include "Framework/runDataProcessing.h"
+
 #include "filterTables.h"
-#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -28,7 +29,7 @@ using namespace o2::framework::expressions;
 struct BCRangeSelector {
 
   Configurable<int> nTimeRes{"nTimeRes", 4, "Range to consider for search of compatible BCs in units of vertex-time-resolution."};
-  Configurable<int> nMinBSs{"nMinBCs", 7, "Minimum width of time window to consider for search of compatible BCs in units of 2*BunchSpacing."};
+  Configurable<int> nMinBCs{"nMinBCs", 7, "Minimum width of time window to consider for search of compatible BCs in units of 2*BunchSpacing."};
   Configurable<double> fillFac{"fillFactor", 0.0, "Factor of MB events to add"};
 
   using FDs = aod::CefpDecisions;
@@ -39,7 +40,6 @@ struct BCRangeSelector {
 
   uint64_t nBCs, nCompBCs, nNotCompBCs;
   uint64_t clast, cnew;
-  o2::dataformats::bcRanges cbcrs = o2::dataformats::bcRanges("Initial list"); // ranges of compatible BCs
 
   // buffer for task output
   std::vector<o2::dataformats::IRFrame> res;
@@ -47,7 +47,6 @@ struct BCRangeSelector {
 
   void init(o2::framework::InitContext&)
   {
-    cbcrs.reset();
     res.clear();
   }
 
@@ -78,42 +77,138 @@ struct BCRangeSelector {
 
     // 1. loop over collisions
     auto filt = fdecs.begin();
+    std::vector<std::pair<uint64_t, uint64_t>> bcRanges;
     for (auto collision : cols) {
       if (filt.hasCefpSelected()) {
 
-        // get range of compatible BCs
-        auto bcRange = udhelpers::compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
-        if (bcRange.size() == 0) {
+        LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+        // return if collisions has no associated BC
+        if (!collision.has_foundBC()) {
           LOGF(warning, "No compatible BCs found for collision that the framework assigned to BC %i", filt.hasGlobalBCId());
           filt++;
           continue;
         }
-        // update list of ranges
-        auto bcfirst = bcRange.rawIteratorAt(0);
-        auto bclast = bcRange.rawIteratorAt(bcRange.size() - 1);
-        cbcrs.add(bcfirst.globalBC(), bclast.globalBC());
+
+        // get associated BC
+        auto bcIter = collision.foundBC_as<BCs>();
+
+        // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+        InteractionRecord mostProbableBC;
+        mostProbableBC.setFromLong(bcIter.globalBC());
+        InteractionRecord meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+        // enforce minimum number for deltaBC
+        int deltaBC = std::ceil(collision.collisionTimeRes() * nTimeRes / o2::constants::lhc::LHCBunchSpacingNS);
+        if (deltaBC < nMinBCs) {
+          deltaBC = nMinBCs;
+        }
+        LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+        auto minBC = meanBC - deltaBC;
+        auto maxBC = meanBC + deltaBC;
+
+        uint64_t minBCId = bcIter.globalIndex();
+        uint64_t maxBCId = bcIter.globalIndex();
+
+        auto localIter = bcIter;
+        while (localIter.globalIndex() > 0) {
+          --localIter;
+          if (localIter.globalBC() >= minBC.toLong()) {
+            minBCId = localIter.globalIndex();
+          } else {
+            break;
+          }
+        }
+        localIter = bcIter;
+        while (localIter.globalIndex() < bcs.size()) {
+          ++localIter;
+          if (localIter.globalBC() <= maxBC.toLong()) {
+            maxBCId = localIter.globalIndex();
+          } else {
+            break;
+          }
+        }
+
+        bcRanges.push_back(std::make_pair(minBCId, maxBCId));
       }
       filt++;
     }
 
-    // 2. sort, merge, and extend ranges of compatible BCs
-    cbcrs.compact(bcs, fillFac);
+    /// We cannot merge the ranges in the previous loop because while collisions are sorted by time, the corresponding minBCs can be unsorted as the collision time resolution is not constant
+    std::sort(bcRanges.begin(), bcRanges.end(), [](const std::pair<uint64_t, uint64_t>& a, const std::pair<uint64_t, uint64_t>& b) {
+      return a.first < b.first;
+    });
+    std::vector<std::pair<uint64_t, uint64_t>> bcRangesMerged(1, bcRanges[0]);
+    for (uint64_t iR{1}; iR < bcRanges.size(); ++iR) {
+      if (bcRanges[iR - 1].second >= bcRanges[iR].first) {
+        bcRangesMerged.back().second = bcRanges[iR].second;
+      } else {
+        bcRangesMerged.push_back(bcRanges[iR]);
+      }
+    }
+    bcRanges.swap(bcRangesMerged);
+
+    // 2. extend ranges
+    int nBCselected{0};
+    for (auto& range : bcRanges) {
+      nBCselected += range.second - range.first + 1;
+    }
+    int nToBeAdded = std::ceil((bcs.size() - nBCselected) * fillFac);
+    int nToBeAddedPerRange = std::ceil(float(nToBeAdded) / bcRanges.size());
+    LOGF(debug, "Extending ranges by %d BCs (%d per selected range)", nToBeAdded, nToBeAddedPerRange);
+
+    InteractionRecord IR1, IR2;
+    uint64_t first{bcs.iteratorAt(bcRanges[0].first).globalBC()};
+    IR1.setFromLong(first);
+    while (nToBeAdded > 0 && bcRanges[0].first > 0) { /// TODO: decide if we want to extend the ranges to the beginning of the dataframe
+      first = bcs.iteratorAt(bcRanges[0].first - 1).globalBC();
+      IR2.setFromLong(first);
+      if (IR1.differenceInBC(IR2) > o2::constants::lhc::LHCMaxBunches) { // protection against change of orbit in the DataFrame
+        LOGF(debug, "Jump by more than one orbit detected!");
+        break;
+      } else {
+        IR1.setFromLong(first);
+      }
+      bcRanges[0].first--;
+      nToBeAdded--;
+    }
+    LOGF(debug, "Extending ranges by %d BCs (%d per selected range)", nToBeAdded, nToBeAddedPerRange);
+
+    for (uint64_t iR{0}; iR < bcRanges.size() && nToBeAdded > 0; ++iR) {
+      uint64_t second{bcs.iteratorAt(bcRanges[iR].second).globalBC()};
+      IR2.setFromLong(second);
+      for (int i{0}; i < nToBeAddedPerRange && nToBeAdded > 0; ++i) {
+        if (bcRanges[iR].second < bcs.size() - 1) {
+          second = bcs.iteratorAt(bcRanges[iR].second + 1).globalBC();
+          IR1.setFromLong(second);
+          if (IR1.differenceInBC(IR2) > o2::constants::lhc::LHCMaxBunches) { // protection against change of orbit in the DataFrame
+            LOGF(debug, "Jump by more than one orbit detected!");
+            break;
+          } else {
+            IR2.setFromLong(second);
+          }
+          bcRanges[iR].second++;
+          nToBeAdded--;
+        }
+      }
+    }
+    LOGF(debug, "End extension, remaining to be added %d BCs", nToBeAdded);
 
     // fill res
-    InteractionRecord IR1, IR2;
     LOGF(debug, "Merged and extended sorted ranges");
-    for (auto limit : cbcrs.list()) {
-      LOGF(debug, "  %i - %i", limit.first, limit.second);
-      IR1.setFromLong(limit.first);
-      IR2.setFromLong(limit.second);
+    for (auto& range : bcRanges) {
+      LOGF(debug, "  %i - %i", range.first, range.second);
+      uint64_t first{bcs.iteratorAt(range.first).globalBC()}, second{bcs.iteratorAt(range.second).globalBC()};
+      IR1.setFromLong(first);
+      IR2.setFromLong(second);
       res.emplace_back(IR1, IR2);
-      tags(limit.first, limit.second);
+      tags(first, second);
     }
     // make res an output
     pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);
 
     // clean up
-    cbcrs.reset();
     res.clear();
   }
 
