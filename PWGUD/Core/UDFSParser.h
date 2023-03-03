@@ -47,7 +47,7 @@ class UDFSParser
   // get pattern string
   std::string patternString(int ibeam);
 
-  void print();
+  void Print();
 
  private:
   // has been loaded with filling scheme
