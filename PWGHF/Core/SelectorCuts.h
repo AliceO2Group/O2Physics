@@ -34,6 +34,7 @@ enum Code {
   kDStar = 413,
   kDS = 431,
   kLambdaCPlus = 4122,
+  kXiCZero = 4132,
   kXiCPlus = 4232,
   kXiCCPlusPlus = 4422,
   kLambdaB0 = 5122,
@@ -43,7 +44,10 @@ enum Code {
   kB0Bar = -511,
   kBPlus = 521,
   kX3872 = 9920443,
-  kOmegaC0 = 4332
+  kSigmaC0 = 4112,
+  kSigmaCPlusPlus = 4222,
+  kOmegaC0 = 4332,
+  kPhi = 333
 };
 } // namespace pdg
 
@@ -357,8 +361,8 @@ static const std::vector<std::string> labelsCutVar = {"mK0s", "mLambda", "mGamma
 
 namespace hf_cuts_dplus_to_pi_k_pi
 {
-static const int nBinsPt = 24;
-static const int nCutVars = 13;
+static const int nBinsPt = 25;
+static const int nCutVars = 11;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
@@ -386,38 +390,37 @@ constexpr double binsPt[nBinsPt + 1] = {
     16.,
     24.,
     36.,
-    50.
-
-  };
+    50.,
+    100.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-// selections from pp at 5 TeV 2017 analysis https://alice-notes.web.cern.ch/node/808
-constexpr double cuts[nBinsPt][nCutVars] = {
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.07, 0., 6, 2.5},  /* 0.0  < pT < 1.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.07, 0., 6, 2.5},  /* 1.0  < pT < 1.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.980, 0.07, 0., 6, 2.5},  /* 1.5  < pT < 2.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.980, 0.10, 0., 5, 2.5},  /* 2.0  < pT < 2.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.10, 0., 5, 2.5},  /* 2.5  < pT < 3.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.10, 0., 5, 2.5},  /* 3.0  < pT < 3.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.10, 0., 5, 2.5},  /* 3.5  < pT < 4.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.10, 0., 5, 2.5},  /* 4.0  < pT < 4.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.985, 0.10, 0., 5, 2.5},  /* 4.5  < pT < 5.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.980, 0.10, 0., 5, 2.5},  /* 5.0  < pT < 5.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.980, 0.10, 0., 5, 2.5},  /* 5.5  < pT < 6.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.060, 0., 0.97, 0.980, 0.10, 0., 5, 2.5},  /* 6.0  < pT < 6.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.97, 0.980, 0.10, 0., 5, 2.5},  /* 6.5  < pT < 7.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.98, 0.980, 0.10, 0., 5, 2.5},  /* 7.0  < pT < 7.5  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.98, 0.980, 0.10, 0., 5, 2.5},  /* 7.5  < pT < 8.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.98, 0.980, 0.12, 0., 5, 2.5},  /* 8.0  < pT < 9.0  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.98, 0.980, 0.12, 0., 5, 2.5},  /* 9.0  < pT < 10.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5},  /* 10.  < pT < 11.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5},  /* 11.  < pT < 12.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5},  /* 12.  < pT < 14.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5},  /* 14.  < pT < 16.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5},  /* 16.  < pT < 24.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5},  /* 24.  < pT < 36.  */
-                {0.2, 0.3, 0.3, 0.1, 0.1, 0.040, 0., 0.96, 0.980, 0.12, 0., 5, 2.5}}; /* 36   < pT < 50   */
+// selections from pp at 13 TeV 2023 analysis https://alice-notes.web.cern.ch/node/1339
+constexpr double cuts[nBinsPt][nCutVars] = {{0.2, 0.3, 0.3, 0.02, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 0.0  < pT < 1.0  */ 
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 1.0  < pT < 1.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 1.5  < pT < 2.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 2.0  < pT < 2.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 2.5  < pT < 3.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 3.0  < pT < 3.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 3.5  < pT < 4.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 4.0  < pT < 4.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.85, 0.9, 2.5, 0., 0., 1.E10},  /* 4.5  < pT < 5.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 5.0  < pT < 5.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 5.5  < pT < 6.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 6.0  < pT < 6.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 6.5  < pT < 7.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 7.0  < pT < 7.5  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 7.5  < pT < 8.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 8.0  < pT < 9.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 9.0  < pT < 10.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 10.0  < pT < 11.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 11.0  < pT < 12.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 12.0  < pT < 14.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 14.0  < pT < 16.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 16.0  < pT < 24.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 24.0  < pT < 36.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10},  /* 36.0  < pT < 50.0  */
+                                            {0.2, 0.3, 0.3, 0.03, 0., 0.75, 0.8, 2.5, 0., 0., 1.E10}};  /* 50.0  < pT < 100.0 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -444,45 +447,40 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 20",
   "pT bin 21",
   "pT bin 22",
-  "pT bin 23"  };
+  "pT bin 23", 
+  "pT bin 24"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"deltaM", "pT Pi", "pT K", "d0 Pi", "do K", "Sigma vtx", "sum d0^2", "cos pointing angle", "cos pointing angle xy", "decay length", "decay length xy", "normalized decay length XY", "max normalized deltaIP"};
+static const std::vector<std::string> labelsCutVar = {"deltaM", "pT K", "pT Pi", "decay length", "normalized dl_xy", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP", "sum d0^2", "decay length XY", "DCA"};
 } // namespace hf_cuts_dplus_to_pi_k_pi
 
 namespace hf_cuts_ds_to_k_k_pi
 {
-static const int nBinsPt = 12;
-static const int nCutVars = 8;
+static const int nBinsPt = 8;
+static const int nCutVars = 10;
 // momentary cuts
 constexpr double binsPt[nBinsPt + 1] = {
-  1.,
   2.,
   3.,
   4.,
   5.,
   6.,
-  7.,
   8.,
-  10.,
   12.,
   16.,
-  24.,
-  36.};
+  24.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
-constexpr double cuts[nBinsPt][nCutVars] = {{0.2, 0.3, 0.3, 0.07, 6., 0.96, 0.985, 2.5},  /* 1  < pT < 2  */
-                                            {0.2, 0.3, 0.3, 0.07, 5., 0.96, 0.985, 2.5},  /* 2  < pT < 3  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.980, 2.5},  /* 3  < pT < 4  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 4  < pT < 5  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 5  < pT < 6  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 6  < pT < 7  */
-                                            {0.2, 0.3, 0.3, 0.10, 5., 0.96, 0.000, 2.5},  /* 7  < pT < 8  */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 8  < pT < 10 */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 10 < pT < 12 */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 12 < pT < 16 */
-                                            {0.2, 0.3, 0.3, 0.12, 5., 0.96, 0.000, 2.5},  /* 16 < pT < 24 */
-                                            {0.2, 0.3, 0.3, 0.20, 5., 0.94, 0.000, 2.5}}; /* 24 < pT < 36 */
+// default values for the cuts
+// selections from pp at 5 TeV 2017 analysis https://alice-notes.web.cern.ch/node/808
+constexpr double cuts[nBinsPt][nCutVars] = {{0.2, 0.3, 0.3, 0.02, 4., 0.92, 0.92, 0.014, 0.010, 0.10},  /* 2  < pT < 3  */
+                                            {0.2, 0.3, 0.3, 0.02, 4., 0.92, 0.92, 0.014, 0.010, 0.10},  /* 3  < pT < 4  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.05},  /* 4  < pT < 5  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.05},  /* 5  < pT < 6  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.05},  /* 6  < pT < 8  */
+                                            {0.2, 0.3, 0.3, 0.03, 4., 0.90, 0.90, 0.012, 0.010, 0.00},  /* 8  < pT < 12 */
+                                            {0.2, 0.3, 0.3, 0.05, 4., 0.85, 0.85, 0.012, 0.015, 0.00},  /* 12 < pT < 16 */
+                                            {0.2, 0.3, 0.3, 0.05, 4., 0.85, 0.85, 0.012, 0.015, 0.00}}; /* 16 < pT < 24 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -493,14 +491,10 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 4",
   "pT bin 5",
   "pT bin 6",
-  "pT bin 7",
-  "pT bin 8",
-  "pT bin 9",
-  "pT bin 10",
-  "pT bin 11"};
+  "pT bin 7"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP"};
+static const std::vector<std::string> labelsCutVar = {"deltaM", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "impact parameter XY", "deltaM Phi", "cos^3 theta_PiK"};
 } // namespace hf_cuts_ds_to_k_k_pi
 
 namespace hf_cuts_xic_to_p_k_pi
