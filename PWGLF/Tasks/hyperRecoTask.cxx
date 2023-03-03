@@ -255,7 +255,7 @@ struct hyperRecoTask {
     }
     if (!pidPath.value.empty()) {
       auto he3pid = ccdb->getForTimeStamp<std::array<float, 6>>(pidPath.value + "_He3", run3grp_timestamp);
-      mBBparamsHe = he3pid;
+      std::copy(he3pid->begin(), he3pid->end(), mBBparamsHe.begin());
     } else {
       for (int i = 0; i < 5; i++) {
         mBBparamsHe[i] = cfgBetheBlochParams->get("He3", Form("p%i", i));
@@ -285,8 +285,8 @@ struct hyperRecoTask {
       if (abs(posTrack.eta()) > etaMax || abs(negTrack.eta()) > etaMax)
         continue;
 
-      double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
+      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
       double expSigmaPos{expBethePos * mBBparamsHe[5]};
       double expSigmaNeg{expBetheNeg * mBBparamsHe[5]};
       auto nSigmaTPCpos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
