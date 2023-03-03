@@ -30,8 +30,8 @@ using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 struct HfCandidateSelectorDplusToPiKPi {
   Produces<aod::HfSelDplusToPiKPi> hfSelDplusToPiKPiCandidate;
 
-  Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
-  Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 100., "Upper bound of candidate pT"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -100,7 +100,17 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(candidate.maxNormalisedDeltaIP()) > cuts->get(pTBin, "max normalized deltaIP")) {
       return false;
     }
-    return true;
+     // product of daughter impact parameters
+    if (candidate.impactParameterProngSqSum() > cuts->get(pTBin, "sum d0^2")) {
+      return false;
+    }
+    if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
+      return false;
+    }
+   if (std::abs(candidate.impactParameterNormalised0()) > cuts->get(pTBin, "DCA") || std::abs(candidate.impactParameterNormalised1()) > cuts->get(pTBin, "DCA")) {
+      return false;
+    }
+   return true;
   }
 
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
