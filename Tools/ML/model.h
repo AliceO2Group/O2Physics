@@ -56,6 +56,7 @@ class OnnxModel
 
   // Getters & Setters
   Ort::SessionOptions* getSessionOptions() { return &sessionOptions; } // For optimizations in post
+  std::shared_ptr<Ort::Experimental::Session> getSession() { return mSession; }
   int getNumInputNodes() const { return mInputShapes[0][1]; }
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
   uint64_t getValidityFrom() const { return validFrom; }

@@ -78,12 +78,13 @@ struct TrackPropagationTester {
   // Configurables regarding what to propagate
   //  FIXME: This is dangerous and error prone for general purpose use. It is meant ONLY for testing.
   Configurable<bool> propagateUnassociated{"propagateUnassociated", false, "propagate tracks with no collision assoc"};
+  Configurable<bool> propagateTPConly{"propagateTPConly", false, "propagate tracks with only TPC (no ITS, TRD, TOF)"};
   Configurable<int> minTPCClusters{"minTPCClusters", 70, "min number of TPC clusters to propagate"};
   Configurable<float> maxPropagStep{"maxPropagStep", 2.0, "max propag step"}; // to be checked systematically
 
   void init(o2::framework::InitContext& initContext)
   {
-    const AxisSpec axisX{(int)3, 0.0f, +3.0f, "Track counter"};
+    const AxisSpec axisX{(int)4, 0.0f, +4.0f, "Track counter"};
     histos.add("hTrackCounter", "hTrackCounter", kTH1F, {axisX});
 
     if (doprocessCovariance == true && doprocessStandard == true) {
@@ -139,23 +140,31 @@ struct TrackPropagationTester {
 
     int lNAll = 0;
     int lNaccTPC = 0;
+    int lNaccNotTPCOnly = 0;
     int lNPropagated = 0;
     bool passTPCclu = kFALSE;
+    bool passNotTPCOnly = kFALSE;
 
     for (auto& track : tracks) {
       // Selection criteria
       passTPCclu = kFALSE;
+      passNotTPCOnly = kFALSE;
       lNAll++;
       if (track.tpcNClsFound() >= minTPCClusters) {
         passTPCclu = kTRUE;
         lNaccTPC++;
       }
+      if ((track.hasTPC() && !track.hasITS() && !track.hasTRD() && !track.hasTOF()) || propagateTPConly) {
+        passNotTPCOnly = kTRUE;
+        lNaccNotTPCOnly++;
+      }
+
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       auto trackPar = getTrackPar(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius && passTPCclu) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius && passTPCclu && passNotTPCOnly) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, maxPropagStep, matCorr, &dcaInfo);
@@ -177,7 +186,8 @@ struct TrackPropagationTester {
     // Fill only per table (not per track). ROOT FindBin is slow
     histos.fill(HIST("hTrackCounter"), 0.5, lNAll);
     histos.fill(HIST("hTrackCounter"), 1.5, lNaccTPC);
-    histos.fill(HIST("hTrackCounter"), 2.5, lNPropagated);
+    histos.fill(HIST("hTrackCounter"), 2.5, lNaccNotTPCOnly);
+    histos.fill(HIST("hTrackCounter"), 3.5, lNPropagated);
   }
   PROCESS_SWITCH(TrackPropagationTester, processStandard, "Process without covariance", true);
 
@@ -193,22 +203,30 @@ struct TrackPropagationTester {
 
     int lNAll = 0;
     int lNaccTPC = 0;
+    int lNaccNotTPCOnly = 0;
     int lNPropagated = 0;
     bool passTPCclu = kFALSE;
+    bool passNotTPCOnly = kFALSE;
 
     for (auto& track : tracks) {
       // Selection criteria
       passTPCclu = kFALSE;
+      passNotTPCOnly = kFALSE;
       lNAll++;
       if (track.tpcNClsFound() >= minTPCClusters) {
         passTPCclu = kTRUE;
         lNaccTPC++;
       }
+      if ((track.hasTPC() && !track.hasITS() && !track.hasTRD() && !track.hasTOF()) || propagateTPConly) {
+        passNotTPCOnly = kTRUE;
+        lNaccNotTPCOnly++;
+      }
+
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius && passTPCclu) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius && passTPCclu && passNotTPCOnly) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
@@ -241,7 +259,8 @@ struct TrackPropagationTester {
     // Fill only per table (not per track). ROOT FindBin is slow
     histos.fill(HIST("hTrackCounter"), 0.5, lNAll);
     histos.fill(HIST("hTrackCounter"), 1.5, lNaccTPC);
-    histos.fill(HIST("hTrackCounter"), 2.5, lNPropagated);
+    histos.fill(HIST("hTrackCounter"), 2.5, lNaccNotTPCOnly);
+    histos.fill(HIST("hTrackCounter"), 3.5, lNPropagated);
   }
   PROCESS_SWITCH(TrackPropagationTester, processCovariance, "Process with covariance", false);
 };
