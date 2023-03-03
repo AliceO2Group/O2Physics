@@ -69,6 +69,8 @@ struct LFNucleiBATask {
   Configurable<float> nsigmaTPCStrongCut{"nsigmaTPCStrongCut", 3.f, "Value of the Nsigma TPC (Strong) proton cut, if enabled"};
   Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
   Configurable<bool> enableNucleiHardCut{"enableNucleiHardCut", false, "Flag to enable TPC sigma histograms filled without the 'nearby' particle (at low momentum)"};
+  Configurable<int> nITSLayer{"nITSLayer", 0, "ITS Layer (0-6)"};
+  Configurable<bool> usenITSLayer{"usenITSLayer", false, "Flag to enable ITS layer hit"};
 
   static constexpr int PDGPion = 211;
   static constexpr int PDGKaon = 321;
@@ -792,7 +794,7 @@ struct LFNucleiBATask {
           continue;
         }
       }
-
+      std::bitset<8> itsClusterMap = track.itsClusterMap();
       if (track.tpcNClsCrossedRows() < cfgCutTPCXRows)
         continue;
       if (track.tpcNClsFound() < cfgCutTPCClusters)
@@ -816,6 +818,8 @@ struct LFNucleiBATask {
           }
         }
         if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe) {
+          if (usenITSLayer && !itsClusterMap.test(nITSLayer))
+            continue;
           if (track.sign() > 0) {
             histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtDeuteron"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/deuteron/dca/before/hDCAzVsPtDeuteron"), track.pt(), track.dcaZ());
@@ -883,6 +887,8 @@ struct LFNucleiBATask {
           }
         }
         if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe) {
+          if (usenITSLayer && !itsClusterMap.test(nITSLayer))
+            continue;
           if (track.sign() > 0) {
             histos.fill(HIST("tracks/deuteron/dca/after/hDCAxyVsPtDeuteron"), track.pt(), track.dcaXY());
             histos.fill(HIST("tracks/deuteron/dca/after/hDCAzVsPtDeuteron"), track.pt(), track.dcaZ());
