@@ -24,6 +24,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -49,9 +50,6 @@ struct HfTaskMuonSourceMc {
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
 
-  int muonPDG = 13;     // PDG code of muon
-  int tauPDG = 15;      // PDG code of tau
-  int protonPDG = 2212; // PDG code of proton
   double etaLow = -3.6; // low edge of eta acceptance
   double etaUp = -2.5;  // up edge of eta acceptance
   double edgeZ = 10.0;  // edge of event position Z
@@ -98,7 +96,7 @@ struct HfTaskMuonSourceMc {
     }
 
     auto mcPart(muon.mcParticle());
-    if (std::abs(mcPart.pdgCode()) == muonPDG) {
+    if (std::abs(mcPart.pdgCode()) == kMuonMinus) {
       // Muon
       SETBIT(mask, IsMuon);
     } else {
@@ -117,7 +115,7 @@ struct HfTaskMuonSourceMc {
         continue;
       }
 
-      if (pdgAbs == tauPDG) {
+      if (pdgAbs == kTauMinus) {
         // Tau
         SETBIT(mask, HasTauParent);
         continue;
@@ -125,7 +123,7 @@ struct HfTaskMuonSourceMc {
 
       const int pdgRem(pdgAbs % 100000);
 
-      if (pdgRem == protonPDG) {
+      if (pdgRem == kProton) {
         continue;
       } // Beam particle
 
