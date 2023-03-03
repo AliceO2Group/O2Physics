@@ -34,7 +34,7 @@ using McMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksD
 namespace
 {
 enum ParticleType {
-  IsID = 0,            // this particle is identified
+  IsIdentified = 0,    // this particle is identified
   IsMuon,              // this is a muon
   IsSecondary,         // this is a secondary particle
   HasLightParent,      // this particle has a light flavor parent
@@ -49,6 +49,9 @@ struct HfTaskMuonSourceMc {
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
 
+  int muonPDG = 13;     // PDG code of muon
+  int tauPDG = 15;      // PDG code of tau
+  int protonPDG = 2212; // PDG code of proton
   double etaLow = -3.6; // low edge of eta acceptance
   double etaUp = -2.5;  // up edge of eta acceptance
   double edgeZ = 10.0;  // edge of event position Z
@@ -62,8 +65,7 @@ struct HfTaskMuonSourceMc {
 
   void init(InitContext&)
   {
-    const auto nSrcs(7);
-    const TString muonSources[nSrcs]{
+    const TString muonSources[]{
       "BeautyDecayMu",
       "NonpromptCharmMu",
       "PromptCharmMu",
@@ -90,13 +92,13 @@ struct HfTaskMuonSourceMc {
   {
     uint8_t mask(0);
     if (muon.has_mcParticle()) {
-      SETBIT(mask, IsID);
+      SETBIT(mask, IsIdentified);
     } else {
       return mask;
     }
 
     auto mcPart(muon.mcParticle());
-    if (std::abs(mcPart.pdgCode()) == 13) {
+    if (std::abs(mcPart.pdgCode()) == muonPDG) {
       // Muon
       SETBIT(mask, IsMuon);
     } else {
@@ -115,7 +117,7 @@ struct HfTaskMuonSourceMc {
         continue;
       }
 
-      if (pdgAbs == 15) {
+      if (pdgAbs == tauPDG) {
         // Tau
         SETBIT(mask, HasTauParent);
         continue;
@@ -123,7 +125,7 @@ struct HfTaskMuonSourceMc {
 
       const int pdgRem(pdgAbs % 100000);
 
-      if (pdgRem == 2122) {
+      if (pdgRem == protonPDG) {
         continue;
       } // Beam particle
 
@@ -158,40 +160,40 @@ struct HfTaskMuonSourceMc {
   // this particle is muon
   bool isMuon(const uint8_t& mask)
   {
-    return (TESTBIT(mask, IsID) && TESTBIT(mask, IsMuon));
+    return (TESTBIT(mask, IsIdentified) && TESTBIT(mask, IsMuon));
   }
 
-  // this muon is come from beauty decay and does not have light flavor parent
+  // this muon comes from beauty decay and does not have light flavor parent
   bool isBeautyMu(const uint8_t& mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasBeautyParent) && (!TESTBIT(mask, HasLightParent)));
   }
 
-  // this muon is directly come from beauty decay
+  // this muon comes directly from beauty decay
   bool isBeautyDecayMu(const uint8_t& mask)
   {
     return (isBeautyMu(mask) && (!TESTBIT(mask, HasCharmParent)));
   }
 
-  // this muon is come from non-prompt charm decay and does not have light flavor parent
+  // this muon comes from non-prompt charm decay and does not have light flavor parent
   bool isNonpromptCharmMu(const uint8_t& mask)
   {
     return (isBeautyMu(mask) && TESTBIT(mask, HasCharmParent));
   }
 
-  // this muon is come from prompt charm decay and does not have light flavor parent
+  // this muon comes from prompt charm decay and does not have light flavor parent
   bool isPromptCharmMu(const uint8_t& mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasCharmParent) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasLightParent)));
   }
 
-  // this muon is come from light flavor quark decay
+  // this muon comes from light flavor quark decay
   bool isLightDecayMu(const uint8_t& mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)));
   }
 
-  // this muon is come from transport
+  // this muon comes from transport
   bool isSecondaryMu(const uint8_t& mask)
   {
     return (isMuon(mask) && TESTBIT(mask, IsSecondary));
@@ -200,13 +202,13 @@ struct HfTaskMuonSourceMc {
   // this is a hadron
   bool isHadron(const uint8_t& mask)
   {
-    return (TESTBIT(mask, IsID) && (!TESTBIT(mask, IsMuon)));
+    return (TESTBIT(mask, IsIdentified) && (!TESTBIT(mask, IsMuon)));
   }
 
-  // this particle is undientified
+  // this particle is unidentified
   bool isUnidentified(const uint8_t& mask)
   {
-    return (!TESTBIT(mask, IsID));
+    return (!TESTBIT(mask, IsIdentified));
   }
 
   // fill the histograms of each particle types
