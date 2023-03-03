@@ -58,6 +58,8 @@ DECLARE_SOA_COLUMN(Pz, pz, float);                 // Momentum of the candidate 
 DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);       // Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);       // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);       // Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(MassH3L, massH3L, float);       // Squared mass w/ hypertriton mass hypo
+DECLARE_SOA_COLUMN(MassH4L, massH4L, float);       // Squared mass w/ H4L mass hypo
 DECLARE_SOA_COLUMN(DcaV0Daug, dcaV0Daug, float);   // DCA between daughters
 DECLARE_SOA_COLUMN(CosPA, cosPA, double);          // Cosine of the pointing angle
 DECLARE_SOA_COLUMN(NSigmaHe, nSigmaHe, float);     // Number of sigmas of the He daughter
@@ -83,6 +85,8 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
                   o2::aod::hyperrec::XDecVtx,
                   o2::aod::hyperrec::YDecVtx,
                   o2::aod::hyperrec::ZDecVtx,
+                  o2::aod::hyperrec::MassH3L,
+                  o2::aod::hyperrec::MassH4L,
                   o2::aod::hyperrec::DcaV0Daug,
                   o2::aod::hyperrec::CosPA,
                   o2::aod::hyperrec::NSigmaHe,
@@ -99,6 +103,8 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::aod::hyperrec::XDecVtx,
                   o2::aod::hyperrec::YDecVtx,
                   o2::aod::hyperrec::ZDecVtx,
+                  o2::aod::hyperrec::MassH3L,
+                  o2::aod::hyperrec::MassH4L,
                   o2::aod::hyperrec::DcaV0Daug,
                   o2::aod::hyperrec::CosPA,
                   o2::aod::hyperrec::NSigmaHe,
@@ -124,6 +130,8 @@ struct hyperCandidate {
   bool isMatter = false;
   std::array<float, 3> mom;
   std::array<float, 3> decVtx;
+  float massH3L = -10;
+  float massH4L = -10;
   float dcaV0dau = -10;
   float cosPA = -10;
   float nSigmaHe3 = -10;
@@ -146,6 +154,7 @@ struct hyperRecoTask {
 
   // Selection criteria
   Configurable<double> v0cospa{"hypcospa", 0.95, "V0 CosPA"};
+  Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> heliumNsigmaMax{"heliumNsigmaMax", 5, "helium dEdx cut (n sigma)"};
@@ -154,6 +163,11 @@ struct hyperRecoTask {
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
+
+  // daughter masses
+  float he3Mass = o2::constants::physics::MassHelium3;
+  float he4Mass = o2::constants::physics::MassAlpha;
+  float piMass = o2::constants::physics::MassPionCharged;
 
   // bethe bloch parameters
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
@@ -266,11 +280,9 @@ struct hyperRecoTask {
       auto nSigmaTPCpos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
-      // ITS only tracks do not have TPC information
-      if (!((abs(nSigmaTPCpos) < heliumNsigmaMax && posTrack.hasTPC()) || (abs(nSigmaTPCneg) < heliumNsigmaMax && negTrack.hasTPC())))
+      // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for both hypertriton and hyperhydrogen4 reconstruction
+      if (!((nSigmaTPCpos < -1 * heliumNsigmaMax && posTrack.hasTPC()) || (nSigmaTPCneg < -1 * heliumNsigmaMax && negTrack.hasTPC())))
         continue;
-
-      hyperCandidate hypCand;
 
       bool matter = false;
       if (posTrack.hasTPC() && !negTrack.hasTPC())
@@ -280,6 +292,7 @@ struct hyperRecoTask {
       else
         matter = abs(nSigmaTPCpos) < abs(nSigmaTPCneg);
 
+      hyperCandidate hypCand;
       hypCand.isMatter = matter;
       auto& he3track = hypCand.isMatter ? posTrack : negTrack;
       if (he3track.tpcNClsFindable() < heliumNtpcClusMin)
@@ -302,28 +315,46 @@ struct hyperRecoTask {
         continue;
       }
 
-      auto& propPosTrack = fitter.getTrack(0);
-      auto& propNegTrack = fitter.getTrack(1);
+      auto& hePropTrack = hypCand.isMatter ? fitter.getTrack(0) : fitter.getTrack(1);
+      auto& piPropTrack = hypCand.isMatter ? fitter.getTrack(1) : fitter.getTrack(0);
 
-      std::array<float, 3> posTrackP;
-      std::array<float, 3> negTrackP;
+      std::array<float, 3> heTrackP;
+      std::array<float, 3> piTrackP;
 
-      propPosTrack.getPxPyPzGlo(posTrackP);
-      propNegTrack.getPxPyPzGlo(negTrackP);
+      hePropTrack.getPxPyPzGlo(heTrackP);
+      piPropTrack.getPxPyPzGlo(piTrackP);
 
-      unsigned int posAbsCharge = hypCand.isMatter ? 2 : 1;
-      unsigned int negAbsCharge = !hypCand.isMatter ? 2 : 1;
+      // he momentum has to be multiplied by 2 (charge)
+      for (int i = 0; i < 3; i++) {
+        heTrackP[i] *= 2;
+      }
 
-      posTrackP[0] *= posAbsCharge, posTrackP[1] *= posAbsCharge, posTrackP[2] *= posAbsCharge;
-      negTrackP[0] *= negAbsCharge, negTrackP[1] *= negAbsCharge, negTrackP[2] *= negAbsCharge;
+      float heP2 = heTrackP[0] * heTrackP[0] + heTrackP[1] * heTrackP[1] + heTrackP[2] * heTrackP[2];
+      float piP2 = piTrackP[0] * piTrackP[0] + piTrackP[1] * piTrackP[1] + piTrackP[2] * piTrackP[2];
+
+      float he3E = TMath::Sqrt(heP2 + he3Mass * he3Mass);
+      float he4E = TMath::Sqrt(heP2 + he4Mass * he4Mass);
+      float piE = TMath::Sqrt(piP2 + piMass * piMass);
+
+      float h3lE = he3E + piE;
+      float h4lE = he4E + piE;
 
       auto posPrimVtx = array{collision.posX(), collision.posY(), collision.posZ()};
 
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
         hypCand.decVtx[i] = vtx[i];
-        hypCand.mom[i] = posTrackP[i] + negTrackP[i];
+        hypCand.mom[i] = heTrackP[i] + piTrackP[i];
       }
+
+      hypCand.massH3L = TMath::Sqrt(h3lE * h3lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
+      hypCand.massH4L = TMath::Sqrt(h4lE * h4lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
+
+      if (hypCand.massH3L < o2::constants::physics::MassHyperTriton - masswidth || hypCand.massH3L > o2::constants::physics::MassHyperTriton + masswidth)
+        continue;
+
+      if (hypCand.massH4L < o2::constants::physics::MassHyperhydrog4 - masswidth || hypCand.massH4L > o2::constants::physics::MassHyperhydrog4 + masswidth)
+        continue;
 
       hypCand.dcaV0dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
 
@@ -455,7 +486,7 @@ struct hyperRecoTask {
     }
     for (auto& hypCand : hyperCandidates) {
       outputDataTable(hypCand.isMatter, hypCand.mom[0], hypCand.mom[1], hypCand.mom[2],
-                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2], hypCand.massH3L, hypCand.massH4L,
                       hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
                       hypCand.nTPCClustersHe3, hypCand.he3DCAXY, hypCand.piDCAXY);
     }
@@ -489,7 +520,7 @@ struct hyperRecoTask {
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
       outputMCTable(hypCand.isMatter, hypCand.mom[0], hypCand.mom[1], hypCand.mom[2],
-                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2], hypCand.massH3L, hypCand.massH4L,
                     hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
                     hypCand.nTPCClustersHe3, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.gMom[0], hypCand.gMom[1], hypCand.gMom[2],
