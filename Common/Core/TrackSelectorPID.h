@@ -14,8 +14,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_TRACKSELECTORPID_H_
-#define O2_ANALYSIS_TRACKSELECTORPID_H_
+#ifndef COMMON_CORE_TRACKSELECTORPID_H_
+#define COMMON_CORE_TRACKSELECTORPID_H_
 
 #include <TPDGCode.h>
 
@@ -472,10 +472,10 @@ class TrackSelectorPID
     if (statusTPC == Status::PIDAccepted && statusTOF == Status::PIDAccepted) {
       return Status::PIDAccepted;
     }
-    if (statusTPC == Status::PIDAccepted && statusTOF == Status::PIDNotApplicable) {
+    if (statusTPC == Status::PIDAccepted && (statusTOF == Status::PIDNotApplicable || statusTOF == Status::PIDConditional)) {
       return Status::PIDAccepted;
     }
-    if (statusTPC == Status::PIDNotApplicable && statusTOF == Status::PIDAccepted) {
+    if ((statusTPC == Status::PIDNotApplicable || statusTPC == Status::PIDConditional) && statusTOF == Status::PIDAccepted) {
       return Status::PIDAccepted;
     }
     if (statusTPC == Status::PIDConditional && statusTOF == Status::PIDConditional) {
@@ -684,4 +684,4 @@ class TrackSelectorPID
   float mProbBayesMin = -1.; ///< minium Bayesian probability [%]
 };
 
-#endif // O2_ANALYSIS_TRACKSELECTORPID_H_
+#endif // COMMON_CORE_TRACKSELECTORPID_H_
