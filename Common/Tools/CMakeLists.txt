@@ -26,3 +26,10 @@ o2physics_add_executable(pidparam-tpc-response
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                  )
 
+o2physics_add_library(trackSelectionRequest
+               SOURCES trackSelectionRequest.cxx
+               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
+
+o2physics_target_root_dictionary(trackSelectionRequest
+                          HEADERS trackSelectionRequest.h
+                          LINKDEF trackSelectionRequestLinkDef.h)

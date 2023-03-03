@@ -183,7 +183,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float
 
 namespace v0KFParticle
 {
-DECLARE_SOA_COLUMN(ChiSquare, chiSquare, float); // Chi2 of the reconstructed V0
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
 } // namespace v0KFParticle
 
 DECLARE_SOA_TABLE(V0RecalculationAndKF, "AOD", "V0RECALCANDKF",
@@ -191,7 +191,7 @@ DECLARE_SOA_TABLE(V0RecalculationAndKF, "AOD", "V0RECALCANDKF",
                   v0Recalculations::RecalculatedVtxY,
                   v0Recalculations::RecalculatedVtxZ,
                   v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>,
-                  v0KFParticle::ChiSquare);
+                  v0KFParticle::ChiSquareNDF);
 
 namespace gammamctrue
 {
