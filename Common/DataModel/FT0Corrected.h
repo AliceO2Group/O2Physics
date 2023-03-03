@@ -26,7 +26,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(T0ACorrectedValid, t0ACorrectedValid, //! Was T0ACorr
 DECLARE_SOA_DYNAMIC_COLUMN(T0CCorrectedValid, t0CCorrectedValid, //! Was T0CCorrected computable?
                            [](float t0) -> bool { return t0 < 1e9; });
 DECLARE_SOA_DYNAMIC_COLUMN(T0resolution, t0resolution, //! Was T0CCorrected computable?
-                           [](float t0C, float t0A) -> float { return 0.5f * (t0A - t0C); });
+                           [](float t0A, float t0C) -> float { return 0.5f * (t0A - t0C); });
 DECLARE_SOA_DYNAMIC_COLUMN(T0ACValid, t0ACValid, //! Was T0AC computable?
                            [](float t0a, float t0c) -> bool { return (t0a < 1e9) && (t0c < 1e9); });
 
