@@ -34,6 +34,7 @@ AxisSpec const gAxis_z2d{1000, -250.f, 250.f};
 AxisSpec const gAxis_TPCdEdxSig{401, -10.025f, 10.025f};
 AxisSpec const gAxis_radRes{800, -PI, PI};
 AxisSpec const gAxis_xyz{2400, -300.f, 300.f};
+AxisSpec const gAxis_chi2{501, -1.f, 500.f};
 AxisSpec gAxis_pT_log{800, 0.01f, 25.f};
 
 HistogramSpec const gHistoSpec_hCollisionZ_all_MCTrue{"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
