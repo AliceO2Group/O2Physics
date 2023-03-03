@@ -27,6 +27,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
+#include "trackSelectionRequest.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,6 +43,9 @@ struct propagatorQa {
 
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
+
+  // Configurable based on a struct
+  Configurable<trackSelectionRequest> trackSels{"trackSels", {65, true}, "track selections"};
 
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
@@ -354,7 +358,7 @@ struct propagatorQa {
       float lL = TMath::Sqrt(
         TMath::Power(lCircle.xC - collision.posX(), 2) +
         TMath::Power(lCircle.yC - collision.posY(), 2));
-      float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
+      float lCircleDCA = TMath::Sign(-1, d_bz) * lTrackParametrization.getSign() * (lL - lR); // signed dca
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
       dcaInfo[0] = 999;
