@@ -10,11 +10,8 @@
 // or submit itself to any jurisdiction.
 //
 // Build hypertriton candidates from V0s and tracks
-// =====================
-//
-//
-//
-//
+// ==============================================================================
+
 #include <array>
 
 #include "Framework/runDataProcessing.h"
@@ -31,6 +28,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
 
@@ -180,6 +178,7 @@ struct hyperRecoTask {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
   // PDG codes
   Configurable<int> hyperPdg{"hyperPDG", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
@@ -191,6 +190,10 @@ struct hyperRecoTask {
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
   HistogramRegistry qaRegistry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  int mRunNumber;
+  float d_bz;
+  std::array<float, 6> mBBparamsHe;
 
   void init(InitContext const&)
   {
@@ -250,16 +253,25 @@ struct hyperRecoTask {
         d_bz = d_bz_input;
       }
     }
+    if (!pidPath.value.empty()) {
+      auto he3pid = ccdb->getForTimeStamp<std::array<float, 6>>(pidPath.value + "_He3", run3grp_timestamp);
+      std::copy(he3pid->begin(), he3pid->end(), mBBparamsHe.begin());
+    } else {
+      for (int i = 0; i < 5; i++) {
+        mBBparamsHe[i] = cfgBetheBlochParams->get("He3", Form("p%i", i));
+      }
+      mBBparamsHe[5] = cfgBetheBlochParams->get("He3", "resolution");
+    }
     fitter.setBz(d_bz);
     mRunNumber = bc.runNumber();
   }
 
-  int mRunNumber;
-  float d_bz;
-
   template <class T>
   void fillCandidateData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s)
   {
+    if (mBBparamsHe[5] < 0) {
+      LOG(fatal) << "Bethe-Bloch parameters for He3 not set, please check your CCDB and configuration";
+    }
     for (auto& v0 : V0s) {
 
       auto posTrack = v0.posTrack_as<T>();
@@ -273,10 +285,10 @@ struct hyperRecoTask {
       if (abs(posTrack.eta()) > etaMax || abs(negTrack.eta()) > etaMax)
         continue;
 
-      double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), cfgBetheBlochParams->get("He3", "p0"), cfgBetheBlochParams->get("He3", "p1"), cfgBetheBlochParams->get("He3", "p2"), cfgBetheBlochParams->get("He3", "p3"), cfgBetheBlochParams->get("He3", "p4"))};
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), cfgBetheBlochParams->get("He3", "p0"), cfgBetheBlochParams->get("He3", "p1"), cfgBetheBlochParams->get("He3", "p2"), cfgBetheBlochParams->get("He3", "p3"), cfgBetheBlochParams->get("He3", "p4"))};
-      double expSigmaPos{expBethePos * cfgBetheBlochParams->get("He3", "resolution")};
-      double expSigmaNeg{expBetheNeg * cfgBetheBlochParams->get("He3", "resolution")};
+      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
+      double expSigmaPos{expBethePos * mBBparamsHe[5]};
+      double expSigmaNeg{expBetheNeg * mBBparamsHe[5]};
       auto nSigmaTPCpos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
@@ -385,7 +397,7 @@ struct hyperRecoTask {
       hypCand.posTrackID = posTrack.globalIndex();
       hypCand.negTrackID = negTrack.globalIndex();
 
-      int chargeFactor = hypCand.isMatter ? 1 : -1;
+      int chargeFactor = -1 + 2 * hypCand.isMatter;
 
       qaRegistry.fill(HIST("hDeDx3HeSel"), chargeFactor * he3track.tpcInnerParam(), he3track.tpcSignal());
       qaRegistry.fill(HIST("hNsigma3HeSel"), chargeFactor * he3track.tpcInnerParam(), hypCand.nSigmaHe3);
