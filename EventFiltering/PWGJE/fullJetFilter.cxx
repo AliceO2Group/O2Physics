@@ -65,10 +65,14 @@ struct fullJetFilter {
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_clusterPtMin{"f_clusterPtMin", 0.0, "minimum cluster pT cut"};
   Configurable<double> f_jetR{"f_jetR", 0.2, "jet R to trigger on"};
-  Configurable<float> f_gammaPtMin{"f_gammaPtMin", 4.0, "minimum gamma pT cut"};
+  Configurable<float> f_gammaPtMinEMCAL{"f_gammaPtMinEMCAL", 4.0, "minimum gamma pT cut in EMCAL"};
+  Configurable<float> f_gammaPtMinDCAL{"f_gammaPtMinDCAL", 4.0, "minimum gamma pT cut in DCAL"};
+
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   Configurable<bool> b_doJetTrigger{"b_doJetTrigger", true, "run the full jet trigger"};
   Configurable<bool> b_doGammaTrigger{"b_doGammaTrigger", true, "run the gamma trigger"};
+  Configurable<bool> b_IgnoreEmcalFlag{"b_IgnoreEmcalFlag", false, "ignore the EMCAL live flag check"};
+  Configurable<bool> b_DoFiducialCut{"b_DoFiducialCut", false, "do a fiducial cut on jets to check if they are in the emcal"};
 
   void init(o2::framework::InitContext&)
   {
@@ -84,6 +88,14 @@ struct fullJetFilter {
     Float_t kMaxEta = 1.;
 
     hProcessedEvents.setObject(new TH1I("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
+    // hProcessedEvents.setObject(new TH1I("hProcessedEvents", "Processed events", 7, -0.5, 6.5));
+    // hProcessedEvents->GetXaxis()->SetBinLabel(1, "MB");
+    // hProcessedEvents->GetXaxis()->SetBinLabel(2, "EMC");
+    // hProcessedEvents->GetXaxis()->SetBinLabel(3, "Selected Jet");
+    // hProcessedEvents->GetXaxis()->SetBinLabel(4, "Selected Gamma EMCAL");
+    // hProcessedEvents->GetXaxis()->SetBinLabel(5, "Selected Jet and Gamma EMCAL");
+    // hProcessedEvents->GetXaxis()->SetBinLabel(6, "Selected Gamma DCAL");
+    // hProcessedEvents->GetXaxis()->SetBinLabel(7, "Selected Jet and Gamma DCAL");
 
     hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", "Emc Clusters;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", "Emc Clusters;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
@@ -105,7 +117,8 @@ struct fullJetFilter {
   Bool_t isJetInEmcal(filteredJets::iterator const& jet)
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
-    double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
+    // double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
+    double R = 0;
     if ((jet.eta() >= emcalEtaMin + R) && (jet.eta() <= emcalEtaMax - R) && (jet.phi() >= emcalPhiMin + R) && (jet.phi() <= emcalPhiMax - R)) {
       return true;
     }
@@ -133,7 +146,7 @@ struct fullJetFilter {
     bool keepEvent[kCategories]{false};
     double maxClusterPt = -1., maxSelectedJetPt = -1.;
 
-    if (!collision.alias()[kTVXinEMC]) {
+    if (!collision.alias()[kTVXinEMC] && !b_IgnoreEmcalFlag) {
       tags(keepEvent[0], keepEvent[1]);
       return; // Skip events where EMCAL is not live
     }
@@ -143,9 +156,13 @@ struct fullJetFilter {
       for (const auto& jet : jets) {
         hEmcJetPtEta->Fill(jet.pt(), jet.eta());
         hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
-        if (isJetInEmcal(jet)) {
-          if (jet.pt() > maxSelectedJetPt)
+        if (jet.pt() > maxSelectedJetPt) {
+          if (b_DoFiducialCut && isJetInEmcal(jet)) {
+              maxSelectedJetPt = jet.pt();
+          }
+          else {
             maxSelectedJetPt = jet.pt();
+          }
         }
       }
       if (isEvtSelected(maxSelectedJetPt)) {

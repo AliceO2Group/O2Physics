@@ -39,14 +39,22 @@ struct JetTriggerQA {
   Preslice<aod::JetTrackConstituents> perJetTrackConstituents = o2::aod::jetconstituents::jetId;
   Preslice<aod::JetClusterConstituents> perJetClusterConstituents = o2::aod::jetconstituents::jetId;
 
+  HistogramRegistry registry{ "registry" };
+
   OutputObj<TH1I> hProcessedEvents{"hProcessedEvents"};
 
   OutputObj<TH3F> hJetRPtEta{"hJetRPtEta"};
   OutputObj<TH3F> hJetRPtPhi{"hJetRPtPhi"};
+  // OutputObj<THnF> hJetRPtEtaPhiNoFiducial{"hJetRPtEtaPhiNoFiducial"};
+  // OutputObj<THnF> hJetRMaxPtEtaPhiNoFiducial{"hJetRMaxPtEtaPhiNoFiducial"};
+  // OutputObj<THnF> hJetRPtEtaPhi{"hJetRPtEtaPhi"};
+  // OutputObj<THnF> hJetRMaxPtEtaPhi{"hJetRMaxPtEtaPhi"};
   OutputObj<TH3F> hJetRMaxPtEta{"hJetRMaxPtEta"};
   OutputObj<TH3F> hJetRMaxPtPhi{"hJetRMaxPtPhi"};
   OutputObj<TH2F> hClusterPtEta{"hClusterPtEta"};
   OutputObj<TH2F> hClusterPtPhi{"hClusterPtPhi"};
+  OutputObj<TH3F> hClusterPtEtaPhi{"hClusterPtEtaPhi"};
+  OutputObj<TH3F> hClusterMaxPtEtaPhi{"hClusterMaxPtEtaPhi"};
   OutputObj<TH2F> hClusterMaxPtEta{"hClusterMaxPtEta"};
   OutputObj<TH2F> hClusterMaxPtPhi{"hClusterMaxPtPhi"};
   OutputObj<TH3F> hJetRPtTrackPt{"hJetRPtTrackPt"};
@@ -65,6 +73,8 @@ struct JetTriggerQA {
   OutputObj<TH3F> hSelectedJetRMaxPtPhi{"hSelectedJetRMaxPtPhi"};
   OutputObj<TH2F> hSelectedClusterPtEta{"hSelectedClusterPtEta"};
   OutputObj<TH2F> hSelectedClusterPtPhi{"hSelectedClusterPtPhi"};
+  OutputObj<TH3F> hSelectedClusterPtEtaPhi{"hSelectedClusterPtEtaPhi"};
+  OutputObj<TH3F> hSelectedClusterMaxPtEtaPhi{"hSelectedClusterMaxPtEtaPhi"};
   OutputObj<TH2F> hSelectedClusterMaxPtEta{"hSelectedClusterMaxPtEta"};
   OutputObj<TH2F> hSelectedClusterMaxPtPhi{"hSelectedClusterMaxPtPhi"};
   OutputObj<TH3F> hSelectedJetRPtTrackPt{"hSelectedJetRPtTrackPt"};
@@ -79,19 +89,25 @@ struct JetTriggerQA {
 
   OutputObj<TH2F> hSelectedGammaPtEta{"hSelectedGammaPtEta"};
   OutputObj<TH2F> hSelectedGammaPtPhi{"hSelectedGammaPtPhi"};
+  OutputObj<TH3F> hSelectedGammaPtEtaPhi{"hSelectedGammaPtEtaPhi"};
+  OutputObj<TH3F> hSelectedGammaMaxPtEtaPhi{"hSelectedGammaMaxPtEtaPhi"};
   OutputObj<TH2F> hSelectedGammaMaxPtEta{"hSelectedGammaMaxPtEta"};
   OutputObj<TH2F> hSelectedGammaMaxPtPhi{"hSelectedGammaMaxPtPhi"};
 
   OutputObj<TH3F> hJetRMaxPtJetPt{"hJetRMaxPtJetPt"};
+  OutputObj<TH3F> hJetRMaxPtJetPtNoFiducial{"hJetRMaxPtJetPtNoFiducial"};
   OutputObj<TH2F> hClusterMaxPtClusterPt{"hClusterMaxPtClusterPt"};
 
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_SD_zCut{"f_SD_zCut", 0.1, "soft drop z cut"};
   Configurable<float> f_SD_beta{"f_SD_beta", 0.0, "soft drop beta"};
-  Configurable<float> f_jetR{"f_jetR", 0.4, "jet resolution parameter"};
+  Configurable<float> f_jetR{"f_jetR", 0.4, "jet resolution parameter that you have triggered on"};
   Configurable<std::vector<float>> f_ang_kappa{"f_ang_kappa", {1.0, 1.0, 2.0}, "angularity momentum exponent"};
   Configurable<std::vector<float>> f_ang_alpha{"f_ang_alpha", {1.0, 2.0, 1.0}, "angularity angle exponent"};
   Configurable<bool> b_JetsInEmcalOnly{"b_JetsInEmcalOnly", true, "fill histograms only for jets inside the EMCAL"};
+  Configurable<bool> b_IgnoreEmcalFlag{"b_IgnoreEmcalFlag", false, "ignore the EMCAL live flag check"};
+  Configurable<bool> b_DoFiducialCut{"b_DoFiducialCut", false, "do a fiducial cut on jets to check if they are in the emcal"};
+
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
 
@@ -108,7 +124,7 @@ struct JetTriggerQA {
 
     Int_t nPtBins = 200;
     Float_t kMinPt = 0.;
-    Float_t kMaxPt = 200.;
+    Float_t kMaxPt = 201.;
     Int_t nPhiBins = 18 * 8;
     Float_t kMinPhi = 0.;
     Float_t kMaxPhi = 2. * TMath::Pi();
@@ -119,19 +135,44 @@ struct JetTriggerQA {
     Float_t kMinR = 0.05;
     Float_t kMaxR = 0.65;
 
-    hProcessedEvents.setObject(new TH1I("hProcessedEvents", "Processed events", 4, -0.5, 3.5));
+    AxisSpec rAxis = {nRBins, kMinR, kMaxR, "#it{R}"};
+    AxisSpec jetPtAxis = {nPtBins, kMinPt, kMaxPt, "#it{p}_{T}^{jet}"};
+    AxisSpec etaAxis = {nEtaBins, kMinEta, kMaxEta, "#eta"};
+    AxisSpec phiAxis = {nPhiBins, kMinPhi, kMaxPhi, "#phi"};
+
+    HistogramConfigSpec hJetRPtEtaPhi({HistType::kTHnF, {rAxis, jetPtAxis, etaAxis, phiAxis}});
+    HistogramConfigSpec hJetRMaxPtEtaPhi({HistType::kTHnF, {rAxis, jetPtAxis, etaAxis, phiAxis}});
+    HistogramConfigSpec hJetRPtEtaPhiNoFiducial({HistType::kTHnF, {rAxis, jetPtAxis, etaAxis, phiAxis}});
+    HistogramConfigSpec hJetRMaxPtEtaPhiNoFiducial({HistType::kTHnF, {rAxis, jetPtAxis, etaAxis, phiAxis}});
+
+    registry.add("jetRPtEtaPhi", "JetRPtEtaPhi", hJetRPtEtaPhi);
+    registry.add("jetRMaxPtEtaPhi", "JetRMaxPtEtaPhi", hJetRMaxPtEtaPhi);
+    registry.add("jetRPtEtaPhiNoFiducial", "JetRPtEtaPhiNoFiducial", hJetRPtEtaPhiNoFiducial);
+    registry.add("jetRMaxPtEtaPhiNoFiducial", "JetRMaxPtEtaPhiNoFiducial", hJetRMaxPtEtaPhiNoFiducial);
+
+    hProcessedEvents.setObject(new TH1I("hProcessedEvents", "Processed events", 7, -0.5, 6.5));
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "MB");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "EMC");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "Selected Jet");
-    hProcessedEvents->GetXaxis()->SetBinLabel(4, "Selected Gamma");
+    hProcessedEvents->GetXaxis()->SetBinLabel(4, "Selected Gamma EMCAL");
+    hProcessedEvents->GetXaxis()->SetBinLabel(5, "Selected Jet and Gamma EMCAL");
+    hProcessedEvents->GetXaxis()->SetBinLabel(6, "Selected Gamma DCAL");
+    hProcessedEvents->GetXaxis()->SetBinLabel(7, "Selected Jet and Gamma DCAL");
+
 
     // Histograms for events where the EMCAL is live
     hJetRPtEta.setObject(new TH3F("hJetRPtEta", "Jets #it{p}_{T} and #eta;#it{R};#it{p}_{T};#eta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
     hJetRPtPhi.setObject(new TH3F("hJetRPtPhi", "Jets #it{p}_{T} and #phi;#it{R};#it{p}_{T};#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    // hJetRPtEtaPhiNoFiducial.setObject(new THnF("hJetRPtEtaPhiNoFiducial", "Jets #it{p}_{T}, #eta and #phi (no fiducial cut);#it{R};#it{p}_{T};#eta;#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
+    // hJetRMaxPtEtaPhiNoFiducial.setObject(new THnF("hJetRMaxPtEtaPhiNoFiducial", "Leading jets #it{p}_{T}, #eta and #phi (no fiducial cut);#it{R};#it{p}_{T};#eta;#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
+    // hJetRPtEtaPhi.setObject(new THnF("hJetRPtEtaPhi", "Jets #it{p}_{T}, #eta and #phi;#it{R};#it{p}_{T};#eta;#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
+    // hJetRMaxPtEtaPhi.setObject(new THnF("hJetRMaxPtEtaPhi", "Leading jets #it{p}_{T}, #eta and #phi;#it{R};#it{p}_{T};#eta;#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
     hJetRMaxPtEta.setObject(new TH3F("hJetRMaxPtEta", "Leading jets #it{p}_{T} and #eta;#it{R};#it{p}_{T};#eta", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
     hJetRMaxPtPhi.setObject(new TH3F("hJetRMaxPtPhi", "Leading jets #it{p}_{T} and #phi;#it{R};#it{p}_{T};#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hClusterPtEta.setObject(new TH2F("hClusterPtEta", "Cluster #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hClusterPtPhi.setObject(new TH2F("hClusterPtPhi", "Cluster #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hClusterPtEtaPhi.setObject(new TH3F("hClusterPtEtaPhi", "Cluster #it{p}_{T}, #eta and #phi;#it{p}_{T};#eta;#phi", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
+    hClusterMaxPtEtaPhi.setObject(new TH3F("hClusterMaxPtEtaPhi", "Leading cluster #it{p}_{T}, #eta and #phi;#it{p}_{T};#eta;#phi", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
     hClusterMaxPtEta.setObject(new TH2F("hClusterMaxPtEta", "Leading clusters #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hClusterMaxPtPhi.setObject(new TH2F("hClusterMaxPtPhi", "Leading clusters #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hJetRPtTrackPt.setObject(new TH3F("hJetRPtTrackPt", "Jets;#it{p}_{T};#it{R};#it{p}_{T}^{track}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
@@ -151,6 +192,8 @@ struct JetTriggerQA {
     hSelectedJetRMaxPtPhi.setObject(new TH3F("hSelectedJetRMaxPtPhi", "Leading selected jets #it{p}_{T} and #phi;#it{R};#it{p}_{T};#phi", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedClusterPtEta.setObject(new TH2F("hSelectedClusterPtEta", "Selected Cluster #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", "Selected Cluster #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedClusterPtEtaPhi.setObject(new TH3F("hSelectedClusterPtEtaPhi", "Selected cluster #it{p}_{T}, #eta and #phi;#it{p}_{T};#eta;#phi", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedClusterMaxPtEtaPhi.setObject(new TH3F("hSelectedClusterMaxPtEtaPhi", "Leading Selected cluster #it{p}_{T}, #eta and #phi;#it{p}_{T};#eta;#phi", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedClusterMaxPtEta.setObject(new TH2F("hSelectedClusterMaxPtEta", "Leading selected clusters #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedClusterMaxPtPhi.setObject(new TH2F("hSelectedClusterMaxPtPhi", "Leading selected clusters #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetRPtTrackPt.setObject(new TH3F("hSelectedJetRPtTrackPt", "Selected jets;#it{R};#it{p}_{T};#it{p}_{T}^{track}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
@@ -163,11 +206,14 @@ struct JetTriggerQA {
     hSelectedJetRPtZThetaSq.setObject(new TH3F("hSelectedJetRPtZThetaSq", "Selected jets;#it{R};#it{p}_{T};z #theta^{2}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins / 2, 0., 1.));
     hSelectedGammaPtEta.setObject(new TH2F("hSelectedGammaPtEta", "Selected Gamma #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaPtPhi.setObject(new TH2F("hSelectedGammaPtPhi", "Selected Gamma #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaPtEtaPhi.setObject(new TH3F("hSelectedGammaPtEtaPhi", "Selected Gamma #it{p}_{T}, #eta and #phi;#it{p}_{T};#eta;#phi", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaMaxPtEtaPhi.setObject(new TH3F("hSelectedGammaMaxPtEtaPhi", "Leading selected gammas #it{p}_{T}, #eta and #phi;#it{p}_{T};#eta;#phi", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaMaxPtEta.setObject(new TH2F("hSelectedGammaMaxPtEta", "Leading selected gammas #it{p}_{T} and #eta;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaMaxPtPhi.setObject(new TH2F("hSelectedGammaMaxPtPhi", "Leading selected gammas #it{p}_{T} and #phi;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetRMaxPtClusterMaxPt.setObject(new TH3F("hSelectedJetRMaxPtClusterMaxPt", "Leading selected jets and clusters;#it{R};#it{p}_{T};#it{p}_{T}^{clus}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt / 2));
 
     hJetRMaxPtJetPt.setObject(new TH3F("hJetRMaxPtJetPt", "Leading jet #it{p}_{T} vs jet #it{p}_{T};#it{R};#it{p}_{T}^{max};#it{p}_{T}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
+    hJetRMaxPtJetPtNoFiducial.setObject(new TH3F("hJetRMaxPtJetPtNoFiducial", "Leading jet #it{p}_{T} vs jet #it{p}_{T} (no fiducial cut);#it{R};#it{p}_{T}^{max};#it{p}_{T}", nRBins, kMinR, kMaxR, nPtBins, kMinPt, kMaxPt, nPtBins, kMinPt, kMaxPt));
     hClusterMaxPtClusterPt.setObject(new TH2F("hClusterMaxPtClusterPt", "Leading cluster #it{p}_{T} vs cluster #it{p}_{T};#it{p}_{T}^{max};#it{p}_{T}", nPtBins, kMinPt, kMaxPt / 2, nPtBins, kMinPt, kMaxPt / 2));
 
     if (b_JetsInEmcalOnly) {
@@ -250,10 +296,13 @@ struct JetTriggerQA {
                selectedClusters const& clusters)
   {
     hProcessedEvents->Fill(0);
-    if (!collision.alias()[kTVXinEMC]) {
+    if (!collision.alias()[kTVXinEMC] && !b_IgnoreEmcalFlag) {
       return; // Only consider events where EMCAL is live
     }
-    hProcessedEvents->Fill(1);
+    // This is here to prevent events from being flagged EMC when we are ignoring the EMC keyword
+    if (collision.alias()[kTVXinEMC]) {
+      hProcessedEvents->Fill(1);
+    }
 
     bool isEvtSelected = false, isEvtSelectedGamma = false;
     if (collision.hasJetFullHighPt()) {
@@ -264,18 +313,24 @@ struct JetTriggerQA {
       isEvtSelectedGamma = true;
       hProcessedEvents->Fill(3);
     }
+    if (collision.hasJetFullHighPt() && collision.hasGammaHighPt()) {
+      hProcessedEvents->Fill(4);
+    }
 
     double maxClusterPt = -1.;
     selectedClusters::iterator maxCluster;
     std::vector<aod::Jet> vecMaxJet;
+    std::vector<aod::Jet> vecMaxJetNoFiducial;
 
     for (const auto& jet : jets) {
+      double jetPt = jet.pt(), jetR = jet.r() * 1e-2;
+      registry.get<THn>(HIST("jetRPtEtaPhiNoFiducial"))->Fill(jetR, jetPt, jet.eta(), jet.phi());
+      check_maxJetPt(jet, vecMaxJetNoFiducial);
       if (b_JetsInEmcalOnly && !isJetInEmcal(jet)) {
         continue;
       }
       float neutralEnergyFraction = 0., ptD = 0.;
       float zTheta = 0., zSqTheta = 0., zThetaSq = 0; // Jet angularities (1,1), (1,2), (2,1)
-      double jetPt = jet.pt(), jetR = jet.r() * 1e-2;
       check_maxJetPt(jet, vecMaxJet);
 
       // Slice JetTrackConstituents table to obtain a list of trackId belonging to this jet only (and the same for clusters)
@@ -329,6 +384,7 @@ struct JetTriggerQA {
       hJetRPtZTheta->Fill(jetR, jetPt, zTheta);
       hJetRPtZSqTheta->Fill(jetR, jetPt, zSqTheta);
       hJetRPtZThetaSq->Fill(jetR, jetPt, zThetaSq);
+      registry.get<THn>(HIST("jetRPtEtaPhi"))->Fill(jetR, jetPt, jet.eta(), jet.phi());
       if (isEvtSelected) {
         hSelectedJetRPtEta->Fill(jetR, jetPt, jet.eta());
         hSelectedJetRPtPhi->Fill(jetR, jetPt, jet.phi());
@@ -348,19 +404,23 @@ struct JetTriggerQA {
       }
       hClusterPtEta->Fill(clusterPt, cluster.eta());
       hClusterPtPhi->Fill(clusterPt, cluster.phi());
+      hClusterPtEtaPhi->Fill(clusterPt, cluster.eta(), cluster.phi());
       if (isEvtSelected) {
         hSelectedClusterPtEta->Fill(clusterPt, cluster.eta());
         hSelectedClusterPtPhi->Fill(clusterPt, cluster.phi());
+        hSelectedClusterPtEtaPhi->Fill(clusterPt, cluster.eta(), cluster.phi());
       }
       if (isEvtSelectedGamma) {
         hSelectedGammaPtEta->Fill(clusterPt, cluster.eta());
         hSelectedGammaPtPhi->Fill(clusterPt, cluster.phi());
+        hSelectedGammaPtEtaPhi->Fill(clusterPt, cluster.eta(), cluster.phi());
       }
     } // for clusters
 
     if (maxClusterPt > 0) {
       hClusterMaxPtEta->Fill(maxClusterPt, maxCluster.eta());
       hClusterMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
+      hClusterMaxPtEtaPhi->Fill(maxClusterPt, maxCluster.eta(), maxCluster.phi());
       for (const auto& cluster : clusters) {
         double clusterPt = cluster.energy() / std::cosh(cluster.eta());
         hClusterMaxPtClusterPt->Fill(maxClusterPt, clusterPt);
@@ -368,10 +428,12 @@ struct JetTriggerQA {
       if (isEvtSelected) {
         hSelectedClusterMaxPtEta->Fill(maxClusterPt, maxCluster.eta());
         hSelectedClusterMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
+        hSelectedClusterMaxPtEtaPhi->Fill(maxClusterPt, maxCluster.eta(), maxCluster.phi());
       }
       if (isEvtSelectedGamma) {
         hSelectedGammaMaxPtEta->Fill(maxClusterPt, maxCluster.eta());
         hSelectedGammaMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
+        hSelectedGammaMaxPtEtaPhi->Fill(maxClusterPt, maxCluster.eta(), maxCluster.phi());
       }
     }
 
@@ -379,6 +441,8 @@ struct JetTriggerQA {
       double jetR = maxJet.r() * 1e-2, jetPt = maxJet.pt(), jetEta = maxJet.eta(), jetPhi = maxJet.phi();
       hJetRMaxPtEta->Fill(jetR, jetPt, jetEta);
       hJetRMaxPtPhi->Fill(jetR, jetPt, jetPhi);
+      // hJetRMaxPtEtaPhi->Fill(jetR, jetPt, jetEta, jetPhi);
+      registry.get<THn>(HIST("jetRMaxPtEtaPhi"))->Fill(jetR, jetPt, jetEta, jetPhi);
       if (isEvtSelected) {
         hSelectedJetRMaxPtEta->Fill(jetR, jetPt, jetEta);
         hSelectedJetRMaxPtPhi->Fill(jetR, jetPt, jetPhi);
@@ -389,12 +453,24 @@ struct JetTriggerQA {
           hSelectedJetRMaxPtClusterMaxPt->Fill(jetR, jetPt, maxClusterPt);
         }
       } // if maxClusterPt
-      if (maxJet.r() == 20) {
+      if (maxJet.r() == std::round(f_jetR * 100)) {
         for (const auto& jet : jets) {
-          hJetRMaxPtJetPt->Fill(jet.r() * 1e-2, jetPt, jet.pt());
+          if (isJetInEmcal(jet)) {
+            hJetRMaxPtJetPt->Fill(jet.r() * 1e-2, jetPt, jet.pt());
+          }
         } // for jets
-      }   // if maxJet.r() == 20
+      }   // if maxJet.r() == std::round(f_jetR * 100)
     }     // for maxJet
+    for (auto maxJet : vecMaxJetNoFiducial) {
+      double jetR = maxJet.r() * 1e-2, jetPt = maxJet.pt(), jetEta = maxJet.eta(), jetPhi = maxJet.phi();
+      // hJetRMaxPtEtaPhiNoFiducial->Fill(jetR, jetPt, jetEta, jetPhi);
+      registry.get<THn>(HIST("jetRMaxPtEtaPhiNoFiducial"))->Fill(jetR, jetPt, jetEta, jetPhi);
+      if (maxJet.r() == std::round(f_jetR * 100)) {
+        for (const auto& jet : jets) {
+          hJetRMaxPtJetPtNoFiducial->Fill(jet.r() * 1e-2, jetPt, jet.pt());
+        } // for jets
+      }   // if maxJet.r() == std::round(f_jetR * 100)
+    }
   }       // process
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
