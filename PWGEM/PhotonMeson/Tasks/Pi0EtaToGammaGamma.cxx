@@ -218,6 +218,8 @@ struct Pi0EtaToGammaGamma {
   };
 
   Partition<aod::EMReducedEvents> goodEventsPCM = o2::aod::emreducedevent::ngpcm > 0; // && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
+  Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
 
   HistogramRegistry registry{"Pi0EtaToGammaGamma"};
 
@@ -532,48 +534,48 @@ struct Pi0EtaToGammaGamma {
 
   // Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
   // using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPCM(aod::EMReducedEvents const& collisions, aod::V0Datas const& v0photons)
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Datas const& v0photons)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
-    MixedEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
+    MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision);
   }
 
   // Filter collisionFilter_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngphos > 0;
   // using MyFilteredCollisions_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPHOSPHOS(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& phosclusters)
+  void processPHOSPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
-    MixedEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
+    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
   }
 
-  void processEMCEMC(aod::EMReducedEvents const& collisions, aod::SkimEMCClusters const& emcclusters)
+  void processEMCEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters)
   {
     if (useRotation) {
       SameEventPairingWithRotation(collisions, emcclusters);
     } else {
       SameEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
     }
-    MixedEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
+    MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
   }
 
   // Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
   // using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
-    MixedEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
+    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos);
   }
 
-  void processPCMEMC(aod::EMReducedEvents const& collisions, aod::V0Datas const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Datas const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
-    MixedEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
+    MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc);
   }
 
-  void processPHOSEMC(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  void processPHOSEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     SameEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
-    MixedEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
+    MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
   }
 
   void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Datas const& v0photons)
