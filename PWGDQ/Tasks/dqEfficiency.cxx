@@ -34,6 +34,9 @@
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
 
 using std::cout;
 using std::endl;
@@ -484,6 +487,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   float mMagField = 0.0;
+  o2::parameters::GRPMagField* grpmag = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
@@ -500,6 +504,8 @@ struct AnalysisSameEventPairing {
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
+  Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
 
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
@@ -667,24 +673,24 @@ struct AnalysisSameEventPairing {
   {
     if (fCurrentRun != event.runNumber()) {
       if (fUseRemoteField.value) {
-        o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPath, event.timestamp());
-        if (grpo != nullptr) {
-          mMagField = grpo->getNominalL3Field();
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
+        if (grpmag != nullptr) {
+          mMagField = grpmag->getNominalL3Field();
         } else {
           LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
         }
         if (fConfigUseKFVertexing.value) {
           VarManager::SetupTwoProngKFParticle(mMagField);
         } else {
-          VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-          VarManager::SetupTwoProngFwdDCAFitter(mMagField, true, 200.0f, 1.0e-3f, 0.9f, true);
+          VarManager::SetupTwoProngDCAFitter(mMagField, fPropToPCA.value, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // TODO: get these parameters from Configurables
+          VarManager::SetupTwoProngFwdDCAFitter(mMagField, fPropToPCA.value, 200.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
         }
       } else {
         if (fConfigUseKFVertexing.value) {
           VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
         } else {
-          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-          VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, true, 200.0f, 1.0e-3f, 0.9f, true);
+          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, fPropToPCA.value, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // TODO: get these parameters from Configurables
+          VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, fPropToPCA.value, 200.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
         }
       }
       fCurrentRun = event.runNumber();

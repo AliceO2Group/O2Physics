@@ -47,7 +47,7 @@ struct multFilter {
          kLeadingPtTrack,
          kNtriggersMM };
   // my track selection, discussed with Mesut and Matia
-  TrackSelection myTrackSelection();
+  TrackSelection mTrackSelector;
   // event selection cuts
   Configurable<float> selHTrkMult{"selHTrkMult", 30., "global trk multiplicity threshold"};
   Configurable<float> selHMFv0{"selHMFv0", 33559.5, "FV0-amplitude threshold"};
@@ -85,6 +85,20 @@ struct multFilter {
 
   void init(o2::framework::InitContext&)
   {
+    mTrackSelector.SetPtRange(0.15f, 1e10f);
+    mTrackSelector.SetEtaRange(-0.8f, 0.8f);
+    mTrackSelector.SetRequireITSRefit(true);
+    mTrackSelector.SetRequireTPCRefit(true);
+    mTrackSelector.SetRequireGoldenChi2(false);
+    mTrackSelector.SetMinNClustersTPC(60);
+    mTrackSelector.SetMinNCrossedRowsTPC(70);
+    mTrackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+    mTrackSelector.SetMaxChi2PerClusterTPC(4.f);
+    mTrackSelector.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+    mTrackSelector.SetMaxChi2PerClusterITS(36.f);
+    mTrackSelector.SetMaxDcaXY(1.f);
+    mTrackSelector.SetMaxDcaZ(1.f);
+
     int nBinsEst[8] = {100, 1000, 102, 700, 102, 700, 102, 150};
     float lowEdgeEst[8] = {-0.5, -0.5, -0.01, -0.5, -0.01, -0.5, -0.01, .0};
     float upEdgeEst[8] = {99.5, 99999.5, 1.01, 699.5, 1.01, 699.5, 1.01, 150.0};
@@ -342,7 +356,7 @@ struct multFilter {
     // Globaltracks
 
     for (auto& track : tracks) {
-      if (!myTrackSelection().IsSelected(track)) {
+      if (!mTrackSelector.IsSelected(track)) {
         continue;
       }
       // Has this track contributed to the collision vertex fit
@@ -526,24 +540,6 @@ struct multFilter {
     }
   }
 };
-TrackSelection multFilter::myTrackSelection()
-{
-  TrackSelection selectedTracks;
-  selectedTracks.SetPtRange(0.15f, 1e10f);
-  selectedTracks.SetEtaRange(-0.8f, 0.8f);
-  selectedTracks.SetRequireITSRefit(true);
-  selectedTracks.SetRequireTPCRefit(true);
-  selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMinNClustersTPC(60);
-  selectedTracks.SetMinNCrossedRowsTPC(70);
-  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
-  selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  selectedTracks.SetMaxDcaXY(1.f);
-  selectedTracks.SetMaxDcaZ(1.f);
-  return selectedTracks;
-}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {

@@ -70,21 +70,33 @@ struct JetFinderTask {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackPtCut{"trackPtCut", 0.1, "minimum constituent pT"};
   Configurable<float> trackEtaCut{"trackEtaCut", 0.9, "constituent eta cut"};
+  Configurable<float> trackPhiMinCut{"trackPhiMinCut", -999, "track min phi cut"};
+  Configurable<float> trackPhiMaxCut{"trackPhiMaxCut", 999, "track max phi cut"};
+  Configurable<float> clusterEtaCut{"clusterEtaCut", 0.7, "cluster eta cut"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterPhiMinCut{"clusterPhiMinCut", -999, "cluster min phi cut"};
+  Configurable<float> clusterPhiMaxCut{"clusterPhiMaxCut", 999, "cluster max phi cut"};
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
   Configurable<float> jetPtMin{"jetPtMin", 10.0, "minimum jet pT"};
+  Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<std::vector<double>> jetR{"jetR", {0.4}, "jet resolution parameters"};
   // FIXME: This should be named jetType. However, as of Aug 2021, it doesn't appear possible
   //        to set both global and task level options. This should be resolved when workflow
   //        level customization is available
   Configurable<int> jetType2{"jetType2", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
+  Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
-  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (requireGlobalTrackInFilter()) && (aod::track::pt > trackPtCut);
+  // Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (requireGlobalTrackInFilter()) && (aod::track::pt > trackPtCut);
+  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::phi > trackPhiMinCut) && (aod::track::phi < trackPhiMaxCut) && (requireGlobalTrackInFilter()) && (aod::track::pt > trackPtCut);
+
+  o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
+  // Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusDef)) && (nabs(aod::emcalcluster::eta) < clusterEtaCut) && (aod::emcalcluster::phi > clusterPhiMinCut) && (aod::emcalcluster::phi < clusterPhiMaxCut);
 
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;
-  JetFinder jetFinder; //should be a configurable but for now this cant be changed on hyperloop
+  JetFinder jetFinder; // should be a configurable but for now this cant be changed on hyperloop
   // FIXME: Once configurables support enum, ideally we can
   JetType_t _jetType;
 
@@ -105,6 +117,7 @@ struct JetFinderTask {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
     }
     jetFinder.jetPtMin = jetPtMin;
+    jetFinder.ghostRepeatN = ghostRepeat;
   }
 
   template <typename T>
@@ -144,7 +157,7 @@ struct JetFinderTask {
         hJetPhi->Fill(jet.phi(), R);
         hJetEta->Fill(jet.eta(), R);
         hJetN->Fill(jet.constituents().size(), R);
-        for (const auto& constituent : jet.constituents()) { //event or jetwise
+        for (const auto& constituent : jet.constituents()) { // event or jetwise
           if (DoConstSub) {
             // Since we're copying the consituents, we can combine the tracks and clusters together
             // We only have to keep the uncopied versions separated due to technical constraints.
@@ -261,7 +274,7 @@ struct JetFinderTask {
 
   void processDataFull(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                        soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks,
-                       aod::EMCALClusters const& clusters)
+                       soa::Filtered<aod::EMCALClusters> const& clusters)
   {
     LOG(debug) << "Process data full!";
     processData(collision, tracks, &clusters);

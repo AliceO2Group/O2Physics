@@ -57,7 +57,7 @@ struct QaEfficiency {
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
-  Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
@@ -72,6 +72,19 @@ struct QaEfficiency {
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  // Custom track cuts for debug purposes
+  TrackSelection customTrackCuts;
+  Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
+  Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
+  Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+  Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
+  Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
+  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
 
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
@@ -702,8 +715,11 @@ struct QaEfficiency {
       case 5:
         h->GetXaxis()->SetBinLabel(18, "isInAcceptanceTrack");
         break;
+      case 6:
+        h->GetXaxis()->SetBinLabel(18, "customTrackSelection");
+        break;
       default:
-        LOG(fatal) << "Can't interpret track asked selection";
+        LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
 
     for (int i = 0; i < nSpecies; i++) {
@@ -931,6 +947,23 @@ struct QaEfficiency {
 
     initData(axisSel);
     initMC(axisSel);
+
+    // Custom track cuts
+    if (globalTrackSelection.value == 6) {
+      customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
+      LOG(info) << "Customizing track cuts:";
+      customTrackCuts.SetRequireITSRefit(requireITS.value);
+      customTrackCuts.SetRequireTPCRefit(requireTPC.value);
+      customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
+      customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
+      customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
+      customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
+      customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
+      customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+      customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+      customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
+      customTrackCuts.print();
+    }
   }
 
   template <int charge, o2::track::PID::ID id, typename particleType>
@@ -1271,8 +1304,9 @@ struct QaEfficiency {
   }
 
   // Global process
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-               o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension> const& tracks)
+               TrackCandidates const& tracks)
   {
     isCollisionSelected<true>(collision);
   }
@@ -1427,8 +1461,10 @@ struct QaEfficiency {
         return track.isQualityTrack();
       case 5:
         return track.isInAcceptanceTrack();
+      case 6:
+        return customTrackCuts.IsSelected(track);
       default:
-        LOG(fatal) << "Can't interpret track asked selection";
+        LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
     histos.fill(countingHisto, 18);
 
@@ -1439,7 +1475,7 @@ struct QaEfficiency {
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   void processMC(o2::aod::McCollision const& mcCollision,
                  o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
-                 o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension> const& tracks,
+                 o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
     if (collisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
@@ -1513,7 +1549,7 @@ struct QaEfficiency {
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
   // MC process without the collision association
-  void processMCWithoutCollisions(o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension> const& tracks,
+  void processMCWithoutCollisions(o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                                   o2::aod::McParticles const& mcParticles)
   {
     // Track loop
@@ -1570,7 +1606,7 @@ struct QaEfficiency {
   PROCESS_SWITCH(QaEfficiency, processMCWithoutCollisions, "process MC without the collision association", false);
 
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-                   const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>& tracks)
+                   TrackCandidates const& tracks)
   {
 
     if (!isCollisionSelected<false>(collision)) {
