@@ -129,21 +129,34 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
 {
   // This helper method provides the ability to conveniently combine
   // several sets of track selection requests
-  if( lTraSelRe.getMinPt() < minPt ) minPt = lTraSelRe.getMinPt();
-  if( lTraSelRe.getMaxPt() > maxPt ) maxPt = lTraSelRe.getMaxPt();
-  if( lTraSelRe.getMinEta() < minEta ) minEta = lTraSelRe.getMinEta();
-  if( lTraSelRe.getMaxEta() > maxEta ) maxEta = lTraSelRe.getMaxEta();
+  if (lTraSelRe.getMinPt() < minPt)
+    minPt = lTraSelRe.getMinPt();
+  if (lTraSelRe.getMaxPt() > maxPt)
+    maxPt = lTraSelRe.getMaxPt();
+  if (lTraSelRe.getMinEta() < minEta)
+    minEta = lTraSelRe.getMinEta();
+  if (lTraSelRe.getMaxEta() > maxEta)
+    maxEta = lTraSelRe.getMaxEta();
 
-  if( lTraSelRe.getMaxDCAz() > maxDCAz ) maxDCAz = lTraSelRe.getMaxDCAz();
-  if( lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep ) maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
+  if (lTraSelRe.getMaxDCAz() > maxDCAz)
+    maxDCAz = lTraSelRe.getMaxDCAz();
+  if (lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep)
+    maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
 
-  if( lTraSelRe.getRequireTPCRefit() == false ) requireTPCrefit = false;
-  if( lTraSelRe.getMinTPCClusters() < minTPCclusters ) minTPCclusters = lTraSelRe.getMinTPCClusters();
-  if( lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows ) minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
-  if( lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable ) minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
+  if (lTraSelRe.getRequireTPCRefit() == false)
+    requireTPCrefit = false;
+  if (lTraSelRe.getMinTPCClusters() < minTPCclusters)
+    minTPCclusters = lTraSelRe.getMinTPCClusters();
+  if (lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows)
+    minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
+  if (lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable)
+    minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
 
-  if( lTraSelRe.getRequireITSRefit() == false ) requireITSrefit = false;
-  if( lTraSelRe.getMinITSClusters() < minITSclusters ) minITSclusters = lTraSelRe.getMinITSClusters();
-  if( lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster ) maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
+  if (lTraSelRe.getRequireITSRefit() == false)
+    requireITSrefit = false;
+  if (lTraSelRe.getMinITSClusters() < minITSclusters)
+    minITSclusters = lTraSelRe.getMinITSClusters();
+  if (lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster)
+    maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
   return;
 }
