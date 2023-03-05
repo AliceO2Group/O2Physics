@@ -28,27 +28,68 @@
 #include <Rtypes.h>
 #include <TMath.h>
 
-static constexpr double default_matrix[3][3] = {{1.1, 1.2, 1.3}, {2.1, 2.2, 2.3}, {3.1, 3.2, 3.3}};
-
 class trackSelectionRequest
 {
  public:
-  trackSelectionRequest(int minTPCclusters_ = 70, bool option_ = true)
-    : minTPCclusters{minTPCclusters_}, option{option_}
+  trackSelectionRequest(int minTPCclusters_ = -1, bool option_ = true)
+    : minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPCrefit{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, requireITSrefit{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
   {
+    // constructor
   }
 
+  void setMinPt(float minPt_);
+  int getMinPt() const;
+  void setMaxPt(float maxPt_);
+  int getMaxPt() const;
+  void setMinEta(float minEta_);
+  int getMinEta() const;
+  void setMaxEta(float maxEta_);
+  int getMaxEta() const;
+
+  void setMaxDCAz(float maxDCAz_);
+  int getMaxDCAz() const;
+  void setMaxDCAxyPtDep(float maxDCAxyPtDep_);
+  int getMaxDCAxyPtDep() const;
+
+  void setRequireTPCRefit(bool requireTPCrefit_);
+  bool getRequireTPCRefit() const;
   void setMinTPCClusters(int minTPCclusters_);
   int getMinTPCClusters() const;
+  void setMinTPCCrossedRows(int minTPCCrossedRows_);
+  int getMinTPCCrossedRows() const;
+  void setMinTPCCrossedRowsOverFindable(float minTPCCrossedRowsOverFindable_);
+  int getMinTPCCrossedRowsOverFindable() const;
 
-  void setOption(bool option_);
-  bool getOption() const;
+  void setRequireITSRefit(bool requireITSrefit_);
+  bool getRequireITSRefit() const;
+  void setMinITSClusters(int minITSclusters_);
+  int getMinITSClusters() const;
+  void setMaxITSChi2PerCluster(float maxITSChi2percluster_);
+  int getMaxITSChi2PerCluster() const;
+
+  // Calculate logical OR of selection criteria conveniently
+  void CombineWithLogicalOR(trackSelectionRequest const& lTraSelRe);
 
  private:
+  // Phase space (Tracks or TracksIU)
+  float minPt;
+  float maxPt;
+  float minEta;
+  float maxEta;
+  // DCAs to primary vertex (use for primaries only)
+  float maxDCAz;
+  float maxDCAxyPtDep;
+  // TPC parameters (TracksExtra)
+  bool requireTPCrefit;
   int minTPCclusters;
-  bool option;
+  int minTPCcrossedrows;
+  float minTPCcrossedrowsoverfindable;
+  // ITS parameters (TracksExtra)
+  bool requireITSrefit;
+  int minITSclusters;
+  float maxITSChi2percluster;
 
-  ClassDefNV(trackSelectionRequest, 1);
+  ClassDefNV(trackSelectionRequest, 2);
 };
 
 std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c);
