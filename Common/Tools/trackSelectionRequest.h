@@ -32,10 +32,7 @@ class trackSelectionRequest
 {
  public:
   trackSelectionRequest(int minTPCclusters_ = -1, bool option_ = true)
-    : minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, 
-    maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPCrefit{false}, 
-    minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0},
-    requireITSrefit{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
+    : minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPCrefit{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, requireITSrefit{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
   {
     // constructor
   }
@@ -76,20 +73,20 @@ class trackSelectionRequest
  private:
   // Phase space (Tracks or TracksIU)
   float minPt;
-  float maxPt; 
+  float maxPt;
   float minEta;
   float maxEta;
   // DCAs to primary vertex (use for primaries only)
-  float maxDCAz; 
+  float maxDCAz;
   float maxDCAxyPtDep;
   // TPC parameters (TracksExtra)
   bool requireTPCrefit;
   int minTPCclusters;
-  int minTPCcrossedrows; 
+  int minTPCcrossedrows;
   float minTPCcrossedrowsoverfindable;
   // ITS parameters (TracksExtra)
   bool requireITSrefit;
-  int minITSclusters; 
+  int minITSclusters;
   float maxITSChi2percluster;
 
   ClassDefNV(trackSelectionRequest, 2);
