@@ -219,7 +219,7 @@ struct JetFinderTask {
   PROCESS_SWITCH(JetFinderTask, processParticleLevel, "Particle level jet finding", false);
 
   template <typename T, typename U>
-  void processData(T const& collision, U const& tracks, aod::EMCALClusters const* clusters = nullptr)
+  void processData(T const& collision, U const& tracks, soa::Filtered<aod::EMCALClusters> const* clusters = nullptr)
   {
     LOG(debug) << "Process data!";
     // Setup
