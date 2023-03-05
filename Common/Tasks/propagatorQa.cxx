@@ -331,7 +331,7 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
+      if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
       if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
