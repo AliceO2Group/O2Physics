@@ -124,7 +124,6 @@ struct fullJetFilter {
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
     double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
-    double R = 0;
     if ((jet.eta() >= emcalEtaMin + R) && (jet.eta() <= emcalEtaMax - R) && (jet.phi() >= emcalPhiMin + R) && (jet.phi() <= emcalPhiMax - R)) {
       return true;
     }
