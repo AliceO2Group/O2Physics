@@ -63,7 +63,7 @@ struct propagatorQa {
 
   Configurable<int> NbinsDeltaPt{"NbinsDeltaPt", 100, "binning for delta-pt"};
   Configurable<float> DeltaPtLimit{"DeltaPtLimit", 1, "limit for delta-pt"};
-  Configurable<int> minTPCClusters{"minTPCClusters", -1, "minimum number of TPC clusters"};
+  Configurable<int> minTPCClustersRequired{"minTPCClustersRequired", -1, "minimum number of TPC clusters"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -211,7 +211,7 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
+      if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
       if (!track.has_mcParticle())
@@ -331,7 +331,7 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
+      if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
       if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
