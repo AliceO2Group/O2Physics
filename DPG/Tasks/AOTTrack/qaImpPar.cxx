@@ -148,7 +148,7 @@ struct QaImpactPar {
   /// Data
   using collisionRecoTable = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   using trackTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra>;
-  using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA,
+  using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov,
                                        o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                        o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
   void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,
@@ -281,9 +281,9 @@ struct QaImpactPar {
     histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(5, "hasTPC && hasITS");
     histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-    if(fEnablePulls && !doPVrefit) {
-      LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
-    }
+    //if(fEnablePulls && !doPVrefit) {
+    //  LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
+    //}
     if(fEnablePulls) {
       histograms.add("Reco/h4ImpParPulls", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZPulls", "", kTHnSparseD, {trackPtAxis, trackImpParZPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
@@ -405,7 +405,7 @@ struct QaImpactPar {
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
         o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object";
+        LOG(info) << "Setting magnetic field to current " << grpo->getL3Current() << " A for run " << bc.runNumber() << " from its GRP CCDB object";
       } else {
         LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
@@ -615,22 +615,26 @@ struct QaImpactPar {
       // value calculated wrt global PV (not recalculated) ---> coming from trackextension workflow
       impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
+      impParRPhiSigma = toMicrometers * std::sqrt(track.sigmaDcaXY2());
+      impParZSigma = toMicrometers * std::sqrt(track.sigmaDcaZ2());
       // updated value after PV recalculation
       if (recalc_imppar) {
         if(fEnablePulls) {
           auto trackParCov = getTrackParCov(track);
           o2::dataformats::DCA dcaInfoCov{999, 999, 999, 999, 999};
-          if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackParCov, 2.f, matCorr, &dcaInfoCov)) {
+          if (o2::base::Propagator::Instance()->propagateToDCABxByBz(PVbase_recalculated, trackParCov, 2.f, matCorr, &dcaInfoCov)) {
             impParRPhi = dcaInfoCov.getY() * toMicrometers;
             impParZ = dcaInfoCov.getZ() * toMicrometers;
-            impParRPhiSigma = dcaInfoCov.getSigmaY() * toMicrometers;
+            impParRPhiSigma = std::sqrt(dcaInfoCov.getSigmaY2()) * toMicrometers;
+            impParZSigma = std::sqrt(dcaInfoCov.getSigmaZ2()) * toMicrometers;
           }
-        }
-        auto trackPar = getTrackPar(track);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
-        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
-          impParRPhi = dcaInfo[0] * toMicrometers;
-          impParZ = dcaInfo[1] * toMicrometers;
+        } else {
+          auto trackPar = getTrackPar(track);
+          o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+          if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+            impParRPhi = dcaInfo[0] * toMicrometers;
+            impParZ = dcaInfo[1] * toMicrometers;
+          }
         }
       }
 
@@ -639,7 +643,7 @@ struct QaImpactPar {
       histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       if(fEnablePulls) {
         histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZPulss"), pt, impParZ / impParZSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       }
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
