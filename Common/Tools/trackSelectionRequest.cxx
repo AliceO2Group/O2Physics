@@ -20,7 +20,14 @@ std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c)
   os << "MinTPCClusters value: " << c.getMinTPCClusters();
   return os;
 }
-
+void trackSelectionRequest::setTrackPhysicsType(int trackPhysicsType_)
+{
+  trackPhysicsType = trackPhysicsType_;
+}
+int trackSelectionRequest::getTrackPhysicsType() const
+{
+  return trackPhysicsType;
+}
 void trackSelectionRequest::setMinPt(float minPt_)
 {
   minPt = minPt_;
@@ -149,40 +156,6 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
   return;
 }
 
-template <typename TTrack>
-bool trackSelectionRequest::IsTrackSelected(TTrack const& lTrack){
-  // Selector that applies all selections
-  // Phase-space
-  if( lTrack.pt() < minPt) return false;
-  if( lTrack.pt() > maxPt) return false;
-  if( lTrack.eta() < minEta) return false;
-  if( lTrack.eta() > maxEta) return false;
-  // DCA to PV
-  if( fabs(lTrack.dcaXY()) < maxDCAz) return false;
-  // TracksExtra-based
-  if( lTrack.hasTPC() == false && requireTPC) return false; //FIXME this is a LO approximation
-  if( lTrack.tpcNClsFound() < minTPCclusters ) return false;
-  if( lTrack.tpcNClsCrossedRows() < minTPCcrossedrows ) return false;
-  if( lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable ) return false;
-  if( lTrack.hasITS() == false && requireITS) return false;
-  if( lTrack.itsNCls() < minITSclusters ) return false;
-  if( lTrack.itsChi2NCl() < maxITSChi2percluster ) return false; //FIXME this is a LO approximation
-  return true;
-}
-
-template <typename TTrack>
-bool trackSelectionRequest::IsTrackSelected_TrackExtraCriteria(TTrack const& lTrack){
-  // Selector that only applies TracksExtra columns selection
-  if( lTrack.hasTPC() == false && requireTPC) return false; //FIXME this is a LO approximation
-  if( lTrack.tpcNClsFound() < minTPCclusters ) return false;
-  if( lTrack.tpcNClsCrossedRows() < minTPCcrossedrows ) return false;
-  if( lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable ) return false;
-  if( lTrack.hasITS() == false && requireITS) return false;
-  if( lTrack.itsNCls() < minITSclusters ) return false;
-  if( lTrack.itsChi2NCl() < maxITSChi2percluster ) return false; //FIXME this is a LO approximation
-  return true;
-}
-
 void trackSelectionRequest::SetTightSelections() {
   // Phase space (Tracks or TracksIU)
   minPt = 1e+3;
@@ -204,6 +177,7 @@ void trackSelectionRequest::SetTightSelections() {
 }
 
 void trackSelectionRequest::PrintSelections() const {
+  LOGF(info, "Track physics type .....................: %s", trackPhysicsType==0?"primary":"secondary");
   LOGF(info, "Minimum pT .............................: %.3f", minPt);
   LOGF(info, "Maximum pT .............................: %.3f", maxPt);
   LOGF(info, "Minimum eta ............................: %.3f", minEta);

@@ -133,7 +133,7 @@ struct TrackPropagationTester {
         for (auto const& option : device.options) {
           if (hasEnding(option.name,".requireTPC") ) {
             bool lVal = option.defaultValue.get<bool>();
-            LOGF(info, "Device %s, request TPC information or TPC : %i", device.name, lVal);
+            LOGF(info, "Device %s, request TPC: %i", device.name, lVal);
             if( trackSels.getRequireTPC() == false ) trackSels.setRequireTPC( lVal ); 
           }
           if (hasEnding(option.name,".minTPCclusters") ) {
@@ -153,7 +153,7 @@ struct TrackPropagationTester {
           }
           if (hasEnding(option.name,".requireITS") ) {
             bool lVal = option.defaultValue.get<bool>();
-            LOGF(info, "Device %s, request ITS information or ITS : %i", device.name, lVal);
+            LOGF(info, "Device %s, request ITS: %i", device.name, lVal);
             if( trackSels.getRequireITS() == false ) trackSels.setRequireITS( lVal ); 
           }
           if (hasEnding(option.name,".minITSclusters") ) {
