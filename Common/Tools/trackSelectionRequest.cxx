@@ -137,29 +137,43 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
 {
   // This helper method provides the ability to conveniently combine
   // several sets of track selection requests
-  if( lTraSelRe.getMinPt() < minPt ) minPt = lTraSelRe.getMinPt();
-  if( lTraSelRe.getMaxPt() > maxPt ) maxPt = lTraSelRe.getMaxPt();
-  if( lTraSelRe.getMinEta() < minEta ) minEta = lTraSelRe.getMinEta();
-  if( lTraSelRe.getMaxEta() > maxEta ) maxEta = lTraSelRe.getMaxEta();
+  if (lTraSelRe.getMinPt() < minPt)
+    minPt = lTraSelRe.getMinPt();
+  if (lTraSelRe.getMaxPt() > maxPt)
+    maxPt = lTraSelRe.getMaxPt();
+  if (lTraSelRe.getMinEta() < minEta)
+    minEta = lTraSelRe.getMinEta();
+  if (lTraSelRe.getMaxEta() > maxEta)
+    maxEta = lTraSelRe.getMaxEta();
 
-  if( lTraSelRe.getMaxDCAz() > maxDCAz ) maxDCAz = lTraSelRe.getMaxDCAz();
-  if( lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep ) maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
+  if (lTraSelRe.getMaxDCAz() > maxDCAz)
+    maxDCAz = lTraSelRe.getMaxDCAz();
+  if (lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep)
+    maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
 
-  if( lTraSelRe.getRequireTPC() == false ) requireTPC = false;
-  if( lTraSelRe.getMinTPCClusters() < minTPCclusters ) minTPCclusters = lTraSelRe.getMinTPCClusters();
-  if( lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows ) minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
-  if( lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable ) minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
+  if (lTraSelRe.getRequireTPC() == false)
+    requireTPC = false;
+  if (lTraSelRe.getMinTPCClusters() < minTPCclusters)
+    minTPCclusters = lTraSelRe.getMinTPCClusters();
+  if (lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows)
+    minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
+  if (lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable)
+    minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
 
-  if( lTraSelRe.getRequireITS() == false ) requireITS = false;
-  if( lTraSelRe.getMinITSClusters() < minITSclusters ) minITSclusters = lTraSelRe.getMinITSClusters();
-  if( lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster ) maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
+  if (lTraSelRe.getRequireITS() == false)
+    requireITS = false;
+  if (lTraSelRe.getMinITSClusters() < minITSclusters)
+    minITSclusters = lTraSelRe.getMinITSClusters();
+  if (lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster)
+    maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
   return;
 }
 
-void trackSelectionRequest::SetTightSelections() {
+void trackSelectionRequest::SetTightSelections()
+{
   // Phase space (Tracks or TracksIU)
   minPt = 1e+3;
-  maxPt = 0.0; 
+  maxPt = 0.0;
   minEta = 100;
   maxEta = -100;
   // DCAs to primary vertex (use for primaries only)
@@ -168,7 +182,7 @@ void trackSelectionRequest::SetTightSelections() {
   // TPC parameters (TracksExtra)
   requireTPC = true;
   minTPCclusters = 200;
-  minTPCcrossedrows = 200; 
+  minTPCcrossedrows = 200;
   minTPCcrossedrowsoverfindable = 200;
   // ITS parameters (TracksExtra)
   requireITS = true;
@@ -176,8 +190,9 @@ void trackSelectionRequest::SetTightSelections() {
   maxITSChi2percluster = -1;
 }
 
-void trackSelectionRequest::PrintSelections() const {
-  LOGF(info, "Track physics type .....................: %s", trackPhysicsType==0?"primary":"secondary");
+void trackSelectionRequest::PrintSelections() const
+{
+  LOGF(info, "Track physics type .....................: %s", trackPhysicsType == 0 ? "primary" : "secondary");
   LOGF(info, "Minimum pT .............................: %.3f", minPt);
   LOGF(info, "Maximum pT .............................: %.3f", maxPt);
   LOGF(info, "Minimum eta ............................: %.3f", minEta);
