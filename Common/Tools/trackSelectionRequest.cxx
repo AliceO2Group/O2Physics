@@ -12,6 +12,7 @@
 // see header for a more detailed description.
 
 #include "trackSelectionRequest.h"
+#include "Framework/Logger.h"
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c)
@@ -68,13 +69,13 @@ int trackSelectionRequest::getMaxDCAxyPtDep() const
 {
   return maxDCAxyPtDep;
 }
-void trackSelectionRequest::setRequireTPCRefit(bool requireTPCrefit_)
+void trackSelectionRequest::setRequireTPC(bool requireTPC_)
 {
-  requireTPCrefit = requireTPCrefit_;
+  requireTPC = requireTPC_;
 }
-bool trackSelectionRequest::getRequireTPCRefit() const
+bool trackSelectionRequest::getRequireTPC() const
 {
-  return requireTPCrefit;
+  return requireTPC;
 }
 void trackSelectionRequest::setMinTPCClusters(int minTPCclusters_)
 {
@@ -100,13 +101,13 @@ int trackSelectionRequest::getMinTPCCrossedRowsOverFindable() const
 {
   return minTPCcrossedrowsoverfindable;
 }
-void trackSelectionRequest::setRequireITSRefit(bool requireITSrefit_)
+void trackSelectionRequest::setRequireITS(bool requireITS_)
 {
-  requireITSrefit = requireITSrefit_;
+  requireITS = requireITS_;
 }
-bool trackSelectionRequest::getRequireITSRefit() const
+bool trackSelectionRequest::getRequireITS() const
 {
-  return requireITSrefit;
+  return requireITS;
 }
 void trackSelectionRequest::setMinITSClusters(int minITSclusters_)
 {
@@ -129,34 +130,93 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
 {
   // This helper method provides the ability to conveniently combine
   // several sets of track selection requests
-  if (lTraSelRe.getMinPt() < minPt)
-    minPt = lTraSelRe.getMinPt();
-  if (lTraSelRe.getMaxPt() > maxPt)
-    maxPt = lTraSelRe.getMaxPt();
-  if (lTraSelRe.getMinEta() < minEta)
-    minEta = lTraSelRe.getMinEta();
-  if (lTraSelRe.getMaxEta() > maxEta)
-    maxEta = lTraSelRe.getMaxEta();
+  if( lTraSelRe.getMinPt() < minPt ) minPt = lTraSelRe.getMinPt();
+  if( lTraSelRe.getMaxPt() > maxPt ) maxPt = lTraSelRe.getMaxPt();
+  if( lTraSelRe.getMinEta() < minEta ) minEta = lTraSelRe.getMinEta();
+  if( lTraSelRe.getMaxEta() > maxEta ) maxEta = lTraSelRe.getMaxEta();
 
-  if (lTraSelRe.getMaxDCAz() > maxDCAz)
-    maxDCAz = lTraSelRe.getMaxDCAz();
-  if (lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep)
-    maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
+  if( lTraSelRe.getMaxDCAz() > maxDCAz ) maxDCAz = lTraSelRe.getMaxDCAz();
+  if( lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep ) maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
 
-  if (lTraSelRe.getRequireTPCRefit() == false)
-    requireTPCrefit = false;
-  if (lTraSelRe.getMinTPCClusters() < minTPCclusters)
-    minTPCclusters = lTraSelRe.getMinTPCClusters();
-  if (lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows)
-    minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
-  if (lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable)
-    minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
+  if( lTraSelRe.getRequireTPC() == false ) requireTPC = false;
+  if( lTraSelRe.getMinTPCClusters() < minTPCclusters ) minTPCclusters = lTraSelRe.getMinTPCClusters();
+  if( lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows ) minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
+  if( lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable ) minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
 
-  if (lTraSelRe.getRequireITSRefit() == false)
-    requireITSrefit = false;
-  if (lTraSelRe.getMinITSClusters() < minITSclusters)
-    minITSclusters = lTraSelRe.getMinITSClusters();
-  if (lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster)
-    maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
+  if( lTraSelRe.getRequireITS() == false ) requireITS = false;
+  if( lTraSelRe.getMinITSClusters() < minITSclusters ) minITSclusters = lTraSelRe.getMinITSClusters();
+  if( lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster ) maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
   return;
+}
+
+template <typename TTrack>
+bool trackSelectionRequest::IsTrackSelected(TTrack const& lTrack){
+  // Selector that applies all selections
+  // Phase-space
+  if( lTrack.pt() < minPt) return false;
+  if( lTrack.pt() > maxPt) return false;
+  if( lTrack.eta() < minEta) return false;
+  if( lTrack.eta() > maxEta) return false;
+  // DCA to PV
+  if( fabs(lTrack.dcaXY()) < maxDCAz) return false;
+  // TracksExtra-based
+  if( lTrack.hasTPC() == false && requireTPC) return false; //FIXME this is a LO approximation
+  if( lTrack.tpcNClsFound() < minTPCclusters ) return false;
+  if( lTrack.tpcNClsCrossedRows() < minTPCcrossedrows ) return false;
+  if( lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable ) return false;
+  if( lTrack.hasITS() == false && requireITS) return false;
+  if( lTrack.itsNCls() < minITSclusters ) return false;
+  if( lTrack.itsChi2NCl() < maxITSChi2percluster ) return false; //FIXME this is a LO approximation
+  return true;
+}
+
+template <typename TTrack>
+bool trackSelectionRequest::IsTrackSelected_TrackExtraCriteria(TTrack const& lTrack){
+  // Selector that only applies TracksExtra columns selection
+  if( lTrack.hasTPC() == false && requireTPC) return false; //FIXME this is a LO approximation
+  if( lTrack.tpcNClsFound() < minTPCclusters ) return false;
+  if( lTrack.tpcNClsCrossedRows() < minTPCcrossedrows ) return false;
+  if( lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable ) return false;
+  if( lTrack.hasITS() == false && requireITS) return false;
+  if( lTrack.itsNCls() < minITSclusters ) return false;
+  if( lTrack.itsChi2NCl() < maxITSChi2percluster ) return false; //FIXME this is a LO approximation
+  return true;
+}
+
+void trackSelectionRequest::SetTightSelections() {
+  // Phase space (Tracks or TracksIU)
+  minPt = 1e+3;
+  maxPt = 0.0; 
+  minEta = 100;
+  maxEta = -100;
+  // DCAs to primary vertex (use for primaries only)
+  maxDCAz = -1;
+  maxDCAxyPtDep = -1;
+  // TPC parameters (TracksExtra)
+  requireTPC = true;
+  minTPCclusters = 200;
+  minTPCcrossedrows = 200; 
+  minTPCcrossedrowsoverfindable = 200;
+  // ITS parameters (TracksExtra)
+  requireITS = true;
+  minITSclusters = 20;
+  maxITSChi2percluster = -1;
+}
+
+void trackSelectionRequest::PrintSelections() const {
+  LOGF(info, "Minimum pT .............................: %.3f", minPt);
+  LOGF(info, "Maximum pT .............................: %.3f", maxPt);
+  LOGF(info, "Minimum eta ............................: %.3f", minEta);
+  LOGF(info, "Maximum eta ............................: %.3f", maxEta);
+
+  LOGF(info, "Max DCAz ...............................: %.3f", maxDCAz);
+  LOGF(info, "Max DCAxy, pt dep ......................: %.3f", maxDCAxyPtDep);
+
+  LOGF(info, "Require TPC ............................: %i", requireTPC);
+  LOGF(info, "Minimum TPC clusters ...................: %i", minTPCclusters);
+  LOGF(info, "Minimum TPC crossed rows ...............: %i", minTPCcrossedrows);
+  LOGF(info, "Minimum TPC crossed rows over findable .: %.3f", minTPCcrossedrowsoverfindable);
+  LOGF(info, "Require ITS ............................: %i", requireITS);
+  LOGF(info, "Minimum ITS clusters ...................: %i", minITSclusters);
+  LOGF(info, "Max ITS chi2/clu  ......................: %.3f", maxITSChi2percluster);
 }

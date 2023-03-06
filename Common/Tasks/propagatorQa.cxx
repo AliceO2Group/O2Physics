@@ -45,7 +45,7 @@ struct propagatorQa {
   o2::base::Propagator::MatCorrType matCorr;
 
   // Configurable based on a struct
-  Configurable<trackSelectionRequest> trackSels{"trackSels", {65, true}, "track selections"};
+  Configurable<trackSelectionRequest> trackSels{"trackSels", {}, "track selections"};
 
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
