@@ -158,7 +158,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
       if (usePid) {
         // PID applied
-        if (selectorPion.getStatusTrackPIDAll(trackPi) != TrackSelectorPID::Status::PIDAccepted) {
+        if (selectorPion.getStatusTrackPIDTpcOrTof(trackPi) != TrackSelectorPID::Status::PIDAccepted) {
           // Printf("PID not successful");
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;

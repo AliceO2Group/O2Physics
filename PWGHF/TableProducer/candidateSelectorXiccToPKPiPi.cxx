@@ -159,7 +159,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
         pidPi = 1;
       } else {
         // track-level PID selection
-        int pidPion = selectorPion.getStatusTrackPIDAll(trackPi);
+        int pidPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPi);
         if (pidPion == TrackSelectorPID::Status::PIDAccepted) {
           pidPi = 1;
         }
