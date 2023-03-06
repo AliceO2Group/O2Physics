@@ -784,20 +784,20 @@ struct TableMaker {
                                 soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
     // Process orphan tracks
-      if (fDoDetailedQA && fIsAmbiguous) {
-        for (auto& ambiTrackFwd : ambiTracksFwd) {
-          auto muon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
-          if (muon.collisionId() < 0) {
-            VarManager::FillTrack<gkMuonFillMapWithAmbi>(muon);
-            if ((static_cast<int>(muon.trackType()) == 0)) {
-              fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
-            } else if ((static_cast<int>(muon.trackType()) == 3)) {
-              fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
-            }
+    if (fDoDetailedQA && fIsAmbiguous) {
+      for (auto& ambiTrackFwd : ambiTracksFwd) {
+        auto muon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
+        if (muon.collisionId() < 0) {
+          VarManager::FillTrack<gkMuonFillMapWithAmbi>(muon);
+          if ((static_cast<int>(muon.trackType()) == 0)) {
+            fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+          } else if ((static_cast<int>(muon.trackType()) == 3)) {
+            fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
           }
         }
       }
-    for (auto& collision : collisions){
+    }
+    for (auto& collision : collisions) {
       auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
       fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collision, bcs, nullptr, groupedMuons, nullptr, ambiTracksFwd);
     }
@@ -807,20 +807,20 @@ struct TableMaker {
                                        soa::Filtered<MyMuonsWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
     // Process orphan tracks
-      if (fDoDetailedQA && fIsAmbiguous) {
-        for (auto& ambiTrackFwd : ambiTracksFwd) {
-          auto muon = ambiTrackFwd.template fwdtrack_as<MyMuonsWithCov>();
-          if (muon.collisionId() < 0) {
-            VarManager::FillTrack<gkMuonFillMapWithCovAmbi>(muon);
-            if ((static_cast<int>(muon.trackType()) == 0)) {
-              fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
-            } else if ((static_cast<int>(muon.trackType()) == 3)) {
-              fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
-            }
+    if (fDoDetailedQA && fIsAmbiguous) {
+      for (auto& ambiTrackFwd : ambiTracksFwd) {
+        auto muon = ambiTrackFwd.template fwdtrack_as<MyMuonsWithCov>();
+        if (muon.collisionId() < 0) {
+          VarManager::FillTrack<gkMuonFillMapWithCovAmbi>(muon);
+          if ((static_cast<int>(muon.trackType()) == 0)) {
+            fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+          } else if ((static_cast<int>(muon.trackType()) == 3)) {
+            fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
           }
         }
       }
-    for (auto& collision : collisions){
+    }
+    for (auto& collision : collisions) {
       auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
       fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, groupedMuons, nullptr, ambiTracksFwd);
     }
@@ -831,16 +831,16 @@ struct TableMaker {
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
     // Process orphan tracks
-      if (fDoDetailedQA && fIsAmbiguous) {
-        for (auto& ambiTrack : ambiTracksMid) {
-          auto trk = ambiTrack.template track_as<MyBarrelTracks>();
-          if (trk.collisionId() < 0) {
-            VarManager::FillTrack<gkTrackFillMapWithAmbi>(trk);
-            fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
-          }
+    if (fDoDetailedQA && fIsAmbiguous) {
+      for (auto& ambiTrack : ambiTracksMid) {
+        auto trk = ambiTrack.template track_as<MyBarrelTracks>();
+        if (trk.collisionId() < 0) {
+          VarManager::FillTrack<gkTrackFillMapWithAmbi>(trk);
+          fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
         }
       }
-    for (auto& collision : collisions){
+    }
+    for (auto& collision : collisions) {
       auto groupedTracks = tracksBarrel.sliceBy(perCollisionTracks, collision.globalIndex());
       fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collision, bcs, groupedTracks, nullptr, ambiTracksMid, nullptr);
     }
