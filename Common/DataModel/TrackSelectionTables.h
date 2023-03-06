@@ -25,8 +25,8 @@ DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float); //! Impact parameter in Y of forwar
 namespace track
 {
 // Columns to store the DCA to the primary vertex
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float); //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);             //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);               //! Impact parameter in Z of the track to the primary vertex
 DECLARE_SOA_COLUMN(SigmaDcaXY2, sigmaDcaXY2, float); //! Impact parameter sigma^2 in XY of the track to the primary vertex
 DECLARE_SOA_COLUMN(SigmaDcaZ2, sigmaDcaZ2, float);   //! Impact parameter sigma^2 in Z of the track to the primary vertex
 
