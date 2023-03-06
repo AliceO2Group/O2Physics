@@ -102,46 +102,38 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
 
 float* OnnxModel::evalModel(std::vector<Ort::Value> input)
 {
+  LOG(debug) << "Shape of input (tensor): " << printShape(input[0].GetTensorTypeAndShapeInfo().GetShape());
+  // assert(input[0].GetTensorTypeAndShapeInfo().GetShape() == getNumInputNodes()); --> Fails build in debug mode, TODO: assertion should be checked somehow
+
   try {
-    LOG(debug) << "Shape of input (tensor): " << printShape(input[0].GetTensorTypeAndShapeInfo().GetShape()); // assert(input[0].GetTensorTypeAndShapeInfo().GetShape() == getNumInputNodes()); --> Fails build in debug mode, TODO: assertion should be checked somehow
-
     auto outputTensors = mSession->Run(mInputNames, input, mOutputNames);
+    LOG(debug) << "Shape of output (tensor): " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
+    // assert(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == getNumOutputNodes());
     float* outputValues = outputTensors[0].GetTensorMutableData<float>();
-    LOG(debug) << "Shape of output (tensor): " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape()); // assert(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == getNumOutputNodes());
-
     return outputValues;
-
   } catch (const Ort::Exception& exception) {
     LOG(error) << "Error running model inference: " << exception.what();
-
-    return 0;
   }
+  return nullptr;
 }
 
 float* OnnxModel::evalModel(std::vector<float> input)
 {
-
   int64_t size = input.size();
   assert(size % mInputShapes[0][1] == 0);
   std::vector<int64_t> inputShape{size / mInputShapes[0][1], mInputShapes[0][1]};
   std::vector<Ort::Value> inputTensors;
   inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(input.data(), size, inputShape));
-
+  LOG(debug) << "Shape of input (vector): " << printShape(inputShape);
   try {
-
-    LOG(debug) << "Shape of input (vector): " << printShape(inputShape);
     auto outputTensors = mSession->Run(mInputNames, inputTensors, mOutputNames);
     LOG(debug) << "Shape of output (tensor): " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
     float* outputValues = outputTensors[0].GetTensorMutableData<float>();
-
     return outputValues;
-
   } catch (const Ort::Exception& exception) {
-
     LOG(error) << "Error running model inference: " << exception.what();
-
-    return 0;
   }
+  return nullptr;
 }
 
 void OnnxModel::setActiveThreads(int threads)

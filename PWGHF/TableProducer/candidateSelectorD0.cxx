@@ -229,10 +229,10 @@ struct HfCandidateSelectorD0 {
       statusCand = 1;
 
       // track-level PID selection
-      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDAll(trackPos);
-      int pidTrackPosPion = selectorPion.getStatusTrackPIDAll(trackPos);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
-      int pidTrackNegPion = selectorPion.getStatusTrackPIDAll(trackNeg);
+      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
+      int pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
 
       int pidD0 = -1;
       int pidD0bar = -1;

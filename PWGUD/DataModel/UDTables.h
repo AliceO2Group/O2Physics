@@ -213,6 +213,7 @@ DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
+                  track::TPCInnerParam,
                   track::ITSClusterMap,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,

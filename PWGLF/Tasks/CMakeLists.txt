@@ -11,6 +11,11 @@
 
 add_subdirectory(QC)
 
+o2physics_add_dpl_workflow(hypertriton-reco-task
+                    SOURCES hyperRecoTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hyperon-reco-test
                     SOURCES hyperon-reco-test.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

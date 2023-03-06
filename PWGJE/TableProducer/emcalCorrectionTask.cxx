@@ -36,6 +36,7 @@
 #include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/ClusterFactory.h"
+#include "EMCALBase/NonlinearityHandler.h"
 #include "EMCALReconstruction/Clusterizer.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "TVector2.h"
@@ -67,6 +68,8 @@ struct EmcalCorrectionTask {
   Configurable<std::string> clusterDefinitions{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default. Multiple definitions can be specified separated by comma"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
   Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
+  Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
+  Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -79,6 +82,7 @@ struct EmcalCorrectionTask {
   // So we use unique_ptr and define them below.
   std::vector<std::unique_ptr<o2::emcal::Clusterizer<o2::emcal::Cell>>> mClusterizers;
   o2::emcal::ClusterFactory<o2::emcal::Cell> mClusterFactories;
+  o2::emcal::NonlinearityHandler mNonlinearityHandler;
   // Cells and clusters
   std::vector<o2::emcal::AnalysisCluster> mAnalysisClusters;
 
@@ -135,6 +139,10 @@ struct EmcalCorrectionTask {
     if (mClusterizers.size() == 0) {
       LOG(error) << "No cluster definitions specified!";
     }
+
+    mNonlinearityHandler = o2::emcal::NonlinearityFactory::getInstance().getNonlinearity(static_cast<std::string>(nonlinearityFunction));
+    LOG(info) << "Using nonlinearity parameterisation: " << nonlinearityFunction.value;
+    LOG(info) << "Apply shaper saturation correction:  " << (hasShaperCorrection.value ? "yes" : "no");
 
     LOG(debug) << "Completed init!";
 
@@ -207,8 +215,12 @@ struct EmcalCorrectionTask {
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (auto& cell : cellsInBC) {
+        auto amplitude = cell.amplitude();
+        if (static_cast<bool>(hasShaperCorrection)) {
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             cell.amplitude(),
+                             amplitude,
                              cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
@@ -396,12 +408,20 @@ struct EmcalCorrectionTask {
       // Normalize the vector and rescale by energy.
       pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
+      // Correct for nonlinear behaviour
+      float nonlinCorrEnergy = cluster.E();
+      try {
+        nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
+      } catch (o2::emcal::NonlinearityHandler::UninitException& e) {
+        LOG(error) << e.what();
+      }
+
       // save to table
       LOG(debug) << "Writing cluster definition "
                  << static_cast<int>(mClusterDefinitions.at(iClusterizer))
                  << " to table.";
       mHistManager.fill(HIST("hClusterType"), 1);
-      clusters(col, cluster.getID(), cluster.E(), cluster.getCoreEnergy(),
+      clusters(col, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), cluster.E(),
                pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02(),
                cluster.getM20(), cluster.getNCells(),
                cluster.getClusterTime(), cluster.getIsExotic(),
@@ -442,6 +462,14 @@ struct EmcalCorrectionTask {
       // Normalize the vector and rescale by energy.
       pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
+      // Correct for nonlinear behaviour
+      float nonlinCorrEnergy = cluster.E();
+      try {
+        nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
+      } catch (o2::emcal::NonlinearityHandler::UninitException& e) {
+        LOG(error) << e.what();
+      }
+
       // We have our necessary properties. Now we store outputs
 
       // LOG(debug) << "Cluster E: " << cluster.E();
@@ -451,7 +479,7 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hClusterType"), 2);
       }
       clustersAmbiguous(
-        bc, cluster.getID(), cluster.E(), cluster.getCoreEnergy(),
+        bc, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), cluster.E(),
         pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02(),
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),

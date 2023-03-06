@@ -416,7 +416,7 @@ struct EventSelectionTask {
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-  void processRun3(aod::Collision const& col, aod::FullTracks const& tracks, BCsWithBcSels const& bcs)
+  void processRun3(aod::Collision const& col, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks, BCsWithBcSels const& bcs)
   {
     // count tracks of different types
     int nITStracks = 0;
