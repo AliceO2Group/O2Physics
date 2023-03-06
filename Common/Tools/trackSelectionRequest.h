@@ -32,10 +32,7 @@ class trackSelectionRequest
 {
  public:
   trackSelectionRequest()
-    : trackPhysicsType{0}, minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, 
-    maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPC{false}, 
-    minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0},
-    requireITS{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
+    : trackPhysicsType{0}, minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPC{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, requireITS{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
   {
     // constructor
   }
@@ -76,35 +73,56 @@ class trackSelectionRequest
 
   // Apply track selection checks (to be used in core services)
   template <typename TTrack>
-  bool IsTrackSelected(TTrack const& lTrack){
+  bool IsTrackSelected(TTrack const& lTrack)
+  {
     // Selector that applies all selections
     // Phase-space
-    if( lTrack.pt() < minPt) return false;
-    if( lTrack.pt() > maxPt) return false;
-    if( lTrack.eta() < minEta) return false;
-    if( lTrack.eta() > maxEta) return false;
+    if (lTrack.pt() < minPt)
+      return false;
+    if (lTrack.pt() > maxPt)
+      return false;
+    if (lTrack.eta() < minEta)
+      return false;
+    if (lTrack.eta() > maxEta)
+      return false;
     // DCA to PV
-    if( fabs(lTrack.dcaXY()) < maxDCAz) return false;
+    if (fabs(lTrack.dcaXY()) < maxDCAz)
+      return false;
     // TracksExtra-based
-    if( lTrack.hasTPC() == false && requireTPC) return false; //FIXME this is a LO approximation
-    if( lTrack.tpcNClsFound() < minTPCclusters ) return false;
-    if( lTrack.tpcNClsCrossedRows() < minTPCcrossedrows ) return false;
-    if( lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable ) return false;
-    if( lTrack.hasITS() == false && requireITS) return false;
-    if( lTrack.itsNCls() < minITSclusters ) return false;
-    if( lTrack.itsChi2NCl() < maxITSChi2percluster ) return false; //FIXME this is a LO approximation
+    if (lTrack.hasTPC() == false && requireTPC)
+      return false; // FIXME this is a LO approximation
+    if (lTrack.tpcNClsFound() < minTPCclusters)
+      return false;
+    if (lTrack.tpcNClsCrossedRows() < minTPCcrossedrows)
+      return false;
+    if (lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable)
+      return false;
+    if (lTrack.hasITS() == false && requireITS)
+      return false;
+    if (lTrack.itsNCls() < minITSclusters)
+      return false;
+    if (lTrack.itsChi2NCl() < maxITSChi2percluster)
+      return false; // FIXME this is a LO approximation
     return true;
   }
   template <typename TTrack>
-  bool IsTrackSelected_TrackExtraCriteria(TTrack const& lTrack){
+  bool IsTrackSelected_TrackExtraCriteria(TTrack const& lTrack)
+  {
     // Selector that only applies TracksExtra columns selection
-    if( lTrack.hasTPC() == false && requireTPC) return false; //FIXME this is a LO approximation
-    if( lTrack.tpcNClsFound() < minTPCclusters ) return false;
-    if( lTrack.tpcNClsCrossedRows() < minTPCcrossedrows ) return false;
-    if( lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable ) return false;
-    if( lTrack.hasITS() == false && requireITS) return false;
-    if( lTrack.itsNCls() < minITSclusters ) return false;
-    if( lTrack.itsChi2NCl() < maxITSChi2percluster ) return false; //FIXME this is a LO approximation
+    if (lTrack.hasTPC() == false && requireTPC)
+      return false; // FIXME this is a LO approximation
+    if (lTrack.tpcNClsFound() < minTPCclusters)
+      return false;
+    if (lTrack.tpcNClsCrossedRows() < minTPCcrossedrows)
+      return false;
+    if (lTrack.tpcCrossedRowsOverFindableCls() < minTPCcrossedrowsoverfindable)
+      return false;
+    if (lTrack.hasITS() == false && requireITS)
+      return false;
+    if (lTrack.itsNCls() < minITSclusters)
+      return false;
+    if (lTrack.itsChi2NCl() < maxITSChi2percluster)
+      return false; // FIXME this is a LO approximation
     return true;
   }
 
@@ -114,23 +132,23 @@ class trackSelectionRequest
   void PrintSelections() const;
 
  private:
-  int trackPhysicsType; //0 - primary, 1 - secondary
+  int trackPhysicsType; // 0 - primary, 1 - secondary
   // Phase space (Tracks or TracksIU)
   float minPt;
-  float maxPt; 
+  float maxPt;
   float minEta;
   float maxEta;
   // DCAs to primary vertex (use for primaries only)
-  float maxDCAz; 
+  float maxDCAz;
   float maxDCAxyPtDep;
   // TPC parameters (TracksExtra)
   bool requireTPC; // in Run 3, equiv to hasTPC
   int minTPCclusters;
-  int minTPCcrossedrows; 
+  int minTPCcrossedrows;
   float minTPCcrossedrowsoverfindable;
   // ITS parameters (TracksExtra)
   bool requireITS; // in Run 3, equiv to hasITS
-  int minITSclusters; 
+  int minITSclusters;
   float maxITSChi2percluster;
 
   ClassDefNV(trackSelectionRequest, 3);
