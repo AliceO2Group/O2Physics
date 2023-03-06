@@ -57,7 +57,9 @@ struct QaImpactPar {
 
   /// Input parameters
   Configurable<bool> fDebug{"fDebug", false, "Debug flag enabling outputs"};
+  Configurable<bool> fEnablePulls{"fEnablePulls", false, "Enable storage of pulls"};
   ConfigurableAxis binningImpPar{"binningImpPar", {200, -500.f, 500.f}, "Impact parameter binning"};
+  ConfigurableAxis binningPulls{"binningPulls", {200, -10.f, 10.f}, "Pulls binning"};
   ConfigurableAxis binningPt{"binningPt", {100, 0.f, 10.f}, "Pt binning"};
   ConfigurableAxis binningEta{"binningEta", {40, -2.f, 2.f}, "Eta binning"};
   ConfigurableAxis binningPhi{"binningPhi", {24, 0.f, TMath::TwoPi()}, "Phi binning"};
@@ -256,6 +258,8 @@ struct QaImpactPar {
     const AxisSpec trackPhiAxis{binningPhi, "#varphi"};
     const AxisSpec trackImpParRPhiAxis{binningImpPar, "#it{d}_{r#it{#varphi}} (#mum)"};
     const AxisSpec trackImpParZAxis{binningImpPar, "#it{d}_{z} (#mum)"};
+    const AxisSpec trackImpParRPhiPullsAxis{binningPulls, "#it{d}_{r#it{#varphi}} / #sigma(#it{d}_{r#it{#varphi}})"};
+    const AxisSpec trackImpParZPullsAxis{binningPulls, "#it{d}_{z} / #sigma(#it{d}_{z})"};
     const AxisSpec trackNSigmaTPCPionAxis{20, -10.f, 10.f, "Number of #sigma TPC #pi^{#pm}"};
     const AxisSpec trackNSigmaTPCKaonAxis{20, -10.f, 10.f, "Number of #sigma TPC K^{#pm}"};
     const AxisSpec trackNSigmaTPCProtonAxis{20, -10.f, 10.f, "Number of #sigma TPC proton"};
@@ -277,6 +281,13 @@ struct QaImpactPar {
     histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(5, "hasTPC && hasITS");
     histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+    if(fEnablePulls && !doPVrefit) {
+      LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
+    }
+    if(fEnablePulls) {
+      histograms.add("Reco/h4ImpParPulls", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+      histograms.add("Reco/h4ImpParZPulls", "", kTHnSparseD, {trackPtAxis, trackImpParZPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+    }
     if (isPIDPionApplied) {
       histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
@@ -432,6 +443,8 @@ struct QaImpactPar {
     float pt = -999.f;
     float impParRPhi = -999.f;
     float impParZ = -999.f;
+    float impParRPhiSigma = 999.f;
+    float impParZSigma = 999.f;
     float tpcNSigmaPion = -999.f;
     float tpcNSigmaKaon = -999.f;
     float tpcNSigmaProton = -999.f;
@@ -604,10 +617,18 @@ struct QaImpactPar {
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
       // updated value after PV recalculation
       if (recalc_imppar) {
+        if(fEnablePulls) {
+          auto trackParCov = getTrackParCov(track);
+          o2::dataformats::DCA dcaInfoCov{999, 999, 999, 999, 999};
+          if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackParCov, 2.f, matCorr, &dcaInfoCov)) {
+            impParRPhi = dcaInfoCov.getY() * toMicrometers;
+            impParZ = dcaInfoCov.getZ() * toMicrometers;
+            impParRPhiSigma = dcaInfoCov.getSigmaY() * toMicrometers;
+          }
+        }
         auto trackPar = getTrackPar(track);
         o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
         if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
-          // if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
           impParRPhi = dcaInfo[0] * toMicrometers;
           impParZ = dcaInfo[1] * toMicrometers;
         }
@@ -616,6 +637,10 @@ struct QaImpactPar {
       /// all tracks
       histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+      if(fEnablePulls) {
+        histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParZPulss"), pt, impParZ / impParZSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+      }
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
         /// PID selected pions
