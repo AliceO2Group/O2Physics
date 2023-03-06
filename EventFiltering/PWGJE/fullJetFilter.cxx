@@ -92,14 +92,6 @@ struct fullJetFilter {
     Float_t kMaxEta = 1.;
 
     hProcessedEvents.setObject(new TH1I("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
-    // hProcessedEvents.setObject(new TH1I("hProcessedEvents", "Processed events", 7, -0.5, 6.5));
-    // hProcessedEvents->GetXaxis()->SetBinLabel(1, "MB");
-    // hProcessedEvents->GetXaxis()->SetBinLabel(2, "EMC");
-    // hProcessedEvents->GetXaxis()->SetBinLabel(3, "Selected Jet");
-    // hProcessedEvents->GetXaxis()->SetBinLabel(4, "Selected Gamma EMCAL");
-    // hProcessedEvents->GetXaxis()->SetBinLabel(5, "Selected Jet and Gamma EMCAL");
-    // hProcessedEvents->GetXaxis()->SetBinLabel(6, "Selected Gamma DCAL");
-    // hProcessedEvents->GetXaxis()->SetBinLabel(7, "Selected Jet and Gamma DCAL");
 
     hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", "Emc Clusters;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", "Emc Clusters;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
@@ -181,9 +173,9 @@ struct fullJetFilter {
           if (b_DoFiducialCut) {
             if (isJetInEmcal(jet)) {
               maxSelectedJetPt = jet.pt();
-            } else {
-              maxSelectedJetPt = jet.pt();
             }
+          } else {
+            maxSelectedJetPt = jet.pt();
           }
         }
       }
