@@ -272,7 +272,7 @@ struct HfFilter { // Main struct for HF triggers
       if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && !sessionML[kD0]) {
         for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
           if (onnxFiles[iCharmPart] != "") {
-            sessionML[iCharmPart].reset(InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB));
+            sessionML[iCharmPart].reset(InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, bc.timestamp()));
           }
         }
       }
