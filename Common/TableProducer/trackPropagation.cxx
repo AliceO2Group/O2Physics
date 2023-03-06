@@ -30,6 +30,7 @@
 #include "Framework/runDataProcessing.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "TableHelper.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -69,21 +70,35 @@ struct TrackPropagation {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
+  bool produceCovMat = false; // flag to enable/disable covariance matrix production when working in the auto mode producer
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (doprocessCovariance == true && doprocessStandard == true) {
-      LOGF(fatal, "Cannot enable processStandard and processCovariance at the same time. Please choose one.");
+    int nProc = 0;
+    if (doprocessCovariance == true) {
+      LOG(info) << "processCovariance enabled";
+      nProc++;
+    }
+    if (doprocessStandard == true) {
+      LOG(info) << "processStandard enabled";
+      nProc++;
+    }
+    if (doprocessAutoset == true) {
+      LOG(info) << "processAutoset enabled";
+      nProc++;
+    }
+    if (nProc != 1) {
+      LOGF(fatal, "Cannot enable more than one process function at the same time. Please choose one.");
     }
 
     // Checking if the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      for (auto const& input : device.inputs) {
-        if (input.matcher.binding == "TracksDCA") {
-          fillTracksDCA = true;
-        }
-      }
+    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
+    if (fillTracksDCA) {
+      LOG(info) << "Table TracksDCA needed in the workflow";
+    }
+    produceCovMat = isTableRequiredInWorkflow(initContext, "StoredTracksCov");
+    if (produceCovMat) {
+      LOG(info) << "Table StoredTracksCov needed in the workflow";
     }
 
     ccdb->setURL(ccdburl);
@@ -187,6 +202,72 @@ struct TrackPropagation {
     }
   }
   PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
+
+  o2::track::TrackParametrization<float> mTrackPar;
+  o2::track::TrackParametrizationWithError<float> mTrackParCov;
+  void processAutoset(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const& bcs)
+  {
+    if (bcs.size() == 0) {
+      return;
+    }
+    initCCDB(bcs.begin());
+
+    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::dataformats::DCA dcaInfoCov;
+    o2::dataformats::VertexBase vtx;
+
+    for (auto& track : tracks) {
+      if (produceCovMat) {
+        dcaInfoCov.set(999, 999, 999, 999, 999);
+        mTrackParCov = getTrackParCov(track);
+      } else {
+        dcaInfo[0] = 999;
+        dcaInfo[1] = 999;
+        mTrackPar = getTrackPar(track);
+      }
+      aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
+      // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
+        if (track.has_collision()) {
+          auto const& collision = track.collision();
+          if (produceCovMat) {
+            vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+            vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, mTrackParCov, 2.f, matCorr, &dcaInfoCov);
+          } else {
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, mTrackPar, 2.f, matCorr, &dcaInfo);
+          }
+        } else {
+          if (produceCovMat) {
+            vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
+            vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, mTrackParCov, 2.f, matCorr, &dcaInfoCov);
+          } else {
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, mTrackPar, 2.f, matCorr, &dcaInfo);
+          }
+        }
+        trackType = aod::track::Track;
+      }
+      if (produceCovMat) {
+        FillTracksPar(track, trackType, mTrackParCov);
+        if (fillTracksDCA) {
+          tracksDCA(dcaInfoCov.getY(), dcaInfoCov.getZ());
+        }
+        tracksParCovPropagated(std::sqrt(mTrackParCov.getSigmaY2()), std::sqrt(mTrackParCov.getSigmaZ2()), std::sqrt(mTrackParCov.getSigmaSnp2()),
+                               std::sqrt(mTrackParCov.getSigmaTgl2()), std::sqrt(mTrackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        tracksParCovExtensionPropagated(mTrackParCov.getSigmaY2(), mTrackParCov.getSigmaZY(), mTrackParCov.getSigmaZ2(), mTrackParCov.getSigmaSnpY(),
+                                        mTrackParCov.getSigmaSnpZ(), mTrackParCov.getSigmaSnp2(), mTrackParCov.getSigmaTglY(), mTrackParCov.getSigmaTglZ(), mTrackParCov.getSigmaTglSnp(),
+                                        mTrackParCov.getSigmaTgl2(), mTrackParCov.getSigma1PtY(), mTrackParCov.getSigma1PtZ(), mTrackParCov.getSigma1PtSnp(), mTrackParCov.getSigma1PtTgl(),
+                                        mTrackParCov.getSigma1Pt2());
+      } else {
+        FillTracksPar(track, trackType, mTrackPar);
+        if (fillTracksDCA) {
+          tracksDCA(dcaInfo[0], dcaInfo[1]);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(TrackPropagation, processAutoset, "Process both with covariance and without (autoconfigured but still more expensive than processStandard)", false);
 };
 
 //****************************************************************************************
