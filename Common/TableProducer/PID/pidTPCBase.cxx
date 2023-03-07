@@ -50,7 +50,7 @@ struct PidMultiplicity {
     if (enableTable) {
       LOG(info) << "Table TPC PID Multiplicity enabled!";
     }
-    if(doprocessStandard == true && doprocessIU == true){
+    if (doprocessStandard == true && doprocessIU == true) {
       LOG(fatal) << "Both processStandard and processIU are enabled, pick one!";
     }
   }
@@ -74,7 +74,6 @@ struct PidMultiplicity {
     mult(tracksGrouped.size());
   }
   PROCESS_SWITCH(PidMultiplicity, processStandard, "Process with tracks, needs propagated tracks", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
