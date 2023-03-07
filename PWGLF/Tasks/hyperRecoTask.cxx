@@ -293,7 +293,7 @@ struct hyperRecoTask {
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for both hypertriton and hyperhydrogen4 reconstruction
-      if (!((nSigmaTPCpos < -1 * heliumNsigmaMax && posTrack.hasTPC()) || (nSigmaTPCneg < -1 * heliumNsigmaMax && negTrack.hasTPC())))
+      if (!((nSigmaTPCpos > -1 * heliumNsigmaMax && posTrack.hasTPC()) || (nSigmaTPCneg > -1 * heliumNsigmaMax && negTrack.hasTPC())))
         continue;
 
       bool matter = false;
