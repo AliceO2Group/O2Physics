@@ -80,7 +80,8 @@ void upload_trigger_aliases_run3()
     // read CTP config
     metadata["runNumber"] = Form("%d", run);
     auto ctpcfg = ccdb.retrieveFromTFileAny<o2::ctp::CTPConfiguration>("CTP/Config/Config", metadata, ts);
-    if (!ctpcfg) continue;
+    if (!ctpcfg)
+      continue;
 
     if (run == 529414) { // adding tolerance to sor for this run
       sor = 1668809980000;
@@ -107,6 +108,6 @@ void upload_trigger_aliases_run3()
       }
     }
     aliases->Print();
-    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor+10000); // adding tolerance of 10s to eor
+    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor + 10000); // adding tolerance of 10s to eor
   }
 }
