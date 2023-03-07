@@ -275,10 +275,10 @@ struct HfCandidateSelectorToXiPi {
         pidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
         pidPiFromOme = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
       } else if (usePidTpcTofCombined) {
-        pidProton = selectorProton.getStatusTrackPIDAll(trackPrFromLam);
-        pidPiFromLam = selectorPion.getStatusTrackPIDAll(trackPiFromLam);
-        pidPiFromCasc = selectorPion.getStatusTrackPIDAll(trackPiFromCasc);
-        pidPiFromOme = selectorPion.getStatusTrackPIDAll(trackPiFromOmeg);
+        pidProton = selectorProton.getStatusTrackPIDTpcAndTof(trackPrFromLam);
+        pidPiFromLam = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromLam);
+        pidPiFromCasc = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromCasc);
+        pidPiFromOme = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
       }
 
       bool statusPidLambda = false;
