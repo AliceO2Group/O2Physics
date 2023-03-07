@@ -14,12 +14,13 @@
 ///
 /// \author Jan Fiete Grosse-Oetringhaus, CERN
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -27,15 +28,18 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
-#include "Framework/runDataProcessing.h"
-
 struct HfTaskMcEfficiency {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
 
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  ConfigurableAxis axisPt{"axisPt", {10, 0, 10}, "pT axis"};
+  ConfigurableAxis axisMass{"axisMass", {120, 1.5848, 2.1848}, "m_inv axis"};
+  ConfigurableAxis axisPdg{"axisPdg", {VARIABLE_WIDTH, -421.5, 0, 421.5}, "PDG code axis"};
+  ConfigurableAxis axisCPA{"axisCPA", {100, 0.9, 1.0001}, "Cosine of pointing angle axis"};
+  Configurable<std::vector<int>> pdgCodes{"pdgCodes", {pdg::kD0Bar, pdg::kD0}, "PDG codes to process"};
 
-  HistogramRegistry registry{"registry"};
+  Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
+  Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
   enum HFStep { kHFStepMC = 0,
                 kHFStepAcceptance,          // MC mothers where all prongs are in the acceptance
@@ -54,22 +58,16 @@ struct HfTaskMcEfficiency {
                        kTrackableITSTPC,  // track contains ITS and TPC information
                        kNTrackableSteps };
 
-  ConfigurableAxis axisPt{"axisPt", {10, 0, 10}, "pT axis"};
-  ConfigurableAxis axisMass{"axisMass", {120, 1.5848, 2.1848}, "m_inv axis"};
-  ConfigurableAxis axisPdg{"axisPdg", {VARIABLE_WIDTH, -421.5, 0, 421.5}, "PDG code axis"};
-  ConfigurableAxis axisCPA{"axisCPA", {100, 0.9, 1.0001}, "Cosine of pointing angle axis"};
-  Configurable<std::vector<int>> pdgCodes{"pdgCodes", {pdg::kD0Bar, pdg::kD0}, "PDG codes to process"};
-
-  Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
-  Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
-
   using TracksWithSelection = soa::Join<aod::Tracks, aod::TrackSelection>;
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
 
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+
+  HistogramRegistry registry{"registry"};
+
   void init(o2::framework::InitContext&)
   {
-    registry.add("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, axisPdg, axisCPA, {2, -0.5, 1.5, "collision matched"}}, kHFNSteps});
-    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, axisPdg, axisCPA, {2, -0.5, 1.5, "collision matched"}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("p_{T} (GeV/c)");
     hCandidates->GetAxis(1)->SetTitle("m_{inv}");
     hCandidates->GetAxis(2)->SetTitle("PDG code");
@@ -77,8 +75,7 @@ struct HfTaskMcEfficiency {
 
     registry.add("hDuplicateCount", "Duplicate count;frequency;count", {HistType::kTH1F, {{10, 0.5, 10.5}}});
 
-    registry.add("hTrackablePtEta", "Prongs kinematics at different steps", {HistType::kStepTHnF, {{20, 0, 10}, {40, -2, 2}}, kNTrackableSteps});
-    auto hTrackablePtEta = registry.get<StepTHn>(HIST("hCandidates"));
+    auto hTrackablePtEta = registry.add<StepTHn>("hTrackablePtEta", "Prongs kinematics at different steps", {HistType::kStepTHnF, {{20, 0, 10}, {40, -2, 2}}, kNTrackableSteps});
     hTrackablePtEta->GetAxis(0)->SetTitle("p_{T} (GeV/c)");
     hTrackablePtEta->GetAxis(1)->SetTitle("#eta");
   }
@@ -96,8 +93,9 @@ struct HfTaskMcEfficiency {
     using TracksType = std::decay_t<decltype(tracks)>;
 
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    std::map<int64_t, int> duplicates;
 
-    for (auto pdgCode : (std::vector<int>)pdgCodes) {
+    for (const auto pdgCode : pdgCodes.value) {
       auto decayType = -1;
       std::array<int, 2> pdgDaughters;
 
@@ -113,20 +111,17 @@ struct HfTaskMcEfficiency {
         LOGP(fatal, "Not implemented for PDG {}", pdgCode);
       }
 
-      std::map<int64_t, int> duplicates;
-
-      for (auto& candidate : selectedD0Candidates) {
+      for (const auto& candidate : selectedD0Candidates) {
         if (!(candidate.hfflag() & decayType)) {
           continue;
         }
 
+        auto trackPos = candidate.prong0_as<TracksType>();
+        auto trackNeg = candidate.prong1_as<TracksType>();
+
         bool collisionMatched = false;
         if constexpr (mc) {
-          auto trackPos = candidate.prong0_as<TracksType>();
-          auto trackNeg = candidate.prong1_as<TracksType>();
-
-          int8_t sign = 0;
-          auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, pdgCode, pdgDaughters, false, &sign);
+          auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, pdgCode, pdgDaughters, false);
           if (indexRec < 0) {
             continue;
           }
@@ -135,6 +130,8 @@ struct HfTaskMcEfficiency {
         }
 
         float mass = -1;
+        float cpa = candidate.cpa();
+        float pt = candidate.pt();
         bool selected = false;
         if (pdgCode == pdg::kD0) {
           mass = invMassD0ToPiK(candidate);
@@ -146,11 +143,11 @@ struct HfTaskMcEfficiency {
         LOGP(debug, "Candidate {} has prong {} and prong {} and pT {} and mass {}", candidate.globalIndex(), candidate.prong0Id(), candidate.prong1Id(), candidate.pt(), mass);
 
         // all candidates
-        hCandidates->Fill(kHFStepTracked, candidate.pt(), mass, pdgCode, candidate.cpa(), collisionMatched);
+        hCandidates->Fill(kHFStepTracked, pt, mass, pdgCode, cpa, collisionMatched);
 
         // check if prongs have passed track cuts
-        if (checkTrack(candidate.prong0_as<TracksType>()) && checkTrack(candidate.prong1_as<TracksType>())) {
-          hCandidates->Fill(kHFStepTrackedCuts, candidate.pt(), mass, pdgCode, candidate.cpa(), collisionMatched);
+        if (checkTrack(trackPos) && checkTrack(trackNeg)) {
+          hCandidates->Fill(kHFStepTrackedCuts, pt, mass, pdgCode, cpa, collisionMatched);
         }
 
         if (!selected) {
@@ -158,7 +155,7 @@ struct HfTaskMcEfficiency {
         }
 
         // selected candidates
-        hCandidates->Fill(kHFStepTrackedSelected, candidate.pt(), mass, pdgCode, candidate.cpa(), collisionMatched);
+        hCandidates->Fill(kHFStepTrackedSelected, pt, mass, pdgCode, cpa, collisionMatched);
 
         // duplicates
         int64_t hash = 0;
@@ -168,15 +165,15 @@ struct HfTaskMcEfficiency {
           hash = ((int64_t)candidate.prong1Id() << 32) | candidate.prong0Id();
         }
         if (duplicates.find(hash) != duplicates.end()) {
-          hCandidates->Fill(kHFStepTrackedDuplicates, candidate.pt(), mass, pdgCode, candidate.cpa(), collisionMatched);
+          hCandidates->Fill(kHFStepTrackedDuplicates, pt, mass, pdgCode, cpa, collisionMatched);
         }
         duplicates[hash]++;
       }
+    }
 
-      auto hDuplicateCount = registry.get<TH1>(HIST("hDuplicateCount"));
-      for (const auto& i : duplicates) {
-        hDuplicateCount->Fill(i.second);
-      }
+    auto hDuplicateCount = registry.get<TH1>(HIST("hDuplicateCount"));
+    for (const auto& i : duplicates) {
+      hDuplicateCount->Fill(i.second);
     }
   }
 
@@ -198,7 +195,7 @@ struct HfTaskMcEfficiency {
     std::vector<bool> hasITS(mcParticles.size(), false);
     std::vector<bool> hasTPC(mcParticles.size(), false);
     std::vector<bool> selected(mcParticles.size(), false);
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.mcParticleId() >= 0) {
         tracked[track.mcParticleId()] = true;
         if (checkTrack(track)) {
@@ -213,10 +210,10 @@ struct HfTaskMcEfficiency {
       }
     }
 
-    for (auto pdgCode : (std::vector<int>)pdgCodes) {
+    for (const auto pdgCode : pdgCodes.value) {
       auto mass = RecoDecay::getMassPDG(pdgCode);
 
-      for (auto& mcParticle : mcParticles) {
+      for (const auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() != pdgCode) {
           continue;
         }
@@ -234,8 +231,8 @@ struct HfTaskMcEfficiency {
         }
 
         bool inAcceptance = true;
-        for (auto& daugther : mcParticle.daughters_as<aod::McParticles>()) {
-          if (daugther.pt() < mcAcceptancePt || std::abs(daugther.eta()) > mcAcceptanceEta) {
+        for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+          if (daughter.pt() < mcAcceptancePt || std::abs(daughter.eta()) > mcAcceptanceEta) {
             inAcceptance = false;
           }
         }
@@ -250,20 +247,20 @@ struct HfTaskMcEfficiency {
             hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
           } else {
             LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
-            for (auto& daugther : mcParticle.daughters_as<aod::McParticles>()) {
-              LOGP(debug, "   MC: pt={} eta={}", daugther.pt(), daugther.eta());
+            for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+              LOGP(debug, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
             }
           }
-          for (auto& daugther : mcParticle.daughters_as<aod::McParticles>()) {
-            hTrackablePtEta->Fill(kTrackableAll, daugther.pt(), daugther.eta());
-            if (hasITS[daugther.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITS, daugther.pt(), daugther.eta());
+          for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+            hTrackablePtEta->Fill(kTrackableAll, daughter.pt(), daughter.eta());
+            if (hasITS[daughter.globalIndex()]) {
+              hTrackablePtEta->Fill(kTrackableITS, daughter.pt(), daughter.eta());
             }
-            if (hasTPC[daugther.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableTPC, daugther.pt(), daugther.eta());
+            if (hasTPC[daughter.globalIndex()]) {
+              hTrackablePtEta->Fill(kTrackableTPC, daughter.pt(), daughter.eta());
             }
-            if (hasITS[daugther.globalIndex()] && hasTPC[daugther.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITSTPC, daugther.pt(), daugther.eta());
+            if (hasITS[daughter.globalIndex()] && hasTPC[daughter.globalIndex()]) {
+              hTrackablePtEta->Fill(kTrackableITSTPC, daughter.pt(), daughter.eta());
             }
           }
         }
@@ -273,8 +270,8 @@ struct HfTaskMcEfficiency {
           hCandidates->Fill(kHFStepTrackableCuts, mcParticle.pt(), mass, pdgCode, 1.0, true);
           if (!inAcceptance) {
             LOGP(info, "Candidate {} not in acceptance but tracked and selected.", mcParticle.globalIndex());
-            for (auto& daugther : mcParticle.daughters_as<aod::McParticles>()) {
-              LOGP(info, "   MC: pt={} eta={}", daugther.pt(), daugther.eta());
+            for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+              LOGP(info, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
             }
           }
         }
