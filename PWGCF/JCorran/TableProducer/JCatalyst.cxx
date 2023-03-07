@@ -107,7 +107,7 @@ struct JCatalyst {
     }
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::BCsWithTimestamps>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks)
   {
     Double_t cent[3] = {
       collision.centRun2V0M(),
@@ -149,7 +149,7 @@ struct JCatalyst {
       else if (trackingMode == 1 && !track.isGlobalTrackSDD())
         continue;
 
-      Double_t pt = track.pt();
+      float pt = track.pt();
       if (pt < ptmin || pt > ptmax)
         continue;
 
@@ -157,10 +157,10 @@ struct JCatalyst {
       if (charge != 0 && charge * ch < 0)
         continue;
 
-      Double_t eta = track.eta();
-      Double_t phi = track.phi();
+      float eta = track.eta();
+      float phi = track.phi();
 
-      Double_t phiWeight = 1.0;
+      float phiWeight = 1.0;
       if (pweightMap) {
         Int_t bin = pweightMap->FindBin(phi, eta, zvertex);
         phiWeight = pweightMap->GetBinContent(bin);

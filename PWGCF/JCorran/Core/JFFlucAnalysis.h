@@ -80,7 +80,6 @@ class JFFlucAnalysis
     flags |= _flags;
   }
 
-  // TODO: O2 port: check XXXXXX
   template <class JInputClass>
   inline void FillQA(JInputClass& inputInst)
   {
@@ -101,8 +100,8 @@ class JFFlucAnalysis
       if (TMath::Abs(track.eta()) < fEta_min || TMath::Abs(track.eta()) > fEta_max)
         continue;
 
-      Double_t phiNUACorr = 1.0; // itrack->GetWeight();//XXXXXX
-      Double_t effCorr = 1.0;    // itrack->GetTrackEff();//fEfficiency->GetCorrection( pt, fEffFilterBit, fCent); //XXXXXX
+      Double_t phiNUACorr = track.weightNUA();
+      Double_t effCorr = track.weightEff();
       Double_t effCorrInv = 1.0 / effCorr;
       fh_eta[fCBin]->Fill(track.eta(), effCorrInv);
       fh_pt[fCBin]->Fill(track.pt(), effCorrInv);
@@ -129,8 +128,8 @@ class JFFlucAnalysis
       if (track.eta() < -fEta_max || track.eta() > fEta_max)
         continue;
 
-      Double_t effCorr = 1.0;    // itrack->GetTrackEff();//fEfficiency->GetCorrection( track.pt(), fEffFilterBit, fCent); //XXXXXX
-      Double_t phiNUACorr = 1.0; // itrack->GetWeight(); //XXXXXX
+      Double_t phiNUACorr = track.weightNUA();
+      Double_t effCorr = track.weightEff();
 
       UInt_t isub = (UInt_t)(track.eta() > 0.0);
       for (UInt_t ih = 0; ih < kNH; ih++) {
