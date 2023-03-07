@@ -34,6 +34,7 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> triggerBcShift{"triggerBcShift", 0, "set to -294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -201,7 +202,7 @@ struct BcSelectionTask {
       int32_t alias[kNaliases] = {0};
 
       // workaround for pp2022 apass2-apass3 (trigger info is shifted by -294 bcs)
-      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() - 294];
+      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
       if (triggerBcId) {
         auto triggerBc = bcs.iteratorAt(triggerBcId);
         uint64_t triggerMask = triggerBc.triggerMask();
