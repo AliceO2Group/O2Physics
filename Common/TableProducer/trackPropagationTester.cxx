@@ -33,6 +33,7 @@
 #include "Framework/runDataProcessing.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "trackSelectionRequest.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -68,6 +69,11 @@ struct TrackPropagationTester {
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
 
+  // Track selection object in this scope: not necessarily a configurable
+  trackSelectionRequest trackSels;
+  // Configurable based on a struct
+  // Configurable<trackSelectionRequest> trackSels{"trackSels", {}, "track selections"};
+
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
@@ -81,6 +87,17 @@ struct TrackPropagationTester {
   Configurable<bool> propagateTPConly{"propagateTPConly", false, "propagate tracks with only TPC (no ITS, TRD, TOF)"};
   Configurable<int> minTPCClusters{"minTPCClusters", 70, "min number of TPC clusters to propagate"};
   Configurable<float> maxPropagStep{"maxPropagStep", 2.0, "max propag step"}; // to be checked systematically
+                                                                              // use auto-detect configuration
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested track criteria"};
+
+  bool hasEnding(std::string const& fullString, std::string const& ending)
+  {
+    if (fullString.length() >= ending.length()) {
+      return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+      return false;
+    }
+  }
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -106,6 +123,62 @@ struct TrackPropagationTester {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+
+    if (d_UseAutodetectMode) {
+      LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+      LOGF(info, "    Track propagator self-configuration");
+      LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+      trackSels.SetTightSelections(); // Only loosen from this point forward
+      for (DeviceSpec const& device : workflows.devices) {
+        // Loop over options to find track selection
+        for (auto const& option : device.options) {
+          if (hasEnding(option.name, ".requireTPC")) {
+            bool lVal = option.defaultValue.get<bool>();
+            LOGF(info, "Device %s, request TPC: %i", device.name, lVal);
+            if (trackSels.getRequireTPC() == false)
+              trackSels.setRequireTPC(lVal);
+          }
+          if (hasEnding(option.name, ".minTPCclusters")) {
+            int lVal = option.defaultValue.get<int>();
+            LOGF(info, "Device %s, min TPC clusters: %i", device.name, lVal);
+            if (trackSels.getMinTPCClusters() > lVal)
+              trackSels.setMinTPCClusters(lVal);
+          }
+          if (hasEnding(option.name, ".minTPCcrossedrows")) {
+            int lVal = option.defaultValue.get<int>();
+            LOGF(info, "Device %s, min TPC crossed rows: %i", device.name, lVal);
+            if (trackSels.getMinTPCCrossedRows() > lVal)
+              trackSels.setMinTPCCrossedRows(lVal);
+          }
+          if (hasEnding(option.name, ".minTPCcrossedrowsoverfindable")) {
+            float lVal = option.defaultValue.get<float>();
+            LOGF(info, "Device %s, min TPC crossed rows over findable: %.3f", device.name, lVal);
+            if (trackSels.getMinTPCCrossedRowsOverFindable() > lVal)
+              trackSels.setMinTPCCrossedRowsOverFindable(lVal);
+          }
+          if (hasEnding(option.name, ".requireITS")) {
+            bool lVal = option.defaultValue.get<bool>();
+            LOGF(info, "Device %s, request ITS: %i", device.name, lVal);
+            if (trackSels.getRequireITS() == false)
+              trackSels.setRequireITS(lVal);
+          }
+          if (hasEnding(option.name, ".minITSclusters")) {
+            int lVal = option.defaultValue.get<int>();
+            LOGF(info, "Device %s, minimum ITS clusters: %i", device.name, lVal);
+            if (trackSels.getMinITSClusters() > lVal)
+              trackSels.setMinITSClusters(lVal);
+          }
+          if (hasEnding(option.name, ".maxITSChi2percluster")) {
+            float lVal = option.defaultValue.get<float>();
+            LOGF(info, "Device %s, max ITS chi2/clu: %.3f", device.name, lVal);
+            if (trackSels.getMaxITSChi2PerCluster() < lVal)
+              trackSels.setMaxITSChi2PerCluster(lVal);
+          }
+        }
+      }
+      LOGF(info, "-+*> Automatic self-config ended. Final settings:");
+      trackSels.PrintSelections();
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)

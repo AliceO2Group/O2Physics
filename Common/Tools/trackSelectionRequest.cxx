@@ -12,6 +12,7 @@
 // see header for a more detailed description.
 
 #include "trackSelectionRequest.h"
+#include "Framework/Logger.h"
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c)
@@ -19,7 +20,14 @@ std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c)
   os << "MinTPCClusters value: " << c.getMinTPCClusters();
   return os;
 }
-
+void trackSelectionRequest::setTrackPhysicsType(int trackPhysicsType_)
+{
+  trackPhysicsType = trackPhysicsType_;
+}
+int trackSelectionRequest::getTrackPhysicsType() const
+{
+  return trackPhysicsType;
+}
 void trackSelectionRequest::setMinPt(float minPt_)
 {
   minPt = minPt_;
@@ -68,13 +76,13 @@ int trackSelectionRequest::getMaxDCAxyPtDep() const
 {
   return maxDCAxyPtDep;
 }
-void trackSelectionRequest::setRequireTPCRefit(bool requireTPCrefit_)
+void trackSelectionRequest::setRequireTPC(bool requireTPC_)
 {
-  requireTPCrefit = requireTPCrefit_;
+  requireTPC = requireTPC_;
 }
-bool trackSelectionRequest::getRequireTPCRefit() const
+bool trackSelectionRequest::getRequireTPC() const
 {
-  return requireTPCrefit;
+  return requireTPC;
 }
 void trackSelectionRequest::setMinTPCClusters(int minTPCclusters_)
 {
@@ -100,13 +108,13 @@ int trackSelectionRequest::getMinTPCCrossedRowsOverFindable() const
 {
   return minTPCcrossedrowsoverfindable;
 }
-void trackSelectionRequest::setRequireITSRefit(bool requireITSrefit_)
+void trackSelectionRequest::setRequireITS(bool requireITS_)
 {
-  requireITSrefit = requireITSrefit_;
+  requireITS = requireITS_;
 }
-bool trackSelectionRequest::getRequireITSRefit() const
+bool trackSelectionRequest::getRequireITS() const
 {
-  return requireITSrefit;
+  return requireITS;
 }
 void trackSelectionRequest::setMinITSClusters(int minITSclusters_)
 {
@@ -143,8 +151,8 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
   if (lTraSelRe.getMaxDCAxyPtDep() > maxDCAxyPtDep)
     maxDCAxyPtDep = lTraSelRe.getMaxDCAxyPtDep();
 
-  if (lTraSelRe.getRequireTPCRefit() == false)
-    requireTPCrefit = false;
+  if (lTraSelRe.getRequireTPC() == false)
+    requireTPC = false;
   if (lTraSelRe.getMinTPCClusters() < minTPCclusters)
     minTPCclusters = lTraSelRe.getMinTPCClusters();
   if (lTraSelRe.getMinTPCCrossedRows() < minTPCcrossedrows)
@@ -152,11 +160,52 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
   if (lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable)
     minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
 
-  if (lTraSelRe.getRequireITSRefit() == false)
-    requireITSrefit = false;
+  if (lTraSelRe.getRequireITS() == false)
+    requireITS = false;
   if (lTraSelRe.getMinITSClusters() < minITSclusters)
     minITSclusters = lTraSelRe.getMinITSClusters();
   if (lTraSelRe.getMaxITSChi2PerCluster() > maxITSChi2percluster)
     maxITSChi2percluster = lTraSelRe.getMaxITSChi2PerCluster();
   return;
+}
+
+void trackSelectionRequest::SetTightSelections()
+{
+  // Phase space (Tracks or TracksIU)
+  minPt = 1e+3;
+  maxPt = 0.0;
+  minEta = 100;
+  maxEta = -100;
+  // DCAs to primary vertex (use for primaries only)
+  maxDCAz = -1;
+  maxDCAxyPtDep = -1;
+  // TPC parameters (TracksExtra)
+  requireTPC = true;
+  minTPCclusters = 200;
+  minTPCcrossedrows = 200;
+  minTPCcrossedrowsoverfindable = 200;
+  // ITS parameters (TracksExtra)
+  requireITS = true;
+  minITSclusters = 20;
+  maxITSChi2percluster = -1;
+}
+
+void trackSelectionRequest::PrintSelections() const
+{
+  LOGF(info, "Track physics type .....................: %s", trackPhysicsType == 0 ? "primary" : "secondary");
+  LOGF(info, "Minimum pT .............................: %.3f", minPt);
+  LOGF(info, "Maximum pT .............................: %.3f", maxPt);
+  LOGF(info, "Minimum eta ............................: %.3f", minEta);
+  LOGF(info, "Maximum eta ............................: %.3f", maxEta);
+
+  LOGF(info, "Max DCAz ...............................: %.3f", maxDCAz);
+  LOGF(info, "Max DCAxy, pt dep ......................: %.3f", maxDCAxyPtDep);
+
+  LOGF(info, "Require TPC ............................: %i", requireTPC);
+  LOGF(info, "Minimum TPC clusters ...................: %i", minTPCclusters);
+  LOGF(info, "Minimum TPC crossed rows ...............: %i", minTPCcrossedrows);
+  LOGF(info, "Minimum TPC crossed rows over findable .: %.3f", minTPCcrossedrowsoverfindable);
+  LOGF(info, "Require ITS ............................: %i", requireITS);
+  LOGF(info, "Minimum ITS clusters ...................: %i", minITSclusters);
+  LOGF(info, "Max ITS chi2/clu  ......................: %.3f", maxITSChi2percluster);
 }
