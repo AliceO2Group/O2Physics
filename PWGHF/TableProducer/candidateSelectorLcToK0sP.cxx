@@ -58,10 +58,10 @@ struct HfCandidateSelectorLcToK0sP {
 
   void init(InitContext&)
   {
-    if (doprocessWithStandardPID == false && doprocessWithBayesPID == false) {
+    if (!doprocessWithStandardPID && !doprocessWithBayesPID) {
       LOGF(fatal, "Neither processWithStandardPID nor processWithBayesPID enabled. Please choose one.");
     }
-    if (doprocessWithStandardPID == true && doprocessWithBayesPID == true) {
+    if (doprocessWithStandardPID && doprocessWithBayesPID) {
       LOGF(fatal, "Cannot enable processWithStandardPID and processWithBayesPID at the same time. Please choose one.");
     }
   }
@@ -190,7 +190,6 @@ struct HfCandidateSelectorLcToK0sP {
       hfSelLcToK0sPCandidate(statusLc);
     }
   }
-
   PROCESS_SWITCH(HfCandidateSelectorLcToK0sP, processWithStandardPID, "Use standard PID for bachelor track", true);
 
   void processWithBayesPID(aod::HfCandCascade const& candidates, MyBigTracksBayes const& tracks)
@@ -217,7 +216,6 @@ struct HfCandidateSelectorLcToK0sP {
       hfSelLcToK0sPCandidate(statusLc);
     }
   }
-
   PROCESS_SWITCH(HfCandidateSelectorLcToK0sP, processWithBayesPID, "Use Bayesian PID for bachelor track", false);
 };
 
