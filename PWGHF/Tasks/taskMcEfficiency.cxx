@@ -231,7 +231,8 @@ struct HfTaskMcEfficiency {
         }
 
         bool inAcceptance = true;
-        for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        for (const auto& daughter : daughters) {
           if (daughter.pt() < mcAcceptancePt || std::abs(daughter.eta()) > mcAcceptanceEta) {
             inAcceptance = false;
           }
@@ -247,11 +248,11 @@ struct HfTaskMcEfficiency {
             hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
           } else {
             LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
-            for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+            for (const auto& daughter : daughters) {
               LOGP(debug, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
             }
           }
-          for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+          for (const auto& daughter : daughters) {
             hTrackablePtEta->Fill(kTrackableAll, daughter.pt(), daughter.eta());
             if (hasITS[daughter.globalIndex()]) {
               hTrackablePtEta->Fill(kTrackableITS, daughter.pt(), daughter.eta());
@@ -270,7 +271,7 @@ struct HfTaskMcEfficiency {
           hCandidates->Fill(kHFStepTrackableCuts, mcParticle.pt(), mass, pdgCode, 1.0, true);
           if (!inAcceptance) {
             LOGP(info, "Candidate {} not in acceptance but tracked and selected.", mcParticle.globalIndex());
-            for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+            for (const auto& daughter : daughters) {
               LOGP(info, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
             }
           }
