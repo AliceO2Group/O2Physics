@@ -308,10 +308,9 @@ struct DGCandAnalyzer {
           registry.get<TH1>(HIST("2TrackAngle"))->Fill(angle, 1.);
           registry.get<TH2>(HIST("2TrackAngleIVM"))->Fill(ivm.M(), angle, 1.);
         }
-        
+
         registry.get<TH2>(HIST("2Tracketa1IVM"))->Fill(ivm.M(), trk1.eta(), 1.);
         registry.get<TH2>(HIST("2Tracketa2IVM"))->Fill(ivm.M(), trk2.eta(), 1.);
-        
       }
 
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
