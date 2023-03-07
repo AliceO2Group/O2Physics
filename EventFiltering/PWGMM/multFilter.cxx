@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 #include <cmath>
 #include <string>
 
@@ -20,23 +19,22 @@
 
 #include "EventFiltering/filterTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "DataFormatsFT0/Digit.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFv0", "kHfFv0", "kHmFt0", "kHfFt0", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
 float meanMultT0A = 0.f;
 float meanMultT0C = 0.f;
 float meanMultV0A = 0.f;
-
-static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFv0", "kHfFv0", "kHmFt0", "kHfFt0", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
 
 struct multFilter {
   enum { kHighTrackMult = 0,
