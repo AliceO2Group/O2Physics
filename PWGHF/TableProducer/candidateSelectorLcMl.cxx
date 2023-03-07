@@ -78,7 +78,7 @@ struct HfCandidateSelectorLcMl {
   void init(o2::framework::InitContext&)
   {
     AxisSpec bdtAxis{100, 0.f, 1.f};
-    if (applyML && activateQA > 1) {
+    if (applyML && activateQA != 0) {
       registry.add<TH1>("LcBDTScoreBkgDistr", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("LcBDTScorePromptDistr", "BDT prompt score distribution for Lc;BDT prompt score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("LcBDTScoreNonPromptDistr", "BDT nonprompt score distribution for Lc;BDT nonprompt score;counts", HistType::kTH1F, {bdtAxis});
@@ -308,7 +308,7 @@ struct HfCandidateSelectorLcMl {
             // non-prompt
             // NOTE: Can be both prompt and non-prompt!
           }
-          if (activateQA > 1) {
+          if (activateQA != 0) {
             registry.fill(HIST("LcBDTScoreBkgDistr"), scores[0]);
             registry.fill(HIST("LcBDTScorePromptDistr"), scores[1]);
             registry.fill(HIST("LcBDTScoreNonPromptDistr"), scores[2]);
