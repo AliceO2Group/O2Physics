@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Antonio Ortiz <antonio.ortiz.velasquez@cern.ch>, UNAM
 
 #include <cmath>
 #include <string>
@@ -21,14 +20,14 @@
 
 #include "EventFiltering/filterTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
 #include "DataFormatsFT0/Digit.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "CommonDataFormat/BunchFilling.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 
 using namespace o2;
 using namespace o2::framework;
