@@ -616,7 +616,7 @@ struct qaKFEvent {
   }
 
   template <typename T4>
-  void writeVarTreeColl(const T4& collision, long timeColl, double timestamp, double timeDiff, int tfID)
+  void writeVarTreeColl(const T4& collision, uint64_t timeColl, double timestamp, double timeDiff, int tfID)
   {
     if (writeTree) {
       /// Filling the tree
@@ -640,7 +640,7 @@ struct qaKFEvent {
   /// Process function for data
   void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
   {
-    long timeColl = 0;
+    uint64_t timeColl = 0;
     tfID = tfID + 1;
     LOGP(info, "processing TF {}", tfID);
 
@@ -659,7 +659,7 @@ struct qaKFEvent {
       if (!isSelectedCollision(collisionIndex)) {
         continue;
       }
-      timeColl = long((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
+      timeColl = uint64_t((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
       writeVarTreeColl(collisionIndex, timeColl, bc.timestamp(), collisionIndex.collisionTime(), tfID);
     }
   }
