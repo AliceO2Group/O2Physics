@@ -33,6 +33,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/ASoAHelpers.h"
 #include "TRandom3.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 // This task goes straight from a combination of track table and mcParticles 
 // and a custom TOF configuration to a table of TOF NSigmas for the particles
@@ -90,14 +91,25 @@ struct onTheFlyTOFPID {
   Configurable<float> iTOFTimeReso{"iTOFTimeReso", 20, "barrel iTOF time error (ps)"};
   Configurable<float> oTOFTimeReso{"oTOFTimeReso", 20, "barrel oTOF time error (ps)"};
   Configurable<int> lNStepsLIntegrator{"lNStepsLIntegrator", 200, "number of steps in length integrator"};
+  Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // needed: random number generator for smearing
   TRandom3 lPRNG;
+
+  // for handling basic QA histograms if requested 
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   
   void init(o2::framework::InitContext& initContext) {
     lPRNG.SetSeed(0); // fully randomize
+
+    if(doQAplots){
+      const AxisSpec axisMomentum{(int)80, 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisVelocity{(int)110, 0.0f, +1.1f, "Measured #beta"};
+      histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
+      histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
+    }
   }
 
   template <typename mcParticleType>
@@ -218,6 +230,15 @@ struct onTheFlyTOFPID {
       float lDeltaTime_oTOF[5], lNSigma_oTOF[5];
       int lpdg_array[5] = {11, 13, 211, 321, 2212}; 
       float lMasses[5]; 
+
+      if(doQAplots){ 
+        float momentum = recoTrack.getP(); 
+        float innerbeta = (lThisTrackLength_iTOF / (1e+3*lMeasuredTime_iTOF))/o2::constants::physics::LightSpeedCm2NS;
+        float outerbeta = (lThisTrackLength_oTOF / (1e+3*lMeasuredTime_oTOF))/o2::constants::physics::LightSpeedCm2NS;
+
+        histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerbeta);
+        histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerbeta);
+      }
 
       for(int ii=0; ii<5; ii++){ 
         lNSigma_iTOF[ii] = -100;
