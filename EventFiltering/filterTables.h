@@ -96,12 +96,12 @@ DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);         //! PHOS antineutrons
 namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, uint64_t);                      //! Bunch crossing Id
-DECLARE_SOA_COLUMN(GlobalBCId, hasGlobalBCId, uint64_t);          //! Global Bunch crossing Id
-DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float);       //! Collision time
-DECLARE_SOA_COLUMN(CollisionTimeRes, hasCollisionTimeRes, float); //! Collision time resolution
-DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t);    //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decision
+DECLARE_SOA_COLUMN(BCId, bcIndex, uint64_t);                   //! Bunch crossing Id
+DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
+DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
+DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, cefpSelected, uint64_t);      //! CEFP decision
 
 } // namespace decision
 
