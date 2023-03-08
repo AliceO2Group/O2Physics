@@ -38,12 +38,10 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelectorPID.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 /// includes KFParticle
@@ -90,30 +88,23 @@ struct qaKFParticle {
 
   /// Particle Identification
   // TPC PID
-  Configurable<double> ptPidTpcMinPi{"ptPidTpcMinPi", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMaxPi{"ptPidTpcMaxPi", 5., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMaxPi{"nSigmaTpcMaxPi", 3., "Nsigma cut on TPC only"};
-  Configurable<double> nSigmaTpcCombinedMaxPi{"nSigmaTpcCombinedMaxPi", 5., "Nsigma cut on TPC combined with TOF"};
-  Configurable<double> ptPidTpcMinKa{"ptPidTpcMinKa", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMaxKa{"ptPidTpcMaxKa", 5., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMaxKa{"nSigmaTpcMaxKa", 3., "Nsigma cut on TPC only"};
-  Configurable<double> nSigmaTpcCombinedMaxKa{"nSigmaTpcCombinedMaxKa", 5., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
   Configurable<double> ptPidTofMinPi{"ptPidTofMinPi", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMaxPi{"ptPidTofMaxPi", 5., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMaxPi{"nSigmaTofMaxPi", 3., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTofCombinedMaxPi{"nSigmaTofCombinedMaxPi", 5., "Nsigma cut on TOF combined with TPC"};
   Configurable<double> ptPidTofMinKa{"ptPidTofMinKa", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMaxKa{"ptPidTofMaxKa", 5., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMaxKa{"nSigmaTofMaxKa", 3., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTofCombinedMaxKa{"nSigmaTofCombinedMaxKa", 5., "Nsigma cut on TOF combined with TPC"};
+  // TPC & TOF Combined
+  Configurable<double> nSigmaCombMaxPi{"nSigmaCombMaxPi", 3., "Nsigma cut on TPC & TOF"};
+  Configurable<double> nSigmaCombMaxKa{"nSigmaCombMaxKa", 3., "Nsigma cut on TPC & TOF"};
   /// singe track selections
   Configurable<float> d_pTMin{"d_pTMin", 0.3, "minimum momentum for tracks"};
   Configurable<float> d_etaRange{"d_etaRange", 0.8, "eta Range for tracks"};
   Configurable<float> d_dcaXYTrackPV{"d_dcaXYTrackPV", 2., "DCA XY of the daughter tracks to the PV"};
   Configurable<float> d_dcaZTrackPV{"d_dcaZTrackPV", 10., "DCA Z of the daughter tracks to the PV"};
-  /// D0 selections
-  Configurable<bool> applySelectionDoWithTopoConst{"applySelectionDoWithTopoConst", true, "Apply selections on the D0 after constraining it to the PV"};
+  // /// D0 selections
+  Configurable<bool> applySelectionDoWithTopoConst{"applySelectionDoWithTopoConst", false, "Apply selections on the D0 after constraining it to the PV"};
   Configurable<float> d_pTMinD0{"d_pTMinD0", 0., "minimum momentum for D0 candidates"};
   Configurable<float> d_pTMaxD0{"d_pTMaxD0", 36., "maximum momentum for D0 candidates"};
   Configurable<float> d_massMinD0{"d_massMinD0", 1.65, "minimum mass for D0"};
@@ -131,6 +122,7 @@ struct qaKFParticle {
   /// Option to write D0 variables in a tree
   Configurable<double> d_DwnSmplFact{"d_DwnSmplFact", 1., "Downsampling factor for tree"};
   Configurable<bool> writeTree{"writeTree", false, "write daughter variables in a tree"};
+  Configurable<bool> writeHistograms{"writeHistograms", true, "write histograms"};
   Configurable<bool> writeQAHistograms{"writeQAHistograms", false, "write all QA histograms"};
 
   // Define which track selection should be used:
@@ -151,7 +143,7 @@ struct qaKFParticle {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
-  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using BigTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;
   using BigTracksExtended = soa::Join<BigTracks, aod::TracksDCA>;
   using BigTracksPID = soa::Join<BigTracksExtended, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -201,109 +193,80 @@ struct qaKFParticle {
     }
     runNumber = 0;
 
-    const AxisSpec axisVertexPosX{500, -0.05, 0.05, "X [cm]"};
-    const AxisSpec axisVertexPosY{500, -0.05, 0.05, "Y [cm]"};
+    const AxisSpec axisVertexPosX{100, -0.05, 0.05, "X [cm]"};
+    const AxisSpec axisVertexPosY{100, -0.05, 0.05, "Y [cm]"};
     const AxisSpec axisVertexPosZ{100, -20., 20., "Z [cm]"};
     const AxisSpec axisVertexNumContrib{160, 0, 160, "Number Of contributors to the PV"};
     const AxisSpec axisVertexCov{100, -0.00005, 0.00005};
 
-    const AxisSpec axisParX{300, -0.1, 0.1, "#it{x} [cm]"};
-    const AxisSpec axisParY{200, -0.1, 0.1, "#it{y} [cm]"};
-    const AxisSpec axisParZ{200, -20., 20., "#it{z} [cm]"};
+    const AxisSpec axisParX{100, -0.1, 0.1, "#it{x} [cm]"};
+    const AxisSpec axisParY{100, -0.1, 0.1, "#it{y} [cm]"};
+    const AxisSpec axisParZ{100, -20., 20., "#it{z} [cm]"};
     const AxisSpec axisParPX{binsPt, "#it{p}_{x} [GeV/c]"};
     const AxisSpec axisParPY{binsPt, "#it{p}_{y} [GeV/c]"};
     const AxisSpec axisParPZ{binsPt, "#it{p}_{z} [GeV/c]"};
+    if (writeHistograms) {
+      /// tracks
+      histos.add("TracksKFPi/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
+      histos.add("TracksKFPi/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
+      histos.add("TracksKFPi/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
+      histos.add("TracksKFPi/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{100, 0., 25.}});
+      histos.add("TracksKFPi/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("TracksKFPi/dcaToPV", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("TracksKFPi/dcaToPVLargeRange", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
+      histos.add("TracksKFPi/dcaToPVLargeRangeMCBeforeReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, 0., 20.}});
+      histos.add("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, 0., 20.}});
+      histos.add("TracksKFPi/nSigmaTPC", "nSigmaTPC vs P", kTH2D, {{axisParPX}, {100, -6., 6.}}); // Add array in function
+      histos.add("TracksKFPi/deviationPiToSV", "deviation of Pi to SV", kTH1D, {{100, 0., 10.}});
+      histos.add("TracksKFPi/deviationPiToPV", "deviation of Pi to PV", kTH1D, {{100, 0., 10.}});
+      histos.add("TracksKFPi/dcaToSV", "distance of Pi to SV", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("TracksKFPi/dcaXYToSV", "distance xy of Pi to SV", kTH1D, {{100, -0.15, 0.15}});
 
-    /// collisions
-    histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covYY", ";Cov_{yy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covXZ", ";Cov_{xz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("TracksKFKa/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
+      histos.add("TracksKFKa/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
+      histos.add("TracksKFKa/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
+      histos.add("TracksKFKa/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{100, 0., 25.}});
+      histos.add("TracksKFKa/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("TracksKFKa/dcaToPV", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("TracksKFKa/dcaToPVLargeRange", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
+      histos.add("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, 0., 20.}});
+      histos.add("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, 0., 20.}});
+      histos.add("TracksKFKa/nSigmaTPC", "nSigmaTPC vs P", kTH2D, {{axisParPX}, {100, -6., 6.}}); // Add Array in function
+      histos.add("TracksKFKa/deviationKaToSV", "deviation of Ka to SV", kTH1D, {{100, 0., 10.}});
+      histos.add("TracksKFKa/deviationKaToPV", "deviation of Ka to PV", kTH1D, {{100, 0., 10.}});
+      histos.add("TracksKFKa/dcaToSV", "distance of Ka to SV", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("TracksKFKa/dcaXYToSV", "distance xy of Ka to SV", kTH1D, {{100, -0.15, 0.15}});
 
-    histos.add("EventsKF/posX", "", kTH1D, {axisVertexPosX});
-    histos.add("EventsKF/posY", "", kTH1D, {axisVertexPosY});
-    histos.add("EventsKF/posZ", "", kTH1D, {axisVertexPosZ});
-    histos.add("EventsKF/posXY", "", kTH2D, {axisVertexPosX, axisVertexPosY});
-    histos.add("EventsKF/nContrib", "", kTH1D, {axisVertexNumContrib});
-    histos.add("EventsKF/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
-    histos.add("EventsKF/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covYY", ";Cov_{yy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covXZ", ";Cov_{xz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("TracksDaughter/deviationDaugtherTracks", "chi2 in 3D of daughter tracks at the SV", kTH1D, {{100, 0., 0.2}});
+      histos.add("TracksDaughter/dcaDaugtherTracks", "distance in 3D of daughter tracks at the SV", kTH1D, {{100, 0., 0.01}});
+      histos.add("TracksDaughter/d0pid0ka", "product of impact parameters of daughters to the PV", kTH1D, {{100, -0.003, 0.003}});
 
-    histos.add("Tracks/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("Tracks/dcaZToPV", "distance of closest approach in #it{z} plane;#it{dcaXY} [cm];", kTH1D, {{200, -10., 10.}});
+      /// D0 candidates
 
-    /// tracks
-    histos.add("TracksKFPi/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
-    histos.add("TracksKFPi/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
-    histos.add("TracksKFPi/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
-    histos.add("TracksKFPi/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
-    histos.add("TracksKFPi/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
-    histos.add("TracksKFPi/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
-    histos.add("TracksKFPi/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, 0., 25.}});
-    histos.add("TracksKFPi/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("TracksKFPi/dcaToPV", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("TracksKFPi/dcaToPVLargeRange", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("TracksKFPi/dcaToPVLargeRangeMCBeforeReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("TracksKFPi/nSigmaTPC", "nSigmaTPC vs P", kTH2D, {{axisParPX}, {100, -6., 6.}}); // Add array in function
-    histos.add("TracksKFPi/deviationPiToSV", "deviation of Pi to SV", kTH1D, {{200, 0., 10.}});
-    histos.add("TracksKFPi/deviationPiToPV", "deviation of Pi to PV", kTH1D, {{200, 0., 10.}});
-    histos.add("TracksKFPi/dcaToSV", "distance of Pi to SV", kTH1D, {{100, -0.15, 0.15}});
-    histos.add("TracksKFPi/dcaXYToSV", "distance xy of Pi to SV", kTH1D, {{100, -0.15, 0.15}});
-
-    histos.add("TracksKFKa/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
-    histos.add("TracksKFKa/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
-    histos.add("TracksKFKa/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
-    histos.add("TracksKFKa/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
-    histos.add("TracksKFKa/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
-    histos.add("TracksKFKa/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
-    histos.add("TracksKFKa/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, 0., 25.}});
-    histos.add("TracksKFKa/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("TracksKFKa/dcaToPV", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("TracksKFKa/dcaToPVLargeRange", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("TracksKFKa/nSigmaTPC", "nSigmaTPC vs P", kTH2D, {{axisParPX}, {100, -6., 6.}}); // Add Array in function
-    histos.add("TracksKFKa/deviationKaToSV", "deviation of Ka to SV", kTH1D, {{200, 0., 10.}});
-    histos.add("TracksKFKa/deviationKaToPV", "deviation of Ka to PV", kTH1D, {{200, 0., 10.}});
-    histos.add("TracksKFKa/dcaToSV", "distance of Ka to SV", kTH1D, {{100, -0.15, 0.15}});
-    histos.add("TracksKFKa/dcaXYToSV", "distance xy of Ka to SV", kTH1D, {{100, -0.15, 0.15}});
-
-    histos.add("TracksDaughter/deviationDaugtherTracks", "chi2 in 3D of daughter tracks at the SV", kTH1D, {{200, 0., 0.2}});
-    histos.add("TracksDaughter/dcaDaugtherTracks", "distance in 3D of daughter tracks at the SV", kTH1D, {{100, 0., 0.01}});
-    histos.add("TracksDaughter/d0pid0ka", "product of impact parameters of daughters to the PV", kTH1D, {{100, -0.003, 0.003}});
-
-    /// D0 candidates
-
-    histos.add("DZeroCandTopo/X", "X [cm]", kTH1D, {axisParX});
-    histos.add("DZeroCandTopo/Y", "Y [cm]", kTH1D, {axisParY});
-    histos.add("DZeroCandTopo/Z", "Z [cm]", kTH1D, {axisParZ});
-    histos.add("DZeroCandTopo/E", "E", kTH1D, {{100, 0., 50.}});
-    histos.add("DZeroCandTopo/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
-    histos.add("DZeroCandTopo/NDF", "NDF", kTH1D, {{5, 0., 5.}});
-    histos.add("DZeroCandTopo/Chi2OverNDF", "Chi2OverNDF", kTH1D, {{100, 0., 25.}});
-    histos.add("DZeroCandTopo/p", "momentum", kTH1D, {axisParPX});
-    histos.add("DZeroCandTopo/pt", "transverse momentum", kTH1D, {axisParPX});
-    histos.add("DZeroCandTopo/eta", "eta", kTH1D, {{100, -2., 2.}});
-    histos.add("DZeroCandTopo/phi", "phi", kTH1D, {{100, 0., 3.6}});
-    histos.add("DZeroCandTopo/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
-    histos.add("DZeroCandTopo/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
-    histos.add("DZeroCandTopo/decayLength", "decay length [cm]", kTH1D, {{200, 0., 0.5}});
-    histos.add("DZeroCandTopo/decayLengthXY", "decay length in xy plane [cm]", kTH1D, {{200, 0., 0.5}});
-    histos.add("DZeroCandTopo/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
-    histos.add("DZeroCandTopo/lifetime", "life time", kTH1D, {{100, 0., 0.2}});
-    histos.add("DZeroCandTopo/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
-    histos.add("DZeroCandTopo/decayLengthErr", "decay length error [cm]", kTH1D, {{200, 0., 0.05}});
-    histos.add("DZeroCandTopo/dcaDToPV", "distance to PV", kTH1D, {{100, -0.01, 0.01}});
-    histos.add("DZeroCandTopo/deviationDToPV", "deviation to PV", kTH1D, {{200, 0., 5.}});
-    histos.add("DZeroCandTopo/dcaDToPVXY", "distance to PV in xy plane", kTH1D, {{100, -0.02, 0.02}});
-    histos.add("DZeroCandTopo/deviationDToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 5.}});
+      histos.add("DZeroCandTopo/X", "X [cm]", kTH1D, {axisParX});
+      histos.add("DZeroCandTopo/Y", "Y [cm]", kTH1D, {axisParY});
+      histos.add("DZeroCandTopo/Z", "Z [cm]", kTH1D, {axisParZ});
+      histos.add("DZeroCandTopo/E", "E", kTH1D, {{100, 0., 50.}});
+      histos.add("DZeroCandTopo/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
+      histos.add("DZeroCandTopo/NDF", "NDF", kTH1D, {{5, 0., 5.}});
+      histos.add("DZeroCandTopo/Chi2OverNDF", "Chi2OverNDF", kTH1D, {{100, 0., 25.}});
+      histos.add("DZeroCandTopo/p", "momentum", kTH1D, {axisParPX});
+      histos.add("DZeroCandTopo/pt", "transverse momentum", kTH1D, {axisParPX});
+      histos.add("DZeroCandTopo/eta", "eta", kTH1D, {{100, -2., 2.}});
+      histos.add("DZeroCandTopo/phi", "phi", kTH1D, {{100, 0., 3.6}});
+      histos.add("DZeroCandTopo/mass", "mass", kTH1D, {{172, 1.65, 2.08}});
+      histos.add("DZeroCandTopo/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {172, 1.65, 2.08}});
+      histos.add("DZeroCandTopo/decayLength", "decay length [cm]", kTH1D, {{100, 0., 0.5}});
+      histos.add("DZeroCandTopo/decayLengthXY", "decay length in xy plane [cm]", kTH1D, {{100, 0., 0.5}});
+      histos.add("DZeroCandTopo/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
+      histos.add("DZeroCandTopo/lifetime", "life time", kTH1D, {{100, 0., 0.2}});
+      histos.add("DZeroCandTopo/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
+      histos.add("DZeroCandTopo/decayLengthErr", "decay length error [cm]", kTH1D, {{100, 0., 0.05}});
+      histos.add("DZeroCandTopo/dcaDToPV", "distance to PV", kTH1D, {{100, -0.01, 0.01}});
+      histos.add("DZeroCandTopo/deviationDToPV", "deviation to PV", kTH1D, {{100, 0., 5.}});
+      histos.add("DZeroCandTopo/dcaDToPVXY", "distance to PV in xy plane", kTH1D, {{100, -0.02, 0.02}});
+      histos.add("DZeroCandTopo/deviationDToPVXY", "deviation to PV in xy plane", kTH1D, {{100, 0., 5.}});
+    }
     auto hSelection = histos.add<TH1>("DZeroCandTopo/Selections", "Selections", kTH1D, {{25, 0.5, 25.5}});
     hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(1), "All Collisions");
     hSelection->GetXaxis()->SetBinLabel(hSelection->FindBin(2), "Cov < 0");
@@ -349,36 +312,18 @@ struct qaKFParticle {
       histos.add("DZeroCandGeo/pt", "transverse momentum", kTH1D, {axisParPX});
       histos.add("DZeroCandGeo/eta", "eta", kTH1D, {{100, -2., 2.}});
       histos.add("DZeroCandGeo/phi", "phi", kTH1D, {{100, 0., 3.6}});
-      histos.add("DZeroCandGeo/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
-      histos.add("DZeroCandGeo/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
+      histos.add("DZeroCandGeo/mass", "mass", kTH1D, {{172, 1.65, 2.08}});
+      histos.add("DZeroCandGeo/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {172, 1.65, 2.08}});
       histos.add("DZeroCandGeo/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
       histos.add("DZeroCandGeo/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
       histos.add("DZeroCandGeo/dcaDToPV", "distance to PV", kTH1D, {{100, -0.01, 0.01}});
-      histos.add("DZeroCandGeo/deviationDToPV", "deviation to PV", kTH1D, {{200, 0., 5.}});
+      histos.add("DZeroCandGeo/deviationDToPV", "deviation to PV", kTH1D, {{100, 0., 5.}});
       histos.add("DZeroCandGeo/dcaDToPVXY", "distance to PV in xy plane", kTH1D, {{100, -0.02, 0.02}});
-      histos.add("DZeroCandGeo/deviationDToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 5.}});
+      histos.add("DZeroCandGeo/deviationDToPVXY", "deviation to PV in xy plane", kTH1D, {{100, 0., 5.}});
       histos.add("DZeroCandGeo/cosThetaStar", "cosine theta star", kTH1D, {{100, -1., 1.}});
-
-      histos.add("DZeroCandTopoAtSV/X", "X [cm]", kTH1D, {axisParX});
-      histos.add("DZeroCandTopoAtSV/Y", "Y [cm]", kTH1D, {axisParY});
-      histos.add("DZeroCandTopoAtSV/Z", "Z [cm]", kTH1D, {axisParZ});
-      histos.add("DZeroCandTopoAtSV/E", "E", kTH1D, {{100, 0., 50.}});
-      histos.add("DZeroCandTopoAtSV/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
-      histos.add("DZeroCandTopoAtSV/NDF", "NDF", kTH1D, {{5, 0., 5.}});
-      histos.add("DZeroCandTopoAtSV/Chi2OverNDF", "Chi2OverNDF", kTH1D, {{100, 0., 25.}});
-      histos.add("DZeroCandTopoAtSV/p", "momentum", kTH1D, {axisParPX});
-      histos.add("DZeroCandTopoAtSV/pt", "transverse momentum", kTH1D, {axisParPX});
-      histos.add("DZeroCandTopoAtSV/eta", "eta", kTH1D, {{100, -2., 2.}});
-      histos.add("DZeroCandTopoAtSV/phi", "phi", kTH1D, {{100, 0., 3.6}});
-      histos.add("DZeroCandTopoAtSV/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
-      histos.add("DZeroCandTopoAtSV/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
-      histos.add("DZeroCandTopoAtSV/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
-      histos.add("DZeroCandTopoAtSV/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
-      histos.add("DZeroCandTopoAtSV/dcaDToPV", "distance to PV", kTH1D, {{100, -0.01, 0.01}});
-      histos.add("DZeroCandTopoAtSV/deviationDToPV", "deviation to PV", kTH1D, {{200, 0., 5.}});
-      histos.add("DZeroCandTopoAtSV/dcaDToPVXY", "distance to PV in xy plane", kTH1D, {{100, -0.02, 0.02}});
-      histos.add("DZeroCandTopoAtSV/deviationDToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 5.}});
     }
+    LOGF(info, "End of init");
+    histos.print();
   } /// End init
 
   /// Function to select collisions
@@ -541,69 +486,114 @@ struct qaKFParticle {
     return true;
   }
 
+  template <typename T1>
+  bool SelectPIDCombined(const T1& track, int particle)
+  {
+    switch (particle) {
+      case kPiPlus: {
+        if ((track.pt() <= ptPidTofMinPi) && track.hasTPC() && (abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
+          return true;
+        } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && !track.hasTOF() && (abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
+          return true;
+        } else if ((track.pt() > ptPidTofMinPi) && !track.hasTPC() && track.hasTOF() && (abs(track.tofNSigmaPi()) < nSigmaTofMaxPi)) {
+          return true;
+        } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && track.hasTOF()) {
+          float CombinednSigma = 1. / sqrt(2) * sqrt((track.tpcNSigmaPi() * track.tpcNSigmaPi()) + (track.tofNSigmaPi() * track.tofNSigmaPi()));
+          if (abs(CombinednSigma) < nSigmaCombMaxPi) {
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
+        break;
+      }
+      case kKPlus: {
+        if ((track.pt() <= ptPidTofMinKa) && track.hasTPC() && (abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
+          return true;
+        } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && !track.hasTOF() && (abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
+          return true;
+        } else if ((track.pt() > ptPidTofMinKa) && !track.hasTPC() && track.hasTOF() && (abs(track.tofNSigmaKa()) < nSigmaTofMaxKa)) {
+          return true;
+        } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && track.hasTOF()) {
+          float CombinednSigma = 1. / sqrt(2) * sqrt((track.tpcNSigmaKa() * track.tpcNSigmaKa()) + (track.tofNSigmaKa() * track.tofNSigmaKa()));
+          if (abs(CombinednSigma) < nSigmaCombMaxKa) {
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
+        break;
+      }
+      default: {
+        LOGF(error, "ERROR: Species is not implemented");
+        return false;
+      }
+    }
+  }
+
   template <typename T1, typename T2>
   void fillHistograms(const T1& kfpTrackPi, const T1& kfpTrackKa, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV, const T2& KFDZero_DecayVtx, float cosThetaStar)
   {
-    /// fill daughter track parameters
-    histos.fill(HIST("TracksKFPi/x"), kfpTrackPi.GetX());
-    histos.fill(HIST("TracksKFPi/y"), kfpTrackPi.GetY());
-    histos.fill(HIST("TracksKFPi/z"), kfpTrackPi.GetZ());
-    histos.fill(HIST("TracksKFPi/px"), kfpTrackPi.GetPx());
-    histos.fill(HIST("TracksKFPi/py"), kfpTrackPi.GetPy());
-    histos.fill(HIST("TracksKFPi/pz"), kfpTrackPi.GetPz());
-    histos.fill(HIST("TracksKFPi/chi2perNDF"), kfpTrackPi.GetChi2perNDF());
-    histos.fill(HIST("TracksKFPi/dcaXYToPV"), KFPion.GetDistanceFromVertexXY(KFPV));
-    histos.fill(HIST("TracksKFPi/dcaToPV"), KFPion.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("TracksKFPi/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("TracksKFPi/deviationPiToSV"), KFPion.GetDeviationFromVertex(KFDZero));
-    histos.fill(HIST("TracksKFPi/deviationPiToPV"), KFPion.GetDeviationFromVertex(KFPV));
-    histos.fill(HIST("TracksKFPi/dcaToSV"), KFPion.GetDistanceFromVertex(KFDZero));
-    histos.fill(HIST("TracksKFPi/dcaXYToSV"), KFPion.GetDistanceFromVertexXY(KFDZero));
+    if (writeHistograms) {
+      /// fill daughter track parameters
+      histos.fill(HIST("TracksKFPi/px"), kfpTrackPi.GetPx());
+      histos.fill(HIST("TracksKFPi/py"), kfpTrackPi.GetPy());
+      histos.fill(HIST("TracksKFPi/pz"), kfpTrackPi.GetPz());
+      histos.fill(HIST("TracksKFPi/chi2perNDF"), kfpTrackPi.GetChi2perNDF());
+      histos.fill(HIST("TracksKFPi/dcaXYToPV"), KFPion.GetDistanceFromVertexXY(KFPV));
+      histos.fill(HIST("TracksKFPi/dcaToPV"), KFPion.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("TracksKFPi/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("TracksKFPi/deviationPiToSV"), KFPion.GetDeviationFromVertex(KFDZero));
+      histos.fill(HIST("TracksKFPi/deviationPiToPV"), KFPion.GetDeviationFromVertex(KFPV));
+      histos.fill(HIST("TracksKFPi/dcaToSV"), KFPion.GetDistanceFromVertex(KFDZero));
+      histos.fill(HIST("TracksKFPi/dcaXYToSV"), KFPion.GetDistanceFromVertexXY(KFDZero));
 
-    histos.fill(HIST("TracksKFKa/x"), kfpTrackKa.GetX());
-    histos.fill(HIST("TracksKFKa/y"), kfpTrackKa.GetY());
-    histos.fill(HIST("TracksKFKa/z"), kfpTrackKa.GetZ());
-    histos.fill(HIST("TracksKFKa/px"), kfpTrackKa.GetPx());
-    histos.fill(HIST("TracksKFKa/py"), kfpTrackKa.GetPy());
-    histos.fill(HIST("TracksKFKa/pz"), kfpTrackKa.GetPz());
-    histos.fill(HIST("TracksKFKa/chi2perNDF"), kfpTrackKa.GetChi2perNDF());
-    histos.fill(HIST("TracksKFKa/dcaXYToPV"), KFKaon.GetDistanceFromVertexXY(KFPV));
-    histos.fill(HIST("TracksKFKa/dcaToPV"), KFKaon.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("TracksKFKa/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("TracksKFKa/deviationKaToSV"), KFKaon.GetDeviationFromVertex(KFDZero));
-    histos.fill(HIST("TracksKFKa/deviationKaToPV"), KFKaon.GetDeviationFromVertex(KFPV));
-    histos.fill(HIST("TracksKFKa/dcaToSV"), KFKaon.GetDistanceFromVertex(KFDZero));
-    histos.fill(HIST("TracksKFKa/dcaXYToSV"), KFKaon.GetDistanceFromVertexXY(KFDZero));
+      histos.fill(HIST("TracksKFKa/px"), kfpTrackKa.GetPx());
+      histos.fill(HIST("TracksKFKa/py"), kfpTrackKa.GetPy());
+      histos.fill(HIST("TracksKFKa/pz"), kfpTrackKa.GetPz());
+      histos.fill(HIST("TracksKFKa/chi2perNDF"), kfpTrackKa.GetChi2perNDF());
+      histos.fill(HIST("TracksKFKa/dcaXYToPV"), KFKaon.GetDistanceFromVertexXY(KFPV));
+      histos.fill(HIST("TracksKFKa/dcaToPV"), KFKaon.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("TracksKFKa/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("TracksKFKa/deviationKaToSV"), KFKaon.GetDeviationFromVertex(KFDZero));
+      histos.fill(HIST("TracksKFKa/deviationKaToPV"), KFKaon.GetDeviationFromVertex(KFPV));
+      histos.fill(HIST("TracksKFKa/dcaToSV"), KFKaon.GetDistanceFromVertex(KFDZero));
+      histos.fill(HIST("TracksKFKa/dcaXYToSV"), KFKaon.GetDistanceFromVertexXY(KFDZero));
 
-    histos.fill(HIST("TracksDaughter/deviationDaugtherTracks"), KFPion.GetDeviationFromParticle(KFKaon));
-    histos.fill(HIST("TracksDaughter/dcaDaugtherTracks"), KFPion.GetDistanceFromParticle(KFKaon));
-    float d0pid0ka = KFPion.GetDistanceFromVertexXY(KFPV) * KFKaon.GetDistanceFromVertexXY(KFPV);
-    histos.fill(HIST("TracksDaughter/d0pid0ka"), d0pid0ka);
+      histos.fill(HIST("TracksDaughter/deviationDaugtherTracks"), KFPion.GetDeviationFromParticle(KFKaon));
+      histos.fill(HIST("TracksDaughter/dcaDaugtherTracks"), KFPion.GetDistanceFromParticle(KFKaon));
+      float d0pid0ka = KFPion.GetDistanceFromVertexXY(KFPV) * KFKaon.GetDistanceFromVertexXY(KFPV);
+      histos.fill(HIST("TracksDaughter/d0pid0ka"), d0pid0ka);
 
-    histos.fill(HIST("DZeroCandTopo/X"), KFDZero_PV.GetX());
-    histos.fill(HIST("DZeroCandTopo/Y"), KFDZero_PV.GetY());
-    histos.fill(HIST("DZeroCandTopo/Z"), KFDZero_PV.GetZ());
-    histos.fill(HIST("DZeroCandTopo/E"), KFDZero_PV.GetE());
-    histos.fill(HIST("DZeroCandTopo/Chi2"), KFDZero_PV.GetChi2());
-    histos.fill(HIST("DZeroCandTopo/NDF"), KFDZero_PV.GetNDF());
-    float chi2topo = KFDZero_PV.GetChi2() / KFDZero_PV.GetNDF();
-    histos.fill(HIST("DZeroCandTopo/Chi2OverNDF"), chi2topo);
-    histos.fill(HIST("DZeroCandTopo/p"), KFDZero_PV.GetP());
-    histos.fill(HIST("DZeroCandTopo/pt"), KFDZero_PV.GetPt());
-    histos.fill(HIST("DZeroCandTopo/eta"), KFDZero_PV.GetEta());
-    histos.fill(HIST("DZeroCandTopo/phi"), KFDZero_PV.GetPhi());
-    histos.fill(HIST("DZeroCandTopo/mass"), KFDZero_PV.GetMass());
-    histos.fill(HIST("DZeroCandTopo/massvspt"), KFDZero_PV.GetPt(), KFDZero_PV.GetMass());
-    histos.fill(HIST("DZeroCandTopo/decayLength"), KFDZero_PV.GetDecayLength());
-    histos.fill(HIST("DZeroCandTopo/decayLengthXY"), KFDZero_PV.GetDecayLengthXY());
-    histos.fill(HIST("DZeroCandTopo/cosPA"), cpaFromKF(KFDZero_DecayVtx, KFPV));
-    histos.fill(HIST("DZeroCandTopo/lifetime"), KFDZero_PV.GetLifeTime());
-    histos.fill(HIST("DZeroCandTopo/massErr"), KFDZero_PV.GetErrMass());
-    histos.fill(HIST("DZeroCandTopo/decayLengthErr"), KFDZero_PV.GetErrDecayLength());
-    histos.fill(HIST("DZeroCandTopo/dcaDToPV"), KFDZero_PV.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("DZeroCandTopo/deviationDToPV"), KFDZero_PV.GetDeviationFromVertex(KFPV));
-    histos.fill(HIST("DZeroCandTopo/dcaDToPVXY"), KFDZero_PV.GetDistanceFromVertexXY(KFPV));
-    histos.fill(HIST("DZeroCandTopo/deviationDToPVXY"), KFDZero_PV.GetDeviationFromVertexXY(KFPV));
+      histos.fill(HIST("DZeroCandTopo/X"), KFDZero_PV.GetX());
+      histos.fill(HIST("DZeroCandTopo/Y"), KFDZero_PV.GetY());
+      histos.fill(HIST("DZeroCandTopo/Z"), KFDZero_PV.GetZ());
+      histos.fill(HIST("DZeroCandTopo/E"), KFDZero_PV.GetE());
+      histos.fill(HIST("DZeroCandTopo/Chi2"), KFDZero_PV.GetChi2());
+      histos.fill(HIST("DZeroCandTopo/NDF"), KFDZero_PV.GetNDF());
+      float chi2topo = KFDZero_PV.GetChi2() / KFDZero_PV.GetNDF();
+      histos.fill(HIST("DZeroCandTopo/Chi2OverNDF"), chi2topo);
+      histos.fill(HIST("DZeroCandTopo/p"), KFDZero_PV.GetP());
+      histos.fill(HIST("DZeroCandTopo/pt"), KFDZero_PV.GetPt());
+      histos.fill(HIST("DZeroCandTopo/eta"), KFDZero_PV.GetEta());
+      histos.fill(HIST("DZeroCandTopo/phi"), KFDZero_PV.GetPhi());
+      histos.fill(HIST("DZeroCandTopo/mass"), KFDZero_PV.GetMass());
+      histos.fill(HIST("DZeroCandTopo/massvspt"), KFDZero_PV.GetPt(), KFDZero_PV.GetMass());
+      histos.fill(HIST("DZeroCandTopo/decayLength"), KFDZero_PV.GetDecayLength());
+      histos.fill(HIST("DZeroCandTopo/decayLengthXY"), KFDZero_PV.GetDecayLengthXY());
+      histos.fill(HIST("DZeroCandTopo/cosPA"), cpaFromKF(KFDZero_DecayVtx, KFPV));
+      histos.fill(HIST("DZeroCandTopo/lifetime"), KFDZero_PV.GetLifeTime());
+      histos.fill(HIST("DZeroCandTopo/massErr"), KFDZero_PV.GetErrMass());
+      histos.fill(HIST("DZeroCandTopo/decayLengthErr"), KFDZero_PV.GetErrDecayLength());
+      histos.fill(HIST("DZeroCandTopo/dcaDToPV"), KFDZero_PV.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("DZeroCandTopo/deviationDToPV"), KFDZero_PV.GetDeviationFromVertex(KFPV));
+      histos.fill(HIST("DZeroCandTopo/dcaDToPVXY"), KFDZero_PV.GetDistanceFromVertexXY(KFPV));
+      histos.fill(HIST("DZeroCandTopo/deviationDToPVXY"), KFDZero_PV.GetDeviationFromVertexXY(KFPV));
+    }
 
     if (writeQAHistograms) {
       histos.fill(HIST("DZeroCandGeo/X"), KFDZero.GetX());
@@ -627,26 +617,6 @@ struct qaKFParticle {
       histos.fill(HIST("DZeroCandGeo/dcaDToPVXY"), KFDZero.GetDistanceFromVertexXY(KFPV));
       histos.fill(HIST("DZeroCandGeo/deviationDToPVXY"), KFDZero.GetDeviationFromVertexXY(KFPV));
       histos.fill(HIST("DZeroCandGeo/cosThetaStar"), cosThetaStar);
-
-      histos.fill(HIST("DZeroCandTopoAtSV/X"), KFDZero_DecayVtx.GetX());
-      histos.fill(HIST("DZeroCandTopoAtSV/Y"), KFDZero_DecayVtx.GetY());
-      histos.fill(HIST("DZeroCandTopoAtSV/Z"), KFDZero_DecayVtx.GetZ());
-      histos.fill(HIST("DZeroCandTopoAtSV/E"), KFDZero_DecayVtx.GetE());
-      histos.fill(HIST("DZeroCandTopoAtSV/Chi2"), KFDZero_DecayVtx.GetChi2());
-      histos.fill(HIST("DZeroCandTopoAtSV/NDF"), KFDZero_DecayVtx.GetNDF());
-      float chi2Topo = KFDZero_DecayVtx.GetChi2() / KFDZero_DecayVtx.GetNDF();
-      histos.fill(HIST("DZeroCandTopoAtSV/Chi2OverNDF"), chi2Topo);
-      histos.fill(HIST("DZeroCandTopoAtSV/p"), KFDZero_DecayVtx.GetP());
-      histos.fill(HIST("DZeroCandTopoAtSV/pt"), KFDZero_DecayVtx.GetPt());
-      histos.fill(HIST("DZeroCandTopoAtSV/eta"), KFDZero_DecayVtx.GetEta());
-      histos.fill(HIST("DZeroCandTopoAtSV/phi"), KFDZero_DecayVtx.GetPhi());
-      histos.fill(HIST("DZeroCandTopoAtSV/mass"), KFDZero_DecayVtx.GetMass());
-      histos.fill(HIST("DZeroCandTopoAtSV/massvspt"), KFDZero_DecayVtx.GetPt(), KFDZero_DecayVtx.GetMass());
-      histos.fill(HIST("DZeroCandTopoAtSV/massErr"), KFDZero_DecayVtx.GetErrMass());
-      histos.fill(HIST("DZeroCandTopoAtSV/dcaDToPV"), KFDZero_DecayVtx.GetDistanceFromVertex(KFPV));
-      histos.fill(HIST("DZeroCandTopoAtSV/deviationDToPV"), KFDZero_DecayVtx.GetDeviationFromVertex(KFPV));
-      histos.fill(HIST("DZeroCandTopoAtSV/dcaDToPVXY"), KFDZero_DecayVtx.GetDistanceFromVertexXY(KFPV));
-      histos.fill(HIST("DZeroCandTopoAtSV/deviationDToPVXY"), KFDZero_DecayVtx.GetDeviationFromVertexXY(KFPV));
     }
   }
   template <typename T1, typename T2, typename T3>
@@ -703,7 +673,6 @@ struct qaKFParticle {
   /// Process function for data
   void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
-
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
@@ -713,13 +682,8 @@ struct qaKFParticle {
       KFParticle::SetField(magneticField);
 #endif
     }
+
     histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
-    histos.fill(HIST("Events/covXX"), collision.covXX());
-    histos.fill(HIST("Events/covXY"), collision.covXY());
-    histos.fill(HIST("Events/covXZ"), collision.covXZ());
-    histos.fill(HIST("Events/covYY"), collision.covYY());
-    histos.fill(HIST("Events/covYZ"), collision.covYZ());
-    histos.fill(HIST("Events/covZZ"), collision.covZZ());
     /// Apply event selection
     if (!isSelectedCollision(collision)) {
       return;
@@ -727,37 +691,6 @@ struct qaKFParticle {
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
-
-    /// fill collision parameters
-    histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
-    histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
-    histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
-    histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
-    histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
-    histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
-    histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
-    histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
-    histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
-    histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
-
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMinPi, ptPidTpcMaxPi);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMaxPi, nSigmaTpcMaxPi);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxPi, nSigmaTpcCombinedMaxPi);
-    selectorPion.setRangePtTOF(ptPidTofMinPi, ptPidTofMaxPi);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMaxPi, nSigmaTofMaxPi);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxPi, nSigmaTofCombinedMaxPi);
-
-    TrackSelectorPID selectorKaon(kKPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMinKa, ptPidTpcMaxKa);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMaxKa, nSigmaTpcMaxKa);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxKa, nSigmaTpcCombinedMaxKa);
-    selectorPion.setRangePtTOF(ptPidTofMinKa, ptPidTofMaxKa);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMaxKa, nSigmaTofMaxKa);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxKa, nSigmaTofCombinedMaxKa);
-
     for (auto& [track1, track2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
       histos.fill(HIST("DZeroCandTopo/Selections"), 3.f);
@@ -767,11 +700,6 @@ struct qaKFParticle {
       if (!isSelectedTracks(track1, track2)) {
         continue;
       }
-
-      histos.fill(HIST("Tracks/dcaXYToPV"), track1.dcaXY());
-      histos.fill(HIST("Tracks/dcaXYToPV"), track2.dcaXY());
-      histos.fill(HIST("Tracks/dcaZToPV"), track1.dcaZ());
-      histos.fill(HIST("Tracks/dcaZToPV"), track2.dcaZ());
 
       KFPTrack kfpTrackPosPi;
       KFPTrack kfpTrackNegPi;
@@ -791,10 +719,10 @@ struct qaKFParticle {
       float TOFnSigmaNegKa = 0;
       int source = 0;
 
-      int pidKaonTr1 = selectorKaon.getStatusTrackPIDTpcOrTof(track1);
-      int pidKaonTr2 = selectorKaon.getStatusTrackPIDTpcOrTof(track2);
-      int pidPionTr1 = selectorPion.getStatusTrackPIDTpcOrTof(track1);
-      int pidPionTr2 = selectorPion.getStatusTrackPIDTpcOrTof(track2);
+      bool pidKaonTr1 = SelectPIDCombined(track1, kKPlus);
+      bool pidKaonTr2 = SelectPIDCombined(track2, kKPlus);
+      bool pidPionTr1 = SelectPIDCombined(track1, kPiPlus);
+      bool pidPionTr2 = SelectPIDCombined(track2, kPiPlus);
 
       if (track1.isPVContributor() || track2.isPVContributor()) {
         PVContributor = 1;
@@ -805,7 +733,7 @@ struct qaKFParticle {
       }
 
       /// Select D0 and D0bar candidates
-      if (pidPionTr1 == TrackSelectorPID::Status::PIDAccepted && pidKaonTr2 == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidPionTr1 && pidKaonTr2) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0 = true;
           source = 1;
@@ -828,10 +756,13 @@ struct qaKFParticle {
           continue;
         }
       }
-      if (pidKaonTr1 == TrackSelectorPID::Status::PIDAccepted && pidPionTr2 == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidKaonTr1 && pidPionTr2) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0bar = true;
           source = 2;
+          if (CandD0 == true) {
+            source = 3;
+          }
           kfpTrackNegPi = createKFPTrackFromTrack(track2);
           kfpTrackPosKa = createKFPTrackFromTrack(track1);
           TPCnSigmaNegPi = track2.tpcNSigmaPi();
@@ -841,6 +772,9 @@ struct qaKFParticle {
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0 = true;
           source = 1;
+          if (CandD0bar == true) {
+            source = 3;
+          }
           kfpTrackPosPi = createKFPTrackFromTrack(track2);
           kfpTrackNegKa = createKFPTrackFromTrack(track1);
           TPCnSigmaPosPi = track2.tpcNSigmaPi();
@@ -854,9 +788,6 @@ struct qaKFParticle {
       if (!CandD0 && !CandD0bar) {
         histos.fill(HIST("DZeroCandTopo/Selections"), 9.f);
         continue;
-      }
-      if (CandD0 && CandD0bar) {
-        source = 3;
       }
 
       KFParticle KFPosPion(kfpTrackPosPi, 211);
@@ -895,10 +826,11 @@ struct qaKFParticle {
             continue;
           }
         }
-
         fillHistograms(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, cosThetaStar);
-        histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackPosPi.GetPt(), TPCnSigmaPosPi);
-        histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackNegKa.GetPt(), TPCnSigmaNegKa);
+        if (writeHistograms) {
+          histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackPosPi.GetPt(), TPCnSigmaPosPi);
+          histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackNegKa.GetPt(), TPCnSigmaNegKa);
+        }
         writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, TPCnSigmaPosPi, TOFnSigmaPosPi, TPCnSigmaNegKa, TOFnSigmaNegKa, cosThetaStar, track1, source);
       }
       if (CandD0bar) {
@@ -930,8 +862,10 @@ struct qaKFParticle {
           }
         }
         fillHistograms(kfpTrackNegPi, kfpTrackPosKa, KFNegPion, KFPosKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, cosThetaStar);
-        histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackNegPi.GetPt(), TPCnSigmaNegPi);
-        histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackPosKa.GetPt(), TPCnSigmaPosKa);
+        if (writeHistograms) {
+          histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackNegPi.GetPt(), TPCnSigmaNegPi);
+          histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackPosKa.GetPt(), TPCnSigmaPosKa);
+        }
         writeVarTree(kfpTrackNegPi, kfpTrackPosKa, KFNegPion, KFPosKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, TPCnSigmaNegPi, TOFnSigmaNegPi, TPCnSigmaPosKa, TOFnSigmaPosKa, cosThetaStar, track1, source);
       }
     }
@@ -940,9 +874,9 @@ struct qaKFParticle {
 
   /// Process function for MC
   using CollisionTableMC = soa::Join<CollisionTableData, aod::McCollisionLabels>;
-  using CollisionTableDataMult = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
+  using CollisionTableDataMult = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
-  Preslice<aod::McCollisionLabels> perMcCollision = aod::mccollisionlabel::mcCollisionId;
+  // Preslice<o2::aod::McCollisionLabels> perMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
   void processMC(CollisionTableMC::iterator const& collision, CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -959,12 +893,6 @@ struct qaKFParticle {
       return;
     }
     histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
-    histos.fill(HIST("Events/covXX"), collision.covXX());
-    histos.fill(HIST("Events/covXY"), collision.covXY());
-    histos.fill(HIST("Events/covXZ"), collision.covXZ());
-    histos.fill(HIST("Events/covYY"), collision.covYY());
-    histos.fill(HIST("Events/covYZ"), collision.covYZ());
-    histos.fill(HIST("Events/covZZ"), collision.covZZ());
     /// Apply event selection
     if (!isSelectedCollision(collision)) {
       return;
@@ -975,36 +903,6 @@ struct qaKFParticle {
 
     KFPVertex kfpVertexDefault = createKFPVertexFromCollision(collision);
     KFParticle KFPVDefault(kfpVertexDefault);
-
-    /// fill collision parameters
-    histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
-    histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
-    histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
-    histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
-    histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
-    histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
-    histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
-    histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
-    histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
-    histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
-
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMinPi, ptPidTpcMaxPi);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMaxPi, nSigmaTpcMaxPi);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxPi, nSigmaTpcCombinedMaxPi);
-    selectorPion.setRangePtTOF(ptPidTofMinPi, ptPidTofMaxPi);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMaxPi, nSigmaTofMaxPi);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxPi, nSigmaTofCombinedMaxPi);
-
-    TrackSelectorPID selectorKaon(kKPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMinKa, ptPidTpcMaxKa);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMaxKa, nSigmaTpcMaxKa);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxKa, nSigmaTpcCombinedMaxKa);
-    selectorPion.setRangePtTOF(ptPidTofMinKa, ptPidTofMaxKa);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMaxKa, nSigmaTofMaxKa);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxKa, nSigmaTofCombinedMaxKa);
 
     for (auto& [track1, track2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
@@ -1018,52 +916,52 @@ struct qaKFParticle {
         continue;
       }
 
-      /// Check whether the track was assigned to the true MC PV
+      //       /// Check whether the track was assigned to the true MC PV
       auto particle1 = track1.mcParticle();
       auto particle2 = track2.mcParticle();
-      auto collMC = particle1.mcCollision();
-      auto mcCollID_recoColl = track1.collision_as<CollisionTableMC>().mcCollisionId();
-      auto mcCollID_particle = particle1.mcCollisionId();
-      bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
-      if (!indexMatchOK) {
-        histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
-        const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
-        int i = 0;
-        std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
-        float min = 100;
-        for (auto matchedCollision : matchedCollisions) {
-          dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
-          if (i == 0) {
-            min = dcaZ[i];
-          }
-          if (i > 0) {
-            if (dcaZ[i] < dcaZ[i - 1]) {
-              min = dcaZ[i];
-            }
-          }
+      //       auto collMC = particle1.mcCollision();
+      //       auto mcCollID_recoColl = track1.collision_as<CollisionTableMC>().mcCollisionId();
+      //       auto mcCollID_particle = particle1.mcCollisionId();
+      //       bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
+      //       if (!indexMatchOK) {
+      //         histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
+      //         const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
+      //         int i = 0;
+      //         std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
+      //         float min = 100;
+      //         for (auto matchedCollision : matchedCollisions) {
+      //           dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
+      //           if (i == 0) {
+      //             min = dcaZ[i];
+      //           }
+      //           if (i > 0) {
+      //             if (dcaZ[i] < dcaZ[i - 1]) {
+      //               min = dcaZ[i];
+      //             }
+      //           }
 
-          i = i + 1;
-        }
-        if (min > 10.) {
-          histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);
-        }
-        int j = 0;
-        for (auto matchedCollision : matchedCollisions) {
-          if (i == 1) {
-            kfpVertex = createKFPVertexFromCollision(matchedCollision);
-            KFParticle KFPVNew(kfpVertex);
-            KFPV = KFPVNew;
-          }
-          if (i > 1) {
-            if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
-              kfpVertex = createKFPVertexFromCollision(matchedCollision);
-              KFParticle KFPVNew(kfpVertex);
-              KFPV = KFPVNew;
-            }
-          }
-          j = j + 1;
-        }
-      }
+      //           i = i + 1;
+      //         }
+      //         if (min > 10.) {
+      //           histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);
+      //         }
+      //         int j = 0;
+      //         for (auto matchedCollision : matchedCollisions) {
+      //           if (i == 1) {
+      //             kfpVertex = createKFPVertexFromCollision(matchedCollision);
+      //             KFParticle KFPVNew(kfpVertex);
+      //             KFPV = KFPVNew;
+      //           }
+      //           if (i > 1) {
+      //             if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+      //               kfpVertex = createKFPVertexFromCollision(matchedCollision);
+      //               KFParticle KFPVNew(kfpVertex);
+      //               KFPV = KFPVNew;
+      //             }
+      //           }
+      //           j = j + 1;
+      //         }
+      //       }
 
       /// Remove fake tracks
       if (!track1.has_mcParticle() || !track2.has_mcParticle()) {
@@ -1099,11 +997,6 @@ struct qaKFParticle {
         continue;
       }
 
-      histos.fill(HIST("Tracks/dcaXYToPV"), track1.dcaXY());
-      histos.fill(HIST("Tracks/dcaXYToPV"), track2.dcaXY());
-      histos.fill(HIST("Tracks/dcaZToPV"), track1.dcaZ());
-      histos.fill(HIST("Tracks/dcaZToPV"), track2.dcaZ());
-
       KFPTrack kfpTrackPosPi;
       KFPTrack kfpTrackNegPi;
       KFPTrack kfpTrackPosKa;
@@ -1120,10 +1013,10 @@ struct qaKFParticle {
       float TOFnSigmaPosKa = 0;
       float TOFnSigmaNegKa = 0;
 
-      int pidKaonTr1 = selectorKaon.getStatusTrackPIDTpcOrTof(track1);
-      int pidKaonTr2 = selectorKaon.getStatusTrackPIDTpcOrTof(track2);
-      int pidPionTr1 = selectorPion.getStatusTrackPIDTpcOrTof(track1);
-      int pidPionTr2 = selectorPion.getStatusTrackPIDTpcOrTof(track2);
+      bool pidKaonTr1 = SelectPIDCombined(track1, kKPlus);
+      bool pidKaonTr2 = SelectPIDCombined(track2, kKPlus);
+      bool pidPionTr1 = SelectPIDCombined(track1, kPiPlus);
+      bool pidPionTr2 = SelectPIDCombined(track2, kPiPlus);
 
       if (track1.isPVContributor() || track2.isPVContributor()) {
         PVContributor = 1;
@@ -1135,7 +1028,7 @@ struct qaKFParticle {
 
       int pdgMother = mcParticles.rawIteratorAt(indexRec - mcParticles.offset()).pdgCode();
       /// Select D0 and D0bar candidates
-      if (pidPionTr1 == TrackSelectorPID::Status::PIDAccepted && pidKaonTr2 == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidPionTr1 && pidKaonTr2) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0 = true;
           particle1 = track1.mcParticle();
@@ -1164,7 +1057,7 @@ struct qaKFParticle {
           continue;
         }
       }
-      if (pidKaonTr1 == TrackSelectorPID::Status::PIDAccepted && pidPionTr2 == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidKaonTr1 && pidPionTr2) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0bar = true;
           if (pdgMother == 421) {
@@ -1234,12 +1127,14 @@ struct qaKFParticle {
         }
 
         fillHistograms(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, cosThetaStar);
-        histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCBeforeReassignment"), KFPosPion.GetDistanceFromVertex(KFPVDefault));
-        histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment"), KFPosPion.GetDistanceFromVertex(KFPV));
-        histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment"), KFNegKaon.GetDistanceFromVertex(KFPVDefault));
-        histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment"), KFNegKaon.GetDistanceFromVertex(KFPV));
-        histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackPosPi.GetPt(), TPCnSigmaPosPi);
-        histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackNegKa.GetPt(), TPCnSigmaNegKa);
+        if (writeHistograms) {
+          histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCBeforeReassignment"), KFPosPion.GetDistanceFromVertex(KFPVDefault));
+          histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment"), KFPosPion.GetDistanceFromVertex(KFPV));
+          histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment"), KFNegKaon.GetDistanceFromVertex(KFPVDefault));
+          histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment"), KFNegKaon.GetDistanceFromVertex(KFPV));
+          histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackPosPi.GetPt(), TPCnSigmaPosPi);
+          histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackNegKa.GetPt(), TPCnSigmaNegKa);
+        }
         writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZero_PV, KFDZero, KFPV, KFDZero_DecayVtx, TPCnSigmaPosPi, TOFnSigmaPosPi, TPCnSigmaNegKa, TOFnSigmaNegKa, cosThetaStar, track1, sourceD0);
       }
       if (CandD0bar) {
@@ -1271,12 +1166,14 @@ struct qaKFParticle {
           }
         }
         fillHistograms(kfpTrackNegPi, kfpTrackPosKa, KFNegPion, KFPosKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, cosThetaStar);
-        histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCBeforeReassignment"), KFNegPion.GetDistanceFromVertex(KFPVDefault));
-        histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment"), KFNegPion.GetDistanceFromVertex(KFPV));
-        histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment"), KFPosKaon.GetDistanceFromVertex(KFPVDefault));
-        histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment"), KFPosKaon.GetDistanceFromVertex(KFPV));
-        histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackNegPi.GetPt(), TPCnSigmaNegPi);
-        histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackPosKa.GetPt(), TPCnSigmaPosKa);
+        if (writeHistograms) {
+          histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCBeforeReassignment"), KFNegPion.GetDistanceFromVertex(KFPVDefault));
+          histos.fill(HIST("TracksKFPi/dcaToPVLargeRangeMCAfterReassignment"), KFNegPion.GetDistanceFromVertex(KFPV));
+          histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCBeforeReassignment"), KFPosKaon.GetDistanceFromVertex(KFPVDefault));
+          histos.fill(HIST("TracksKFKa/dcaToPVLargeRangeMCAfterReassignment"), KFPosKaon.GetDistanceFromVertex(KFPV));
+          histos.fill(HIST("TracksKFPi/nSigmaTPC"), kfpTrackNegPi.GetPt(), TPCnSigmaNegPi);
+          histos.fill(HIST("TracksKFKa/nSigmaTPC"), kfpTrackPosKa.GetPt(), TPCnSigmaPosKa);
+        }
         writeVarTree(kfpTrackPosPi, kfpTrackNegKa, KFPosPion, KFNegKaon, KFDZeroBar_PV, KFDZeroBar, KFPV, KFDZeroBar_DecayVtx, TPCnSigmaNegPi, TOFnSigmaNegPi, TPCnSigmaPosKa, TOFnSigmaPosKa, cosThetaStar, track1, sourceD0Bar);
       }
     }

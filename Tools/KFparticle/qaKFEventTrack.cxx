@@ -88,6 +88,7 @@ struct qaKFEventTrack {
   Configurable<float> d_etaRange{"d_etaRange", 0.8, "eta Range for tracks"};
   /// Option to write variables in a tree
   Configurable<double> d_DwnSmplFact{"d_DwnSmplFact", 1., "Downsampling factor for tree"};
+  Configurable<bool> writeHistograms{"writeHistograms", true, "write histograms"};
   Configurable<bool> writeTree{"writeTree", false, "write daughter variables in a tree"};
 
   // Define which track selection should be used:
@@ -158,54 +159,56 @@ struct qaKFEventTrack {
     }
     runNumber = 0;
 
-    const AxisSpec axisVertexPosX{500, -0.05, 0.05, "X [cm]"};
-    const AxisSpec axisVertexPosY{500, -0.05, 0.05, "Y [cm]"};
+    const AxisSpec axisVertexPosX{100, -0.05, 0.05, "X [cm]"};
+    const AxisSpec axisVertexPosY{100, -0.05, 0.05, "Y [cm]"};
     const AxisSpec axisVertexPosZ{100, -20., 20., "Z [cm]"};
     const AxisSpec axisVertexNumContrib{160, 0, 160, "Number Of contributors to the PV"};
     const AxisSpec axisVertexCov{100, -0.00005, 0.00005};
 
-    const AxisSpec axisParX{300, -0.1, 0.1, "#it{x} [cm]"};
-    const AxisSpec axisParY{200, -0.1, 0.1, "#it{y} [cm]"};
-    const AxisSpec axisParZ{200, -20., 20., "#it{z} [cm]"};
+    const AxisSpec axisParX{100, -0.1, 0.1, "#it{x} [cm]"};
+    const AxisSpec axisParY{100, -0.1, 0.1, "#it{y} [cm]"};
+    const AxisSpec axisParZ{100, -20., 20., "#it{z} [cm]"};
     const AxisSpec axisParPX{binsPt, "#it{p}_{x} [GeV/c]"};
     const AxisSpec axisParPY{binsPt, "#it{p}_{y} [GeV/c]"};
     const AxisSpec axisParPZ{binsPt, "#it{p}_{z} [GeV/c]"};
 
-    /// collisions
-    histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covYY", ";Cov_{yy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covXZ", ";Cov_{xz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("Events/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
+    if (writeHistograms) {
+      /// collisions
+      histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("Events/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("Events/covYY", ";Cov_{yy} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("Events/covXZ", ";Cov_{xz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("Events/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("Events/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
 
-    histos.add("EventsKF/posX", "", kTH1D, {axisVertexPosX});
-    histos.add("EventsKF/posY", "", kTH1D, {axisVertexPosY});
-    histos.add("EventsKF/posZ", "", kTH1D, {axisVertexPosZ});
-    histos.add("EventsKF/posXY", "", kTH2D, {axisVertexPosX, axisVertexPosY});
-    histos.add("EventsKF/nContrib", "", kTH1D, {axisVertexNumContrib});
-    histos.add("EventsKF/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
-    histos.add("EventsKF/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covYY", ";Cov_{yy} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covXZ", ";Cov_{xz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
-    histos.add("EventsKF/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("EventsKF/posX", "", kTH1D, {axisVertexPosX});
+      histos.add("EventsKF/posY", "", kTH1D, {axisVertexPosY});
+      histos.add("EventsKF/posZ", "", kTH1D, {axisVertexPosZ});
+      histos.add("EventsKF/posXY", "", kTH2D, {axisVertexPosX, axisVertexPosY});
+      histos.add("EventsKF/nContrib", "", kTH1D, {axisVertexNumContrib});
+      histos.add("EventsKF/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
+      histos.add("EventsKF/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("EventsKF/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("EventsKF/covYY", ";Cov_{yy} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("EventsKF/covXZ", ";Cov_{xz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("EventsKF/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
+      histos.add("EventsKF/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
 
-    /// tracks
-    histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
-    histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
-    histos.add("Tracks/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
-    histos.add("Tracks/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
-    histos.add("Tracks/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
-    histos.add("Tracks/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
-    histos.add("Tracks/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, 0., 25.}});
-    histos.add("Tracks/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("Tracks/dcaToPV", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("Tracks/dcaToPVLargeRange", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("Tracks/dcaToPVLargeRangeMCBeforeReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("Tracks/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
-    histos.add("Tracks/deviationPiToPV", "deviation of Pi to PV", kTH1D, {{200, 0., 10.}});
+      /// tracks
+      histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
+      histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
+      histos.add("Tracks/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
+      histos.add("Tracks/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
+      histos.add("Tracks/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
+      histos.add("Tracks/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
+      histos.add("Tracks/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{100, 0., 25.}});
+      histos.add("Tracks/dcaXYToPV", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("Tracks/dcaToPV", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, -0.15, 0.15}});
+      histos.add("Tracks/dcaToPVLargeRange", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{200, 0., 20.}});
+      histos.add("Tracks/dcaToPVLargeRangeMCBeforeReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, 0., 20.}});
+      histos.add("Tracks/dcaToPVLargeRangeMCAfterReassignment", "distance of closest approach ;#it{dca} [cm];", kTH1D, {{100, 0., 20.}});
+      histos.add("Tracks/deviationPiToPV", "deviation of Pi to PV", kTH1D, {{100, 0., 10.}});
+    }
 
     auto hSelectionMC = histos.add<TH1>("DZeroCandTopo/SelectionsMC", "Selections MC", kTH1D, {{5, 0.5, 5.5}});
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(1), "All Tracks");
@@ -243,18 +246,20 @@ struct qaKFEventTrack {
   template <typename T1, typename T2>
   void fillHistograms(const T1& kfpTrackPi, const T2& KFPion, const T2& KFPV)
   {
-    /// fill daughter track parameters
-    histos.fill(HIST("Tracks/x"), kfpTrackPi.GetX());
-    histos.fill(HIST("Tracks/y"), kfpTrackPi.GetY());
-    histos.fill(HIST("Tracks/z"), kfpTrackPi.GetZ());
-    histos.fill(HIST("Tracks/px"), kfpTrackPi.GetPx());
-    histos.fill(HIST("Tracks/py"), kfpTrackPi.GetPy());
-    histos.fill(HIST("Tracks/pz"), kfpTrackPi.GetPz());
-    histos.fill(HIST("Tracks/chi2perNDF"), kfpTrackPi.GetChi2perNDF());
-    histos.fill(HIST("Tracks/dcaXYToPV"), KFPion.GetDistanceFromVertexXY(KFPV));
-    histos.fill(HIST("Tracks/dcaToPV"), KFPion.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("Tracks/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
-    histos.fill(HIST("Tracks/deviationPiToPV"), KFPion.GetDeviationFromVertex(KFPV));
+    if (writeHistograms) {
+      /// fill daughter track parameters
+      histos.fill(HIST("Tracks/x"), kfpTrackPi.GetX());
+      histos.fill(HIST("Tracks/y"), kfpTrackPi.GetY());
+      histos.fill(HIST("Tracks/z"), kfpTrackPi.GetZ());
+      histos.fill(HIST("Tracks/px"), kfpTrackPi.GetPx());
+      histos.fill(HIST("Tracks/py"), kfpTrackPi.GetPy());
+      histos.fill(HIST("Tracks/pz"), kfpTrackPi.GetPz());
+      histos.fill(HIST("Tracks/chi2perNDF"), kfpTrackPi.GetChi2perNDF());
+      histos.fill(HIST("Tracks/dcaXYToPV"), KFPion.GetDistanceFromVertexXY(KFPV));
+      histos.fill(HIST("Tracks/dcaToPV"), KFPion.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("Tracks/dcaToPVLargeRange"), KFPion.GetDistanceFromVertex(KFPV));
+      histos.fill(HIST("Tracks/deviationPiToPV"), KFPion.GetDeviationFromVertex(KFPV));
+    }
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
@@ -300,13 +305,14 @@ struct qaKFEventTrack {
       KFParticle::SetField(magneticField);
 #endif
     }
-
-    histos.fill(HIST("Events/covXX"), collision.covXX());
-    histos.fill(HIST("Events/covXY"), collision.covXY());
-    histos.fill(HIST("Events/covXZ"), collision.covXZ());
-    histos.fill(HIST("Events/covYY"), collision.covYY());
-    histos.fill(HIST("Events/covYZ"), collision.covYZ());
-    histos.fill(HIST("Events/covZZ"), collision.covZZ());
+    if (writeHistograms) {
+      histos.fill(HIST("Events/covXX"), collision.covXX());
+      histos.fill(HIST("Events/covXY"), collision.covXY());
+      histos.fill(HIST("Events/covXZ"), collision.covXZ());
+      histos.fill(HIST("Events/covYY"), collision.covYY());
+      histos.fill(HIST("Events/covYZ"), collision.covYZ());
+      histos.fill(HIST("Events/covZZ"), collision.covZZ());
+    }
     /// Apply event selection
     if (!isSelectedCollision(collision)) {
       return;
@@ -314,20 +320,21 @@ struct qaKFEventTrack {
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
-
-    /// fill collision parameters
-    histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
-    histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
-    histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
-    histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
-    histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
-    histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
-    histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
-    histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
-    histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
-    histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
+    if (writeHistograms) {
+      /// fill collision parameters
+      histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
+      histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
+      histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
+      histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
+      histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
+      histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
+      histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
+      histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
+      histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
+      histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
+      histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
+      histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
+    }
 
     int ntracks = 0;
 
@@ -374,7 +381,7 @@ struct qaKFEventTrack {
   using CollisionTableMC = soa::Join<CollisionTableData, aod::McCollisionLabels>;
   using CollisionTableDataMult = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
-  Preslice<aod::McCollisionLabels> perMcCollision = aod::mccollisionlabel::mcCollisionId;
+  // Preslice<aod::McCollisionLabels> perMcCollision = aod::mccollisionlabel::mcCollisionId;
   void processMC(CollisionTableMC::iterator const& collision, CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -391,12 +398,15 @@ struct qaKFEventTrack {
     if (!collision.has_mcCollision()) {
       return;
     }
-    histos.fill(HIST("Events/covXX"), collision.covXX());
-    histos.fill(HIST("Events/covXY"), collision.covXY());
-    histos.fill(HIST("Events/covXZ"), collision.covXZ());
-    histos.fill(HIST("Events/covYY"), collision.covYY());
-    histos.fill(HIST("Events/covYZ"), collision.covYZ());
-    histos.fill(HIST("Events/covZZ"), collision.covZZ());
+    if (writeHistograms) {
+      histos.fill(HIST("Events/covXX"), collision.covXX());
+      histos.fill(HIST("Events/covXY"), collision.covXY());
+      histos.fill(HIST("Events/covXZ"), collision.covXZ());
+      histos.fill(HIST("Events/covYY"), collision.covYY());
+      histos.fill(HIST("Events/covYZ"), collision.covYZ());
+      histos.fill(HIST("Events/covZZ"), collision.covZZ());
+    }
+
     /// Apply event selection
     if (!isSelectedCollision(collision)) {
       return;
@@ -407,20 +417,21 @@ struct qaKFEventTrack {
 
     KFPVertex kfpVertexDefault = createKFPVertexFromCollision(collision);
     KFParticle KFPVDefault(kfpVertexDefault);
-
-    /// fill collision parameters
-    histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
-    histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
-    histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
-    histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
-    histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
-    histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
-    histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
-    histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
-    histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
-    histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
-    histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
+    if (writeHistograms) {
+      /// fill collision parameters
+      histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
+      histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
+      histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
+      histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
+      histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
+      histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
+      histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
+      histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
+      histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
+      histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
+      histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
+      histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
+    }
 
     int ntracks = 0;
 
@@ -440,51 +451,51 @@ struct qaKFEventTrack {
         continue;
       }
 
-      /// Check whether the track was assigned to the true MC PV
-      auto particle = track.mcParticle();
-      auto collMC = particle.mcCollision();
-      auto mcCollID_recoColl = track.collision_as<CollisionTableMC>().mcCollisionId();
-      auto mcCollID_particle = particle.mcCollisionId();
-      bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
-      if (!indexMatchOK) {
-        histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
-        const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
-        int i = 0;
-        std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
-        float min = 100;
-        for (auto matchedCollision : matchedCollisions) {
-          dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
-          if (i == 0) {
-            min = dcaZ[i];
-          }
-          if (i > 0) {
-            if (dcaZ[i] < dcaZ[i - 1]) {
-              min = dcaZ[i];
-            }
-          }
+      // /// Check whether the track was assigned to the true MC PV
+      // auto particle = track.mcParticle();
+      // auto collMC = particle.mcCollision();
+      // auto mcCollID_recoColl = track.collision_as<CollisionTableMC>().mcCollisionId();
+      // auto mcCollID_particle = particle.mcCollisionId();
+      // bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
+      // if (!indexMatchOK) {
+      //   histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 4.f);
+      //   const auto matchedCollisions = collisions.sliceBy(perMcCollision, collMC.globalIndex());
+      //   int i = 0;
+      //   std::array<float, 5> dcaZ{100, 100, 100, 100, 100};
+      //   float min = 100;
+      //   for (auto matchedCollision : matchedCollisions) {
+      //     dcaZ[i] = abs(matchedCollision.posZ() - collMC.posZ());
+      //     if (i == 0) {
+      //       min = dcaZ[i];
+      //     }
+      //     if (i > 0) {
+      //       if (dcaZ[i] < dcaZ[i - 1]) {
+      //         min = dcaZ[i];
+      //       }
+      //     }
 
-          i = i + 1;
-        }
-        if (min > 10.) {
-          histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);
-        }
-        int j = 0;
-        for (auto matchedCollision : matchedCollisions) {
-          if (i == 1) {
-            kfpVertex = createKFPVertexFromCollision(matchedCollision);
-            KFParticle KFPVNew(kfpVertex);
-            KFPV = KFPVNew;
-          }
-          if (i > 1) {
-            if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
-              kfpVertex = createKFPVertexFromCollision(matchedCollision);
-              KFParticle KFPVNew(kfpVertex);
-              KFPV = KFPVNew;
-            }
-          }
-          j = j + 1;
-        }
-      }
+      //     i = i + 1;
+      //   }
+      //   if (min > 10.) {
+      //     histos.fill(HIST("DZeroCandTopo/SelectionsMC"), 5.f);
+      //   }
+      //   int j = 0;
+      //   for (auto matchedCollision : matchedCollisions) {
+      //     if (i == 1) {
+      //       kfpVertex = createKFPVertexFromCollision(matchedCollision);
+      //       KFParticle KFPVNew(kfpVertex);
+      //       KFPV = KFPVNew;
+      //     }
+      //     if (i > 1) {
+      //       if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+      //         kfpVertex = createKFPVertexFromCollision(matchedCollision);
+      //         KFParticle KFPVNew(kfpVertex);
+      //         KFPV = KFPVNew;
+      //       }
+      //     }
+      //     j = j + 1;
+      //   }
+      // }
 
       /// Remove fake tracks
       if (!track.has_mcParticle()) {
@@ -519,9 +530,10 @@ struct qaKFEventTrack {
 
       fillHistograms(kfpTrack, KFParticleTrack, KFPV);
       writeVarTree(kfpTrack, KFParticleTrack, KFPV, track, source, pVContrib, runNumber, collision);
-
-      histos.fill(HIST("Tracks/dcaToPVLargeRangeMCBeforeReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPVDefault));
-      histos.fill(HIST("Tracks/dcaToPVLargeRangeMCAfterReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPV));
+      if (writeHistograms) {
+        histos.fill(HIST("Tracks/dcaToPVLargeRangeMCBeforeReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPVDefault));
+        histos.fill(HIST("Tracks/dcaToPVLargeRangeMCAfterReassignment"), KFParticleTrack.GetDistanceFromVertex(KFPV));
+      }
     }
   }
   PROCESS_SWITCH(qaKFEventTrack, processMC, "process mc", false);
@@ -541,6 +553,7 @@ struct qaKFEvent {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
   double magneticField = 0.;
+  int tfID = 0;
   /// option to select good events
   Configurable<bool> eventSelection{"eventSelection", true, "select good events"}; // currently only sel8 is defined for run3
   Configurable<bool> writeTree{"writeTree", true, "write daughter variables in a tree"};
@@ -603,7 +616,7 @@ struct qaKFEvent {
   }
 
   template <typename T4>
-  void writeVarTreeColl(const T4& collision, double timeColl, double timestamp, double timeDiff)
+  void writeVarTreeColl(const T4& collision, long timeColl, double timestamp, double timeDiff, int tfID)
   {
     if (writeTree) {
       /// Filling the tree
@@ -619,18 +632,25 @@ struct qaKFEvent {
                       runNumber,
                       timeColl,
                       timestamp,
-                      timeDiff);
+                      timeDiff,
+                      collision.bcId(),
+                      tfID);
     }
   }
   /// Process function for data
   void processCollisions(CollisionTableData const& collisions, aod::BCsWithTimestamps const&)
   {
-    double timeColl = 0;
-    double timestamp = 0;
-    double timeDiff = 0;
+    long timeColl = 0;
+    tfID = tfID + 1;
+    LOGP(info, "processing TF {}", tfID);
 
+    int bc0 = 0;
     for (auto& collisionIndex : collisions) {
       auto bc = collisionIndex.bc_as<aod::BCsWithTimestamps>();
+      if (bc0 == 0) {
+        bc0 = bc.globalBC();
+      }
+      // LOGP(info, "{} vs {}", collisionIndex.bcId(), bc.globalIndex());
       if (runNumber != bc.runNumber()) {
         initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
         magneticField = o2::base::Propagator::Instance()->getNominalBz();
@@ -639,10 +659,8 @@ struct qaKFEvent {
       if (!isSelectedCollision(collisionIndex)) {
         continue;
       }
-      timestamp = bc.timestamp() * 1.e6;
-      timeDiff = collisionIndex.collisionTime();
-      timeColl = timestamp + timeDiff;
-      writeVarTreeColl(collisionIndex, timeColl, bc.timestamp(), timeDiff);
+      timeColl = long((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
+      writeVarTreeColl(collisionIndex, timeColl, bc.timestamp(), collisionIndex.collisionTime(), tfID);
     }
   }
   PROCESS_SWITCH(qaKFEvent, processCollisions, "process collision", true);
