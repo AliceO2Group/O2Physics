@@ -71,6 +71,8 @@ struct OnTheFlyTracker {
   template <typename mcParticleType>
   void convertMCParticleToO2Track(mcParticleType& particle, o2::track::TrackParCov& o2track)
   {
+    // FIXME: this is a fundamentally important piece of code.
+    // It could be placed in a utility file instead of here.
     std::array<float, 3> xyz = {static_cast<float>(particle.vx()), static_cast<float>(particle.vy()), static_cast<float>(particle.vz())};
     std::array<float, 3> ptetaphi = {static_cast<float>(particle.pt()), static_cast<float>(particle.eta()), static_cast<float>(particle.phi())};
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
@@ -78,19 +80,14 @@ struct OnTheFlyTracker {
     if (pdgInfo != nullptr)
       charge = pdgInfo->Charge();
     std::array<float, 5> params;
-    std::array<float, 15> covm = {
-      0.,
-      0., 0.,
-      0., 0., 0.,
-      0., 0., 0., 0.,
-      0., 0., 0., 0., 0.};
+    std::array<float, 15> covm = {0.};
     float s, c, x;
     o2::math_utils::sincos(ptetaphi[2], s, c);
     o2::math_utils::rotateZInv(xyz[0], xyz[1], x, params[0], s, c);
     params[1] = xyz[2];
     params[2] = 0.; // since alpha = phi
-    auto theta = 2. * atan(exp(-ptetaphi[1]));
-    params[3] = 1. / tan(theta);
+    auto theta = 2. * std::atan(std::exp(-ptetaphi[1]));
+    params[3] = 1. / std::tan(theta);
     params[4] = charge / ptetaphi[0];
 
     // Initialize TrackParCov in-place

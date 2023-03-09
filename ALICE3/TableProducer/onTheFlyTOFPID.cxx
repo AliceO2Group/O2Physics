@@ -85,10 +85,10 @@ struct OnTheFlyTOFPID {
   // more could be added (especially a disk TOF at a certain z?)
   // in the evolution of this effort
   Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss)"};
-  Configurable<float> iTOFRadius{"iTOFRadius", 20, "barrel iTOF radius (cm)"};
-  Configurable<float> oTOFRadius{"oTOFRadius", 80, "barrel oTOF radius (cm)"};
-  Configurable<float> iTOFTimeReso{"iTOFTimeReso", 20, "barrel iTOF time error (ps)"};
-  Configurable<float> oTOFTimeReso{"oTOFTimeReso", 20, "barrel oTOF time error (ps)"};
+  Configurable<float> iTOFRadius{"iTOFRadius", 20, "barrel inner TOF radius (cm)"};
+  Configurable<float> oTOFRadius{"oTOFRadius", 80, "barrel outer TOF radius (cm)"};
+  Configurable<float> iTOFTimeReso{"iTOFTimeReso", 20, "barrel inner TOF time error (ps)"};
+  Configurable<float> oTOFTimeReso{"oTOFTimeReso", 20, "barrel outer TOF time error (ps)"};
   Configurable<int> lNStepsLIntegrator{"lNStepsLIntegrator", 200, "number of steps in length integrator"};
   Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
 
@@ -124,34 +124,31 @@ struct OnTheFlyTOFPID {
     if (pdgInfo != nullptr)
       charge = pdgInfo->Charge();
     std::array<float, 5> params;
-    std::array<float, 15> covm = {
-      0.,
-      0., 0.,
-      0., 0., 0.,
-      0., 0., 0., 0.,
-      0., 0., 0., 0., 0.};
+    std::array<float, 15> covm = {0.};
     float s, c, x;
     o2::math_utils::sincos(ptetaphi[2], s, c);
     o2::math_utils::rotateZInv(xyz[0], xyz[1], x, params[0], s, c);
     params[1] = xyz[2];
     params[2] = 0.; // since alpha = phi
-    auto theta = 2. * atan(exp(-ptetaphi[1]));
-    params[3] = 1. / tan(theta);
+    auto theta = 2. * std::atan(std::exp(-ptetaphi[1]));
+    params[3] = 1. / std::tan(theta);
     params[4] = charge / ptetaphi[0];
 
     // Initialize TrackParCov in-place
     new (&o2track)(o2::track::TrackParCov)(x, ptetaphi[2], params, covm);
   }
 
-  Double_t TrackLength(o2::track::TrackParCov track, Double_t lX0, Double_t lX1, Double_t lMagneticField)
+  float trackLength(o2::track::TrackParCov track, float lX0, float lX1, float lMagneticField)
   {
+    // utility class to calculate track length from track position X0 to track position X1 
+    // with a given magnetic field
     std::array<float, 3> lPointN;
     std::array<float, 3> lPointNplus;
-    Double_t lLength = 0.0;
+    float lLength = 0.0;
     track.propagateTo(lX0, lMagneticField);
-    for (Int_t iStep = 1; iStep < lNStepsLIntegrator; iStep++) {
+    for (int iStep = 1; iStep < lNStepsLIntegrator; iStep++) {
       track.getXYZGlo(lPointN);
-      Float_t lPosition = lX0 + (lX1 - lX0) * ((Float_t)(iStep)) / ((Float_t)(lNStepsLIntegrator - 1));
+      float lPosition = lX0 + (lX1 - lX0) * ((float)(iStep)) / ((float)(lNStepsLIntegrator - 1));
       track.propagateTo(lPosition, lMagneticField);
       track.getXYZGlo(lPointNplus);
       lLength += std::hypot(lPointNplus[0] - lPointN[0], lPointNplus[1] - lPointN[1], lPointNplus[2] - lPointN[2]);
@@ -159,10 +156,10 @@ struct OnTheFlyTOFPID {
     return lLength;
   }
 
-  Double_t Velocity(Double_t lMomentum, Double_t lMass){
+  float Velocity(float lMomentum, float lMass){
     //Momentum p and mass m -> returns speed in centimeters per picosecond
     //Useful for TOF calculations
-    Double_t lA = std::pow(lMomentum / lMass, 2);
+    float lA = std::pow(lMomentum / lMass, 2);
     return (o2::constants::physics::LightSpeedCm2NS / 1e+3)*TMath::Sqrt(lA/(1+lA));
   }
 
@@ -202,9 +199,9 @@ struct OnTheFlyTOFPID {
       if (!o2track.getXatLabR(oTOFRadius, lX_oTOF, dBz, o2::track::DirOutward))
         lX_oTOF = -100;
       if (lX_PV > -99. && lX_iTOF > -99.)
-        lThisTrackLength_iTOF = TrackLength(o2track, lX_PV, lX_iTOF, dBz);
+        lThisTrackLength_iTOF = trackLength(o2track, lX_PV, lX_iTOF, dBz);
       if (lX_PV > -99. && lX_oTOF > -99.)
-        lThisTrackLength_oTOF = TrackLength(o2track, lX_PV, lX_oTOF, dBz);
+        lThisTrackLength_oTOF = trackLength(o2track, lX_PV, lX_oTOF, dBz);
 
       // get mass to calculate velocity
       auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
