@@ -34,7 +34,7 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<int> triggerBcShift{"triggerBcShift", 0, "set to -294 for apass2/apass3 in LHC22o-t"};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to -294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -195,7 +195,12 @@ struct BcSelectionTask {
     for (auto& bc : bcs) {
       mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
     }
-
+    int triggerBcShift = confTriggerBcShift;
+    if (confTriggerBcShift==999) {
+      int run = bcs.iteratorAt(0).runNumber();
+      triggerBcShift = (run<=526766 || (run>=526886 && run<=527237) || (run>=527259 && run<=527518) || run==527523 || run==527734) ? 0 : -294;
+    }
+    
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
       TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
