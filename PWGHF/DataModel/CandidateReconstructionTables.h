@@ -148,7 +148,7 @@ DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates wi
                   hf_track_index::V0Id);
 using HfCascade = HfCascades::iterator;
 
-DECLARE_SOA_TABLE(Hf3Prongs_000, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
+DECLARE_SOA_TABLE(Hf3Prongs_000, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates (Run 2 converted format)
                   o2::soa::Index<>,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
