@@ -9,14 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// --- LUT-based on-the-fly analysis task-level tracking  
 //
-// Task to add a table of track parameters propagated to the primary vertex
-//
+// This task allows for the calculation of aod::collisions and aod::Tracks in a synthetic manner, 
+// smearing MC particles with very configurable settings. This will allow for the usage of 
+// custom LUTs (obtained through separate studies) and the subsequent estimate of the performance
+// of a future detector even in very statistics-hungry analyses.
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -24,21 +30,15 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "CommonUtils/NameConf.h"
 #include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-// This task allows for the calculation of aod::collisions and aod::Tracks in a synthetic mannter, 
-// smearing MC particles with very configurable settings
 
 using namespace o2;
 using namespace o2::framework;
 
-struct onTheFlyTracker {
+struct OnTheFlyTracker {
   Produces<aod::Collisions> collisions;
   Produces<aod::McCollisionLabels> collLabels;
   Produces<aod::StoredTracks> tracksPar;
@@ -109,7 +109,7 @@ struct onTheFlyTracker {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       auto pdg = std::abs(mcParticle.pdgCode());
       if (pdg != 11 && pdg != 13 && pdg != 211 && pdg != 321 && pdg != 2212) continue;
 
@@ -153,6 +153,5 @@ struct onTheFlyTracker {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<onTheFlyTracker>(cfgc)};
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyTracker>(cfgc)};
 }

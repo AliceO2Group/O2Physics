@@ -17,6 +17,9 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -24,16 +27,13 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "CommonUtils/NameConf.h"
 #include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "TRandom3.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "TRandom3.h"
+
 
 // This task goes straight from a combination of track table and mcParticles 
 // and a custom TOF configuration to a table of TOF NSigmas for the particles
@@ -48,8 +48,7 @@ using namespace o2::framework;
 
 namespace o2::aod
 {
-namespace upgradetof
-{
+namespace upgrade_tof{
 DECLARE_SOA_COLUMN(NSigmaElectronInner, nSigmaElectronInner, float); //! NSigma electron iTOF
 DECLARE_SOA_COLUMN(NSigmaMuonInner, nSigmaMuonInner, float); //! NSigma muon iTOF
 DECLARE_SOA_COLUMN(NSigmaPionInner, nSigmaPionInner, float); //! NSigma pion iTOF
@@ -62,20 +61,20 @@ DECLARE_SOA_COLUMN(NSigmaKaonOuter, nSigmaKaonOuter, float); //! NSigma kaon oTO
 DECLARE_SOA_COLUMN(NSigmaProtonOuter, nSigmaProtonOuter, float); //! NSigma proton oTOF
 }
 DECLARE_SOA_TABLE(UpgradeTof, "AOD", "UPGRADETOF",
-                  upgradetof::NSigmaElectronInner,
-                  upgradetof::NSigmaMuonInner,
-                  upgradetof::NSigmaPionInner,
-                  upgradetof::NSigmaKaonInner,
-                  upgradetof::NSigmaProtonInner,
-                  upgradetof::NSigmaElectronOuter,
-                  upgradetof::NSigmaMuonOuter,
-                  upgradetof::NSigmaPionOuter,
-                  upgradetof::NSigmaKaonOuter,
-                  upgradetof::NSigmaProtonOuter
+                  upgrade_tof::NSigmaElectronInner,
+                  upgrade_tof::NSigmaMuonInner,
+                  upgrade_tof::NSigmaPionInner,
+                  upgrade_tof::NSigmaKaonInner,
+                  upgrade_tof::NSigmaProtonInner,
+                  upgrade_tof::NSigmaElectronOuter,
+                  upgrade_tof::NSigmaMuonOuter,
+                  upgrade_tof::NSigmaPionOuter,
+                  upgrade_tof::NSigmaKaonOuter,
+                  upgrade_tof::NSigmaProtonOuter
                   );
 } // namespace o2::aod
 
-struct onTheFlyTOFPID {
+struct OnTheFlyTOFPID {
   Produces<aod::UpgradeTof> upgradetof;
 
   // necessary for particle charges 
@@ -105,8 +104,8 @@ struct onTheFlyTOFPID {
     lPRNG.SetSeed(0); // fully randomize
 
     if(doQAplots){
-      const AxisSpec axisMomentum{(int)80, 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
-      const AxisSpec axisVelocity{(int)110, 0.0f, +1.1f, "Measured #beta"};
+      const AxisSpec axisMomentum{static_cast<int>(80), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisVelocity{static_cast<int>(110), 0.0f, +1.1f, "Measured #beta"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
     }
@@ -161,29 +160,29 @@ struct onTheFlyTOFPID {
   Double_t Velocity(Double_t lMomentum, Double_t lMass){
     //Momentum p and mass m -> returns speed in centimeters per picosecond
     //Useful for TOF calculations
-    Double_t lA = TMath::Power(lMomentum / lMass, 2);
-    return 0.0299792458*TMath::Sqrt(lA/(1+lA));
+    Double_t lA = std::pow(lMomentum / lMass, 2);
+    return (o2::constants::physics::LightSpeedCm2NS / 1e+3)*TMath::Sqrt(lA/(1+lA));
   }
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
-    o2::math_utils::Point3D<float> pvpos{collision.posX(),collision.posY(),collision.posZ()};
-    std::array<float, 6> pvcov;
-    pvcov[0] = collision.covXX();
-    pvcov[1] = collision.covXY();
-    pvcov[2] = collision.covYY();
-    pvcov[3] = collision.covXZ();
-    pvcov[4] = collision.covXY();
-    pvcov[5] = collision.covXZ();
-    o2::dataformats::VertexBase pvvtx(pvpos, pvcov);
+    o2::math_utils::Point3D<float> pvPos{collision.posX(),collision.posY(),collision.posZ()};
+    std::array<float, 6> pvCov;
+    pvCov[0] = collision.covXX();
+    pvCov[1] = collision.covXY();
+    pvCov[2] = collision.covYY();
+    pvCov[3] = collision.covXZ();
+    pvCov[4] = collision.covXY();
+    pvCov[5] = collision.covXZ();
+    o2::dataformats::VertexBase pvvtx(pvPos, pvCov);
 
     auto mcCollision = collision.mcCollision();
-    o2::math_utils::Point3D<float> mcpvpos{mcCollision.posX(),mcCollision.posY(),mcCollision.posZ()};
-    std::array<float, 6> mcpvcov; // dummy! 
-    for(int ii=0; ii<6; ii++) mcpvcov[ii] = 1e-6;
-    o2::dataformats::VertexBase mcpvvtx(mcpvpos, mcpvcov);
+    o2::math_utils::Point3D<float> mcPvPos{mcCollision.posX(),mcCollision.posY(),mcCollision.posZ()};
+    std::array<float, 6> mcPvCov; // dummy! 
+    for(int ii=0; ii<6; ii++) mcPvCov[ii] = 1e-6;
+    o2::dataformats::VertexBase mcpvvtx(mcPvPos, mcPvCov);
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track 
       if ( !track.has_mcParticle() ) // should always be OK but check please
@@ -268,6 +267,5 @@ struct onTheFlyTOFPID {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<onTheFlyTOFPID>(cfgc)};
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyTOFPID>(cfgc)};
 }
