@@ -147,7 +147,7 @@ struct OnTheFlyTOFPID {
     track.propagateTo(lX0, lMagneticField);
     for (int iStep = 1; iStep < lNStepsLIntegrator; iStep++) {
       track.getXYZGlo(lPointN);
-      float lPosition = lX0 + (lX1 - lX0) * ((float)(iStep)) / ((float)(lNStepsLIntegrator - 1));
+      float lPosition = lX0 + (lX1 - lX0) * (static_cast<float>(iStep)) / (static_cast<float>(lNStepsLIntegrator - 1));
       track.propagateTo(lPosition, lMagneticField);
       track.getXYZGlo(lPointNplus);
       lLength += std::hypot(lPointNplus[0] - lPointN[0], lPointNplus[1] - lPointN[1], lPointNplus[2] - lPointN[2]);
