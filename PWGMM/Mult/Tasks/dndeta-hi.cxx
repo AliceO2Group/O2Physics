@@ -339,13 +339,13 @@ struct MultiplicityCounter {
 
               if (abs(v0.yK0Short()) < rapidity) {
                 registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short(), cent);
-                if(0.482 < v0.mK0Short() && v0.mK0Short() < 0.509) {
+                if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509) {
                   registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut), cent);
                   registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta(), cent);
                   registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta(), cent);
                 }
               }
-              
+
               if (abs(v0.yLambda()) < rapidity) {
                 registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda(), cent);
                 if (1.11 < v0.mLambda() && v0.mLambda() < 1.12) {
