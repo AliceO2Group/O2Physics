@@ -86,6 +86,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBa
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
 using MyBarrelTracksSelectedWithPrefilter = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::Prefilter>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
+using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra>;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
 using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
@@ -1181,15 +1182,18 @@ struct AnalysisDileptonHadron {
     TString configCutNamesStr = fConfigTrackCuts.value;
     if (!configCutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(configCutNamesStr.Tokenize(","));
-      fNHadronCutBit = objArray->GetEntries();
+      fNHadronCutBit = objArray->GetEntries()-1;
     } else {
       fNHadronCutBit = 0;
     }
   }
-
+  //void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
+  //                                      soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
+  //                                      ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   // Template function to run pair - hadron combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runDileptonHadron(TEvent const& event, TTracks const& tracks,  soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons)
+  void runDileptonHadron(TEvent const& event, TTracks const& tracks,  soa::Filtered<MyPairCandidatesSelected> const& dileptons)
+  //void runDileptonHadron(TEvent const& event, TTracks const& tracks,  soa::Filtered<aod::Dileptons> const& dileptons)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -1225,13 +1229,19 @@ struct AnalysisDileptonHadron {
       if (lepton1.sign() * lepton2.sign() > 0) {
         continue;
       }
+
       // loop over hadrons
       for (auto& hadron : tracks) {
-        // TODO: Replace this with a Filter expression
         if (!(uint32_t(hadron.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
           continue;
         }
-        // TODO: Check whether this hadron is one of the dilepton daughters!
+
+        // if the hadron is either of the electron legs, continue
+        int index = hadron.globalIndex(); 
+        if (index == indexLepton1 || index == indexLepton2) {
+          continue; 
+        }
+
         VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
         VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
@@ -1240,7 +1250,8 @@ struct AnalysisDileptonHadron {
     }
   }
 
-  void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons)
+  void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
+  //void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
   {
     runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
 
