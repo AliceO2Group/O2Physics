@@ -269,15 +269,15 @@ struct HfFilter { // Main struct for HF triggers
         optimisationTreeCollisions(thisCollId);
       }
 
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+
       if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && !sessionML[kD0]) {
         for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
           if (onnxFiles[iCharmPart] != "") {
-            sessionML[iCharmPart].reset(InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB));
+            sessionML[iCharmPart].reset(InitONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, bc.timestamp()));
           }
         }
       }
-
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
       // needed for track propagation
       if (currentRun != bc.runNumber()) {

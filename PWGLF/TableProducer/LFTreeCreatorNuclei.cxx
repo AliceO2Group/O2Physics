@@ -65,6 +65,7 @@ struct LfTreeCreatorNuclei {
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
   Configurable<int> trackSelType{"trackSelType", 0, "Option for the track cut: 0 isGlobalTrackWoDCA, 1 isGlobalTrack"};
+  Configurable<int> nITSInnerBarrelHits{"nITSInnerBarrelHits", 0, "Option for ITS inner barrel hits maximum: 3"};
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -105,6 +106,8 @@ struct LfTreeCreatorNuclei {
       tableCandidateMC.reserve(tracks.size());
     }
     for (auto& track : tracks) {
+      if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits)
+        continue;
       // auto const& mcParticle = track.mcParticle();
       tableCandidate(
         tableEvents.lastIndex(),
@@ -135,7 +138,8 @@ struct LfTreeCreatorNuclei {
         track.tpcCrossedRowsOverFindableCls(),
         track.tpcNClsFound(),
         track.tpcChi2NCl(),
-        track.itsChi2NCl());
+        track.itsChi2NCl(),
+        track.itsClusterMap());
 
       if constexpr (isMC) { // Filling MC reco information
         if (track.has_mcParticle()) {

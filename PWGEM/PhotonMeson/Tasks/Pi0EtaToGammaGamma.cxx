@@ -17,6 +17,10 @@
 #include <array>
 #include "TString.h"
 #include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/LorentzRotation.h"
+#include "Math/Rotation3D.h"
+#include "Math/AxisAngle.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -45,7 +49,7 @@ using std::array;
 
 struct PCMQC {
   HistogramRegistry registry{
-    "registry",
+    "PCMQC",
     {
       {"hCollisionCounter", "hCollisionCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
     },
@@ -61,6 +65,8 @@ struct PCMQC {
       // registry.add(Form("%sTrack/hNcoll", tracktype[i].Data()), "number of collisions", HistType::kTH1F, {{101, -0.5, 100.5}});
       registry.add(Form("%sTrack/hPt", tracktype[i].Data()), "pT", HistType::kTH1F, {{1000, 0.0f, 10}});
       registry.add(Form("%sTrack/hEtaPhi", tracktype[i].Data()), "#eta vs. #varphi", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
+      registry.add(Form("%sTrack/hEtaPhiPosDaughter", tracktype[i].Data()), "#eta vs. #varphi positive daughter;", HistType::kTH2F, {{40, -2.0f, 2.0f}, {180, 0, TMath::TwoPi()}});
+      registry.add(Form("%sTrack/hEtaPhiNegDaughter", tracktype[i].Data()), "#eta vs. #varphi negative daughter;", HistType::kTH2F, {{40, -2.0f, 2.0f}, {180, 0, TMath::TwoPi()}});
       registry.add(Form("%sTrack/hDCAxyz", tracktype[i].Data()), "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}});
       registry.add(Form("%sTrack/hNclsTPC", tracktype[i].Data()), "number of TPC clusters", HistType::kTH1F, {{161, -0.5, 160.5}});
       registry.add(Form("%sTrack/hNcrTPC", tracktype[i].Data()), "number of TPC crossed rows", HistType::kTH1F, {{161, -0.5, 160.5}});
@@ -138,47 +144,56 @@ struct PCMQC {
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy"), v0.vx(), v0.vy());
   }
 
-  // Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-  void process(aod::EMReducedEvents::iterator const& collision, aod::V0Datas const& v0photons)
+  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
+  Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
+  void processQC(aod::EMReducedEvents::iterator const& collision, aod::V0Datas const& v0photons, aod::V0DaughterTracks const& v0daughters)
   {
-    // registry.fill(HIST("hCollisionCounter"), 1.0); // all
-    // if (!collision.sel8()) {
-    //   return;
-    // }
-    // registry.fill(HIST("hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
+    registry.fill(HIST("hCollisionCounter"), 1.0); // all
+    if (!collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
 
-    // if (collision.numContrib() < 0.5) {
-    //   return;
-    // }
-    // registry.fill(HIST("hCollisionCounter"), 3.0); // Ncontrib > 0
+    if (collision.numContrib() < 0.5) {
+      return;
+    }
+    registry.fill(HIST("hCollisionCounter"), 3.0); // Ncontrib > 0
 
-    // if (abs(collision.posZ()) > 10.0) {
-    //   return;
-    // }
-    // registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
-    // auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
+    if (abs(collision.posZ()) > 10.0) {
+      return;
+    }
+    registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
+    auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
 
     // int ng_nonamb = 0;
     // int ng_amb = 0;
-    // for (auto& g : V0Photons_coll) {
-    //   auto pos = g.posTrack_as<aod::V0Legs>();
-    //   auto ele = g.negTrack_as<aod::V0Legs>();
+    for (auto& g : V0Photons_coll) {
+      auto V0Daughters = v0daughters.sliceBy(perV0, g.globalIndex());
+      for (auto& daughter : V0Daughters) {
+        if (daughter.positivelyCharged() == true) {
+          registry.fill(HIST("NonAmbTrack/hEtaPhiPosDaughter"), daughter.eta(), daughter.phi());
+        } else {
+          registry.fill(HIST("NonAmbTrack/hEtaPhiNegDaughter"), daughter.eta(), daughter.phi());
+        }
+      } // end of loop over V0 daughters
+      // auto pos = g.posTrack_as<aod::V0DaughterTracks>();
+      // auto ele = g.negTrack_as<aod::V0DaughterTracks>();
 
-    //   if (ele.isAmbTrack() || pos.isAmbTrack()) {
-    //     fillHistosV0<1>(g);
-    //     ng_amb++;
-    //   } else {
-    //     fillHistosV0<0>(g);
-    //     ng_nonamb++;
-    //   }
-    //   for (auto& leg : {pos, ele}) {
-    //     if (leg.isAmbTrack())
-    //       fillHistosLeg<1>(leg);
-    //     else
-    //       fillHistosLeg<0>(leg);
-    //   }
+      // if (ele.isAmbTrack() || pos.isAmbTrack()) {
+      //   fillHistosV0<1>(g);
+      //   ng_amb++;
+      // } else {
+      //   fillHistosV0<0>(g);
+      //   ng_nonamb++;
+      // }
+      // for (auto& leg : {pos, ele}) {
+      //   if (leg.isAmbTrack())
+      //     fillHistosLeg<1>(leg);
+      //   else
+      //     fillHistosLeg<0>(leg);
+      // }
 
-    // } // end of v0 loop
+    } // end of v0 loop
     // registry.fill(HIST("NonAmbV0/hNgamma"), ng_nonamb);
     // registry.fill(HIST("AmbV0/hNgamma"), ng_amb);
   } // end of processSame
@@ -188,7 +203,7 @@ struct PCMQC {
     // do nothing
   }
 
-  PROCESS_SWITCH(PCMQC, process, "run PCM QC", true);
+  PROCESS_SWITCH(PCMQC, processQC, "run PCM QC", true);
   PROCESS_SWITCH(PCMQC, processDummy, "Dummy function", false);
 };
 
@@ -202,7 +217,12 @@ struct Pi0EtaToGammaGamma {
     kPHOSEMC = 5,
   };
 
-  HistogramRegistry registry;
+  Partition<aod::EMReducedEvents> goodEventsPCM = o2::aod::emreducedevent::ngpcm > 0; // && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
+
+  HistogramRegistry registry{"Pi0EtaToGammaGamma"};
+
+  Configurable<bool> useRotation{"useRotation", 0, "use rotation method for EMC-EMC background estimation"};
+  Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
 
   void init(InitContext& context)
   {
@@ -216,13 +236,15 @@ struct Pi0EtaToGammaGamma {
       registry.add(Form("%s/hCollisionCounter", pairnames[i].data()), "Collision counter", HistType::kTH1F, {{5, 0.5f, 5.5f}});
       registry.add(Form("%s/hNgamma1", pairnames[i].data()), "Number of #gamma1 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
       registry.add(Form("%s/hNgamma2", pairnames[i].data()), "Number of #gamma2 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
-      registry.add(Form("%s/h2MggPt_Same", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {100, 0.0f, 10}});
-      registry.add(Form("%s/h2MggPt_Mixed", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {100, 0.0f, 10}});
+      registry.add(Form("%s/h2MggPt_Same", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
+      registry.add(Form("%s/h2MggPt_Mixed", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
     }
+    registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
   }
 
-  Preslice<aod::V0Datas> perCollision = aod::v0photon::collisionId;
+  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
+  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2)
@@ -267,24 +289,15 @@ struct Pi0EtaToGammaGamma {
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
             v2.SetM(g2.mGamma());
-          } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-            v1.SetPt(g1.pt(0));
+          } else if constexpr (pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
+            v1.SetPt(g1.pt(0.));
             v1.SetEta(g1.eta());
             v1.SetPhi(g1.phi());
-            v1.SetM(0);
-            v2.SetPt(g2.pt(0));
+            v1.SetM(0.);
+            v2.SetPt(g2.pt(0.));
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
-            v2.SetM(0);
-          } else if constexpr (pairtype == PairType::kEMCEMC) {
-            v1.SetPt(g1.pt());
-            v1.SetEta(g1.eta());
-            v1.SetPhi(g1.phi());
-            v1.SetM(0);
-            v2.SetPt(g2.pt());
-            v2.SetEta(g2.eta());
-            v2.SetPhi(g2.phi());
-            v2.SetM(0);
+            v2.SetM(0.);
           }
 
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -298,33 +311,24 @@ struct Pi0EtaToGammaGamma {
           ROOT::Math::PtEtaPhiMVector v1;
           ROOT::Math::PtEtaPhiMVector v2;
 
-          if constexpr (pairtype == PairType::kPCMPHOS) {
+          if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
             v1.SetPt(g1.pt());
             v1.SetEta(g1.eta());
             v1.SetPhi(g1.phi());
             v1.SetM(g1.mGamma());
-            v2.SetPt(g2.pt(0));
+            v2.SetPt(g2.pt(0.));
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
-            v2.SetM(0);
-          } else if constexpr (pairtype == PairType::kPCMEMC) {
-            v1.SetPt(g1.pt());
-            v1.SetEta(g1.eta());
-            v1.SetPhi(g1.phi());
-            v1.SetM(g1.mGamma());
-            v2.SetPt(g2.pt());
-            v2.SetEta(g2.eta());
-            v2.SetPhi(g2.phi());
-            v2.SetM(0);
+            v2.SetM(0.);
           } else if constexpr (pairtype == PairType::kPHOSEMC) {
-            v1.SetPt(g1.pt(0));
+            v1.SetPt(g1.pt(0.));
             v1.SetEta(g1.eta());
             v1.SetPhi(g1.phi());
-            v1.SetM(0);
-            v2.SetPt(g2.pt());
+            v1.SetM(0.);
+            v2.SetPt(g2.pt(0.));
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
-            v2.SetM(0);
+            v2.SetM(0.);
           }
 
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -334,6 +338,52 @@ struct Pi0EtaToGammaGamma {
       }
 
     } // end of collision loop
+  }
+
+  void SameEventPairingWithRotation(aod::EMReducedEvents const& collisions, aod::SkimEMCClusters const& photons)
+  {
+    for (auto& collision : collisions) {
+      registry.fill(HIST("EMCEMC/hCollisionCounter"), 1.0); // all
+      if (!collision.sel8()) {
+        continue;
+      }
+      registry.fill(HIST("EMCEMC/hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
+
+      if (collision.numContrib() < 0.5) {
+        continue;
+      }
+      registry.fill(HIST("EMCEMC/hCollisionCounter"), 3.0); // Ncontrib > 0
+
+      if (abs(collision.posZ()) > 10.0) {
+        continue;
+      }
+      registry.fill(HIST("EMCEMC/hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
+
+      auto photons_coll = photons.sliceBy(perCollision_emc, collision.collisionId());
+
+      registry.fill(HIST("EMCEMC/hNgamma1"), photons_coll.size());
+      registry.fill(HIST("EMCEMC/hNgamma2"), photons_coll.size());
+      // LOGF(info, "Number of photon candidates in a collision: %d", photons_coll.size());
+
+      for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons_coll, photons_coll))) {
+
+        ROOT::Math::PtEtaPhiMVector v1;
+        ROOT::Math::PtEtaPhiMVector v2;
+        v1.SetPt(g1.pt(0.));
+        v1.SetEta(g1.eta());
+        v1.SetPhi(g1.phi());
+        v1.SetM(0.);
+        v2.SetPt(g2.pt(0.));
+        v2.SetEta(g2.eta());
+        v2.SetPhi(g2.phi());
+        v2.SetM(0.);
+
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        registry.fill(HIST("EMCEMC/h2MggPt_Same"), v12.M(), v12.Pt());
+
+        RotationBackground<aod::SkimEMCClusters, aod::EMReducedEvent>(v12, v1, v2, photons_coll, collision, g1.globalIndex(), g2.globalIndex());
+      } // end of combination
+    }   // end of collision loop
   }
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
@@ -368,50 +418,50 @@ struct Pi0EtaToGammaGamma {
           v2.SetPhi(g2.phi());
           v2.SetM(g2.mGamma());
         } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-          v1.SetPt(g1.pt(0));
+          v1.SetPt(g1.pt(0.));
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(0);
-          v2.SetPt(g2.pt(0));
+          v1.SetM(0.);
+          v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(0);
+          v2.SetM(0.);
         } else if constexpr (pairtype == PairType::kEMCEMC) {
-          v1.SetPt(g1.pt());
+          v1.SetPt(g1.pt(0.));
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(0);
-          v2.SetPt(g2.pt());
+          v1.SetM(0.);
+          v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(0);
+          v2.SetM(0.);
         } else if constexpr (pairtype == PairType::kPCMPHOS) {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
           v1.SetM(g1.mGamma());
-          v2.SetPt(g2.pt(0));
+          v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(0);
+          v2.SetM(0.);
         } else if constexpr (pairtype == PairType::kPCMEMC) {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
           v1.SetM(g1.mGamma());
-          v2.SetPt(g2.pt());
+          v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(0);
+          v2.SetM(0.);
         } else if constexpr (pairtype == PairType::kPHOSEMC) {
-          v1.SetPt(g1.pt(0));
+          v1.SetPt(g1.pt(0.));
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(0);
-          v2.SetPt(g2.pt());
+          v1.SetM(0.);
+          v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(0);
+          v2.SetM(0.);
         }
 
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -422,28 +472,108 @@ struct Pi0EtaToGammaGamma {
     } // end of different collision combinations
   }
 
-  Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
-  using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions_PCM_mix const& colls_mix, aod::V0Datas const& v0photons)
+  /// \brief Calculate background (using rotation background method only for EMCal!)
+  template <typename TPhotons, typename TEvent>
+  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, TEvent const& collision, unsigned int ig1, unsigned int ig2)
+  {
+    // if less than 3 clusters are present skip event since we need at least 3 clusters
+    if (photons_coll.size() < 3) {
+      return;
+    }
+    const double rotationAngle = M_PI / 2.0; // rotaion angle 90°
+    // ROOT::Math::XYZVector meson3D(meson.Px(), meson.Py(), meson.Pz());
+    ROOT::Math::AxisAngle rotationAxis(meson.Vect(), rotationAngle);
+    // LOG(info) << "rotationAxis.Angle() = " << rotationAxis.Angle();
+    ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
+    // ROOT::Math::XYZVector test(photon1.Px(), photon1.Py(), photon1.Pz());
+    // ROOT::Math::XYZVector photon1_3D(photon1.Px(), photon1.Py(), photon1.Pz());
+    // ROOT::Math::XYZVector photon2_3D(photon2.Px(), photon2.Py(), photon2.Pz());
+
+    // float openingAngleTest = std::acos(photon1_3D.Dot(test) / (std::sqrt(photon1_3D.Mag2()) * std::sqrt(test.Mag2())));
+    // LOG(info) << "openingAngleTest before rotation = " << openingAngleTest;
+    photon1 = rotationMatrix * photon1;
+    photon2 = rotationMatrix * photon2;
+
+    // openingAngleTest = std::acos(photon1_3D.Dot(test) / (std::sqrt(photon1_3D.Mag2()) * std::sqrt(test.Mag2())));
+    // LOG(info) << "openingAngleTest = " << openingAngleTest;
+
+    for (auto& photon : photons_coll) {
+      if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
+        // only combine rotated photons with other photons
+        continue;
+      }
+      ROOT::Math::PtEtaPhiMVector photon3;
+      photon3.SetPt(photon.pt(0.));
+      photon3.SetEta(photon.eta());
+      photon3.SetPhi(photon.phi());
+      photon3.SetM(0.);
+      // ROOT::Math::XYZVector photon3_3D(photon3.Px(), photon3.Py(), photon3.Pz());
+      ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
+      ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
+
+      float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
+      float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
+      // float openingAngle1_1 = std::acos(photon1_3D.Dot(photon3_3D) / (std::sqrt(photon1_3D.Mag2()) * std::sqrt(photon3_3D.Mag2())));
+      // float openingAngle2_2 = std::acos(photon2_3D.Dot(photon3_3D) / (std::sqrt(photon2_3D.Mag2()) * std::sqrt(photon3_3D.Mag2())));
+      // LOG(info) << "openingAngle1 = " << openingAngle1;
+      // LOG(info) << "openingAngle2 = " << openingAngle2;
+      // LOG(info) << "openingAngle1_1 = " << openingAngle1_1;
+      // LOG(info) << "openingAngle2_2 = " << openingAngle2_2;
+
+      // Fill histograms
+      if (openingAngle1 > minOpenAngle) {
+        registry.fill(HIST("EMCEMC/h2MggPt_Rotated"), mother1.M(), mother1.Pt());
+      }
+      if (openingAngle2 > minOpenAngle) {
+        registry.fill(HIST("EMCEMC/h2MggPt_Rotated"), mother2.M(), mother2.Pt());
+      }
+    }
+  }
+
+  // Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
+  // using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
+  void processPCMPCM(aod::EMReducedEvents const& collisions, aod::V0Datas const& v0photons)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
-    MixedEventPairing<PairType::kPCMPCM>(colls_mix, v0photons, v0photons, perCollision, perCollision);
+    MixedEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
   }
 
-  Filter collisionFilter_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngphos > 0;
-  using MyFilteredCollisions_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPHOSPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions_phos_mix const& colls_mix, aod::PHOSClusters const& phosclusters)
+  // Filter collisionFilter_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngphos > 0;
+  // using MyFilteredCollisions_phos_mix = soa::Filtered<aod::EMReducedEvents>;
+  void processPHOSPHOS(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
-    MixedEventPairing<PairType::kPHOSPHOS>(colls_mix, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
+    MixedEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
   }
 
-  Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
-  using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions_PCM_mix const& colls_mix, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processEMCEMC(aod::EMReducedEvents const& collisions, aod::SkimEMCClusters const& emcclusters)
+  {
+    if (useRotation) {
+      SameEventPairingWithRotation(collisions, emcclusters);
+    } else {
+      SameEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
+    }
+    MixedEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
+  }
+
+  // Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
+  // using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
-    MixedEventPairing<PairType::kPCMPHOS>(colls_mix, v0photons, phosclusters, perCollision, perCollision_phos);
+    MixedEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
+  }
+
+  void processPCMEMC(aod::EMReducedEvents const& collisions, aod::V0Datas const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  {
+    SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
+    MixedEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
+  }
+
+  void processPHOSEMC(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  {
+    SameEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
+    MixedEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
   }
 
   void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Datas const& v0photons)
@@ -453,7 +583,10 @@ struct Pi0EtaToGammaGamma {
 
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processPCMPCM, "pairing PCM-PCM", false);
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processPHOSPHOS, "pairing PHOS-PHOS", false);
+  PROCESS_SWITCH(Pi0EtaToGammaGamma, processEMCEMC, "pairing EMCal-EMCal", false);
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processPCMPHOS, "pairing PCM-PHOS", false);
+  PROCESS_SWITCH(Pi0EtaToGammaGamma, processPCMEMC, "pairing PCM-EMCal", false);
+  PROCESS_SWITCH(Pi0EtaToGammaGamma, processPHOSEMC, "pairing PHOS-EMCal", false);
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processDummy, "Dummy function", true);
 };
 

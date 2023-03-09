@@ -36,6 +36,7 @@ struct caloClusterProducerTask {
   Produces<aod::CaloAmbiguousClusters> cluambcursor;
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<bool> useCoreE{"coreE", 0, "0 - full energy, 1 - core energy"};
+  Configurable<bool> skipL1phase{"skipL1phase", false, "skip or apply L1phase time correction"};
   Configurable<std::vector<double>> cpvMinE{"cpvCluMinAmp", {20., 50., 50.}, "minimal CPV cluster amplitude per module"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -97,6 +98,16 @@ struct caloClusterProducerTask {
     // calibration may be updated by CCDB fetcher
     const o2::phos::BadChannelsMap* badMap = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
     const o2::phos::CalibParams* calibParams = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
+
+    if (!isMC && !skipL1phase) {
+      const std::vector<int>* vec = ccdb->get<std::vector<int>>("PHS/Calib/L1phase");
+      if (vec) {
+        clusterizerPHOS->setL1phase((*vec)[0]);
+      } else {
+        LOG(fatal) << "Can not get PHOS L1phase calibration";
+      }
+    }
+
     if (badMap) {
       clusterizerPHOS->setBadMap(badMap);
     } else {
@@ -261,10 +272,12 @@ struct caloClusterProducerTask {
           float sigmaZ = 1. / TMath::Min(3.3, 1.12 + 0.35 * TMath::Exp(-0.032 * e * e) + 0.75 / TMath::Power(e + 0.24, 3)); // inverse sigma Z
 
           for (int indx : regions) {
-            for (auto p : cpvMatchPoints[indx]) {
-              float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
-              if (d < trackdist) {
-                trackdist = d;
+            if (indx >= 0 && indx < nCpvCells) {
+              for (auto p : cpvMatchPoints[indx]) {
+                float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
+                if (d < trackdist) {
+                  trackdist = d;
+                }
               }
             }
           }

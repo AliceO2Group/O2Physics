@@ -276,46 +276,46 @@ struct tofPidQa {
     const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
 
     // Event properties
-    auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
+    auto h = histos.add<TH1>("event/evsel", "", kTH1D, {{10, 0.5, 10.5, "Ev. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
     h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
 
-    h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
+    h = histos.add<TH1>("event/trackselection", "", kTH1D, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "isGlobalTrack");
     h->GetXaxis()->SetBinLabel(3, "hasITS");
     h->GetXaxis()->SetBinLabel(4, "hasTPC");
     h->GetXaxis()->SetBinLabel(5, "hasTOF");
 
-    histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
-    h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
+    histos.add("event/vertexz", "", kTH1D, {vtxZAxis});
+    h = histos.add<TH1>("event/particlehypo", "", kTH1D, {{10, 0, 10, "PID in tracking"}});
     for (int i = 0; i < 9; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
     }
 
-    histos.add("event/evtime/colltime", "collisionTime()", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/colltime", "collisionTime()", kTH1D, {colTimeAxis});
     histos.add("event/evtime/colltimereso", "collisionTimeRes()", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/evtime/undef", "Undefined event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/undef", "Undefined event time", kTH1D, {colTimeAxis});
     histos.add("event/evtime/undefreso", "Undefined event time reso.", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/evtime/avail", "Available event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/avail", "Available event time", kTH1D, {colTimeAxis});
     histos.add("event/evtime/availreso", "Available event time reso.", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/evtime/ft0tof", "FT0+TOF event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/ft0tof", "FT0+TOF event time", kTH1D, {colTimeAxis});
     histos.add("event/evtime/ft0tofreso", "FT0+TOF event time reso.", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/evtime/tof", "TOF event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/tof", "TOF event time", kTH1D, {colTimeAxis});
     histos.add("event/evtime/tofreso", "TOF event time reso.", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/evtime/ft0", "FT0 event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/ft0", "FT0 event time", kTH1D, {colTimeAxis});
     histos.add("event/evtime/ft0reso", "FT0 event time reso.", kTH2F, {multAxis, colTimeResoAxis});
 
     histos.add("event/tofsignal", "TOF signal", kTH2F, {pAxis, tofAxis});
     histos.add("event/tofsignalunassigned", "TOF signal (unassigned tracks)", kTH2F, {pAxis, tofAxis});
     histos.add("event/pexp", "", kTH2F, {pAxis, pExpAxis});
-    histos.add("event/eta", "", kTH1F, {etaAxis});
-    histos.add("event/phi", "", kTH1F, {phiAxis});
+    histos.add("event/eta", "", kTH1D, {etaAxis});
+    histos.add("event/phi", "", kTH1D, {phiAxis});
     histos.add("event/etaphi", "", kTH2F, {etaAxis, phiAxis});
-    histos.add("event/length", "", kTH1F, {lAxis});
-    histos.add("event/pt", "", kTH1F, {ptAxis});
-    histos.add("event/p", "", kTH1F, {pAxis});
+    histos.add("event/length", "", kTH1D, {lAxis});
+    histos.add("event/pt", "", kTH1D, {ptAxis});
+    histos.add("event/p", "", kTH1D, {pAxis});
     // histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
 
     static_for<0, 8>([&](auto i) {

@@ -27,6 +27,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
+#include "trackSelectionRequest.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,6 +43,9 @@ struct propagatorQa {
 
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr;
+
+  // Configurable based on a struct
+  Configurable<trackSelectionRequest> trackSels{"trackSels", {}, "track selections"};
 
   Configurable<float> windowDCA{"windowDCA", 50, "windowDCA"};
   Configurable<int> NbinsX{"NbinsX", 500, "NbinsX"};
@@ -59,7 +63,7 @@ struct propagatorQa {
 
   Configurable<int> NbinsDeltaPt{"NbinsDeltaPt", 100, "binning for delta-pt"};
   Configurable<float> DeltaPtLimit{"DeltaPtLimit", 1, "limit for delta-pt"};
-  Configurable<int> minTPCClusters{"minTPCClusters", -1, "minimum number of TPC clusters"};
+  Configurable<int> minTPCClustersRequired{"minTPCClustersRequired", -1, "minimum number of TPC clusters"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -207,7 +211,7 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
+      if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
       if (!track.has_mcParticle())
@@ -327,7 +331,7 @@ struct propagatorQa {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < minTPCClusters)
+      if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
       if (track.trackType() != aod::track::TrackIU && track.x() > maxXtoConsider)
@@ -354,7 +358,7 @@ struct propagatorQa {
       float lL = TMath::Sqrt(
         TMath::Power(lCircle.xC - collision.posX(), 2) +
         TMath::Power(lCircle.yC - collision.posY(), 2));
-      float lCircleDCA = lTrackParametrization.getSign() * (lL - lR); // signed dca
+      float lCircleDCA = TMath::Sign(-1, d_bz) * lTrackParametrization.getSign() * (lL - lR); // signed dca
       //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
       dcaInfo[0] = 999;
