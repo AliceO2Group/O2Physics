@@ -224,9 +224,9 @@ struct OnTheFlyTOFPID {
       if (!recoTrack.getXatLabR(oTOFRadius, lX_oTOF, dBz, o2::track::DirOutward))
         lX_oTOF = -100;
       if (lX_PV > -99. && lX_iTOF > -99.)
-        lThisTrackLengthReco_iTOF = TrackLength(recoTrack, lX_PV, lX_iTOF, dBz);
+        lThisTrackLengthReco_iTOF = trackLength(recoTrack, lX_PV, lX_iTOF, dBz);
       if (lX_PV > -99. && lX_oTOF > -99.)
-        lThisTrackLengthReco_oTOF = TrackLength(recoTrack, lX_PV, lX_oTOF, dBz);
+        lThisTrackLengthReco_oTOF = trackLength(recoTrack, lX_PV, lX_oTOF, dBz);
 
       // Straight to Nsigma
       float lDeltaTime_iTOF[5], lNSigma_iTOF[5];
