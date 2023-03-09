@@ -75,6 +75,10 @@ struct JetFinderTask {
   Configurable<float> clusterEtaCut{"clusterEtaCut", 0.7, "cluster eta cut"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
   Configurable<float> clusterPhiMinCut{"clusterPhiMinCut", -999, "cluster min phi cut"};
   Configurable<float> clusterPhiMaxCut{"clusterPhiMaxCut", 999, "cluster max phi cut"};
+  Configurable<float> clusterMinEnergy{"clusterMinEnergyCut", 0.5, "Min. cluster energy in EMCAL (GeV)"};
+  Configurable<float> clusterMinTime{"clusterMinTime", -999., "Min. Cluster time (ns)"};
+  Configurable<float> clusterMaxTime{"clusterMaxTime", 999., "Max. Cluster time (ns)"};
+  Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
   Configurable<float> jetPtMin{"jetPtMin", 10.0, "minimum jet pT"};
@@ -92,7 +96,7 @@ struct JetFinderTask {
 
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   // Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
-  Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusDef)) && (nabs(aod::emcalcluster::eta) < clusterEtaCut) && (aod::emcalcluster::phi > clusterPhiMinCut) && (aod::emcalcluster::phi < clusterPhiMaxCut);
+  Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusDef)) && (nabs(aod::emcalcluster::eta) < clusterEtaCut) && (aod::emcalcluster::phi > clusterPhiMinCut) && (aod::emcalcluster::phi < clusterPhiMaxCut) && (aod::emcalcluster::energy >= clusterMinEnergy) && (aod::emcalcluster::time > clusterMinTime) && (aod::emcalcluster::time < clusterMaxTime) && (clusterRejectExotics && aod::emcalcluster::isExotic != true);
 
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;
