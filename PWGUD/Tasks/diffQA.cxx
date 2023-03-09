@@ -863,7 +863,7 @@ struct DiffQA {
       }
       auto bc = bcs.rawIteratorAt(col.globalIndex());
       bc3 = bc.globalBC();
-    
+
       if (bc1 != bc2 || bc1 != bc3) {
         LOGF(info, "BC missmatch: %d %d %d", bc1, bc2, bc3);
       }
