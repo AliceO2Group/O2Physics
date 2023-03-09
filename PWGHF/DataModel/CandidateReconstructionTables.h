@@ -155,7 +155,7 @@ DECLARE_SOA_TABLE(Hf3Prongs_000, "AOD", "HF3PRONG", //! Table for HF 3 prong can
                   hf_track_index::Prong2Id,
                   hf_track_index::HFflag);
 
-DECLARE_SOA_TABLE_VERSIONED(Hf3Prongs_001, "AOD", "HF3PRONG", 1, //! Table for HF 3 prong candidates
+DECLARE_SOA_TABLE_VERSIONED(Hf3Prongs_001, "AOD", "HF3PRONG", 1, //! Table for HF 3 prong candidates (Run 3 format)
                             o2::soa::Index<>,
                             hf_track_association::CollisionId,
                             hf_track_index::Prong0Id,
