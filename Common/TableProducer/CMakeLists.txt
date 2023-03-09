@@ -66,16 +66,6 @@ o2physics_add_dpl_workflow(track-propagation-tester
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::trackSelectionRequest
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(onthefly-tracker
-                    SOURCES onTheFlyTracker.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(onthefly-tofpid
-                    SOURCES onTheFlyTOFPID.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(mc-converter
                     SOURCES mcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
