@@ -132,6 +132,7 @@ struct TableMaker {
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -222,6 +223,7 @@ struct TableMaker {
       }
     }
 
+    VarManager::SetRunlist((TString)fConfigRunPeriods);
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -305,6 +307,7 @@ struct TableMaker {
     VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
     VarManager::fgValues[VarManager::kBC] = bc.globalBC();
     VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
+    VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
