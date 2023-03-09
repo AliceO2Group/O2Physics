@@ -131,7 +131,7 @@ DECLARE_SOA_TABLE(Hf2Prongs_000, "AOD", "HF2PRONG", //! Table for HF 2 prong can
                   hf_track_index::Prong1Id,
                   hf_track_index::HFflag);
 
-DECLARE_SOA_TABLE_VERSIONED(Hf2Prongs_001, "AOD", "HF2PRONG", 1, //! Table for HF 2 prong candidates
+DECLARE_SOA_TABLE_VERSIONED(Hf2Prongs_001, "AOD", "HF2PRONG", 1, //! Table for HF 2 prong candidates (Run 3 format)
                             o2::soa::Index<>,
                             hf_track_association::CollisionId,
                             hf_track_index::Prong0Id,
