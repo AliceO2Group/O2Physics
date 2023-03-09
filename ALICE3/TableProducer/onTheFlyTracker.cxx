@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// --- LUT-based on-the-fly analysis task-level tracking  
+// --- LUT-based on-the-fly analysis task-level tracking
 //
-// This task allows for the calculation of aod::collisions and aod::Tracks in a synthetic manner, 
-// smearing MC particles with very configurable settings. This will allow for the usage of 
+// This task allows for the calculation of aod::collisions and aod::Tracks in a synthetic manner,
+// smearing MC particles with very configurable settings. This will allow for the usage of
 // custom LUTs (obtained through separate studies) and the subsequent estimate of the performance
 // of a future detector even in very statistics-hungry analyses.
 

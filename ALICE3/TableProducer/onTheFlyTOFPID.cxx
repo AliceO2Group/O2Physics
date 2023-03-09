@@ -34,7 +34,6 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "TRandom3.h"
 
-
 // This task goes straight from a combination of track table and mcParticles
 // and a custom TOF configuration to a table of TOF NSigmas for the particles
 // being analysed. It currently contemplates 5 particle types:
@@ -48,7 +47,8 @@ using namespace o2::framework;
 
 namespace o2::aod
 {
-namespace upgrade_tof{
+namespace upgrade_tof
+{
 DECLARE_SOA_COLUMN(NSigmaElectronInner, nSigmaElectronInner, float); //! NSigma electron iTOF
 DECLARE_SOA_COLUMN(NSigmaMuonInner, nSigmaMuonInner, float);         //! NSigma muon iTOF
 DECLARE_SOA_COLUMN(NSigmaPionInner, nSigmaPionInner, float);         //! NSigma pion iTOF
@@ -59,7 +59,7 @@ DECLARE_SOA_COLUMN(NSigmaMuonOuter, nSigmaMuonOuter, float);         //! NSigma 
 DECLARE_SOA_COLUMN(NSigmaPionOuter, nSigmaPionOuter, float);         //! NSigma pion oTOF
 DECLARE_SOA_COLUMN(NSigmaKaonOuter, nSigmaKaonOuter, float);         //! NSigma kaon oTOF
 DECLARE_SOA_COLUMN(NSigmaProtonOuter, nSigmaProtonOuter, float);     //! NSigma proton oTOF
-} // namespace upgradetof
+} // namespace upgrade_tof
 DECLARE_SOA_TABLE(UpgradeTof, "AOD", "UPGRADETOF",
                   upgrade_tof::NSigmaElectronInner,
                   upgrade_tof::NSigmaMuonInner,
@@ -70,8 +70,7 @@ DECLARE_SOA_TABLE(UpgradeTof, "AOD", "UPGRADETOF",
                   upgrade_tof::NSigmaMuonOuter,
                   upgrade_tof::NSigmaPionOuter,
                   upgrade_tof::NSigmaKaonOuter,
-                  upgrade_tof::NSigmaProtonOuter
-                  );
+                  upgrade_tof::NSigmaProtonOuter);
 } // namespace o2::aod
 
 struct OnTheFlyTOFPID {
@@ -104,7 +103,7 @@ struct OnTheFlyTOFPID {
   {
     lPRNG.SetSeed(0); // fully randomize
 
-    if(doQAplots){
+    if (doQAplots) {
       const AxisSpec axisMomentum{static_cast<int>(80), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisVelocity{static_cast<int>(110), 0.0f, +1.1f, "Measured #beta"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
@@ -140,7 +139,7 @@ struct OnTheFlyTOFPID {
 
   float trackLength(o2::track::TrackParCov track, float lX0, float lX1, float lMagneticField)
   {
-    // utility class to calculate track length from track position X0 to track position X1 
+    // utility class to calculate track length from track position X0 to track position X1
     // with a given magnetic field
     std::array<float, 3> lPointN;
     std::array<float, 3> lPointNplus;
@@ -156,16 +155,17 @@ struct OnTheFlyTOFPID {
     return lLength;
   }
 
-  float Velocity(float lMomentum, float lMass){
-    //Momentum p and mass m -> returns speed in centimeters per picosecond
-    //Useful for TOF calculations
+  float Velocity(float lMomentum, float lMass)
+  {
+    // Momentum p and mass m -> returns speed in centimeters per picosecond
+    // Useful for TOF calculations
     float lA = std::pow(lMomentum / lMass, 2);
-    return (o2::constants::physics::LightSpeedCm2NS / 1e+3)*TMath::Sqrt(lA/(1+lA));
+    return (o2::constants::physics::LightSpeedCm2NS / 1e+3) * TMath::Sqrt(lA / (1 + lA));
   }
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
-    o2::math_utils::Point3D<float> pvPos{collision.posX(),collision.posY(),collision.posZ()};
+    o2::math_utils::Point3D<float> pvPos{collision.posX(), collision.posY(), collision.posZ()};
     std::array<float, 6> pvCov;
     pvCov[0] = collision.covXX();
     pvCov[1] = collision.covXY();
@@ -176,9 +176,10 @@ struct OnTheFlyTOFPID {
     o2::dataformats::VertexBase pvvtx(pvPos, pvCov);
 
     auto mcCollision = collision.mcCollision();
-    o2::math_utils::Point3D<float> mcPvPos{mcCollision.posX(),mcCollision.posY(),mcCollision.posZ()};
-    std::array<float, 6> mcPvCov; // dummy! 
-    for(int ii=0; ii<6; ii++) mcPvCov[ii] = 1e-6;
+    o2::math_utils::Point3D<float> mcPvPos{mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+    std::array<float, 6> mcPvCov; // dummy!
+    for (int ii = 0; ii < 6; ii++)
+      mcPvCov[ii] = 1e-6;
     o2::dataformats::VertexBase mcpvvtx(mcPvPos, mcPvCov);
 
     for (const auto& track : tracks) {
