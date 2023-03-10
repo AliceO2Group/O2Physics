@@ -9,12 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// --- LUT-based on-the-fly analysis task-level tracking
-//
-// This task allows for the calculation of aod::collisions and aod::Tracks in a synthetic manner,
-// smearing MC particles with very configurable settings. This will allow for the usage of
-// custom LUTs (obtained through separate studies) and the subsequent estimate of the performance
-// of a future detector even in very statistics-hungry analyses.
+/// \file onTheFlyTracker.cxx
+///
+/// \brief LUT-based on-the-fly analysis task-level tracking
+///
+/// This task allows for the calculation of aod::collisions and aod::Tracks in a synthetic manner,
+/// smearing MC particles with very configurable settings. This will allow for the usage of
+/// custom LUTs (obtained through separate studies) and the subsequent estimate of the performance
+/// of a future detector even in very statistics-hungry analyses.
+///
+/// \author David Dobrigkeit Chinellato, UNICAMP
+
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -68,30 +73,30 @@ struct OnTheFlyTracker {
     }
   }
 
-  template <typename mcParticleType>
-  void convertMCParticleToO2Track(mcParticleType& particle, o2::track::TrackParCov& o2track)
+  /// Function to convert a McParticle into a perfect Track 
+  /// \param particle the particle to convert (mcParticle)
+  /// \param o2track the address of the resulting TrackParCov
+  template <typename McParticleType>
+  void convertMCParticleToO2Track(McParticleType& particle, o2::track::TrackParCov& o2track)
   {
-    // FIXME: this is a fundamentally important piece of code.
-    // It could be placed in a utility file instead of here.
-    std::array<float, 3> xyz = {static_cast<float>(particle.vx()), static_cast<float>(particle.vy()), static_cast<float>(particle.vz())};
-    std::array<float, 3> ptetaphi = {static_cast<float>(particle.pt()), static_cast<float>(particle.eta()), static_cast<float>(particle.phi())};
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
     int charge = 0;
-    if (pdgInfo != nullptr)
+    if (pdgInfo != nullptr){
       charge = pdgInfo->Charge();
+    }
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};
     float s, c, x;
-    o2::math_utils::sincos(ptetaphi[2], s, c);
-    o2::math_utils::rotateZInv(xyz[0], xyz[1], x, params[0], s, c);
-    params[1] = xyz[2];
+    o2::math_utils::sincos(particle.phi(), s, c);
+    o2::math_utils::rotateZInv(particle.vx(), particle.vy(), x, params[0], s, c);
+    params[1] = particle.vz();
     params[2] = 0.; // since alpha = phi
-    auto theta = 2. * std::atan(std::exp(-ptetaphi[1]));
+    auto theta = 2. * std::atan(std::exp(-particle.eta()));
     params[3] = 1. / std::tan(theta);
-    params[4] = charge / ptetaphi[0];
+    params[4] = charge / particle.pt();
 
     // Initialize TrackParCov in-place
-    new (&o2track)(o2::track::TrackParCov)(x, ptetaphi[2], params, covm);
+    new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
   }
 
   template <typename CollType, typename TTrackPar>
