@@ -172,8 +172,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly")); // no cut on ITS clusters
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryLoose"));     // with 3 sigma El TOF
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2MCdebugCuts13_Corr")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly")); // no cut on ITS clusters
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));        // with DCA cut
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryLoose"));
     return cut;
   }
 
