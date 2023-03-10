@@ -160,7 +160,7 @@ struct HfTaskB0 {
       if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
         continue;
       }
-      // auto candD = candidate.prong0_as<aod::HfCand3Prong>();
+
       auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
@@ -212,7 +212,7 @@ struct HfTaskB0 {
     for (auto const& particle : particlesMC) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
-        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
           continue;
         }
