@@ -60,61 +60,7 @@ struct HfTaskB0 {
     registry.add("hDecLenXYErr", "B^{0} candidates;B^{0} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hIPProd", "B^{0} candidates;B^{0} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hInvMassD", "B^{0} candidates;prong0, D^{#minus} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-  }
 
-  void process(aod::Collision const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, aod::BigTracks const&)
-  {
-    for (auto const& candidate : candidates) {
-      if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
-      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
-        continue;
-      }
-
-      auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
-      auto candPi = candidate.prong1_as<aod::BigTracks>();
-
-      registry.fill(HIST("hMass"), invMassB0ToDPi(candidate), candidate.pt());
-      registry.fill(HIST("hPtCand"), candidate.pt());
-      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hRapidity"), yB0(candidate), candidate.pt());
-      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-      if (candPi.sign() < 0) {
-        registry.fill(HIST("hInvMassD"), invMassDplusToPiKPi(candD), candidate.pt());
-      }
-    } // candidate loop
-  }   // process
-};    // struct
-
-/// B0 MC analysis and fill histograms
-struct HfTaskB0Mc {
-  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);
-
-  HistogramRegistry registry{
-    "registry",
-    {{"hPtRecSig", "B0 candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
-     {"hPtRecBg", "B0 candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
-     {"hPtGenSig", "B0 candidates (matched);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}}},
-     {"hPtGen", "MC particles (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}}}};
-
-  void init(o2::framework::InitContext&)
-  {
     registry.add("hEtaGen", "MC particles (matched);B^{0} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hYGen", "MC particles (matched);B^{0} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtProng0Gen", "MC particles (matched);prong 0 (D^{#minus}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -159,28 +105,71 @@ struct HfTaskB0Mc {
     registry.add("hChi2PCARecBg", "B^{0} candidates (unmatched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hThetaStarRecSig", "B^{0} candidates (matched);B^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hThetaStarRecBg", "B^{0} candidates (unmatched);B^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    registry.add("hPtRecSig", "B0 candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+    registry.add("hPtRecBg", "B0 candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+    registry.add("hPtGenSig", "B0 candidates (matched);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}});
+    registry.add("hPtGen", "MC particles (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
   }
 
-  void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0McRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCand3Prong const&)
+  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+  void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
   {
-    // MC rec
     for (auto const& candidate : candidates) {
-      if (TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
         continue;
       }
-      auto candD = candidate.prong0_as<aod::HfCand3Prong>();
-      if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
 
+      auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
+      auto candPi = candidate.prong1_as<TracksWithSel>();
+
+      registry.fill(HIST("hMass"), invMassB0ToDPi(candidate), candidate.pt());
+      registry.fill(HIST("hPtCand"), candidate.pt());
+      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
+      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
+      registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), candidate.pt());
+      registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
+      registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
+      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+      registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
+      registry.fill(HIST("hRapidity"), yB0(candidate), candidate.pt());
+      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
+      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
+      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+      registry.fill(HIST("hInvMassD"), invMassDplusToPiKPi(candD), candidate.pt());
+    } // candidate loop
+  }   // process
+
+  /// B0 MC analysis and fill histograms
+  void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0McRec>> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particlesMC,
+                 aod::BigTracksMC const& tracks,
+                 soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
+  {
+    // MC rec
+    for (auto const& candidate : candidates) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
+        continue;
+      }
+      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
+        continue;
+      }
+      // auto candD = candidate.prong0_as<aod::HfCand3Prong>();
+      auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
+      if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
+
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
-        registry.fill(HIST("hCPAxyRecSig"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hRapidityRecSig"), yB0(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
@@ -199,7 +188,7 @@ struct HfTaskB0Mc {
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
-        registry.fill(HIST("hCPAxyRecBg"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hRapidityRecBg"), yB0(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), candidate.pt());
@@ -223,7 +212,7 @@ struct HfTaskB0Mc {
     for (auto const& particle : particlesMC) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
-        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
+        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
           continue;
         }
@@ -253,13 +242,10 @@ struct HfTaskB0Mc {
       }
     } // gen
   }   // process
-  PROCESS_SWITCH(HfTaskB0Mc, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfTaskB0, processMc, "Process MC", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfTaskB0>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTaskB0Mc>(cfgc));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<HfTaskB0>(cfgc)};
 }
