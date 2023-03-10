@@ -123,32 +123,30 @@ struct HfCandidateSelectorB0ToDPi {
 
   using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
 
-  void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
+  void process(aod::HfCandB0::iterator const& hfCandB0, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
   {
-    for (auto const& hfCandB0 : hfCandB0s) { // looping over B0 candidates
-      int statusB0 = 0;
+    int statusB0 = 0;
 
-      // check if flagged as B0 → D- π+
-      if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        hfSelB0ToDPiCandidate(statusB0);
-        // Printf("B0 candidate selection failed at hfflag check");
-        continue;
-      }
-
-      // D is always index0 and pi is index1 by default
-      auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
-      auto trackPi = hfCandB0.prong1_as<TracksWithSel>();
-
-      // topological cuts
-      if (!selectionTopol(hfCandB0, candD, trackPi)) {
-        hfSelB0ToDPiCandidate(statusB0);
-        // Printf("B0 candidate selection failed at selection topology");
-        continue;
-      }
-
-      hfSelB0ToDPiCandidate(1);
-      // Printf("B0 candidate selection successful, candidate should be selected");
+    // check if flagged as B0 → D- π+
+    if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
+      hfSelB0ToDPiCandidate(statusB0);
+      // Printf("B0 candidate selection failed at hfflag check");
+      return;
     }
+
+    // D is always index0 and pi is index1 by default
+    auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
+    auto trackPi = hfCandB0.prong1_as<TracksWithSel>();
+
+    // topological cuts
+    if (!selectionTopol(hfCandB0, candD, trackPi)) {
+      hfSelB0ToDPiCandidate(statusB0);
+      // Printf("B0 candidate selection failed at selection topology");
+      return;
+    }
+
+    hfSelB0ToDPiCandidate(1);
+    // Printf("B0 candidate selection successful, candidate should be selected");
   }
 };
 
