@@ -29,11 +29,13 @@ struct HfRefitPvDummy {
   // Tables to be added
   Produces<aod::HfPvRefit2Prong> rowProng2PVrefit;
   Produces<aod::HfPvRefit3Prong> rowProng3PVrefit;
+  Produces<aod::Hf2Prongs_001> rowProng2WithCollId;
+  Produces<aod::Hf3Prongs_001> rowProng3WithCollId;
 
   // process function
   void process(aod::Collisions const& collisions,
-               aod::Hf2Prongs const& rowsTrackIndexProng2,
-               aod::Hf3Prongs const& rowsTrackIndexProng3,
+               aod::Hf2Prongs_000 const& rowsTrackIndexProng2,
+               aod::Hf3Prongs_000 const& rowsTrackIndexProng3,
                aod::Tracks const&)
   {
 
@@ -48,6 +50,9 @@ struct HfRefitPvDummy {
       // fill table row with coordinates of origial PV (dummy)
       rowProng2PVrefit(primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(), primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2());
+
+      // fill version 001 of candidate table, containing also the collision ID
+      rowProng2WithCollId(collision.globalIndex(), rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), rowTrackIndexProng2.hfflag());
     }
 
     // dummy tables for 3 prong candidates
@@ -61,6 +66,9 @@ struct HfRefitPvDummy {
       // fill table row with coordinates of origial PV (dummy)
       rowProng3PVrefit(primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(), primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2());
+
+      // fill version 001 of candidate table, containing also the collision ID
+      rowProng3WithCollId(collision.globalIndex(), rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), rowTrackIndexProng3.hfflag());
     }
   } // end of process function
 };
