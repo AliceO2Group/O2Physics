@@ -115,7 +115,7 @@ struct OnTheFlyTOFPID {
     }
   }
 
-  /// Function to convert a McParticle into a perfect Track 
+  /// Function to convert a McParticle into a perfect Track
   /// \param particle the particle to convert (mcParticle)
   /// \param o2track the address of the resulting TrackParCov
   template <typename McParticleType>
@@ -125,7 +125,7 @@ struct OnTheFlyTOFPID {
     // It could be placed in a utility file instead of here.
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
     int charge = 0;
-    if (pdgInfo != nullptr){
+    if (pdgInfo != nullptr) {
       charge = pdgInfo->Charge();
     }
     std::array<float, 5> params;
@@ -143,10 +143,10 @@ struct OnTheFlyTOFPID {
     new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
   }
 
-  /// function to calculate track length 
-  /// \param track the input track 
-  /// \param x0 the initial position 
-  /// \param x1 the final position 
+  /// function to calculate track length
+  /// \param track the input track
+  /// \param x0 the initial position
+  /// \param x1 the final position
   /// \param magneticField the magnetic field to use when propagating
   float trackLength(o2::track::TrackParCov track, float x0, float x1, float magneticField)
   {
@@ -165,21 +165,21 @@ struct OnTheFlyTOFPID {
   }
 
   /// returns velocity in centimeters per picoseconds
-  /// \param momentum the input track 
-  /// \param x0 the initial position 
-  /// \param x1 the final position 
+  /// \param momentum the input track
+  /// \param x0 the initial position
+  /// \param x1 the final position
   /// \param magneticField the magnetic field to use when propagating
   float velocity(float momentum, float mass)
   {
     float a = std::pow(momentum / mass, 2);
-    // uses light speed in cm/ps so output is in those units 
+    // uses light speed in cm/ps so output is in those units
     return (o2::constants::physics::LightSpeedCm2NS / 1e+3) * std::sqrt(a / (1 + a));
   }
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
-    o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()}, 
-    {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
+    o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()},
+                                      {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
 
     auto mcCollision = collision.mcCollision();
     std::array<float, 6> mcPvCov = {0.};
@@ -209,8 +209,8 @@ struct OnTheFlyTOFPID {
 
       // get mass to calculate velocity
       auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
-      if (pdgInfo != nullptr){
-       continue;
+      if (pdgInfo != nullptr) {
+        continue;
       }
       float expectedTimeInnerTOF = trackLengthInnerTOF / velocity(o2track.getP(), pdgInfo->Mass());
       float expectedTimeOuterTOF = trackLengthOuterTOF / velocity(o2track.getP(), pdgInfo->Mass());

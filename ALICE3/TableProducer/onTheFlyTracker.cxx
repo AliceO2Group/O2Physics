@@ -20,7 +20,6 @@
 ///
 /// \author David Dobrigkeit Chinellato, UNICAMP
 
-
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -73,7 +72,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  /// Function to convert a McParticle into a perfect Track 
+  /// Function to convert a McParticle into a perfect Track
   /// \param particle the particle to convert (mcParticle)
   /// \param o2track the address of the resulting TrackParCov
   template <typename McParticleType>
@@ -81,7 +80,7 @@ struct OnTheFlyTracker {
   {
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
     int charge = 0;
-    if (pdgInfo != nullptr){
+    if (pdgInfo != nullptr) {
       charge = pdgInfo->Charge();
     }
     std::array<float, 5> params;
