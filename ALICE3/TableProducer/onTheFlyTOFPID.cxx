@@ -78,7 +78,7 @@ DECLARE_SOA_TABLE(UpgradeTof, "AOD", "UPGRADETOF",
 } // namespace o2::aod
 
 struct OnTheFlyTOFPID {
-  Produces<aod::UpgradeTof> upgradetof;
+  Produces<aod::UpgradeTof> upgradeTof;
 
   // necessary for particle charges
   Service<O2DatabasePDG> pdg;
@@ -165,10 +165,8 @@ struct OnTheFlyTOFPID {
   }
 
   /// returns velocity in centimeters per picoseconds
-  /// \param momentum the input track
-  /// \param x0 the initial position
-  /// \param x1 the final position
-  /// \param magneticField the magnetic field to use when propagating
+  /// \param momentum the momentum of the tarck
+  /// \param mass the mass of the particle
   float velocity(float momentum, float mass)
   {
     float a = std::pow(momentum / mass, 2);
@@ -268,7 +266,7 @@ struct OnTheFlyTOFPID {
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
-      upgradetof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4],
+      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4],
                  nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4]);
     }
   }

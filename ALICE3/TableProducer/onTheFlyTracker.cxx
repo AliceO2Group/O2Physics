@@ -98,8 +98,12 @@ struct OnTheFlyTracker {
     new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
   }
 
+  /// Function to fill track parameter table
+  /// \param coll collision (for index)
+  /// \param trackType type of created track
+  /// \param trackPar track for parameters
   template <typename CollType, typename TTrackPar>
-  void FillTracksPar(CollType& coll, aod::track::TrackTypeEnum trackType, TTrackPar& trackPar)
+  void fillTracksPar(CollType& coll, aod::track::TrackTypeEnum trackType, TTrackPar& trackPar)
   {
     tracksPar(coll.globalIndex(), trackType, trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
     tracksParExtension(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
@@ -112,7 +116,7 @@ struct OnTheFlyTracker {
 
     for (const auto& mcParticle : mcParticles) {
       auto pdg = std::abs(mcParticle.pdgCode());
-      if (pdg != 11 && pdg != 13 && pdg != 211 && pdg != 321 && pdg != 2212)
+      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton)
         continue;
 
       o2::track::TrackParCov trackParCov;
@@ -131,7 +135,7 @@ struct OnTheFlyTracker {
 
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
-      FillTracksPar(mcCollision, trackType, trackParCov);
+      fillTracksPar(mcCollision, trackType, trackParCov);
       if (fillTracksDCA) {
         tracksDCA(1e-3, 1e-3);
       }
