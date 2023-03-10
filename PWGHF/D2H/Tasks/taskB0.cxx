@@ -124,7 +124,7 @@ struct HfTaskB0 {
       }
 
       auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
-      auto candPi = candidate.prong1_as<TracksWithSel>();
+      // auto candPi = candidate.prong1_as<TracksWithSel>();
 
       registry.fill(HIST("hMass"), invMassB0ToDPi(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
