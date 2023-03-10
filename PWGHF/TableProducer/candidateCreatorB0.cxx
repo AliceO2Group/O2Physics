@@ -180,9 +180,7 @@ struct HfCandidateCreatorB0 {
 
         hPtPion->Fill(trackPion.pt());
         array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
-        ;
         auto trackParCovPi = getTrackParCov(trackPion);
-
         // ---------------------------------
         // reconstruct the 2-prong B0 vertex
         if (df2.process(trackParCovD, trackParCovPi) == 0) {
@@ -190,11 +188,11 @@ struct HfCandidateCreatorB0 {
         }
 
         // calculate invariant mass
-        auto arrayMomenta = array{pVecD, pVecPion};
-        massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
-        if (candD.isSelDplusToPiKPi() > 0) {
-          hMassB0ToDPi->Fill(massDPi);
+        massDPi = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
+        if (std::abs(massDPi - massB0) > invMassWindowB0) {
+          continue;
         }
+        hMassB0ToDPi->Fill(massDPi);
 
         // calculate relevant properties
         const auto& secondaryVertexB0 = df2.getPCACandidate();
@@ -271,7 +269,7 @@ struct HfCandidateCreatorB0Expressions {
       flag = 0;
       origin = 0;
       debug = 0;
-      auto candD = candidate.prong0_as<aod::HfCand3Prong>();
+      auto candD = candidate.prong0();
       auto arrayDaughters = array{candD.prong0_as<aod::BigTracksMC>(),
                                   candD.prong1_as<aod::BigTracksMC>(),
                                   candD.prong2_as<aod::BigTracksMC>(),
