@@ -121,7 +121,7 @@ struct BCRangeSelector {
           }
         }
         localIter = bcIter;
-        while (localIter.globalIndex() < bcs.size()) {
+        while (localIter.globalIndex() < bcs.size() - 1) {
           ++localIter;
           if (localIter.globalBC() <= maxBC.toLong()) {
             maxBCId = localIter.globalIndex();
