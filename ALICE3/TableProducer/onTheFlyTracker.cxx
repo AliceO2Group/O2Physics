@@ -52,6 +52,8 @@ struct OnTheFlyTracker {
   Produces<aod::McTrackLabels> tracksLabels;
   Produces<aod::TracksDCA> tracksDCA;
 
+  Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
+
   bool fillTracksDCA = false;
 
   // necessary for particle charges
@@ -117,6 +119,8 @@ struct OnTheFlyTracker {
     for (const auto& mcParticle : mcParticles) {
       auto pdg = std::abs(mcParticle.pdgCode());
       if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton)
+        continue;
+      if (std::fabs(mcParticle.eta())>maxEta)
         continue;
 
       o2::track::TrackParCov trackParCov;
