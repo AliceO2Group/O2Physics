@@ -337,28 +337,30 @@ struct MultiplicityCounter {
               registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kBasiccut), cent);
               registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kBasiccut), cent);
 
-              if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut), cent);
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta(), cent);
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta(), cent);
+              if (abs(v0.yK0Short()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short(), cent);
+                if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509) {
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut), cent);
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta(), cent);
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta(), cent);
+                }
               }
 
-              if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut), cent);
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta(), cent);
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta(), cent);
-              }
-
-              if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut), cent);
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta(), cent);
-                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta(), cent);
+              if (abs(v0.yLambda()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda(), cent);
+                if (1.11 < v0.mLambda() && v0.mLambda() < 1.12) {
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut), cent);
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta(), cent);
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta(), cent);
+                }
+                registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda(), cent);
+                if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12) {
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut), cent);
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta(), cent);
+                  registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta(), cent);
+                }
               }
             }
-
-            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short(), cent);
-            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda(), cent);
-            registry.fill(HIST("Tracks/ProcessCounting/Centrality/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda(), cent);
           }
         } else {
           // without centrality
@@ -410,28 +412,30 @@ struct MultiplicityCounter {
               registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kBasiccut));
               registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kBasiccut));
 
-              if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
-                registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut));
-                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
-                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
+              if (abs(v0.yK0Short()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short());
+                if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509) {
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kK0short), Double_t(kMasscut));
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
+                }
               }
 
-              if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-                registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut));
-                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
-                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
-              }
-
-              if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-                registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut));
-                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
-                registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
+              if (abs(v0.yLambda()) < rapidity) {
+                registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda());
+                if (1.11 < v0.mLambda() && v0.mLambda() < 1.12) {
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kLambda), Double_t(kMasscut));
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
+                }
+                registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda());
+                if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12) {
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0Count"), Double_t(kDATA), Double_t(kAntilambda), Double_t(kMasscut));
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
+                  registry.fill(HIST("Tracks/ProcessCounting/hV0DauEta"), Double_t(kDATA), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
+                }
               }
             }
-
-            registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kK0short), v0.mK0Short());
-            registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kLambda), v0.mLambda());
-            registry.fill(HIST("Tracks/ProcessCounting/hV0Mass"), Double_t(kDATA), Double_t(kAntilambda), v0.mAntiLambda());
           }
         }
       }
@@ -509,25 +513,30 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kBasiccut));
           registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kBasiccut));
 
-          if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509 && abs(v0.yK0Short()) < rapidity) {
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kMasscut));
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
+          if (abs(v0.yK0Short()) < rapidity) {
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kK0short), v0.mK0Short());
+            if (0.482 < v0.mK0Short() && v0.mK0Short() < 0.509) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kK0short), Double_t(kMasscut));
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kK0short), pTrack.eta());
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kK0short), nTrack.eta());
+            }
           }
-          if (1.11 < v0.mLambda() && v0.mLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kMasscut));
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
-          }
-          if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kMasscut));
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
-            registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
+
+          if (abs(v0.yLambda()) < rapidity) {
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kLambda), v0.mLambda());
+            if (1.11 < v0.mLambda() && v0.mLambda() < 1.12) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kLambda), Double_t(kMasscut));
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kLambda), pTrack.eta());
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kLambda), nTrack.eta());
+            }
+            registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kAntilambda), v0.mAntiLambda());
+            if (1.11 < v0.mAntiLambda() && v0.mAntiLambda() < 1.12 && abs(v0.yLambda()) < rapidity) {
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0Count"), Double_t(kINEL), Double_t(kAntilambda), Double_t(kMasscut));
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kPositive), Double_t(kAntilambda), pTrack.eta());
+              registry.fill(HIST("Tracks/ProcessMCCounting/hV0DauEta"), Double_t(kINEL), Double_t(kNegative), Double_t(kAntilambda), nTrack.eta());
+            }
           }
         }
-        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kK0short), v0.mK0Short());
-        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kLambda), v0.mLambda());
-        registry.fill(HIST("Tracks/ProcessMCCounting/hV0Mass"), Double_t(kINEL), Double_t(kAntilambda), v0.mAntiLambda());
       }
 
       registry.fill(HIST("Tracks/ProcessMCCounting/hreczvtx"), Double_t(kINEL), Double_t(kMBAND), z);

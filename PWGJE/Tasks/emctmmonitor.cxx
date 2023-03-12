@@ -73,9 +73,9 @@ struct TrackMatchingMonitor {
   ConfigurableAxis mClusterTimeBinning{"clustertime-binning", {1500, -600, 900}, ""};
   Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
   Configurable<bool> usePionRejection{"usePionRejection", false, "demand pion rection for electron signal with TPC PID"};
-  Configurable<std::vector<float>> tpcNsigmaElectron{"tpcNsigmaElectron", {-1., +3.}, "TPC PID NSigma range for electron signal"};
-  Configurable<std::vector<float>> tpcNsigmaBack{"tpcNsigmaBack", {-10., -4.}, "TPC PID NSigma range for electron background"};
-  Configurable<std::vector<float>> tpcNsigmaPion{"tpcNsigmaPion", {-3., +3.}, "TPC PID NSigma range for pions for rejection if usePionRejection is enabled"};
+  Configurable<std::vector<float>> tpcNsigmaElectron{"tpcNsigmaElectron", {-1., +3.}, "TPC PID NSigma range for electron signal (first <= NSigma <= second)"};
+  Configurable<std::vector<float>> tpcNsigmaBack{"tpcNsigmaBack", {-10., -4.}, "TPC PID NSigma range for electron background (first <= NSigma <= second)"};
+  Configurable<std::vector<float>> tpcNsigmaPion{"tpcNsigmaPion", {-3., +3.}, "TPC PID NSigma range for pions for rejection if usePionRejection is enabled (first <= NSigma <= second)"};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -144,7 +144,11 @@ struct TrackMatchingMonitor {
     mHistManager.add("clusterTM_EoverP_Pt", "E/p vs track pT", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                              // E/p vs track pT for the Nth closest track
     mHistManager.add("clusterTM_EvsP", "cluster E/track p", o2HistType::kTH3F, {energyAxis, trackpAxis, nmatchedtrack});                                                                  // E vs p for the Nth closest track
     mHistManager.add("clusterTM_EoverP_electron", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                    // E over p vs track pT for the Nth closest electron/positron track
-    mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p)", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                       // E over p vs track pT for the Nth closest hadron track
+    mHistManager.add("clusterTM_EoverP_electron_ASide", "cluster E/electron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                    // E over p vs track pT for the Nth closest electron/positron track in A-Side
+    mHistManager.add("clusterTM_EoverP_electron_CSide", "cluster E/electron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                    // E over p vs track pT for the Nth closest electron/positron track in C-Side
+    mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                        // E over p vs track pT for the Nth closest hadron track
+    mHistManager.add("clusterTM_EoverP_hadron_ASide", "cluster E/hadron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                        // E over p vs track pT for the Nth closest hadron track in A-Side
+    mHistManager.add("clusterTM_EoverP_hadron_CSide", "cluster E/hadron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                        // E over p vs track pT for the Nth closest hadron track in C-Side
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -301,14 +305,29 @@ struct TrackMatchingMonitor {
             mHistManager.fill(HIST("clusterTM_NegdEtadPhi_0_75leqPl1_25"), dEta, dPhi, t);
           }
         }
-        if (match.track_as<tracksPID>().tpcNSigmaEl() >= tpcNsigmaElectron->at(0) && match.track_as<tracksPID>().tpcNSigmaEl() <= tpcNsigmaElectron->at(1)) {                 // E/p for e+/e-
-          if (usePionRejection && (match.track_as<tracksPID>().tpcNSigmaPi() <= tpcNsigmaPion->at(0) || match.track_as<tracksPID>().tpcNSigmaPi() >= tpcNsigmaPion->at(1))) { // with pion rejection
+        if (tpcNsigmaElectron->at(0) <= match.track_as<tracksPID>().tpcNSigmaEl() && match.track_as<tracksPID>().tpcNSigmaEl() <= tpcNsigmaElectron->at(1)) {                 // E/p for e+/e-
+          if (usePionRejection && (tpcNsigmaPion->at(0) <= match.track_as<tracksPID>().tpcNSigmaPi() || match.track_as<tracksPID>().tpcNSigmaPi() <= tpcNsigmaPion->at(1))) { // with pion rejection
             mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
-          } else {
+            if (match.track_as<tracksPID>().eta() >= 0.) {
+              mHistManager.fill(HIST("clusterTM_EoverP_electron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            } else {
+              mHistManager.fill(HIST("clusterTM_EoverP_electron_CSide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            }
+          } else { // without pion rejection
             mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            if (match.track_as<tracksPID>().eta() >= 0.) {
+              mHistManager.fill(HIST("clusterTM_EoverP_electron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            } else {
+              mHistManager.fill(HIST("clusterTM_EoverP_electron_CSide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            }
           }
-        } else if (match.track_as<tracksPID>().tpcNSigmaEl() >= tpcNsigmaBack->at(0) && match.track_as<tracksPID>().tpcNSigmaEl() >= tpcNsigmaBack->at(1)) { // E/p for hadrons / background
+        } else if (tpcNsigmaBack->at(0) <= match.track_as<tracksPID>().tpcNSigmaEl() && match.track_as<tracksPID>().tpcNSigmaEl() <= tpcNsigmaBack->at(1)) { // E/p for hadrons / background
           mHistManager.fill(HIST("clusterTM_EoverP_hadron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          if (match.track_as<tracksPID>().eta() >= 0.) {
+            mHistManager.fill(HIST("clusterTM_EoverP_hadron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          } else {
+            mHistManager.fill(HIST("clusterTM_EoverP_hadron_CSide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          }
         }
         if ((fabs(dEta) <= 0.01 + pow(match.track_as<tracksPID>().pt() + 4.07, -2.5)) &&
             (fabs(dPhi) <= 0.015 + pow(match.track_as<tracksPID>().pt() + 3.65, -2.)) &&

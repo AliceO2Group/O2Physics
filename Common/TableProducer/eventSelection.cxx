@@ -34,6 +34,7 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to -294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -189,13 +190,30 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
+    // map from GlobalBC to BcId needed to find triggerBc
+    std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
+    for (auto& bc : bcs) {
+      mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
+    }
+    int triggerBcShift = confTriggerBcShift;
+    if (confTriggerBcShift == 999) {
+      int run = bcs.iteratorAt(0).runNumber();
+      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : -294;
+    }
+
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
       TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       int32_t alias[kNaliases] = {0};
-      uint64_t triggerMask = bc.triggerMask();
-      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
-        alias[al.first] |= (triggerMask & al.second) > 0;
+
+      // workaround for pp2022 apass2-apass3 (trigger info is shifted by -294 bcs)
+      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
+      if (triggerBcId) {
+        auto triggerBc = bcs.iteratorAt(triggerBcId);
+        uint64_t triggerMask = triggerBc.triggerMask();
+        for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+          alias[al.first] |= (triggerMask & al.second) > 0;
+        }
       }
       alias[kALL] = 1;
 
