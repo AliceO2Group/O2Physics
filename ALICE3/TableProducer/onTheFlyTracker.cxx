@@ -120,7 +120,7 @@ struct OnTheFlyTracker {
       auto pdg = std::abs(mcParticle.pdgCode());
       if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton)
         continue;
-      if (std::fabs(mcParticle.eta())>maxEta)
+      if (std::fabs(mcParticle.eta()) > maxEta)
         continue;
 
       o2::track::TrackParCov trackParCov;
