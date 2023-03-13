@@ -82,7 +82,7 @@ struct HfRefitPvDummy {
   PROCESS_SWITCH(HfRefitPvDummy, process3Prongs, "Produce tables for 3-prong candidates", true);
 
   // process function for cascade candidates
-  void processCascades(aod::Collisions const& collisions,
+  void processCascades(aod::Collisions const&,
                        aod::HfCascades_000 const& rowsTrackIndexCascade,
                        aod::Tracks const&)
   {
