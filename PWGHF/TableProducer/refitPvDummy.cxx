@@ -31,14 +31,13 @@ struct HfRefitPvDummy {
   Produces<aod::HfPvRefit3Prong> rowProng3PVrefit;
   Produces<aod::Hf2Prongs_001> rowProng2WithCollId;
   Produces<aod::Hf3Prongs_001> rowProng3WithCollId;
+  Produces<aod::HfCascades_001> rowCascadesWithCollId;
 
-  // process function
-  void process(aod::Collisions const& collisions,
-               aod::Hf2Prongs_000 const& rowsTrackIndexProng2,
-               aod::Hf3Prongs_000 const& rowsTrackIndexProng3,
-               aod::Tracks const&)
+  // process function for 2-prong candidates
+  void process2Prongs(aod::Collisions const& collisions,
+                      aod::Hf2Prongs_000 const& rowsTrackIndexProng2,
+                      aod::Tracks const&)
   {
-
     // dummy tables for 2 prong candidates
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
 
@@ -54,7 +53,15 @@ struct HfRefitPvDummy {
       // fill version 001 of candidate table, containing also the collision ID
       rowProng2WithCollId(collision.globalIndex(), rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), rowTrackIndexProng2.hfflag());
     }
+  } // end of process function for 2 prong candidates
 
+  PROCESS_SWITCH(HfRefitPvDummy, process2Prongs, "Produce tables for 2-prong candidates", true);
+
+  // process function for 3-prong candidates
+  void process3Prongs(aod::Collisions const& collisions,
+                      aod::Hf3Prongs_000 const& rowsTrackIndexProng3,
+                      aod::Tracks const&)
+  {
     // dummy tables for 3 prong candidates
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
 
@@ -70,7 +77,27 @@ struct HfRefitPvDummy {
       // fill version 001 of candidate table, containing also the collision ID
       rowProng3WithCollId(collision.globalIndex(), rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), rowTrackIndexProng3.hfflag());
     }
-  } // end of process function
+  } // end of process function for 3 prong candidates
+
+  PROCESS_SWITCH(HfRefitPvDummy, process3Prongs, "Produce tables for 3-prong candidates", true);
+
+  // process function for 3-prong candidates
+  void processCascades(aod::Collisions const& collisions,
+                       aod::HfCascades_000 const& rowsTrackIndexCascade,
+                       aod::Tracks const&)
+  {
+    // dummy tables for 3 prong candidates
+    for (const auto& rowTrackIndexCascade : rowsTrackIndexCascade) {
+
+      // original PV information
+      auto track0 = rowTrackIndexCascade.prong0_as<aod::Tracks>();
+      auto collision = track0.collision();
+      // fill version 001 of candidate table, containing also the collision ID
+      rowCascadesWithCollId(collision.globalIndex(), rowTrackIndexCascade.prong0Id(), rowTrackIndexCascade.v0Id());
+    }
+  } // end of process function for 3 prong candidates
+
+  PROCESS_SWITCH(HfRefitPvDummy, processCascades, "Produce tables for hf-cascade candidates", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
