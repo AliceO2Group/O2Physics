@@ -19,6 +19,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -27,35 +28,36 @@ using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
-// using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;  // used if we apply D mass cut
 
 struct HfCandidateSelectorB0ToDPi {
   Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  // Enable PID
+  Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
 
-  // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
+  // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
   bool selectionTopol(const T1& hfCandB0, const T2& hfCandD, const T3& trackPi)
   {
     auto candpT = hfCandB0.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
-      // Printf("B0 topol selection failed at getpTBin");
+      // LOGF(info, "B0 topol selection failed at getpTBin");
       return false;
     }
 
@@ -81,11 +83,9 @@ struct HfCandidateSelectorB0ToDPi {
     }
 
     // D mass cut
-    // if (trackPi.sign() > 0) {
-    //   if (std::abs(InvMassDplus(hfCandD) - RecoDecay::getMassPDG(pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaM")) {
-    //     return false;
-    //   }
-    // }
+    if (std::abs(hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
+      return false;
+    }
 
     // B0 Decay length
     if (hfCandB0.decayLength() < cuts->get(pTBin, "B0 decLen")) {
@@ -99,7 +99,6 @@ struct HfCandidateSelectorB0ToDPi {
 
     // B0 chi2PCA cut
     if (hfCandB0.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      // Printf("B0 selection failed at chi2PCA");
       return false;
     }
 
@@ -121,32 +120,70 @@ struct HfCandidateSelectorB0ToDPi {
     return true;
   }
 
-  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
-
-  void process(aod::HfCandB0::iterator const& hfCandB0, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
+  // Apply PID selection; return true if candidate passes all selections
+  template <typename T>
+  bool selectionPID(const T& pidTrackPi) 
   {
-    int statusB0 = 0;
-
-    // check if flagged as B0 → D- π+
-    if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-      hfSelB0ToDPiCandidate(statusB0);
-      // Printf("B0 candidate selection failed at hfflag check");
-      return;
+    if (pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+      return false;
     }
 
-    // D is always index0 and pi is index1 by default
-    auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
-    auto trackPi = hfCandB0.prong1_as<TracksWithSel>();
+    return true;
+  }
 
-    // topological cuts
-    if (!selectionTopol(hfCandB0, candD, trackPi)) {
-      hfSelB0ToDPiCandidate(statusB0);
-      // Printf("B0 candidate selection failed at selection topology");
-      return;
+  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+
+  void process(aod::HfCandB0 const& hfCandsB0, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksPIDWithSel const&)
+  {
+    int statusB0ToDPi = 0;
+
+    TrackSelectorPID selectorPion(kPiPlus);
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+
+    for (const auto& hfCandB0 : hfCandsB0) {
+      // check if flagged as B0 → D π
+      if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
+        hfSelB0ToDPiCandidate(statusB0ToDPi);
+        // LOGF(info, "B0 candidate selection failed at hfflag check");
+        continue;
+      }
+      SETBIT(statusB0ToDPi, aod::SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1 
+
+      auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
+      auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
+
+      // topological cuts
+      if (!selectionTopol(hfCandB0, candD, trackPi)) {
+        hfSelB0ToDPiCandidate(statusB0ToDPi);
+        // LOGF(info, "B0 candidate selection failed at topology selection");
+        continue;
+      }
+      SETBIT(statusB0ToDPi, aod::SelectionStep::RecoTopol); // RecoTopol = 1 --> statusB0ToDPi = 3
+
+      // track-level PID selection
+      if (usePid) {
+        if (!TESTBIT(candD.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) { // safety
+          LOG(warning) << "PID not enabled in DplusToPiKPi selector. Set selectionFlagD=7 in hf-candidate-creator-b0";
+          hfSelB0ToDPiCandidate(statusB0ToDPi);
+          continue;
+        }
+        int pidTrackPi = selectorPion.getStatusTrackPIDTpcOrTof(trackPi);
+        if (!selectionPID(pidTrackPi)) {
+          // LOGF(info, "B0 candidate selection failed at PID selection");
+          hfSelB0ToDPiCandidate(statusB0ToDPi);
+          continue;
+        }
+        SETBIT(statusB0ToDPi, aod::SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
+      }
+
+      hfSelB0ToDPiCandidate(statusB0ToDPi);
+      // LOGF(info, "B0 candidate selection passed all selections");
     }
-
-    hfSelB0ToDPiCandidate(1);
-    // Printf("B0 candidate selection successful, candidate should be selected");
   }
 };
 
