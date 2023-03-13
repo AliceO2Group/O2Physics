@@ -77,7 +77,7 @@ struct OnTheFlyTracker {
       }
     }
 
-    //Basic QA
+    // Basic QA
     const AxisSpec axisMomentum{static_cast<int>(100), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
     histos.add("hPt", "hPt", kTH1F, {axisMomentum});
   }
