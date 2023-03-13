@@ -294,28 +294,44 @@ struct HfCandidateSelectorLcMl {
         auto trackParPos1 = getTrackPar(trackPos1);
         auto trackParNeg = getTrackPar(trackNeg);
         auto trackParPos2 = getTrackPar(trackPos2);
-        std::vector<float> inputFeatures{trackParPos1.getPt(), trackPos1.dcaXY(), trackPos1.dcaZ(), trackParNeg.getPt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackParPos2.getPt(), trackPos2.dcaXY(), trackPos2.dcaZ()};
-        if (dataTypeML == 1 || dataTypeML == 11) {
-          auto scores = model.evalModel(inputFeatures);
-          if (scores[0] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTbkg")) {
-            // background
-            statusLcToPKPi = 0;
-            statusLcToPiKP = 0;
+        std::vector<float> inputFeaturesF{trackParPos1.getPt(), trackPos1.dcaXY(), trackPos1.dcaZ(), trackParNeg.getPt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackParPos2.getPt(), trackPos2.dcaXY(), trackPos2.dcaZ()};
+        std::vector<double> inputFeaturesD{trackParPos1.getPt(), trackPos1.dcaXY(), trackPos1.dcaZ(), trackParNeg.getPt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackParPos2.getPt(), trackPos2.dcaXY(), trackPos2.dcaZ()};
+        float scores[3] = {-1.f, -1.f, -1.f};
+        if (dataTypeML == 1) {
+          auto scoresRaw = model.evalModel(inputFeaturesF);
+          for (int iScore = 0; iScore < 3; ++iScore) {
+            scores[iScore] = scoresRaw[iScore];
           }
-          if (scores[1] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTprompt")) {
-            // prompt
-          }
-          if (scores[2] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTnonprompt")) {
-            // non-prompt
-            // NOTE: Can be both prompt and non-prompt!
-          }
-          if (activateQA != 0) {
-            registry.fill(HIST("LcBDTScoreBkgDistr"), scores[0]);
-            registry.fill(HIST("LcBDTScorePromptDistr"), scores[1]);
-            registry.fill(HIST("LcBDTScoreNonPromptDistr"), scores[2]);
+        } else if (dataTypeML == 11) {
+          auto scoresRaw = model.evalModel(inputFeaturesD);
+          for (int iScore = 0; iScore < 3; ++iScore) {
+            scores[iScore] = scoresRaw[iScore];
           }
         } else {
           LOG(error) << "Error running model inference for Lc: Unexpected input data type.";
+        }
+        if (scores[0] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTbkg")) {
+          // background
+          statusLcToPKPi = 0;
+          statusLcToPiKP = 0;
+        }
+        // This is an equivalent to the cut above but it depends on the thresholds set
+        if (scores[1] <= thresholdBDTScoreLcToPiKP.value.get(0u, "BDTprompt") &&
+            scores[2] <= thresholdBDTScoreLcToPiKP.value.get(0u, "BDTnonprompt")) {
+          statusLcToPKPi = 0;
+          statusLcToPiKP = 0;
+        }
+        if (scores[1] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTprompt")) {
+          // prompt
+        }
+        if (scores[2] > thresholdBDTScoreLcToPiKP.value.get(0u, "BDTnonprompt")) {
+          // non-prompt
+          // NOTE: Can be both prompt and non-prompt!
+        }
+        if (activateQA != 0) {
+          registry.fill(HIST("LcBDTScoreBkgDistr"), scores[0]);
+          registry.fill(HIST("LcBDTScorePromptDistr"), scores[1]);
+          registry.fill(HIST("LcBDTScoreNonPromptDistr"), scores[2]);
         }
       }
 
