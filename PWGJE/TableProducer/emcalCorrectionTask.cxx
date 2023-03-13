@@ -70,6 +70,12 @@ struct EmcalCorrectionTask {
   Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
   Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
+  Configurable<float> logWeight{"logWeight", 4.5, "logarithmic weight for the cluster center of gravity calculation"};
+  Configurable<float> exoticCellFraction{"exoticCellFraction", 0.97, "Good cell if fraction < 1-ecross/ecell"};
+  Configurable<float> exoticCellDiffTime{"exoticCellDiffTime", 1.e6, "If time of candidate to exotic and close cell is larger than exoticCellDiffTime (in ns), it must be noisy, set amp to 0"};
+  Configurable<float> exoticCellMinAmplitude{"exoticCellMinAmplitude", 4, "Check for exotic only if amplitud is larger than this value"};
+  Configurable<float> exoticCellInCrossMinAmplitude{"exoticCellInCrossMinAmplitude", 0.1, "Minimum energy of cells in cross, if lower not considered in cross"};
+  Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -122,6 +128,12 @@ struct EmcalCorrectionTask {
       }
     }
     mClusterFactories.setGeometry(geometry);
+    mClusterFactories.SetECALogWeight(logWeight);
+    mClusterFactories.setExoticCellFraction(exoticCellFraction);
+    mClusterFactories.setExoticCellDiffTime(exoticCellDiffTime);
+    mClusterFactories.setExoticCellMinAmplitude(exoticCellMinAmplitude);
+    mClusterFactories.setExoticCellInCrossMinAmplitude(exoticCellInCrossMinAmplitude);
+    mClusterFactories.setUseWeightExotic(useWeightExotic);
     for (auto& clusterDefinition : mClusterDefinitions) {
       mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1E9, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, clusterDefinition.doGradientCut, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
       LOG(info) << "Cluster definition initialized: " << clusterDefinition.toString();
