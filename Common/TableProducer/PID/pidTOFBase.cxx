@@ -60,8 +60,8 @@ struct tofSignal {
       LOG(info) << "Table TOFSignal enabled!";
     }
   }
-  using Trks = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
-  void process(Trks const& tracks)
+  using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
+  void processRun3(Trks const& tracks)
   {
     if (!enableTable) {
       return;
@@ -70,7 +70,27 @@ struct tofSignal {
     for (auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
     }
+    if (doprocessRun2 && doprocessRun3) {
+      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
+    }
+    if (!doprocessRun2 && !doprocessRun3) {
+      LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
+    }
   }
+  PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
+
+  using TrksRun2 = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
+  void processRun2(TrksRun2 const& tracks)
+  {
+    if (!enableTable) {
+      return;
+    }
+    table.reserve(tracks.size());
+    for (auto& t : tracks) {
+      table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
+    }
+  }
+  PROCESS_SWITCH(tofSignal, processRun2, "Process Run2 data i.e. input is Tracks", false);
 };
 
 /// Selection criteria for tracks used for TOF event time
@@ -111,6 +131,7 @@ struct tofEventTime {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
   Configurable<float> maxMomentum{"maxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
+  Configurable<float> maxEvTimeTOF{"maxEvTimeTOF", 100000.0f, "Maximum value of the TOF event time"};
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -203,7 +224,7 @@ struct tofEventTime {
 
   ///
   /// Process function to prepare the event for each track on Run 3 data without the FT0
-  using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
+  using TrksEvTime = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal>;
   // Define slice per collision
   Preslice<TrksEvTime> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
@@ -251,10 +272,10 @@ struct tofEventTime {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
         }
         uint8_t flags = 0;
-        if (erret < errDiamond) {
+        if (erret < errDiamond && abs(et) < maxEvTimeTOF) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
         } else {
-          et = 0;
+          et = 0.f;
           erret = errDiamond;
         }
         tableFlags(flags);
@@ -328,7 +349,7 @@ struct tofEventTime {
         if constexpr (removeTOFEvTimeBias) {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
         }
-        if (t0TOF[1] < errDiamond) {
+        if (t0TOF[1] < errDiamond && abs(t0TOF[0]) < maxEvTimeTOF) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
           weight = 1.f / (t0TOF[1] * t0TOF[1]);

@@ -266,6 +266,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("kaonPID2")) {
+    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma2"));
+    return cut;
+  }
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
@@ -712,6 +718,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmee_eNSigmaRun3_strongPID_looseDCAxy")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCAxy"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
   if (!nameStr.compare("lmee_eNSigmaRun3_tight_pt04")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine_pt04"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -843,7 +867,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("lmee_GlobalTrackRun3")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("tightPrimaryTrack"));
     return cut;
   }
 
@@ -851,6 +875,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("tightPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_GlobalTrackRun3_looseDCAxy")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCAxy"));
     return cut;
   }
 
@@ -868,13 +899,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lmee_GlobalTrackRun3_TPC_ePID_lowPt")) {
-    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
-    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
-    cut->AddCut(GetAnalysisCut("tightPrimaryTrack"));
-    cut->AddCut(GetAnalysisCut("tpc_electron"));
-    return cut;
-  }
   // -------------------------------------------------------------------------------------------------
   // lmee pair cuts
 
@@ -1564,6 +1588,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("PrimaryTrack_looseDCAxy")) {
+    cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);   // in cm
+    cut->AddCut(VarManager::kTrackDCAsigZ, -3.0, 3.0); // in sigma
+    return cut;
+  }
+
   if (!nameStr.compare("tightPrimaryTrack")) {
     cut->AddCut(VarManager::kTrackDCAsigXY, -3.0, 3.0);
     cut->AddCut(VarManager::kTrackDCAsigZ, -3.0, 3.0);
@@ -1802,8 +1832,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("kaonPIDnsigma")) {
-    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+  if (!nameStr.compare("kaonPIDnsigma2")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
     return cut;
   }
 
