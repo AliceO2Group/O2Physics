@@ -42,7 +42,7 @@ struct HfRefitPvDummy {
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
 
       // original PV information
-      auto track0 = rowTrackIndexProng2.prong0_as<aod::Tracks>();
+      auto track0 = rowTrackIndexProng2.prong0();
       auto collision = track0.collision();
       auto primaryVertex = getPrimaryVertex(collision);
 
@@ -66,7 +66,7 @@ struct HfRefitPvDummy {
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
 
       // original PV information
-      auto track0 = rowTrackIndexProng3.prong0_as<aod::Tracks>();
+      auto track0 = rowTrackIndexProng3.prong0();
       auto collision = track0.collision();
       auto primaryVertex = getPrimaryVertex(collision);
 
@@ -90,7 +90,7 @@ struct HfRefitPvDummy {
     for (const auto& rowTrackIndexCascade : rowsTrackIndexCascade) {
 
       // original PV information
-      auto track0 = rowTrackIndexCascade.prong0_as<aod::Tracks>();
+      auto track0 = rowTrackIndexCascade.prong0();
       auto collision = track0.collision();
       // fill version 001 of candidate table, containing also the collision ID
       rowCascadesWithCollId(collision.globalIndex(), rowTrackIndexCascade.prong0Id(), rowTrackIndexCascade.v0Id());
