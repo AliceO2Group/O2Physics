@@ -67,6 +67,9 @@ DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+// New 
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
@@ -123,7 +126,8 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::Phi,
                   full::Y,
                   full::E,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   collision::BCId,
@@ -140,7 +144,8 @@ DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -154,7 +159,102 @@ struct HfTreeCreatorD0ToKPi {
   {
   }
 
-  void process(aod::Collisions const& collisions,
+  void processData(aod::Collisions const& collisions,
+               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
+               aod::BigTracksPID const& tracks)
+  {
+
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (auto& collision : collisions) {
+      rowCandidateFullEvents(
+        collision.bcId(),
+        collision.numContrib(),
+        collision.posX(),
+        collision.posY(),
+        collision.posZ(),
+        0,
+        1);
+    }
+
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
+    for (auto& candidate : candidates) {
+      auto fillTable = [&](int CandFlag,
+                           int FunctionSelection,
+                           double FunctionInvMass,
+                           double FunctionCosThetaStar,
+                           double FunctionCt,
+                           double FunctionY,
+                           double FunctionE) {
+        if (FunctionSelection >= 1) {
+          rowCandidateFull(
+            candidate.prong0_as<aod::BigTracksPID>().collision().bcId(),
+            candidate.prong0_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.posX(),
+            candidate.posY(),
+            candidate.posZ(),
+            candidate.xSecondaryVertex(),
+            candidate.ySecondaryVertex(),
+            candidate.zSecondaryVertex(),
+            candidate.errorDecayLength(),
+            candidate.errorDecayLengthXY(),
+            candidate.chi2PCA(),
+            candidate.rSecondaryVertex(),
+            candidate.decayLength(),
+            candidate.decayLengthXY(),
+            candidate.decayLengthNormalised(),
+            candidate.decayLengthXYNormalised(),
+            candidate.impactParameterNormalised0(),
+            candidate.ptProng0(),
+            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            candidate.impactParameterNormalised1(),
+            candidate.ptProng1(),
+            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+            candidate.pxProng0(),
+            candidate.pyProng0(),
+            candidate.pzProng0(),
+            candidate.pxProng1(),
+            candidate.pyProng1(),
+            candidate.pzProng1(),
+            candidate.impactParameter0(),
+            candidate.impactParameter1(),
+            candidate.errorImpactParameter0(),
+            candidate.errorImpactParameter1(),
+            candidate.prong0_as<aod::BigTracksPID>().tpcNSigmaPi(),
+            candidate.prong0_as<aod::BigTracksPID>().tpcNSigmaKa(),
+            candidate.prong0_as<aod::BigTracksPID>().tofNSigmaPi(),
+            candidate.prong0_as<aod::BigTracksPID>().tofNSigmaKa(),
+            candidate.prong1_as<aod::BigTracksPID>().tpcNSigmaPi(),
+            candidate.prong1_as<aod::BigTracksPID>().tpcNSigmaKa(),
+            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi(),
+            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaKa(),
+            1 << CandFlag,
+            FunctionInvMass,
+            candidate.impactParameterProduct(),
+            FunctionCosThetaStar,
+            candidate.pt(),
+            candidate.p(),
+            candidate.cpa(),
+            candidate.cpaXY(),
+            FunctionCt,
+            candidate.eta(),
+            candidate.phi(),
+            FunctionY,
+            FunctionE,
+            0,
+            0);
+        }
+      };
+
+      fillTable(0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD0(candidate), yD0(candidate), eD0(candidate));
+      fillTable(1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD0(candidate), yD0(candidate), eD0(candidate));
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processData, "Process data", true);
+
+  void processMC(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
@@ -239,7 +339,8 @@ struct HfTreeCreatorD0ToKPi {
             candidate.phi(),
             FunctionY,
             FunctionE,
-            candidate.flagMcMatchRec());
+            candidate.flagMcMatchRec(),
+            candidate.originMcRec());
         }
       };
 
@@ -257,10 +358,13 @@ struct HfTreeCreatorD0ToKPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen());
+          particle.flagMcMatchGen(),
+          particle.originMcGen());
       }
     }
   }
+
+  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
