@@ -81,12 +81,12 @@ struct HfRefitPvDummy {
 
   PROCESS_SWITCH(HfRefitPvDummy, process3Prongs, "Produce tables for 3-prong candidates", true);
 
-  // process function for 3-prong candidates
+  // process function for cascade candidates
   void processCascades(aod::Collisions const& collisions,
                        aod::HfCascades_000 const& rowsTrackIndexCascade,
                        aod::Tracks const&)
   {
-    // dummy tables for 3 prong candidates
+    // dummy tables for cascade candidates
     for (const auto& rowTrackIndexCascade : rowsTrackIndexCascade) {
 
       // original PV information
@@ -95,7 +95,7 @@ struct HfRefitPvDummy {
       // fill version 001 of candidate table, containing also the collision ID
       rowCascadesWithCollId(collision.globalIndex(), rowTrackIndexCascade.prong0Id(), rowTrackIndexCascade.v0Id());
     }
-  } // end of process function for 3 prong candidates
+  } // end of process function for cascade candidates
 
   PROCESS_SWITCH(HfRefitPvDummy, processCascades, "Produce tables for hf-cascade candidates", true);
 };
