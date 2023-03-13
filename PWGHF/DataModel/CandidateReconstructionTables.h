@@ -141,11 +141,18 @@ DECLARE_SOA_TABLE_VERSIONED(Hf2Prongs_001, "AOD", "HF2PRONG", 1, //! Table for H
 using Hf2Prongs = Hf2Prongs_001;
 using Hf2Prong = Hf2Prongs::iterator;
 
-DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
+DECLARE_SOA_TABLE(HfCascades_000, "AOD", "HFCASCADE", //! Table for HF candidates with a V0 (Run 2 converted format)
                   o2::soa::Index<>,
-                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::V0Id);
+
+DECLARE_SOA_TABLE_VERSIONED(HfCascades_001, "AOD", "HFCASCADE", 1, //! Table for HF candidates with a V0 (Run 3 format)
+                            o2::soa::Index<>,
+                            hf_track_association::CollisionId,
+                            hf_track_index::Prong0Id,
+                            hf_track_index::V0Id);
+
+using HfCascades = HfCascades_001;
 using HfCascade = HfCascades::iterator;
 
 DECLARE_SOA_TABLE(Hf3Prongs_000, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates (Run 2 converted format)
