@@ -58,7 +58,7 @@ struct HfRefitPvDummy {
   PROCESS_SWITCH(HfRefitPvDummy, process2Prongs, "Produce tables for 2-prong candidates", true);
 
   // process function for 3-prong candidates
-  void process3Prongs(aod::Collisions const& collisions,
+  void process3Prongs(aod::Collisions const&,
                       aod::Hf3Prongs_000 const& rowsTrackIndexProng3,
                       aod::Tracks const&)
   {
