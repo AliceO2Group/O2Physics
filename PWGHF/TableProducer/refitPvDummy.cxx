@@ -34,7 +34,7 @@ struct HfRefitPvDummy {
   Produces<aod::HfCascades_001> rowCascadesWithCollId;
 
   // process function for 2-prong candidates
-  void process2Prongs(aod::Collisions const& collisions,
+  void process2Prongs(aod::Collisions const&,
                       aod::Hf2Prongs_000 const& rowsTrackIndexProng2,
                       aod::Tracks const&)
   {
