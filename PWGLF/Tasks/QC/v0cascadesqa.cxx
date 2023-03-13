@@ -471,6 +471,7 @@ struct v0cascadesQA {
   ////////////////////////////////
 
   void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, aod::McParticles const&, MyTracksMC const& tracks)
+  //void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, MyTracksMC const& tracks)
   {
     if (sel8 && !collision.sel8()) {
       return;

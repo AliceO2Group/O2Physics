@@ -45,10 +45,10 @@ namespace o2::aod
 using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
                                      aod::Mults>::iterator;
-// using FemtoFullCollisionMC = soa::Join<aod::Collisions,
-//                                        aod::EvSels,
-//                                        aod::Mults,
-//                                        aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions,
+                                       aod::EvSels,
+                                       aod::Mults,
+                                       aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
                                   aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -61,9 +61,10 @@ struct femtoDreamProducerReducedTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputParts;
-  // Produces<aod::FemtoDreamParticlesMC> outputPartsMC;
+  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
   Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  // Produces<aod::FemtoDreamDebugParticlesMC> outputDebugPartsMC;
+  Produces<aod::FemtoDreamMCLabels> outputPartsMCLabels;
+  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -183,10 +184,53 @@ struct femtoDreamProducerReducedTask {
     mRunNumber = bc.runNumber();
   }
 
-  void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+  template <typename ParticleType>
+  void fillMCParticle(ParticleType const& particle)
+  {
+    if (particle.has_mcParticle()) {
+      // get corresponding MC particle and its info
+      auto particleMC = particle.mcParticle();
+      auto pdgCode = particleMC.pdgCode();
+
+      int particleOrigin = 99;
+      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
+
+      if (abs(pdgCode) == 2212) { // TODO: create a configurable and do not hardcode!
+        if (particleMC.isPhysicalPrimary()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
+        } else if (motherparticleMC.producedByGenerator()) {
+          switch (abs(motherparticleMC.pdgCode())) {
+            case 3122:
+              particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterLambda;
+              break;
+            case 3222:
+              particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterSigmaplus;
+              break;
+            default:
+              particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+          } // switch
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        }
+      } else {
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
+      }
+      outputPartsMC(outputCollision.lastIndex(), particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      //outputPartsMCLabels(particleMC.globalIndex());
+      outputPartsMCLabels(outputPartsMC.lastIndex());
+    } else {
+      outputPartsMC(outputCollision.lastIndex(), -999, -999, -999, -999, -999);
+      outputPartsMCLabels(outputPartsMC.lastIndex());
+      //outputPartsMCLabels(-1);
+    }
+  }
+
+  //void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+  template <bool isMC, typename CollisionType, typename TrackType>
+  void fillCollisionsAndTracks(CollisionType const& col, TrackType const& tracks) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    //getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>()); //\todo: remove this line
 
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
@@ -241,6 +285,11 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
+
+      if constexpr (isMC) {
+        fillMCParticle(track);
+      }
+
       if (ConfDebugOutput) {
         outputDebugParts(track.sign(),
                          (uint8_t)track.tpcNClsFound(),
@@ -272,6 +321,29 @@ struct femtoDreamProducerReducedTask {
       }
     }
   }
+
+  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  {
+    // get magnetic field for run
+    //getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>(), false);
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracks<false>(col, tracks);
+  }
+  PROCESS_SWITCH(femtoDreamProducerReducedTask, processData, "Provide experimental data", true);
+  
+  void processMC(aod::FemtoFullCollisionMC const& col,
+                 aod::BCsWithTimestamps const&,
+                 soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    // get magnetic field for run
+    //getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>(), true);
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracks<true>(col, tracks);
+  }
+  PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC, "Provide MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

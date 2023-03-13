@@ -57,6 +57,29 @@ class FemtoDreamContainer
   /// Destructor
   virtual ~FemtoDreamContainer() = default;
 
+
+  template <typename T>
+  void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis)
+  {
+    
+    mHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "/kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "/MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
+    mHistogramRegistry->add((folderName + "/MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
+    mHistogramRegistry->add((folderName + "/PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
+  }
+
+  template <typename T>
+  void init_MC(std::string folderName, T femtoObsAxis)
+  {
+    mHistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
+  }
+
   /// Initializes histograms for the task
   /// \tparam T Type of the configurable for the axis configuration
   /// \param registry Histogram registry to be passed
@@ -65,7 +88,7 @@ class FemtoDreamContainer
   /// \param kTBins kT binning for the histograms
   /// \param mTBins mT binning for the histograms
   template <typename T>
-  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins)
+  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, bool isMC)
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -78,17 +101,14 @@ class FemtoDreamContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]);
-    mHistogramRegistry->add((folderName + "relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    mHistogramRegistry->add((folderName + "relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    mHistogramRegistry->add((folderName + "relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    mHistogramRegistry->add((folderName + "kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    mHistogramRegistry->add((folderName + "MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    mHistogramRegistry->add((folderName + "MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    mHistogramRegistry->add((folderName + "PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
+    std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]);
+    
+    init_base(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis);
+    if(isMC){
+      folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]);
+      init_base(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis);
+      init_MC(folderName, femtoObsAxis);
+    }
   }
 
   /// Set the PDG codes of the two particles involved
@@ -105,8 +125,8 @@ class FemtoDreamContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  template <typename T>
-  void setPair(T const& part1, T const& part2, const int mult)
+  template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
+  void setPair_base(T const& part1, T const& part2, const int mult)
   {
     float femtoObs;
     if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
@@ -115,23 +135,55 @@ class FemtoDreamContainer
     const float kT = FemtoDreamMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
 
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkT"), kT);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs, kT);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarMult"), femtoObs, mult);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/kstarPtPart1"), femtoObs, part1.pt());
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/kstarPtPart2"), femtoObs, part2.pt());
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt());
+  }
+
+  /// Pass a pair to the container and compute all the relevant observables
+  /// \tparam T type of the femtodreamparticle
+  /// \param part1 Particle one
+  /// \param part2 Particle two
+  /// \param mult Multiplicity of the event
+  template <typename T>
+  void setPair_MC(T const& part1, T const& part2, const int mult)
+  {
+    float femtoObs, femtoObsMC;
+    if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
+      femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
+      femtoObsMC = FemtoDreamMath::getkstar(part1.femtoDreamMCParticle(), mMassOne, part2.femtoDreamMCParticle(), mMassTwo);
+    }
     if (mHistogramRegistry) {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist"), femtoObs);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkT"), kT);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarkT"), femtoObs, kT);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarmT"), femtoObs, mT);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairkstarMult"), femtoObs, mult);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstarPtPart1"), femtoObs, part1.pt());
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("kstarPtPart2"), femtoObs, part2.pt());
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart1"), part1.pt(), mult);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart2"), part2.pt(), mult);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("PtPart1PtPart2"), part1.pt(), part2.pt());
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/kstar_resolution"), femtoObsMC, femtoObs);
+    }
+  }
+
+  template <bool isMC, typename T>
+  void setPair(T const& part1, T const& part2, const int mult)
+  {
+    if (mHistogramRegistry) {
+      setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(part1, part2, mult);
+
+      if constexpr (isMC){
+        if(part1.has_femtoDreamMCParticle() && part2.has_femtoDreamMCParticle()){
+          setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part1.femtoDreamMCParticle(), part2.femtoDreamMCParticle(), mult);
+          setPair_MC(part1, part2, mult);
+        }
+      }
+
     }
   }
 
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;                                    ///< For QA output
-  static constexpr std::string_view mFolderSuffix[2] = {"SameEvent/", "MixedEvent/"}; ///< Folder naming for the output according to mEventType
+  static constexpr std::string_view mFolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to mEventType
   static constexpr femtoDreamContainer::Observable mFemtoObs = obs;                   ///< Femtoscopic observable to be computed (according to femtoDreamContainer::Observable)
   static constexpr int mEventType = eventType;                                        ///< Type of the event (same/mixed, according to femtoDreamContainer::EventType)
   float mMassOne = 0.f;                                                               ///< PDG mass of particle 1

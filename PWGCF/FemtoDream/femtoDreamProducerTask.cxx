@@ -84,9 +84,9 @@ struct femtoDreamProducerTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamParticlesMC> outputPartsMC;
+  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
   Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  Produces<aod::FemtoDreamDebugParticlesMC> outputDebugPartsMC;
+  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -337,9 +337,9 @@ struct femtoDreamProducerTask {
       auto pdgCode = particleMC.pdgCode();
       bool isPrimary = particleMC.isPhysicalPrimary();
       if (isPrimary) {
-        outputPartsMC(outputParts.lastIndex(), aod::femtodreamparticleMC::ParticleOriginMCTruth::kPrimary, pdgCode);
+        outputPartsMC(outputParts.lastIndex(), aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary, pdgCode);
       } else {
-        outputPartsMC(outputParts.lastIndex(), aod::femtodreamparticleMC::ParticleOriginMCTruth::kNotPrimary, pdgCode);
+        outputPartsMC(outputParts.lastIndex(), aod::femtodreamMCparticle::ParticleOriginMCTruth::kNotPrimary, pdgCode);
       }
       // fill with correct values, this is currently placeholder
       outputDebugPartsMC(-999);
