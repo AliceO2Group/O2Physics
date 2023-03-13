@@ -60,6 +60,9 @@ struct OnTheFlyTracker {
   // necessary for particle charges
   Service<O2DatabasePDG> pdg;
 
+  // for handling basic QA histograms if requested
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   void init(o2::framework::InitContext& initContext)
@@ -73,6 +76,10 @@ struct OnTheFlyTracker {
         }
       }
     }
+
+    //Basic QA
+    const AxisSpec axisMomentum{static_cast<int>(100), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
+    histos.add("hPt", "hPt", kTH1F, {axisMomentum});
   }
 
   /// Function to convert a McParticle into a perfect Track
@@ -83,7 +90,7 @@ struct OnTheFlyTracker {
   {
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
     int charge = 0;
-    if (pdgInfo != nullptr) {
+    if (pdgInfo == nullptr) {
       charge = pdgInfo->Charge();
     }
     std::array<float, 5> params;
@@ -139,6 +146,9 @@ struct OnTheFlyTracker {
       // Calculate primary vertex
       // To be added once smeared tracks are in place
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+
+      // Base QA
+      histos.fill(HIST("hPt"), trackParCov.getPt());
 
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
