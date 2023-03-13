@@ -266,6 +266,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("kaonPID2")) {
+    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma2"));
+    return cut;
+  }
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
@@ -1826,8 +1832,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("kaonPIDnsigma")) {
-    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+  if (!nameStr.compare("kaonPIDnsigma2")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
     return cut;
   }
 
