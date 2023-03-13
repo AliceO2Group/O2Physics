@@ -51,8 +51,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::TracksCov>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels, aod::TracksCov>;
+using tracksAndTPCInfo = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::TracksCovIU>;
+using tracksAndTPCInfoMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels, aod::TracksCovIU>;
 
 struct skimmerGammaConversions {
 
